@@ -1,8 +1,10 @@
 package com.ktome.client.render
 
+import com.ktome.client.ui.card.ModalCardAction
 import com.ktome.core.snapshot.RouteOptionSnapshot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -57,5 +59,13 @@ class RoutePreviewTextTest {
         assertTrue(mechanic.contains("ambush net"))
         assertTrue(zhSummary.contains("推荐等级 3-5 · 碎晶 +20"))
         assertTrue(zhTraits!!.contains("位移 · 净化"))
+
+        val card = RoutePreviewText.modalCardModel(option.copy(guaranteedRewardItemNameKeys = listOf("item.healing_potion.name")))
+        assertEquals("route:route.greenwood_fringe.bandit_camp", card.stableKey)
+        assertEquals("zone.bandit_camp.name", card.title.key)
+        assertEquals(null, card.iconKey)
+        assertEquals(ModalCardAction.ENTER_ROUTE, card.primaryAction)
+        assertEquals(ModalCardAction.CANCEL, card.secondaryAction)
+        assertEquals("ui.world_map.route_card.summary.range", card.summary?.key)
     }
 }

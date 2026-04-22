@@ -15,9 +15,7 @@ class RenderSnapshotAssetAudit(
             resolveVisual(cell.terrainVisualKey)
             resolveAudio(cell.terrainAudioProfile)
             cell.items.forEach { item ->
-                resolveVisual(item.visualKey)
-                resolveVisual(item.iconKey)
-                resolveAudio(item.audioProfile)
+                auditItem(item)
             }
         }
 
@@ -66,25 +64,34 @@ class RenderSnapshotAssetAudit(
     }
 
     private fun auditItem(item: ItemRenderSnapshot) {
-        resolveVisual(item.visualKey)
-        resolveVisual(item.iconKey)
-        resolveAudio(item.audioProfile)
+        resolveVisual(item.visualKey, item.assetContext("visualKey"))
+        resolveVisual(item.iconKey, item.assetContext("iconKey"))
+        resolveAudio(item.audioProfile, item.assetContext("audioProfile"))
     }
 
-    private fun resolveVisual(key: String?) {
+    private fun ItemRenderSnapshot.assetContext(field: String): String =
+        "baseItemId=$baseItemId specialTemplateId=${specialTemplateId ?: "-"} field=$field"
+
+    private fun resolveVisual(
+        key: String?,
+        context: String? = null,
+    ) {
         if (!key.isNullOrBlank()) {
             val resolved = assets.visualResolver.resolve(key)
             require(!resolved.fallbackUsed && !resolved.matchedByPrefix) {
-                "Render snapshot references unknown visual key '$key'."
+                "Render snapshot references unknown visual key '$key'${context?.let { value -> " ($value)" }.orEmpty()}."
             }
         }
     }
 
-    private fun resolveAudio(key: String?) {
+    private fun resolveAudio(
+        key: String?,
+        context: String? = null,
+    ) {
         if (!key.isNullOrBlank()) {
             val resolved = assets.audioResolver.resolve(key)
             require(!resolved.fallbackUsed && !resolved.matchedByPrefix) {
-                "Render snapshot references unknown audio key '$key'."
+                "Render snapshot references unknown audio key '$key'${context?.let { value -> " ($value)" }.orEmpty()}."
             }
         }
     }

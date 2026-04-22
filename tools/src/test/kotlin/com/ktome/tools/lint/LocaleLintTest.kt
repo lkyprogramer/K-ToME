@@ -19,6 +19,7 @@ class LocaleLintTest {
     @Test
     fun `locale bundles stay in lockstep and cover all schema referenced keys`() {
         assertEquals(en.keys, zh.keys, "Locale bundles must expose the same key set.")
+        assertFalse("ui.inspect.empty.tile" in en.keys, "PR-02 temporary inspect empty key must stay removed after UiEmptyState cutover.")
         val missingKeys = referencedKeys - en.keys
         val extraKeys = en.keys - referencedKeys
         assertTrue(

@@ -28,6 +28,8 @@ class ContractLintTest {
         val loader = DataLoader()
         val catalog = loader.loadSchemaCatalog()
         val assets = ClientAssetBundleLoader.load()
+        val itemIconFindings = ItemIconKeyCoverageRule.validate(catalog.itemBundle, assets.visualResolver)
+        assertTrue(itemIconFindings.isEmpty(), "Item icon key coverage failed: ${itemIconFindings.take(20)}")
         val professionIds = catalog.professions.map { it.id }.toSet()
         val advancedProfessionIds = setOf("berserker", "spellblade", "shadowblade", "warden")
         val talentIds = catalog.talents.map { it.id }.toSet()

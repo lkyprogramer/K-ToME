@@ -120,7 +120,10 @@ class ClientAssetLoadStrategy(
             visualKeys += cell.terrainVisualKey
             terrainVisualKeys += cell.terrainVisualKey
             cell.terrainAudioProfile?.let(audioKeys::add)
-            cell.items.forEach { item -> collectItem(item, visualKeys, audioKeys) }
+            cell.items.forEach { item ->
+                collectItem(item, visualKeys, audioKeys)
+                item.iconKey?.let(iconVisualKeys::add)
+            }
         }
         snapshot.props.forEach { prop ->
             visualKeys += prop.visualKey
@@ -211,6 +214,21 @@ class ClientAssetLoadStrategy(
 
     fun warmCache(snapshot: RenderSnapshot) {
         bootstrapLoad()
+        if (snapshot.overlays.isEmpty()) {
+            if (warmVisualKeys.isEmpty() && warmAudioKeys.isEmpty()) {
+                return
+            }
+            warmCacheDescriptor =
+                WarmCacheDescriptor(
+                    overlayVisualKeys = emptySet(),
+                    overlayAudioKeys = emptySet(),
+                    portraitVisualKeys = emptySet(),
+                    highValueVfxKeys = emptySet(),
+                )
+            warmVisualKeys = emptySet()
+            warmAudioKeys = emptySet()
+            return
+        }
         val visualKeys = snapshot.overlays.mapTo(linkedSetOf()) { overlay -> overlay.visualKey }
         val audioKeys =
             snapshot.overlays

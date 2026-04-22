@@ -27,6 +27,8 @@ class ScopeCoverageLintTest {
                 .jsonArray
                 .map { element -> element.jsonObject }
         val coreCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "core_phase4_owner_false_negative" }
+        val presentationOnlySnapshotCase =
+            cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "presentation_only_item_snapshot_scope" }
         val dataLoaderCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "data_loader_false_negative" }
         val foundationSessionCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "foundation_session_false_negative" }
         val maintainabilityGovernanceCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "maintainability_governance_scope" }
@@ -50,6 +52,12 @@ class ScopeCoverageLintTest {
         assertTrue(coreCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "maintainability" })
         assertTrue(coreCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:whiteBoxMapgen" })
         assertTrue(coreCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:maintainabilityLint" })
+        assertTrue(presentationOnlySnapshotCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "maintainability" })
+        assertTrue(presentationOnlySnapshotCase.getValue("impactedDomainIds").jsonArray.none { domain -> domain.jsonPrimitive.content == "loot" })
+        assertTrue(presentationOnlySnapshotCase.getValue("impactedDomainIds").jsonArray.none { domain -> domain.jsonPrimitive.content == "boss" })
+        assertTrue(presentationOnlySnapshotCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:maintainabilityLint" })
+        assertTrue(presentationOnlySnapshotCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":tools:lootBalanceLab" })
+        assertTrue(presentationOnlySnapshotCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":game:longRunLab" })
         assertTrue(dataLoaderCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "content-pack" })
         assertTrue(dataLoaderCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:whiteBoxContentPack" })
         assertTrue(foundationSessionCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "boss" })

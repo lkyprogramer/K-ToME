@@ -34,6 +34,103 @@ class GitChangedFileCollectorTest {
     }
 
     @Test
+    fun `presentation-only snapshot diff classifier accepts item tier snapshot changes`() {
+        val renderSnapshotDiff =
+            """
+            diff --git a/core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt b/core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt
+            @@ -464,0 +465 @@ data class ItemRenderSnapshot(
+            +    val specialTierId: String? = null,
+            @@ -482 +483,11 @@ data class ItemRenderSnapshot(
+            -)
+            +) {
+            +    init {
+            +        val validSpecialTiers = setOf("UNIQUE", "ARTIFACT")
+            +        require(specialTierId == null || specialTierId in validSpecialTiers) {
+            +            "ItemRenderSnapshot.specialTierId must be UNIQUE or ARTIFACT when present."
+            +        }
+            +        require((specialTemplateId == null) == (specialTierId == null)) {
+            +            "ItemRenderSnapshot requires specialTemplateId and specialTierId to be present together."
+            +        }
+            +    }
+            +}
+            """.trimIndent()
+        val foundationSessionDiff =
+            """
+            diff --git a/game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt b/game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt
+            @@ -3898,0 +3899 @@ class FoundationGameSession internal constructor(
+            +            specialTierId = item.specialTemplateId?.let(content.itemBundle::specialTemplate)?.specialTier?.name,
+            """.trimIndent()
+
+        assertTrue(
+            GitChangedFileCollector.isPresentationOnlySnapshotDiff(
+                VerificationImpactHints.RENDER_SNAPSHOT_PATH,
+                renderSnapshotDiff,
+            ),
+        )
+        assertTrue(
+            GitChangedFileCollector.isPresentationOnlySnapshotDiff(
+                VerificationImpactHints.FOUNDATION_GAME_SESSION_PATH,
+                foundationSessionDiff,
+            ),
+        )
+    }
+
+    @Test
+    fun `presentation-only snapshot diff classifier rejects unrelated snapshot changes`() {
+        val diff =
+            """
+            diff --git a/core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt b/core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt
+            @@ -16 +16 @@ data class RenderSnapshot(
+            +    val debugRuleState: String? = null,
+            """.trimIndent()
+
+        assertEquals(
+            false,
+            GitChangedFileCollector.isPresentationOnlySnapshotDiff(
+                VerificationImpactHints.RENDER_SNAPSHOT_PATH,
+                diff,
+            ),
+        )
+    }
+
+    @Test
+    fun `presentation-only snapshot diff classifier rejects presentation field deletion`() {
+        val diff =
+            """
+            diff --git a/core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt b/core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt
+            @@ -465 +465,0 @@ data class ItemRenderSnapshot(
+            -    val specialTierId: String? = null,
+            """.trimIndent()
+
+        assertEquals(
+            false,
+            GitChangedFileCollector.isPresentationOnlySnapshotDiff(
+                VerificationImpactHints.RENDER_SNAPSHOT_PATH,
+                diff,
+            ),
+        )
+    }
+
+    @Test
+    fun `presentation-only snapshot diff classifier rejects session mapping mutation`() {
+        val diff =
+            """
+            diff --git a/game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt b/game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt
+            @@ -3899 +3899 @@ class FoundationGameSession internal constructor(
+            -            specialTierId = oldSpecialTierId,
+            +            specialTierId = item.specialTemplateId?.let(content.itemBundle::specialTemplate)?.specialTier?.name,
+            """.trimIndent()
+
+        assertEquals(
+            false,
+            GitChangedFileCollector.isPresentationOnlySnapshotDiff(
+                VerificationImpactHints.FOUNDATION_GAME_SESSION_PATH,
+                diff,
+            ),
+        )
+    }
+
+    @Test
     fun `collector falls back to existing local branch when preferred base ref is missing`() {
         runGit(tempDir, "init")
         runGit(tempDir, "checkout", "-b", "main")

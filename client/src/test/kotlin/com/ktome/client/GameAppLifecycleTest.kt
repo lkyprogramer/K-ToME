@@ -176,6 +176,26 @@ class GameAppLifecycleTest {
     }
 
     @Test
+    fun `asset contract coordinator exposes recoverable error payload`() {
+        val coordinator =
+            AssetContractCoordinator(
+                assetVersionProvider = {
+                    throw AssetVersionLoadException("manifest missing")
+                },
+                visualManifestProvider = { sampleVisualManifest() },
+                audioManifestProvider = { sampleAudioManifest() },
+            )
+
+        val errorState = requireNotNull(coordinator.errorStateOrNull(LocalizationBundle.load().translator(GameLocale.EN_US)))
+        val payload = errorState.payload.renderPlainText()
+
+        assertTrue(payload.contains("Asset Contract Error"))
+        assertTrue(payload.contains("stage: asset-version-load"))
+        assertTrue(payload.contains("message: manifest missing"))
+        assertTrue(payload.contains("[ktome/"))
+    }
+
+    @Test
     fun `asset contract coordinator tracks bootstrap session and warm cache phases`() {
         val coordinator =
             AssetContractCoordinator(

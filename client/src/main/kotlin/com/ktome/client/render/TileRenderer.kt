@@ -274,6 +274,7 @@ class TileRenderer(
             TileLayerComposer.compose(model).forEach { placement ->
                 drawPlacement(canvas, placement, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
             }
+            drawGroundLootMarkers(canvas, model.groundLootMarkers, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
             drawFogOverlays(canvas, model.fogTiles, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
             drawCombatFeedback(canvas, model.combatFeedback, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
 
@@ -542,6 +543,48 @@ class TileRenderer(
             canvas.drawRect(x + width - stroke, y, stroke, height, color)
         }
 
+        private fun drawGroundLootMarkers(
+            canvas: TileCanvas,
+            markers: List<TileGroundLootMarkerModel>,
+            mapHeight: Int,
+            mapOffsetY: Float,
+            cellWidth: Float,
+            cellHeight: Float,
+        ) {
+            markers.forEach { marker ->
+                val cellLeft = marker.x * cellWidth
+                val cellBottom = mapOffsetY + (mapHeight - marker.y - 1) * cellHeight
+                val actorCorner = marker.placement == com.ktome.client.ui.item.GroundLootMarkerPlacement.ACTOR_CORNER
+                val iconSize = if (actorCorner) cellWidth * 0.52f else cellWidth * 0.72f
+                val iconX =
+                    if (actorCorner) {
+                        cellLeft + cellWidth - iconSize - 2f
+                    } else {
+                        cellLeft + (cellWidth - iconSize) / 2f
+                    }
+                val iconY =
+                    if (actorCorner) {
+                        cellBottom + cellHeight - iconSize - 2f
+                    } else {
+                        cellBottom + (cellHeight - iconSize) / 2f
+                    }
+                canvas.drawRect(iconX - 2f, iconY - 2f, iconSize + 4f, iconSize + 4f, color("05070A", 0.72f))
+                canvas.drawRect(iconX - 2f, iconY - 2f, iconSize + 4f, 3f, tone(marker.rarityTone))
+                marker.specialAccentTokenId?.let { accent ->
+                    canvas.drawRect(iconX - 2f, iconY + iconSize - 1f, iconSize + 4f, 3f, specialAccentColor(accent))
+                }
+                canvas.drawAsset(marker.icon, iconX, iconY, iconSize, iconSize)
+                marker.cornerGlyph?.let { glyph ->
+                    canvas.drawText(TileTextStyle.SMALL, glyph, iconX - 1f, iconY + iconSize + 13f, tone(marker.rarityTone))
+                }
+                marker.countBadge?.let { badge ->
+                    val badgeWidth = if (badge == "9+") 27f else 20f
+                    canvas.drawRect(iconX + iconSize - badgeWidth + 3f, iconY - 4f, badgeWidth, 18f, UiDesignTokens.color.surface.baseDim.color())
+                    canvas.drawText(TileTextStyle.SMALL, badge, iconX + iconSize - badgeWidth + 6f, iconY + 11f, tone(TileTextTone.WHITE))
+                }
+            }
+        }
+
         private fun drawCombatFeedback(
             canvas: TileCanvas,
             combatFeedback: List<TileCombatFeedbackModel>,
@@ -793,6 +836,12 @@ class TileRenderer(
                 TileTextTone.RED -> UiDesignTokens.color.status.badge.turns.color()
                 TileTextTone.BLUE -> UiDesignTokens.color.quality.magic.color()
                 TileTextTone.MAGENTA -> UiDesignTokens.color.telegraph.lethal.color()
+            }
+
+        private fun specialAccentColor(accent: com.ktome.client.ui.item.SpecialAccentTokenId): Color =
+            when (accent) {
+                com.ktome.client.ui.item.SpecialAccentTokenId.UNIQUE -> UiDesignTokens.color.accent.unique.color()
+                com.ktome.client.ui.item.SpecialAccentTokenId.ARTIFACT -> UiDesignTokens.color.accent.artifact.color()
             }
 
         internal fun color(

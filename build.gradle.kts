@@ -1,6 +1,8 @@
 import org.gradle.api.JavaVersion
+import org.gradle.api.file.RegularFile
 import org.gradle.api.tasks.Exec
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
@@ -110,11 +112,141 @@ val verifyChangedPreflightTaskPaths =
         ":tools:verifyHiddenPreflight",
         ":tools:verifyContentPackPreflight",
     )
+val verifyChangedTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-paths.txt")
 val verifyChangedPreflightTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/preflight-task-paths.txt")
-val verifyChangedPreflightSummaryJsonFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-duration-summary.json")
-val verifyChangedPreflightSummaryMarkdownFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-duration-summary.md")
-val verifyChangedPreflightDurations = linkedMapOf<String, Long>()
-val verifyChangedPreflightStartedAtNanos = linkedMapOf<String, Long>()
+val verifyChangedFullSummaryJsonFile = rootProject.layout.buildDirectory.file("verification/verify-changed/full-task-duration-summary.json")
+val verifyChangedFullSummaryMarkdownFile = rootProject.layout.buildDirectory.file("verification/verify-changed/full-task-duration-summary.md")
+val verifyChangedPreflightSummaryJsonFile = rootProject.layout.buildDirectory.file("verification/verify-changed/preflight-task-duration-summary.json")
+val verifyChangedPreflightSummaryMarkdownFile = rootProject.layout.buildDirectory.file("verification/verify-changed/preflight-task-duration-summary.md")
+val verifyChangedLegacyPreflightSummaryJsonFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-duration-summary.json")
+val verifyChangedLegacyPreflightSummaryMarkdownFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-duration-summary.md")
+val verifyChangedTrackedTaskPaths = (verifyChangedTaskPaths + verifyChangedPreflightTaskPaths).toSet()
+
+data class VerifyChangedTaskDurationRecord(
+    val taskPath: String,
+    val durationMillis: Long,
+    val outcome: String,
+)
+
+val verifyChangedTaskDurationStartedAtNanos = linkedMapOf<String, Long>()
+val verifyChangedTaskDurationRecords = linkedMapOf<String, VerifyChangedTaskDurationRecord>()
+
+fun readVerifyChangedSelectedTaskPaths(taskPathsFile: Provider<RegularFile>): List<String> =
+    taskPathsFile
+        .get()
+        .asFile
+        .takeIf { file -> file.exists() }
+        ?.readLines()
+        ?.map(String::trim)
+        ?.filter(String::isNotBlank)
+        .orEmpty()
+
+fun verifyChangedJsonEscape(value: String): String =
+    value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+
+fun writeVerifyChangedTaskDurationSummary(
+    title: String,
+    summaryKind: String,
+    selectedTaskPaths: List<String>,
+    summaryJsonFile: Provider<RegularFile>,
+    summaryMarkdownFile: Provider<RegularFile>,
+    mirrorJsonFile: Provider<RegularFile>? = null,
+    mirrorMarkdownFile: Provider<RegularFile>? = null,
+) {
+    val selectedRecords =
+        selectedTaskPaths.map { taskPath ->
+            verifyChangedTaskDurationRecords[taskPath]
+                ?: VerifyChangedTaskDurationRecord(
+                    taskPath = taskPath,
+                    durationMillis = 0L,
+                    outcome = "NOT_RECORDED",
+                )
+        }
+    val totalDurationMillis = selectedRecords.sumOf(VerifyChangedTaskDurationRecord::durationMillis)
+    val slowestRecords =
+        selectedRecords
+            .sortedByDescending(VerifyChangedTaskDurationRecord::durationMillis)
+            .take(10)
+    val json =
+        buildString {
+            appendLine("{")
+            appendLine("""  "summaryKind": "${verifyChangedJsonEscape(summaryKind)}",""")
+            appendLine("""  "selectedTaskCount": ${selectedRecords.size},""")
+            appendLine("""  "totalDurationMillis": $totalDurationMillis,""")
+            appendLine("""  "tasks": [""")
+            selectedRecords.forEachIndexed { index, record ->
+                append(
+                    """    {"taskPath":"${verifyChangedJsonEscape(record.taskPath)}","durationMillis":${record.durationMillis},"outcome":"${verifyChangedJsonEscape(record.outcome)}"}""",
+                )
+                appendLine(if (index == selectedRecords.lastIndex) "" else ",")
+            }
+            appendLine("  ],")
+            appendLine("""  "slowestTasks": [""")
+            slowestRecords.forEachIndexed { index, record ->
+                append(
+                    """    {"taskPath":"${verifyChangedJsonEscape(record.taskPath)}","durationMillis":${record.durationMillis},"outcome":"${verifyChangedJsonEscape(record.outcome)}"}""",
+                )
+                appendLine(if (index == slowestRecords.lastIndex) "" else ",")
+            }
+            appendLine("  ]")
+            appendLine("}")
+        }
+    val markdown =
+        buildString {
+            appendLine("# $title")
+            appendLine()
+            appendLine("- summaryKind: `$summaryKind`")
+            appendLine("- selectedTaskCount: `${selectedRecords.size}`")
+            appendLine("- totalDurationMillis: `$totalDurationMillis`")
+            appendLine()
+            appendLine("## Slowest Tasks")
+            appendLine()
+            appendLine("| Task | Duration (ms) | Outcome |")
+            appendLine("| --- | ---: | --- |")
+            slowestRecords.forEach { record ->
+                appendLine("| `${record.taskPath}` | `${record.durationMillis}` | `${record.outcome}` |")
+            }
+            appendLine()
+            appendLine("## Selected Tasks")
+            appendLine()
+            appendLine("| Task | Duration (ms) | Outcome |")
+            appendLine("| --- | ---: | --- |")
+            selectedRecords.forEach { record ->
+                appendLine("| `${record.taskPath}` | `${record.durationMillis}` | `${record.outcome}` |")
+            }
+        }
+    val summaryJson = summaryJsonFile.get().asFile.toPath()
+    Files.createDirectories(summaryJson.parent)
+    Files.writeString(summaryJson, json)
+    Files.writeString(summaryMarkdownFile.get().asFile.toPath(), markdown)
+    mirrorJsonFile?.let { file -> Files.writeString(file.get().asFile.toPath(), json) }
+    mirrorMarkdownFile?.let { file -> Files.writeString(file.get().asFile.toPath(), markdown) }
+    println("$summaryKind task-duration summary")
+    selectedRecords.forEach { record ->
+        println("- ${record.taskPath} durationMs=${record.durationMillis} outcome=${record.outcome}")
+    }
+}
+
+fun recordVerifyChangedTaskStarted(taskPath: String) {
+    verifyChangedTaskDurationStartedAtNanos[taskPath] = System.nanoTime()
+}
+
+fun recordVerifyChangedTaskFinished(taskPath: String) {
+    val startedAt = verifyChangedTaskDurationStartedAtNanos.remove(taskPath)
+    verifyChangedTaskDurationRecords[taskPath] =
+        VerifyChangedTaskDurationRecord(
+            taskPath = taskPath,
+            durationMillis =
+                if (startedAt == null) {
+                    0L
+                } else {
+                    (System.nanoTime() - startedAt) / 1_000_000
+                },
+            outcome = "EXECUTED",
+        )
+}
 
 extensions.configure<JacocoPluginExtension> {
     toolVersion = providers.gradleProperty("jacocoVersion").get()
@@ -467,6 +599,15 @@ tasks.register("verifyChanged") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Collects changed files, analyzes impacted Phase 4 domains, and runs the selected preflight/owner verification tasks."
     dependsOn(verifyChangedTaskPaths)
+    doLast {
+        writeVerifyChangedTaskDurationSummary(
+            title = "verifyChanged Full Task Duration Summary",
+            summaryKind = "verifyChangedFull",
+            selectedTaskPaths = readVerifyChangedSelectedTaskPaths(verifyChangedTaskPathsFile),
+            summaryJsonFile = verifyChangedFullSummaryJsonFile,
+            summaryMarkdownFile = verifyChangedFullSummaryMarkdownFile,
+        )
+    }
 }
 
 tasks.register("verifyChangedPreflight") {
@@ -474,81 +615,28 @@ tasks.register("verifyChangedPreflight") {
     description = "Collects changed files, analyzes impacted Phase 4 domains, and runs only the routed lightweight preflight checks."
     dependsOn(verifyChangedPreflightTaskPaths)
     doLast {
-        val selectedTaskPaths =
-            verifyChangedPreflightTaskPathsFile
-                .get()
-                .asFile
-                .takeIf { file -> file.exists() }
-                ?.readLines()
-                ?.map(String::trim)
-                ?.filter(String::isNotBlank)
-                .orEmpty()
-        val selectedRecords =
-            selectedTaskPaths.map { taskPath ->
-                val outcome = if (verifyChangedPreflightDurations.containsKey(taskPath)) "EXECUTED" else "NOT_RECORDED"
-                val durationMillis = verifyChangedPreflightDurations[taskPath] ?: 0L
-                Triple(taskPath, durationMillis, outcome)
-            }
-        val totalDurationMillis = selectedRecords.sumOf { record -> record.second }
-        val json =
-            buildString {
-                appendLine("{")
-                appendLine("""  "selectedTaskCount": ${selectedRecords.size},""")
-                appendLine("""  "totalDurationMillis": $totalDurationMillis,""")
-                appendLine("""  "tasks": [""")
-                selectedRecords.forEachIndexed { index, (taskPath, durationMillis, outcome) ->
-                    append("""    {"taskPath":"$taskPath","durationMillis":$durationMillis,"outcome":"$outcome"}""")
-                    appendLine(if (index == selectedRecords.lastIndex) "" else ",")
-                }
-                appendLine("  ]")
-                appendLine("}")
-            }
-        val markdown =
-            buildString {
-                appendLine("# verifyChangedPreflight Task Duration Summary")
-                appendLine()
-                appendLine("- selectedTaskCount: `${selectedRecords.size}`")
-                appendLine("- totalDurationMillis: `$totalDurationMillis`")
-                appendLine()
-                appendLine("| Task | Duration (ms) | Outcome |")
-                appendLine("| --- | ---: | --- |")
-                selectedRecords.forEach { (taskPath, durationMillis, outcome) ->
-                    appendLine("| `$taskPath` | `$durationMillis` | `$outcome` |")
-                }
-            }
-        val summaryJson = verifyChangedPreflightSummaryJsonFile.get().asFile.toPath()
-        Files.createDirectories(summaryJson.parent)
-        Files.writeString(summaryJson, json)
-        Files.writeString(verifyChangedPreflightSummaryMarkdownFile.get().asFile.toPath(), markdown)
-        println("verifyChangedPreflight task-duration summary")
-        selectedRecords.forEach { (taskPath, durationMillis, outcome) ->
-            println("- $taskPath durationMs=$durationMillis outcome=$outcome")
-        }
+        writeVerifyChangedTaskDurationSummary(
+            title = "verifyChangedPreflight Task Duration Summary",
+            summaryKind = "verifyChangedPreflight",
+            selectedTaskPaths = readVerifyChangedSelectedTaskPaths(verifyChangedPreflightTaskPathsFile),
+            summaryJsonFile = verifyChangedPreflightSummaryJsonFile,
+            summaryMarkdownFile = verifyChangedPreflightSummaryMarkdownFile,
+            mirrorJsonFile = verifyChangedLegacyPreflightSummaryJsonFile,
+            mirrorMarkdownFile = verifyChangedLegacyPreflightSummaryMarkdownFile,
+        )
     }
 }
 
 gradle.projectsEvaluated {
-    listOf(
-        project(":tools").tasks.named("prepareVerifyChangedPlan"),
-        project(":tools").tasks.named("scopeCoverageLint"),
-        project(":tools").tasks.named("maintainabilityLint"),
-        project(":tools").tasks.named("verifyContractLintPreflight"),
-        project(":tools").tasks.named("verifyLootPreflight"),
-        project(":tools").tasks.named("verifyHiddenPreflight"),
-        project(":tools").tasks.named("verifyContentPackPreflight"),
-    ).forEach { taskProvider ->
-        taskProvider.configure {
+    verifyChangedTrackedTaskPaths.forEach { taskPath ->
+        val taskProjectPath = taskPath.substringBeforeLast(':').ifBlank { ":" }
+        val taskName = taskPath.substringAfterLast(':')
+        project(taskProjectPath).tasks.named(taskName).configure {
             doFirst {
-                verifyChangedPreflightStartedAtNanos[path] = System.nanoTime()
+                recordVerifyChangedTaskStarted(path)
             }
             doLast {
-                val startedAt = verifyChangedPreflightStartedAtNanos.remove(path)
-                verifyChangedPreflightDurations[path] =
-                    if (startedAt == null) {
-                        0L
-                    } else {
-                        (System.nanoTime() - startedAt) / 1_000_000
-                    }
+                recordVerifyChangedTaskFinished(path)
             }
         }
     }

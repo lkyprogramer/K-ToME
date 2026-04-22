@@ -74,6 +74,31 @@ data class VerificationFallbackRule(
     fun matches(path: String): Boolean = InputScope.normalizePath(path).startsWith(InputScope.normalizePath(pathPrefix))
 }
 
+data class VerificationImpactHints(
+    val presentationOnlySnapshotFiles: Set<String> = emptySet(),
+) {
+    private val normalizedPresentationOnlySnapshotFiles: Set<String> =
+        presentationOnlySnapshotFiles.map(InputScope.Companion::normalizePath).toSet()
+
+    fun suppressesFallback(
+        rule: VerificationFallbackRule,
+        changedFile: String,
+    ): Boolean {
+        val normalizedChangedFile = InputScope.normalizePath(changedFile)
+        return normalizedChangedFile in normalizedPresentationOnlySnapshotFiles &&
+            when (rule.ruleId) {
+                "false-negative.core-phase4-owner" -> normalizedChangedFile == RENDER_SNAPSHOT_PATH
+                "false-negative.foundation-session" -> normalizedChangedFile == FOUNDATION_GAME_SESSION_PATH
+                else -> false
+            }
+    }
+
+    companion object {
+        const val RENDER_SNAPSHOT_PATH: String = "core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt"
+        const val FOUNDATION_GAME_SESSION_PATH: String = "game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt"
+    }
+}
+
 object VerificationImpactAnalyzer {
     private val phase4OwnerDomains: Set<String> =
         linkedSetOf(
@@ -123,7 +148,10 @@ object VerificationImpactAnalyzer {
             ),
         )
 
-    fun analyze(changedFiles: Collection<String>): VerificationImpactPlan {
+    fun analyze(
+        changedFiles: Collection<String>,
+        impactHints: VerificationImpactHints = VerificationImpactHints(),
+    ): VerificationImpactPlan {
         val normalizedChangedFiles =
             changedFiles
                 .asSequence()
@@ -149,6 +177,7 @@ object VerificationImpactAnalyzer {
         normalizedChangedFiles.forEach { changedFile ->
             fallbackRules
                 .filter { rule -> rule.matches(changedFile) }
+                .filterNot { rule -> impactHints.suppressesFallback(rule = rule, changedFile = changedFile) }
                 .forEach { rule ->
                     rule.domainIds
                         .filter(registeredDomains::contains)

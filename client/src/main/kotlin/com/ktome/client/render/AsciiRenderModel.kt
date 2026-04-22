@@ -8,6 +8,9 @@ import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
+import com.ktome.client.ui.item.QualityColorTokenId
+import com.ktome.client.ui.item.QualityPresentation
+import com.ktome.client.ui.state.UiEmptyState
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.talent.DescriptionLine
 import com.ktome.client.ui.talent.DescriptionLineKind
@@ -133,11 +136,15 @@ internal object AsciiRenderModelBuilder {
             inspectCursor = overlayState.inspectCursor,
             hudText = AsciiRenderer.hudText(localizer, snapshot),
             messageLines =
-                snapshot.logEvents.map { event ->
-                    AsciiTextLine(
-                        text = renderLogEvent(localizer, event),
-                        tone = messageTone(event.message.key),
-                    )
+                if (snapshot.logEvents.isEmpty()) {
+                    emptyStateLines(localizer, UiEmptyState.log())
+                } else {
+                    snapshot.logEvents.map { event ->
+                        AsciiTextLine(
+                            text = renderLogEvent(localizer, event),
+                            tone = messageTone(event.message.key),
+                        )
+                    }
                 },
             sidebarLines = buildSidebarLines(localizer, snapshot, overlayState, cellByPoint, actorById),
         )
@@ -186,8 +193,10 @@ internal object AsciiRenderModelBuilder {
 
         lines += AsciiTextLine(localizer.text("ui.sidebar.equipment"), AsciiTextTone.GOLD)
         snapshot.uiState.equipment.forEach { equipment ->
-            val itemName = equipment.item?.let { item -> renderItemDisplay(localizer, item) } ?: "-"
-            lines += AsciiTextLine("${equipmentSlotLabel(localizer, equipment.slotId)}: $itemName", AsciiTextTone.WHITE)
+            val item = equipment.item
+            val presentation = item?.let(QualityPresentation::from)
+            val itemName = item?.let { renderItemDisplay(localizer, it, requireNotNull(presentation)) } ?: "-"
+            lines += AsciiTextLine("${equipmentSlotLabel(localizer, equipment.slotId)}: $itemName", presentation?.let(::itemTone) ?: AsciiTextTone.WHITE)
         }
 
         lines += blankLine()
@@ -215,7 +224,8 @@ internal object AsciiRenderModelBuilder {
             lines += AsciiTextLine("-", AsciiTextTone.WHITE)
         } else {
             playerCell.items.forEach { item ->
-                lines += AsciiTextLine(renderItemDisplay(localizer, item), AsciiTextTone.WHITE)
+                val presentation = QualityPresentation.from(item)
+                lines += AsciiTextLine(renderItemDisplay(localizer, item, presentation), itemTone(presentation))
             }
         }
 
@@ -272,20 +282,25 @@ internal object AsciiRenderModelBuilder {
                         )
                 }
                 if (snapshot.uiState.activeShop?.offers.isNullOrEmpty()) {
-                    lines += AsciiTextLine(localizer.text("ui.sidebar.empty"), AsciiTextTone.GRAY)
+                    lines += emptyStateLines(localizer, UiEmptyState.shop())
                 }
                 lines += AsciiTextLine(localizer.text("ui.shop.sell"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL) AsciiTextTone.GOLD else AsciiTextTone.WHITE)
                 val sellEntries = snapshot.uiState.activeShop?.sellEntries.orEmpty()
                 if (sellEntries.isEmpty()) {
-                    lines += AsciiTextLine(localizer.text("ui.sidebar.empty"), AsciiTextTone.GRAY)
+                    lines += emptyStateLines(localizer, UiEmptyState.shop())
                 } else {
                     sellEntries.forEachIndexed { displayIndex, sellEntry ->
                         val inventoryEntry = snapshot.uiState.inventory.firstOrNull { entry -> entry.index == sellEntry.inventoryIndex }
-                        val itemName = inventoryEntry?.let { entry -> renderItemDisplay(localizer, entry.item) } ?: "-"
+                        val presentation = inventoryEntry?.let { entry -> QualityPresentation.from(entry.item) }
+                        val itemName = inventoryEntry?.let { entry -> renderItemDisplay(localizer, entry.item, requireNotNull(presentation)) } ?: "-"
                         lines +=
                             AsciiTextLine(
                                 "${displayIndex + 1}. $itemName (${sellEntry.price})",
-                                if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL && overlayState.inventorySelection == displayIndex) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
+                                if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL && overlayState.inventorySelection == displayIndex) {
+                                    AsciiTextTone.CYAN
+                                } else {
+                                    presentation?.let(::itemTone) ?: AsciiTextTone.WHITE
+                                },
                             )
                     }
                 }
@@ -331,14 +346,15 @@ internal object AsciiRenderModelBuilder {
                 lines += AsciiTextLine(AsciiRenderer.sidebarTitle(localizer, UiMode.INVENTORY), AsciiTextTone.GOLD)
                 lines += AsciiTextLine(localizer.text("ui.controls.inventory.close_hint"), AsciiTextTone.LIGHT_GRAY)
                 snapshot.uiState.inventory.forEach { item ->
+                    val presentation = QualityPresentation.from(item.item)
                     val equipped = item.equippedSlotId?.let { slotId -> " [${equipmentSlotLabel(localizer, slotId)}]" } ?: ""
                     lines += AsciiTextLine(
-                        "${item.index + 1}. ${renderItemDisplay(localizer, item.item)}$equipped",
-                        if (item.index == overlayState.inventorySelection) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
+                        "${item.index + 1}. ${renderItemDisplay(localizer, item.item, presentation)}$equipped",
+                        if (item.index == overlayState.inventorySelection) AsciiTextTone.CYAN else itemTone(presentation),
                     )
                 }
                 if (snapshot.uiState.inventory.isEmpty()) {
-                    lines += AsciiTextLine(localizer.text("ui.sidebar.empty"), AsciiTextTone.GRAY)
+                    lines += emptyStateLines(localizer, UiEmptyState.inventory())
                 }
                 lines += AsciiTextLine(localizer.text("ui.controls.inventory"), AsciiTextTone.LIGHT_GRAY)
             }
@@ -461,7 +477,8 @@ internal object AsciiRenderModelBuilder {
                 if (cell.items.isNotEmpty()) {
                     lines += AsciiTextLine(localizer.text("ui.sidebar.items"), AsciiTextTone.GOLD)
                     cell.items.forEach { item ->
-                        lines += AsciiTextLine(renderItemDisplay(localizer, item), AsciiTextTone.WHITE)
+                        val presentation = QualityPresentation.from(item)
+                        lines += AsciiTextLine(renderItemDisplay(localizer, item, presentation), itemTone(presentation))
                         itemDetailLines(localizer, item).forEach { detail ->
                             lines += AsciiTextLine(detail, AsciiTextTone.LIGHT_GRAY)
                         }
@@ -499,14 +516,18 @@ internal object AsciiRenderModelBuilder {
                 }
 
                 if (actor == null && cell.items.isEmpty() && cell.stairDirectionId == null && prop == null) {
-                    lines += AsciiTextLine(
-                        when (cell.visibility) {
-                            CellVisibilitySnapshot.VISIBLE -> localizer.text("ui.inspect.no_visible_target")
-                            CellVisibilitySnapshot.EXPLORED -> localizer.text("ui.inspect.explored_not_visible")
-                            CellVisibilitySnapshot.HIDDEN -> localizer.text("ui.inspect.unknown_tile")
-                        },
-                        AsciiTextTone.LIGHT_GRAY,
-                    )
+                    if (cell.visibility == CellVisibilitySnapshot.VISIBLE) {
+                        lines += emptyStateLines(localizer, UiEmptyState.inspect())
+                    } else {
+                        lines += AsciiTextLine(
+                            when (cell.visibility) {
+                                CellVisibilitySnapshot.VISIBLE -> error("Visible inspect empty state is handled above.")
+                                CellVisibilitySnapshot.EXPLORED -> localizer.text("ui.inspect.explored_not_visible")
+                                CellVisibilitySnapshot.HIDDEN -> localizer.text("ui.inspect.unknown_tile")
+                            },
+                            AsciiTextTone.LIGHT_GRAY,
+                        )
+                    }
                 }
 
                 lines += AsciiTextLine(localizer.text("ui.controls.inspect"), AsciiTextTone.LIGHT_GRAY)
@@ -708,6 +729,25 @@ internal object AsciiRenderModelBuilder {
             RewardPresentationSourceSnapshot.SUPPORT -> AsciiTextTone.LIGHT_GRAY
             RewardPresentationSourceSnapshot.HIDDEN_EVENT -> AsciiTextTone.MAGENTA
             RewardPresentationSourceSnapshot.SECRET_ZONE -> AsciiTextTone.GREEN
+        }
+
+    private fun emptyStateLines(
+        localizer: Localizer,
+        emptyState: UiEmptyState,
+    ): List<AsciiTextLine> =
+        listOf(
+            AsciiTextLine(renderTextToken(localizer, emptyState.title), AsciiTextTone.GOLD),
+            AsciiTextLine(renderTextToken(localizer, emptyState.detail), AsciiTextTone.LIGHT_GRAY),
+        )
+
+    private fun itemTone(item: ItemRenderSnapshot): AsciiTextTone =
+        itemTone(QualityPresentation.from(item))
+
+    private fun itemTone(presentation: QualityPresentation): AsciiTextTone =
+        when (presentation.colorTokenId) {
+            QualityColorTokenId.NORMAL -> AsciiTextTone.WHITE
+            QualityColorTokenId.MAGIC -> AsciiTextTone.CYAN
+            QualityColorTokenId.RARE -> AsciiTextTone.GOLD
         }
 
     private fun frontstageSidebarLines(
@@ -935,7 +975,11 @@ internal object AsciiRenderModelBuilder {
     private fun renderItemDisplay(
         localizer: Localizer,
         item: ItemRenderSnapshot,
-    ): String = item.displayName?.let { token -> renderTextToken(localizer, token) } ?: localizer.text(item.nameKey)
+        presentation: QualityPresentation = QualityPresentation.from(item),
+    ): String {
+        val baseName = item.displayName?.let { token -> renderTextToken(localizer, token) } ?: localizer.text(item.nameKey)
+        return presentation.cornerGlyph?.let { glyph -> "$glyph $baseName" } ?: baseName
+    }
 
     private fun talentUsageSummary(
         localizer: Localizer,

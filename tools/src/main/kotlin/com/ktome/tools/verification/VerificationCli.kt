@@ -156,7 +156,10 @@ object VerificationCli {
             }
         val plan =
             VerificationImpactAnalyzer
-                .analyze(collected.changedFiles)
+                .analyze(
+                    changedFiles = collected.changedFiles,
+                    impactHints = collected.impactHints,
+                )
                 .copy(collectionNotes = collected.notes)
         outputDir.resolve(CHANGED_PLAN_FILE_NAME).writeText(prettyJson.encodeToString(plan))
         outputDir.resolve(CHANGED_TASKS_FILE_NAME).writeText(plan.requestedTaskPaths.joinToString(separator = System.lineSeparator()))

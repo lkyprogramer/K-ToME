@@ -464,6 +464,7 @@ data class RouteOptionSnapshot(
 data class ItemRenderSnapshot(
     val baseItemId: String,
     val specialTemplateId: String? = null,
+    val specialTierId: String? = null,
     val nameKey: String,
     val displayName: RenderTextTokenSnapshot? = null,
     val descKey: String? = null,
@@ -482,7 +483,17 @@ data class ItemRenderSnapshot(
     val effectTypeId: String? = null,
     val resourceTypeId: String? = null,
     val magnitude: Int = 0,
-)
+) {
+    init {
+        val validSpecialTiers = setOf("UNIQUE", "ARTIFACT")
+        require(specialTierId == null || specialTierId in validSpecialTiers) {
+            "ItemRenderSnapshot.specialTierId must be UNIQUE or ARTIFACT when present."
+        }
+        require((specialTemplateId == null) == (specialTierId == null)) {
+            "ItemRenderSnapshot requires specialTemplateId and specialTierId to be present together."
+        }
+    }
+}
 
 @Serializable
 data class ItemStatModifierSnapshot(

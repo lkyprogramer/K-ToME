@@ -66,6 +66,35 @@ class RenderSnapshotHasherTest {
         assertNotEquals(RenderSnapshotHasher.sha256(before), RenderSnapshotHasher.sha256(after))
     }
 
+    @Test
+    fun `item special tier participates in canonical hash`() {
+        val before = sampleSnapshot(revision = 3L)
+        val after =
+            before.copy(
+                uiState =
+                    before.uiState.copy(
+                        equipment =
+                            listOf(
+                                EquipmentSlotSnapshot(
+                                    slotId = "WEAPON",
+                                    item =
+                                        ItemRenderSnapshot(
+                                            baseItemId = "thornpath_crook",
+                                            specialTemplateId = "unique.thornpath_crook",
+                                            specialTierId = "UNIQUE",
+                                            nameKey = "item.unique.thornpath_crook.name",
+                                            typeId = "WEAPON",
+                                            slotId = "WEAPON",
+                                            iconKey = "item.unique.thornpath_crook.icon",
+                                        ),
+                                ),
+                            ),
+                    ),
+            )
+
+        assertNotEquals(RenderSnapshotHasher.sha256(before), RenderSnapshotHasher.sha256(after))
+    }
+
     private fun sampleSnapshot(revision: Long): RenderSnapshot =
         RenderSnapshot(
             metadata =

@@ -129,6 +129,8 @@ class TileRendererCanvasTest {
             )
 
         assertTrue(model.messageLines.any { line -> line.text == "Shop took over the current view." })
+        assertTrue(model.messageLines.any { line -> line.text == "No new log entries." })
+        assertTrue(model.messageLines.any { line -> line.text == "Actions, combat, and event records will appear here." })
         assertEquals("Log unavailable.", model.logPresentation.fallbackText)
         assertFalse(model.playerCard.name.isBlank())
         assertEquals("No available actions.", model.actionPanel.emptyStateText)
@@ -242,7 +244,7 @@ class TileRendererCanvasTest {
             )
 
         assertFalse(model.targetCard.isEmpty)
-        assertTrue(model.targetCard.lines.any { line -> line == "There is nothing here to inspect." })
+        assertTrue(model.targetCard.lines.any { line -> line == "Move the cursor to an enemy, terrain, dropped item, or warning tile for details." })
     }
 
     @Test
@@ -295,6 +297,46 @@ class TileRendererCanvasTest {
 
         assertTrue(cellRects.any { draw -> draw.x == 32f && draw.color.a == 0.42f })
         assertTrue(cellRects.any { draw -> draw.x == 64f && draw.color.a == 0.94f })
+    }
+
+    @Test
+    fun `render canvas draws ground loot marker with count badge and rarity glyph`() {
+        val canvas = RecordingTileCanvas()
+        val rareItem =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                qualityTierId = "RARE",
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot =
+                sampleSnapshot(
+                    cells =
+                        listOf(
+                            MapCellSnapshot(
+                                x = 0,
+                                y = 0,
+                                visibility = CellVisibilitySnapshot.VISIBLE,
+                                terrainTypeId = "floor",
+                                terrainVisualKey = "tileset.test.ground_01",
+                                items = List(10) { rareItem },
+                            ),
+                        ),
+                ),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == "item.short_sword.icon" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "9+" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "\u25C6\u25C6" })
     }
 
     @Test
@@ -1029,8 +1071,10 @@ class TileRendererCanvasTest {
                                 RenderTextArgumentSnapshot(name = "suffix2", value = ""),
                                 RenderTextArgumentSnapshot(name = "base", valueKey = "item.short_sword.name"),
                             ),
-                    ),
+                ),
                 typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                qualityTierId = "RARE",
             )
         val model =
             TileRenderer.buildRenderModel(
@@ -1053,7 +1097,7 @@ class TileRendererCanvasTest {
                 overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
             )
 
-        assertTrue(model.sidebar.rows.any { row -> row.text == "Rare Mithril Short Sword" })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "\u25C6\u25C6 Rare Mithril Short Sword" })
     }
 
     @Test
@@ -1130,6 +1174,12 @@ class TileRendererCanvasTest {
                                 category = "actor_sprite",
                                 rawOutputPath = "phase2/p2-b/actor_vanguard.png",
                                 footprint = "2x1",
+                            ),
+                            VisualManifestEntry(
+                                key = "item.short_sword.icon",
+                                category = "item_icon",
+                                rawOutputPath = "phase2/p2-b/icon_item_short_sword.png",
+                                footprint = "ui",
                             ),
                             VisualManifestEntry(
                                 key = "vfx.boss.variant.molten_glass",

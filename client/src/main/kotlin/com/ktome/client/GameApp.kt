@@ -28,7 +28,10 @@ import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.ValidationSetupContext
 import com.ktome.client.screen.ValidationSetupScreen
 import com.ktome.client.screen.ValidationZoneOption
+import com.ktome.client.screen.UiErrorScreen
 import com.ktome.client.screen.VictoryScreen
+import com.ktome.client.ui.state.UiErrorState
+import com.ktome.client.ui.state.UiLoadingState
 import com.ktome.core.profile.AvailabilityContext
 import com.ktome.core.profile.AdvancedClassUnlockRule
 import com.ktome.core.profile.ClassPlayabilityState
@@ -159,7 +162,12 @@ class GameApp(
 
     override fun create() {
         BuildInfo.initialize()
-        showMainMenu(saveCurrent = false, notice = assetContractNotice())
+        val assetError = assetContractErrorState()
+        if (assetError != null) {
+            showAssetContractError(assetError)
+        } else {
+            showMainMenu(saveCurrent = false)
+        }
     }
 
     fun startNewGame(selection: PlayerCreationSelection = playerCreationState.selection) {
@@ -380,8 +388,8 @@ class GameApp(
         previous?.dispose()
     }
 
-    private fun assetContractNotice(): String? =
-        assetContracts.noticeOrNull()
+    private fun assetContractErrorState(): UiErrorState? =
+        assetContracts.errorStateOrNull(currentLocalizer)
 
     internal fun activeSessionOrNull(): FoundationGameSession? = activeSession
 
@@ -440,6 +448,9 @@ class GameApp(
         assetContracts.warmCache(snapshot)
     }
 
+    internal fun loadingStateFor(snapshot: com.ktome.core.snapshot.RenderSnapshot): UiLoadingState? =
+        assetContracts.loadingStateFor(snapshot)
+
     internal fun audioRouterOrNull(): AudioRouter? =
         assetContracts.bundleOrNull()?.let { bundle ->
             AudioRouter(
@@ -450,17 +461,38 @@ class GameApp(
         }
 
     private fun ensureAssetContracts(): Boolean =
-        assetContractNotice()?.let { notice ->
-            showMainMenu(saveCurrent = false, notice = notice)
+        assetContractErrorState()?.let { errorState ->
+            showAssetContractError(errorState)
             false
         } ?: true
 
     private fun ensureValidationAssetContracts(options: ValidationSessionOptions): Boolean =
-        assetContractNotice()?.let { notice ->
+        assetContracts.noticeOrNull()?.let { notice ->
             validationSetupNotice = notice
             showValidationSetup(options, notice)
             false
         } ?: true
+
+    private fun showAssetContractError(errorState: UiErrorState) {
+        replaceScreen(
+            UiErrorScreen(
+                app = this,
+                errorState = errorState,
+                retry = {
+                    val retryError = assetContractErrorState()
+                    if (retryError == null) {
+                        showMainMenu(saveCurrent = false)
+                    } else {
+                        showAssetContractError(retryError)
+                    }
+                },
+                backToMenu = {
+                    showMainMenu(saveCurrent = false, notice = errorState.payload.detail)
+                },
+                renderEnabled = renderEnabled,
+            ),
+        )
+    }
 
     private fun refreshPlayerCreationState(
         previousSelection: PlayerCreationSelection = playerCreationState.selection,
@@ -758,6 +790,12 @@ internal fun appendAndPersistProfileRun(
     }
 }
 
+internal data class AssetContractFailure(
+    val stage: String,
+    val message: String,
+    val exceptionClass: String,
+)
+
 internal class AssetContractCoordinator(
     private val assetVersionProvider: () -> AssetVersionContract,
     private val visualManifestProvider: () -> VisualManifest,
@@ -767,6 +805,7 @@ internal class AssetContractCoordinator(
 ) {
     private var cachedBundle: ClientAssetBundle? = null
     private var loadStrategy: ClientAssetLoadStrategy? = null
+    private var lastFailure: AssetContractFailure? = null
 
     fun noticeOrNull(): String? =
         try {
@@ -781,20 +820,33 @@ internal class AssetContractCoordinator(
             loadStrategy = requireNotNull(cachedBundle).let { bundle ->
                 ClientAssetLoadStrategy(bundle).also(ClientAssetLoadStrategy::bootstrapLoad)
             }
+            lastFailure = null
             null
         } catch (exception: AssetVersionMismatchException) {
-            dispose()
-            exception.message
+            recordFailure(stage = "asset-version", exception = exception)
         } catch (exception: AssetVersionLoadException) {
-            dispose()
-            exception.message
+            recordFailure(stage = "asset-version-load", exception = exception)
         } catch (exception: ManifestLoadException) {
-            dispose()
-            exception.message
+            recordFailure(stage = "manifest-load", exception = exception)
         } catch (exception: ContentPackLoadException) {
-            dispose()
-            exception.message
+            recordFailure(stage = "content-pack-load", exception = exception)
         }
+
+    fun errorStateOrNull(localizer: Localizer): UiErrorState? {
+        noticeOrNull() ?: return null
+        val failure = requireNotNull(lastFailure) { "Asset contract failure must be recorded with its notice." }
+        return UiErrorState.recoverable(
+            localizer = localizer,
+            heading = RenderTextTokenSnapshot("ui.error.asset.heading"),
+            detail = RenderTextTokenSnapshot("ui.error.asset.detail"),
+            contextKeyValuePairs =
+                listOf(
+                    "stage" to failure.stage,
+                    "exception" to failure.exceptionClass,
+                    "message" to failure.message,
+                ),
+        )
+    }
 
     fun bundleOrNull(): ClientAssetBundle? = cachedBundle
 
@@ -810,10 +862,40 @@ internal class AssetContractCoordinator(
 
     internal fun loadStateOrNull(): com.ktome.client.assets.AssetLoadStateSnapshot? = loadStrategy?.stateSnapshot()
 
+    fun loadingStateFor(snapshot: com.ktome.core.snapshot.RenderSnapshot): UiLoadingState? {
+        val state = loadStateOrNull() ?: return UiLoadingState.generic()
+        if (!state.bootstrapLoaded || state.sessionZoneId != snapshot.metadata.zoneId) {
+            return UiLoadingState.generic()
+        }
+        if (snapshot.overlays.isEmpty()) {
+            return null
+        }
+        val warmVisualKeys = snapshot.overlays.mapTo(linkedSetOf()) { overlay -> overlay.visualKey }
+        val warmAudioKeys = snapshot.overlays.mapNotNullTo(linkedSetOf()) { overlay -> overlay.audioProfile }
+        return UiLoadingState.generic().takeIf {
+            warmVisualKeys != state.warmVisualKeys || warmAudioKeys != state.warmAudioKeys
+        }
+    }
+
     fun dispose() {
         cachedBundle?.dispose()
         cachedBundle = null
         loadStrategy = null
+    }
+
+    private fun recordFailure(
+        stage: String,
+        exception: RuntimeException,
+    ): String {
+        dispose()
+        val message = exception.message ?: exception::class.java.name
+        lastFailure =
+            AssetContractFailure(
+                stage = stage,
+                message = message,
+                exceptionClass = exception::class.java.name,
+            )
+        return message
     }
 }
 

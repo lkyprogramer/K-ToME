@@ -3,6 +3,7 @@ package com.ktome.core.snapshot
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -38,6 +39,17 @@ class RenderSnapshotSerializationTest {
                             visibility = CellVisibilitySnapshot.VISIBLE,
                             terrainTypeId = "floor",
                             terrainVisualKey = "tileset.foundation.ascii.floor",
+                            items =
+                                listOf(
+                                    ItemRenderSnapshot(
+                                        baseItemId = "thornpath_crook",
+                                        specialTemplateId = "unique.thornpath_crook",
+                                        specialTierId = "UNIQUE",
+                                        nameKey = "item.unique.thornpath_crook.name",
+                                        typeId = "WEAPON",
+                                        iconKey = "item.unique.thornpath_crook.icon",
+                                    ),
+                                ),
                         ),
                     ),
                 uiState =
@@ -125,6 +137,27 @@ class RenderSnapshotSerializationTest {
         assertTrue(encoded.contains("\"recentActionCues\""))
         assertTrue(encoded.contains("\"stableKey\": \"search:deep_iron:revealed\""))
         assertTrue(encoded.contains("\"priority\": \"CRITICAL\""))
+        assertTrue(encoded.contains("\"specialTierId\": \"UNIQUE\""))
         assertEquals(snapshot, decoded)
+    }
+
+    @Test
+    fun `special item snapshot requires special template and tier together`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ItemRenderSnapshot(
+                baseItemId = "thornpath_crook",
+                specialTemplateId = "unique.thornpath_crook",
+                nameKey = "item.unique.thornpath_crook.name",
+                typeId = "WEAPON",
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ItemRenderSnapshot(
+                baseItemId = "thornpath_crook",
+                specialTierId = "UNIQUE",
+                nameKey = "item.unique.thornpath_crook.name",
+                typeId = "WEAPON",
+            )
+        }
     }
 }
