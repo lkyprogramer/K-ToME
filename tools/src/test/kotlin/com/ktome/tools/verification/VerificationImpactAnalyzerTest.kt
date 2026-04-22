@@ -51,6 +51,29 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
+    fun `presentation-only item snapshot changes do not expand into phase4 owner domains`() {
+        val changedFiles =
+            listOf(
+                VerificationImpactHints.RENDER_SNAPSHOT_PATH,
+                VerificationImpactHints.FOUNDATION_GAME_SESSION_PATH,
+            )
+        val plan =
+            VerificationImpactAnalyzer.analyze(
+                changedFiles = changedFiles,
+                impactHints = VerificationImpactHints(presentationOnlySnapshotFiles = changedFiles.toSet()),
+            )
+
+        assertEquals(setOf("maintainability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedTaskPaths)
+        assertFalse(plan.requestedTaskPaths.contains(":tools:lootBalanceLab"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:whiteBoxLoot"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:terrainInteractionBatch"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:bossHarness"))
+        assertFalse(plan.requestedTaskPaths.contains(":game:longRunLab"))
+    }
+
+    @Test
     fun `headless harness false negative expands to phase4 game harness producers`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/kotlin/com/ktome/game/harness/HeadlessRunHarness.kt"))
         val impactedDomainIds = plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet()

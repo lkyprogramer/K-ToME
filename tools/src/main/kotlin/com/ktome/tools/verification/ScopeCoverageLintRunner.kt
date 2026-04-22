@@ -64,6 +64,22 @@ object ScopeCoverageLintRunner {
                     changedFiles = listOf("core/src/main/kotlin/com/ktome/core/map/MapGrid.kt"),
                 ),
                 planCase(
+                    caseId = "presentation_only_item_snapshot_scope",
+                    changedFiles =
+                        listOf(
+                            VerificationImpactHints.RENDER_SNAPSHOT_PATH,
+                            VerificationImpactHints.FOUNDATION_GAME_SESSION_PATH,
+                        ),
+                    impactHints =
+                        VerificationImpactHints(
+                            presentationOnlySnapshotFiles =
+                                setOf(
+                                    VerificationImpactHints.RENDER_SNAPSHOT_PATH,
+                                    VerificationImpactHints.FOUNDATION_GAME_SESSION_PATH,
+                                ),
+                        ),
+                ),
+                planCase(
                     caseId = "data_loader_false_negative",
                     changedFiles = listOf("game/src/main/kotlin/com/ktome/game/data/DataLoader.kt"),
                 ),
@@ -148,8 +164,13 @@ object ScopeCoverageLintRunner {
     private fun planCase(
         caseId: String,
         changedFiles: List<String>,
+        impactHints: VerificationImpactHints = VerificationImpactHints(),
     ): ScopeCoverageLintCaseResult {
-        val plan = VerificationImpactAnalyzer.analyze(changedFiles)
+        val plan =
+            VerificationImpactAnalyzer.analyze(
+                changedFiles = changedFiles,
+                impactHints = impactHints,
+            )
         return ScopeCoverageLintCaseResult(
             caseId = caseId,
             changedFiles = plan.changedFiles,

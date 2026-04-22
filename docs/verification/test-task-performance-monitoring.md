@@ -20,9 +20,17 @@
 
 补充边界：
 
-1. `verifyChangedPreflight` 的 `build/verification/verify-changed/preflight-task-paths.txt` 与 `task-duration-summary.{json,md}` 属于 routed preflight artifact
-2. 这些 artifact 只用于说明本次 PR 轻量入口实际选中了哪些 task、每个 task 耗时多少
-3. 它们不是 `.gradle/test-perf/` lane baseline，也不能反向充当 unified verification registry
+1. `verifyChanged` 的 `build/verification/verify-changed/task-paths.txt` 与 `full-task-duration-summary.{json,md}` 属于 routed full artifact
+2. `verifyChangedPreflight` 的 `build/verification/verify-changed/preflight-task-paths.txt` 与 `preflight-task-duration-summary.{json,md}` 属于 routed preflight artifact
+3. 兼容期内 `task-duration-summary.{json,md}` 仍镜像 preflight summary，但排查 full gate 慢点必须读取 `full-task-duration-summary.{json,md}`
+4. 这些 artifact 只用于说明本次 PR 实际选中了哪些 task、每个 task 耗时多少
+5. 它们不是 `.gradle/test-perf/` lane baseline，也不能反向充当 unified verification registry
+
+`verifyChanged` impact routing 保留宽泛 false-negative guard，但允许 narrow semantic fact 收窄 UI-only snapshot 改动：
+
+1. `ItemRenderSnapshot.specialTierId` 及其 constructor invariant 被识别为 item presentation-only snapshot diff
+2. `FoundationGameSession` 中只为 `ItemRenderSnapshot` 填充同一 presentation field 的 diff，可与上述 snapshot diff 一起抑制 `core` / `foundation-session` 的 Phase 4 owner fallback
+3. classifier 只接受固定 diff 形状；其它 `RenderSnapshot` 或 `FoundationGameSession` 改动仍按 broad owner fallback 路由
 
 默认监控面：
 

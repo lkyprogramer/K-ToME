@@ -8,8 +8,14 @@ import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
+import com.ktome.client.ui.card.ModalCardModel
 import com.ktome.client.ui.hud.ResourceGaugeModel
 import com.ktome.client.ui.hud.ResourceHud
+import com.ktome.client.ui.item.GroundLootMarkerModel
+import com.ktome.client.ui.item.GroundLootMarkerPlacement
+import com.ktome.client.ui.item.QualityColorTokenId
+import com.ktome.client.ui.item.QualityPresentation
+import com.ktome.client.ui.item.SpecialAccentTokenId
 import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.client.ui.panel.ActionPanelEntryModel
 import com.ktome.client.ui.panel.ActionPanelModel
@@ -17,6 +23,7 @@ import com.ktome.client.ui.panel.LogPresentationModel
 import com.ktome.client.ui.panel.LogPresentationModelBuilder
 import com.ktome.client.ui.panel.PlayerCardModel
 import com.ktome.client.ui.panel.TargetCardModel
+import com.ktome.client.ui.state.UiEmptyState
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.status.StatusHudIconModel
 import com.ktome.client.ui.status.StatusIconResolver
@@ -62,6 +69,17 @@ internal data class TileVisualPlacement(
     val asset: ResolvedVisualAsset,
     val alpha: Float = 1f,
     val tintColorHex: String? = null,
+)
+
+internal data class TileGroundLootMarkerModel(
+    val x: Int,
+    val y: Int,
+    val icon: ResolvedVisualAsset,
+    val countBadge: String?,
+    val cornerGlyph: String?,
+    val rarityTone: TileTextTone,
+    val specialAccentTokenId: SpecialAccentTokenId?,
+    val placement: GroundLootMarkerPlacement,
 )
 
 internal data class TileFogPlacement(
@@ -143,6 +161,7 @@ internal data class TileRenderModel(
     val terrainTiles: List<TileVisualPlacement>,
     val propTiles: List<TileVisualPlacement>,
     val overlayTiles: List<TileVisualPlacement>,
+    val groundLootMarkers: List<TileGroundLootMarkerModel>,
     val actorTiles: List<TileVisualPlacement>,
     val fogTiles: List<TileFogPlacement>,
     val targetCursor: com.ktome.core.map.Point?,
@@ -210,6 +229,17 @@ internal object TileRenderModelBuilder {
                 }
             }
         val overlayCells = snapshot.overlays.flatMap { overlay -> overlay.cells }.map { cell -> cell.x to cell.y }.toSet()
+        val groundLootMarkers =
+            snapshot.mapCells.mapNotNull { cell ->
+                if (cell.visibility != CellVisibilitySnapshot.VISIBLE || cell.items.isEmpty()) {
+                    null
+                } else {
+                    GroundLootMarkerModel.fromCell(
+                        cell = cell,
+                        isActorOccupied = cell.actorEntityId != null,
+                    )?.toTileMarker(visualResolver)
+                }
+            }
         val actorTiles =
             snapshot.actors
                 .sortedBy { actor -> if (actor.isPlayer) 1 else 0 }
@@ -224,11 +254,15 @@ internal object TileRenderModelBuilder {
 
         val hud = buildHud(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint)
         val baseMessageLines =
-            snapshot.logEvents.map { event ->
-                TileMessageLine(
-                    text = renderLogEvent(localizer, event),
-                    tone = messageTone(event.message.key),
-                )
+            if (snapshot.logEvents.isEmpty()) {
+                emptyLogMessageLines(localizer)
+            } else {
+                snapshot.logEvents.map { event ->
+                    TileMessageLine(
+                        text = renderLogEvent(localizer, event),
+                        tone = messageTone(event.message.key),
+                    )
+                }
             }
         val uiMessageLine =
             overlayState.uiMessageKey?.let { key ->
@@ -240,6 +274,7 @@ internal object TileRenderModelBuilder {
             terrainTiles = terrainTiles,
             propTiles = propTiles,
             overlayTiles = overlayTiles,
+            groundLootMarkers = groundLootMarkers,
             actorTiles = actorTiles,
             fogTiles = fogTiles,
             targetCursor = overlayState.targetingCursor,
@@ -371,7 +406,8 @@ internal object TileRenderModelBuilder {
         cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
         propByPoint: Map<com.ktome.core.map.Point, PropRenderSnapshot>,
     ): TargetCardModel {
-        val emptyText = localizer.text("ui.target.empty")
+        val inspectEmptyState = UiEmptyState.inspect()
+        val emptyText = renderTextToken(localizer, inspectEmptyState.title)
         val focusPoint =
             when (overlayState.mode) {
                 UiMode.INSPECT -> overlayState.inspectCursor
@@ -406,10 +442,10 @@ internal object TileRenderModelBuilder {
         }
         return TargetCardModel(
             title = terrainName(localizer, cell),
-            lines =
-                listOf(
-                    localizer.text("ui.inspect.cursor", "x" to focusPoint.x, "y" to focusPoint.y),
-                    localizer.text("ui.inspect.empty.tile"),
+                lines =
+                    listOf(
+                        localizer.text("ui.inspect.cursor", "x" to focusPoint.x, "y" to focusPoint.y),
+                    renderTextToken(localizer, inspectEmptyState.detail),
                 ),
             emptyStateText = emptyText,
         )
@@ -447,10 +483,12 @@ internal object TileRenderModelBuilder {
                 rows += TileTextRow(localizer.text("ui.sidebar.equipment"), TileTextTone.GOLD)
                 snapshot.uiState.equipment.forEach { equipment ->
                     val item = equipment.item
+                    val presentation = item?.let(QualityPresentation::from)
+                    val itemName = item?.let { renderItemDisplay(localizer, it, requireNotNull(presentation)) } ?: "-"
                     rows +=
                         TileTextRow(
-                            text = "${equipmentSlotLabel(localizer, equipment.slotId)}: ${item?.let { renderItemDisplay(localizer, it) } ?: "-"}",
-                            tone = TileTextTone.WHITE,
+                            text = "${equipmentSlotLabel(localizer, equipment.slotId)}: $itemName",
+                            tone = presentation?.let(::itemTone) ?: TileTextTone.WHITE,
                             icon = item?.iconKey?.let { resolveVisual(visualResolver, it) },
                         )
                 }
@@ -476,10 +514,11 @@ internal object TileRenderModelBuilder {
                     rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
                 } else {
                     playerCell.items.forEach { item ->
+                        val presentation = QualityPresentation.from(item)
                         rows +=
                             TileTextRow(
-                                text = renderItemDisplay(localizer, item),
-                                tone = TileTextTone.WHITE,
+                                text = renderItemDisplay(localizer, item, presentation),
+                                tone = itemTone(presentation),
                                 icon = item.iconKey?.let { resolveVisual(visualResolver, it) },
                         )
                     }
@@ -518,7 +557,7 @@ internal object TileRenderModelBuilder {
                 val shop = snapshot.uiState.activeShop
                 rows += TileTextRow(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), TileTextTone.GOLD)
                 if (shop == null) {
-                    rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                    rows += emptyStateRows(localizer, UiEmptyState.shop())
                 } else {
                     rows += TileTextRow(localizer.text(shop.shopNameKey), TileTextTone.GOLD)
                     shop.hintLabelKeys.forEach { hintLabelKey ->
@@ -529,12 +568,16 @@ internal object TileRenderModelBuilder {
                 if (shop != null) {
                     rows += TileTextRow(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) TileTextTone.GOLD else TileTextTone.WHITE)
                     if (shop.offers.isEmpty()) {
-                        rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                        rows += emptyStateRows(localizer, UiEmptyState.shop())
                     } else {
                         shop.offers.forEach { offer ->
+                            val card = ModalCardModel.shopOffer(shop.shopId, offer)
                             rows +=
-                                TileTextRow(
-                                    text = shopOfferText(localizer, offer),
+                                modalCardHeaderRow(
+                                    localizer = localizer,
+                                    visualResolver = visualResolver,
+                                    card = card,
+                                    prefix = "${offer.index + 1}.",
                                     tone = if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY && overlayState.shopOfferSelection == offer.index) TileTextTone.CYAN else TileTextTone.WHITE,
                                     selected = overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY && overlayState.shopOfferSelection == offer.index,
                                 )
@@ -542,14 +585,23 @@ internal object TileRenderModelBuilder {
                     }
                     rows += TileTextRow(localizer.text("ui.shop.sell"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL) TileTextTone.GOLD else TileTextTone.WHITE)
                     if (shop.sellEntries.isEmpty()) {
-                        rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                        rows += emptyStateRows(localizer, UiEmptyState.shop())
                     } else {
                         shop.sellEntries.forEachIndexed { displayIndex, sellEntry ->
                             val inventoryEntry = snapshot.uiState.inventory.firstOrNull { entry -> entry.index == sellEntry.inventoryIndex }
-                            val itemLabel = inventoryEntry?.item?.let { item -> renderItemDisplay(localizer, item) } ?: localizer.text("ui.sidebar.empty")
+                            val card =
+                                ModalCardModel.shopSellEntry(
+                                    shopId = shop.shopId,
+                                    displayIndex = displayIndex,
+                                    item = inventoryEntry?.item,
+                                    price = sellEntry.price,
+                                )
                             rows +=
-                                TileTextRow(
-                                    text = "${displayIndex + 1}. $itemLabel (${sellEntry.price})",
+                                modalCardHeaderRow(
+                                    localizer = localizer,
+                                    visualResolver = visualResolver,
+                                    card = card,
+                                    prefix = "${displayIndex + 1}.",
                                     tone = if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL && overlayState.inventorySelection == displayIndex) TileTextTone.CYAN else TileTextTone.WHITE,
                                     selected = overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL && overlayState.inventorySelection == displayIndex,
                                 )
@@ -566,27 +618,27 @@ internal object TileRenderModelBuilder {
                 } else {
                     rows += TileTextRow(localizer.text("ui.world_map.current_zone", "zone" to localizer.text(routePanel.currentZoneNameKey)), TileTextTone.GOLD)
                     routePanel.options.forEach { option ->
+                        val card = RoutePreviewText.modalCardModel(option)
                         rows +=
-                            TileTextRow(
-                                text = "${option.index + 1}. ${localizer.text(option.destinationZoneNameKey)}",
+                            modalCardHeaderRow(
+                                localizer = localizer,
+                                visualResolver = visualResolver,
+                                card = card,
+                                prefix = "${option.index + 1}.",
                                 tone = if (overlayState.routeSelection == option.index) TileTextTone.CYAN else TileTextTone.WHITE,
                                 selected = overlayState.routeSelection == option.index,
                             )
-                        option.destinationZoneDescKey?.let { descKey ->
-                            rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        card.detailLines.forEach { detailLine ->
+                            rows += TileTextRow(renderTextToken(localizer, detailLine), TileTextTone.LIGHT_GRAY)
                         }
-                        rows += TileTextRow(RoutePreviewText.summaryLine(localizer, option), TileTextTone.LIGHT_GRAY)
-                        RoutePreviewText.guaranteedRewardLine(localizer, option)?.let { rewardPreview ->
-                            rows += TileTextRow(rewardPreview, TileTextTone.GREEN)
+                        card.summary?.let { summary ->
+                            rows += TileTextRow(renderTextToken(localizer, summary), TileTextTone.LIGHT_GRAY)
                         }
-                        RoutePreviewText.milestoneRewardLine(localizer, option)?.let { rewardPreview ->
-                            rows += TileTextRow(rewardPreview, TileTextTone.GOLD)
+                        card.rewardLines.forEach { rewardLine ->
+                            rows += TileTextRow(renderTextToken(localizer, rewardLine), modalCardRewardTone(rewardLine))
                         }
                         RoutePreviewText.traitLine(localizer, option)?.let { traits ->
                             rows += TileTextRow(traits, TileTextTone.BLUE)
-                        }
-                        RoutePreviewText.mechanicLine(localizer, option)?.let { hint ->
-                            rows += TileTextRow(hint, TileTextTone.LIGHT_GRAY)
                         }
                     }
                 }
@@ -604,10 +656,11 @@ internal object TileRenderModelBuilder {
                     if (selectedItem == null) {
                         rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
                     } else {
+                        val presentation = QualityPresentation.from(selectedItem)
                         rows +=
                             TileTextRow(
-                                text = renderItemDisplay(localizer, selectedItem),
-                                tone = TileTextTone.GOLD,
+                                text = renderItemDisplay(localizer, selectedItem, presentation),
+                                tone = itemTone(presentation),
                                 icon = selectedItem.iconKey?.let { resolveVisual(visualResolver, it) },
                             )
                         selectedItem.descKey?.let { descKey ->
@@ -622,18 +675,19 @@ internal object TileRenderModelBuilder {
                 }
                 rows += TileTextRow(localizer.text("ui.controls.inventory.close_hint"), TileTextTone.LIGHT_GRAY)
                 snapshot.uiState.inventory.forEach { entry ->
-                    val label = "${entry.index + 1}. ${renderItemDisplay(localizer, entry.item)}"
+                    val presentation = QualityPresentation.from(entry.item)
+                    val label = "${entry.index + 1}. ${renderItemDisplay(localizer, entry.item, presentation)}"
                     val equipped = entry.equippedSlotId?.let { slotId -> " [${equipmentSlotLabel(localizer, slotId)}]" }.orEmpty()
                     rows +=
                         TileTextRow(
                             text = label + equipped,
-                            tone = if (entry.index == overlayState.inventorySelection) TileTextTone.CYAN else TileTextTone.WHITE,
+                            tone = if (entry.index == overlayState.inventorySelection) TileTextTone.CYAN else itemTone(presentation),
                             icon = entry.item.iconKey?.let { resolveVisual(visualResolver, it) },
                             selected = entry.index == overlayState.inventorySelection,
                         )
                 }
                 if (snapshot.uiState.inventory.isEmpty()) {
-                    rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                    rows += emptyStateRows(localizer, UiEmptyState.inventory())
                 } else {
                     val selectedItem = snapshot.uiState.inventory.getOrNull(overlayState.inventorySelection)?.item
                     selectedItem?.let { item ->
@@ -780,10 +834,11 @@ internal object TileRenderModelBuilder {
                 if (cell.items.isNotEmpty()) {
                     rows += TileTextRow(localizer.text("ui.sidebar.items"), TileTextTone.GOLD)
                     cell.items.forEach { item ->
+                        val presentation = QualityPresentation.from(item)
                         rows +=
                             TileTextRow(
-                                text = renderItemDisplay(localizer, item),
-                                tone = TileTextTone.WHITE,
+                                text = renderItemDisplay(localizer, item, presentation),
+                                tone = itemTone(presentation),
                                 icon = item.iconKey?.let { resolveVisual(visualResolver, it) },
                             )
                         item.descKey?.let { descKey ->
@@ -817,16 +872,20 @@ internal object TileRenderModelBuilder {
                         )
                 }
                 if (actor == null && cell.items.isEmpty() && cell.stairDirectionId == null && prop == null) {
-                    rows +=
-                        TileTextRow(
-                            text =
-                                when (cell.visibility) {
-                                    CellVisibilitySnapshot.VISIBLE -> localizer.text("ui.inspect.empty.tile")
-                                    CellVisibilitySnapshot.EXPLORED -> localizer.text("ui.inspect.explored_not_visible")
-                                    CellVisibilitySnapshot.HIDDEN -> localizer.text("ui.inspect.unknown_tile")
-                                },
-                            tone = TileTextTone.LIGHT_GRAY,
-                        )
+                    if (cell.visibility == CellVisibilitySnapshot.VISIBLE) {
+                        rows += emptyStateRows(localizer, UiEmptyState.inspect())
+                    } else {
+                        rows +=
+                            TileTextRow(
+                                text =
+                                    when (cell.visibility) {
+                                        CellVisibilitySnapshot.VISIBLE -> error("Visible inspect empty state is handled above.")
+                                        CellVisibilitySnapshot.EXPLORED -> localizer.text("ui.inspect.explored_not_visible")
+                                        CellVisibilitySnapshot.HIDDEN -> localizer.text("ui.inspect.unknown_tile")
+                                    },
+                                tone = TileTextTone.LIGHT_GRAY,
+                            )
+                    }
                 }
                 rows += TileTextRow(localizer.text("ui.controls.inspect"), TileTextTone.LIGHT_GRAY)
             }
@@ -915,16 +974,17 @@ internal object TileRenderModelBuilder {
 
         if (overlayState.mode in recentRewardPresentationModes && snapshot.uiState.recentRewards.isNotEmpty()) {
             rows += TileTextRow(localizer.text("ui.sidebar.recent_rewards"), TileTextTone.GOLD)
-            snapshot.uiState.recentRewards.asReversed().forEach { entry ->
+            snapshot.uiState.recentRewards.asReversed().forEachIndexed { index, entry ->
+                val card = ModalCardModel.rewardPresentation(index = index, entry = entry)
                 rows +=
                     TileTextRow(
                         recentRewardText(
-                            sourceLabel = localizer.text(entry.sourceLabelKey),
-                            itemDisplayName = renderTextToken(localizer, entry.itemDisplayName),
+                            sourceLabel = card.summary?.let { summary -> renderTextToken(localizer, summary) }.orEmpty(),
+                            itemDisplayName = renderTextToken(localizer, card.title),
                         ),
                         rewardPresentationTone(entry.source),
                     )
-                entry.detailText?.let { detailText ->
+                card.detailLines.forEach { detailText ->
                     rows += TileTextRow(recentRewardDetailText(renderTextToken(localizer, detailText)), TileTextTone.LIGHT_GRAY)
                 }
             }
@@ -950,6 +1010,78 @@ internal object TileRenderModelBuilder {
             RewardPresentationSourceSnapshot.SUPPORT -> TileTextTone.BLUE
             RewardPresentationSourceSnapshot.HIDDEN_EVENT -> TileTextTone.MAGENTA
             RewardPresentationSourceSnapshot.SECRET_ZONE -> TileTextTone.GREEN
+        }
+
+    private fun emptyStateRows(
+        localizer: Localizer,
+        emptyState: UiEmptyState,
+    ): List<TileTextRow> =
+        listOf(
+            TileTextRow(renderTextToken(localizer, emptyState.title), TileTextTone.GOLD),
+            TileTextRow(renderTextToken(localizer, emptyState.detail), TileTextTone.LIGHT_GRAY),
+        )
+
+    private fun emptyLogMessageLines(localizer: Localizer): List<TileMessageLine> {
+        val emptyState = UiEmptyState.log()
+        return listOf(
+            TileMessageLine(renderTextToken(localizer, emptyState.title), TileTextTone.GOLD),
+            TileMessageLine(renderTextToken(localizer, emptyState.detail), TileTextTone.LIGHT_GRAY),
+        )
+    }
+
+    private fun modalCardHeaderRow(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        card: ModalCardModel,
+        prefix: String,
+        tone: TileTextTone,
+        selected: Boolean = false,
+    ): TileTextRow {
+        val title = renderTextToken(localizer, card.title)
+        val detailSuffix =
+            card.detailLines
+                .takeIf { details -> details.isNotEmpty() }
+                ?.joinToString(separator = " / ", prefix = " [", postfix = "]") { detail -> renderTextToken(localizer, detail) }
+                .orEmpty()
+        val summarySuffix = card.summary?.let { summary -> " - ${renderTextToken(localizer, summary)}" }.orEmpty()
+        val disabledSuffix = card.disabledReason?.let { reason -> " - ${renderTextToken(localizer, reason)}" }.orEmpty()
+        return TileTextRow(
+            text = "$prefix $title$detailSuffix$summarySuffix$disabledSuffix",
+            tone = tone,
+            icon = card.iconKey?.let { iconKey -> resolveVisual(visualResolver, iconKey) },
+            selected = selected,
+        )
+    }
+
+    private fun modalCardRewardTone(line: RenderTextTokenSnapshot): TileTextTone =
+        when (line.key) {
+            "ui.world_map.milestone_reward" -> TileTextTone.GOLD
+            else -> TileTextTone.GREEN
+        }
+
+    private fun GroundLootMarkerModel.toTileMarker(visualResolver: VisualManifestResolver): TileGroundLootMarkerModel =
+        TileGroundLootMarkerModel(
+            x = x,
+            y = y,
+            icon = resolveVisual(visualResolver, iconKey),
+            countBadge = countBadge,
+            cornerGlyph = qualityPresentation.cornerGlyph,
+            rarityTone = qualityTone(qualityPresentation),
+            specialAccentTokenId = qualityPresentation.specialAccentTokenId,
+            placement = placement,
+        )
+
+    private fun itemTone(item: ItemRenderSnapshot): TileTextTone =
+        itemTone(QualityPresentation.from(item))
+
+    private fun itemTone(presentation: QualityPresentation): TileTextTone =
+        qualityTone(presentation)
+
+    private fun qualityTone(presentation: QualityPresentation): TileTextTone =
+        when (presentation.colorTokenId) {
+            QualityColorTokenId.NORMAL -> TileTextTone.WHITE
+            QualityColorTokenId.MAGIC -> TileTextTone.BLUE
+            QualityColorTokenId.RARE -> TileTextTone.GOLD
         }
 
     private fun focusedActor(
@@ -1279,7 +1411,11 @@ internal object TileRenderModelBuilder {
     private fun renderItemDisplay(
         localizer: Localizer,
         item: ItemRenderSnapshot,
-    ): String = item.displayName?.let { token -> renderTextToken(localizer, token) } ?: localizer.text(item.nameKey)
+        presentation: QualityPresentation = QualityPresentation.from(item),
+    ): String {
+        val baseName = item.displayName?.let { token -> renderTextToken(localizer, token) } ?: localizer.text(item.nameKey)
+        return presentation.cornerGlyph?.let { glyph -> "$glyph $baseName" } ?: baseName
+    }
 
     private fun talentUsageSummary(
         localizer: Localizer,

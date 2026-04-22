@@ -11,6 +11,8 @@
 
 1. PR CI 默认先跑 `./gradlew verifyChanged`
    - 复用既有 `VerifyChangedPlanGate` / impact routing，不在 workflow 里再手写第二套治理判断
+   - full gate 耗时排查读取 `build/verification/verify-changed/full-task-duration-summary.{json,md}`
+   - UI-only `ItemRenderSnapshot.specialTierId` diff 可由 semantic classifier 收窄，不触发宽泛 Phase 4 owner fallback
 2. nightly harness 默认跑 `./gradlew nightlyGovernanceGate`
    - 包含 `scopeCoverageLint`
    - 包含 `maintainabilityLint` 的 report-only 夜跑

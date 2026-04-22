@@ -1,22 +1,9 @@
 package com.ktome.client.screen
 
 import com.ktome.client.build.BuildInfo
+import com.ktome.client.ui.state.UiErrorPayload
 import com.ktome.game.contentpack.GameBuildVersion
 import com.ktome.game.i18n.Localizer
-
-internal data class ContinueUnavailablePayload(
-    val heading: String,
-    val detail: String,
-    val contextKeyValuePairs: List<Pair<String, String>>,
-    val buildHash: String,
-) {
-    fun renderPlainText(): String =
-        (
-            listOf(heading, detail) +
-                contextKeyValuePairs.map { (key, value) -> "$key: $value" } +
-                "[ktome/$buildHash]"
-        ).joinToString("\n")
-}
 
 internal object ContinueUnavailablePayloadFormatter {
     private const val throwableMessageMaxChars: Int = 200
@@ -26,7 +13,7 @@ internal object ContinueUnavailablePayloadFormatter {
         unavailable: ContinueAvailability.Unavailable,
         buildHash: String = BuildInfo.shortHash,
         gameVersion: String = GameBuildVersion.current(),
-    ): ContinueUnavailablePayload {
+    ): UiErrorPayload {
         val context =
             mutableListOf(
                 "savePath" to unavailable.savePath,
@@ -37,7 +24,7 @@ internal object ContinueUnavailablePayloadFormatter {
             unavailable.throwableClass?.let { throwableClass -> context += "throwableClass" to throwableClass }
             unavailable.throwableMessage?.let { throwableMessage -> context += "throwableMessage" to truncateThrowableMessage(throwableMessage) }
         }
-        return ContinueUnavailablePayload(
+        return UiErrorPayload(
             heading = localizer.text("ui.menu.continue.error.heading"),
             detail = localizer.text(unavailable.reasonKey),
             contextKeyValuePairs = context,

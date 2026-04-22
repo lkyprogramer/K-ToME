@@ -5,6 +5,7 @@ import java.nio.file.Path
 data class GitChangedFileCollection(
     val changedFiles: List<String>,
     val notes: List<String>,
+    val impactHints: VerificationImpactHints = VerificationImpactHints(),
 )
 
 object GitChangedFileCollector {
@@ -13,8 +14,9 @@ object GitChangedFileCollector {
         preferredBaseRef: String?,
     ): GitChangedFileCollection {
         val notes = mutableListOf<String>()
+        val diffBase = resolveDiffBase(repoRoot = repoRoot, preferredBaseRef = preferredBaseRef, notes = notes)
         val committedFiles =
-            when (val diffBase = resolveDiffBase(repoRoot = repoRoot, preferredBaseRef = preferredBaseRef, notes = notes)) {
+            when (diffBase) {
                 null -> trackedFilesSnapshot(repoRoot, notes)
                 else -> diffFilesSinceBase(repoRoot = repoRoot, diffBase = diffBase, notes = notes)
             }
@@ -46,11 +48,49 @@ object GitChangedFileCollector {
                 .map(String::trim)
                 .filter(String::isNotBlank)
                 .toList()
+        val changedFiles = (committedFiles + stagedFiles + unstagedFiles + untrackedFiles).distinct().sorted()
+        val impactHints =
+            collectImpactHints(
+                repoRoot = repoRoot,
+                diffBase = diffBase,
+                changedFiles = changedFiles,
+                notes = notes,
+            )
 
         return GitChangedFileCollection(
-            changedFiles = (committedFiles + stagedFiles + unstagedFiles + untrackedFiles).distinct().sorted(),
+            changedFiles = changedFiles,
             notes = notes.toList(),
+            impactHints = impactHints,
         )
+    }
+
+    internal fun isPresentationOnlySnapshotDiff(
+        path: String,
+        diff: String,
+    ): Boolean {
+        val normalizedPath = InputScope.normalizePath(path)
+        val changedLines =
+            diff
+                .lineSequence()
+                .filter { line -> line.startsWith("+") || line.startsWith("-") }
+                .filterNot { line -> line.startsWith("+++") || line.startsWith("---") }
+                .toList()
+        if (changedLines.isEmpty()) {
+            return false
+        }
+        val addedLines = changedLines.filter { line -> line.startsWith("+") }
+        val removedLines = changedLines.filter { line -> line.startsWith("-") }
+        return when (normalizedPath) {
+            VerificationImpactHints.RENDER_SNAPSHOT_PATH ->
+                addedLines.any { line -> line.contains("specialTierId") } &&
+                    addedLines.all(::isAllowedRenderSnapshotPresentationAdditionLine) &&
+                    removedLines.all(::isAllowedRenderSnapshotPresentationRemovalLine)
+            VerificationImpactHints.FOUNDATION_GAME_SESSION_PATH ->
+                addedLines.any { line -> line.contains("specialTierId") } &&
+                    addedLines.all(::isAllowedFoundationSessionPresentationAdditionLine) &&
+                    removedLines.isEmpty()
+            else -> false
+        }
     }
 
     internal fun parseNameStatusPaths(output: String): List<String> =
@@ -133,6 +173,49 @@ object GitChangedFileCollector {
         return parseNameStatusPaths(output)
     }
 
+    private fun collectImpactHints(
+        repoRoot: Path,
+        diffBase: String?,
+        changedFiles: List<String>,
+        notes: MutableList<String>,
+    ): VerificationImpactHints {
+        val presentationOnlySnapshotFiles =
+            changedFiles
+                .asSequence()
+                .filter { path ->
+                    path == VerificationImpactHints.RENDER_SNAPSHOT_PATH ||
+                        path == VerificationImpactHints.FOUNDATION_GAME_SESSION_PATH
+                }
+                .filter { path ->
+                    isPresentationOnlySnapshotDiff(
+                        path = path,
+                        diff = combinedDiffForPath(repoRoot = repoRoot, diffBase = diffBase, path = path),
+                    )
+                }
+                .toSet()
+        if (presentationOnlySnapshotFiles.isNotEmpty()) {
+            notes +=
+                "Presentation-only item snapshot diff detected; verifyChanged suppresses broad Phase 4 owner fallback for " +
+                presentationOnlySnapshotFiles.sorted().joinToString()
+        }
+        return VerificationImpactHints(presentationOnlySnapshotFiles = presentationOnlySnapshotFiles)
+    }
+
+    private fun combinedDiffForPath(
+        repoRoot: Path,
+        diffBase: String?,
+        path: String,
+    ): String =
+        buildList {
+            if (diffBase != null) {
+                add(listOf("diff", "--unified=0", "$diffBase...HEAD", "--", path))
+            }
+            add(listOf("diff", "--cached", "--unified=0", "--", path))
+            add(listOf("diff", "--unified=0", "--", path))
+        }.mapNotNull { args -> runGit(repoRoot, *args.toTypedArray()) }
+            .filter(String::isNotBlank)
+            .joinToString(separator = "\n")
+
     private fun trackedFilesSnapshot(
         repoRoot: Path,
         notes: MutableList<String>,
@@ -170,5 +253,31 @@ object GitChangedFileCollector {
         } else {
             null
         }
+    }
+
+    private fun isAllowedRenderSnapshotPresentationAdditionLine(line: String): Boolean {
+        val content = line.drop(1).trim()
+        return content in
+            setOf(
+                "val specialTierId: String? = null,",
+                ") {",
+                "init {",
+                """val validSpecialTiers = setOf("UNIQUE", "ARTIFACT")""",
+                "require(specialTierId == null || specialTierId in validSpecialTiers) {",
+                """"ItemRenderSnapshot.specialTierId must be UNIQUE or ARTIFACT when present."""",
+                "require((specialTemplateId == null) == (specialTierId == null)) {",
+                """"ItemRenderSnapshot requires specialTemplateId and specialTierId to be present together."""",
+                "}",
+            )
+    }
+
+    private fun isAllowedRenderSnapshotPresentationRemovalLine(line: String): Boolean {
+        val content = line.drop(1).trim()
+        return content == ")"
+    }
+
+    private fun isAllowedFoundationSessionPresentationAdditionLine(line: String): Boolean {
+        val content = line.drop(1).trim()
+        return content == "specialTierId = item.specialTemplateId?.let(content.itemBundle::specialTemplate)?.specialTier?.name,"
     }
 }

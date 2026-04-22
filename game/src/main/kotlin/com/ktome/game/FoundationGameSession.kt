@@ -3898,6 +3898,7 @@ class FoundationGameSession internal constructor(
         return ItemRenderSnapshot(
             baseItemId = item.baseId,
             specialTemplateId = item.specialTemplateId,
+            specialTierId = item.specialTemplateId?.let(content.itemBundle::specialTemplate)?.specialTier?.name,
             nameKey = presentation.nameKey,
             displayName = itemDisplayToken(item),
             descKey = presentation.descKey,

@@ -413,11 +413,13 @@ class RenderSnapshotContractTest {
         assertEquals("item.unique.thornpath_crook.visual", uniqueItem.visualKey)
         assertEquals("item.unique.thornpath_crook.icon", uniqueItem.iconKey)
         assertEquals("audio.item.unique.thornpath_crook", uniqueItem.audioProfile)
+        assertEquals("UNIQUE", uniqueItem.specialTierId)
         assertEquals("item.artifact.heartroot_gambit.name", artifactItem.nameKey)
         assertEquals("item.artifact.heartroot_gambit.desc", artifactItem.descKey)
         assertEquals("item.artifact.heartroot_gambit.visual", artifactItem.visualKey)
         assertEquals("item.artifact.heartroot_gambit.icon", artifactItem.iconKey)
         assertEquals("audio.item.artifact.heartroot_gambit", artifactItem.audioProfile)
+        assertEquals("ARTIFACT", artifactItem.specialTierId)
     }
 
     @Test

@@ -46,6 +46,9 @@ import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.ai.BossEncounterState
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.OverlayRenderSnapshot
+import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.MainMenuTextSnapshot
@@ -62,6 +65,7 @@ import com.ktome.game.harness.HarnessReportWriter
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.validation.ValidationPreset
+import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlin.math.abs
@@ -262,6 +266,63 @@ class ClientSmokeHarnessTest {
         )
 
         assertTrue(reports.all { it.success }, reports.joinToString(separator = "\n") { "${it.name}: ${it.failureReason}" })
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `loading screen transitions within five hundred milliseconds`() {
+        val coordinator =
+            AssetContractCoordinator(
+                assetVersionProvider = { AssetVersionContract.CURRENT },
+                visualManifestProvider = { clientAssets.visualManifest },
+                audioManifestProvider = { clientAssets.audioManifest },
+                clientAssetBundleProvider = { ClientAssetBundleLoader.load() },
+            )
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260413L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("loading-smoke-save")),
+        )
+        val snapshot =
+            session.renderSnapshot().copy(
+                overlays =
+                    listOf(
+                        OverlayRenderSnapshot(
+                            id = "loading-smoke:boss-warning",
+                            visualKey = "vfx.boss.warning.sigil_01",
+                            audioProfile = "audio.boss.warning",
+                            previewTurns = 1,
+                            dangerLevel = 3,
+                            shape = OverlayShapeSnapshot.SINGLE_TILE,
+                            sourceAbilityId = "loading_smoke",
+                            cells = listOf(GridPointSnapshot(session.renderSnapshot().metadata.playerX, session.renderSnapshot().metadata.playerY)),
+                        ),
+                    ),
+            )
+        assertEquals(null, coordinator.noticeOrNull())
+        coordinator.prepareSession(snapshot)
+        val loading = requireNotNull(coordinator.loadingStateFor(snapshot)) {
+            "Warm cache overlay keys should expose a loading state before warmSessionAssets."
+        }
+        val startNanos = System.nanoTime()
+        coordinator.warmCache(snapshot)
+        val transitionMs = ((System.nanoTime() - startNanos) / 1_000_000L).toInt()
+        val cleared = coordinator.loadingStateFor(snapshot) == null
+        val reportDir = Path.of("build", "reports", "client-smoke")
+        Files.createDirectories(reportDir)
+        Files.writeString(
+            reportDir.resolve("loading-timing.jsonl"),
+            buildJsonObject {
+                put("state", loading.message.key)
+                put("transitionMs", transitionMs)
+                put("budgetMs", 500)
+                put("loadingCleared", cleared)
+            }.toString() + "\n",
+        )
+
+        coordinator.dispose()
+        assertTrue(cleared, "Loading state did not clear after warmSessionAssets.")
+        assertTrue(transitionMs <= 500, "Loading state transition exceeded soft budget: ${transitionMs}ms.")
     }
 
     @Test

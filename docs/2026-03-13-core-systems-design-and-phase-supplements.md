@@ -3011,6 +3011,7 @@ data class WorldProgressSnapshot(
 4. `RenderSnapshot` 只包含 tile、actor、overlay、HUD、telegraph 等逻辑表现字段；浮字、震屏、Tween、过渡动画由 client 根据事件自行驱动。
 5. 伤害数字、miss、暴击提示、阶段切换 warning 通过 `CombatEvent/StatusEvent/LogEvent` 传递，不作为 snapshot 历史缓存的一部分。
 6. `Status HUD` 的 steady-state（icon / 层数 / 剩余回合）必须来自 `RenderSnapshot`；`StatusEvent` 只负责覆盖、净化、隐匿打破等瞬时反馈。
+7. `ItemRenderSnapshot.specialTierId` 是 presentation-only 字段，只能与 `specialTemplateId` 成对出现，用于 client 区分 `UNIQUE / ARTIFACT` accent；它不进入 save schema，不允许 client 通过 content template 反查 special tier。
 
 #### 9.1.1.3 Phase 2 经济、难度与输入最小合同
 
