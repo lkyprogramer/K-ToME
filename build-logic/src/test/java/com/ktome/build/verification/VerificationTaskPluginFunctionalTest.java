@@ -133,6 +133,39 @@ class VerificationTaskPluginFunctionalTest {
     }
 
     @Test
+    void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughIterableAliasDependency() throws IOException {
+        writeBuildWithVerifyChangedGateAliasDependency("[tasks.named('watched')]");
+
+        var result = runner().withArguments("verifyChanged", "aliasGate", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
+    void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughMapAliasDependency() throws IOException {
+        writeBuildWithVerifyChangedGateAliasDependency("[watchedTask: tasks.named('watched')]");
+
+        var result = runner().withArguments("verifyChanged", "aliasGate", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
+    void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughCallableAliasDependency() throws IOException {
+        writeBuildWithVerifyChangedGateAliasDependency("{ tasks.named('watched').get() } as Callable");
+
+        var result = runner().withArguments("verifyChanged", "aliasGate", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
     void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughRootQualifiedAliasInMixedInvocation() throws IOException {
         writeBuildWithVerifyChangedGate(":otherTask\n");
 
@@ -253,6 +286,50 @@ class VerificationTaskPluginFunctionalTest {
                 }
                 """
                         .formatted(groovyQuoted(plannedTaskPaths), groovyQuoted(plannedPreflightTaskPaths)));
+    }
+
+    private void writeBuildWithVerifyChangedGateAliasDependency(String aliasDependencyExpression) throws IOException {
+        writeBuild(
+                """
+                import com.ktome.build.verification.VerifyChangedPlanGate
+                import java.util.concurrent.Callable
+
+                plugins {
+                    id 'com.ktome.build.verification'
+                }
+
+                def verifyChangedTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/task-paths.txt')
+                def verifyChangedPreflightTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/preflight-task-paths.txt')
+
+                tasks.register('prepareVerifyChangedPlan') {
+                    doLast {
+                        def taskPathsFile = verifyChangedTaskPathsFile.get().asFile
+                        def preflightTaskPathsFile = verifyChangedPreflightTaskPathsFile.get().asFile
+                        taskPathsFile.parentFile.mkdirs()
+                        taskPathsFile.text = ":otherTask\\n"
+                        preflightTaskPathsFile.text = ":otherTask\\n"
+                    }
+                }
+
+                tasks.register('watched') { task ->
+                    doLast {
+                        def marker = layout.buildDirectory.file('watched.txt').get().asFile
+                        marker.parentFile.mkdirs()
+                        marker.text = 'WATCHED'
+                    }
+                    VerifyChangedPlanGate.applyTo(task, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, 'prepareVerifyChangedPlan')
+                }
+
+                tasks.register('verifyChanged') {
+                    dependsOn(tasks.named('prepareVerifyChangedPlan'))
+                    dependsOn(tasks.named('watched'))
+                }
+
+                tasks.register('aliasGate') {
+                    dependsOn(%s)
+                }
+                """
+                        .formatted(aliasDependencyExpression));
     }
 
     private void writeMultiProjectBuildWithVerifyChangedGate(String plannedTaskPaths) throws IOException {

@@ -6,10 +6,13 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 import org.gradle.api.Action;
 import org.gradle.api.Task;
@@ -135,10 +138,16 @@ public final class VerifyChangedPlanGate {
             return false;
         }
         for (Object dependencyObject : current.getDependsOn()) {
-            Task dependency = declaredDependencyTask(current, dependencyObject, target);
-            if (dependency == null) {
-                continue;
+            if (dependencyObjectDependsOn(current, dependencyObject, target, visitedTaskPaths)) {
+                return true;
             }
+        }
+        return false;
+    }
+
+    private static boolean dependencyObjectDependsOn(
+            Task current, Object dependencyObject, Task target, Set<String> visitedTaskPaths) {
+        for (Task dependency : declaredDependencyTasks(current, dependencyObject, target)) {
             if (dependency.getPath().equals(target.getPath())) {
                 return true;
             }
@@ -149,26 +158,51 @@ public final class VerifyChangedPlanGate {
         return false;
     }
 
-    private static Task declaredDependencyTask(Task current, Object dependencyObject, Task target) {
+    private static List<Task> declaredDependencyTasks(Task current, Object dependencyObject, Task target) {
         if (dependencyObject instanceof Task dependency) {
-            return shouldTraverseDependency(current, dependency, target) ? dependency : null;
+            return shouldTraverseDependency(current, dependency, target)
+                    ? Collections.singletonList(dependency)
+                    : Collections.emptyList();
         }
         if (dependencyObject instanceof TaskProvider<?> dependencyProvider) {
             if (!shouldResolveDependencyProvider(current, dependencyProvider, target)) {
-                return null;
+                return Collections.emptyList();
             }
             Task dependency = dependencyProvider.get();
-            return shouldTraverseDependency(current, dependency, target) ? dependency : null;
+            return shouldTraverseDependency(current, dependency, target)
+                    ? Collections.singletonList(dependency)
+                    : Collections.emptyList();
         }
         if (dependencyObject instanceof CharSequence dependencyPath) {
             String normalizedPath = normalizeTaskPath(current, dependencyPath.toString());
             if (!shouldResolveTaskPath(current, normalizedPath, target)) {
-                return null;
+                return Collections.emptyList();
             }
             Task dependency = taskByPath(current, normalizedPath);
-            return dependency != null && shouldTraverseDependency(current, dependency, target) ? dependency : null;
+            return dependency != null && shouldTraverseDependency(current, dependency, target)
+                    ? Collections.singletonList(dependency)
+                    : Collections.emptyList();
         }
-        return null;
+        if (dependencyObject instanceof Iterable<?> dependencyObjects) {
+            List<Task> dependencies = new ArrayList<>();
+            for (Object nestedDependencyObject : dependencyObjects) {
+                dependencies.addAll(declaredDependencyTasks(current, nestedDependencyObject, target));
+            }
+            return dependencies;
+        }
+        if (dependencyObject instanceof Map<?, ?> dependencyMap) {
+            return declaredDependencyTasks(current, dependencyMap.values(), target);
+        }
+        if (dependencyObject instanceof Callable<?> callableDependency) {
+            try {
+                return declaredDependencyTasks(current, callableDependency.call(), target);
+            } catch (Exception exception) {
+                throw new IllegalStateException(
+                        "Failed to resolve task dependency notation for " + current.getPath(),
+                        exception);
+            }
+        }
+        return Collections.emptyList();
     }
 
     private static boolean shouldResolveDependencyProvider(
