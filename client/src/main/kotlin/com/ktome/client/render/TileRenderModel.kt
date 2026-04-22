@@ -10,6 +10,13 @@ import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.client.ui.hud.ResourceGaugeModel
 import com.ktome.client.ui.hud.ResourceHud
+import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.panel.ActionPanelEntryModel
+import com.ktome.client.ui.panel.ActionPanelModel
+import com.ktome.client.ui.panel.LogPresentationModel
+import com.ktome.client.ui.panel.LogPresentationModelBuilder
+import com.ktome.client.ui.panel.PlayerCardModel
+import com.ktome.client.ui.panel.TargetCardModel
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.status.StatusHudIconModel
 import com.ktome.client.ui.status.StatusIconResolver
@@ -142,6 +149,10 @@ internal data class TileRenderModel(
     val inspectCursor: com.ktome.core.map.Point?,
     val hud: TileHudModel,
     val messageLines: List<TileMessageLine>,
+    val logPresentation: LogPresentationModel,
+    val playerCard: PlayerCardModel,
+    val targetCard: TargetCardModel,
+    val actionPanel: ActionPanelModel,
     val combatFeedback: List<TileCombatFeedbackModel>,
     val sidebar: TileSidebarModel,
 )
@@ -155,6 +166,7 @@ internal object TileRenderModelBuilder {
     ): TileRenderModel {
         val cellByPoint = snapshot.mapCells.associateBy { cell -> point(cell.x, cell.y) }
         val actorById = snapshot.actors.associateBy(ActorRenderSnapshot::entityId)
+        val propByPoint = snapshot.props.associateBy { prop -> point(prop.x, prop.y) }
         val player = requireNotNull(snapshot.actors.singleOrNull { actor -> actor.isPlayer }) {
             "Expected a single player actor in render snapshot."
         }
@@ -162,13 +174,13 @@ internal object TileRenderModelBuilder {
             snapshot.mapCells
                 .filter { cell -> cell.visibility != CellVisibilitySnapshot.HIDDEN }
                 .map { cell ->
-                TileVisualPlacement(
-                    x = cell.x,
-                    y = cell.y,
-                    asset = resolveVisual(visualResolver, cell.terrainVisualKey),
-                    alpha = if (cell.visibility == CellVisibilitySnapshot.EXPLORED) 0.72f else 1f,
-                )
-            }
+                    TileVisualPlacement(
+                        x = cell.x,
+                        y = cell.y,
+                        asset = resolveVisual(visualResolver, cell.terrainVisualKey),
+                        alpha = if (cell.visibility == CellVisibilitySnapshot.EXPLORED) 0.72f else 1f,
+                    )
+                }
         val fogTiles =
             snapshot.mapCells.mapNotNull { cell ->
                 when (cell.visibility) {
@@ -210,6 +222,20 @@ internal object TileRenderModelBuilder {
                     )
                 }
 
+        val hud = buildHud(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint)
+        val baseMessageLines =
+            snapshot.logEvents.map { event ->
+                TileMessageLine(
+                    text = renderLogEvent(localizer, event),
+                    tone = messageTone(event.message.key),
+                )
+            }
+        val uiMessageLine =
+            overlayState.uiMessageKey?.let { key ->
+                TileMessageLine(text = localizer.text(key), tone = TileTextTone.CYAN)
+            }
+        val messageLines = baseMessageLines + listOfNotNull(uiMessageLine)
+
         return TileRenderModel(
             terrainTiles = terrainTiles,
             propTiles = propTiles,
@@ -218,16 +244,45 @@ internal object TileRenderModelBuilder {
             fogTiles = fogTiles,
             targetCursor = overlayState.targetingCursor,
             inspectCursor = overlayState.inspectCursor,
-            hud = buildHud(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint),
-            messageLines =
-                snapshot.logEvents.map { event ->
-                    TileMessageLine(
-                        text = renderLogEvent(localizer, event),
-                        tone = messageTone(event.message.key),
-                    )
+            hud = hud,
+            messageLines = messageLines,
+            logPresentation =
+                LogPresentationModelBuilder.build(localizer, snapshot.logEvents) { token ->
+                    renderTextToken(localizer, token)
                 },
+            playerCard =
+                PlayerCardModel(
+                    name = hud.playerName,
+                    hpSummary = hud.hpGauge.summary,
+                    primaryResourceSummary = hud.resourceGauge.summary,
+                    secondaryResourceSummary = hud.secondaryResourceGauge?.summary,
+                    statusCount = hud.statusIcons.size,
+                    emptyStateText = localizer.text("ui.player.empty"),
+                ),
+            targetCard =
+                buildTargetCardModel(
+                    localizer = localizer,
+                    snapshot = snapshot,
+                    overlayState = overlayState,
+                    hud = hud,
+                    actorById = actorById,
+                    cellByPoint = cellByPoint,
+                    propByPoint = propByPoint,
+                ),
+            actionPanel =
+                ActionPanelModel(
+                    entries =
+                        hud.hotbar.map { slot ->
+                            ActionPanelEntryModel(
+                                hotkey = slot.slot.toString(),
+                                label = slot.label,
+                                enabled = slot.cooldownText == null,
+                            )
+                        },
+                    emptyStateText = localizer.text("ui.action.empty"),
+                ),
             combatFeedback = buildCombatFeedback(localizer, snapshot.metadata.width, overlayCells, snapshot.combatFeedbackEvents),
-            sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint),
+            sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint, propByPoint),
         )
     }
 
@@ -307,6 +362,59 @@ internal object TileRenderModelBuilder {
         )
     }
 
+    private fun buildTargetCardModel(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+        hud: TileHudModel,
+        actorById: Map<Int, ActorRenderSnapshot>,
+        cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
+        propByPoint: Map<com.ktome.core.map.Point, PropRenderSnapshot>,
+    ): TargetCardModel {
+        val emptyText = localizer.text("ui.target.empty")
+        val focusPoint =
+            when (overlayState.mode) {
+                UiMode.INSPECT -> overlayState.inspectCursor
+                UiMode.TARGETING -> overlayState.targetingCursor
+                UiMode.VALIDATION -> overlayState.validationPanel?.inspectCursor
+                else -> null
+            } ?: return TargetCardModel(title = hud.focusName, lines = hud.focusLines, emptyStateText = emptyText)
+        val cell = cellByPoint[focusPoint] ?: return TargetCardModel(title = null, lines = emptyList(), emptyStateText = emptyText)
+        val actor = cell.actorEntityId?.let(actorById::get)
+        if (actor != null) {
+            return TargetCardModel(
+                title = hud.focusName ?: localizer.text(actor.nameKey),
+                lines = hud.focusLines,
+                emptyStateText = emptyText,
+            )
+        }
+        val prop = propByPoint[focusPoint]
+        val propNameKey = prop?.nameKey
+        if (propNameKey != null) {
+            return TargetCardModel(
+                title = localizer.text(propNameKey),
+                lines = listOfNotNull(prop.stateLabelKey?.let(localizer::text), prop.descKey?.let(localizer::text)),
+                emptyStateText = emptyText,
+            )
+        }
+        if (cell.items.isNotEmpty()) {
+            return TargetCardModel(
+                title = localizer.text("ui.sidebar.items"),
+                lines = cell.items.map { item -> renderItemDisplay(localizer, item) },
+                emptyStateText = emptyText,
+            )
+        }
+        return TargetCardModel(
+            title = terrainName(localizer, cell),
+            lines =
+                listOf(
+                    localizer.text("ui.inspect.cursor", "x" to focusPoint.x, "y" to focusPoint.y),
+                    localizer.text("ui.inspect.empty.tile"),
+                ),
+            emptyStateText = emptyText,
+        )
+    }
+
     private fun buildSidebar(
         localizer: Localizer,
         visualResolver: VisualManifestResolver,
@@ -315,11 +423,11 @@ internal object TileRenderModelBuilder {
         player: ActorRenderSnapshot,
         actorById: Map<Int, ActorRenderSnapshot>,
         cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
+        propByPoint: Map<com.ktome.core.map.Point, PropRenderSnapshot>,
     ): TileSidebarModel {
         val rows = mutableListOf<TileTextRow>()
         val title = TileRenderer.sidebarTitle(localizer, overlayState.mode)
         val playerCell = requireNotNull(cellByPoint[point(snapshot.metadata.playerX, snapshot.metadata.playerY)])
-        val propByPoint = snapshot.props.associateBy { prop -> point(prop.x, prop.y) }
 
         when (overlayState.mode) {
             UiMode.MAP -> {
@@ -486,6 +594,32 @@ internal object TileRenderModelBuilder {
             }
 
             UiMode.INVENTORY -> {
+                if (overlayState.activeModalKind == ModalFrameKind.ITEM_COMPARE) {
+                    rows += TileTextRow(localizer.text("ui.modal.item_compare.stub"), TileTextTone.LIGHT_GRAY)
+                    rows += TileTextRow(localizer.text("ui.controls.deferred_modal"), TileTextTone.LIGHT_GRAY)
+                    return TileSidebarModel(title = localizer.text("ui.sidebar.item_compare"), rows = rows)
+                }
+                if (overlayState.activeModalKind == ModalFrameKind.ITEM_DETAIL) {
+                    val selectedItem = snapshot.uiState.inventory.getOrNull(overlayState.inventorySelection)?.item
+                    if (selectedItem == null) {
+                        rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                    } else {
+                        rows +=
+                            TileTextRow(
+                                text = renderItemDisplay(localizer, selectedItem),
+                                tone = TileTextTone.GOLD,
+                                icon = selectedItem.iconKey?.let { resolveVisual(visualResolver, it) },
+                            )
+                        selectedItem.descKey?.let { descKey ->
+                            rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        }
+                        itemDetailLines(localizer, selectedItem).forEach { detail ->
+                            rows += TileTextRow(detail, TileTextTone.LIGHT_GRAY)
+                        }
+                    }
+                    rows += TileTextRow(localizer.text("ui.controls.item_detail"), TileTextTone.LIGHT_GRAY)
+                    return TileSidebarModel(title = localizer.text("ui.sidebar.item_detail"), rows = rows)
+                }
                 rows += TileTextRow(localizer.text("ui.controls.inventory.close_hint"), TileTextTone.LIGHT_GRAY)
                 snapshot.uiState.inventory.forEach { entry ->
                     val label = "${entry.index + 1}. ${renderItemDisplay(localizer, entry.item)}"
@@ -551,6 +685,11 @@ internal object TileRenderModelBuilder {
             }
 
             UiMode.TARGETING -> {
+                if (overlayState.activeModalKind == ModalFrameKind.COMBAT_DECISION) {
+                    rows += TileTextRow(localizer.text("ui.modal.combat_decision.stub"), TileTextTone.LIGHT_GRAY)
+                    rows += TileTextRow(localizer.text("ui.controls.deferred_modal"), TileTextTone.LIGHT_GRAY)
+                    return TileSidebarModel(title = localizer.text("ui.sidebar.combat_decision"), rows = rows)
+                }
                 val cursor = overlayState.targetingCursor
                 rows += TileTextRow(localizer.text("ui.targeting.slot", "slot" to overlayState.targetingSlot), TileTextTone.WHITE)
                 rows +=
@@ -585,8 +724,16 @@ internal object TileRenderModelBuilder {
                                     "damageType" to localizer.text(damageTypeLabelKey(tickDamageTypeId)),
                                 ),
                                 TileTextTone.RED,
-                            )
+                        )
                     }
+                }
+                val overlaysAtCursor =
+                    snapshot.overlays.filter { overlay ->
+                        overlay.cells.any { cell -> cell.x == cursor.x && cell.y == cursor.y }
+                    }
+                if (overlaysAtCursor.isNotEmpty()) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.warnings"), TileTextTone.GOLD)
+                    rows += TelegraphRenderer.tileRows(localizer, overlaysAtCursor)
                 }
                 actor?.let { inspected ->
                     rows +=
@@ -674,7 +821,7 @@ internal object TileRenderModelBuilder {
                         TileTextRow(
                             text =
                                 when (cell.visibility) {
-                                    CellVisibilitySnapshot.VISIBLE -> localizer.text("ui.inspect.no_visible_target")
+                                    CellVisibilitySnapshot.VISIBLE -> localizer.text("ui.inspect.empty.tile")
                                     CellVisibilitySnapshot.EXPLORED -> localizer.text("ui.inspect.explored_not_visible")
                                     CellVisibilitySnapshot.HIDDEN -> localizer.text("ui.inspect.unknown_tile")
                                 },

@@ -1,6 +1,5 @@
 package com.ktome.client.input
 
-import com.badlogic.gdx.Input.Keys
 import com.ktome.client.audio.AudioRouter
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.PlayerCommand
@@ -35,7 +34,6 @@ interface AudioRouterAwareCommandSource {
 
 class InputHandlerCommandSource(
     private val inputHandler: InputHandler = InputHandler(),
-    private val inputSource: InputSource = GdxInputSource,
     override var audioRouter: AudioRouter? = null,
 ) : CommandSource, AudioRouterAwareCommandSource {
     override fun nextCommand(snapshot: RenderSnapshot): PlayerCommand? {
@@ -59,8 +57,7 @@ class InputHandlerCommandSource(
 
     override fun isMapMode(): Boolean = inputHandler.isMapMode()
 
-    override fun shouldReturnToMenu(): Boolean =
-        isMapMode() && inputSource.isKeyJustPressed(Keys.ESCAPE)
+    override fun shouldReturnToMenu(): Boolean = false
 
     override fun onReturnToMenu() {
         audioRouter?.onReturnToMenu()

@@ -82,16 +82,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "54d053dafc264bd47574617fade06a74e7fb84daf44f3f78d6cfd30c20b24271",
-                "443b4abde7ff4cc366fac17e097985357cdab6be7c3a26e5b9d669b06923e047",
+                "10c7931dc33386a9b673866a3c2b44e319855084093bef4459fc22c84bde46d7",
+                "70fec4986deefa12190ec16db3a30554cbf62534548d11426fac079f16154405",
                 "c928b3fea6db5d4a3d0d2b8043066125246b2478e9b81a705bf01b468d178566",
-                "a2203121a6e7f7ee43a655cbb53a37a88fc5a319b3a10d327a7f0e6516e6dc17",
+                "7caf807bd32afe75fb7a30af36e4b4db9f04a7f2723611bdd084cc8acab243ab",
                 "e6839d604a9bc8d4086197a49cbf42442ab8478d21bd86511dd172ae73ce06fe",
-                "403c704d088716e06ed18e7c45d9c4b64520e567c68498cf39366d9938df6c1b",
-                "afb17f530d25ab7dbe8f61a36c219c9ce2e4a2cc6b4d3cbb363b5e4bd8b7abe7",
-                "e6a914fa61169d3de949969aa5ed86b63a50019fd36da10f2d407238527bd646",
-                "aa59c47fd4eea4749e95d8e313df8e8a703b88c23d5bb6b9721371544182322a",
-                "fe1a14b8d8a2e2db589f5f571a90bcdb5d560f53e9789a639f7c5073eb2b8964",
+                "93752d2697f8db4bdc40ff058ea62ec30836edb4f37770785557cef621d2eae9",
+                "1e48f079f11c2c87b8e14a7a1ccaf32d7c39171bda40b7d293b287006d29bd75",
+                "ba219f208abf048fa30eaa138e63e09867ca3e5a2380b2c4dc64f8da3ae167e3",
+                "4e13d81ef2bfc3c3cf72a2cc8df67a0cdadb9a480a77bfd5a91a92ad8f5768b7",
+                "16cd197a4799379bccc76da46ec14be344387aa475be734ae575f5a2cfb84e8b",
             ),
             english + chinese,
         )
@@ -104,8 +104,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "4263249baeed7166a93a930f4c90aeb9555e9d938af0ca332549a0ded60b17c3",
-                "759512b9c91b2bdf327a319320438cebd5d1b114093c0a9fcaa89509ac49721e",
+                "04de15f30ba3563794ad18fa329962aecc91ab9469447d570c6da74e96fa9929",
+                "0815e6cefb0603f2d262bf54cea826657f5d558bc9e8fd84bdfe0b1ebd17540f",
             ),
             listOf(english, chinese),
         )
@@ -118,10 +118,10 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "f109e3d6311f1d49f8cf4542dfe5b0c0ce82f6c0cc7648896131fe5330dbaeef",
+                "65489fb81048c508bfe2207b7fdeee2144ee211caf894e1b8db62ccbae15de32",
                 "7240563d751016528ee4bc281b5a218b7f757d855a751ee7d1243a6137794246",
                 "01eda206980a87df74289a7f920b571bbf4229dd605afc09bb96b4c5cf29ce4f",
-                "6f0ccf63e7e06e597471f751c0dcb1923a7efb59cfa45329e9dd4cab95e767a9",
+                "f37da3c12ce980573b4d9402b50072baab97cc30400292c234ec49c0da238c0d",
                 "a3de098e346815760c54ecb55eec12837d77002ad3feff2963bb34048ad00743",
                 "2210c03efbaaa0b0df3cc8cccd325548bb55eacca9a064e398982fe84efddc16",
             ),
@@ -180,9 +180,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "450e7caf5c08a15a48c92829f8bdfbacd38b2f5291fb61f4696ec0d325e53633",
-                "d129bad8def3b289dd6d022ef8653bb8e2e80a83873282e820db4c2c70c6d9a2",
+                "07ea94b807ab0a8ad5cbb0756e59cdc1b07be5264490a5ad83475918c9616533",
                 "1b2502c2e7fd673dde69ef26ed55b91ba246883c2a10d3a470e74a9c7853647a",
-                "b1ceccc59345c7191b770452e0fde4de9985afa030cc6fe9119625f869dbdeaf",
+                "300d967936072b363834edf7ae0074a8d874461f284c7040caf6b1d7dff3a67a",
             ),
             english + chinese,
         )
@@ -202,10 +202,10 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "a482884989679bd0cc42de7ade8a2aefe45cd354df40a70ff3cbad597277bd50",
-                "7bd14e86f0cfd095fb10655668596f605f6c976ed530c4ece0d1aabfe56a3ce2",
-                "2a10eae01820308145b649151f43836127e5fbe99fcde4e300653a8d1575aa78",
-                "0dd2e7bfe9e5f883b906f748b3d2ea6ac8548433c231c90e01983442262c9ac1",
+                "e200b96c61b1184b21b45d8116c4d79cef4a683b17d5fa8e9e9a3b597a34e82f",
+                "8f3959a0ef439c1b04fe206658b1ab1170b98909253aea58217e704d0f2a65bd",
+                "4d487c66b67ea9bdbb6d4ece2ffeeecbbe9dd02b9ac5552410ba313e25a2bcfe",
+                "8d403f8ede05c24e5c6b6ab6ef3ba826cf11a51c21e9b86cc59bb3b98e31c496",
                 "ed9b72ac5db6a4a4754119dd41ce19ffb13513b5b53bed151e9f5744a423c37b",
                 "ae59d93bac251d879588ca6294b4fdcc07d07c4d12e7aaaecc8f860407343f84",
                 "41b81929ffeb019137507bf71911c99777c763297ea5b2308ddc4cf36d9096f2",

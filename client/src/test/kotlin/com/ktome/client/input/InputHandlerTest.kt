@@ -2,6 +2,10 @@ package com.ktome.client.input
 
 import com.badlogic.gdx.Input.Keys
 import com.ktome.client.replay.ReplayInputSource
+import com.ktome.client.ui.layout.ModalFrame
+import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.layout.ModalStack
+import com.ktome.client.ui.layout.PaneFocusAnchor
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
@@ -16,9 +20,14 @@ import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.snapshot.RouteOptionSnapshot
+import com.ktome.core.snapshot.RouteSelectionSnapshot
+import com.ktome.core.snapshot.ShopOfferSnapshot
+import com.ktome.core.snapshot.ShopPanelSnapshot
+import com.ktome.core.snapshot.ShopSellEntrySnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
-import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
@@ -137,6 +146,29 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `validation overlay noops inspect vim keys without moving the inspect cursor`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-overlay-vim-noop-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        val cursor = handler.overlayState().inspectCursor
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(cursor, handler.overlayState().inspectCursor)
+        assertEquals("DEBUG validation.inspect-key.noop", handler.overlayState().debugMessageKey)
+    }
+
+    @Test
     fun `single seed validation overlays keep restart on same preset`() {
         val input = ReplayInputSource()
         val handler =
@@ -242,7 +274,23 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `inspect mode remains available while stat points are pending`() {
+    fun `inspect question mark invokes explain stub without renderer visible state`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout()
+
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.SLASH), pressed = setOf(Keys.SHIFT_LEFT, Keys.SLASH))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INSPECT, handler.overlayState().mode)
+        assertEquals("DEBUG inspect.explain-stub.invoked", handler.overlayState().debugMessageKey)
+    }
+
+    @Test
+    fun `pending stat allocation passively takes over and blocks inspect stack`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val session = GameModule.newFoundationSession(saveManager = SaveManager(tempDir.resolve("pending-stat-save")))
@@ -250,21 +298,9 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.X))
         assertNull(handler.pollCommand(session.renderSnapshot()))
-        assertEquals(UiMode.INSPECT, handler.overlayState().mode)
-        input.clear()
-
-        input.frame()
-        assertNull(handler.pollCommand(session.renderSnapshot()))
-        assertEquals(UiMode.INSPECT, handler.overlayState().mode)
-        input.clear()
-
-        input.frame(justPressed = setOf(Keys.X))
-        assertNull(handler.pollCommand(session.renderSnapshot()))
-        assertEquals(UiMode.MAP, handler.overlayState().mode)
-
-        input.frame()
-        assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(UiMode.STAT_ASSIGN, handler.overlayState().mode)
+        assertEquals("ui.message.force-switch.stat-assign", handler.overlayState().uiMessageKey)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
     }
 
     @Test
@@ -279,6 +315,239 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
         assertEquals(PlayerCommand.SaveGame, handler.pollCommand(session.renderSnapshot()))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.SYM, Keys.S))
+        assertEquals(PlayerCommand.SaveGame, handler.pollCommand(session.renderSnapshot()))
+    }
+
+    @Test
+    fun `map root escape backspace and f are noops while tab cycles pane focus`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout()
+
+        listOf(Keys.ESCAPE, Keys.BACKSPACE, Keys.F).forEach { key ->
+            input.frame(justPressed = setOf(key))
+            assertNull(handler.pollCommand(snapshot))
+            assertEquals(UiMode.MAP, handler.overlayState().mode)
+            input.clear()
+        }
+
+        input.frame(justPressed = setOf(Keys.TAB))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(PaneFocusAnchor.CONTEXT, handler.overlayState().paneFocusAnchor)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.TAB), pressed = setOf(Keys.SHIFT_LEFT, Keys.TAB))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(PaneFocusAnchor.WORLD, handler.overlayState().paneFocusAnchor)
+    }
+
+    @Test
+    fun `modal save preserves active inventory stack while targeting and validation block saves`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    listOf(
+                        InventoryEntrySnapshot(
+                            index = 0,
+                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                        ),
+                    ),
+                reserveTalents = listOf(reserveTalent("charge", "talent.vanguard.charge.name")),
+                inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)),
+            )
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
+        assertEquals(PlayerCommand.SaveGame, handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.NUM_5))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals("ui.message.save.blocked-in-targeting", handler.overlayState().uiMessageKey)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals("ui.message.save.blocked-in-validation", handler.overlayState().uiMessageKey)
+    }
+
+    @Test
+    fun `validation blocked save feedback persists across render frames`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-save-toast-persistence")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals("ui.message.save.blocked-in-validation", handler.overlayState().uiMessageKey)
+        input.clear()
+
+        repeat(3) {
+            input.frame()
+            assertNull(handler.pollCommand(session.renderSnapshot()))
+            assertEquals("ui.message.save.blocked-in-validation", handler.overlayState().uiMessageKey)
+        }
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.SYM, Keys.S))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals("ui.message.save.blocked-in-validation", handler.overlayState().uiMessageKey)
+    }
+
+    @Test
+    fun `passive world map and shop takeover clear active modal stack with feedback`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val baseSnapshot =
+            snapshotWithLoadout(
+                inventory =
+                    listOf(
+                        InventoryEntrySnapshot(
+                            index = 0,
+                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(baseSnapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        assertNull(handler.pollCommand(baseSnapshot.copy(uiState = baseSnapshot.uiState.copy(activeRouteSelection = sampleRouteSelection()))))
+        assertEquals(UiMode.WORLD_MAP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+        assertEquals(PaneFocusAnchor.WORLD, handler.overlayState().paneFocusAnchor)
+        assertEquals("ui.message.force-switch.world-map", handler.overlayState().uiMessageKey)
+
+        assertNull(handler.pollCommand(baseSnapshot))
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(baseSnapshot))
+        input.clear()
+
+        assertNull(handler.pollCommand(baseSnapshot.copy(uiState = baseSnapshot.uiState.copy(activeShop = sampleShop()))))
+        assertEquals(UiMode.SHOP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+        assertEquals("ui.message.force-switch.shop", handler.overlayState().uiMessageKey)
+    }
+
+    @Test
+    fun `passive owners reconcile before validation toggle`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val snapshot = snapshotWithLoadout(activeShop = sampleShop())
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(snapshot))
+
+        assertEquals(UiMode.SHOP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+        assertEquals("ui.message.force-switch.shop", handler.overlayState().uiMessageKey)
+    }
+
+    @Test
+    fun `combat decision deferred frame blocks ctrl s without saving`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout(inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)))
+
+        input.frame(justPressed = setOf(Keys.NUM_5))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        input.clear()
+
+        val stackField = InputHandler::class.java.getDeclaredField("modalStack")
+        stackField.isAccessible = true
+        val stack = stackField.get(handler) as ModalStack
+        stack.push(ModalFrame(ModalFrameKind.COMBAT_DECISION))
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals("DEBUG combat-decision.save-blocked.stub", handler.overlayState().debugMessageKey)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.TARGETING, handler.overlayState().activeModalKind)
+        assertEquals(5, handler.overlayState().targetingInscriptionHotkey)
+        assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(3, 3)), handler.pollCommand(snapshot))
+    }
+
+    @Test
+    fun `modal depth preflight keeps current frame and emits overflow feedback`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    listOf(
+                        InventoryEntrySnapshot(
+                            index = 0,
+                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                        ),
+                    ),
+            )
+        val stackField = InputHandler::class.java.getDeclaredField("modalStack")
+        stackField.isAccessible = true
+        val stack = stackField.get(handler) as ModalStack
+        stack.push(ModalFrame(ModalFrameKind.INVENTORY))
+        stack.push(ModalFrame(ModalFrameKind.INSPECT))
+        stack.push(ModalFrame(ModalFrameKind.ITEM_DETAIL))
+        val modeField = InputHandler::class.java.getDeclaredField("mode")
+        modeField.isAccessible = true
+        modeField.set(handler, UiMode.INVENTORY)
+
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.ITEM_DETAIL, handler.overlayState().activeModalKind)
+        assertEquals("ui.message.modal.stack-overflow", handler.overlayState().uiMessageKey)
     }
 
     @Test
@@ -321,6 +590,67 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.ENTER))
         assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(4, 3)), handler.pollCommand(snapshot))
+    }
+
+    @Test
+    fun `rejected targeted talent command reuses current targeting frame`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talents =
+                    listOf(
+                        activeTalent(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            requiresTarget = true,
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.NUM_1))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(1, handler.overlayState().modalFrames.size)
+        input.clear()
+
+        repeat(2) {
+            input.frame(justPressed = setOf(Keys.ENTER))
+            val command = requireNotNull(handler.pollCommand(snapshot))
+            assertEquals(PlayerCommand.UseTalent(slot = 1, target = Point(3, 3)), command)
+            handler.onCommandResult(snapshot, command, consumed = false)
+            assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+            assertEquals(ModalFrameKind.TARGETING, handler.overlayState().activeModalKind)
+            assertEquals(1, handler.overlayState().modalFrames.size)
+            assertEquals(1, handler.overlayState().targetingSlot)
+            assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
+            input.clear()
+        }
+    }
+
+    @Test
+    fun `rejected targeted inscription command reuses current targeting frame`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout(inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)))
+
+        input.frame(justPressed = setOf(Keys.NUM_5))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(1, handler.overlayState().modalFrames.size)
+        input.clear()
+
+        repeat(2) {
+            input.frame(justPressed = setOf(Keys.ENTER))
+            val command = requireNotNull(handler.pollCommand(snapshot))
+            assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(3, 3)), command)
+            handler.onCommandResult(snapshot, command, consumed = false)
+            assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+            assertEquals(ModalFrameKind.TARGETING, handler.overlayState().activeModalKind)
+            assertEquals(1, handler.overlayState().modalFrames.size)
+            assertEquals(5, handler.overlayState().targetingInscriptionHotkey)
+            assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
+            input.clear()
+        }
     }
 
     @Test
@@ -387,28 +717,15 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `loadout edit remains available while stat points are pending`() {
+    fun `pending stat allocation clears active loadout stack`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val snapshot = snapshotWithLoadout(statPoints = 1, reserveTalents = listOf(reserveTalent("charge", "talent.vanguard.charge.name")))
 
         input.frame(justPressed = setOf(Keys.L))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals(UiMode.LOADOUT_EDIT, handler.overlayState().mode)
-        input.clear()
-
-        input.frame()
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(UiMode.LOADOUT_EDIT, handler.overlayState().mode)
-        input.clear()
-
-        input.frame(justPressed = setOf(Keys.F))
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(UiMode.MAP, handler.overlayState().mode)
-
-        input.frame()
-        assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.STAT_ASSIGN, handler.overlayState().mode)
+        assertEquals("ui.message.force-switch.stat-assign", handler.overlayState().uiMessageKey)
     }
 
     @Test
@@ -441,7 +758,7 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `inventory mode maps drop command and closes with f instead of escape`() {
+    fun `inventory mode opens item detail and uses escape as full close`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val snapshot =
@@ -464,12 +781,66 @@ class InputHandlerTest {
         assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
         input.clear()
 
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(0, handler.overlayState().inventorySelection)
+        assertEquals(ModalFrameKind.INVENTORY, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.SPACE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.ITEM_DETAIL, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.INVENTORY, handler.overlayState().activeModalKind)
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
         input.frame(justPressed = setOf(Keys.D))
         assertEquals(PlayerCommand.DropInventoryItem(0), handler.pollCommand(snapshot))
         assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
         input.clear()
 
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.ITEM_DETAIL, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.ITEM_COMPARE, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.E))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.ITEM_COMPARE, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.ITEM_DETAIL, handler.overlayState().activeModalKind)
+        input.clear()
+
         input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.I))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
         input.clear()
@@ -477,6 +848,53 @@ class InputHandlerTest {
         input.frame(justPressed = setOf(Keys.F))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.MAP, handler.overlayState().mode)
+    }
+
+    @Test
+    fun `inventory escape and backspace close root frame while x is not list navigation`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    listOf(
+                        InventoryEntrySnapshot(
+                            index = 0,
+                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                        ),
+                        InventoryEntrySnapshot(
+                            index = 1,
+                            item = ItemRenderSnapshot(baseItemId = "healing_potion", nameKey = "item.healing_potion.name", typeId = "CONSUMABLE"),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(0, handler.overlayState().inventorySelection)
+        assertEquals(ModalFrameKind.INVENTORY, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
     }
 
     @Test
@@ -737,6 +1155,15 @@ class InputHandlerTest {
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
         inventory: List<InventoryEntrySnapshot> = emptyList(),
+        activeShop: ShopPanelSnapshot? = null,
+        activeRouteSelection: RouteSelectionSnapshot? = null,
+        talents: List<TalentSlotSnapshot> =
+            listOf(
+                activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
+                activeTalent(slot = 2, talentId = "shield_bash", nameKey = "talent.vanguard.shield_bash.name"),
+                activeTalent(slot = 3, talentId = "guard_stance", nameKey = "talent.vanguard.guard_stance.name"),
+                activeTalent(slot = 4, talentId = "war_cry", nameKey = "talent.vanguard.war_cry.name"),
+            ),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -787,16 +1214,12 @@ class InputHandlerTest {
                             speed = 100,
                         ),
                     equipment = emptyList(),
-                    talents =
-                        listOf(
-                            activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
-                            activeTalent(slot = 2, talentId = "shield_bash", nameKey = "talent.vanguard.shield_bash.name"),
-                            activeTalent(slot = 3, talentId = "guard_stance", nameKey = "talent.vanguard.guard_stance.name"),
-                            activeTalent(slot = 4, talentId = "war_cry", nameKey = "talent.vanguard.war_cry.name"),
-                        ),
+                    talents = talents,
                     reserveTalents = reserveTalents,
                     inscriptions = inscriptions,
                     inventory = inventory,
+                    activeShop = activeShop,
+                    activeRouteSelection = activeRouteSelection,
                     targetablePositions = emptyList(),
                 ),
         )
@@ -808,6 +1231,7 @@ class InputHandlerTest {
         ownerType: TalentTreeOwnerType = TalentTreeOwnerType.PROFESSION,
         treeOwnerId: String = "vanguard",
         hasPendingAllocation: Boolean = false,
+        requiresTarget: Boolean = false,
     ): TalentSlotSnapshot =
         TalentSlotSnapshot(
             slot = slot,
@@ -824,7 +1248,7 @@ class InputHandlerTest {
             minRange = 0,
             currentCooldown = 0,
             maxCooldown = 3,
-            requiresTarget = false,
+            requiresTarget = requiresTarget,
             hasPendingAllocation = hasPendingAllocation,
         )
 
@@ -868,5 +1292,30 @@ class InputHandlerTest {
             cooldownRemaining = 0,
             maxCooldown = 15,
             requiresTarget = requiresTarget,
+        )
+
+    private fun sampleShop(): ShopPanelSnapshot =
+        ShopPanelSnapshot(
+            shopId = "test_shop",
+            shopNameKey = "ui.sidebar.shop",
+            offers = listOf(ShopOfferSnapshot(index = 0, labelKey = "item.long_sword.name", price = 10)),
+            sellEntries = listOf(ShopSellEntrySnapshot(inventoryIndex = 0, price = 4)),
+        )
+
+    private fun sampleRouteSelection(): RouteSelectionSnapshot =
+        RouteSelectionSnapshot(
+            currentZoneNameKey = "zone.shattered_outpost.name",
+            options =
+                listOf(
+                    RouteOptionSnapshot(
+                        index = 0,
+                        routeId = "route:next",
+                        destinationZoneId = "greenwood_fringe",
+                        destinationZoneNameKey = "zone.greenwood_fringe.name",
+                        recommendedLevelMin = 1,
+                        recommendedLevelMax = 3,
+                        shardReward = 1,
+                    ),
+                ),
         )
 }

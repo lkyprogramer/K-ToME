@@ -1,6 +1,12 @@
 package com.ktome.client.input
 
 import com.badlogic.gdx.Input.Keys
+import com.ktome.client.ui.layout.ModalFrame
+import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.layout.ModalFrameLocalState
+import com.ktome.client.ui.layout.ModalStack
+import com.ktome.client.ui.layout.PaneFocusAnchor
+import com.ktome.client.ui.layout.PaneFocusController
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
@@ -38,6 +44,8 @@ enum class ShopFocus {
 
 data class OverlayState(
     val mode: UiMode,
+    val modalFrames: List<ModalFrame> = emptyList(),
+    val paneFocusAnchor: PaneFocusAnchor = PaneFocusAnchor.WORLD,
     val inventorySelection: Int = 0,
     val shopOfferSelection: Int = 0,
     val routeSelection: Int = 0,
@@ -51,7 +59,12 @@ data class OverlayState(
     val inspectCursor: Point? = null,
     val validationCursor: ValidationOverlayCursor? = null,
     val validationPanel: ValidationOverlayPanelState? = null,
-)
+    val uiMessageKey: String? = null,
+    val debugMessageKey: String? = null,
+) {
+    val activeModalKind: ModalFrameKind?
+        get() = modalFrames.lastOrNull()?.kind
+}
 
 class InputHandler(
     private val input: InputSource = GdxInputSource,
@@ -59,6 +72,7 @@ class InputHandler(
     private val validationPreset: ValidationPreset = ValidationPreset.CUSTOM,
     private val validationRestartNextSeedEnabled: Boolean = false,
 ) {
+    private val uiMessageDisplayFrames = 90
     private val overlayCloseBindings = listOf(Keys.F)
     private val repeatInitialDelayFrames = 12
     private val repeatIntervalFrames = 3
@@ -106,12 +120,19 @@ class InputHandler(
     private var validationCursor: ValidationOverlayCursor = ValidationOverlayCursor()
     private var heldMovementKey: Int? = null
     private var movementRepeatCountdown: Int = repeatInitialDelayFrames
+    private val modalStack = ModalStack()
+    private val paneFocusController = PaneFocusController()
+    private var uiMessageKey: String? = null
+    private var uiMessageFramesRemaining: Int = 0
+    private var debugMessageKey: String? = null
 
     fun isMapMode(): Boolean = mode == UiMode.MAP
 
     fun overlayState(): OverlayState =
         OverlayState(
             mode = mode,
+            modalFrames = modalStack.frames(),
+            paneFocusAnchor = paneFocusController.currentAnchor,
             inventorySelection = inventorySelection,
             shopOfferSelection = shopOfferSelection,
             routeSelection = routeSelection,
@@ -125,25 +146,22 @@ class InputHandler(
             inspectCursor = inspectCursor,
             validationCursor =
                 validationCursor.takeIf { validationOverlayAvailability == ValidationOverlayAvailability.ENABLED },
+            uiMessageKey = uiMessageKey,
+            debugMessageKey = debugMessageKey,
         )
 
     fun pollCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        advanceUiMessageFrame()
+        debugMessageKey = null
+        reconcileMode(snapshot)
         if (toggleValidationModeIfRequested(snapshot)) {
             return null
         }
-        if (mode == UiMode.MAP && input.isKeyJustPressed(Keys.L)) {
-            enterLoadoutEdit(snapshot)
-            return null
-        }
-        if (mode == UiMode.MAP && input.isKeyJustPressed(Keys.X)) {
-            mode = UiMode.INSPECT
-            inspectCursor = defaultInspectCursor(snapshot)
-            return null
-        }
-
-        reconcileMode(snapshot)
         if (mode != UiMode.MAP) {
             resetMovementRepeat()
+        }
+        if (isSaveBinding()) {
+            return pollSaveBinding()
         }
         return when (mode) {
             UiMode.MAP -> pollMapCommand(snapshot)
@@ -166,7 +184,8 @@ class InputHandler(
     ) {
         when (command) {
             is PlayerCommand.UseTalent -> {
-                if (command.target == null) {
+                val target = command.target
+                if (target == null) {
                     reconcileMode(snapshot)
                     return
                 }
@@ -174,15 +193,17 @@ class InputHandler(
                 if (consumed) {
                     clearTargeting()
                 } else {
-                    mode = UiMode.TARGETING
-                    targetingSlot = command.slot
-                    targetingInscriptionHotkey = null
-                    targetingCursor = command.target
+                    restoreRejectedTargetingState(
+                        targetingSlot = command.slot,
+                        targetingInscriptionHotkey = null,
+                        targetingCursor = target,
+                    )
                 }
             }
 
             is PlayerCommand.UseInscription -> {
-                if (command.target == null) {
+                val target = command.target
+                if (target == null) {
                     reconcileMode(snapshot)
                     return
                 }
@@ -190,10 +211,11 @@ class InputHandler(
                 if (consumed) {
                     clearTargeting()
                 } else {
-                    mode = UiMode.TARGETING
-                    targetingSlot = command.hotkey
-                    targetingInscriptionHotkey = command.hotkey
-                    targetingCursor = command.target
+                    restoreRejectedTargetingState(
+                        targetingSlot = command.hotkey,
+                        targetingInscriptionHotkey = command.hotkey,
+                        targetingCursor = target,
+                    )
                 }
             }
 
@@ -219,6 +241,9 @@ class InputHandler(
     private fun reconcileMode(snapshot: RenderSnapshot) {
         val activeRouteSelection = snapshot.uiState.activeRouteSelection
         if (activeRouteSelection != null) {
+            if (mode != UiMode.WORLD_MAP) {
+                resetActiveModalForPassiveTakeover("ui.message.force-switch.world-map")
+            }
             mode = UiMode.WORLD_MAP
             routeSelection = routeSelection.coerceIn(0, (activeRouteSelection.options.size - 1).coerceAtLeast(0))
             return
@@ -229,20 +254,28 @@ class InputHandler(
 
         val activeShop = snapshot.uiState.activeShop
         if (activeShop != null) {
-            if (mode == UiMode.MAP || mode == UiMode.SHOP) {
-                mode = UiMode.SHOP
+            if (mode != UiMode.SHOP) {
+                resetActiveModalForPassiveTakeover("ui.message.force-switch.shop")
             }
+            mode = UiMode.SHOP
             shopOfferSelection = shopOfferSelection.coerceIn(0, (activeShop.offers.size - 1).coerceAtLeast(0))
             inventorySelection = inventorySelection.coerceIn(0, (activeShop.sellEntries.size - 1).coerceAtLeast(0))
+            return
         } else if (mode == UiMode.SHOP) {
             mode = UiMode.MAP
         }
 
+        if (hasPendingStatAllocation(snapshot)) {
+            if (mode != UiMode.STAT_ASSIGN) {
+                resetActiveModalForPassiveTakeover("ui.message.force-switch.stat-assign")
+            }
+            mode = UiMode.STAT_ASSIGN
+            return
+        }
+
         when (mode) {
             UiMode.STAT_ASSIGN -> {
-                if (!hasPendingStatAllocation(snapshot)) {
-                    mode = UiMode.MAP
-                }
+                mode = UiMode.MAP
             }
 
             UiMode.LOADOUT_EDIT -> {
@@ -282,14 +315,19 @@ class InputHandler(
                 }
         }
 
-        if (hasPendingStatAllocation(snapshot) && mode == UiMode.MAP) {
-            mode = UiMode.STAT_ASSIGN
+        if (mode != UiMode.VALIDATION) {
+            updateModeFromModalStack()
         }
     }
 
     private fun pollMapCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (isSaveBinding()) {
-            return PlayerCommand.SaveGame
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.BACKSPACE) || isOverlayCloseBinding()) {
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            paneFocusController.move(if (shiftPressed()) -1 else 1)
+            return null
         }
 
         interactionCommandAtPlayer(snapshot)?.let { command ->
@@ -324,9 +362,30 @@ class InputHandler(
         }
 
         if (input.isKeyJustPressed(Keys.I)) {
-            mode = UiMode.INVENTORY
             inventorySelection = inventorySelection.coerceAtMost((snapshot.uiState.inventory.size - 1).coerceAtLeast(0))
+            openModalFrame(
+                ModalFrame(
+                    kind = ModalFrameKind.INVENTORY,
+                    localState = ModalFrameLocalState(inventorySelection = inventorySelection),
+                ),
+            )
             resetMovementRepeat()
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.L)) {
+            enterLoadoutEdit(snapshot)
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.X)) {
+            inspectCursor = defaultInspectCursor(snapshot)
+            openModalFrame(
+                ModalFrame(
+                    kind = ModalFrameKind.INSPECT,
+                    localState = ModalFrameLocalState(inspectCursor = inspectCursor),
+                ),
+            )
             return null
         }
 
@@ -339,10 +398,20 @@ class InputHandler(
             if (!inscription.requiresTarget) {
                 return PlayerCommand.UseInscription(inscription.hotkey)
             }
-            mode = UiMode.TARGETING
             targetingSlot = inscription.hotkey
             targetingInscriptionHotkey = inscription.hotkey
             targetingCursor = playerPosition(snapshot)
+            openModalFrame(
+                ModalFrame(
+                    kind = ModalFrameKind.TARGETING,
+                    localState =
+                        ModalFrameLocalState(
+                            targetingSlot = inscription.hotkey,
+                            targetingInscriptionHotkey = inscription.hotkey,
+                            targetingCursor = targetingCursor,
+                        ),
+                ),
+            )
             resetMovementRepeat()
             return null
         }
@@ -353,10 +422,19 @@ class InputHandler(
                 return PlayerCommand.UseTalent(slot)
             }
 
-            mode = UiMode.TARGETING
             targetingSlot = slot
             targetingInscriptionHotkey = null
             targetingCursor = defaultTargetCursor(snapshot)
+            openModalFrame(
+                ModalFrame(
+                    kind = ModalFrameKind.TARGETING,
+                    localState =
+                        ModalFrameLocalState(
+                            targetingSlot = slot,
+                            targetingCursor = targetingCursor,
+                        ),
+                ),
+            )
             resetMovementRepeat()
         }
 
@@ -365,7 +443,7 @@ class InputHandler(
 
     private fun pollShopCommand(snapshot: RenderSnapshot): PlayerCommand? {
         val shop = snapshot.uiState.activeShop ?: return null
-        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.I)) {
+        if (input.isKeyJustPressed(Keys.I)) {
             return PlayerCommand.CloseShop
         }
         if (
@@ -383,7 +461,7 @@ class InputHandler(
                 shopOfferSelection = (shopOfferSelection - 1).coerceAtLeast(0)
                 return null
             }
-            if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+            if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
                 shopOfferSelection = (shopOfferSelection + 1).coerceAtMost((shop.offers.size - 1).coerceAtLeast(0))
                 return null
             }
@@ -401,7 +479,7 @@ class InputHandler(
             inventorySelection = (inventorySelection - 1).coerceAtLeast(0)
             return null
         }
-        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
             inventorySelection = (inventorySelection + 1).coerceAtMost((shop.sellEntries.size - 1).coerceAtLeast(0))
             return null
         }
@@ -422,7 +500,7 @@ class InputHandler(
             routeSelection = (routeSelection - 1).coerceAtLeast(0)
             return null
         }
-        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X) || input.isKeyJustPressed(Keys.RIGHT) || input.isKeyJustPressed(Keys.D)) {
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S) || input.isKeyJustPressed(Keys.RIGHT) || input.isKeyJustPressed(Keys.D)) {
             routeSelection = (routeSelection + 1).coerceAtMost((routePanel.options.size - 1).coerceAtLeast(0))
             return null
         }
@@ -443,8 +521,16 @@ class InputHandler(
     }
 
     private fun pollLoadoutCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.L)) {
-            clearLoadoutEdit()
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.L)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE) || isOverlayCloseBinding()) {
+            closeCurrentModalFrame()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleModalFocus()
             return null
         }
 
@@ -454,6 +540,7 @@ class InputHandler(
             input.isKeyJustPressed(Keys.NUM_3) -> loadoutSlotSelection = 3
             input.isKeyJustPressed(Keys.NUM_4) -> loadoutSlotSelection = 4
         }
+        updateTopModalState { state -> state.copy(loadoutSlotSelection = loadoutSlotSelection) }
 
         val reserveSize = snapshot.uiState.reserveTalents.size
         if (reserveSize == 0) {
@@ -462,11 +549,13 @@ class InputHandler(
 
         if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
             loadoutReserveSelection = (loadoutReserveSelection - 1).coerceAtLeast(0)
+            updateTopModalState { state -> state.copy(loadoutReserveSelection = loadoutReserveSelection) }
             return null
         }
 
-        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
             loadoutReserveSelection = (loadoutReserveSelection + 1).coerceAtMost(reserveSize - 1)
+            updateTopModalState { state -> state.copy(loadoutReserveSelection = loadoutReserveSelection) }
             return null
         }
 
@@ -483,8 +572,33 @@ class InputHandler(
     }
 
     private fun pollInspectCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.X)) {
-            clearInspect()
+        if (input.isKeyJustPressed(Keys.ESCAPE)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE) || isOverlayCloseBinding() || input.isKeyJustPressed(Keys.X)) {
+            closeCurrentModalFrame()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleModalFocus()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.SLASH)) {
+            debugMessageKey = "DEBUG inspect.explain-stub.invoked"
+            return null
+        }
+        if (
+            input.isKeyJustPressed(Keys.I) ||
+            input.isKeyJustPressed(Keys.J) ||
+            input.isKeyJustPressed(Keys.K) ||
+            input.isKeyJustPressed(Keys.L)
+        ) {
+            return null
+        }
+
+        val activeKind = modalStack.top()?.kind
+        if (activeKind == ModalFrameKind.ITEM_COMPARE || activeKind == ModalFrameKind.COMBAT_DECISION) {
             return null
         }
 
@@ -496,6 +610,7 @@ class InputHandler(
                     x = (cursor.x + movement.x).coerceIn(0, snapshot.metadata.width - 1),
                     y = (cursor.y + movement.y).coerceIn(0, snapshot.metadata.height - 1),
                 )
+            updateTopModalState { state -> state.copy(inspectCursor = inspectCursor) }
         }
         return null
     }
@@ -510,7 +625,7 @@ class InputHandler(
             validationCursor = validationCursor.moveSection(delta = -1)
             return null
         }
-        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
             validationCursor = validationCursor.moveSection(delta = 1)
             return null
         }
@@ -532,20 +647,13 @@ class InputHandler(
         }
 
         val cursor = inspectCursor ?: defaultInspectCursor(snapshot)
-        val inspectionDelta =
-            when {
-                input.isKeyJustPressed(Keys.I) -> Point(0, -1)
-                input.isKeyJustPressed(Keys.K) -> Point(0, 1)
-                input.isKeyJustPressed(Keys.J) -> Point(-1, 0)
-                input.isKeyJustPressed(Keys.L) -> Point(1, 0)
-                else -> null
-            }
-        if (inspectionDelta != null) {
-            inspectCursor =
-                Point(
-                    x = (cursor.x + inspectionDelta.x).coerceIn(0, snapshot.metadata.width - 1),
-                    y = (cursor.y + inspectionDelta.y).coerceIn(0, snapshot.metadata.height - 1),
-                )
+        if (
+            input.isKeyJustPressed(Keys.I) ||
+            input.isKeyJustPressed(Keys.J) ||
+            input.isKeyJustPressed(Keys.K) ||
+            input.isKeyJustPressed(Keys.L)
+        ) {
+            debugMessageKey = "DEBUG validation.inspect-key.noop"
             return null
         }
 
@@ -570,10 +678,23 @@ class InputHandler(
     }
 
     private fun pollInventoryCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        when (modalStack.top()?.kind) {
+            ModalFrameKind.ITEM_DETAIL -> return pollItemDetailCommand(snapshot)
+            ModalFrameKind.ITEM_COMPARE -> return pollDeferredModalCommand()
+            else -> Unit
+        }
+
         val inventorySize = snapshot.uiState.inventory.size
-        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.I)) {
-            mode = UiMode.MAP
-            resetMovementRepeat()
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE) || isOverlayCloseBinding()) {
+            closeCurrentModalFrame()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleModalFocus()
             return null
         }
 
@@ -583,19 +704,25 @@ class InputHandler(
 
         if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
             inventorySelection = (inventorySelection - 1).coerceAtLeast(0)
+            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
             return null
         }
 
-        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
             inventorySelection = (inventorySelection + 1).coerceAtMost(inventorySize - 1)
+            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
             return null
         }
 
         if (
             input.isKeyJustPressed(Keys.ENTER) ||
-            input.isKeyJustPressed(Keys.SPACE) ||
-            input.isKeyJustPressed(Keys.E)
+            input.isKeyJustPressed(Keys.SPACE)
         ) {
+            pushItemDetailFrame()
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.E)) {
             return PlayerCommand.ActivateInventoryItem(inventorySelection)
         }
 
@@ -606,9 +733,60 @@ class InputHandler(
         return null
     }
 
+    private fun pollItemDetailCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE) || isOverlayCloseBinding()) {
+            closeCurrentModalFrame()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleModalFocus()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.X) || input.isKeyJustPressed(Keys.C)) {
+            pushDeferredFrame(ModalFrameKind.ITEM_COMPARE)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.E)) {
+            val selectedEntry = snapshot.uiState.inventory.getOrNull(inventorySelection) ?: return null
+            return PlayerCommand.ActivateInventoryItem(selectedEntry.index)
+        }
+        return null
+    }
+
+    private fun pollDeferredModalCommand(): PlayerCommand? {
+        if (input.isKeyJustPressed(Keys.ESCAPE)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE) || isOverlayCloseBinding()) {
+            closeCurrentModalFrame()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleModalFocus()
+            return null
+        }
+        return null
+    }
+
     private fun pollTargetingCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (isOverlayCloseBinding()) {
-            clearTargeting()
+        if (modalStack.top()?.kind == ModalFrameKind.COMBAT_DECISION) {
+            return pollCombatDecisionStubCommand()
+        }
+        if (input.isKeyJustPressed(Keys.ESCAPE)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE) || isOverlayCloseBinding()) {
+            closeCurrentModalFrame()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleModalFocus()
             return null
         }
 
@@ -620,6 +798,7 @@ class InputHandler(
                     x = (cursor.x + movement.x).coerceIn(0, snapshot.metadata.width - 1),
                     y = (cursor.y + movement.y).coerceIn(0, snapshot.metadata.height - 1),
                 )
+            updateTopModalState { state -> state.copy(targetingCursor = targetingCursor) }
             return null
         }
 
@@ -631,6 +810,14 @@ class InputHandler(
         }
 
         return null
+    }
+
+    private fun pollCombatDecisionStubCommand(): PlayerCommand? {
+        if (isSaveBinding()) {
+            debugMessageKey = "DEBUG combat-decision.save-blocked.stub"
+            return null
+        }
+        return pollDeferredModalCommand()
     }
 
     private fun pollStatAssignCommand(snapshot: RenderSnapshot): PlayerCommand? {
@@ -649,12 +836,20 @@ class InputHandler(
     }
 
     private fun pollTalentAssignCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.T)) {
-            mode = UiMode.MAP
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.T)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (isOverlayCloseBinding()) {
+            closeCurrentModalFrame()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleModalFocus()
             return null
         }
         if (!canOpenTalentAllocation(snapshot)) {
-            mode = UiMode.MAP
+            closeAllModalFrames()
             return null
         }
         if (input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)) {
@@ -672,11 +867,13 @@ class InputHandler(
             if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
                 loadoutReserveSelection = (loadoutReserveSelection - 1).coerceAtLeast(0)
                 talentAssignFocus = TalentAssignFocus.RESERVE
+                updateTopModalState { state -> state.copy(loadoutReserveSelection = loadoutReserveSelection) }
                 return null
             }
-            if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+            if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
                 loadoutReserveSelection = (loadoutReserveSelection + 1).coerceAtMost(snapshot.uiState.reserveTalents.lastIndex)
                 talentAssignFocus = TalentAssignFocus.RESERVE
+                updateTopModalState { state -> state.copy(loadoutReserveSelection = loadoutReserveSelection) }
                 return null
             }
             if (
@@ -732,20 +929,40 @@ class InputHandler(
     private fun defaultInspectCursor(snapshot: RenderSnapshot): Point = playerPosition(snapshot)
 
     private fun clearTargeting() {
-        mode = UiMode.MAP
         targetingSlot = null
         targetingInscriptionHotkey = null
         targetingCursor = null
-        resetMovementRepeat()
+        removeModalFrames(ModalFrameKind.TARGETING, ModalFrameKind.COMBAT_DECISION)
     }
 
-    private fun clearLoadoutEdit() {
-        mode = UiMode.MAP
-        resetMovementRepeat()
+    private fun restoreRejectedTargetingState(
+        targetingSlot: Int,
+        targetingInscriptionHotkey: Int?,
+        targetingCursor: Point,
+    ) {
+        this.targetingSlot = targetingSlot
+        this.targetingInscriptionHotkey = targetingInscriptionHotkey
+        this.targetingCursor = targetingCursor
+        val updateTargetingFrame: (ModalFrameLocalState) -> ModalFrameLocalState = { localState ->
+            localState.copy(
+                targetingSlot = targetingSlot,
+                targetingInscriptionHotkey = targetingInscriptionHotkey,
+                targetingCursor = targetingCursor,
+            )
+        }
+        if (modalStack.top()?.kind == ModalFrameKind.TARGETING) {
+            updateTopModalState(updateTargetingFrame)
+        } else {
+            openModalFrame(
+                ModalFrame(
+                    kind = ModalFrameKind.TARGETING,
+                    localState = updateTargetingFrame(ModalFrameLocalState()),
+                ),
+            )
+        }
     }
 
     private fun enterTalentAssign(snapshot: RenderSnapshot) {
-        mode = UiMode.TALENT_ASSIGN
         loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
         loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
         talentAssignFocus =
@@ -754,17 +971,22 @@ class InputHandler(
             } else {
                 TalentAssignFocus.RESERVE
             }
-        resetMovementRepeat()
-    }
-
-    private fun clearInspect() {
-        mode = UiMode.MAP
-        inspectCursor = null
-        resetMovementRepeat()
+        openModalFrame(
+            ModalFrame(
+                kind = ModalFrameKind.TALENT_ASSIGN,
+                localState =
+                    ModalFrameLocalState(
+                        loadoutSlotSelection = loadoutSlotSelection,
+                        loadoutReserveSelection = loadoutReserveSelection,
+                    ),
+            ),
+        )
     }
 
     private fun clearValidation() {
         mode = UiMode.MAP
+        modalStack.clear()
+        paneFocusController.onPassiveTakeover()
         resetMovementRepeat()
     }
 
@@ -784,11 +1006,185 @@ class InputHandler(
         ).size
 
     private fun enterLoadoutEdit(snapshot: RenderSnapshot) {
-        mode = UiMode.LOADOUT_EDIT
         loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
         loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
+        openModalFrame(
+            ModalFrame(
+                kind = ModalFrameKind.LOADOUT_EDIT,
+                localState =
+                    ModalFrameLocalState(
+                        loadoutSlotSelection = loadoutSlotSelection,
+                        loadoutReserveSelection = loadoutReserveSelection,
+                    ),
+            ),
+        )
+    }
+
+    private fun pollSaveBinding(): PlayerCommand? =
+        when (modalStack.top()?.kind) {
+            ModalFrameKind.TARGETING -> {
+                showUiMessage("ui.message.save.blocked-in-targeting")
+                null
+            }
+
+            ModalFrameKind.COMBAT_DECISION -> {
+                debugMessageKey = "DEBUG combat-decision.save-blocked.stub"
+                null
+            }
+
+            else ->
+                when (mode) {
+                    UiMode.VALIDATION -> {
+                        showUiMessage("ui.message.save.blocked-in-validation")
+                        null
+                    }
+
+                    UiMode.TARGETING -> {
+                        showUiMessage("ui.message.save.blocked-in-targeting")
+                        null
+                    }
+
+                    else -> PlayerCommand.SaveGame
+                }
+        }
+
+    private fun openModalFrame(frame: ModalFrame): Boolean {
+        if (!modalStack.canPush()) {
+            showUiMessage("ui.message.modal.stack-overflow")
+            return false
+        }
+        modalStack.push(frame)
+        paneFocusController.onModalOpened()
+        updateModeFromModalStack()
+        resetMovementRepeat()
+        return true
+    }
+
+    private fun pushItemDetailFrame() {
+        val selected = inventorySelection
+        openModalFrame(
+            ModalFrame(
+                kind = ModalFrameKind.ITEM_DETAIL,
+                localState = ModalFrameLocalState(inventorySelection = selected),
+            ),
+        )
+    }
+
+    private fun pushDeferredFrame(kind: ModalFrameKind) {
+        openModalFrame(
+            ModalFrame(
+                kind = kind,
+                localState = ModalFrameLocalState(inventorySelection = inventorySelection),
+            ),
+        )
+    }
+
+    private fun closeCurrentModalFrame() {
+        val popped = modalStack.pop()
+        val targetingFrameStillActive = modalStack.frames().any { frame -> frame.kind == ModalFrameKind.TARGETING }
+        if (
+            popped?.kind == ModalFrameKind.TARGETING ||
+            (popped?.kind == ModalFrameKind.COMBAT_DECISION && !targetingFrameStillActive)
+        ) {
+            targetingSlot = null
+            targetingInscriptionHotkey = null
+            targetingCursor = null
+        }
+        if (popped?.kind == ModalFrameKind.INSPECT) {
+            inspectCursor = null
+        }
+        if (modalStack.isEmpty) {
+            paneFocusController.onModalClosed()
+        }
+        updateModeFromModalStack()
         resetMovementRepeat()
     }
+
+    private fun closeAllModalFrames() {
+        modalStack.clear()
+        targetingSlot = null
+        targetingInscriptionHotkey = null
+        targetingCursor = null
+        inspectCursor = null
+        paneFocusController.onModalClosed()
+        updateModeFromModalStack()
+        resetMovementRepeat()
+    }
+
+    private fun resetActiveModalForPassiveTakeover(messageKey: String) {
+        showUiMessage(messageKey)
+        modalStack.clear()
+        targetingSlot = null
+        targetingInscriptionHotkey = null
+        targetingCursor = null
+        inspectCursor = null
+        paneFocusController.onPassiveTakeover()
+        resetMovementRepeat()
+    }
+
+    private fun removeModalFrames(vararg kinds: ModalFrameKind) {
+        if (modalStack.isEmpty) {
+            mode = UiMode.MAP
+            resetMovementRepeat()
+            return
+        }
+        val removedKinds = kinds.toSet()
+        val retained = modalStack.frames().filterNot { frame -> frame.kind in removedKinds }
+        modalStack.clear()
+        retained.forEach(modalStack::push)
+        if (modalStack.isEmpty) {
+            paneFocusController.onModalClosed()
+        }
+        updateModeFromModalStack()
+        resetMovementRepeat()
+    }
+
+    private fun showUiMessage(messageKey: String) {
+        uiMessageKey = messageKey
+        uiMessageFramesRemaining = uiMessageDisplayFrames
+    }
+
+    private fun advanceUiMessageFrame() {
+        if (uiMessageFramesRemaining <= 0) {
+            uiMessageKey = null
+            return
+        }
+        uiMessageFramesRemaining -= 1
+        if (uiMessageFramesRemaining == 0) {
+            uiMessageKey = null
+        }
+    }
+
+    private fun cycleModalFocus() {
+        val delta = if (shiftPressed()) -1 else 1
+        updateTopModalState { state -> state.copy(focusIndex = Math.floorMod(state.focusIndex + delta, 3)) }
+    }
+
+    private fun updateTopModalState(transform: (ModalFrameLocalState) -> ModalFrameLocalState) {
+        if (modalStack.isEmpty) {
+            return
+        }
+        modalStack.replaceTop { frame -> frame.copy(localState = transform(frame.localState)) }
+    }
+
+    private fun updateModeFromModalStack() {
+        mode = modalStack.top()?.kind?.toUiMode() ?: UiMode.MAP
+    }
+
+    private fun ModalFrameKind.toUiMode(): UiMode =
+        when (this) {
+            ModalFrameKind.INVENTORY,
+            ModalFrameKind.ITEM_DETAIL,
+            ModalFrameKind.ITEM_COMPARE,
+            -> UiMode.INVENTORY
+
+            ModalFrameKind.LOADOUT_EDIT -> UiMode.LOADOUT_EDIT
+            ModalFrameKind.TALENT_ASSIGN -> UiMode.TALENT_ASSIGN
+            ModalFrameKind.INSPECT -> UiMode.INSPECT
+            ModalFrameKind.TARGETING,
+            ModalFrameKind.COMBAT_DECISION,
+            -> UiMode.TARGETING
+        }
 
     private fun toggleValidationModeIfRequested(snapshot: RenderSnapshot): Boolean {
         if (input.isKeyJustPressed(Keys.F9).not()) {
@@ -801,6 +1197,8 @@ class InputHandler(
             UiMode.MAP,
             UiMode.INSPECT,
             -> {
+                modalStack.clear()
+                paneFocusController.onPassiveTakeover()
                 mode = UiMode.VALIDATION
                 validationCursor = ValidationOverlayCursor()
                 inspectCursor = inspectCursor ?: defaultInspectCursor(snapshot)
@@ -834,17 +1232,14 @@ class InputHandler(
 
     private fun isAscendBinding(): Boolean = shiftPressed() && input.isKeyJustPressed(Keys.COMMA)
 
-    private fun controlPressed(): Boolean = input.isKeyPressed(Keys.CONTROL_LEFT) || input.isKeyPressed(Keys.CONTROL_RIGHT)
+    private fun controlPressed(): Boolean =
+        input.isKeyPressed(Keys.CONTROL_LEFT) ||
+            input.isKeyPressed(Keys.CONTROL_RIGHT) ||
+            input.isKeyPressed(Keys.SYM)
 
     private fun shiftPressed(): Boolean = input.isKeyPressed(Keys.SHIFT_LEFT) || input.isKeyPressed(Keys.SHIFT_RIGHT)
 
     private fun hasPendingStatAllocation(snapshot: RenderSnapshot): Boolean = snapshot.uiState.playerStatus.statPoints > 0
-
-    private fun hasPendingTalentAllocation(snapshot: RenderSnapshot): Boolean =
-        snapshot.uiState.playerStatus.talentPoints > 0 ||
-            snapshot.uiState.playerStatus.raceTalentPoints > 0 ||
-            snapshot.uiState.talents.any(TalentSlotSnapshot::hasPendingAllocation) ||
-            snapshot.uiState.reserveTalents.any(TalentReserveSnapshot::hasPendingAllocation)
 
     private fun canOpenTalentAllocation(snapshot: RenderSnapshot): Boolean =
         snapshot.uiState.talents.isNotEmpty() || snapshot.uiState.reserveTalents.isNotEmpty()

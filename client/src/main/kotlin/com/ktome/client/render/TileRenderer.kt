@@ -14,6 +14,8 @@ import com.ktome.client.input.UiMode
 import com.ktome.client.render.layout.InfoSurfaceLayout
 import com.ktome.client.render.layout.InfoSurfaceLayoutRequest
 import com.ktome.client.render.layout.InfoSurfaceLayoutSolver
+import com.ktome.client.ui.layout.PaneFocusAnchor
+import com.ktome.client.ui.panel.LogPresentationModel
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.snapshot.RenderSnapshot
@@ -282,8 +284,9 @@ class TileRenderer(
                 drawCursor(canvas, cursor.x, cursor.y, mapHeight, layout.mapOffsetY, cellWidth, cellHeight, UiDesignTokens.color.focus.ring.color())
             }
 
-            drawHud(canvas, model.hud, layout)
-            drawMessages(canvas, model.messageLines, layout)
+            drawPaneFocusRing(canvas, overlayState, layout, mapWidth, mapHeight, cellWidth, cellHeight)
+            drawHud(canvas, model, layout)
+            drawMessages(canvas, model.logPresentation, model.messageLines, layout)
             drawSidebar(canvas, model.sidebar, layout, mapHeight, cellHeight)
         }
 
@@ -318,9 +321,13 @@ class TileRenderer(
 
         private fun drawHud(
             canvas: TileCanvas,
-            hud: TileHudModel,
+            model: TileRenderModel,
             layout: TileLayoutMetrics,
         ) {
+            val hud = model.hud
+            val playerCard = model.playerCard
+            val targetCard = model.targetCard
+            val actionPanel = model.actionPanel
             val textTopY = layout.cardY + layout.cardHeight - 16f
             val smallLineHeight = 26f
             val focusNameY = layout.cardY + 72f
@@ -334,7 +341,7 @@ class TileRenderer(
 
             canvas.drawText(
                 TileTextStyle.UI,
-                truncateTextToWidth(hud.playerName, layout.infoWidth - 24f, TileTextStyle.UI),
+                truncateTextToWidth(playerCard.name.ifBlank { playerCard.emptyStateText }, layout.infoWidth - 24f, TileTextStyle.UI),
                 layout.infoX + 12f,
                 textTopY,
                 tone(TileTextTone.GOLD),
@@ -390,7 +397,7 @@ class TileRenderer(
             hud.focusIcon?.let { icon ->
                 canvas.drawAsset(icon, layout.focusX + 12f, layout.cardY + 38f, 32f, 32f)
             }
-            hud.focusName?.let { name ->
+            targetCard.title?.let { name ->
                 canvas.drawText(
                     TileTextStyle.SMALL,
                     truncateTextToWidth(name, layout.focusWidth - 66f, TileTextStyle.SMALL),
@@ -399,7 +406,7 @@ class TileRenderer(
                     tone(TileTextTone.GOLD),
                 )
             }
-            hud.focusLines.forEachIndexed { index, line ->
+            targetCard.lines.forEachIndexed { index, line ->
                 canvas.drawText(
                     TileTextStyle.SMALL,
                     truncateTextToWidth(line, layout.focusWidth - 24f, TileTextStyle.SMALL),
@@ -409,20 +416,24 @@ class TileRenderer(
                 )
             }
 
-            hud.hotbar.forEachIndexed { index, slot ->
+            if (actionPanel.isEmpty) {
+                return
+            }
+            actionPanel.entries.forEachIndexed { index, entry ->
+                val slot = hud.hotbar.getOrNull(index)
                 val x = layout.hotbarX + index * (layout.hotbarCardWidth + layout.hotbarGap)
                 canvas.drawRect(x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, UiDesignTokens.color.surface.raised.color())
-                slot.icon?.let { icon -> canvas.drawAsset(icon, x + 10f, layout.hotbarY + 18f, 44f, 44f) }
-                slot.accentIcon?.let { icon -> canvas.drawAsset(icon, x + 40f, layout.hotbarY + 48f, 16f, 16f) }
-                canvas.drawText(TileTextStyle.SMALL, slot.slot.toString(), x + 8f, layout.hotbarY + 74f, tone(TileTextTone.GOLD))
+                slot?.icon?.let { icon -> canvas.drawAsset(icon, x + 10f, layout.hotbarY + 18f, 44f, 44f) }
+                slot?.accentIcon?.let { icon -> canvas.drawAsset(icon, x + 40f, layout.hotbarY + 48f, 16f, 16f) }
+                canvas.drawText(TileTextStyle.SMALL, entry.hotkey, x + 8f, layout.hotbarY + 74f, tone(TileTextTone.GOLD))
                 canvas.drawText(
                     TileTextStyle.SMALL,
-                    truncateTextToWidth(slot.label, layout.hotbarCardWidth - 64f, TileTextStyle.SMALL),
+                    truncateTextToWidth(entry.label, layout.hotbarCardWidth - 64f, TileTextStyle.SMALL),
                     x + 62f,
                     layout.hotbarY + 66f,
                     tone(TileTextTone.WHITE),
                 )
-                slot.cooldownText?.let { cooldown ->
+                slot?.cooldownText?.let { cooldown ->
                     canvas.drawText(
                         TileTextStyle.SMALL,
                         truncateTextToWidth(cooldown, layout.hotbarCardWidth - 64f, TileTextStyle.SMALL),
@@ -432,7 +443,7 @@ class TileRenderer(
                     )
                 } ?: canvas.drawText(
                     TileTextStyle.SMALL,
-                    truncateTextToWidth(slot.resourceText, layout.hotbarCardWidth - 64f, TileTextStyle.SMALL),
+                    truncateTextToWidth(slot?.resourceText.orEmpty(), layout.hotbarCardWidth - 64f, TileTextStyle.SMALL),
                     x + 62f,
                     layout.hotbarY + 34f,
                     tone(TileTextTone.LIGHT_GRAY),
@@ -442,12 +453,20 @@ class TileRenderer(
 
         private fun drawMessages(
             canvas: TileCanvas,
+            logPresentation: LogPresentationModel,
             messageLines: List<TileMessageLine>,
             layout: TileLayoutMetrics,
         ) {
             val topY = layout.cardY + layout.cardHeight - 18f
             val maxChars = maxCharsForWidth(layout.logWidth - 24f, TileTextStyle.SMALL)
-            messageLines.takeLast(messageRows).forEachIndexed { index, line ->
+            val overlayMessages =
+                if (messageLines.size > logPresentation.entries.size) {
+                    messageLines.drop(logPresentation.entries.size)
+                } else {
+                    emptyList()
+                }
+            val displayLines = messageLines.take(logPresentation.entries.size) + overlayMessages
+            displayLines.takeLast(messageRows).forEachIndexed { index, line ->
                 canvas.drawText(
                     TileTextStyle.SMALL,
                     truncateText(line.text, maxChars),
@@ -456,6 +475,71 @@ class TileRenderer(
                     tone(line.tone),
                 )
             }
+        }
+
+        private fun drawPaneFocusRing(
+            canvas: TileCanvas,
+            overlayState: OverlayState,
+            layout: TileLayoutMetrics,
+            mapWidth: Int,
+            mapHeight: Int,
+            cellWidth: Float,
+            cellHeight: Float,
+        ) {
+            if (overlayState.mode != UiMode.MAP) {
+                return
+            }
+            val stroke = UiDesignTokens.stroke.medium
+            val color = UiDesignTokens.color.focus.ring.color()
+            when (overlayState.paneFocusAnchor) {
+                PaneFocusAnchor.WORLD ->
+                    drawRectOutline(
+                        canvas = canvas,
+                        x = 0f,
+                        y = layout.mapOffsetY,
+                        width = mapWidth * cellWidth,
+                        height = mapHeight * cellHeight,
+                        stroke = stroke,
+                        color = color,
+                    )
+
+                PaneFocusAnchor.CONTEXT ->
+                    drawRectOutline(
+                        canvas = canvas,
+                        x = layout.logX,
+                        y = layout.cardY,
+                        width = layout.logWidth,
+                        height = layout.cardHeight,
+                        stroke = stroke,
+                        color = color,
+                    )
+
+                PaneFocusAnchor.CHARACTER_ACTION ->
+                    drawRectOutline(
+                        canvas = canvas,
+                        x = layout.focusX,
+                        y = layout.cardY,
+                        width = layout.focusWidth,
+                        height = layout.cardHeight,
+                        stroke = stroke,
+                        color = color,
+                    )
+            }
+        }
+
+        private fun drawRectOutline(
+            canvas: TileCanvas,
+            x: Float,
+            y: Float,
+            width: Float,
+            height: Float,
+            stroke: Float,
+            color: Color,
+        ) {
+            canvas.drawRect(x, y, width, stroke, color)
+            canvas.drawRect(x, y + height - stroke, width, stroke, color)
+            canvas.drawRect(x, y, stroke, height, color)
+            canvas.drawRect(x + width - stroke, y, stroke, height, color)
         }
 
         private fun drawCombatFeedback(
@@ -540,10 +624,7 @@ class TileRenderer(
         ) {
             val worldX = x * cellWidth
             val worldY = mapOffsetY + (mapHeight - y - 1) * cellHeight
-            canvas.drawRect(worldX, worldY, cellWidth, 2f, color)
-            canvas.drawRect(worldX, worldY + cellHeight - 2f, cellWidth, 2f, color)
-            canvas.drawRect(worldX, worldY, 2f, cellHeight, color)
-            canvas.drawRect(worldX + cellWidth - 2f, worldY, 2f, cellHeight, color)
+            drawRectOutline(canvas, worldX, worldY, cellWidth, cellHeight, 2f, color)
         }
 
         private fun drawPlacement(
