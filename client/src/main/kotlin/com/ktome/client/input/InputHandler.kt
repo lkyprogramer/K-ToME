@@ -184,7 +184,8 @@ class InputHandler(
     ) {
         when (command) {
             is PlayerCommand.UseTalent -> {
-                if (command.target == null) {
+                val target = command.target
+                if (target == null) {
                     reconcileMode(snapshot)
                     return
                 }
@@ -192,24 +193,17 @@ class InputHandler(
                 if (consumed) {
                     clearTargeting()
                 } else {
-                    targetingSlot = command.slot
-                    targetingInscriptionHotkey = null
-                    targetingCursor = command.target
-                    openModalFrame(
-                        ModalFrame(
-                            kind = ModalFrameKind.TARGETING,
-                            localState =
-                                ModalFrameLocalState(
-                                    targetingSlot = command.slot,
-                                    targetingCursor = command.target,
-                                ),
-                        ),
+                    restoreRejectedTargetingState(
+                        targetingSlot = command.slot,
+                        targetingInscriptionHotkey = null,
+                        targetingCursor = target,
                     )
                 }
             }
 
             is PlayerCommand.UseInscription -> {
-                if (command.target == null) {
+                val target = command.target
+                if (target == null) {
                     reconcileMode(snapshot)
                     return
                 }
@@ -217,19 +211,10 @@ class InputHandler(
                 if (consumed) {
                     clearTargeting()
                 } else {
-                    targetingSlot = command.hotkey
-                    targetingInscriptionHotkey = command.hotkey
-                    targetingCursor = command.target
-                    openModalFrame(
-                        ModalFrame(
-                            kind = ModalFrameKind.TARGETING,
-                            localState =
-                                ModalFrameLocalState(
-                                    targetingSlot = command.hotkey,
-                                    targetingInscriptionHotkey = command.hotkey,
-                                    targetingCursor = command.target,
-                                ),
-                        ),
+                    restoreRejectedTargetingState(
+                        targetingSlot = command.hotkey,
+                        targetingInscriptionHotkey = command.hotkey,
+                        targetingCursor = target,
                     )
                 }
             }
@@ -948,6 +933,33 @@ class InputHandler(
         targetingInscriptionHotkey = null
         targetingCursor = null
         removeModalFrames(ModalFrameKind.TARGETING, ModalFrameKind.COMBAT_DECISION)
+    }
+
+    private fun restoreRejectedTargetingState(
+        targetingSlot: Int,
+        targetingInscriptionHotkey: Int?,
+        targetingCursor: Point,
+    ) {
+        this.targetingSlot = targetingSlot
+        this.targetingInscriptionHotkey = targetingInscriptionHotkey
+        this.targetingCursor = targetingCursor
+        val updateTargetingFrame: (ModalFrameLocalState) -> ModalFrameLocalState = { localState ->
+            localState.copy(
+                targetingSlot = targetingSlot,
+                targetingInscriptionHotkey = targetingInscriptionHotkey,
+                targetingCursor = targetingCursor,
+            )
+        }
+        if (modalStack.top()?.kind == ModalFrameKind.TARGETING) {
+            updateTopModalState(updateTargetingFrame)
+        } else {
+            openModalFrame(
+                ModalFrame(
+                    kind = ModalFrameKind.TARGETING,
+                    localState = updateTargetingFrame(ModalFrameLocalState()),
+                ),
+            )
+        }
     }
 
     private fun enterTalentAssign(snapshot: RenderSnapshot) {

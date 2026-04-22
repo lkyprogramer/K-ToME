@@ -593,6 +593,67 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `rejected targeted talent command reuses current targeting frame`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talents =
+                    listOf(
+                        activeTalent(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            requiresTarget = true,
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.NUM_1))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(1, handler.overlayState().modalFrames.size)
+        input.clear()
+
+        repeat(2) {
+            input.frame(justPressed = setOf(Keys.ENTER))
+            val command = requireNotNull(handler.pollCommand(snapshot))
+            assertEquals(PlayerCommand.UseTalent(slot = 1, target = Point(3, 3)), command)
+            handler.onCommandResult(snapshot, command, consumed = false)
+            assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+            assertEquals(ModalFrameKind.TARGETING, handler.overlayState().activeModalKind)
+            assertEquals(1, handler.overlayState().modalFrames.size)
+            assertEquals(1, handler.overlayState().targetingSlot)
+            assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
+            input.clear()
+        }
+    }
+
+    @Test
+    fun `rejected targeted inscription command reuses current targeting frame`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout(inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)))
+
+        input.frame(justPressed = setOf(Keys.NUM_5))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(1, handler.overlayState().modalFrames.size)
+        input.clear()
+
+        repeat(2) {
+            input.frame(justPressed = setOf(Keys.ENTER))
+            val command = requireNotNull(handler.pollCommand(snapshot))
+            assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(3, 3)), command)
+            handler.onCommandResult(snapshot, command, consumed = false)
+            assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+            assertEquals(ModalFrameKind.TARGETING, handler.overlayState().activeModalKind)
+            assertEquals(1, handler.overlayState().modalFrames.size)
+            assertEquals(5, handler.overlayState().targetingInscriptionHotkey)
+            assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
+            input.clear()
+        }
+    }
+
+    @Test
     fun `holding a movement key repeats move after a short delay`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
@@ -1096,6 +1157,13 @@ class InputHandlerTest {
         inventory: List<InventoryEntrySnapshot> = emptyList(),
         activeShop: ShopPanelSnapshot? = null,
         activeRouteSelection: RouteSelectionSnapshot? = null,
+        talents: List<TalentSlotSnapshot> =
+            listOf(
+                activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
+                activeTalent(slot = 2, talentId = "shield_bash", nameKey = "talent.vanguard.shield_bash.name"),
+                activeTalent(slot = 3, talentId = "guard_stance", nameKey = "talent.vanguard.guard_stance.name"),
+                activeTalent(slot = 4, talentId = "war_cry", nameKey = "talent.vanguard.war_cry.name"),
+            ),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -1146,13 +1214,7 @@ class InputHandlerTest {
                             speed = 100,
                         ),
                     equipment = emptyList(),
-                    talents =
-                        listOf(
-                            activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
-                            activeTalent(slot = 2, talentId = "shield_bash", nameKey = "talent.vanguard.shield_bash.name"),
-                            activeTalent(slot = 3, talentId = "guard_stance", nameKey = "talent.vanguard.guard_stance.name"),
-                            activeTalent(slot = 4, talentId = "war_cry", nameKey = "talent.vanguard.war_cry.name"),
-                        ),
+                    talents = talents,
                     reserveTalents = reserveTalents,
                     inscriptions = inscriptions,
                     inventory = inventory,
@@ -1169,6 +1231,7 @@ class InputHandlerTest {
         ownerType: TalentTreeOwnerType = TalentTreeOwnerType.PROFESSION,
         treeOwnerId: String = "vanguard",
         hasPendingAllocation: Boolean = false,
+        requiresTarget: Boolean = false,
     ): TalentSlotSnapshot =
         TalentSlotSnapshot(
             slot = slot,
@@ -1185,7 +1248,7 @@ class InputHandlerTest {
             minRange = 0,
             currentCooldown = 0,
             maxCooldown = 3,
-            requiresTarget = false,
+            requiresTarget = requiresTarget,
             hasPendingAllocation = hasPendingAllocation,
         )
 
