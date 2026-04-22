@@ -4,6 +4,7 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -44,6 +45,33 @@ class MainMenuScreenTextTest {
     }
 
     @Test
+    fun `main menu help lines stay between summary and footer`() {
+        val footerTopY = mainMenuFooterLanguageY(entryCount = 4) + MAIN_MENU_FOOTER_LINE_HEIGHT
+
+        assertTrue(mainMenuHelpLineY(0) + MAIN_MENU_FOOTER_LINE_HEIGHT <= MAIN_MENU_PLAYER_CREATION_SECTION_BOTTOM_Y)
+        assertTrue(mainMenuHelpLineY(1) + MAIN_MENU_FOOTER_LINE_HEIGHT <= mainMenuHelpLineY(0))
+        assertTrue(mainMenuHelpLineY(1) - MAIN_MENU_FOOTER_LINE_HEIGHT >= footerTopY)
+        assertTrue(MAIN_MENU_BUILD_SUMMARY_X + MAIN_MENU_HELP_MAX_WIDTH <= menuWidth)
+    }
+
+    @Test
+    fun `main menu help copy remains compact for the right column`() {
+        val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val zhLocalizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
+
+        val helpKeys = listOf("ui.menu.help.primary-keys", "ui.menu.help.safe-start")
+        assertTrue(helpKeys.all { key -> enLocalizer.text(key).length <= 64 })
+        assertTrue(helpKeys.all { key -> zhLocalizer.text(key).length <= 24 })
+    }
+
+    @Test
+    fun `build summary leaves enough width at the minimum menu breakpoint`() {
+        val minimumMenuWidth = 960f
+
+        assertTrue(minimumMenuWidth - MAIN_MENU_BUILD_SUMMARY_X >= 380f)
+    }
+
+    @Test
     fun `selection labels keep profession and race independent`() {
         val zhLocalizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
         val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
@@ -61,6 +89,54 @@ class MainMenuScreenTextTest {
 
         assertEquals("Status: Ready to start", selectionStateText(enLocalizer, com.ktome.core.profile.ClassPlayabilityState.PLAYABLE))
         assertEquals("状态：锁定", selectionStateText(zhLocalizer, com.ktome.core.profile.ClassPlayabilityState.LOCKED))
+    }
+
+    @Test
+    fun `build capability lines resolve through menu summary keys`() {
+        val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+
+        val text =
+            buildCapabilityText(
+                enLocalizer,
+                BuildCapabilityLine("ui.menu.build.class-roster.label", "ui.menu.build.class-roster.value"),
+            )
+
+        assertEquals("Classes: 4 foundation classes playable", text)
+    }
+
+    @Test
+    fun `main menu controls describe locale toggle instead of loadout`() {
+        val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val zhLocalizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
+
+        assertTrue(enLocalizer.text("ui.menu.controls").contains("L switch language"))
+        assertFalse(enLocalizer.text("ui.menu.controls").contains("loadout"))
+        assertTrue(zhLocalizer.text("ui.menu.controls").contains("L 切换语言"))
+        assertFalse(zhLocalizer.text("ui.menu.controls").contains("装备"))
+    }
+
+    @Test
+    fun `footer notice prefers reason-specific unavailable copy`() {
+        val snapshot =
+            textSnapshot(
+                continueDisabledReason = "Save file could not be read.",
+                continueDisabledDetail = "The save cannot be loaded. Copy error detail if you need to report it.",
+            )
+
+        assertEquals("Save file could not be read.", snapshot.footerNotice)
+    }
+
+    @Test
+    fun `footer notice keeps explicit menu notice above unavailable copy`() {
+        val snapshot =
+            textSnapshot(
+                continueDisabledReason = "Save file could not be read.",
+                continueDisabledDetail = "The save cannot be loaded. Copy error detail if you need to report it.",
+                notice = "Continue error detail copied.",
+            )
+
+        assertEquals("Continue error detail copied.", snapshot.footerNotice)
+        assertNull(textSnapshot().footerNotice)
     }
 
     @Test
@@ -94,4 +170,29 @@ class MainMenuScreenTextTest {
         )
         assertFalse(zhNote.contains("开发验证"))
     }
+
+    private fun textSnapshot(
+        continueDisabledReason: String? = null,
+        continueDisabledDetail: String? = null,
+        notice: String? = null,
+    ): MainMenuTextSnapshot =
+        MainMenuTextSnapshot(
+            title = "",
+            subtitle = "",
+            profession = "",
+            professionState = "",
+            professionDescription = "",
+            professionResourceHint = "",
+            race = "",
+            raceState = "",
+            raceDescription = "",
+            entries = emptyList(),
+            buildSummary = emptyList(),
+            helpLines = emptyList(),
+            continueDisabledReason = continueDisabledReason,
+            continueDisabledDetail = continueDisabledDetail,
+            language = "",
+            controls = "",
+            notice = notice,
+        )
 }

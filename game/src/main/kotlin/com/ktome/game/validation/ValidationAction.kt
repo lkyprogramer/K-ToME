@@ -100,6 +100,10 @@ sealed interface ValidationAction {
         override val family: ValidationActionFamily = ValidationActionFamily.ENCOUNTER
     }
 
+    data object TriggerBossTelegraph : ValidationAction {
+        override val family: ValidationActionFamily = ValidationActionFamily.ENCOUNTER
+    }
+
     data object KillNearestHostile : ValidationAction {
         override val family: ValidationActionFamily = ValidationActionFamily.ENCOUNTER
     }

@@ -23,6 +23,8 @@ import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestResourceLoader
 import com.ktome.client.input.InputSource
+import com.ktome.client.screen.ContinueAvailability
+import com.ktome.client.screen.ContinueUnavailableReasonCode
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.ValidationSetupScreen
 import com.ktome.client.screen.selectionLabel
@@ -115,7 +117,10 @@ class GameAppLifecycleTest {
         saveManager.savePath().writeText("""{"version":2,"timestampEpochMillis":123}""")
         val coordinator = LifecycleCoordinator(saveManager)
 
-        assertFalse(coordinator.refreshContinueAvailability())
+        val availability = coordinator.refreshContinueAvailabilityState()
+
+        assertTrue(availability is ContinueAvailability.Unavailable)
+        assertEquals(ContinueUnavailableReasonCode.VERSION_MISMATCH, (availability as ContinueAvailability.Unavailable).reasonCode)
         assertTrue(coordinator.consumeNotice()?.contains("Legacy saves") == true)
     }
 
@@ -538,7 +543,6 @@ class GameAppLifecycleTest {
             val input =
                 QueueInputSource(
                     com.badlogic.gdx.Input.Keys.DOWN,
-                    com.badlogic.gdx.Input.Keys.DOWN,
                     com.badlogic.gdx.Input.Keys.ENTER,
                 )
             val app =
@@ -565,11 +569,61 @@ class GameAppLifecycleTest {
     }
 
     @Test
+    fun `main menu copies unavailable continue payload to clipboard`() {
+        var copiedPayload: String? = null
+        val savePath = tempDir.resolve("copy-unavailable-continue/save/run-save.json")
+        val app =
+            GameApp(
+                saveManager = SaveManager(tempDir.resolve("copy-unavailable-continue/save")),
+                validationSaveManager = SaveManager(tempDir.resolve("copy-unavailable-continue/validation-save")),
+                profileManager = ProfileManager(tempDir.resolve("copy-unavailable-continue/profile")),
+                validationProfileManager = ProfileManager(tempDir.resolve("copy-unavailable-continue/validation-profile")),
+                renderEnabled = false,
+            )
+        val screen =
+            MainMenuScreen(
+                app = app,
+                continueAvailability =
+                    com.ktome.client.screen.ContinueAvailability.Unavailable(
+                        reasonCode = com.ktome.client.screen.ContinueUnavailableReasonCode.CORRUPTED,
+                        savePath = savePath.toString(),
+                    ),
+                playerCreationState =
+                    PlayerCreationState(
+                        professionOptions = listOf(professionOption("vanguard")),
+                        raceOptions = listOf(raceOption("human")),
+                        selection = PlayerCreationSelection(professionId = "vanguard", raceId = "human"),
+                    ),
+                inputSource = QueueInputSource(com.badlogic.gdx.Input.Keys.C),
+                renderEnabled = false,
+                copyToClipboard = { payload ->
+                    copiedPayload = payload
+                    true
+                },
+            )
+        try {
+            screen.render(0f)
+
+            val copied = requireNotNull(copiedPayload)
+            assertTrue(copied.contains("savePath: $savePath"))
+            assertTrue(copied.contains("reasonCode: CORRUPTED"))
+            assertTrue(copied.contains("gameVersion:"))
+            assertTrue(copied.contains("[ktome/"))
+            assertEquals(
+                LocalizationBundle.load().translator(GameLocale.ZH_CN).text("ui.menu.continue.error.copied"),
+                screen.textSnapshot().notice,
+            )
+        } finally {
+            screen.dispose()
+            app.dispose()
+        }
+    }
+
+    @Test
     fun `validation setup can start the default preset session`() {
         withHeadlessGdx {
             val input = QueueInputSource()
             input.push(
-                com.badlogic.gdx.Input.Keys.DOWN,
                 com.badlogic.gdx.Input.Keys.DOWN,
                 com.badlogic.gdx.Input.Keys.ENTER,
             )

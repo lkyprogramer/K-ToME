@@ -5,6 +5,7 @@ import com.ktome.client.automationGeneratedFloor
 import com.ktome.client.automationWorld
 import com.ktome.client.fixtureAutomationMovePlayerTo
 import com.ktome.client.input.InputHandler
+import com.ktome.client.screen.ContinueAvailability
 import com.ktome.client.screen.MainMenuAction
 import com.ktome.client.screen.MainMenuController
 import com.ktome.core.ai.BossEncounterState
@@ -51,8 +52,8 @@ class InputReplayFullGameLoopTest {
             )
 
         assertFalse(saveManager.hasSave())
-        val newGameAction = pressMenu(menu, menuInput, hasSave = false, justPressed = setOf(Keys.ENTER))
-        assertEquals(MainMenuAction.StartNewGame, newGameAction)
+        val newGameAction = pressMenu(menu, menuInput, continueAvailability = ContinueAvailability.Absent, justPressed = setOf(Keys.ENTER))
+        assertEquals(MainMenuAction.QuickStart, newGameAction)
 
         val session =
             GameModule.newFoundationSession(
@@ -69,10 +70,10 @@ class InputReplayFullGameLoopTest {
         assertTrue(runCommand(session, inputHandler, justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S)))
         assertTrue(saveManager.hasSave())
 
-        val continueSelection = pressMenu(menu, menuInput, hasSave = true, justPressed = setOf(Keys.DOWN))
+        val continueSelection = pressMenu(menu, menuInput, continueAvailability = ContinueAvailability.Available, justPressed = setOf(Keys.DOWN))
         assertNull(continueSelection)
-        val continueAction = pressMenu(menu, menuInput, hasSave = true, justPressed = setOf(Keys.ENTER))
-        assertEquals(MainMenuAction.ContinueGame, continueAction)
+        val continueAction = pressMenu(menu, menuInput, continueAvailability = ContinueAvailability.Available, justPressed = setOf(Keys.ENTER))
+        assertEquals(MainMenuAction.Continue, continueAction)
 
         val continued = GameModule.loadFoundationSession(saveManager)
         assertNotNull(continued)
@@ -84,10 +85,8 @@ class InputReplayFullGameLoopTest {
         assertTrue(continuedSession.runOutcome() is RunOutcome.Victory)
         assertFalse(saveManager.hasSave())
 
-        val secondNewGameAction = pressMenu(menu, menuInput, hasSave = false, justPressed = setOf(Keys.UP))
-        assertNull(secondNewGameAction)
-        val wrapAroundAction = pressMenu(menu, menuInput, hasSave = false, justPressed = setOf(Keys.ENTER))
-        assertEquals(MainMenuAction.StartNewGame, wrapAroundAction)
+        val secondNewGameAction = pressMenu(menu, menuInput, continueAvailability = ContinueAvailability.Absent, justPressed = setOf(Keys.ENTER))
+        assertEquals(MainMenuAction.QuickStart, secondNewGameAction)
 
         val secondRun = GameModule.newFoundationSession(FoundationGameConfig(), saveManager)
         val secondInput = InputHandler(ReplayInputSource())
@@ -95,10 +94,10 @@ class InputReplayFullGameLoopTest {
         assertTrue(secondRun.runOutcome() is RunOutcome.Defeat)
         assertFalse(saveManager.hasSave())
 
-        val blockedContinueSelect = pressMenu(menu, menuInput, hasSave = false, justPressed = setOf(Keys.DOWN))
-        assertNull(blockedContinueSelect)
-        val blockedContinueConfirm = pressMenu(menu, menuInput, hasSave = false, justPressed = setOf(Keys.ENTER))
-        assertNull(blockedContinueConfirm)
+        val validationSelect = pressMenu(menu, menuInput, continueAvailability = ContinueAvailability.Absent, justPressed = setOf(Keys.DOWN))
+        assertNull(validationSelect)
+        val validationAction = pressMenu(menu, menuInput, continueAvailability = ContinueAvailability.Absent, justPressed = setOf(Keys.ENTER))
+        assertEquals(MainMenuAction.ValidationMode, validationAction)
         assertNull(GameModule.loadFoundationSession(saveManager))
     }
 
@@ -232,12 +231,12 @@ class InputReplayFullGameLoopTest {
     private fun pressMenu(
         controller: MainMenuController,
         input: ReplayInputSource,
-        hasSave: Boolean,
+        continueAvailability: ContinueAvailability,
         justPressed: Set<Int>,
         pressed: Set<Int> = justPressed,
     ): MainMenuAction? {
         input.frame(justPressed = justPressed, pressed = pressed)
-        val action = controller.pollAction(hasSave).action
+        val action = controller.pollAction(continueAvailability).action
         input.clear()
         return action
     }

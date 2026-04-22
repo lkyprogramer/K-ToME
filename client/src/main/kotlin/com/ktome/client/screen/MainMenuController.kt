@@ -8,9 +8,11 @@ import com.ktome.game.PlayerCreationSelection
 import com.ktome.game.PlayerCreationState
 
 internal sealed interface MainMenuAction {
-    data object StartNewGame : MainMenuAction
+    data object QuickStart : MainMenuAction
 
-    data object ContinueGame : MainMenuAction
+    data object Continue : MainMenuAction
+
+    data object CopyContinueErrorDetail : MainMenuAction
 
     data object ValidationMode : MainMenuAction
 
@@ -38,6 +40,7 @@ internal data class MainMenuPollResult(
 internal class MainMenuController(
     private val input: InputSource = GdxInputSource,
     playerCreationState: PlayerCreationState,
+    initialContinueAvailability: ContinueAvailability = ContinueAvailability.Absent,
 ) {
     private val playerCreationState = playerCreationState
     private val browseableProfessionOptions =
@@ -48,10 +51,10 @@ internal class MainMenuController(
         playerCreationState.raceOptions
             .filter { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }
             .ifEmpty { playerCreationState.raceOptions }
-    private var selectedIndex: Int = 0
     private var focusedAxis: PlayerCreationFocus = PlayerCreationFocus.PROFESSION
     private var selectedProfessionIndex: Int = browseableProfessionOptions.indexOfFirst { option -> option.id == playerCreationState.selection.professionId }.takeIf { it >= 0 } ?: 0
     private var selectedRaceIndex: Int = browseableRaceOptions.indexOfFirst { option -> option.id == playerCreationState.selection.raceId }.takeIf { it >= 0 } ?: 0
+    private var selectedIndex: Int = MainMenuFocusPolicy.initialIndex(entries(initialContinueAvailability), initialContinueAvailability)
 
     fun selectedIndex(): Int = selectedIndex
 
@@ -67,16 +70,40 @@ internal class MainMenuController(
 
     fun currentRaceOption() = raceOptions()[selectedRaceIndex]
 
-    fun entries(hasSave: Boolean): List<MenuEntry> =
+    fun entries(continueAvailability: ContinueAvailability): List<MenuEntry> =
         listOf(
-            MenuEntry("ui.menu.new_game", enabled = canStartNewGame()),
-            MenuEntry("ui.menu.continue", enabled = hasSave),
-            MenuEntry("ui.menu.validation_mode", enabled = true),
-            MenuEntry("ui.menu.exit", enabled = true),
+            MenuEntry(
+                action = MainMenuAction.QuickStart,
+                labelKey = "ui.menu.action.quick-start",
+                state = MenuEntryState(enabled = canStartNewGame(), focusable = true),
+            ),
+            MenuEntry(
+                action = MainMenuAction.Continue,
+                labelKey = "ui.menu.action.continue",
+                state =
+                    MenuEntryState(
+                        enabled = continueAvailability.isAvailable,
+                        focusable = continueAvailability !is ContinueAvailability.Absent,
+                        disabledReasonKey = (continueAvailability as? ContinueAvailability.Unavailable)?.reasonKey,
+                    ),
+            ),
+            MenuEntry(
+                action = MainMenuAction.ValidationMode,
+                labelKey = "ui.menu.action.validation",
+                state = MenuEntryState(enabled = true, focusable = true),
+            ),
+            MenuEntry(
+                action = MainMenuAction.ExitGame,
+                labelKey = "ui.menu.exit",
+                state = MenuEntryState(enabled = true, focusable = true),
+            ),
         )
 
-    fun pollAction(hasSave: Boolean): MainMenuPollResult {
-        val entries = entries(hasSave)
+    fun pollAction(continueAvailability: ContinueAvailability): MainMenuPollResult {
+        val entries = entries(continueAvailability)
+        if (entries.getOrNull(selectedIndex)?.focusable != true) {
+            selectedIndex = MainMenuFocusPolicy.initialIndex(entries, continueAvailability)
+        }
         if (input.isKeyJustPressed(Keys.L)) {
             return MainMenuPollResult(
                 action = MainMenuAction.ToggleLocale,
@@ -85,15 +112,22 @@ internal class MainMenuController(
                 localeToggled = true,
             )
         }
+        if (continueAvailability is ContinueAvailability.Unavailable && input.isKeyJustPressed(Keys.C)) {
+            return MainMenuPollResult(
+                action = MainMenuAction.CopyContinueErrorDetail,
+                selection = currentSelection(),
+                focusedAxis = focusedAxis,
+            )
+        }
         var selectionChanged = false
         var professionChanged = false
         var raceChanged = false
         if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
-            selectedIndex = (selectedIndex - 1).floorMod(entries.size)
+            selectedIndex = nextFocusableIndex(entries, delta = -1)
             selectionChanged = true
         }
         if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
-            selectedIndex = (selectedIndex + 1).floorMod(entries.size)
+            selectedIndex = nextFocusableIndex(entries, delta = 1)
             selectionChanged = true
         }
         if (input.isKeyJustPressed(Keys.LEFT) || input.isKeyJustPressed(Keys.A)) {
@@ -129,13 +163,7 @@ internal class MainMenuController(
                 )
             }
             return MainMenuPollResult(
-                action =
-                    when (selectedIndex) {
-                        0 -> MainMenuAction.StartNewGame
-                        1 -> MainMenuAction.ContinueGame
-                        2 -> MainMenuAction.ValidationMode
-                        else -> MainMenuAction.ExitGame
-                    },
+                action = selected.action,
                 selection = currentSelection(),
                 focusedAxis = focusedAxis,
                 selectionChanged = selectionChanged || professionChanged || raceChanged,
@@ -160,10 +188,35 @@ internal class MainMenuController(
 
     private fun raceOptions() = browseableRaceOptions
 
-    internal data class MenuEntry(
-        val labelKey: String,
+    private fun nextFocusableIndex(
+        entries: List<MenuEntry>,
+        delta: Int,
+    ): Int {
+        var candidate = selectedIndex
+        repeat(entries.size) {
+            candidate = (candidate + delta).floorMod(entries.size)
+            if (entries[candidate].focusable) {
+                return candidate
+            }
+        }
+        return selectedIndex
+    }
+
+    internal data class MenuEntryState(
         val enabled: Boolean,
+        val focusable: Boolean,
+        val disabledReasonKey: String? = null,
     )
+
+    internal data class MenuEntry(
+        val action: MainMenuAction,
+        val labelKey: String,
+        val state: MenuEntryState,
+    ) {
+        val enabled: Boolean get() = state.enabled
+        val focusable: Boolean get() = state.focusable
+        val disabledReasonKey: String? get() = state.disabledReasonKey
+    }
 }
 
 private fun Int.floorMod(modulus: Int): Int = ((this % modulus) + modulus) % modulus

@@ -7,6 +7,7 @@ import org.gradle.api.tasks.bundling.Zip
 import org.gradle.kotlin.dsl.named
 import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.gradle.jvm.tasks.Jar
+import org.gradle.language.jvm.tasks.ProcessResources
 import java.io.File
 
 plugins {
@@ -28,6 +29,32 @@ val macPackagingIcnsFile = macPackagingIconDir.map { it.file("$macAppName.icns")
 val macAppOutputDir = layout.buildDirectory.dir("release")
 val macAppImageDir = layout.buildDirectory.dir("release/$macAppName.app")
 val isMacOs = System.getProperty("os.name").contains("Mac", ignoreCase = true)
+
+data class GitShortHash(
+    val value: String,
+    val resolved: Boolean,
+)
+
+val gitShortHashPattern = Regex("[0-9a-f]{7,40}")
+
+fun resolveGitShortHash(): GitShortHash =
+    try {
+        val output =
+            providers.exec {
+                commandLine("git", "rev-parse", "--short", "HEAD")
+            }.standardOutput.asText.get().trim()
+        if (output.matches(gitShortHashPattern)) {
+            GitShortHash(value = output, resolved = true)
+        } else {
+            GitShortHash(value = "unknown", resolved = false)
+        }
+    } catch (_: Exception) {
+        GitShortHash(value = "unknown", resolved = false)
+    }
+
+val gitShortHash = providers.provider { resolveGitShortHash() }
+val buildInfoShortHash = gitShortHash.map { hash -> hash.value }
+val buildInfoShortHashResolved = gitShortHash.map { hash -> hash.resolved.toString() }
 
 fun requireMacPackagingEnvironment(taskName: String, requireIconTools: Boolean = false): File {
     if (!isMacOs) {
@@ -296,8 +323,16 @@ tasks.named<Test>("test") {
     enabled = true
 }
 
-tasks.named("processResources") {
+tasks.named<ProcessResources>("processResources") {
     dependsOn(rootProject.tasks.named("syncPhase2Manifests"))
+    inputs.property("buildInfoShortHash", buildInfoShortHash)
+    inputs.property("buildInfoShortHashResolved", buildInfoShortHashResolved)
+    filesMatching("build-info.properties") {
+        expand(
+            "shortHash" to buildInfoShortHash.get(),
+            "shortHashResolved" to buildInfoShortHashResolved.get(),
+        )
+    }
 }
 
 tasks.withType<Test>().configureEach {

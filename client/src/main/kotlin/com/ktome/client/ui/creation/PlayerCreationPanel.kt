@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.ktome.client.screen.MainMenuController
 import com.ktome.client.screen.PlayerCreationFocus
+import com.ktome.client.ui.token.UiDesignTokens
 
 private const val PLAYER_CREATION_SECTION_OFFSET_X = 380f
 
@@ -83,9 +84,9 @@ internal object PlayerCreationPanel {
         model.entries.forEachIndexed { index, entry ->
             font.color =
                 when {
-                    !entry.enabled -> Color.DARK_GRAY
-                    entry.selected -> Color.CYAN
-                    else -> Color.WHITE
+                    !entry.enabled -> disabledColor()
+                    entry.selected -> UiDesignTokens.color.menu.selection.focused.color()
+                    else -> UiDesignTokens.color.menu.selection.normal.color()
                 }
             font.draw(batch, entry.text, x, topY - 132f - index * 32f)
         }
@@ -100,11 +101,11 @@ internal object PlayerCreationPanel {
         topY: Float,
         focused: Boolean,
     ) {
-        font.color = if (focused) Color.CYAN else Color.WHITE
+        font.color = if (focused) UiDesignTokens.color.focus.ring.color() else UiDesignTokens.color.text.primary.color()
         font.draw(batch, model.title, x, topY)
         font.color = stateColor
         font.draw(batch, model.state, x, topY - 28f)
-        font.color = Color.GRAY
+        font.color = UiDesignTokens.color.text.disabled.color()
         font.draw(batch, model.description, x, topY - 56f)
         model.detail?.takeIf(String::isNotBlank)?.let { detail ->
             font.draw(batch, detail, x, topY - 84f)
@@ -113,4 +114,6 @@ internal object PlayerCreationPanel {
             font.draw(batch, note, x, topY - 108f)
         }
     }
+
+    private fun disabledColor(): Color = UiDesignTokens.color.menu.selection.disabled.color()
 }

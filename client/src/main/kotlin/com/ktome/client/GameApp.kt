@@ -13,6 +13,7 @@ import com.ktome.client.assets.VisualManifestResourceLoader
 import com.ktome.client.audio.AudioSinkBindingsFactory
 import com.ktome.client.audio.AudioRouter
 import com.ktome.client.audio.DefaultAudioSinkBindingsFactory
+import com.ktome.client.build.BuildInfo
 import com.ktome.client.input.AudioRouterAwareCommandSource
 import com.ktome.client.input.CommandSource
 import com.ktome.client.input.GdxInputSource
@@ -21,6 +22,8 @@ import com.ktome.client.input.InputSource
 import com.ktome.client.input.ValidationCommandSource
 import com.ktome.client.screen.FoundationGameScreen
 import com.ktome.client.screen.GameOverScreen
+import com.ktome.client.screen.ContinueAvailability
+import com.ktome.client.screen.ContinueUnavailableReasonCode
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.ValidationSetupContext
 import com.ktome.client.screen.ValidationSetupScreen
@@ -36,8 +39,12 @@ import com.ktome.core.profile.RunSummary as ProfileRunSummary
 import com.ktome.core.save.AssetVersionContract
 import com.ktome.core.save.AssetVersionGate
 import com.ktome.core.save.AssetVersionMismatchException
+import com.ktome.core.save.InvalidSaveException
+import com.ktome.core.save.LegacySaveFormatException
+import com.ktome.core.save.MalformedSaveException
 import com.ktome.core.save.SaveLoadException
 import com.ktome.core.save.SaveManager
+import com.ktome.core.save.UnsupportedSaveContractVersionException
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
@@ -58,6 +65,7 @@ import com.ktome.game.validation.ValidationSessionRequest
 import com.ktome.game.validation.ValidationSessionOptions
 import com.ktome.game.validation.loadPersistedValidationSessionOptions
 import com.ktome.game.validation.validationSessionOptionsForPreset
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -150,6 +158,7 @@ class GameApp(
     private val audioSinks = audioSinkBindingsFactory.create(renderEnabled)
 
     override fun create() {
+        BuildInfo.initialize()
         showMainMenu(saveCurrent = false, notice = assetContractNotice())
     }
 
@@ -339,13 +348,18 @@ class GameApp(
         activeSessionPath = SessionPath.STANDARD
         activeContentPackSelection = contentPackSelection
         refreshPlayerCreationState()
-        val continueEnabled = lifecycle.refreshContinueAvailability()
+        val continueAvailability = lifecycle.refreshContinueAvailabilityState()
         replaceScreen(
             MainMenuScreen(
                 app = this,
-                continueEnabled = continueEnabled,
+                continueAvailability = continueAvailability,
                 playerCreationState = playerCreationState,
-                notice = notice ?: pendingMenuNotice ?: lifecycle.consumeNotice(),
+                notice =
+                    notice ?: pendingMenuNotice ?: if (continueAvailability is ContinueAvailability.Unavailable) {
+                        null
+                    } else {
+                        lifecycle.consumeNotice()
+                    },
                 inputSource = menuInputSourceFactory(),
                 renderEnabled = renderEnabled,
             ),
@@ -807,16 +821,18 @@ internal class LifecycleCoordinator(
     private val saveManager: SaveManager,
     private val continueAvailabilityProbe: () -> Boolean = { saveManager.load() != null },
 ) {
-    private var cachedContinueAvailable: Boolean = false
+    private var cachedContinueAvailability: ContinueAvailability = ContinueAvailability.Absent
     private var pendingNotice: String? = null
 
-    fun refreshContinueAvailability(): Boolean {
+    fun refreshContinueAvailabilityState(): ContinueAvailability {
         pendingNotice = null
-        cachedContinueAvailable = snapshotIsLoadable()
-        return cachedContinueAvailable
+        cachedContinueAvailability = resolveContinueAvailability()
+        return cachedContinueAvailability
     }
 
-    fun cachedContinueAvailability(): Boolean = cachedContinueAvailable
+    fun refreshContinueAvailability(): Boolean = refreshContinueAvailabilityState() is ContinueAvailability.Available
+
+    fun cachedContinueAvailability(): Boolean = cachedContinueAvailability is ContinueAvailability.Available
 
     fun consumeNotice(): String? =
         pendingNotice.also {
@@ -826,7 +842,7 @@ internal class LifecycleCoordinator(
     fun <T> startNewSession(factory: () -> T): T {
         val session = factory()
         saveManager.deleteSave()
-        cachedContinueAvailable = false
+        cachedContinueAvailability = ContinueAvailability.Absent
         return session
     }
 
@@ -839,20 +855,76 @@ internal class LifecycleCoordinator(
                 null
             }
         if (session == null) {
-            cachedContinueAvailable = false
+            cachedContinueAvailability = ContinueAvailability.Absent
         } else {
-            cachedContinueAvailable = true
+            cachedContinueAvailability = ContinueAvailability.Available
         }
         return session
     }
 
-    private fun snapshotIsLoadable(): Boolean =
+    private fun resolveContinueAvailability(): ContinueAvailability {
+        if (!saveManager.hasSaveFile()) {
+            return ContinueAvailability.Absent
+        }
+        return snapshotAvailability()
+    }
+
+    private fun snapshotAvailability(): ContinueAvailability =
         try {
-            continueAvailabilityProbe()
+            if (continueAvailabilityProbe()) {
+                ContinueAvailability.Available
+            } else {
+                ContinueAvailability.Absent
+            }
         } catch (exception: SaveLoadException) {
             pendingNotice = exception.message
-            false
-        } catch (_: Exception) {
-            false
+            unavailableFrom(exception)
+        } catch (exception: IOException) {
+            unavailable(
+                reasonCode = ContinueUnavailableReasonCode.IO_ERROR,
+                throwable = exception,
+                includeThrowable = false,
+            )
+        } catch (exception: SecurityException) {
+            unavailable(
+                reasonCode = ContinueUnavailableReasonCode.IO_ERROR,
+                throwable = exception,
+                includeThrowable = false,
+            )
+        } catch (exception: Exception) {
+            unavailable(
+                reasonCode = ContinueUnavailableReasonCode.UNKNOWN,
+                throwable = exception,
+                includeThrowable = true,
+            )
         }
+
+    private fun unavailableFrom(exception: SaveLoadException): ContinueAvailability.Unavailable =
+        unavailable(
+            reasonCode =
+                when (exception) {
+                    is LegacySaveFormatException -> ContinueUnavailableReasonCode.VERSION_MISMATCH
+                    is MalformedSaveException -> ContinueUnavailableReasonCode.CORRUPTED
+                    is UnsupportedSaveContractVersionException -> ContinueUnavailableReasonCode.VERSION_MISMATCH
+                    is InvalidSaveException -> ContinueUnavailableReasonCode.SCHEMA_MISMATCH
+                    else -> ContinueUnavailableReasonCode.UNKNOWN
+                },
+            throwable = exception,
+            includeThrowable = exception !is LegacySaveFormatException &&
+                exception !is MalformedSaveException &&
+                exception !is UnsupportedSaveContractVersionException &&
+                exception !is InvalidSaveException,
+        )
+
+    private fun unavailable(
+        reasonCode: ContinueUnavailableReasonCode,
+        throwable: Throwable,
+        includeThrowable: Boolean,
+    ): ContinueAvailability.Unavailable =
+        ContinueAvailability.Unavailable(
+            reasonCode = reasonCode,
+            savePath = saveManager.savePath().toString(),
+            throwableClass = throwable::class.java.name.takeIf { includeThrowable },
+            throwableMessage = throwable.message?.takeIf { includeThrowable },
+        )
 }

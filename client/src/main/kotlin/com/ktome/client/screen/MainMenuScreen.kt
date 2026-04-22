@@ -16,6 +16,7 @@ import com.ktome.client.text.LocalizedTextSeparator
 import com.ktome.client.text.joinLocalizedKeys
 import com.ktome.client.ui.creation.PlayerCreationPanel
 import com.ktome.client.ui.creation.PlayerCreationSectionModel
+import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.profile.ClassPlayabilityState
 import com.ktome.game.PlayerCreationState
 import com.ktome.game.i18n.Localizer
@@ -26,12 +27,17 @@ internal const val MAIN_MENU_TEXT_X = 120f
 internal const val MAIN_MENU_TITLE_Y = 420f
 internal const val MAIN_MENU_SUBTITLE_Y = 392f
 internal const val MAIN_MENU_PANEL_TOP_Y = 352f
-internal const val MAIN_MENU_FOOTER_LANGUAGE_DEFAULT_Y = 128f
-internal const val MAIN_MENU_FOOTER_CONTROLS_DEFAULT_Y = 80f
-internal const val MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y = 44f
+internal const val MAIN_MENU_BUILD_SUMMARY_X = MAIN_MENU_TEXT_X + 455f
 internal const val MAIN_MENU_FOOTER_LINE_HEIGHT = 24f
 internal const val MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y = 132f
 internal const val MAIN_MENU_CLASS_ENTRY_STEP_Y = 32f
+internal const val MAIN_MENU_PLAYER_CREATION_SECTION_BOTTOM_Y = MAIN_MENU_PANEL_TOP_Y - 108f
+internal const val MAIN_MENU_HELP_TOP_Y = MAIN_MENU_PANEL_TOP_Y - MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y - 12f
+internal const val MAIN_MENU_HELP_BLOCK_STEP_Y = MAIN_MENU_FOOTER_LINE_HEIGHT + 4f
+internal const val MAIN_MENU_HELP_MAX_WIDTH = menuWidth - MAIN_MENU_BUILD_SUMMARY_X - 40f
+internal const val MAIN_MENU_FOOTER_LANGUAGE_DEFAULT_Y = 128f
+internal const val MAIN_MENU_FOOTER_CONTROLS_DEFAULT_Y = 80f
+internal const val MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y = 44f
 internal const val MAIN_MENU_ENTRY_TO_FOOTER_CLEARANCE_Y = MAIN_MENU_FOOTER_LINE_HEIGHT + 4f
 internal const val MAIN_MENU_FOOTER_STACK_CLEARANCE_Y = MAIN_MENU_FOOTER_LINE_HEIGHT + 4f
 
@@ -39,6 +45,8 @@ internal fun mainMenuClassEntryY(index: Int): Float =
     MAIN_MENU_PANEL_TOP_Y - MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y - index * MAIN_MENU_CLASS_ENTRY_STEP_Y
 
 internal fun mainMenuLastEntryY(entryCount: Int): Float = mainMenuClassEntryY((entryCount - 1).coerceAtLeast(0))
+
+internal fun mainMenuHelpLineY(index: Int): Float = MAIN_MENU_HELP_TOP_Y - index * MAIN_MENU_HELP_BLOCK_STEP_Y
 
 internal fun mainMenuFooterLanguageY(entryCount: Int): Float =
     minOf(
@@ -71,18 +79,26 @@ internal data class MainMenuTextSnapshot(
     val raceDescription: String,
     val raceNote: String? = null,
     val entries: List<String>,
+    val buildSummary: List<MainMenuBuildSummaryTextLine>,
+    val helpLines: List<String>,
+    val continueDisabledReason: String? = null,
+    val continueDisabledDetail: String? = null,
     val language: String,
     val controls: String,
     val notice: String?,
-)
+) {
+    val footerNotice: String?
+        get() = notice ?: continueDisabledReason ?: continueDisabledDetail
+}
 
-class MainMenuScreen(
+internal class MainMenuScreen(
     private val app: GameApp,
-    private val continueEnabled: Boolean,
+    private val continueAvailability: ContinueAvailability,
     playerCreationState: PlayerCreationState,
-    private val notice: String? = null,
+    notice: String? = null,
     inputSource: InputSource = GdxInputSource,
     private val renderEnabled: Boolean = true,
+    private val copyToClipboard: (String) -> Boolean = ::copyTextToClipboard,
 ) : ScreenAdapter() {
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
@@ -91,6 +107,7 @@ class MainMenuScreen(
         MainMenuController(
             input = inputSource,
             playerCreationState = playerCreationState,
+            initialContinueAvailability = continueAvailability,
         )
     private val playerCreationState = playerCreationState
     private val professionUnavailableNameKeys =
@@ -102,6 +119,7 @@ class MainMenuScreen(
             .filter { option -> option.playabilityState == ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE }
             .map { option -> option.displayNameKey }
     private val audioRouter: AudioRouter? = app.audioRouterOrNull()
+    private var menuNotice: String? = notice
 
     override fun show() {
         audioRouter?.onMenuShown()
@@ -113,7 +131,7 @@ class MainMenuScreen(
     }
 
     override fun render(delta: Float) {
-        val poll = controller.pollAction(continueEnabled)
+        val poll = controller.pollAction(continueAvailability)
         if (poll.professionChanged || poll.raceChanged) {
             app.rememberPlayerCreationSelection(poll.selection)
         }
@@ -124,13 +142,16 @@ class MainMenuScreen(
             rejected = poll.rejected,
         )
         when (poll.action) {
-            MainMenuAction.StartNewGame -> {
+            MainMenuAction.QuickStart -> {
                 app.startNewGame(poll.selection)
                 return
             }
-            MainMenuAction.ContinueGame -> {
+            MainMenuAction.Continue -> {
                 app.continueGame()
                 return
+            }
+            MainMenuAction.CopyContinueErrorDetail -> {
+                copyContinueErrorDetail()
             }
             MainMenuAction.ValidationMode -> {
                 app.showValidationSetup()
@@ -142,7 +163,7 @@ class MainMenuScreen(
             }
             MainMenuAction.ToggleLocale -> {
                 app.cycleLocale()
-                app.showMainMenu(saveCurrent = false, notice = notice)
+                app.showMainMenu(saveCurrent = false, notice = menuNotice)
                 return
             }
             null -> Unit
@@ -155,12 +176,13 @@ class MainMenuScreen(
         val font = requireNotNull(font)
         val text = textSnapshot()
 
-        ScreenUtils.clear(0.04f, 0.04f, 0.06f, 1f)
+        val surfaceBase = UiDesignTokens.color.surface.base.color()
+        ScreenUtils.clear(surfaceBase.r, surfaceBase.g, surfaceBase.b, surfaceBase.a)
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
 
         val selectedIndex = controller.selectedIndex()
-        val entries = controller.entries(continueEnabled)
+        val entries = controller.entries(continueAvailability)
         val footerLanguageY = mainMenuFooterLanguageY(entries.size)
         val footerControlsY = mainMenuFooterControlsY(entries.size)
         val footerNoticeY = mainMenuFooterNoticeY(entries.size)
@@ -188,10 +210,19 @@ class MainMenuScreen(
             )
 
         batch.begin()
-        font.color = Color.GOLD
+        font.color = UiDesignTokens.color.quality.rare.color()
         font.draw(batch, text.title, MAIN_MENU_TEXT_X, MAIN_MENU_TITLE_Y)
-        font.color = Color.LIGHT_GRAY
+        font.color = UiDesignTokens.color.text.secondary.color()
         font.draw(batch, text.subtitle, MAIN_MENU_TEXT_X, MAIN_MENU_SUBTITLE_Y)
+        text.buildSummary.forEachIndexed { index, line ->
+            font.color =
+                if (line.disabled) {
+                    UiDesignTokens.color.text.disabled.color()
+                } else {
+                    UiDesignTokens.color.text.secondary.color()
+                }
+            font.draw(batch, line.text, MAIN_MENU_BUILD_SUMMARY_X, MAIN_MENU_TITLE_Y - index * MAIN_MENU_FOOTER_LINE_HEIGHT)
+        }
         PlayerCreationPanel.render(
             batch = batch,
             font = font,
@@ -202,12 +233,17 @@ class MainMenuScreen(
             topY = MAIN_MENU_PANEL_TOP_Y,
         )
 
-        font.color = Color.GOLD
+        text.helpLines.forEachIndexed { index, line ->
+            font.color = UiDesignTokens.color.text.secondary.color()
+            font.draw(batch, line, MAIN_MENU_BUILD_SUMMARY_X, mainMenuHelpLineY(index))
+        }
+
+        font.color = UiDesignTokens.color.quality.rare.color()
         font.draw(batch, text.language, MAIN_MENU_TEXT_X, footerLanguageY)
-        font.color = Color.GRAY
+        font.color = UiDesignTokens.color.text.disabled.color()
         font.draw(batch, text.controls, MAIN_MENU_TEXT_X, footerControlsY)
-        text.notice?.let { message ->
-            font.color = Color.SALMON
+        text.footerNotice?.let { message ->
+            font.color = UiDesignTokens.color.status.badge.turns.color()
             font.draw(batch, message, MAIN_MENU_TEXT_X, footerNoticeY)
         }
         batch.end()
@@ -239,6 +275,9 @@ class MainMenuScreen(
         app.localizer().let { localizer ->
             val professionOption = controller.currentProfessionOption()
             val raceOption = controller.currentRaceOption()
+            val unavailable = continueAvailability as? ContinueAvailability.Unavailable
+            val entries = controller.entries(continueAvailability)
+            val summary = summaryModel(localizer)
             MainMenuTextSnapshot(
                 title = app.text("ui.menu.title"),
                 subtitle = app.text("ui.menu.subtitle"),
@@ -261,20 +300,83 @@ class MainMenuScreen(
                         noteKey = "ui.menu.race_discovered_unavailable",
                         optionNameKeys = raceUnavailableNameKeys,
                     ),
-                entries = controller.entries(continueEnabled).map { entry -> app.text(entry.labelKey) },
+                entries = entries.map { entry -> app.text(entry.labelKey) },
+                buildSummary = summary.localizedBuildSummary(localizer),
+                helpLines = summary.helpLines,
+                continueDisabledReason = unavailable?.let { reason -> app.text(reason.reasonKey) },
+                continueDisabledDetail =
+                    unavailable
+                        ?.takeIf { reason -> reason.reasonCode == ContinueUnavailableReasonCode.CORRUPTED }
+                        ?.let { app.text("ui.menu.continue.corrupted.detail") },
                 language = app.text("ui.menu.language", "value" to localizer.localeLabel()),
-                controls = app.text("ui.menu.controls"),
-                notice = notice?.takeIf(String::isNotBlank),
+                controls = controlsText(unavailable),
+                notice = menuNotice?.takeIf(String::isNotBlank),
             )
+        }
+
+    private fun copyContinueErrorDetail() {
+        val payload =
+            (continueAvailability as? ContinueAvailability.Unavailable)
+                ?.let { unavailable -> ContinueUnavailablePayloadFormatter.format(app.localizer(), unavailable).renderPlainText() }
+                ?: return
+        val copied = copyToClipboard(payload)
+        menuNotice =
+            app.text(
+                if (copied) {
+                    "ui.menu.continue.error.copied"
+                } else {
+                    "ui.menu.continue.error.copy-failed"
+                },
+            )
+    }
+
+    private fun controlsText(unavailable: ContinueAvailability.Unavailable?): String =
+        if (unavailable == null) {
+            app.text("ui.menu.controls")
+        } else {
+            app.text("ui.menu.controls") + "  " + app.text("ui.menu.continue.copy-hint")
         }
 
     private fun selectionStateColor(state: ClassPlayabilityState): Color =
         when (state) {
-            ClassPlayabilityState.PLAYABLE -> Color.CYAN
-            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE -> Color.GOLD
-            ClassPlayabilityState.LOCKED -> Color.DARK_GRAY
+            ClassPlayabilityState.PLAYABLE -> UiDesignTokens.color.focus.ring.color()
+            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE -> UiDesignTokens.color.quality.rare.color()
+            ClassPlayabilityState.LOCKED -> UiDesignTokens.color.text.disabled.color()
         }
+
+    private fun summaryModel(localizer: Localizer): MainMenuSummaryModel =
+        MainMenuSummaryModel(
+            primaryAction =
+                MainMenuFocusPolicy.primaryAction(
+                    entries = controller.entries(continueAvailability),
+                    continueAvailability = continueAvailability,
+                ),
+            continueAvailability = continueAvailability,
+            buildSummary =
+                listOf(
+                    BuildCapabilityLine("ui.menu.build.class-roster.label", "ui.menu.build.class-roster.value"),
+                    BuildCapabilityLine("ui.menu.build.race-roster.label", "ui.menu.build.race-roster.value"),
+                    BuildCapabilityLine("ui.menu.build.phase4.label", "ui.menu.build.phase4.value"),
+                ),
+            helpLines =
+                listOf(
+                    localizer.text("ui.menu.help.primary-keys"),
+                    localizer.text("ui.menu.help.safe-start"),
+                ),
+            localeLabel = localizer.localeLabel(),
+        )
 }
+
+internal fun copyTextToClipboard(payload: String): Boolean =
+    runCatching {
+        val clipboard = Gdx.app?.clipboard
+        if (clipboard == null) {
+            false
+        } else {
+            clipboard.contents = payload
+            true
+        }
+    }.getOrDefault(false)
 
 internal fun resourceHintText(
     localizer: Localizer,

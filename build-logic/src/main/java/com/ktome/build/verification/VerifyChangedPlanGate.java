@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.gradle.api.Action;
 import org.gradle.api.Task;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
@@ -133,7 +134,11 @@ public final class VerifyChangedPlanGate {
         if (!visitedTaskPaths.add(current.getPath())) {
             return false;
         }
-        for (Task dependency : current.getTaskDependencies().getDependencies(current)) {
+        for (Object dependencyObject : current.getDependsOn()) {
+            Task dependency = declaredDependencyTask(current, dependencyObject, target);
+            if (dependency == null) {
+                continue;
+            }
             if (dependency.getPath().equals(target.getPath())) {
                 return true;
             }
@@ -142,5 +147,75 @@ public final class VerifyChangedPlanGate {
             }
         }
         return false;
+    }
+
+    private static Task declaredDependencyTask(Task current, Object dependencyObject, Task target) {
+        if (dependencyObject instanceof Task dependency) {
+            return shouldTraverseDependency(current, dependency, target) ? dependency : null;
+        }
+        if (dependencyObject instanceof TaskProvider<?> dependencyProvider) {
+            if (!shouldResolveDependencyProvider(current, dependencyProvider, target)) {
+                return null;
+            }
+            Task dependency = dependencyProvider.get();
+            return shouldTraverseDependency(current, dependency, target) ? dependency : null;
+        }
+        if (dependencyObject instanceof CharSequence dependencyPath) {
+            String normalizedPath = normalizeTaskPath(current, dependencyPath.toString());
+            if (!shouldResolveTaskPath(current, normalizedPath, target)) {
+                return null;
+            }
+            Task dependency = taskByPath(current, normalizedPath);
+            return dependency != null && shouldTraverseDependency(current, dependency, target) ? dependency : null;
+        }
+        return null;
+    }
+
+    private static boolean shouldResolveDependencyProvider(
+            Task current, TaskProvider<?> dependencyProvider, Task target) {
+        return current.getProject().getPath().equals(target.getProject().getPath())
+                || current.getProject().equals(current.getProject().getRootProject())
+                || dependencyProvider.getName().equals(target.getName());
+    }
+
+    private static boolean shouldResolveTaskPath(Task current, String taskPath, Task target) {
+        String dependencyProjectPath = projectPathForTask(taskPath);
+        return dependencyProjectPath.equals(target.getProject().getPath())
+                || dependencyProjectPath.equals(current.getProject().getPath());
+    }
+
+    private static boolean shouldTraverseDependency(Task current, Task dependency, Task target) {
+        return dependency.getPath().equals(target.getPath())
+                || dependency.getProject().getPath().equals(target.getProject().getPath())
+                || dependency.getProject().getPath().equals(current.getProject().getPath());
+    }
+
+    private static String normalizeTaskPath(Task current, String dependencyPath) {
+        if (dependencyPath.startsWith(":")) {
+            return dependencyPath;
+        }
+        String projectPath = current.getProject().getPath();
+        return ":".equals(projectPath) ? ":" + dependencyPath : projectPath + ":" + dependencyPath;
+    }
+
+    private static String projectPathForTask(String taskPath) {
+        int separatorIndex = taskPath.lastIndexOf(':');
+        if (separatorIndex <= 0) {
+            return ":";
+        }
+        return taskPath.substring(0, separatorIndex);
+    }
+
+    private static Task taskByPath(Task current, String taskPath) {
+        String projectPath = projectPathForTask(taskPath);
+        String taskName = taskPath.substring(taskPath.lastIndexOf(':') + 1);
+        if (taskName.isBlank()) {
+            return null;
+        }
+        org.gradle.api.Project project =
+                ":".equals(projectPath)
+                        ? current.getProject().getRootProject()
+                        : current.getProject().getRootProject().findProject(projectPath);
+        return project == null ? null : project.getTasks().findByName(taskName);
     }
 }

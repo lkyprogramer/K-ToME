@@ -802,6 +802,7 @@ class InputHandler(
             UiMode.INSPECT,
             -> {
                 mode = UiMode.VALIDATION
+                validationCursor = ValidationOverlayCursor()
                 inspectCursor = inspectCursor ?: defaultInspectCursor(snapshot)
                 resetMovementRepeat()
                 return true
