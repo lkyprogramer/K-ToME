@@ -845,6 +845,31 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `controlled inscription combat decision accepts arbitrary cursor target outside hostile list`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)),
+                targetablePositions = emptyList(),
+            )
+
+        input.frame(justPressed = setOf(Keys.NUM_5))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.RIGHT))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(Point(4, 3), handler.overlayState().targetingCursor)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(4, 3)), handler.pollCommand(snapshot))
+    }
+
+    @Test
     fun `rejected targeted talent command reuses current targeting frame`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)

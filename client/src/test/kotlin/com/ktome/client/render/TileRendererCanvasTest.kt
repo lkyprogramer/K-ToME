@@ -304,6 +304,52 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `warning log prefix follows overlay order instead of presentation sort order`() {
+        val lowWarning =
+            OverlayRenderSnapshot(
+                id = "telegraph:b",
+                visualKey = "missing_visual",
+                previewTurns = 2,
+                dangerLevel = 1,
+                shape = OverlayShapeSnapshot.SINGLE_TILE,
+                sourceAbilityId = "telegraph.low",
+                cells = listOf(GridPointSnapshot(0, 0)),
+                warningMessage = RenderTextTokenSnapshot("log.warning.telegraph"),
+            )
+        val highWarning =
+            OverlayRenderSnapshot(
+                id = "telegraph:a",
+                visualKey = CombatAffordanceResourceKeys.TARGET_ICON,
+                previewTurns = 1,
+                dangerLevel = 3,
+                shape = OverlayShapeSnapshot.SINGLE_TILE,
+                sourceAbilityId = "telegraph.high",
+                cells = listOf(GridPointSnapshot(1, 0)),
+                warningMessage = RenderTextTokenSnapshot("log.warning.telegraph"),
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        overlays = listOf(lowWarning, highWarning),
+                        logEvents =
+                            listOf(
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.warning.telegraph")),
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.warning.telegraph")),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertTrue(model.messageLines[0].text.startsWith("[2t Low]"))
+        assertEquals("missing_visual", model.messageLines[0].icon?.resolvedKey)
+        assertTrue(model.messageLines[1].text.startsWith("[1t High]"))
+        assertEquals(CombatAffordanceResourceKeys.TARGET_ICON, model.messageLines[1].icon?.resolvedKey)
+    }
+
+    @Test
     fun `combat decision panel consumes formal phase icons in sidebar and action panel`() {
         val state =
             OverlayState(

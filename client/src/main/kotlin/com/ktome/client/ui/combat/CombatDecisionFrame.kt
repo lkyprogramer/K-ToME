@@ -48,6 +48,8 @@ internal data class CombatActionOption(
     val requiresTarget: Boolean,
     val methodOptions: List<CombatMethodOption> = listOf(CombatMethodOption(id = "default", labelKey = "ui.combat.method.default")),
 ) {
+    fun usesFreeCursorTargeting(): Boolean = kind == CombatActionKind.INSCRIPTION && requiresTarget
+
     fun command(target: Point?): PlayerCommand =
         when (kind) {
             CombatActionKind.TALENT -> PlayerCommand.UseTalent(slot = commandIndex, target = target.takeIf { requiresTarget })
@@ -98,6 +100,9 @@ internal object CombatDecisionFrame {
                     labelKey = "ui.combat.target.self",
                 ),
             )
+        }
+        if (action.usesFreeCursorTargeting()) {
+            return emptyList()
         }
         return snapshot.uiState.targetablePositions.mapIndexed { index, point ->
             CombatTargetOption(

@@ -1121,6 +1121,12 @@ class InputHandler(
         }
         val target =
             when {
+                action.usesFreeCursorTargeting() && confirmPressed -> {
+                    com.ktome.client.ui.combat.CombatTargetOption(
+                        id = "cursor",
+                        point = targetingCursor ?: playerPosition(snapshot),
+                    )
+                }
                 selectedIndex != null -> {
                     if (selectedIndex > targets.size) {
                         return null
@@ -1138,6 +1144,11 @@ class InputHandler(
                 }
                 else -> null
             }
+        if (action.usesFreeCursorTargeting()) {
+            return action.command(targetingCursor ?: playerPosition(snapshot)).also {
+                closeAllModalFrames()
+            }
+        }
         if (targets.isEmpty()) {
             showUiMessage(CombatDecisionFeedbackKeys.NO_LEGAL_TARGET)
             return null

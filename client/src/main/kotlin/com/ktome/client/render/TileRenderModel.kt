@@ -300,13 +300,13 @@ internal object TileRenderModelBuilder {
             if (snapshot.logEvents.isEmpty()) {
                 emptyLogMessageLines(localizer)
             } else {
-                val sortedTelegraphs = TelegraphPresentationModel.sorted(snapshot.overlays).map { (_, presentation) -> presentation }
+                val warningTelegraphs = snapshot.overlays.map(TelegraphPresentationModel::fromOverlay)
                 var warningIndex = 0
                 snapshot.logEvents.map { event ->
                     val baseText = renderLogEvent(localizer, event)
                     val warningTelegraph =
                         if (event.message.key == "log.warning.telegraph") {
-                            sortedTelegraphs.getOrNull(warningIndex++)
+                            warningTelegraphs.getOrNull(warningIndex++)
                         } else {
                             null
                         }
