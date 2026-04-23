@@ -293,6 +293,79 @@ class DescriptionPresenterTest {
     }
 
     @Test
+    fun `presenter exposes common surfaces beyond talent tooltips`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            DescriptionModelSnapshot(
+                templateKey = "talent.vanguard.charge.desc",
+                placeholders =
+                    mapOf(
+                        "minRange" to DescriptionValueSnapshot.IntValue(1),
+                        "range" to DescriptionValueSnapshot.IntValue(5),
+                        "damagePercent" to DescriptionValueSnapshot.IntValue(130),
+                    ),
+                keywords = listOf("damage"),
+            )
+
+        val surfaces =
+            listOf(
+                DescriptionPresenter.presentInventoryItemLines(localizer, model),
+                DescriptionPresenter.presentShopItemLines(localizer, model),
+                DescriptionPresenter.presentInspectObjectLines(localizer, model),
+                DescriptionPresenter.presentCombatActionLines(localizer, model),
+                DescriptionPresenter.presentStatusEffectLines(localizer, model),
+            )
+
+        surfaces.forEach { lines ->
+            assertTrue(lines.any { line -> line.kind == DescriptionLineKind.PRIMARY && "130% Damage" in line.text })
+            assertTrue(lines.any { line -> line.kind == DescriptionLineKind.KEYWORD && line.text.startsWith("Damage:") })
+        }
+    }
+
+    @Test
+    fun `presenter skips blank primary surface text while keeping keyword tooltips`() {
+        val localizer =
+            LocalizationBundle.load { path ->
+                when (path) {
+                    "/i18n/en-US.json" ->
+                        """
+                        {
+                          "ui.locale.en-US": "English",
+                          "ui.locale.zh-CN": "Chinese",
+                          "test.blank.desc": "   ",
+                          "ui.talent.keyword_line": "{keyword}: {desc}",
+                          "keyword.damage.name": "Damage",
+                          "keyword.damage.tooltip": "Raw offensive pressure."
+                        }
+                        """.trimIndent()
+
+                    "/i18n/zh-CN.json" ->
+                        """
+                        {
+                          "ui.locale.en-US": "英文",
+                          "ui.locale.zh-CN": "中文",
+                          "test.blank.desc": "   ",
+                          "ui.talent.keyword_line": "{keyword}: {desc}",
+                          "keyword.damage.name": "伤害",
+                          "keyword.damage.tooltip": "直接进攻压力。"
+                        }
+                        """.trimIndent()
+
+                    else -> error("Unexpected resource $path")
+                }
+            }.translator(GameLocale.EN_US)
+
+        val lines =
+            DescriptionPresenter.presentSurfaceLines(
+                localizer = localizer,
+                model = DescriptionModelSnapshot(templateKey = "test.blank.desc", keywords = listOf("damage")),
+                surface = DescriptionSurface.INVENTORY_ITEM,
+            )
+
+        assertEquals(listOf(DescriptionLine("Damage: Raw offensive pressure.", DescriptionLineKind.KEYWORD)), lines)
+    }
+
+    @Test
     fun `presenter renders all documented base class breakpoint payoff previews from live talent definitions`() {
         val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
         val talentsById = DataLoader(GameLocale.EN_US).loadTalentDefinitions().associateBy(TalentDef::id)

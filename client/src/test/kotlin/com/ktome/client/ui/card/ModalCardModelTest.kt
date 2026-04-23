@@ -105,9 +105,11 @@ class ModalCardModelTest {
 
         assertEquals("shop:reliquary:offer:1", offer.stableKey)
         assertEquals(ModalCardAction.BUY, offer.primaryAction)
+        assertEquals("ui.card.shop.header.icon", offer.iconKey)
         assertEquals("ui.modal.card.cost.shards", offer.costLines.single().key)
         assertEquals(ModalCardAction.SELL, sell.primaryAction)
         assertEquals("item.short_sword.icon", sell.iconKey)
+        assertEquals("ui.card.reward.header.icon", reward.iconKey)
         assertEquals(ModalCardReturnPolicy.READ_ONLY_POPPABLE, reward.returnPolicy)
         assertEquals(ModalCardAction.CLOSE, reward.actionFor(ModalCardInput.ESCAPE))
     }

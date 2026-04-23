@@ -24,6 +24,7 @@ data class ModalFrameLocalState(
     val targetingInscriptionHotkey: Int? = null,
     val targetingCursor: Point? = null,
     val inspectCursor: Point? = null,
+    val explainPaneOpen: Boolean = false,
 )
 
 data class ModalFrame(

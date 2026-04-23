@@ -454,6 +454,12 @@ class FoundationGameSession internal constructor(
         val schema: TalentSchemaV2,
     )
 
+    private data class ValidationShowcaseItemSpec(
+        val baseItemId: String,
+        val specialTemplateId: String? = null,
+        val quality: RarityTier = RarityTier.NORMAL,
+    )
+
     private data class RouteAdvanceOption(
         val connection: ZoneConnection,
         val destinationZoneId: String,
@@ -1384,6 +1390,8 @@ class FoundationGameSession internal constructor(
 
             is ValidationAction.SpawnItem -> spawnValidationItem(action.baseItemId)
 
+            ValidationAction.SpawnPr03ItemShowcase -> spawnPr03ItemShowcase()
+
             ValidationAction.ExecuteSearch -> executeValidationSearch()
 
             is ValidationAction.RevealBinding -> revealValidationBinding(action.bindingId)
@@ -1534,6 +1542,79 @@ class FoundationGameSession internal constructor(
         return acceptValidationAction(
             if (stored) "log.validation.item.spawned" else "log.validation.item.dropped",
             keyArg("item", rewardItemNameKey(reward, "validation item")),
+        )
+    }
+
+    private fun spawnPr03ItemShowcase(): CommandResolution {
+        val inventorySpecs =
+            listOf(
+                ValidationShowcaseItemSpec(baseItemId = "hunter_bow"),
+                ValidationShowcaseItemSpec(baseItemId = "war_maul"),
+                ValidationShowcaseItemSpec(baseItemId = "arcane_staff"),
+                ValidationShowcaseItemSpec(baseItemId = "shadow_cloak"),
+                ValidationShowcaseItemSpec(baseItemId = "apprentice_robe"),
+                ValidationShowcaseItemSpec(baseItemId = "bandit_trophy"),
+                ValidationShowcaseItemSpec(baseItemId = "emerald_charm"),
+                ValidationShowcaseItemSpec(baseItemId = "sanctified_seal"),
+            )
+        val groundSpecs =
+            listOf(
+                ValidationShowcaseItemSpec(
+                    baseItemId = "unique_briarbound_bow",
+                    specialTemplateId = "unique.briarbound_bow",
+                    quality = RarityTier.RARE,
+                ),
+                ValidationShowcaseItemSpec(
+                    baseItemId = "artifact_river_echo",
+                    specialTemplateId = "artifact.river_echo",
+                    quality = RarityTier.RARE,
+                ),
+                ValidationShowcaseItemSpec(baseItemId = "abyssal_heartstone", quality = RarityTier.RARE),
+                ValidationShowcaseItemSpec(baseItemId = "healing_potion"),
+            )
+        val inventoryItems =
+            inventorySpecs.map { spec ->
+                validationShowcaseItem(spec)
+                    ?: return rejectValidationAction("log.validation.target_missing", literalArg("target", spec.baseItemId))
+            }
+        val groundItems =
+            groundSpecs.map { spec ->
+                validationShowcaseItem(spec)
+                    ?: return rejectValidationAction("log.validation.target_missing", literalArg("target", spec.baseItemId))
+            }
+        val inventory = requireNotNull(world.get<Inventory>(playerId)) { "Missing Inventory for $playerId" }
+        val itemFactory = ItemFactory()
+        var storedCount = 0
+        inventoryItems.forEach { item ->
+            if (inventory.itemIds.size < inventory.capacity) {
+                inventory.itemIds += itemFactory.createCarriedItem(world, item)
+                storedCount += 1
+            }
+        }
+        val dropPoint = playerPosition()
+        groundItems.forEach { item ->
+            observeRewardItem(item)
+            itemFactory.createGroundItem(world, item, dropPoint)
+        }
+        groundItems.firstOrNull { item -> item.specialTemplateId != null }
+            ?.let { item -> recordRecentRewardPresentation(source = RewardPresentationSourceSnapshot.CACHE, reward = item) }
+        invalidateRenderSnapshot()
+        return acceptValidationAction(
+            "log.validation.item.pr03_showcase",
+            literalArg("inventoryCount", storedCount),
+            literalArg("groundCount", groundItems.size),
+        )
+    }
+
+    private fun validationShowcaseItem(spec: ValidationShowcaseItemSpec): ItemInstance? {
+        val base = itemBaseDef(spec.baseItemId) ?: return null
+        val template = spec.specialTemplateId?.let(content.itemBundle::specialTemplate)
+        if (spec.specialTemplateId != null && template?.itemId != spec.baseItemId) {
+            return null
+        }
+        return base.toRuntimeItem().copy(
+            quality = spec.quality,
+            specialTemplateId = spec.specialTemplateId,
         )
     }
 

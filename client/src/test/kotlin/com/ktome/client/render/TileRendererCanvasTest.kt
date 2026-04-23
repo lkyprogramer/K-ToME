@@ -187,6 +187,61 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `phase4 uiux pr04 item and explain descriptions use DescriptionPresenter keyword rendering`() {
+        val item =
+            ItemRenderSnapshot(
+                baseItemId = "long_sword",
+                nameKey = "item.long_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                descKey = "item.long_sword.desc",
+                passiveDescriptions = listOf(RenderTextTokenSnapshot("affix.of_precision.desc")),
+            )
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val inventoryModel =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        inventory =
+                            listOf(
+                                InventoryEntrySnapshot(
+                                    index = 0,
+                                    item = item,
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = 0),
+            )
+        val inspectModel =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        cells =
+                            listOf(
+                                MapCellSnapshot(
+                                    x = 0,
+                                    y = 0,
+                                    visibility = CellVisibilitySnapshot.VISIBLE,
+                                    terrainTypeId = "floor",
+                                    terrainVisualKey = "tileset.test.ground_01",
+                                    items = listOf(item),
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0), explainPaneOpen = true),
+            )
+
+        assertTrue(inventoryModel.sidebar.rows.any { row -> row.text.contains("Marked") })
+        assertTrue(inventoryModel.sidebar.rows.none { row -> row.text.contains("[[marked]]") })
+        assertTrue(inspectModel.sidebar.rows.any { row -> row.text.contains("Marked") })
+        assertEquals(1, inspectModel.sidebar.rows.count { row -> row.text.startsWith("Marked:") })
+    }
+
+    @Test
     fun `inspect sidebar includes telegraph warnings for the cursor cell`() {
         val model =
             TileRenderer.buildRenderModel(
@@ -210,7 +265,7 @@ class TileRendererCanvasTest {
                 overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
             )
 
-        assertTrue(model.sidebar.rows.any { row -> row.text.contains("T-1 High telegraph.test") })
+        assertTrue(model.sidebar.rows.any { row -> row.text.contains("1t High telegraph.test") })
     }
 
     @Test
@@ -1179,6 +1234,36 @@ class TileRendererCanvasTest {
                                 key = "item.short_sword.icon",
                                 category = "item_icon",
                                 rawOutputPath = "phase2/p2-b/icon_item_short_sword.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.empty.inventory.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_empty_inventory_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.empty.shop.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_empty_shop_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.empty.inspect.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_empty_inspect_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.card.shop.header.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_card_shop_header_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.card.reward.header.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_card_reward_header_icon.png",
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(

@@ -2015,11 +2015,11 @@ items:
   - id: hunter_bow
     nameKey: item.hunter_bow.name
     descKey: item.hunter_bow.desc
-    visualKey: item.long_sword.visual
-    iconKey: item.long_sword.icon
+    visualKey: item.base.rogue.weapon.icon
+    iconKey: item.base.rogue.weapon.icon
     audioProfile: audio.item.long_sword
     schemaVersion: 2
-    tags: [item, weapon, energy, ranged, precision, mobility, kite]
+    tags: [item, weapon, rogue, energy, ranged, precision, mobility, kite]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -2033,8 +2033,8 @@ items:
   - id: war_maul
     nameKey: item.war_maul.name
     descKey: item.war_maul.desc
-    visualKey: item.battle_axe.visual
-    iconKey: item.battle_axe.icon
+    visualKey: item.base.vanguard.weapon.icon
+    iconKey: item.base.vanguard.weapon.icon
     audioProfile: audio.item.battle_axe
     schemaVersion: 2
     tags: [item, weapon, melee, hate, cleave, bruise, stagger]
@@ -2050,8 +2050,8 @@ items:
   - id: forgebreaker_pick
     nameKey: item.forgebreaker_pick.name
     descKey: item.forgebreaker_pick.desc
-    visualKey: item.battle_axe.visual
-    iconKey: item.battle_axe.icon
+    visualKey: item.base.vanguard.weapon.icon
+    iconKey: item.base.vanguard.weapon.icon
     audioProfile: audio.item.battle_axe
     schemaVersion: 2
     tags: [item, weapon, melee, frontline, stamina, sunder, forge]
@@ -2067,8 +2067,8 @@ items:
   - id: shadow_cloak
     nameKey: item.shadow_cloak.name
     descKey: item.shadow_cloak.desc
-    visualKey: item.leather_armor.visual
-    iconKey: item.leather_armor.icon
+    visualKey: item.base.rogue.armor.icon
+    iconKey: item.base.rogue.armor.icon
     audioProfile: audio.item.leather_armor
     schemaVersion: 2
     tags: [item, armor, rogue, shadow, mobility]
@@ -2084,8 +2084,8 @@ items:
   - id: bandit_trophy
     nameKey: item.bandit_trophy.name
     descKey: item.bandit_trophy.desc
-    visualKey: item.basic_shield.visual
-    iconKey: item.basic_shield.icon
+    visualKey: item.base.rogue.off_hand.icon
+    iconKey: item.base.rogue.off_hand.icon
     audioProfile: audio.item.basic_shield
     schemaVersion: 2
     tags: [item, armor, accessory, rogue, precision]
@@ -2101,8 +2101,8 @@ items:
   - id: emerald_charm
     nameKey: item.emerald_charm.name
     descKey: item.emerald_charm.desc
-    visualKey: item.mana_potion.visual
-    iconKey: item.mana_potion.icon
+    visualKey: item.base.arcanist.off_hand.icon
+    iconKey: item.base.arcanist.off_hand.icon
     audioProfile: audio.item.mana_potion
     schemaVersion: 2
     tags: [item, armor, accessory, arcanist, arcane, sustain]
@@ -2118,8 +2118,8 @@ items:
   - id: furnace_talisman
     nameKey: item.furnace_talisman.name
     descKey: item.furnace_talisman.desc
-    visualKey: item.basic_shield.visual
-    iconKey: item.basic_shield.icon
+    visualKey: item.base.vanguard.off_hand.icon
+    iconKey: item.base.vanguard.off_hand.icon
     audioProfile: audio.item.basic_shield
     schemaVersion: 2
     tags: [item, armor, accessory, vanguard, fire, protection]
@@ -2135,8 +2135,8 @@ items:
   - id: seal_reliquary
     nameKey: item.seal_reliquary.name
     descKey: item.seal_reliquary.desc
-    visualKey: item.scroll_teleport.visual
-    iconKey: item.scroll_teleport.icon
+    visualKey: item.base.arcanist.off_hand.icon
+    iconKey: item.base.arcanist.off_hand.icon
     audioProfile: audio.item.scroll_teleport
     schemaVersion: 2
     tags: [item, armor, accessory, arcanist, shadow, protection, spell]
@@ -2152,8 +2152,8 @@ items:
   - id: sanctified_seal
     nameKey: item.sanctified_seal.name
     descKey: item.sanctified_seal.desc
-    visualKey: item.basic_shield.visual
-    iconKey: item.basic_shield.icon
+    visualKey: item.base.templar.off_hand.icon
+    iconKey: item.base.templar.off_hand.icon
     audioProfile: audio.item.basic_shield
     schemaVersion: 2
     tags: [item, armor, accessory, reward, templar, holy, protection]
@@ -2168,8 +2168,8 @@ items:
   - id: abyssal_heartstone
     nameKey: item.abyssal_heartstone.name
     descKey: item.abyssal_heartstone.desc
-    visualKey: item.scroll_teleport.visual
-    iconKey: item.scroll_teleport.icon
+    visualKey: item.abyssal_heartstone.icon
+    iconKey: item.abyssal_heartstone.icon
     audioProfile: audio.item.scroll_teleport
     schemaVersion: 2
     tags: [item, armor, accessory, reward, finale, shadow, protection]

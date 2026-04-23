@@ -147,6 +147,10 @@ sealed interface ValidationAction {
         override val family: ValidationActionFamily = ValidationActionFamily.REWARD_AND_ITEM
     }
 
+    data object SpawnPr03ItemShowcase : ValidationAction {
+        override val family: ValidationActionFamily = ValidationActionFamily.REWARD_AND_ITEM
+    }
+
     data object ExecuteSearch : ValidationAction {
         override val family: ValidationActionFamily = ValidationActionFamily.DISCOVERY
     }

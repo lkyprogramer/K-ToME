@@ -114,7 +114,7 @@ data class StatusPresentationModel(
     val nameKey: String?,
     val iconKey: String?,
     val category: StatusEffectCategorySnapshot,
-    val badge: RenderTextTokenSnapshot,
+    val rawBadge: String,
     val priority: Int,
     val group: StatusPresentationGroup,
 )
@@ -125,7 +125,7 @@ badge 规则：
 1. `remainingTurns > 0` 显示回合。
 2. `stackCount > 1` 显示 `xN`。
 3. `stackCap != null` 可显示 `N/cap`，但不能挤掉 danger/turn 信息。
-4. 同一状态在 HUD、目标卡、inspect/explain 中 badge token 一致，并由单一 builder 生成，不允许 renderer 各自格式化。
+4. 同一状态在 HUD、目标卡、inspect/explain 中 raw badge 字符串一致，并由单一 builder 生成，不允许 renderer 各自格式化。
 5. badge 内容不走 locale，由 pure formatter 生成，固定形态为 `x3`、`3/5`、`4t`；若未来需要本地化，再单独修订 badge formatter contract。
 
 分组：
@@ -159,7 +159,7 @@ priority 计算矩阵：
 
 实现应提供 pure builder，例如 `StatusPresentationBuilder.build(...)`，并用 `StatusPresentationModelTest` 覆盖排序。
 
-`TelegraphPresentationModel` 在本 PR 只冻结 compact 所需最小 shape：`typeId / nameKey / iconKey / dangerLevel / previewTurnsRemaining / badge`。`StatusPresentationGroup.TELEGRAPH` 必须由 `TelegraphPresentationModel.toStatusPresentation()` 投影得到，投影规则固定为：
+`TelegraphPresentationModel` 在本 PR 只冻结 compact 所需最小 shape：`typeId / nameKey / iconKey / dangerLevel / previewTurnsRemaining / rawBadge`。`StatusPresentationGroup.TELEGRAPH` 必须由 `TelegraphPresentationModel.toStatusPresentation()` 投影得到，投影规则固定为：
 
 1. `group = StatusPresentationGroup.TELEGRAPH`
 2. `category = StatusEffectCategorySnapshot.NEUTRAL`，除非后续正式新增 telegraph-only category
@@ -276,6 +276,8 @@ lint 实现策略：
 | `ui.status.group.neutral` | status group | `状态` |
 | `ui.status.group.telegraph` | telegraph compact | `危险预兆` |
 | `ui.status.group.zone-effect` | zone effect | `区域效果` |
+| `ui.status.effect.name` | status fallback | `{name}` |
+| `ui.status.effect.line` | status explain line | `{name} {badge}` |
 | `ui.explain.title` | ExplainPane | `说明` |
 | `ui.explain.empty` | ExplainPane | `当前目标没有额外说明。` |
 | `ui.accessibility.high-contrast` | accessibility toggle | `高对比` |

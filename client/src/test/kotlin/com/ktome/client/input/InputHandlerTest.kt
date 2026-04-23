@@ -274,7 +274,7 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `inspect question mark invokes explain stub without renderer visible state`() {
+    fun `inspect question mark opens explain pane and backspace closes subview first`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val snapshot = snapshotWithLoadout()
@@ -286,7 +286,71 @@ class InputHandlerTest {
         input.frame(justPressed = setOf(Keys.SLASH), pressed = setOf(Keys.SHIFT_LEFT, Keys.SLASH))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.INSPECT, handler.overlayState().mode)
-        assertEquals("DEBUG inspect.explain-stub.invoked", handler.overlayState().debugMessageKey)
+        assertTrue(handler.overlayState().explainPaneOpen)
+        assertEquals(ModalFrameKind.INSPECT, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INSPECT, handler.overlayState().mode)
+        assertFalse(handler.overlayState().explainPaneOpen)
+        assertEquals(ModalFrameKind.INSPECT, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.SLASH), pressed = setOf(Keys.SHIFT_LEFT, Keys.SLASH))
+        assertNull(handler.pollCommand(snapshot))
+        assertTrue(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertFalse(handler.overlayState().explainPaneOpen)
+    }
+
+    @Test
+    fun `reopening inspect clears stale explain pane after validation toggle`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("inspect-explain-validation-toggle-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.INSPECT, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.SLASH), pressed = setOf(Keys.SHIFT_LEFT, Keys.SLASH))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertTrue(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
+        assertFalse(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertFalse(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.INSPECT, handler.overlayState().mode)
+        assertFalse(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
     }
 
     @Test

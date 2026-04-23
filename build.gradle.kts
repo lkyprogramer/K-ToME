@@ -44,6 +44,7 @@ val verificationOnlyTestTags =
         "combatTraceGolden",
         "localeLint",
         "contractLint",
+        "keywordRegistryLint",
         "maintainabilityLint",
         "mapgenSmoke",
         "solvabilityHarness",
@@ -67,6 +68,7 @@ val verificationOnlyTestTags =
 val verifyOwnerTaskPaths =
     listOf(
         ":tools:contractLint",
+        ":tools:keywordRegistryLint",
         ":tools:lootBalanceLab",
         ":tools:whiteBoxLoot",
         ":tools:hiddenContentHarness",
@@ -86,6 +88,7 @@ val verifyChangedTaskPaths =
         ":tools:maintainabilityLint",
         ":tools:verifyContractLintPreflight",
         ":tools:contractLint",
+        ":tools:keywordRegistryLint",
         ":tools:verifyLootPreflight",
         ":tools:verifyHiddenPreflight",
         ":tools:verifyContentPackPreflight",
@@ -415,6 +418,12 @@ tasks.register("contractLint") {
     dependsOn(":tools:contractLint")
 }
 
+tasks.register("keywordRegistryLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates keyword registry consumers and formal description coverage probes."
+    dependsOn(":tools:keywordRegistryLint")
+}
+
 tasks.register("maintainabilityLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the anti-bloat maintainability lint and baseline debt gate."
@@ -685,6 +694,8 @@ tasks.register<Exec>("assetLint") {
         "--extra-plan",
         "assets-src/image/specs/phase4-v3-pr03-gemini-plan.yaml",
         "--extra-plan",
+        "assets-src/image/specs/phase4-uiux-pr03-gemini-plan.yaml",
+        "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr09-gemini-plan.yaml",
@@ -722,6 +733,8 @@ tasks.register<Exec>("styleLint") {
         "--extra-plan",
         "assets-src/image/specs/phase4-opt-pr05-gemini-plan.yaml",
         "--extra-plan",
+        "assets-src/image/specs/phase4-uiux-pr03-gemini-plan.yaml",
+        "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr09-gemini-plan.yaml",
@@ -757,6 +770,8 @@ tasks.register<Exec>("audioLint") {
         "assets-src/audio/specs/phase4-opt-pr05-audio-plan.yaml",
         "--extra-plan",
         "assets-src/audio/specs/phase4-v3-pr03-audio-plan.yaml",
+        "--extra-plan",
+        "assets-src/audio/specs/phase4-uiux-pr03-audio-plan.yaml",
         "--extra-plan",
         "assets-src/audio/specs/phase4-pr07-audio-plan.yaml",
         "--manifest",
@@ -826,6 +841,8 @@ tasks.register<Exec>("manifestLint") {
         "assets-src/image/specs/phase4-opt-pr05-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-v3-pr03-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-uiux-pr03-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--manifest",

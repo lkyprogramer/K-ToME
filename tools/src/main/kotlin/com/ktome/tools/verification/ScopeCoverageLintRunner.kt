@@ -52,6 +52,10 @@ object ScopeCoverageLintRunner {
                     changedFiles = listOf("game/src/main/resources/i18n/en-US.json"),
                 ),
                 planCase(
+                    caseId = "keyword_registry_scope",
+                    changedFiles = listOf("client/src/main/kotlin/com/ktome/client/ui/talent/DescriptionPresenter.kt"),
+                ),
+                planCase(
                     caseId = "maintainability_governance_scope",
                     changedFiles = listOf("docs/rule/ai-change-governance.md"),
                 ),

@@ -30,6 +30,7 @@ class ScopeCoverageLintTest {
         val presentationOnlySnapshotCase =
             cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "presentation_only_item_snapshot_scope" }
         val dataLoaderCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "data_loader_false_negative" }
+        val keywordRegistryCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "keyword_registry_scope" }
         val foundationSessionCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "foundation_session_false_negative" }
         val maintainabilityGovernanceCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "maintainability_governance_scope" }
         val maintainabilityBaselineCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "maintainability_baseline_scope" }
@@ -60,6 +61,8 @@ class ScopeCoverageLintTest {
         assertTrue(presentationOnlySnapshotCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":game:longRunLab" })
         assertTrue(dataLoaderCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "content-pack" })
         assertTrue(dataLoaderCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:whiteBoxContentPack" })
+        assertTrue(keywordRegistryCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "keywordRegistry" })
+        assertTrue(keywordRegistryCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:keywordRegistryLint" })
         assertTrue(foundationSessionCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "boss" })
         assertTrue(foundationSessionCase.getValue("impactedDomainIds").jsonArray.none { domain -> domain.jsonPrimitive.content == "loot" })
         assertTrue(foundationSessionCase.getValue("impactedDomainIds").jsonArray.none { domain -> domain.jsonPrimitive.content == "hidden" })

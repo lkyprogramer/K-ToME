@@ -126,6 +126,51 @@ object VerificationTaskRegistry {
             artifactPolicy = VerificationArtifactPolicy(),
         )
 
+    private val keywordRegistryDomain =
+        VerificationDomainSpec(
+            domainId = "keywordRegistry",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "keywordRegistry.lint",
+                        description = "Validates DescriptionPresenter keyword consumers against the core KeywordRegistry authority.",
+                        workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.lint.KeywordRegistryLintTest"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "keyword-registry.authority",
+                        pathPrefixes =
+                            listOf(
+                                "core/src/main/kotlin/com/ktome/core/talent/KeywordRegistry.kt",
+                                "core/src/main/kotlin/com/ktome/core/talent/DescriptionModel.kt",
+                                "client/src/main/kotlin/com/ktome/client/ui/talent/DescriptionPresenter.kt",
+                                "client/src/main/kotlin/com/ktome/client/ui/inspect/ExplainPaneModel.kt",
+                                "client/src/main/kotlin/com/ktome/client/ui/status/StatusPresentationModel.kt",
+                                "game/src/main/resources/data/talents/",
+                                "game/src/main/resources/i18n/",
+                            ),
+                        ownerRequired = true,
+                    ),
+                ),
+            ownerTaskPaths = listOf(":tools:keywordRegistryLint"),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
     private val lootDomain =
         VerificationDomainSpec(
             domainId = "loot",
@@ -697,6 +742,7 @@ object VerificationTaskRegistry {
         listOf(
             contractLintDomain,
             maintainabilityDomain,
+            keywordRegistryDomain,
             lootDomain,
             hiddenDomain,
             organicHiddenDomain,

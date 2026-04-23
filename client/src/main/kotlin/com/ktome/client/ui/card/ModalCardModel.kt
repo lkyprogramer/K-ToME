@@ -1,5 +1,6 @@
 package com.ktome.client.ui.card
 
+import com.ktome.client.ui.UiCompanionVisualKeys
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
@@ -101,8 +102,8 @@ internal data class ModalCardModel(
             ModalCardModel(
                 stableKey = "shop:$shopId:offer:${offer.index}",
                 title = RenderTextTokenSnapshot(offer.labelKey),
-                iconKey = null,
-                summary = shardCostToken(offer.price),
+                iconKey = UiCompanionVisualKeys.CARD_SHOP_HEADER,
+                summary = null,
                 detailLines = offer.tagLabelKeys.map(::RenderTextTokenSnapshot),
                 costLines = listOf(shardCostToken(offer.price)),
                 primaryAction = ModalCardAction.BUY,
@@ -119,7 +120,7 @@ internal data class ModalCardModel(
                 stableKey = "shop:$shopId:sell:$displayIndex",
                 title = item?.displayName ?: RenderTextTokenSnapshot(item?.nameKey ?: "ui.empty.inventory.title"),
                 iconKey = item?.iconKey,
-                summary = shardCostToken(price),
+                summary = null,
                 detailLines = listOfNotNull(item?.descKey?.let(::RenderTextTokenSnapshot)),
                 rewardLines = listOf(shardCostToken(price)),
                 disabledReason = if (item == null) RenderTextTokenSnapshot("ui.empty.inventory.detail") else null,
@@ -134,7 +135,7 @@ internal data class ModalCardModel(
             ModalCardModel(
                 stableKey = "reward:${entry.source.name.lowercase()}:$index:${entry.itemDisplayName.key}",
                 title = entry.itemDisplayName,
-                iconKey = null,
+                iconKey = UiCompanionVisualKeys.CARD_REWARD_HEADER,
                 summary = RenderTextTokenSnapshot(entry.sourceLabelKey),
                 detailLines = listOfNotNull(entry.detailText),
                 primaryAction = ModalCardAction.CLOSE,

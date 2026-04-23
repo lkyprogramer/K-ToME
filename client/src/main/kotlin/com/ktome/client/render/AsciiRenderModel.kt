@@ -8,13 +8,15 @@ import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
+import com.ktome.client.ui.card.ModalCardModel
 import com.ktome.client.ui.item.QualityColorTokenId
 import com.ktome.client.ui.item.QualityPresentation
+import com.ktome.client.ui.inspect.ExplainPaneModel
 import com.ktome.client.ui.state.UiEmptyState
-import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.talent.DescriptionLine
 import com.ktome.client.ui.talent.DescriptionLineKind
 import com.ktome.client.ui.talent.DescriptionPresenter
+import com.ktome.client.ui.talent.DescriptionSurface
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -30,6 +32,7 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
+import com.ktome.core.snapshot.ShopPanelSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
@@ -304,6 +307,11 @@ internal object AsciiRenderModelBuilder {
                             )
                     }
                 }
+                snapshot.uiState.activeShop?.let { shop ->
+                    selectedShopDescriptionLines(localizer, shop, snapshot, overlayState).forEach { line ->
+                        lines += AsciiTextLine(line.text, descriptionTone(line))
+                    }
+                }
                 lines += AsciiTextLine(localizer.text("ui.controls.shop"), AsciiTextTone.LIGHT_GRAY)
             }
 
@@ -355,6 +363,15 @@ internal object AsciiRenderModelBuilder {
                 }
                 if (snapshot.uiState.inventory.isEmpty()) {
                     lines += emptyStateLines(localizer, UiEmptyState.inventory())
+                } else {
+                    snapshot.uiState.inventory.getOrNull(overlayState.inventorySelection)?.item?.let { item ->
+                        DescriptionPresenter.presentInventoryItemLines(localizer, item).forEach { line ->
+                            lines += AsciiTextLine(line.text, descriptionTone(line))
+                        }
+                        itemDetailLines(localizer, item).forEach { detail ->
+                            lines += AsciiTextLine(detail, AsciiTextTone.LIGHT_GRAY)
+                        }
+                    }
                 }
                 lines += AsciiTextLine(localizer.text("ui.controls.inventory"), AsciiTextTone.LIGHT_GRAY)
             }
@@ -470,7 +487,9 @@ internal object AsciiRenderModelBuilder {
                         }
                     }
                     inspected.statusEffects.forEach { effect ->
-                        lines += AsciiTextLine(StatusHudRenderer.renderTurns(localizer, effect), AsciiTextTone.LIGHT_GRAY)
+                        DescriptionPresenter.presentStatusEffectLines(localizer, effect).forEach { line ->
+                            lines += AsciiTextLine(line.text, descriptionTone(line))
+                        }
                     }
                 }
 
@@ -479,6 +498,9 @@ internal object AsciiRenderModelBuilder {
                     cell.items.forEach { item ->
                         val presentation = QualityPresentation.from(item)
                         lines += AsciiTextLine(renderItemDisplay(localizer, item, presentation), itemTone(presentation))
+                        DescriptionPresenter.presentInspectItemLines(localizer, item).forEach { line ->
+                            lines += AsciiTextLine(line.text, descriptionTone(line))
+                        }
                         itemDetailLines(localizer, item).forEach { detail ->
                             lines += AsciiTextLine(detail, AsciiTextTone.LIGHT_GRAY)
                         }
@@ -489,8 +511,12 @@ internal object AsciiRenderModelBuilder {
                     prop.stateLabelKey?.let { stateLabelKey ->
                         lines += AsciiTextLine(localizer.text(stateLabelKey), AsciiTextTone.CYAN)
                     }
-                    prop.descKey?.let { descKey ->
-                        lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
+                    DescriptionPresenter
+                        .presentInspectObjectLines(
+                            localizer,
+                            listOfNotNull(prop.descKey?.let(::RenderTextTokenSnapshot)),
+                        ).forEach { line ->
+                            lines += AsciiTextLine(line.text, descriptionTone(line))
                     }
                 }
 
@@ -528,6 +554,23 @@ internal object AsciiRenderModelBuilder {
                             AsciiTextTone.LIGHT_GRAY,
                         )
                     }
+                }
+                if (overlayState.explainPaneOpen) {
+                    lines += explainPaneLines(
+                        localizer = localizer,
+                        model =
+                            ExplainPaneModel.fromInspectSurface(
+                                localizer = localizer,
+                                actor = actor,
+                                item = cell.items.firstOrNull(),
+                                prop = prop,
+                                terrainOverride = cell.terrainOverride,
+                                overlay =
+                                    snapshot.overlays.firstOrNull { overlay ->
+                                        overlay.cells.any { overlayCell -> overlayCell.x == cursor.x && overlayCell.y == cursor.y }
+                                    },
+                            ),
+                    )
                 }
 
                 lines += AsciiTextLine(localizer.text("ui.controls.inspect"), AsciiTextTone.LIGHT_GRAY)
@@ -635,6 +678,16 @@ internal object AsciiRenderModelBuilder {
 
         return lines
     }
+
+    private fun explainPaneLines(
+        localizer: Localizer,
+        model: ExplainPaneModel,
+    ): List<AsciiTextLine> =
+        buildList {
+            add(AsciiTextLine(renderTextToken(localizer, model.card.title), AsciiTextTone.GOLD))
+            model.keywordChips.forEach { chip -> add(AsciiTextLine(renderTextToken(localizer, chip), AsciiTextTone.CYAN)) }
+            model.referenceChain.forEach { ref -> add(AsciiTextLine(renderTextToken(localizer, ref), AsciiTextTone.GRAY)) }
+        }
 
     private fun validationOverlayLines(
         localizer: Localizer,
@@ -1064,9 +1117,6 @@ internal object AsciiRenderModelBuilder {
             item.affixNameKeys.forEach { affixNameKey ->
                 add(localizer.text("ui.inspect.affix", "affix" to localizer.text(affixNameKey)))
             }
-            item.passiveDescriptions.forEach { token ->
-                add(renderTextToken(localizer, token))
-            }
             addAll(statModifierLines(localizer, item.stats))
             when (item.effectTypeId) {
                 "HEAL" -> add(localizer.text("ui.inspect.restore_hp", "amount" to item.magnitude))
@@ -1075,6 +1125,28 @@ internal object AsciiRenderModelBuilder {
             }
             if (isEmpty()) {
                 add(localizer.text("ui.inspect.no_special_effect"))
+            }
+        }
+
+    private fun selectedShopDescriptionLines(
+        localizer: Localizer,
+        shop: ShopPanelSnapshot,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+    ): List<DescriptionLine> =
+        when (overlayState.shopFocus) {
+            com.ktome.client.input.ShopFocus.BUY -> {
+                val offer = shop.offers.firstOrNull { candidate -> candidate.index == overlayState.shopOfferSelection }
+                offer?.let { selected ->
+                    val card = ModalCardModel.shopOffer(shop.shopId, selected)
+                    DescriptionPresenter.presentModalCardLines(localizer, card, DescriptionSurface.SHOP_ITEM)
+                }.orEmpty()
+            }
+
+            com.ktome.client.input.ShopFocus.SELL -> {
+                val sellEntry = shop.sellEntries.getOrNull(overlayState.inventorySelection)
+                val item = sellEntry?.let { entry -> snapshot.uiState.inventory.firstOrNull { inventory -> inventory.index == entry.inventoryIndex }?.item }
+                item?.let { selected -> DescriptionPresenter.presentShopItemLines(localizer, selected) }.orEmpty()
             }
         }
 

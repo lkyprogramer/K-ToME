@@ -6,6 +6,7 @@ import com.ktome.core.snapshot.ActorMutationRenderSnapshot
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.BossVariantRenderSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.EquipmentSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
@@ -83,9 +84,19 @@ class AudioRouterTest {
         )
 
         assertEquals(
-            listOf("audio.ui.confirm", "audio.ui.hover", "audio.ui.cancel"),
+            listOf("audio.ui.card_open", "audio.ui.hover", "audio.ui.cancel"),
             sink.events,
         )
+    }
+
+    @Test
+    fun `runtime error presentation emits dedicated critical error cue`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+
+        router.onCriticalError()
+
+        assertEquals(listOf("audio.ui.critical_error"), sink.events)
     }
 
     @Test
@@ -545,6 +556,123 @@ class AudioRouterTest {
         router.onSnapshotUpdated(current, current)
 
         assertEquals(listOf("audio.item.long_sword"), sink.events)
+    }
+
+    @Test
+    fun `new high value inventory item emits pickup accent after item cue`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous = sampleSnapshot()
+        val current =
+            previous.copy(
+                uiState =
+                    previous.uiState.copy(
+                        inventory =
+                            listOf(
+                                InventoryEntrySnapshot(
+                                    index = 0,
+                                    item =
+                                        ItemRenderSnapshot(
+                                            baseItemId = "heartroot_gambit",
+                                            specialTemplateId = "artifact.heartroot_gambit",
+                                            specialTierId = "ARTIFACT",
+                                            nameKey = "item.artifact.heartroot_gambit.name",
+                                            typeId = "ACCESSORY",
+                                            visualKey = "item.artifact.heartroot_gambit.visual",
+                                            iconKey = "item.artifact.heartroot_gambit.icon",
+                                            audioProfile = "audio.item.artifact.heartroot_gambit",
+                                        ),
+                                ),
+                            ),
+                    ),
+            )
+
+        router.onSnapshotUpdated(previous, current)
+
+        assertEquals(listOf("audio.item.artifact.heartroot_gambit", "audio.item.pickup.artifact"), sink.events)
+    }
+
+    @Test
+    fun `new unique inventory item emits unique pickup accent`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous = sampleSnapshot()
+        val current =
+            previous.copy(
+                uiState =
+                    previous.uiState.copy(
+                        inventory =
+                            listOf(
+                                InventoryEntrySnapshot(
+                                    index = 0,
+                                    item =
+                                        ItemRenderSnapshot(
+                                            baseItemId = "thornpath_crook",
+                                            specialTemplateId = "unique.thornpath_crook",
+                                            specialTierId = "UNIQUE",
+                                            nameKey = "item.unique.thornpath_crook.name",
+                                            typeId = "WEAPON",
+                                            visualKey = "item.unique.thornpath_crook.visual",
+                                            iconKey = "item.unique.thornpath_crook.icon",
+                                            audioProfile = "audio.item.unique.thornpath_crook",
+                                        ),
+                                ),
+                            ),
+                    ),
+            )
+
+        router.onSnapshotUpdated(previous, current)
+
+        assertEquals(listOf("audio.item.unique.thornpath_crook", "audio.item.pickup.unique"), sink.events)
+    }
+
+    @Test
+    fun `equipment activation uses changed or rejected item cues`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous = sampleSnapshot()
+        val current =
+            previous.copy(
+                uiState =
+                    previous.uiState.copy(
+                        equipment =
+                            listOf(
+                                EquipmentSlotSnapshot(
+                                    slotId = "WEAPON",
+                                    item =
+                                        ItemRenderSnapshot(
+                                            baseItemId = "hunter_bow",
+                                            nameKey = "item.hunter_bow.name",
+                                            typeId = "WEAPON",
+                                            visualKey = "item.base.rogue.weapon.icon",
+                                            iconKey = "item.base.rogue.weapon.icon",
+                                            audioProfile = "audio.item.long_sword",
+                                        ),
+                                ),
+                            ),
+                    ),
+            )
+
+        router.onCommandResolved(previous, current, PlayerCommand.ActivateInventoryItem(index = 0), consumed = true)
+        router.onCommandResolved(previous, previous, PlayerCommand.ActivateInventoryItem(index = 0), consumed = false)
+
+        assertEquals(listOf("audio.item.equip.changed", "audio.item.equip.rejected"), sink.events)
+    }
+
+    @Test
+    fun `shop purchase success and failure use dedicated cues`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val snapshot = sampleSnapshot()
+
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.BuyShopOffer(index = 0), consumed = true)
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.SellInventoryItem(index = 0), consumed = true)
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.BuyShopOffer(index = 0), consumed = false)
+
+        assertEquals(
+            listOf("audio.shop.purchase_success", "audio.shop.purchase_success", "audio.shop.purchase_failed"),
+            sink.events,
+        )
     }
 
     @Test

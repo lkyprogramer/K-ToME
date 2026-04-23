@@ -12,6 +12,7 @@ import com.ktome.client.GameApp
 import com.ktome.client.assets.ClientAssetBundle
 import com.ktome.client.assets.RenderSnapshotAssetAudit
 import com.ktome.client.audio.AudioRouter
+import com.ktome.client.input.AudioRouterAwareCommandSource
 import com.ktome.client.input.CommandSource
 import com.ktome.client.input.InputHandlerCommandSource
 import com.ktome.client.render.KtomeFonts
@@ -260,6 +261,7 @@ class FoundationGameScreen(
         if (!renderEnabled) {
             throw exception
         }
+        (commandSource as? AudioRouterAwareCommandSource)?.audioRouter?.onCriticalError()
         activeErrorState = runtimeErrorState(snapshot, exception)
     }
 

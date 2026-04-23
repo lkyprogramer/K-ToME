@@ -1,0 +1,69 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+sampleRate: 44100
+entries:
+  - key: audio.ui.card_open
+    cueFamily: ui
+    eventId: audio.ui.card_open
+    sourcePath: audio/phase4/uiux_pr03/card_open.ogg
+    tags: [phase4, uiux, pr03, ui, card]
+  - key: audio.ui.critical_error
+    cueFamily: ui
+    eventId: audio.ui.critical_error
+    sourcePath: audio/phase4/uiux_pr03/critical_error.ogg
+    tags: [phase4, uiux, pr03, ui, error]
+  - key: audio.shop.purchase_success
+    cueFamily: ui
+    eventId: audio.shop.purchase_success
+    sourcePath: audio/phase4/uiux_pr03/shop_purchase_success.ogg
+    tags: [phase4, uiux, pr03, shop, success]
+  - key: audio.shop.purchase_failed
+    cueFamily: ui
+    eventId: audio.shop.purchase_failed
+    sourcePath: audio/phase4/uiux_pr03/shop_purchase_failed.ogg
+    tags: [phase4, uiux, pr03, shop, failure]
+  - key: audio.item.high_value_pickup
+    cueFamily: item
+    eventId: audio.item.high_value_pickup
+    sourcePath: audio/phase4/uiux_pr03/high_value_pickup.ogg
+    tags: [phase4, uiux, pr03, item, reward, high_value]
+  - key: audio.item.pickup.high_value
+    cueFamily: item
+    eventId: audio.item.pickup.high_value
+    sourcePath: audio/phase4/uiux_pr03/item_pickup_high_value.ogg
+    tags: [phase4, uiux, pr03, item, pickup, high_value]
+  - key: audio.item.pickup.unique
+    cueFamily: item
+    eventId: audio.item.pickup.unique
+    sourcePath: audio/phase4/uiux_pr03/item_pickup_unique.ogg
+    tags: [phase4, uiux, pr03, item, pickup, unique]
+  - key: audio.item.pickup.artifact
+    cueFamily: item
+    eventId: audio.item.pickup.artifact
+    sourcePath: audio/phase4/uiux_pr03/item_pickup_artifact.ogg
+    tags: [phase4, uiux, pr03, item, pickup, artifact]
+  - key: audio.item.equip.changed
+    cueFamily: item
+    eventId: audio.item.equip.changed
+    sourcePath: audio/phase4/uiux_pr03/item_equip_changed.ogg
+    tags: [phase4, uiux, pr03, item, equip, success]
+  - key: audio.item.equip.rejected
+    cueFamily: item
+    eventId: audio.item.equip.rejected
+    sourcePath: audio/phase4/uiux_pr03/item_equip_rejected.ogg
+    tags: [phase4, uiux, pr03, item, equip, failure]
+  - key: audio.item.compare.upgrade
+    cueFamily: item
+    eventId: audio.item.compare.upgrade
+    sourcePath: audio/phase4/uiux_pr03/item_compare_upgrade.ogg
+    tags: [phase4, uiux, pr03, item, compare, upgrade]
+  - key: audio.item.compare.sidegrade
+    cueFamily: item
+    eventId: audio.item.compare.sidegrade
+    sourcePath: audio/phase4/uiux_pr03/item_compare_sidegrade.ogg
+    tags: [phase4, uiux, pr03, item, compare, sidegrade]
+  - key: audio.item.compare.downgrade
+    cueFamily: item
+    eventId: audio.item.compare.downgrade
+    sourcePath: audio/phase4/uiux_pr03/item_compare_downgrade.ogg
+    tags: [phase4, uiux, pr03, item, compare, downgrade]

@@ -7,23 +7,27 @@ import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 
 internal data class StatusHudIconModel(
     val asset: ResolvedVisualAsset,
-    val badgeText: String,
-    val category: StatusEffectCategorySnapshot,
-)
+    val presentation: StatusPresentationModel,
+) {
+    val badgeText: String
+        get() = presentation.badgeText
+
+    val category: StatusEffectCategorySnapshot
+        get() = presentation.category
+}
 
 internal object StatusIconResolver {
     fun resolveIcons(
         visualResolver: VisualManifestResolver,
         effects: List<StatusEffectRenderSnapshot>,
     ): List<StatusHudIconModel> =
-        effects
-            .sortedBy { effect -> if (effect.category == StatusEffectCategorySnapshot.BUFF) 0 else 1 }
-            .mapNotNull { effect ->
-                effect.iconKey?.let(visualResolver::resolve)?.let { asset ->
+        StatusPresentationBuilder
+            .sorted(effects.map(StatusPresentationBuilder::build))
+            .mapNotNull { presentation ->
+                presentation.iconKey?.let(visualResolver::resolve)?.let { asset ->
                     StatusHudIconModel(
                         asset = asset,
-                        badgeText = StatusHudRenderer.renderCompact(effect),
-                        category = effect.category,
+                        presentation = presentation,
                     )
                 }
             }

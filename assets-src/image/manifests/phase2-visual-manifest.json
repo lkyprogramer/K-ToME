@@ -852,6 +852,276 @@
       "asciiColorHex": "#FFFFFF"
     },
     {
+      "key": "affix.anchored.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_anchored.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "protection",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "affix.anchored.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_anchored.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "protection",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "affix.briarhook.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_briarhook.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "greenwood",
+        "marked"
+      ]
+    },
+    {
+      "key": "affix.briarhook.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_briarhook.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "greenwood",
+        "marked"
+      ]
+    },
+    {
+      "key": "affix.cindervein.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_cindervein.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "fire",
+        "deep_iron_pit"
+      ]
+    },
+    {
+      "key": "affix.cindervein.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_cindervein.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "fire",
+        "deep_iron_pit"
+      ]
+    },
+    {
+      "key": "affix.floodtouched.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_floodtouched.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "terrain",
+        "water"
+      ]
+    },
+    {
+      "key": "affix.floodtouched.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_floodtouched.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "terrain",
+        "water"
+      ]
+    },
+    {
+      "key": "affix.frostlash.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_frostlash.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "cold",
+        "underground_river"
+      ]
+    },
+    {
+      "key": "affix.frostlash.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_frostlash.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "cold",
+        "underground_river"
+      ]
+    },
+    {
+      "key": "affix.honed.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_honed.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "precision"
+      ]
+    },
+    {
+      "key": "affix.honed.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_honed.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "precision"
+      ]
+    },
+    {
+      "key": "affix.lastlight.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_lastlight.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "conditional",
+        "survival"
+      ]
+    },
+    {
+      "key": "affix.lastlight.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_lastlight.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "conditional",
+        "survival"
+      ]
+    },
+    {
+      "key": "affix.lucid.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_lucid.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "mana",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "affix.lucid.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_lucid.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "mana",
+        "arcanist"
+      ]
+    },
+    {
       "key": "affix.of_fortitude.icon",
       "category": "icon",
       "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_guard_stance.png",
@@ -992,6 +1262,74 @@
       ]
     },
     {
+      "key": "affix.spite_fed.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_spite_fed.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "shadow",
+        "berserker"
+      ]
+    },
+    {
+      "key": "affix.spite_fed.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_spite_fed.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "shadow",
+        "berserker"
+      ]
+    },
+    {
+      "key": "affix.starforged.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_starforged.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "lightning",
+        "crit"
+      ]
+    },
+    {
+      "key": "affix.starforged.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_starforged.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "weapon",
+        "lightning",
+        "crit"
+      ]
+    },
+    {
       "key": "affix.sturdy.icon",
       "category": "icon",
       "rawOutputPath": "phase2/p2-b/icon_item_basic_shield.png",
@@ -1045,6 +1383,74 @@
         "p2-opt",
         "affix",
         "speed"
+      ]
+    },
+    {
+      "key": "affix.wind_fed.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_wind_fed.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "stamina",
+        "mobility"
+      ]
+    },
+    {
+      "key": "affix.wind_fed.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_wind_fed.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "stamina",
+        "mobility"
+      ]
+    },
+    {
+      "key": "affix.zealbound.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_zealbound.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "holy",
+        "templar"
+      ]
+    },
+    {
+      "key": "affix.zealbound.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_affix_zealbound.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "affix",
+        "armor",
+        "holy",
+        "templar"
       ]
     },
     {
@@ -1922,6 +2328,204 @@
         "monster",
         "warded_ruin"
       ]
+    },
+    {
+      "key": "icon.mutation.battle_drill",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_battle_drill.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "B",
+      "asciiColorHex": "#D4A373"
+    },
+    {
+      "key": "icon.mutation.corrosion_cloud",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_corrosion_cloud.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "C",
+      "asciiColorHex": "#7E9A52"
+    },
+    {
+      "key": "icon.mutation.dread_aura",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_dread_aura.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "D",
+      "asciiColorHex": "#8C6FF7"
+    },
+    {
+      "key": "icon.mutation.emberblood",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_emberblood.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "E",
+      "asciiColorHex": "#FF6A3D"
+    },
+    {
+      "key": "icon.mutation.frostbound",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_frostbound.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "F",
+      "asciiColorHex": "#8FDBFF"
+    },
+    {
+      "key": "icon.mutation.hunt_protocol",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_hunt_protocol.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "H",
+      "asciiColorHex": "#88C070"
+    },
+    {
+      "key": "icon.mutation.ironhide",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_ironhide.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "I",
+      "asciiColorHex": "#8A939B"
+    },
+    {
+      "key": "icon.mutation.phase_runner",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_phase_runner.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "P",
+      "asciiColorHex": "#6FA9FF"
+    },
+    {
+      "key": "icon.mutation.stonehide",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_stonehide.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "S",
+      "asciiColorHex": "#B7B7B7"
+    },
+    {
+      "key": "icon.mutation.tidebound",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_tidebound.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "T",
+      "asciiColorHex": "#59B7FF"
+    },
+    {
+      "key": "icon.mutation.void_mirror",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_void_mirror.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "V",
+      "asciiColorHex": "#6D7FD6"
+    },
+    {
+      "key": "icon.mutation.war_caller",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_war_caller.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "W",
+      "asciiColorHex": "#D8894C"
     },
     {
       "key": "icon.profession.arcanist",
@@ -3142,6 +3746,26 @@
       ]
     },
     {
+      "key": "item.abyssal_heartstone.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_abyssal_heartstone_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "high_value",
+        "abyssal",
+        "reward",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
       "key": "item.apprentice_robe.icon",
       "category": "icon",
       "rawOutputPath": "phase2/p2-b/icon_item_apprentice_robe.png",
@@ -3234,6 +3858,40 @@
       ]
     },
     {
+      "key": "item.artifact.deepcurrent_crown.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_deepcurrent_crown.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "artifact",
+        "underground_river",
+        "arcanist",
+        "secret_zone"
+      ]
+    },
+    {
+      "key": "item.artifact.deepcurrent_crown.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_deepcurrent_crown.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "artifact",
+        "underground_river",
+        "arcanist",
+        "secret_zone"
+      ]
+    },
+    {
       "key": "item.artifact.eclipsed_relic.icon",
       "category": "icon",
       "rawOutputPath": "phase4/pr05/icon_item_artifact_eclipsed_relic.png",
@@ -3306,6 +3964,40 @@
       ]
     },
     {
+      "key": "item.artifact.heartroot_gambit.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_heartroot_gambit.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "artifact",
+        "greenwood_fringe",
+        "rogue",
+        "chest"
+      ]
+    },
+    {
+      "key": "item.artifact.heartroot_gambit.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_heartroot_gambit.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "artifact",
+        "greenwood_fringe",
+        "rogue",
+        "chest"
+      ]
+    },
+    {
       "key": "item.artifact.river_echo.icon",
       "category": "icon",
       "rawOutputPath": "phase4/pr05/icon_item_artifact_river_echo.png",
@@ -3339,6 +4031,294 @@
         "underground_river",
         "arcanist",
         "artifact"
+      ]
+    },
+    {
+      "key": "item.artifact.slag_tyrant_seal.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_slag_tyrant_seal.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "artifact",
+        "deep_iron_pit",
+        "vanguard",
+        "secret_zone"
+      ]
+    },
+    {
+      "key": "item.artifact.slag_tyrant_seal.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_slag_tyrant_seal.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "artifact",
+        "deep_iron_pit",
+        "vanguard",
+        "secret_zone"
+      ]
+    },
+    {
+      "key": "item.artifact.vesper_prism.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_vesper_prism.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "artifact",
+        "abyssal_temple",
+        "templar",
+        "boss"
+      ]
+    },
+    {
+      "key": "item.artifact.vesper_prism.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_vesper_prism.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "artifact",
+        "abyssal_temple",
+        "templar",
+        "boss"
+      ]
+    },
+    {
+      "key": "item.base.arcanist.armor.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_arcanist_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "arcanist",
+        "armor"
+      ]
+    },
+    {
+      "key": "item.base.arcanist.off_hand.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_arcanist_off_hand_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "arcanist",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
+      "key": "item.base.arcanist.weapon.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_arcanist_weapon_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "arcanist",
+        "weapon"
+      ]
+    },
+    {
+      "key": "item.base.rogue.armor.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_rogue_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "rogue",
+        "armor"
+      ]
+    },
+    {
+      "key": "item.base.rogue.off_hand.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_rogue_off_hand_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "rogue",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
+      "key": "item.base.rogue.weapon.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_rogue_weapon_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "rogue",
+        "weapon"
+      ]
+    },
+    {
+      "key": "item.base.templar.armor.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_templar_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "templar",
+        "armor"
+      ]
+    },
+    {
+      "key": "item.base.templar.off_hand.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_templar_off_hand_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "templar",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
+      "key": "item.base.templar.weapon.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_templar_weapon_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "templar",
+        "weapon"
+      ]
+    },
+    {
+      "key": "item.base.vanguard.armor.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_vanguard_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "vanguard",
+        "armor"
+      ]
+    },
+    {
+      "key": "item.base.vanguard.off_hand.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_vanguard_off_hand_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "vanguard",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
+      "key": "item.base.vanguard.weapon.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_vanguard_weapon_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "vanguard",
+        "weapon"
       ]
     },
     {
@@ -3658,6 +4638,40 @@
       ]
     },
     {
+      "key": "item.unique.cinderveil_plate.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_cinderveil_plate.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "deep_iron_pit",
+        "arcanist",
+        "survival"
+      ]
+    },
+    {
+      "key": "item.unique.cinderveil_plate.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_cinderveil_plate.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "deep_iron_pit",
+        "arcanist",
+        "survival"
+      ]
+    },
+    {
       "key": "item.unique.coal_ward_talisman.icon",
       "category": "icon",
       "rawOutputPath": "phase4/pr05/icon_item_unique_coal_ward_talisman.png",
@@ -3727,6 +4741,40 @@
         "underground_river",
         "rogue",
         "mobility"
+      ]
+    },
+    {
+      "key": "item.unique.deepcurrent_lens.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_deepcurrent_lens.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "underground_river",
+        "arcanist",
+        "mana"
+      ]
+    },
+    {
+      "key": "item.unique.deepcurrent_lens.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_deepcurrent_lens.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "underground_river",
+        "arcanist",
+        "mana"
       ]
     },
     {
@@ -3802,6 +4850,40 @@
       ]
     },
     {
+      "key": "item.unique.floodglass_rapier.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_floodglass_rapier.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "underground_river",
+        "rogue",
+        "water"
+      ]
+    },
+    {
+      "key": "item.unique.floodglass_rapier.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_floodglass_rapier.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "underground_river",
+        "rogue",
+        "water"
+      ]
+    },
+    {
       "key": "item.unique.furnace_plate.icon",
       "category": "icon",
       "rawOutputPath": "phase4/pr05/icon_item_unique_furnace_plate.png",
@@ -3871,6 +4953,108 @@
         "greenwood_fringe",
         "holy",
         "vanguard"
+      ]
+    },
+    {
+      "key": "item.unique.heartwood_talisman.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_heartwood_talisman.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "greenwood_fringe",
+        "templar",
+        "survival"
+      ]
+    },
+    {
+      "key": "item.unique.heartwood_talisman.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_heartwood_talisman.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "greenwood_fringe",
+        "templar",
+        "survival"
+      ]
+    },
+    {
+      "key": "item.unique.nullwake_blade.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_nullwake_blade.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "abyssal_temple",
+        "rogue",
+        "bane"
+      ]
+    },
+    {
+      "key": "item.unique.nullwake_blade.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_nullwake_blade.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "abyssal_temple",
+        "rogue",
+        "bane"
+      ]
+    },
+    {
+      "key": "item.unique.quenchbreaker_maul.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_quenchbreaker_maul.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "deep_iron_pit",
+        "vanguard",
+        "oil"
+      ]
+    },
+    {
+      "key": "item.unique.quenchbreaker_maul.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_quenchbreaker_maul.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "deep_iron_pit",
+        "vanguard",
+        "oil"
       ]
     },
     {
@@ -3946,6 +5130,40 @@
       ]
     },
     {
+      "key": "item.unique.thornpath_crook.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_thornpath_crook.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "greenwood_fringe",
+        "rogue",
+        "marked"
+      ]
+    },
+    {
+      "key": "item.unique.thornpath_crook.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_thornpath_crook.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "greenwood_fringe",
+        "rogue",
+        "marked"
+      ]
+    },
+    {
       "key": "item.unique.tideglass_staff.icon",
       "category": "icon",
       "rawOutputPath": "phase4/pr05/icon_item_unique_tideglass_staff.png",
@@ -3979,6 +5197,40 @@
         "underground_river",
         "arcanist",
         "lightning"
+      ]
+    },
+    {
+      "key": "item.unique.vesper_chainmail.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_vesper_chainmail.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "abyssal_temple",
+        "templar",
+        "survival"
+      ]
+    },
+    {
+      "key": "item.unique.vesper_chainmail.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_vesper_chainmail.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr03",
+        "unique",
+        "abyssal_temple",
+        "templar",
+        "survival"
       ]
     },
     {
@@ -4300,6 +5552,38 @@
       "asciiColorHex": "#C8B8FF"
     },
     {
+      "key": "prop.hidden_entrance.return_bridge",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase4/pr07/prop_hidden_entrance_return_bridge.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr07",
+        "hidden",
+        "return"
+      ],
+      "asciiGlyph": "<",
+      "asciiColorHex": "#D7E7FF"
+    },
+    {
+      "key": "prop.hidden_entrance.revealed",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase4/pr07/prop_hidden_entrance_revealed.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr07",
+        "hidden",
+        "entrance"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#CFE5B6"
+    },
+    {
       "key": "prop.mine_furnace",
       "category": "prop_environment",
       "rawOutputPath": "phase2/p2-c/prop_mine_furnace.png",
@@ -4346,38 +5630,6 @@
       ],
       "asciiGlyph": "+",
       "asciiColorHex": "#D7F0FF"
-    },
-    {
-      "key": "prop.hidden_entrance.revealed",
-      "category": "prop_interactable",
-      "rawOutputPath": "phase4/pr07/prop_hidden_entrance_revealed.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.08,
-      "tags": [
-        "phase4",
-        "pr07",
-        "hidden",
-        "entrance"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#CFE5B6"
-    },
-    {
-      "key": "prop.hidden_entrance.return_bridge",
-      "category": "prop_interactable",
-      "rawOutputPath": "phase4/pr07/prop_hidden_entrance_return_bridge.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.08,
-      "tags": [
-        "phase4",
-        "pr07",
-        "hidden",
-        "return"
-      ],
-      "asciiGlyph": "<",
-      "asciiColorHex": "#D7E7FF"
     },
     {
       "key": "prop.stairs.down",
@@ -6161,6 +7413,144 @@
       ]
     },
     {
+      "key": "ui.card.reward.header.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr03/ui_card_reward_header_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "ui",
+        "reward",
+        "card"
+      ],
+      "asciiGlyph": "*",
+      "asciiColorHex": "#F6C445"
+    },
+    {
+      "key": "ui.card.shop.header.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr03/ui_card_shop_header_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "ui",
+        "shop",
+        "card"
+      ],
+      "asciiGlyph": "$",
+      "asciiColorHex": "#F6C445"
+    },
+    {
+      "key": "ui.empty.inspect.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr03/ui_empty_inspect_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "ui",
+        "empty_state",
+        "inspect"
+      ],
+      "asciiGlyph": "?",
+      "asciiColorHex": "#8FD3FF"
+    },
+    {
+      "key": "ui.empty.inventory.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr03/ui_empty_inventory_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "ui",
+        "empty_state",
+        "inventory"
+      ],
+      "asciiGlyph": "I",
+      "asciiColorHex": "#F6C445"
+    },
+    {
+      "key": "ui.empty.shop.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr03/ui_empty_shop_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "ui",
+        "empty_state",
+        "shop"
+      ],
+      "asciiGlyph": "$",
+      "asciiColorHex": "#C9A15D"
+    },
+    {
+      "key": "vfx.boss.variant.abyssal_eclipse",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_boss_variant_abyssal_eclipse.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "boss",
+        "variant"
+      ],
+      "asciiGlyph": "A",
+      "asciiColorHex": "#6AD0C4"
+    },
+    {
+      "key": "vfx.boss.variant.grey_crown",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_boss_variant_grey_crown.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "boss",
+        "variant"
+      ],
+      "asciiGlyph": "G",
+      "asciiColorHex": "#9BB4D4"
+    },
+    {
+      "key": "vfx.boss.variant.molten_glass",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_boss_variant_molten_glass.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "boss",
+        "variant"
+      ],
+      "asciiGlyph": "M",
+      "asciiColorHex": "#FF7A3C"
+    },
+    {
       "key": "vfx.boss.warning.sigil_01",
       "category": "tile_decal",
       "rawOutputPath": "phase2/p2-b/vfx_boss_warning_sigil_01.png",
@@ -6191,6 +7581,70 @@
       ],
       "asciiGlyph": "!",
       "asciiColorHex": "#FFA500"
+    },
+    {
+      "key": "vfx.terrain.interaction.ice",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_terrain_ice.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "terrain",
+        "ice"
+      ],
+      "asciiGlyph": "*",
+      "asciiColorHex": "#BFE8FF"
+    },
+    {
+      "key": "vfx.terrain.interaction.oil",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_terrain_oil.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "terrain",
+        "oil"
+      ],
+      "asciiGlyph": "o",
+      "asciiColorHex": "#5F5648"
+    },
+    {
+      "key": "vfx.terrain.interaction.oil_burning",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_terrain_oil_burning.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "terrain",
+        "oil-burning"
+      ],
+      "asciiGlyph": "!",
+      "asciiColorHex": "#FF7A3C"
+    },
+    {
+      "key": "vfx.terrain.interaction.water",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_terrain_water.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr06",
+        "terrain",
+        "water"
+      ],
+      "asciiGlyph": "~",
+      "asciiColorHex": "#4FB6FF"
     },
     {
       "key": "vfx.zone.effect.crystal_shard_01",
@@ -6431,67 +7885,9 @@
       "asciiColorHex": "#FFFFFF"
     },
     {
-      "key": "zone.shattered_outpost.icon",
+      "key": "zone.secret.abyssal_temple_warded_archive.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase2/p2-c/zone_shattered_outpost_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase2",
-        "p2-c",
-        "zone",
-        "ruins"
-      ]
-    },
-    {
-      "key": "zone.shattered_outpost.visual",
-      "category": "prop_environment",
-      "rawOutputPath": "phase2/p2-c/zone_shattered_outpost_visual.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.08,
-      "tags": [
-        "phase2",
-        "p2-c",
-        "zone",
-        "ruins"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
-    },
-    {
-      "key": "zone.underground_river.icon",
-      "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_underground_river_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "river"
-      ]
-    },
-    {
-      "key": "zone.underground_river.visual",
-      "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_underground_river_visual.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "river"
-      ]
-    },
-    {
-      "key": "zone.secret.greenwood_hidden_cache.icon",
-      "category": "icon_quest",
-      "rawOutputPath": "phase4/pr07/zone_secret_greenwood_hidden_cache_icon.png",
+      "rawOutputPath": "phase4/pr07/zone_secret_abyssal_temple_warded_archive_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
@@ -6499,14 +7895,14 @@
         "phase4",
         "pr07",
         "zone",
-        "greenwood",
+        "abyssal",
         "secret"
       ]
     },
     {
-      "key": "zone.secret.greenwood_hidden_cache.visual",
+      "key": "zone.secret.abyssal_temple_warded_archive.visual",
       "category": "portrait",
-      "rawOutputPath": "phase4/pr07/zone_secret_greenwood_hidden_cache_visual.png",
+      "rawOutputPath": "phase4/pr07/zone_secret_abyssal_temple_warded_archive_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
@@ -6514,42 +7910,8 @@
         "phase4",
         "pr07",
         "zone",
-        "greenwood",
+        "abyssal",
         "secret"
-      ]
-    },
-    {
-      "key": "zone.secret.greenwood_ambush_hideout.icon",
-      "category": "icon_quest",
-      "rawOutputPath": "phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase4",
-        "v3",
-        "pr03",
-        "zone",
-        "greenwood",
-        "secret",
-        "ambush"
-      ]
-    },
-    {
-      "key": "zone.secret.greenwood_ambush_hideout.visual",
-      "category": "portrait",
-      "rawOutputPath": "phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_visual.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase4",
-        "v3",
-        "pr03",
-        "zone",
-        "greenwood",
-        "secret",
-        "ambush"
       ]
     },
     {
@@ -6615,6 +7977,70 @@
       ]
     },
     {
+      "key": "zone.secret.greenwood_ambush_hideout.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "v3",
+        "pr03",
+        "zone",
+        "greenwood",
+        "secret",
+        "ambush"
+      ]
+    },
+    {
+      "key": "zone.secret.greenwood_ambush_hideout.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "v3",
+        "pr03",
+        "zone",
+        "greenwood",
+        "secret",
+        "ambush"
+      ]
+    },
+    {
+      "key": "zone.secret.greenwood_hidden_cache.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/pr07/zone_secret_greenwood_hidden_cache_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "greenwood",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.greenwood_hidden_cache.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/pr07/zone_secret_greenwood_hidden_cache_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "greenwood",
+        "secret"
+      ]
+    },
+    {
       "key": "zone.secret.underground_river_crystal_rift.icon",
       "category": "icon_quest",
       "rawOutputPath": "phase4/pr07/zone_secret_underground_river_crystal_rift_icon.png",
@@ -6645,675 +8071,62 @@
       ]
     },
     {
-      "key": "zone.secret.abyssal_temple_warded_archive.icon",
+      "key": "zone.shattered_outpost.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase4/pr07/zone_secret_abyssal_temple_warded_archive_icon.png",
+      "rawOutputPath": "phase2/p2-c/zone_shattered_outpost_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr07",
+        "phase2",
+        "p2-c",
         "zone",
-        "abyssal",
-        "secret"
+        "ruins"
       ]
     },
     {
-      "key": "zone.secret.abyssal_temple_warded_archive.visual",
+      "key": "zone.shattered_outpost.visual",
+      "category": "prop_environment",
+      "rawOutputPath": "phase2/p2-c/zone_shattered_outpost_visual.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "zone",
+        "ruins"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "zone.underground_river.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_underground_river_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "river"
+      ]
+    },
+    {
+      "key": "zone.underground_river.visual",
       "category": "portrait",
-      "rawOutputPath": "phase4/pr07/zone_secret_abyssal_temple_warded_archive_visual.png",
+      "rawOutputPath": "phase3/p3-followup/zone_underground_river_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr07",
+        "phase3",
+        "followup",
         "zone",
-        "abyssal",
-        "secret"
+        "river"
       ]
-    },
-    {
-      "key": "icon.mutation.stonehide",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_stonehide.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "mutation", "icon"],
-      "asciiGlyph": "S",
-      "asciiColorHex": "#B7B7B7"
-    },
-    {
-      "key": "icon.mutation.ironhide",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_ironhide.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr02", "mutation", "icon"],
-      "asciiGlyph": "I",
-      "asciiColorHex": "#8A939B"
-    },
-    {
-      "key": "icon.mutation.battle_drill",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_battle_drill.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "mutation", "icon"],
-      "asciiGlyph": "B",
-      "asciiColorHex": "#D4A373"
-    },
-    {
-      "key": "icon.mutation.dread_aura",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_dread_aura.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "mutation", "icon"],
-      "asciiGlyph": "D",
-      "asciiColorHex": "#8C6FF7"
-    },
-    {
-      "key": "icon.mutation.hunt_protocol",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_hunt_protocol.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "mutation", "icon"],
-      "asciiGlyph": "H",
-      "asciiColorHex": "#88C070"
-    },
-    {
-      "key": "icon.mutation.phase_runner",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_phase_runner.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr02", "mutation", "icon"],
-      "asciiGlyph": "P",
-      "asciiColorHex": "#6FA9FF"
-    },
-    {
-      "key": "icon.mutation.war_caller",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_war_caller.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr02", "mutation", "icon"],
-      "asciiGlyph": "W",
-      "asciiColorHex": "#D8894C"
-    },
-    {
-      "key": "icon.mutation.corrosion_cloud",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_corrosion_cloud.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr02", "mutation", "icon"],
-      "asciiGlyph": "C",
-      "asciiColorHex": "#7E9A52"
-    },
-    {
-      "key": "icon.mutation.emberblood",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_emberblood.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "mutation", "icon"],
-      "asciiGlyph": "E",
-      "asciiColorHex": "#FF6A3D"
-    },
-    {
-      "key": "icon.mutation.frostbound",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_frostbound.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr02", "mutation", "icon"],
-      "asciiGlyph": "F",
-      "asciiColorHex": "#8FDBFF"
-    },
-    {
-      "key": "icon.mutation.tidebound",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_tidebound.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "mutation", "icon"],
-      "asciiGlyph": "T",
-      "asciiColorHex": "#59B7FF"
-    },
-    {
-      "key": "icon.mutation.void_mirror",
-      "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_void_mirror.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr02", "mutation", "icon"],
-      "asciiGlyph": "V",
-      "asciiColorHex": "#6D7FD6"
-    },
-    {
-      "key": "vfx.terrain.interaction.water",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_terrain_water.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "terrain", "water"],
-      "asciiGlyph": "~",
-      "asciiColorHex": "#4FB6FF"
-    },
-    {
-      "key": "vfx.terrain.interaction.oil",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_terrain_oil.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "terrain", "oil"],
-      "asciiGlyph": "o",
-      "asciiColorHex": "#5F5648"
-    },
-    {
-      "key": "vfx.terrain.interaction.ice",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_terrain_ice.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "terrain", "ice"],
-      "asciiGlyph": "*",
-      "asciiColorHex": "#BFE8FF"
-    },
-    {
-      "key": "vfx.terrain.interaction.oil_burning",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_terrain_oil_burning.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "terrain", "oil-burning"],
-      "asciiGlyph": "!",
-      "asciiColorHex": "#FF7A3C"
-    },
-    {
-      "key": "vfx.boss.variant.molten_glass",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_boss_variant_molten_glass.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "boss", "variant"],
-      "asciiGlyph": "M",
-      "asciiColorHex": "#FF7A3C"
-    },
-    {
-      "key": "vfx.boss.variant.grey_crown",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_boss_variant_grey_crown.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "boss", "variant"],
-      "asciiGlyph": "G",
-      "asciiColorHex": "#9BB4D4"
-    },
-    {
-      "key": "vfx.boss.variant.abyssal_eclipse",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_boss_variant_abyssal_eclipse.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "pr06", "boss", "variant"],
-      "asciiGlyph": "A",
-      "asciiColorHex": "#6AD0C4"
-    },
-    {
-      "key": "affix.briarhook.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_briarhook.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "greenwood", "marked"]
-    },
-    {
-      "key": "affix.briarhook.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_briarhook.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "greenwood", "marked"]
-    },
-    {
-      "key": "affix.cindervein.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_cindervein.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "fire", "deep_iron_pit"]
-    },
-    {
-      "key": "affix.cindervein.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_cindervein.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "fire", "deep_iron_pit"]
-    },
-    {
-      "key": "affix.frostlash.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_frostlash.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "cold", "underground_river"]
-    },
-    {
-      "key": "affix.frostlash.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_frostlash.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "cold", "underground_river"]
-    },
-    {
-      "key": "affix.lucid.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_lucid.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "mana", "arcanist"]
-    },
-    {
-      "key": "affix.lucid.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_lucid.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "mana", "arcanist"]
-    },
-    {
-      "key": "affix.wind_fed.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_wind_fed.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "stamina", "mobility"]
-    },
-    {
-      "key": "affix.wind_fed.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_wind_fed.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "stamina", "mobility"]
-    },
-    {
-      "key": "affix.zealbound.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_zealbound.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "holy", "templar"]
-    },
-    {
-      "key": "affix.zealbound.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_zealbound.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "holy", "templar"]
-    },
-    {
-      "key": "affix.spite_fed.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_spite_fed.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "shadow", "berserker"]
-    },
-    {
-      "key": "affix.spite_fed.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_spite_fed.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "shadow", "berserker"]
-    },
-    {
-      "key": "affix.lastlight.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_lastlight.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "conditional", "survival"]
-    },
-    {
-      "key": "affix.lastlight.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_lastlight.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "conditional", "survival"]
-    },
-    {
-      "key": "affix.floodtouched.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_floodtouched.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "terrain", "water"]
-    },
-    {
-      "key": "affix.floodtouched.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_floodtouched.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "terrain", "water"]
-    },
-    {
-      "key": "affix.honed.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_honed.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "precision"]
-    },
-    {
-      "key": "affix.honed.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_honed.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "precision"]
-    },
-    {
-      "key": "affix.starforged.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_starforged.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "lightning", "crit"]
-    },
-    {
-      "key": "affix.starforged.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_starforged.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "weapon", "lightning", "crit"]
-    },
-    {
-      "key": "affix.anchored.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_anchored.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "protection", "vanguard"]
-    },
-    {
-      "key": "affix.anchored.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_affix_anchored.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "affix", "armor", "protection", "vanguard"]
-    },
-    {
-      "key": "item.unique.thornpath_crook.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_thornpath_crook.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "greenwood_fringe", "rogue", "marked"]
-    },
-    {
-      "key": "item.unique.thornpath_crook.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_thornpath_crook.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "greenwood_fringe", "rogue", "marked"]
-    },
-    {
-      "key": "item.unique.heartwood_talisman.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_heartwood_talisman.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "greenwood_fringe", "templar", "survival"]
-    },
-    {
-      "key": "item.unique.heartwood_talisman.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_heartwood_talisman.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "greenwood_fringe", "templar", "survival"]
-    },
-    {
-      "key": "item.unique.quenchbreaker_maul.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_quenchbreaker_maul.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "deep_iron_pit", "vanguard", "oil"]
-    },
-    {
-      "key": "item.unique.quenchbreaker_maul.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_quenchbreaker_maul.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "deep_iron_pit", "vanguard", "oil"]
-    },
-    {
-      "key": "item.unique.cinderveil_plate.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_cinderveil_plate.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "deep_iron_pit", "arcanist", "survival"]
-    },
-    {
-      "key": "item.unique.cinderveil_plate.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_cinderveil_plate.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "deep_iron_pit", "arcanist", "survival"]
-    },
-    {
-      "key": "item.unique.floodglass_rapier.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_floodglass_rapier.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "underground_river", "rogue", "water"]
-    },
-    {
-      "key": "item.unique.floodglass_rapier.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_floodglass_rapier.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "underground_river", "rogue", "water"]
-    },
-    {
-      "key": "item.unique.deepcurrent_lens.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_deepcurrent_lens.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "underground_river", "arcanist", "mana"]
-    },
-    {
-      "key": "item.unique.deepcurrent_lens.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_deepcurrent_lens.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "underground_river", "arcanist", "mana"]
-    },
-    {
-      "key": "item.unique.vesper_chainmail.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_vesper_chainmail.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "abyssal_temple", "templar", "survival"]
-    },
-    {
-      "key": "item.unique.vesper_chainmail.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_vesper_chainmail.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "abyssal_temple", "templar", "survival"]
-    },
-    {
-      "key": "item.unique.nullwake_blade.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_nullwake_blade.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "abyssal_temple", "rogue", "bane"]
-    },
-    {
-      "key": "item.unique.nullwake_blade.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_nullwake_blade.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "unique", "abyssal_temple", "rogue", "bane"]
-    },
-    {
-      "key": "item.artifact.heartroot_gambit.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_heartroot_gambit.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "artifact", "greenwood_fringe", "rogue", "chest"]
-    },
-    {
-      "key": "item.artifact.heartroot_gambit.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_heartroot_gambit.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "artifact", "greenwood_fringe", "rogue", "chest"]
-    },
-    {
-      "key": "item.artifact.slag_tyrant_seal.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_slag_tyrant_seal.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "artifact", "deep_iron_pit", "vanguard", "secret_zone"]
-    },
-    {
-      "key": "item.artifact.slag_tyrant_seal.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_slag_tyrant_seal.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "artifact", "deep_iron_pit", "vanguard", "secret_zone"]
-    },
-    {
-      "key": "item.artifact.deepcurrent_crown.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_deepcurrent_crown.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "artifact", "underground_river", "arcanist", "secret_zone"]
-    },
-    {
-      "key": "item.artifact.deepcurrent_crown.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_deepcurrent_crown.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "artifact", "underground_river", "arcanist", "secret_zone"]
-    },
-    {
-      "key": "item.artifact.vesper_prism.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_vesper_prism.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "artifact", "abyssal_temple", "templar", "boss"]
-    },
-    {
-      "key": "item.artifact.vesper_prism.visual",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_artifact_vesper_prism.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": ["phase4", "opt", "pr03", "artifact", "abyssal_temple", "templar", "boss"]
     }
   ],
   "prefixRules": [

@@ -10,29 +10,23 @@ internal object StatusHudRenderer {
     fun renderLabel(
         localizer: Localizer,
         effect: StatusEffectRenderSnapshot,
-    ): String = (effect.nameKey?.let(localizer::text) ?: effect.typeId) + stackSuffix(effect)
+    ): String = renderLabel(localizer, StatusPresentationBuilder.build(effect))
+
+    fun renderLabel(
+        localizer: Localizer,
+        presentation: StatusPresentationModel,
+    ): String {
+        val label = presentation.nameKey?.let(localizer::text) ?: presentation.typeId
+        return listOf(label, presentation.badgeText.takeIf(String::isNotBlank)).filterNotNull().joinToString(" ")
+    }
 
     fun renderTurns(
         localizer: Localizer,
         effect: StatusEffectRenderSnapshot,
-    ): String =
-        localizer.text(
-            "ui.inspect.effect.turns",
-            "name" to renderLabel(localizer, effect),
-            "turns" to effect.remainingTurns,
-        )
+    ): String = renderLabel(localizer, effect)
 
     fun renderCompact(effect: StatusEffectRenderSnapshot): String =
-        buildString {
-            when {
-                effect.stackCount > 1 && effect.stackCap != null -> append("${effect.stackCount}/${effect.stackCap}")
-                effect.stackCount > 1 -> append("${effect.stackCount}x")
-            }
-            if (isNotEmpty()) {
-                append(" ")
-            }
-            append("${effect.remainingTurns}t")
-        }
+        StatusPresentationBuilder.build(effect).badgeText
 
     fun accentColor(category: StatusEffectCategorySnapshot): Color =
         when (category) {
@@ -46,12 +40,5 @@ internal object StatusHudRenderer {
             StatusEffectCategorySnapshot.BUFF -> UiDesignTokens.color.status.badge.stack.color()
             StatusEffectCategorySnapshot.DEBUFF -> UiDesignTokens.color.status.badge.turns.color()
             StatusEffectCategorySnapshot.NEUTRAL -> UiDesignTokens.color.status.badge.cap.color()
-        }
-
-    private fun stackSuffix(effect: StatusEffectRenderSnapshot): String =
-        when {
-            effect.stackCount <= 1 -> ""
-            effect.stackCap != null -> " x${effect.stackCount}/${effect.stackCap}"
-            else -> " x${effect.stackCount}"
         }
 }

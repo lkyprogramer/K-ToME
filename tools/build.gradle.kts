@@ -411,6 +411,16 @@ tasks.register<Test>("contractLint") {
     }
 }
 
+tasks.register<Test>("keywordRegistryLint") {
+    group = "verification"
+    description = "Validates keyword registry consumers and formal description coverage probes."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("keywordRegistryLint")
+    }
+}
+
 tasks.register<Test>("maintainabilityLint") {
     group = "verification"
     description = "Runs the anti-bloat maintainability lint against the versioned debt baseline."
@@ -921,6 +931,7 @@ tasks.register<Test>("reportPhase4Fixture") {
 
 listOf(
     tasks.named("contractLint"),
+    tasks.named("keywordRegistryLint"),
     tasks.named("verifyContractLintPreflight"),
     tasks.named("verifyLootPreflight"),
     tasks.named("verifyHiddenPreflight"),
