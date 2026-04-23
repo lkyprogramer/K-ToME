@@ -12,6 +12,8 @@ internal data class TelegraphPresentationModel(
     val dangerLevel: Int,
     val previewTurnsRemaining: Int?,
     val badgeText: String,
+    val shapeId: String,
+    val affectedCellCount: Int,
 ) {
     fun toStatusPresentation(): StatusPresentationModel =
         StatusPresentationBuilder.buildTelegraph(
@@ -33,6 +35,8 @@ internal data class TelegraphPresentationModel(
                 dangerLevel = overlay.dangerLevel,
                 previewTurnsRemaining = overlay.previewTurns,
                 badgeText = StatusPresentationBuilder.telegraphBadge(overlay.previewTurns),
+                shapeId = overlay.shape.name,
+                affectedCellCount = overlay.cells.size,
             )
 
         fun sorted(overlays: List<OverlayRenderSnapshot>): List<Pair<OverlayRenderSnapshot, TelegraphPresentationModel>> =

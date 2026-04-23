@@ -3001,6 +3001,71 @@
         "zone",
         "river"
       ]
+    },
+    {
+      "key": "audio.combat.action.confirm",
+      "cueFamily": "ui",
+      "eventId": "audio.combat.action.confirm",
+      "sourcePath": "audio/phase4/uiux_pr05/combat_action_confirm.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ]
+    },
+    {
+      "key": "audio.combat.method.confirm",
+      "cueFamily": "ui",
+      "eventId": "audio.combat.method.confirm",
+      "sourcePath": "audio/phase4/uiux_pr05/combat_method_confirm.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ]
+    },
+    {
+      "key": "audio.combat.target.confirm",
+      "cueFamily": "ui",
+      "eventId": "audio.combat.target.confirm",
+      "sourcePath": "audio/phase4/uiux_pr05/combat_target_confirm.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ]
+    },
+    {
+      "key": "audio.combat.target.lock",
+      "cueFamily": "ui",
+      "eventId": "audio.combat.target.lock",
+      "sourcePath": "audio/phase4/uiux_pr05/combat_target_lock.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ]
+    },
+    {
+      "key": "audio.combat.invalid.submit",
+      "cueFamily": "ui",
+      "eventId": "audio.combat.invalid.submit",
+      "sourcePath": "audio/phase4/uiux_pr05/combat_invalid_submit.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ]
     }
   ],
   "prefixRules": [

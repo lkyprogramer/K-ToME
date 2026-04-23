@@ -279,7 +279,16 @@ class TileRenderer(
             drawCombatFeedback(canvas, model.combatFeedback, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
 
             model.targetCursor?.let { cursor ->
-                drawCursor(canvas, cursor.x, cursor.y, mapHeight, layout.mapOffsetY, cellWidth, cellHeight, UiDesignTokens.color.quality.rare.color())
+                drawCursor(
+                    canvas,
+                    cursor.x,
+                    cursor.y,
+                    mapHeight,
+                    layout.mapOffsetY,
+                    cellWidth,
+                    cellHeight,
+                    targetCursorColor(model.targetCursorState),
+                )
             }
             model.inspectCursor?.let { cursor ->
                 drawCursor(canvas, cursor.x, cursor.y, mapHeight, layout.mapOffsetY, cellWidth, cellHeight, UiDesignTokens.color.focus.ring.color())
@@ -424,7 +433,7 @@ class TileRenderer(
                 val slot = hud.hotbar.getOrNull(index)
                 val x = layout.hotbarX + index * (layout.hotbarCardWidth + layout.hotbarGap)
                 canvas.drawRect(x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, UiDesignTokens.color.surface.raised.color())
-                slot?.icon?.let { icon -> canvas.drawAsset(icon, x + 10f, layout.hotbarY + 18f, 44f, 44f) }
+                (entry.icon ?: slot?.icon)?.let { icon -> canvas.drawAsset(icon, x + 10f, layout.hotbarY + 18f, 44f, 44f) }
                 slot?.accentIcon?.let { icon -> canvas.drawAsset(icon, x + 40f, layout.hotbarY + 48f, 16f, 16f) }
                 canvas.drawText(TileTextStyle.SMALL, entry.hotkey, x + 8f, layout.hotbarY + 74f, tone(TileTextTone.GOLD))
                 canvas.drawText(
@@ -468,15 +477,28 @@ class TileRenderer(
                 }
             val displayLines = messageLines.take(logPresentation.entries.size) + overlayMessages
             displayLines.takeLast(messageRows).forEachIndexed { index, line ->
+                val iconOffset =
+                    line.icon?.let { icon ->
+                        canvas.drawAsset(icon, layout.logX + 12f, topY - index * 26f - 16f, 18f, 18f)
+                        24f
+                    } ?: 0f
                 canvas.drawText(
                     TileTextStyle.SMALL,
-                    truncateText(line.text, maxChars),
-                    layout.logX + 12f,
+                    truncateText(line.text, (maxChars - if (line.icon == null) 0 else 3).coerceAtLeast(0)),
+                    layout.logX + 12f + iconOffset,
                     topY - index * 26f,
                     tone(line.tone),
                 )
             }
         }
+
+        private fun targetCursorColor(state: TileTargetCursorState?): Color =
+            when (state) {
+                TileTargetCursorState.ILLEGAL -> UiDesignTokens.color.telegraph.high.color()
+                TileTargetCursorState.LEGAL,
+                null,
+                -> UiDesignTokens.color.quality.rare.color()
+            }
 
         private fun drawPaneFocusRing(
             canvas: TileCanvas,

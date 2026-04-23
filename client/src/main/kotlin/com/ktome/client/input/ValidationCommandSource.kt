@@ -1,6 +1,7 @@
 package com.ktome.client.input
 
 import com.ktome.client.audio.AudioRouter
+import com.ktome.client.ui.combat.CombatDecisionValidationSurface
 import com.ktome.core.map.Point
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.validation.ValidationAction
@@ -20,6 +21,7 @@ enum class ValidationOverlaySection(
     val titleKey: String,
 ) {
     RESTART(titleKey = "ui.validation.section.restart"),
+    PR05_COMBAT(titleKey = "ui.validation.section.pr05_combat"),
     TRAVEL(titleKey = "ui.validation.section.travel"),
     RECOVERY(titleKey = "ui.validation.section.recovery"),
     ENCOUNTER(titleKey = "ui.validation.section.encounter"),
@@ -37,6 +39,7 @@ data class ValidationOverlayCursor(
     val terrainSelection: Int = 0,
     val rewardAndItemSelection: Int = 0,
     val discoverySelection: Int = 0,
+    val pr05CombatSelection: Int = 0,
 ) {
     fun moveSection(delta: Int): ValidationOverlayCursor {
         val sections = ValidationOverlaySection.entries
@@ -62,6 +65,7 @@ data class ValidationOverlayCursor(
             ValidationOverlaySection.TERRAIN -> terrainSelection
             ValidationOverlaySection.REWARD_AND_ITEM -> rewardAndItemSelection
             ValidationOverlaySection.DISCOVERY -> discoverySelection
+            ValidationOverlaySection.PR05_COMBAT -> pr05CombatSelection
         }
 
     private fun withActionIndex(
@@ -76,6 +80,7 @@ data class ValidationOverlayCursor(
             ValidationOverlaySection.TERRAIN -> copy(terrainSelection = index)
             ValidationOverlaySection.REWARD_AND_ITEM -> copy(rewardAndItemSelection = index)
             ValidationOverlaySection.DISCOVERY -> copy(discoverySelection = index)
+            ValidationOverlaySection.PR05_COMBAT -> copy(pr05CombatSelection = index)
         }
 }
 
@@ -118,8 +123,13 @@ internal data class ValidationOverlayDescriptorScope(
 
 internal data class ValidationOverlayActionDescriptor(
     val labelKey: String,
-    val buildAction: (Point) -> ValidationAction,
-)
+    val buildAction: ((Point) -> ValidationAction)? = null,
+    val combatDecisionSurface: CombatDecisionValidationSurface? = null,
+) {
+    fun requireGameAction(inspectCursor: Point): ValidationAction =
+        buildAction?.invoke(inspectCursor)
+            ?: error("Validation action $labelKey is client-only and cannot be dispatched to the game session.")
+}
 
 class ValidationCommandSource(
     private val session: FoundationGameSession,
@@ -171,6 +181,12 @@ internal fun enrichValidationOverlayState(
 internal fun validationOverlayAction(
     selection: ValidationOverlaySelection,
 ): ValidationAction =
+    validationOverlayActionDescriptor(selection)?.requireGameAction(selection.inspectCursor)
+        ?: error("Unsupported ${selection.section} action index ${selection.index}.")
+
+internal fun validationOverlayActionDescriptor(
+    selection: ValidationOverlaySelection,
+): ValidationOverlayActionDescriptor? =
     validationOverlayActionDescriptors(
         scope =
             ValidationOverlayDescriptorScope(
@@ -178,8 +194,7 @@ internal fun validationOverlayAction(
                 restartMode = selection.restartMode(),
             ),
         section = selection.section,
-    ).getOrNull(selection.index)?.buildAction(selection.inspectCursor)
-        ?: error("Unsupported ${selection.section} action index ${selection.index}.")
+    ).getOrNull(selection.index)
 
 private fun buildValidationOverlaySections(
     summary: ValidationSummarySnapshot,
@@ -339,6 +354,30 @@ internal fun validationOverlayActionDescriptors(
                 ValidationOverlayActionDescriptor(
                     labelKey = "ui.validation.action.discovery.execute_search",
                     buildAction = { ValidationAction.ExecuteSearch },
+                ),
+            )
+
+        ValidationOverlaySection.PR05_COMBAT ->
+            listOf(
+                ValidationOverlayActionDescriptor(
+                    labelKey = "ui.validation.action.pr05_combat.method",
+                    combatDecisionSurface = CombatDecisionValidationSurface.METHOD,
+                ),
+                ValidationOverlayActionDescriptor(
+                    labelKey = "ui.validation.action.pr05_combat.disabled_resource",
+                    combatDecisionSurface = CombatDecisionValidationSurface.DISABLED_RESOURCE,
+                ),
+                ValidationOverlayActionDescriptor(
+                    labelKey = "ui.validation.action.pr05_combat.no_legal_target",
+                    combatDecisionSurface = CombatDecisionValidationSurface.NO_LEGAL_TARGET,
+                ),
+                ValidationOverlayActionDescriptor(
+                    labelKey = "ui.validation.action.pr05_combat.illegal_target",
+                    combatDecisionSurface = CombatDecisionValidationSurface.ILLEGAL_TARGET,
+                ),
+                ValidationOverlayActionDescriptor(
+                    labelKey = "ui.validation.action.pr05_combat.missing_fact",
+                    combatDecisionSurface = CombatDecisionValidationSurface.MISSING_FACT,
                 ),
             )
     }

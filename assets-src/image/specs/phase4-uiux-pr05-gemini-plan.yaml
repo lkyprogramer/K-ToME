@@ -1,0 +1,66 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly combat decision UI icons for
+  K-ToME Phase 4 UI/UX PR-05. These are small formal interface anchors, not
+  character portraits or scene illustrations. Keep each silhouette readable at
+  24-32 px, with no text, no numbers, no letters, no watermark, and no full
+  background scene; never anime and never sci-fi.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no readable text
+    - no numbers
+    - no letters
+    - no floating text, watermark or logo
+    - no watermark
+    - no full background scene
+    - no anime proportions
+    - no sci-fi materials
+phase2AssetGates:
+  P4-UIUX-PR05:
+    description: Formal combat decision affordance icons for action, method, target, target lock, and invalid submit.
+    assets:
+      - id: phase4_uiux_pr05_combat_action_icon
+        category: icon
+        visualKey: ui.combat.action.icon
+        outputName: phase4/uiux_pr05/ui_combat_action_icon.png
+        subject: compact crossed weapon and spark action-choice icon, readable as selecting a combat action
+        materialTags: [phase4, uiux, pr05, combat, action, icon]
+        constraints: [ui-readable icon, clean centered silhouette, no text]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr05_combat_method_icon
+        category: icon
+        visualKey: ui.combat.method.icon
+        outputName: phase4/uiux_pr05/ui_combat_method_icon.png
+        subject: branching tactic glyph with two small route strokes, readable as choosing a method for the selected action
+        materialTags: [phase4, uiux, pr05, combat, method, icon]
+        constraints: [ui-readable icon, distinct from action and target, no text]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr05_combat_target_icon
+        category: icon
+        visualKey: ui.combat.target.icon
+        outputName: phase4/uiux_pr05/ui_combat_target_icon.png
+        subject: focused target reticle over a small stone tile, readable as choosing a target tile
+        materialTags: [phase4, uiux, pr05, combat, target, icon]
+        constraints: [ui-readable icon, clean centered silhouette, no text]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr05_combat_lock_icon
+        category: icon
+        visualKey: ui.combat.lock.icon
+        outputName: phase4/uiux_pr05/ui_combat_lock_icon.png
+        subject: locked target marker with a clamp-like brass ring, readable as target lock or confirm
+        materialTags: [phase4, uiux, pr05, combat, lock, icon]
+        constraints: [ui-readable icon, not a padlock-only generic symbol, no text]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr05_combat_invalid_icon
+        category: icon
+        visualKey: ui.combat.invalid.icon
+        outputName: phase4/uiux_pr05/ui_combat_invalid_icon.png
+        subject: broken targeting mark with a clear slash and cracked ember edge, readable as invalid submit
+        materialTags: [phase4, uiux, pr05, combat, invalid, icon]
+        constraints: [ui-readable icon, distinguishable without color alone, no text]
+        geminiKeyRequired: true

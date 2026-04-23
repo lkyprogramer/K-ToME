@@ -141,6 +141,7 @@ K-ToME 是 `Kotlin + libGDX` 单机 Roguelike。项目概况、当前状态、�
 11. `content pack / overlay` 必须 namespaced、可 lint、可版本校验、冲突时 fail fast，且只能作用于 content registry，不能覆盖 `core` 规则语义或直接指向官方 raw 资源路径
 12. `ProfileData`、run save、replay persistence 必须显式分层，不得混成单一持久化宿主
 13. 所有性能优化都必须带对照数据；禁止拍脑袋提前优化
+14. 任何会提交进仓库的 manifest、report、golden、manual record、fixture、配置或脚本输出中的文件路径，必须使用 repo-relative path；禁止写入 `/Users/...`、`/tmp/...`、`C:\...` 等机器绝对路径。确实需要描述仓库外资源时，只能使用显式占位符或文档说明，不能把本机路径当合同
 
 ### 3.4 工作包设计规则
 
@@ -263,7 +264,8 @@ sdk env
 3. 命中的自动化验证、owner gate、白盒步骤已经执行或明确说明为何未执行
 4. 文档、schema、manifest、baseline、lint / harness 说明在同一改动中同步收口
 5. 主干在当前 checkpoint 结束后仍保持可玩
-6. non-trivial Kotlin 改动已完成 anti-bloat review，且新增 option/helper/compat path/second-authority/temp path 有明确处理结果
+6. 提交内容不包含本机绝对路径；manifest、report、golden、manual record、fixture 与脚本输出中的文件路径已经保持 repo-relative
+7. non-trivial Kotlin 改动已完成 anti-bloat review，且新增 option/helper/compat path/second-authority/temp path 有明确处理结果
 
 ## 7. 一句话原则
 

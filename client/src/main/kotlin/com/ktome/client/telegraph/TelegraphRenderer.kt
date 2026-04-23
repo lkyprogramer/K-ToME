@@ -71,6 +71,32 @@ internal object TelegraphRenderer {
 
     fun fallbackColorHex(dangerLevel: Int): String = UiDesignTokens.color.telegraph.forDangerLevel(dangerLevel).hexString()
 
+    fun targetCardRows(
+        localizer: Localizer,
+        overlay: OverlayRenderSnapshot,
+    ): List<String> {
+        val model = TelegraphPresentationModel.fromOverlay(overlay)
+        return listOf(
+            localizer.text(
+                "ui.telegraph.target.summary",
+                "danger" to dangerLabel(localizer, model.dangerLevel),
+                "turns" to model.previewTurnsRemaining,
+                "cells" to model.affectedCellCount,
+                "ability" to model.typeId,
+            ),
+            warningText(localizer, overlay),
+        )
+    }
+
+    fun logPrefix(
+        localizer: Localizer,
+        presentation: TelegraphPresentationModel,
+    ): String =
+        listOf(
+            presentation.badgeText.takeIf(String::isNotBlank),
+            dangerLabel(localizer, presentation.dangerLevel),
+        ).filterNotNull().joinToString(separator = " ", prefix = "[", postfix = "]")
+
     private fun rowText(
         localizer: Localizer,
         overlay: OverlayRenderSnapshot,
@@ -118,7 +144,7 @@ internal object TelegraphRenderer {
             ?: argument.valueToken?.let { token -> renderTextToken(localizer, token) }
             ?: ""
 
-    private fun tileTone(dangerLevel: Int): TileTextTone =
+    fun tileTone(dangerLevel: Int): TileTextTone =
         when {
             dangerLevel >= 4 -> TileTextTone.MAGENTA
             dangerLevel == 3 -> TileTextTone.RED

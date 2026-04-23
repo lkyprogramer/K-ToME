@@ -41,6 +41,8 @@ class TelegraphPresentationModelTest {
                 dangerLevel = 3,
                 previewTurnsRemaining = null,
                 badgeText = com.ktome.client.ui.status.StatusPresentationBuilder.telegraphBadge(null),
+                shapeId = "CUSTOM",
+                affectedCellCount = 1,
             ).toStatusPresentation()
         val fiveTurns =
             TelegraphPresentationModel(
@@ -50,6 +52,8 @@ class TelegraphPresentationModelTest {
                 dangerLevel = 3,
                 previewTurnsRemaining = 5,
                 badgeText = com.ktome.client.ui.status.StatusPresentationBuilder.telegraphBadge(5),
+                shapeId = "CUSTOM",
+                affectedCellCount = 1,
             ).toStatusPresentation()
 
         assertEquals(fiveTurns.priority, missingPreview.priority)

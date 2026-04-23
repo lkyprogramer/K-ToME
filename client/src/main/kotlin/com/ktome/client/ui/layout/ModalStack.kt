@@ -1,5 +1,6 @@
 package com.ktome.client.ui.layout
 
+import com.ktome.client.ui.combat.CombatDecisionFrameState
 import com.ktome.core.map.Point
 
 const val MODAL_STACK_MAX_DEPTH = 3
@@ -25,6 +26,7 @@ data class ModalFrameLocalState(
     val targetingCursor: Point? = null,
     val inspectCursor: Point? = null,
     val explainPaneOpen: Boolean = false,
+    val combatDecisionState: CombatDecisionFrameState? = null,
 )
 
 data class ModalFrame(

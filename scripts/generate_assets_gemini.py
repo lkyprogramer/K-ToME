@@ -36,6 +36,16 @@ DEFAULT_ASPECT_RATIO = "1:1"
 DEFAULT_IMAGE_SIZE = "1K"
 REPORT_LOCK = threading.Lock()
 RETRYABLE_HTTP_STATUS = {429, 503, 504}
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
+def display_path(path: pathlib.Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(resolved)
+
 
 ALLOWED_CATEGORIES = {
     "tile_ground",
@@ -444,7 +454,7 @@ def generate_job(
         "assetId": job.asset_id,
         "category": job.category,
         "visualKey": job.visual_key,
-        "outputPath": str(output_path),
+        "outputPath": display_path(output_path),
         "model": model,
         "promptSha1": hashlib.sha1(prompt.encode("utf-8")).hexdigest(),
         "styleTag": job.style_tag,

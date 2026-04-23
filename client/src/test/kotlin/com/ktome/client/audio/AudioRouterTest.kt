@@ -12,6 +12,12 @@ import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
+import com.ktome.client.ui.combat.CombatDecisionFrameState
+import com.ktome.client.ui.combat.CombatDecisionPhase
+import com.ktome.client.ui.layout.ModalFrame
+import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.layout.ModalFrameLocalState
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
@@ -90,6 +96,60 @@ class AudioRouterTest {
     }
 
     @Test
+    fun `combat decision phase transitions emit formal phase confirm cues`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+
+        router.onOverlayStateChanged(
+            previous = OverlayState(mode = UiMode.MAP),
+            current = combatDecisionOverlay(CombatDecisionPhase.ACTION),
+        )
+        router.onOverlayStateChanged(
+            previous = combatDecisionOverlay(CombatDecisionPhase.ACTION),
+            current = combatDecisionOverlay(CombatDecisionPhase.METHOD),
+        )
+        router.onOverlayStateChanged(
+            previous = combatDecisionOverlay(CombatDecisionPhase.METHOD),
+            current = combatDecisionOverlay(CombatDecisionPhase.TARGET),
+        )
+
+        assertEquals(
+            listOf(
+                CombatAffordanceResourceKeys.ACTION_CONFIRM_AUDIO,
+                CombatAffordanceResourceKeys.METHOD_CONFIRM_AUDIO,
+                CombatAffordanceResourceKeys.TARGET_CONFIRM_AUDIO,
+            ),
+            sink.events,
+        )
+    }
+
+    @Test
+    fun `combat disabled and invalid submit messages emit formal invalid cue`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous = combatDecisionOverlay(CombatDecisionPhase.ACTION)
+
+        listOf(
+            "ui.combat.disabled.no-method",
+            "ui.combat.disabled.cooldown",
+            "ui.combat.disabled.resource",
+            "ui.message.combat.no-legal-target",
+            "ui.message.combat.illegal-target",
+            "ui.message.combat.no-available-action",
+        ).forEach { messageKey ->
+            router.onOverlayStateChanged(
+                previous = previous,
+                current = previous.copy(uiMessageKey = messageKey),
+            )
+        }
+
+        assertEquals(
+            List(6) { CombatAffordanceResourceKeys.INVALID_SUBMIT_AUDIO },
+            sink.events,
+        )
+    }
+
+    @Test
     fun `runtime error presentation emits dedicated critical error cue`() {
         val sink = RecordingAudioCueSink()
         val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
@@ -98,6 +158,27 @@ class AudioRouterTest {
 
         assertEquals(listOf("audio.ui.critical_error"), sink.events)
     }
+
+    private fun combatDecisionOverlay(phase: CombatDecisionPhase): OverlayState =
+        OverlayState(
+            mode = UiMode.TARGETING,
+            modalFrames =
+                listOf(
+                    ModalFrame(
+                        kind = ModalFrameKind.COMBAT_DECISION,
+                        localState =
+                            ModalFrameLocalState(
+                                combatDecisionState =
+                                    CombatDecisionFrameState(
+                                        phase = phase,
+                                        selectedActionId = "talent:1",
+                                        selectedMethodId = "default",
+                                        skippedMethod = phase == CombatDecisionPhase.TARGET,
+                                    ),
+                            ),
+                    ),
+                ),
+        )
 
     @Test
     fun `command feedback distinguishes movement from bump attacks and prefers talent audio`() {
@@ -143,6 +224,33 @@ class AudioRouterTest {
                 "audio.interactable.open",
                 "audio.interactable.stairs",
                 "audio.ui.cancel",
+            ),
+            sink.events,
+        )
+    }
+
+    @Test
+    fun `targeted combat commands emit target lock before action feedback`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val snapshot = sampleSnapshot()
+        val hitSnapshot =
+            snapshot.copy(
+                uiState = snapshot.uiState.copy(playerStatus = snapshot.uiState.playerStatus.copy(currentResource = 4)),
+                logEvents = listOf(RenderLogEventSnapshot(RenderTextTokenSnapshot(key = "log.talent.damage"))),
+            )
+
+        router.onCommandResolved(snapshot, hitSnapshot, PlayerCommand.UseTalent(slot = 1, target = com.ktome.core.map.Point(2, 0)), consumed = true)
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.UseInscription(hotkey = 5, target = com.ktome.core.map.Point(2, 0)), consumed = true)
+
+        assertEquals(
+            listOf(
+                CombatAffordanceResourceKeys.TARGET_LOCK_AUDIO,
+                "audio.talent.power_strike",
+                "audio.resource.stamina.spend",
+                "audio.damage.physical_hit",
+                CombatAffordanceResourceKeys.TARGET_LOCK_AUDIO,
+                "audio.ui.confirm",
             ),
             sink.events,
         )

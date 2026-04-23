@@ -95,7 +95,7 @@ internal object LintFixtures {
 
         return buildSet {
             files.forEach { path ->
-                if (path.fileName.toString() == "UiCompanionVisualKeys.kt") {
+                if (path.fileName.toString() in setOf("UiCompanionVisualKeys.kt", "CombatAffordanceResourceKeys.kt")) {
                     return@forEach
                 }
                 val content = path.readText()

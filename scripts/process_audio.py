@@ -22,6 +22,15 @@ from asset_pipeline_common import load_json, load_yaml
 SUPPORTED_RAW_SUFFIXES = (".wav", ".ogg", ".mp3", ".flac", ".aif", ".aiff", ".m4a")
 TARGET_SAMPLE_RATE = 44_100
 TARGET_CHANNELS = 1
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
+def display_path(path: pathlib.Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(resolved)
 
 
 @dataclass(frozen=True)
@@ -206,6 +215,8 @@ def generate_placeholder_wav(output_path: pathlib.Path, cue_family: str, identif
         duration_s = 1.35 if "vanguard" in normalized_id or "arcanist" in normalized_id else 1.2
     elif cue_family == "monster":
         duration_s = 0.95 if "bandit" in normalized_id else 0.8
+    elif cue_family == "ui":
+        duration_s = 0.52 + (stable_seed(identifier) % 5) * 0.06
     elif cue_family == "silence":
         duration_s = 0.1
     else:
@@ -269,7 +280,8 @@ def generate_placeholder_wav(output_path: pathlib.Path, cue_family: str, identif
             pulse_start = 0.02
             age = t - pulse_start
             if 0.0 <= age <= 0.12:
-                value = math.sin(2.0 * math.pi * 1320 * age) * 0.24 * math.exp(-age * 24.0)
+                frequency = base_frequency + 920
+                value = math.sin(2.0 * math.pi * frequency * age) * 0.24 * math.exp(-age * 24.0)
             else:
                 value = 0.0
         elif cue_family == "footstep":
@@ -462,9 +474,9 @@ def main() -> int:
                     "cueFamily": asset.cue_family,
                     "eventIds": list(asset.event_ids),
                     "keys": list(asset.keys),
-                    "rawPath": str(raw_path) if raw_path is not None else None,
-                    "cleanedPath": str(cleaned_path),
-                    "runtimePath": str(runtime_path),
+                    "rawPath": display_path(raw_path) if raw_path is not None else None,
+                    "cleanedPath": display_path(cleaned_path),
+                    "runtimePath": display_path(runtime_path),
                     "rawBytes": raw_path.stat().st_size if raw_path is not None and raw_path.is_file() else None,
                     "processedBytes": probe["sizeBytes"],
                     "codec": probe["codec"],
@@ -490,9 +502,9 @@ def main() -> int:
                 "cueFamily": asset.cue_family,
                 "eventIds": list(asset.event_ids),
                 "keys": list(asset.keys),
-                "rawPath": str(raw_path),
-                "cleanedPath": str(cleaned_path),
-                "runtimePath": str(runtime_path),
+                "rawPath": display_path(raw_path),
+                "cleanedPath": display_path(cleaned_path),
+                "runtimePath": display_path(runtime_path),
                 "rawBytes": source_bytes,
                 "processedBytes": probe["sizeBytes"],
                 "codec": probe["codec"],
