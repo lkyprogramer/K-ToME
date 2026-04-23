@@ -383,6 +383,7 @@ class InputHandler(
 
         if (input.isKeyJustPressed(Keys.X)) {
             inspectCursor = defaultInspectCursor(snapshot)
+            explainPaneOpen = false
             openModalFrame(
                 ModalFrame(
                     kind = ModalFrameKind.INSPECT,
@@ -997,6 +998,7 @@ class InputHandler(
     private fun clearValidation() {
         mode = UiMode.MAP
         modalStack.clear()
+        explainPaneOpen = false
         paneFocusController.onPassiveTakeover()
         resetMovementRepeat()
     }
@@ -1224,6 +1226,7 @@ class InputHandler(
                 mode = UiMode.VALIDATION
                 validationCursor = ValidationOverlayCursor()
                 inspectCursor = inspectCursor ?: defaultInspectCursor(snapshot)
+                explainPaneOpen = false
                 resetMovementRepeat()
                 return true
             }

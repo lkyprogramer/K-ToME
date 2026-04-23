@@ -309,6 +309,51 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `reopening inspect clears stale explain pane after validation toggle`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("inspect-explain-validation-toggle-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.INSPECT, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.SLASH), pressed = setOf(Keys.SHIFT_LEFT, Keys.SLASH))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertTrue(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
+        assertFalse(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertFalse(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.X))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.INSPECT, handler.overlayState().mode)
+        assertFalse(handler.overlayState().explainPaneOpen)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+    }
+
+    @Test
     fun `pending stat allocation passively takes over and blocks inspect stack`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
