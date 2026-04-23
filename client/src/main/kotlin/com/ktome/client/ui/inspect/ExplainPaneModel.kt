@@ -10,6 +10,7 @@ import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.TerrainOverrideRenderSnapshot
 import com.ktome.core.talent.KeywordRegistry
+import com.ktome.game.i18n.Localizer
 
 internal data class ExplainPaneModel(
     val card: ModalCardModel,
@@ -47,6 +48,7 @@ internal data class ExplainPaneModel(
             )
 
         fun fromInspectSurface(
+            localizer: Localizer,
             actor: ActorRenderSnapshot?,
             item: ItemRenderSnapshot?,
             prop: PropRenderSnapshot?,
@@ -62,7 +64,7 @@ internal data class ExplainPaneModel(
                     overlay = overlay,
                 )
             val card = DescriptionPresenter.inspectSurfaceCard(surface)
-            val keywordIds = DescriptionPresenter.inspectSurfaceKeywordIds(surface)
+            val keywordIds = DescriptionPresenter.inspectSurfaceKeywordIds(localizer = localizer, surface = surface, card = card)
             return fromCard(card = card, keywordIds = keywordIds)
         }
     }

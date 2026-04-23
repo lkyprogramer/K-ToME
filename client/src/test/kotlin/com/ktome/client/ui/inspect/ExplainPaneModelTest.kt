@@ -5,16 +5,21 @@ import com.ktome.client.ui.card.ModalCardModel
 import com.ktome.client.ui.card.ModalCardReturnPolicy
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
+import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class ExplainPaneModelTest {
+    private val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+
     @Test
     fun `explain pane wraps modal card instead of raw renderer text`() {
         val card =
@@ -48,6 +53,7 @@ class ExplainPaneModelTest {
     fun `inspect explain pane prioritizes active telegraph over actor occupying the same cell`() {
         val pane =
             ExplainPaneModel.fromInspectSurface(
+                localizer = localizer,
                 actor =
                     ActorRenderSnapshot(
                         entityId = 7,
@@ -81,6 +87,7 @@ class ExplainPaneModelTest {
     fun `inspect actor explain pane keeps status presentation badges in modal card tokens`() {
         val pane =
             ExplainPaneModel.fromInspectSurface(
+                localizer = localizer,
                 actor =
                     ActorRenderSnapshot(
                         entityId = 9,
@@ -112,5 +119,27 @@ class ExplainPaneModelTest {
         assertEquals("status.guard", statusLine.arguments.single { argument -> argument.name == "name" }.valueKey)
         assertEquals("3/5 4t", statusLine.arguments.single { argument -> argument.name == "badge" }.value)
         assertEquals(listOf("keyword.guard.name"), pane.keywordChips.map { token -> token.key })
+    }
+
+    @Test
+    fun `inspect item explain pane derives keyword chips from rendered passive descriptions`() {
+        val pane =
+            ExplainPaneModel.fromInspectSurface(
+                localizer = localizer,
+                actor = null,
+                item =
+                    ItemRenderSnapshot(
+                        baseItemId = "precision_ring",
+                        nameKey = "item.ring.name",
+                        typeId = "ACCESSORY",
+                        passiveDescriptions = listOf(RenderTextTokenSnapshot("affix.of_precision.desc")),
+                    ),
+                prop = null,
+                terrainOverride = null,
+                overlay = null,
+            )
+
+        assertEquals("inspect:item:precision_ring", pane.card.stableKey)
+        assertEquals(listOf("keyword.marked.name"), pane.keywordChips.map { token -> token.key })
     }
 }

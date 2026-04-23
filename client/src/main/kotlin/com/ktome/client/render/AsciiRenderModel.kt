@@ -560,6 +560,7 @@ internal object AsciiRenderModelBuilder {
                         localizer = localizer,
                         model =
                             ExplainPaneModel.fromInspectSurface(
+                                localizer = localizer,
                                 actor = actor,
                                 item = cell.items.firstOrNull(),
                                 prop = prop,
@@ -684,9 +685,6 @@ internal object AsciiRenderModelBuilder {
     ): List<AsciiTextLine> =
         buildList {
             add(AsciiTextLine(renderTextToken(localizer, model.card.title), AsciiTextTone.GOLD))
-            DescriptionPresenter.presentModalCardLines(localizer, model.card, DescriptionSurface.INSPECT_OBJECT).forEach { line ->
-                add(AsciiTextLine(line.text, descriptionTone(line)))
-            }
             model.keywordChips.forEach { chip -> add(AsciiTextLine(renderTextToken(localizer, chip), AsciiTextTone.CYAN)) }
             model.referenceChain.forEach { ref -> add(AsciiTextLine(renderTextToken(localizer, ref), AsciiTextTone.GRAY)) }
         }

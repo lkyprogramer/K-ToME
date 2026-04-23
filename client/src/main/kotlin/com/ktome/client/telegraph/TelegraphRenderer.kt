@@ -40,15 +40,17 @@ internal object TelegraphRenderer {
     fun asciiLines(
         localizer: Localizer,
         snapshot: RenderSnapshot,
-    ): List<AsciiTextLine> =
-        TelegraphPresentationModel
+    ): List<AsciiTextLine> {
+        val accessibility = AccessibilityToggle.fromSystemProperties()
+        return TelegraphPresentationModel
             .sorted(snapshot.overlays)
             .map { (overlay, presentation) ->
                 AsciiTextLine(
-                    text = rowText(localizer, overlay, presentation, AccessibilityToggle.fromSystemProperties()),
+                    text = rowText(localizer, overlay, presentation, accessibility),
                     tone = asciiTone(overlay.dangerLevel),
                 )
             }
+    }
 
     fun alpha(dangerLevel: Int): Float =
         alpha(dangerLevel = dangerLevel, accessibility = AccessibilityToggle.fromSystemProperties())

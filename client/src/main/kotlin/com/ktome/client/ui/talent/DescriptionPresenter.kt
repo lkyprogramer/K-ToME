@@ -195,7 +195,11 @@ object DescriptionPresenter {
         }
     }
 
-    internal fun inspectSurfaceKeywordIds(surface: InspectDescriptionSurface): List<String> =
+    internal fun inspectSurfaceKeywordIds(
+        localizer: Localizer,
+        surface: InspectDescriptionSurface,
+        card: ModalCardModel = inspectSurfaceCard(surface),
+    ): List<String> =
         buildList {
             if (surface.overlay != null) {
                 addKnownKeyword(this, "telegraph")
@@ -205,6 +209,7 @@ object DescriptionPresenter {
                     addKnownKeyword(this, keywordId)
                 }
             }
+            inspectCardKeywordIds(localizer, card).forEach(::add)
         }.distinct()
 
     fun presentForTalent(
@@ -478,6 +483,19 @@ object DescriptionPresenter {
 
     private fun keywordIdsIn(text: String): List<String> =
         KEYWORD_PATTERN.findAll(text).map { match -> match.groupValues[1] }.toList()
+
+    private fun inspectCardKeywordIds(
+        localizer: Localizer,
+        card: ModalCardModel,
+    ): List<String> =
+        (
+            listOfNotNull(card.summary) +
+                card.detailLines +
+                card.costLines +
+                card.rewardLines +
+                listOfNotNull(card.disabledReason)
+        )
+            .flatMap { token -> keywordIdsIn(renderTextToken(localizer, token)) }
 
     private fun addKnownKeyword(
         keywordIds: MutableList<String>,

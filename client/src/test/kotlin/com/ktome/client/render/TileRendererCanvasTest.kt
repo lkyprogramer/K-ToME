@@ -238,7 +238,7 @@ class TileRendererCanvasTest {
         assertTrue(inventoryModel.sidebar.rows.any { row -> row.text.contains("Marked") })
         assertTrue(inventoryModel.sidebar.rows.none { row -> row.text.contains("[[marked]]") })
         assertTrue(inspectModel.sidebar.rows.any { row -> row.text.contains("Marked") })
-        assertTrue(inspectModel.sidebar.rows.any { row -> row.text.startsWith("Marked:") })
+        assertEquals(1, inspectModel.sidebar.rows.count { row -> row.text.startsWith("Marked:") })
     }
 
     @Test

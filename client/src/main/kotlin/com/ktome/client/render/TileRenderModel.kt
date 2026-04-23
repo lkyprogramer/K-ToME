@@ -909,6 +909,7 @@ internal object TileRenderModelBuilder {
                         localizer = localizer,
                         model =
                             ExplainPaneModel.fromInspectSurface(
+                                localizer = localizer,
                                 actor = actor,
                                 item = cell.items.firstOrNull(),
                                 prop = prop,
@@ -1065,9 +1066,6 @@ internal object TileRenderModelBuilder {
     ): List<TileTextRow> =
         buildList {
             add(TileTextRow(renderTextToken(localizer, model.card.title), TileTextTone.GOLD))
-            DescriptionPresenter.presentModalCardLines(localizer, model.card, DescriptionSurface.INSPECT_OBJECT).forEach { line ->
-                add(TileTextRow(line.text, descriptionTone(line)))
-            }
             model.keywordChips.forEach { chip -> add(TileTextRow(renderTextToken(localizer, chip), TileTextTone.CYAN)) }
             model.referenceChain.forEach { ref -> add(TileTextRow(renderTextToken(localizer, ref), TileTextTone.GRAY)) }
         }

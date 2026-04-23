@@ -6,6 +6,7 @@ import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
 import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.ShopOfferSnapshot
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
@@ -105,8 +106,10 @@ class ModalCardModelTest {
 
         assertEquals("shop:reliquary:offer:1", offer.stableKey)
         assertEquals(ModalCardAction.BUY, offer.primaryAction)
+        assertNull(offer.summary)
         assertEquals("ui.modal.card.cost.shards", offer.costLines.single().key)
         assertEquals(ModalCardAction.SELL, sell.primaryAction)
+        assertNull(sell.summary)
         assertEquals("item.short_sword.icon", sell.iconKey)
         assertEquals(ModalCardReturnPolicy.READ_ONLY_POPPABLE, reward.returnPolicy)
         assertEquals(ModalCardAction.CLOSE, reward.actionFor(ModalCardInput.ESCAPE))
