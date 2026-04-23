@@ -1237,6 +1237,36 @@ class TileRendererCanvasTest {
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(
+                                key = "ui.empty.inventory.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_empty_inventory_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.empty.shop.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_empty_shop_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.empty.inspect.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_empty_inspect_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.card.shop.header.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_card_shop_header_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "ui.card.reward.header.icon",
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr03/ui_card_reward_header_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
                                 key = "vfx.boss.variant.molten_glass",
                                 category = "vfx_overlay",
                                 rawOutputPath = "phase4/pr06/boss_variant_molten_glass.png",

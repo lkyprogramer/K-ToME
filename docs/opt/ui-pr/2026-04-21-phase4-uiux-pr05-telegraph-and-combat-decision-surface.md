@@ -67,16 +67,22 @@
    - `client/src/main/kotlin/com/ktome/client/screen/FoundationGameScreen.kt`
    - `game/src/main/resources/i18n/zh-CN.json`
    - `game/src/main/resources/i18n/en-US.json`
+   - `build.gradle.kts`
 2. 新增：
    - `client/src/main/kotlin/com/ktome/client/ui/combat/CombatDecisionPanel.kt`
    - `client/src/main/kotlin/com/ktome/client/ui/combat/CombatDecisionFrame.kt`
    - `client/src/main/kotlin/com/ktome/client/ui/combat/ActionHintModel.kt`
+   - `client/src/main/kotlin/com/ktome/client/ui/combat/CombatAffordanceResourceKeys.kt`
 3. 如需窄扩 contract：
    - `core/src/main/kotlin/com/ktome/core/combat/CombatResolutionTrace.kt`
    - `game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt`
 4. 资源：
-   - 可选 `assets-src/image/specs/phase4-uiux-pr05-gemini-plan.yaml`
-   - 可选 `assets-src/audio/specs/phase4-uiux-pr05-audio-plan.yaml`
+   - `assets-src/image/specs/phase4-uiux-pr05-gemini-plan.yaml`
+   - `assets-src/image/manifests/phase4-uiux-pr05-generation-report.jsonl`
+   - `assets-src/image/manifests/phase4-uiux-pr05-processing-report.jsonl`
+   - `assets-src/audio/specs/phase4-uiux-pr05-audio-plan.yaml`
+   - `assets-src/audio/manifests/phase4-uiux-pr05-audio-generation-report.jsonl`
+   - `assets-src/audio/manifests/phase4-uiux-pr05-audio-processing-report.jsonl`
 5. 测试：
    - `client/src/test/kotlin/com/ktome/client/ui/combat/CombatDecisionFrameTest.kt`
    - `client/src/test/kotlin/com/ktome/client/ui/combat/CombatDecisionPanelTest.kt`
@@ -86,6 +92,7 @@
    - `client/src/test/kotlin/com/ktome/client/ClientSmokeHarnessTest.kt`
    - `client/src/test/kotlin/com/ktome/client/golden/GoldenScreenshotHarnessTest.kt`
    - `tools/src/test/kotlin/com/ktome/tools/lint/AiIntentLeakRuleTest.kt`
+   - `tools/src/test/kotlin/com/ktome/tools/lint/CombatAffordanceResourceAuditRuleTest.kt`
 
 ### 3.2 非目标
 
@@ -334,9 +341,11 @@ sdk env
 ./gradlew :client:test --tests "com.ktome.client.ui.combat.CombatDecisionFrameTest" --tests "com.ktome.client.ui.combat.CombatDecisionPanelTest" --tests "com.ktome.client.ui.combat.ActionHintModelBuilderTest"
 ./gradlew :client:test --tests "com.ktome.client.telegraph.TelegraphPresentationModelTest"
 ./gradlew :tools:test --tests "com.ktome.tools.lint.AiIntentLeakRuleTest"
+./gradlew :tools:test --tests "com.ktome.tools.lint.CombatAffordanceResourceAuditRuleTest"
 ./gradlew :client:test --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest"
-./gradlew localeLint contractLint maintainabilityLint
+./gradlew localeLint contractLint assetLint styleLint manifestLint audioLint maintainabilityLint
 ./gradlew clientSmoke goldenScreenshot verifyChanged
+./scripts/verify-bootstrap.sh
 ```
 
 若触及 `core/src/main/kotlin/com/ktome/core/combat/CombatResolutionTrace.kt`：
@@ -356,7 +365,7 @@ sdk env
 ./gradlew :game:test --tests "*RenderSnapshot*"
 ```
 
-若新增资源：
+本 PR 新增 combat affordance image/audio plan，必须补跑资源与 bootstrap gate：
 
 ```bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
@@ -426,9 +435,40 @@ sdk env
 
 ## 7. 资源生成计划
 
-### 7.1 图片
+### 7.1 Combat Affordance Resource Audit
 
-默认优先复用现有图标。若需要战斗 affordance companion 资源：
+本 PR 新增正式 combat affordance resource audit。当前仓库没有 `phase4-uiux-pr05-*` image/audio plan，也没有 action、method、target、lock、invalid 五类 combat decision formal key；这些 key 是玩家识别“我正在选动作 / 方式 / 目标、目标是否已锁定、当前提交为什么无效”的第一层感知锚点，因此本 PR 必须补最小 image/audio plan，不再把该资源面写成可选 fallback。
+
+实现前先用以下命令确认当前基线；若任一 key 已由前序分支补齐，则仍必须在本 PR 记录为复用的正式 key，并由 lint/manifest 证明可解析：
+
+```bash
+rg -n "ui\\.combat\\.(action|method|target|lock|invalid)|audio\\.combat\\.(action|method|target|lock|invalid)" \
+  client/src/main/resources/manifests \
+  assets-src/image/manifests \
+  assets-src/audio/manifests
+```
+
+必须交付的 formal key：
+
+| 面 | visual key | audio cue key | 用途 |
+| --- | --- | --- | --- |
+| action phase | `ui.combat.action.icon` | `audio.combat.action.confirm` | 进入/确认动作层，帮助玩家区分“选动作”不是普通菜单 hover |
+| method phase | `ui.combat.method.icon` | `audio.combat.method.confirm` | 进入/确认方式层，帮助玩家理解同一动作下的方式差异 |
+| target phase | `ui.combat.target.icon` | `audio.combat.target.confirm` | 进入/确认目标层，帮助玩家区分自由移动 cursor 与正式目标选择 |
+| target lock | `ui.combat.lock.icon` | `audio.combat.target.lock` | 当前目标被锁定或即将提交时的稳定锚点 |
+| invalid / disabled | `ui.combat.invalid.icon` | `audio.combat.invalid.submit` | 禁用动作、无合法目标、非法目标、数字越界提交的统一错误锚点 |
+
+约束：
+
+1. `CombatDecisionPanel`、`TileRenderModel`、golden fixture 和 smoke 路径必须消费这些 exact key；不得只把 key 写入 manifest。
+2. `audio.combat.invalid.submit` 只用于真实提交失败或确认非法目标；hover 到非法格只显示 `ui.combat.invalid.icon` / invalid border，不播放错误音。
+3. `ui.combat.lock.icon` 与 `audio.combat.target.lock` 只表示玩家确认的锁定语义，不表示普通敌人 intent，也不能用于预测普通敌人下一步。
+4. 缺任一 formal key 或 key 不可解析时，`assetLint / styleLint / manifestLint / audioLint` 必须失败；不得通过 `missing_visual` 或 `audio.fallback.silence` 开放正式 combat decision 路径。
+5. 若实现发现现有正式 key 可复用，必须在 Resource Fallback Audit 中标记为“formal reuse”，并写明 PR 启动 commit 前已存在于对应 manifest；不能把新 UI 路径依赖的缺失 key 写成 fallback。
+
+### 7.2 图片
+
+本 PR 必须新增最小 combat affordance companion visual plan：
 
 ```text
 assets-src/image/specs/phase4-uiux-pr05-gemini-plan.yaml
@@ -436,34 +476,54 @@ assets-src/image/manifests/phase4-uiux-pr05-generation-report.jsonl
 assets-src/image/manifests/phase4-uiux-pr05-processing-report.jsonl
 ```
 
-允许范围：
+生成范围固定为：
 
-1. 动作层 icon
-2. 方式层区分 icon
-3. 目标层锁定/危险标记
+1. `ui.combat.action.icon`
+2. `ui.combat.method.icon`
+3. `ui.combat.target.icon`
+4. `ui.combat.lock.icon`
+5. `ui.combat.invalid.icon`
 
-### 7.2 音频
+视觉约束：
 
-默认复用 `audio.ui.*`、`audio.boss.warning`、战斗基础 cue。若确实需要：
+1. 图标必须是小尺寸可读的 painterly UI icon，不出现文字、数字、完整人物立绘或纯装饰背景。
+2. action/method/target 三个 icon 必须能在 24-32px 侧栏尺寸下区分层级。
+3. lock 必须读作“目标锁定/即将提交”，invalid 必须读作“不可提交/错误”，不能只靠颜色区分。
+4. 所有 raw / processed / runtime 资源必须走现有 image pipeline 和 `sync_phase2_manifests.py`。
+
+### 7.3 音频
+
+本 PR 必须新增最小 combat affordance audio plan：
 
 ```text
 assets-src/audio/specs/phase4-uiux-pr05-audio-plan.yaml
+assets-src/audio/manifests/phase4-uiux-pr05-audio-generation-report.jsonl
 assets-src/audio/manifests/phase4-uiux-pr05-processing-report.jsonl
 ```
 
-允许范围：
+生成范围固定为：
 
-1. telegraph 升级或锁定预警
-2. 动作确认
-3. 非法/禁用提交
+1. `audio.combat.action.confirm`
+2. `audio.combat.method.confirm`
+3. `audio.combat.target.confirm`
+4. `audio.combat.target.lock`
+5. `audio.combat.invalid.submit`
 
-禁止 spell-by-spell 专属音效工程。
+音频约束：
 
-### 7.3 约束
+1. 使用现有 repo 音频生成/处理管线，不新增第二套工具链。
+2. 每个 cue 必须短、清晰、非旋律化；不得做 spell-by-spell 专属音效工程。
+3. action/method/target confirm 可以共享音色家族，但必须有可听层级差异。
+4. invalid submit 必须和 `audio.ui.cancel` 可区分，避免玩家把非法目标误解成普通返回。
+5. target lock 必须和 boss warning 区分，避免把玩家目标确认误读成 boss/scripted telegraph 升级。
+
+### 7.4 约束
 
 1. 新 key 必须同步 plan、manifest、`build.gradle.kts --extra-plan`。
 2. 新 key 必须被 smoke/golden 消费。
-3. 未生成正式资源时，必须保留 [Resource Fallback Audit](resource-fallback-audit-template.md)；`失效风险等级=high` 且 UI 路径依赖新 key 时，不开放正式玩家路径，不能用 fallback 证据代替资源落地。
+3. PR 合并前不得处于“未生成正式资源但开放 combat decision 正式路径”的状态；实现阶段若临时缺 key，必须登记 [Resource Fallback Audit](resource-fallback-audit-template.md)，且 `失效风险等级=high` 或 UI 路径依赖新 key 时不开放正式玩家路径，不能用 fallback 证据代替资源落地。
+4. PR description 和 manual record 必须附 combat affordance resource audit：列出 action/method/target/lock/invalid 五类 key 的 `visualKey / audioCueId / manifest path / consumer test / smoke or golden label`。
+5. 资源生成并接线后必须运行 `assetLint / styleLint / manifestLint / audioLint` 与 `./scripts/verify-bootstrap.sh`。
 
 ## 8. 出口门禁
 
@@ -473,7 +533,8 @@ assets-src/audio/manifests/phase4-uiux-pr05-processing-report.jsonl
 4. `ESC / Backspace / Ctrl+S` 与 PR-02 输入语义一致。
 5. smoke/golden/locale/contract/maintainability 已执行或明确说明无法执行原因。
 6. 新增 locale key `ui.message.combat.no-legal-target / ui.message.combat.illegal-target / ui.message.combat.no-available-action / ui.message.save.blocked-in-combat-decision` 已进入 `zh-CN` 与 `en-US`。
-7. 停止任何 `PR-02` 遗留的 `combat-decision-stub` golden label，并重录为 `phase4-uiux-pr05-*`。
-8. README “跨 PR Deferred 与收口”中的 `COMBAT_DECISION` stub 条目已在本 PR 关闭；PR-02 truth table 的 `TARGETING` 行已由 `CombatDecisionFrameTest` 中 TARGET phase tests 接管，旧 `InputHandlerTest.TARGETING` 用例保留但 re-target 到 frame phase 断言。
-9. 人工白盒记录包含 telegraph 三位一体、三层决策、回退、禁用/非法/无目标、非目标核查证据。
-10. 没有新增普通敌人 intent、AI plan snapshot、第四层解释页或第二 combat rule authority。
+7. Combat affordance resource audit 已完成；action/method/target/lock/invalid 五类 formal visual/audio key 已进入 plan、manifest、runtime resources、consumer tests 与 smoke/golden evidence。
+8. 停止任何 `PR-02` 遗留的 `combat-decision-stub` golden label，并重录为 `phase4-uiux-pr05-*`。
+9. README “跨 PR Deferred 与收口”中的 `COMBAT_DECISION` stub 条目已在本 PR 关闭；PR-02 truth table 的 `TARGETING` 行已由 `CombatDecisionFrameTest` 中 TARGET phase tests 接管，旧 `InputHandlerTest.TARGETING` 用例保留但 re-target 到 frame phase 断言。
+10. 人工白盒记录包含 telegraph 三位一体、三层决策、回退、禁用/非法/无目标、非目标核查证据。
+11. 没有新增普通敌人 intent、AI plan snapshot、第四层解释页或第二 combat rule authority。

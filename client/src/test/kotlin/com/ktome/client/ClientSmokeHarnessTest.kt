@@ -703,8 +703,8 @@ class ClientSmokeHarnessTest {
                     "Expected menu and zone background tracks, got ${audioHarness.backgroundTransitions}.",
                 )
                 assertTrue(
-                    audioHarness.cueEvents.count { it == "audio.ui.confirm" } >= 2,
-                    "Expected at least two confirm cues, got ${audioHarness.cueEvents}.",
+                    audioHarness.cueEvents.count { it == "audio.ui.card_open" } >= 2,
+                    "Expected at least two card-open cues, got ${audioHarness.cueEvents}.",
                 )
                 assertTrue(
                     audioHarness.cueEvents.count { it == "audio.ui.cancel" } >= 1,

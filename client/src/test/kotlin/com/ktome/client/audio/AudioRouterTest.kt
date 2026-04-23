@@ -83,9 +83,19 @@ class AudioRouterTest {
         )
 
         assertEquals(
-            listOf("audio.ui.confirm", "audio.ui.hover", "audio.ui.cancel"),
+            listOf("audio.ui.card_open", "audio.ui.hover", "audio.ui.cancel"),
             sink.events,
         )
+    }
+
+    @Test
+    fun `runtime error presentation emits dedicated critical error cue`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+
+        router.onCriticalError()
+
+        assertEquals(listOf("audio.ui.critical_error"), sink.events)
     }
 
     @Test
@@ -545,6 +555,56 @@ class AudioRouterTest {
         router.onSnapshotUpdated(current, current)
 
         assertEquals(listOf("audio.item.long_sword"), sink.events)
+    }
+
+    @Test
+    fun `new high value inventory item emits pickup accent after item cue`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous = sampleSnapshot()
+        val current =
+            previous.copy(
+                uiState =
+                    previous.uiState.copy(
+                        inventory =
+                            listOf(
+                                InventoryEntrySnapshot(
+                                    index = 0,
+                                    item =
+                                        ItemRenderSnapshot(
+                                            baseItemId = "heartroot_gambit",
+                                            specialTemplateId = "artifact.heartroot_gambit",
+                                            specialTierId = "ARTIFACT",
+                                            nameKey = "item.artifact.heartroot_gambit.name",
+                                            typeId = "ACCESSORY",
+                                            visualKey = "item.artifact.heartroot_gambit.visual",
+                                            iconKey = "item.artifact.heartroot_gambit.icon",
+                                            audioProfile = "audio.item.artifact.heartroot_gambit",
+                                        ),
+                                ),
+                            ),
+                    ),
+            )
+
+        router.onSnapshotUpdated(previous, current)
+
+        assertEquals(listOf("audio.item.artifact.heartroot_gambit", "audio.item.high_value_pickup"), sink.events)
+    }
+
+    @Test
+    fun `shop purchase success and failure use dedicated cues`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val snapshot = sampleSnapshot()
+
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.BuyShopOffer(index = 0), consumed = true)
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.SellInventoryItem(index = 0), consumed = true)
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.BuyShopOffer(index = 0), consumed = false)
+
+        assertEquals(
+            listOf("audio.shop.purchase_success", "audio.shop.purchase_success", "audio.shop.purchase_failed"),
+            sink.events,
+        )
     }
 
     @Test

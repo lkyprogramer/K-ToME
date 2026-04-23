@@ -1,0 +1,29 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+sampleRate: 44100
+entries:
+  - key: audio.ui.card_open
+    cueFamily: ui
+    eventId: audio.ui.card_open
+    sourcePath: audio/phase4/uiux_pr03/card_open.ogg
+    tags: [phase4, uiux, pr03, ui, card]
+  - key: audio.ui.critical_error
+    cueFamily: ui
+    eventId: audio.ui.critical_error
+    sourcePath: audio/phase4/uiux_pr03/critical_error.ogg
+    tags: [phase4, uiux, pr03, ui, error]
+  - key: audio.shop.purchase_success
+    cueFamily: ui
+    eventId: audio.shop.purchase_success
+    sourcePath: audio/phase4/uiux_pr03/shop_purchase_success.ogg
+    tags: [phase4, uiux, pr03, shop, success]
+  - key: audio.shop.purchase_failed
+    cueFamily: ui
+    eventId: audio.shop.purchase_failed
+    sourcePath: audio/phase4/uiux_pr03/shop_purchase_failed.ogg
+    tags: [phase4, uiux, pr03, shop, failure]
+  - key: audio.item.high_value_pickup
+    cueFamily: item
+    eventId: audio.item.high_value_pickup
+    sourcePath: audio/phase4/uiux_pr03/high_value_pickup.ogg
+    tags: [phase4, uiux, pr03, item, reward, high_value]

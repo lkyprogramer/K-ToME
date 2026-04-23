@@ -1,0 +1,64 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly UI companion pass for K-ToME
+  Phase 4 UI/UX PR-03. These assets are small formal UI anchors for empty
+  states, shop cards, and reward cards. Keep silhouettes readable at 20-32 px,
+  grounded in the existing K-ToME palette, never decorative background art,
+  never anime, and never sci-fi.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+    - no letters, words, numbers, signage or readable UI text
+    - no checkerboard transparency pattern
+    - no full background scene
+phase2AssetGates:
+  P4-UIUX-PR03:
+    description: Formal UI companion visual plan for PR-03 empty states and shared card headers.
+    assets:
+      - id: phase4_uiux_pr03_empty_inventory_icon
+        category: icon
+        visualKey: ui.empty.inventory.icon
+        outputName: phase4/uiux_pr03/ui_empty_inventory_icon.png
+        subject: empty inventory icon with an open worn satchel on a plain dark transparent-ready background, clear empty-space silhouette
+        materialTags: [phase4, uiux, pr03, ui, empty_state, inventory]
+        constraints: [ui-readable icon, clean centered silhouette, readable at sidebar row size, no checkerboard pattern]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_empty_shop_icon
+        category: icon
+        visualKey: ui.empty.shop.icon
+        outputName: phase4/uiux_pr03/ui_empty_shop_icon.png
+        subject: empty shop stock icon with a small closed supply crate and muted tag, not a treasure reward
+        materialTags: [phase4, uiux, pr03, ui, empty_state, shop]
+        constraints: [ui-readable icon, clean centered silhouette, readable at shop row size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_empty_inspect_icon
+        category: icon
+        visualKey: ui.empty.inspect.icon
+        outputName: phase4/uiux_pr03/ui_empty_inspect_icon.png
+        subject: inspect empty icon with a simple brass lens over plain stone, clear look-mode affordance
+        materialTags: [phase4, uiux, pr03, ui, empty_state, inspect]
+        constraints: [ui-readable icon, clean centered silhouette, no text, readable at inspect panel size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_shop_card_header_icon
+        category: icon
+        visualKey: ui.card.shop.header.icon
+        outputName: phase4/uiux_pr03/ui_card_shop_header_icon.png
+        subject: shop card header icon with balanced trade scales and a small shard token, not an item-specific icon
+        materialTags: [phase4, uiux, pr03, ui, shop, card]
+        constraints: [ui-readable icon, header anchor, clean silhouette, readable beside card title]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_reward_card_header_icon
+        category: icon
+        visualKey: ui.card.reward.header.icon
+        outputName: phase4/uiux_pr03/ui_card_reward_header_icon.png
+        subject: reward card header icon with a sealed route cache marker and subtle golden glint, no text, no letters, not a unique item icon
+        materialTags: [phase4, uiux, pr03, ui, reward, card]
+        constraints: [ui-readable icon, header anchor, clean silhouette, readable beside reward title, no text or lettering]
+        geminiKeyRequired: true

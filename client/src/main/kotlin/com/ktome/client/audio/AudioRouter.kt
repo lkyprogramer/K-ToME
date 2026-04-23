@@ -9,6 +9,8 @@ import com.ktome.client.assets.AudioManifestResolver
 import com.ktome.client.assets.ResolvedAudioCue
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.core.snapshot.InventoryEntrySnapshot
+import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.PlayerCommand
@@ -152,7 +154,7 @@ class AudioRouter(
                 if (current.mode == UiMode.MAP) {
                     "audio.ui.cancel"
                 } else {
-                    "audio.ui.confirm"
+                    "audio.ui.card_open"
                 }
             play(cueKey)
             return
@@ -174,6 +176,10 @@ class AudioRouter(
 
     fun onReturnToMenu() {
         play("audio.ui.cancel")
+    }
+
+    fun onCriticalError() {
+        play("audio.ui.critical_error")
     }
 
     fun onSnapshotUpdated(
@@ -212,14 +218,24 @@ class AudioRouter(
         if (!consumed) {
             when (command) {
                 is PlayerCommand.ActivateInventoryItem,
+                is PlayerCommand.BuyShopOffer,
                 is PlayerCommand.EquipTalentToSlot,
+                is PlayerCommand.SellInventoryItem,
                 PlayerCommand.Interact,
                 PlayerCommand.Search,
                 is PlayerCommand.UseTalent,
                 PlayerCommand.Ascend,
                 PlayerCommand.Descend,
                 PlayerCommand.PickUp,
-                -> play("audio.ui.cancel")
+                -> {
+                    val cueKey =
+                        if (command is PlayerCommand.BuyShopOffer || command is PlayerCommand.SellInventoryItem) {
+                            "audio.shop.purchase_failed"
+                        } else {
+                            "audio.ui.cancel"
+                        }
+                    play(cueKey)
+                }
 
                 else -> Unit
             }
@@ -243,6 +259,8 @@ class AudioRouter(
 
             is PlayerCommand.BuyShopOffer,
             is PlayerCommand.SellInventoryItem,
+            -> play("audio.shop.purchase_success")
+
             is PlayerCommand.SelectRoute,
             is PlayerCommand.EquipTalentToSlot,
             is PlayerCommand.AssignStat,
@@ -333,6 +351,7 @@ class AudioRouter(
             .forEach(cues::add)
         resourceRestoreCueKey(previous, current)?.let(cues::add)
         newlyAddedInventoryItemAudioProfile(previous, current)?.let(cues::add)
+        newlyAddedHighValueInventoryCueKey(previous, current)?.let(cues::add)
         newlyVisibleGroundItemAudioProfile(previous, current)?.let(cues::add)
         return cues.toList()
     }
@@ -451,6 +470,37 @@ class AudioRouter(
             previous = previous?.uiState?.inventory.orEmpty().mapNotNull { entry -> entry.item.audioProfile },
             current = current.uiState.inventory.mapNotNull { entry -> entry.item.audioProfile },
         )
+
+    private fun newlyAddedHighValueInventoryCueKey(
+        previous: RenderSnapshot?,
+        current: RenderSnapshot,
+    ): String? {
+        val previousCounts =
+            previous
+                ?.uiState
+                ?.inventory
+                .orEmpty()
+                .map(InventoryEntrySnapshot::item)
+                .map(::itemIdentity)
+                .groupingBy { it }
+                .eachCount()
+                .toMutableMap()
+        current.uiState.inventory.map(InventoryEntrySnapshot::item).forEach { item ->
+            val identity = itemIdentity(item)
+            val previousCount = previousCounts[identity] ?: 0
+            if (previousCount == 0) {
+                if (item.specialTierId != null) {
+                    return "audio.item.high_value_pickup"
+                }
+            } else {
+                previousCounts[identity] = previousCount - 1
+            }
+        }
+        return null
+    }
+
+    private fun itemIdentity(item: ItemRenderSnapshot): String =
+        listOf(item.baseItemId, item.specialTemplateId.orEmpty(), item.specialTierId.orEmpty(), item.nameKey).joinToString("|")
 
     private fun newlyVisibleGroundItemAudioProfile(
         previous: RenderSnapshot?,

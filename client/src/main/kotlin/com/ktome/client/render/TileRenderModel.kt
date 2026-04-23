@@ -565,7 +565,7 @@ internal object TileRenderModelBuilder {
                 val shop = snapshot.uiState.activeShop
                 rows += TileTextRow(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), TileTextTone.GOLD)
                 if (shop == null) {
-                    rows += emptyStateRows(localizer, UiEmptyState.shop())
+                    rows += emptyStateRows(localizer, visualResolver, UiEmptyState.shop())
                 } else {
                     rows += TileTextRow(localizer.text(shop.shopNameKey), TileTextTone.GOLD)
                     shop.hintLabelKeys.forEach { hintLabelKey ->
@@ -576,7 +576,7 @@ internal object TileRenderModelBuilder {
                 if (shop != null) {
                     rows += TileTextRow(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) TileTextTone.GOLD else TileTextTone.WHITE)
                     if (shop.offers.isEmpty()) {
-                        rows += emptyStateRows(localizer, UiEmptyState.shop())
+                        rows += emptyStateRows(localizer, visualResolver, UiEmptyState.shop())
                     } else {
                         shop.offers.forEach { offer ->
                             val card = ModalCardModel.shopOffer(shop.shopId, offer)
@@ -593,7 +593,7 @@ internal object TileRenderModelBuilder {
                     }
                     rows += TileTextRow(localizer.text("ui.shop.sell"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL) TileTextTone.GOLD else TileTextTone.WHITE)
                     if (shop.sellEntries.isEmpty()) {
-                        rows += emptyStateRows(localizer, UiEmptyState.shop())
+                        rows += emptyStateRows(localizer, visualResolver, UiEmptyState.shop())
                     } else {
                         shop.sellEntries.forEachIndexed { displayIndex, sellEntry ->
                             val inventoryEntry = snapshot.uiState.inventory.firstOrNull { entry -> entry.index == sellEntry.inventoryIndex }
@@ -698,7 +698,7 @@ internal object TileRenderModelBuilder {
                         )
                 }
                 if (snapshot.uiState.inventory.isEmpty()) {
-                    rows += emptyStateRows(localizer, UiEmptyState.inventory())
+                    rows += emptyStateRows(localizer, visualResolver, UiEmptyState.inventory())
                 } else {
                     val selectedItem = snapshot.uiState.inventory.getOrNull(overlayState.inventorySelection)?.item
                     selectedItem?.let { item ->
@@ -890,7 +890,7 @@ internal object TileRenderModelBuilder {
                 }
                 if (actor == null && cell.items.isEmpty() && cell.stairDirectionId == null && prop == null) {
                     if (cell.visibility == CellVisibilitySnapshot.VISIBLE) {
-                        rows += emptyStateRows(localizer, UiEmptyState.inspect())
+                        rows += emptyStateRows(localizer, visualResolver, UiEmptyState.inspect())
                     } else {
                         rows +=
                             TileTextRow(
@@ -1045,10 +1045,15 @@ internal object TileRenderModelBuilder {
 
     private fun emptyStateRows(
         localizer: Localizer,
+        visualResolver: VisualManifestResolver,
         emptyState: UiEmptyState,
     ): List<TileTextRow> =
         listOf(
-            TileTextRow(renderTextToken(localizer, emptyState.title), TileTextTone.GOLD),
+            TileTextRow(
+                text = renderTextToken(localizer, emptyState.title),
+                tone = TileTextTone.GOLD,
+                icon = resolveVisual(visualResolver, emptyState.iconKey),
+            ),
             TileTextRow(renderTextToken(localizer, emptyState.detail), TileTextTone.LIGHT_GRAY),
         )
 
