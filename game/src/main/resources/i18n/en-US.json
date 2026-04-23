@@ -1770,6 +1770,5 @@
   "ui.combat.disabled.no-method": "No usable method",
   "ui.combat.disabled.unknown-action": "Unknown action",
   "ui.controls.combat_decision": "Tab cycle  Enter/Space confirm  Backspace back  Esc exit",
-  "ui.telegraph.target.summary": "{danger} risk · {turns}t · {cells} cells · {ability}",
-  "ui.resource.none": "No resource"
+  "ui.telegraph.target.summary": "{danger} risk · {turns}t · {cells} cells · {ability}"
 }

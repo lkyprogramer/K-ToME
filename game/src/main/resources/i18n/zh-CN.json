@@ -1770,6 +1770,5 @@
   "ui.combat.disabled.no-method": "没有可用方式",
   "ui.combat.disabled.unknown-action": "未知动作",
   "ui.controls.combat_decision": "Tab 切换  Enter/Space 确认  Backspace 退层  Esc 退出",
-  "ui.telegraph.target.summary": "{danger}风险 · {turns}回合 · {cells}格 · {ability}",
-  "ui.resource.none": "无资源"
+  "ui.telegraph.target.summary": "{danger}风险 · {turns}回合 · {cells}格 · {ability}"
 }
