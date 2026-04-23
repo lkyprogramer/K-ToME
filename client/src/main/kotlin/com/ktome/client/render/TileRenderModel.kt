@@ -11,6 +11,7 @@ import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.client.ui.card.ModalCardModel
 import com.ktome.client.ui.hud.ResourceGaugeModel
 import com.ktome.client.ui.hud.ResourceHud
+import com.ktome.client.ui.inspect.ExplainPaneModel
 import com.ktome.client.ui.item.GroundLootMarkerModel
 import com.ktome.client.ui.item.GroundLootMarkerPlacement
 import com.ktome.client.ui.item.QualityColorTokenId
@@ -30,6 +31,7 @@ import com.ktome.client.ui.status.StatusIconResolver
 import com.ktome.client.ui.talent.DescriptionLine
 import com.ktome.client.ui.talent.DescriptionLineKind
 import com.ktome.client.ui.talent.DescriptionPresenter
+import com.ktome.client.ui.talent.DescriptionSurface
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -371,7 +373,9 @@ internal object TileRenderModelBuilder {
                             "${localizer.text(mutation.nameKey)} · ${renderTextToken(localizer, summary)}"
                         } ?: localizer.text("ui.inspect.mutation.line", "mutation" to localizer.text(mutation.nameKey))
                     } +
-                    actor.statusEffects.map { effect -> StatusHudRenderer.renderTurns(localizer, effect) }
+                    actor.statusEffects.flatMap { effect ->
+                        DescriptionPresenter.presentStatusEffectLines(localizer, effect).map(DescriptionLine::text)
+                    }
             } ?: frontstageFocus?.second.orEmpty()
 
         return TileHudModel(
@@ -429,7 +433,11 @@ internal object TileRenderModelBuilder {
         if (propNameKey != null) {
             return TargetCardModel(
                 title = localizer.text(propNameKey),
-                lines = listOfNotNull(prop.stateLabelKey?.let(localizer::text), prop.descKey?.let(localizer::text)),
+                lines =
+                    listOfNotNull(prop.stateLabelKey?.let(localizer::text)) +
+                        DescriptionPresenter
+                            .presentInspectObjectLines(localizer, listOfNotNull(prop.descKey?.let(::RenderTextTokenSnapshot)))
+                            .map(DescriptionLine::text),
                 emptyStateText = emptyText,
             )
         }
@@ -607,6 +615,9 @@ internal object TileRenderModelBuilder {
                                 )
                         }
                     }
+                    selectedShopDescriptionRows(localizer, shop, snapshot, overlayState).forEach { line ->
+                        rows += TileTextRow(line.text, descriptionTone(line))
+                    }
                 }
                 rows += TileTextRow(localizer.text("ui.controls.shop"), TileTextTone.LIGHT_GRAY)
             }
@@ -663,8 +674,8 @@ internal object TileRenderModelBuilder {
                                 tone = itemTone(presentation),
                                 icon = selectedItem.iconKey?.let { resolveVisual(visualResolver, it) },
                             )
-                        selectedItem.descKey?.let { descKey ->
-                            rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        DescriptionPresenter.presentInventoryItemLines(localizer, selectedItem).forEach { line ->
+                            rows += TileTextRow(line.text, descriptionTone(line))
                         }
                         itemDetailLines(localizer, selectedItem).forEach { detail ->
                             rows += TileTextRow(detail, TileTextTone.LIGHT_GRAY)
@@ -691,8 +702,8 @@ internal object TileRenderModelBuilder {
                 } else {
                     val selectedItem = snapshot.uiState.inventory.getOrNull(overlayState.inventorySelection)?.item
                     selectedItem?.let { item ->
-                        item.descKey?.let { descKey ->
-                            rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        DescriptionPresenter.presentInventoryItemLines(localizer, item).forEach { line ->
+                            rows += TileTextRow(line.text, descriptionTone(line))
                         }
                         itemDetailLines(localizer, item).forEach { detail ->
                             rows += TileTextRow(detail, TileTextTone.LIGHT_GRAY)
@@ -823,12 +834,14 @@ internal object TileRenderModelBuilder {
                         }
                     }
                     inspected.statusEffects.forEach { effect ->
-                        rows +=
-                            TileTextRow(
-                                text = StatusHudRenderer.renderTurns(localizer, effect),
-                                tone = TileTextTone.LIGHT_GRAY,
-                                icon = effect.iconKey?.let { resolveVisual(visualResolver, it) },
-                            )
+                        DescriptionPresenter.presentStatusEffectLines(localizer, effect).forEach { line ->
+                            rows +=
+                                TileTextRow(
+                                    text = line.text,
+                                    tone = descriptionTone(line),
+                                    icon = effect.iconKey?.let { resolveVisual(visualResolver, it) },
+                                )
+                        }
                     }
                 }
                 if (cell.items.isNotEmpty()) {
@@ -841,8 +854,8 @@ internal object TileRenderModelBuilder {
                                 tone = itemTone(presentation),
                                 icon = item.iconKey?.let { resolveVisual(visualResolver, it) },
                             )
-                        item.descKey?.let { descKey ->
-                            rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        DescriptionPresenter.presentInspectItemLines(localizer, item).forEach { line ->
+                            rows += TileTextRow(line.text, descriptionTone(line))
                         }
                         itemDetailLines(localizer, item).forEach { detail ->
                             rows += TileTextRow(detail, TileTextTone.LIGHT_GRAY)
@@ -859,8 +872,12 @@ internal object TileRenderModelBuilder {
                     prop.stateLabelKey?.let { stateLabelKey ->
                         rows += TileTextRow(localizer.text(stateLabelKey), TileTextTone.CYAN)
                     }
-                    prop.descKey?.let { descKey ->
-                        rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                    DescriptionPresenter
+                        .presentInspectObjectLines(
+                            localizer,
+                            listOfNotNull(prop.descKey?.let(::RenderTextTokenSnapshot)),
+                        ).forEach { line ->
+                            rows += TileTextRow(line.text, descriptionTone(line))
                     }
                 }
                 cell.stairDirectionId?.let { directionId ->
@@ -884,8 +901,21 @@ internal object TileRenderModelBuilder {
                                         CellVisibilitySnapshot.HIDDEN -> localizer.text("ui.inspect.unknown_tile")
                                     },
                                 tone = TileTextTone.LIGHT_GRAY,
-                            )
+                        )
                     }
+                }
+                if (overlayState.explainPaneOpen) {
+                    rows += explainPaneRows(
+                        localizer = localizer,
+                        model =
+                            ExplainPaneModel.fromInspectSurface(
+                                actor = actor,
+                                item = cell.items.firstOrNull(),
+                                prop = prop,
+                                terrainOverride = cell.terrainOverride,
+                                overlay = overlaysAtCursor.firstOrNull(),
+                            ),
+                    )
                 }
                 rows += TileTextRow(localizer.text("ui.controls.inspect"), TileTextTone.LIGHT_GRAY)
             }
@@ -1028,6 +1058,19 @@ internal object TileRenderModelBuilder {
             TileMessageLine(renderTextToken(localizer, emptyState.detail), TileTextTone.LIGHT_GRAY),
         )
     }
+
+    private fun explainPaneRows(
+        localizer: Localizer,
+        model: ExplainPaneModel,
+    ): List<TileTextRow> =
+        buildList {
+            add(TileTextRow(renderTextToken(localizer, model.card.title), TileTextTone.GOLD))
+            DescriptionPresenter.presentModalCardLines(localizer, model.card, DescriptionSurface.INSPECT_OBJECT).forEach { line ->
+                add(TileTextRow(line.text, descriptionTone(line)))
+            }
+            model.keywordChips.forEach { chip -> add(TileTextRow(renderTextToken(localizer, chip), TileTextTone.CYAN)) }
+            model.referenceChain.forEach { ref -> add(TileTextRow(renderTextToken(localizer, ref), TileTextTone.GRAY)) }
+        }
 
     private fun modalCardHeaderRow(
         localizer: Localizer,
@@ -1515,9 +1558,6 @@ internal object TileRenderModelBuilder {
             item.affixNameKeys.forEach { affixNameKey ->
                 add(localizer.text("ui.inspect.affix", "affix" to localizer.text(affixNameKey)))
             }
-            item.passiveDescriptions.forEach { token ->
-                add(renderTextToken(localizer, token))
-            }
             addAll(statModifierLines(localizer, item.stats))
             when (item.effectTypeId) {
                 "HEAL" -> add(localizer.text("ui.inspect.restore_hp", "amount" to item.magnitude))
@@ -1526,6 +1566,28 @@ internal object TileRenderModelBuilder {
             }
             if (isEmpty()) {
                 add(localizer.text("ui.inspect.no_special_effect"))
+            }
+        }
+
+    private fun selectedShopDescriptionRows(
+        localizer: Localizer,
+        shop: com.ktome.core.snapshot.ShopPanelSnapshot,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+    ): List<DescriptionLine> =
+        when (overlayState.shopFocus) {
+            com.ktome.client.input.ShopFocus.BUY -> {
+                val offer = shop.offers.firstOrNull { candidate -> candidate.index == overlayState.shopOfferSelection }
+                offer?.let { selected ->
+                    val card = ModalCardModel.shopOffer(shop.shopId, selected)
+                    DescriptionPresenter.presentModalCardLines(localizer, card, DescriptionSurface.SHOP_ITEM)
+                }.orEmpty()
+            }
+
+            com.ktome.client.input.ShopFocus.SELL -> {
+                val sellEntry = shop.sellEntries.getOrNull(overlayState.inventorySelection)
+                val item = sellEntry?.let { entry -> snapshot.uiState.inventory.firstOrNull { inventory -> inventory.index == entry.inventoryIndex }?.item }
+                item?.let { selected -> DescriptionPresenter.presentShopItemLines(localizer, selected) }.orEmpty()
             }
         }
 

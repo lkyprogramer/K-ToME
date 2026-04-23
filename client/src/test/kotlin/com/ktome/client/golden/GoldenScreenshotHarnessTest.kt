@@ -84,12 +84,12 @@ class GoldenScreenshotHarnessTest {
             listOf(
                 "10c7931dc33386a9b673866a3c2b44e319855084093bef4459fc22c84bde46d7",
                 "28aae9fe1b77155a5493fec5c8c89be50f1d8d54ca833a7d1903518d51bc7372",
-                "c928b3fea6db5d4a3d0d2b8043066125246b2478e9b81a705bf01b468d178566",
+                "9d46e24d8b5a27c6d59afaa8c431e28a73cdd21784fccda0112c856acd925011",
                 "7caf807bd32afe75fb7a30af36e4b4db9f04a7f2723611bdd084cc8acab243ab",
                 "e6839d604a9bc8d4086197a49cbf42442ab8478d21bd86511dd172ae73ce06fe",
                 "93752d2697f8db4bdc40ff058ea62ec30836edb4f37770785557cef621d2eae9",
                 "16d9f452f671b4693e222583777c7cd76906d7c83aa7fdd9496bb9938b7f2f82",
-                "2df886464836cf3044f8e6f9c1e9c17364213384182d6da62412bf12c48c30ce",
+                "8946f26238bd9868ba2c2a3a1b7891fe2ce8edf677e337b27b322163620c088a",
                 "1d1f63acf98657bda1905e38877bb3a5403f9f96a6843baff6301d19af224f8a",
                 "774a50f45053c79566bf1bd330a3ca328348faf95557294ba58b30ea909c9531",
             ),
@@ -104,8 +104,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "7bb970f805d4fb4cdea319a65748a4fe21175d9b65cffebd163712fdb329084c",
-                "15715a9f37d652eddf51329d1228a0b96f2b54662d79d6e432204dcaae1e209d",
+                "1689b1e968ff1aeea7b5a431c770201920454338aa4c11f79f45badbec55e0a1",
+                "abaa150ff80491ff86f5c6cd8fc640c91c18c21388e25395bb9cbf6c399c93cf",
             ),
             listOf(english, chinese),
         )
@@ -118,9 +118,9 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "2237bc299bad738b3ac60ccf289df71ee58a69ee1693d803db0e67e65865114c",
-                "7240563d751016528ee4bc281b5a218b7f757d855a751ee7d1243a6137794246",
-                "b082d904dba029137e183c9815011014353f4348b045de10fcab0c1527d2af06",
+                "e0cbd3cf5cabce1268d8c83d96b051236adf857bc7f6bcca397b4da2ba4c0a3f",
+                "7ccc3c39b817100d7b9e0097523413e1ba999ff16659ce123ae11d3cbca19042",
+                "f34dc27b0dcfb8c6662af6f433c94ae8ade3898e4ea0de198e92e9a85c3e4edf",
                 "c78f2f73dfbee36b2d514ff92c9b9069d81c59cadef0c9239a01a24455034791",
                 "a3de098e346815760c54ecb55eec12837d77002ad3feff2963bb34048ad00743",
                 "2210c03efbaaa0b0df3cc8cccd325548bb55eacca9a064e398982fe84efddc16",
@@ -180,9 +180,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "450e7caf5c08a15a48c92829f8bdfbacd38b2f5291fb61f4696ec0d325e53633",
-                "d1732f71c102a92133e218566812df3c75c1630aa9803db31b7610ccbd253c18",
+                "7e5d15d1d948ef456926c41920241fd35a4b088839962d4f6b87e6bbd1e95380",
                 "1b2502c2e7fd673dde69ef26ed55b91ba246883c2a10d3a470e74a9c7853647a",
-                "3c32fb69a73fd962fc55e0c43405f5c29582f23e63b6b7dc65ffd6771f071719",
+                "51348c17162656e88af4f9a9ae5a7e133b65d189048ead7b54ab7f79f9699654",
             ),
             english + chinese,
         )
@@ -192,7 +192,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("c1571ca8798e4c0e0280b3f78781d61cffaf154c0d71a48ca2f2db2311363678", hash)
+        assertEquals("e15f9fe936b8eb5a346c82619ab594d73dc772dc1e6339d56752291664e6e0d5", hash)
     }
 
     @Test
@@ -202,11 +202,11 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "a482884989679bd0cc42de7ade8a2aefe45cd354df40a70ff3cbad597277bd50",
-                "7bd14e86f0cfd095fb10655668596f605f6c976ed530c4ece0d1aabfe56a3ce2",
-                "2a10eae01820308145b649151f43836127e5fbe99fcde4e300653a8d1575aa78",
-                "0dd2e7bfe9e5f883b906f748b3d2ea6ac8548433c231c90e01983442262c9ac1",
-                "8d8fc4f0b04d7220836e4341b761d10b35763d11c2794edbdb25437841d18d8a",
+                "8b1412ea6e83dfca388e85a0cfc10d690d0324bf373e19d57141023c31ca2926",
+                "1a9601988995ea2cb1d3facb905c98bbeee979ef37f8112be5c802ab39d39f4e",
+                "ec9534a6ca8acb041c63b96e711a714513e4367929efb76f0f9cf607dbd503b8",
+                "6abe371f0d88e9174c69101ee3c05858688cc02bcf3ee6a0d9c757e60ba39d4f",
+                "8f0aef27eca71c577efa4e0c903c03d7c9c1d9ced407fd8fabd84ea737de2760",
                 "ed9b72ac5db6a4a4754119dd41ce19ffb13513b5b53bed151e9f5744a423c37b",
                 "34bff855f7451f40cc7575ccdb72178dd57a62518dee4ebd50f3c2bb205d9b71",
                 "41b81929ffeb019137507bf71911c99777c763297ea5b2308ddc4cf36d9096f2",

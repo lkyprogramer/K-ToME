@@ -57,6 +57,7 @@ data class OverlayState(
     val targetingInscriptionHotkey: Int? = null,
     val targetingCursor: Point? = null,
     val inspectCursor: Point? = null,
+    val explainPaneOpen: Boolean = false,
     val validationCursor: ValidationOverlayCursor? = null,
     val validationPanel: ValidationOverlayPanelState? = null,
     val uiMessageKey: String? = null,
@@ -117,6 +118,7 @@ class InputHandler(
     private var targetingInscriptionHotkey: Int? = null
     private var targetingCursor: Point? = null
     private var inspectCursor: Point? = null
+    private var explainPaneOpen: Boolean = false
     private var validationCursor: ValidationOverlayCursor = ValidationOverlayCursor()
     private var heldMovementKey: Int? = null
     private var movementRepeatCountdown: Int = repeatInitialDelayFrames
@@ -144,6 +146,7 @@ class InputHandler(
             targetingInscriptionHotkey = targetingInscriptionHotkey,
             targetingCursor = targetingCursor,
             inspectCursor = inspectCursor,
+            explainPaneOpen = explainPaneOpen,
             validationCursor =
                 validationCursor.takeIf { validationOverlayAvailability == ValidationOverlayAvailability.ENABLED },
             uiMessageKey = uiMessageKey,
@@ -383,7 +386,7 @@ class InputHandler(
             openModalFrame(
                 ModalFrame(
                     kind = ModalFrameKind.INSPECT,
-                    localState = ModalFrameLocalState(inspectCursor = inspectCursor),
+                    localState = ModalFrameLocalState(inspectCursor = inspectCursor, explainPaneOpen = false),
                 ),
             )
             return null
@@ -576,6 +579,10 @@ class InputHandler(
             closeAllModalFrames()
             return null
         }
+        if (input.isKeyJustPressed(Keys.BACKSPACE) && explainPaneOpen) {
+            setExplainPaneOpen(false)
+            return null
+        }
         if (input.isKeyJustPressed(Keys.BACKSPACE) || isOverlayCloseBinding() || input.isKeyJustPressed(Keys.X)) {
             closeCurrentModalFrame()
             return null
@@ -585,7 +592,11 @@ class InputHandler(
             return null
         }
         if (input.isKeyJustPressed(Keys.SLASH)) {
-            debugMessageKey = "DEBUG inspect.explain-stub.invoked"
+            if (explainPaneOpen) {
+                debugMessageKey = "DEBUG inspect.panel-help.invoked"
+            } else {
+                setExplainPaneOpen(true)
+            }
             return null
         }
         if (
@@ -1092,6 +1103,7 @@ class InputHandler(
         }
         if (popped?.kind == ModalFrameKind.INSPECT) {
             inspectCursor = null
+            explainPaneOpen = false
         }
         if (modalStack.isEmpty) {
             paneFocusController.onModalClosed()
@@ -1106,6 +1118,7 @@ class InputHandler(
         targetingInscriptionHotkey = null
         targetingCursor = null
         inspectCursor = null
+        explainPaneOpen = false
         paneFocusController.onModalClosed()
         updateModeFromModalStack()
         resetMovementRepeat()
@@ -1118,6 +1131,7 @@ class InputHandler(
         targetingInscriptionHotkey = null
         targetingCursor = null
         inspectCursor = null
+        explainPaneOpen = false
         paneFocusController.onPassiveTakeover()
         resetMovementRepeat()
     }
@@ -1167,8 +1181,16 @@ class InputHandler(
         modalStack.replaceTop { frame -> frame.copy(localState = transform(frame.localState)) }
     }
 
+    private fun setExplainPaneOpen(open: Boolean) {
+        explainPaneOpen = open
+        updateTopModalState { state -> state.copy(explainPaneOpen = open) }
+    }
+
     private fun updateModeFromModalStack() {
         mode = modalStack.top()?.kind?.toUiMode() ?: UiMode.MAP
+        if (mode != UiMode.INSPECT) {
+            explainPaneOpen = false
+        }
     }
 
     private fun ModalFrameKind.toUiMode(): UiMode =

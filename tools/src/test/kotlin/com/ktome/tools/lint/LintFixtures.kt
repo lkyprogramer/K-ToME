@@ -129,6 +129,17 @@ internal object LintFixtures {
                 keywordMarkupPattern.findAll(value).map { match -> match.groupValues[1] }.toList()
             }
 
+    fun localeKeywordMarkupIds(
+        locale: GameLocale,
+        localeKeys: Set<String>,
+    ): Set<String> =
+        loadLocale(locale)
+            .filterKeys(localeKeys::contains)
+            .values
+            .flatMapTo(linkedSetOf()) { value ->
+                keywordMarkupPattern.findAll(value).map { match -> match.groupValues[1] }.toList()
+            }
+
     fun formalObjectMaps(): List<Map<*, *>> =
         schemaResources.flatMap { resource -> extractFormalObjects(loadYaml(resource)) }
 

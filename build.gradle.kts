@@ -44,6 +44,7 @@ val verificationOnlyTestTags =
         "combatTraceGolden",
         "localeLint",
         "contractLint",
+        "keywordRegistryLint",
         "maintainabilityLint",
         "mapgenSmoke",
         "solvabilityHarness",
@@ -67,6 +68,7 @@ val verificationOnlyTestTags =
 val verifyOwnerTaskPaths =
     listOf(
         ":tools:contractLint",
+        ":tools:keywordRegistryLint",
         ":tools:lootBalanceLab",
         ":tools:whiteBoxLoot",
         ":tools:hiddenContentHarness",
@@ -86,6 +88,7 @@ val verifyChangedTaskPaths =
         ":tools:maintainabilityLint",
         ":tools:verifyContractLintPreflight",
         ":tools:contractLint",
+        ":tools:keywordRegistryLint",
         ":tools:verifyLootPreflight",
         ":tools:verifyHiddenPreflight",
         ":tools:verifyContentPackPreflight",
@@ -413,6 +416,12 @@ tasks.register("contractLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates schema V2 structure, cross-references, and key namespaces."
     dependsOn(":tools:contractLint")
+}
+
+tasks.register("keywordRegistryLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates keyword registry consumers and formal description coverage probes."
+    dependsOn(":tools:keywordRegistryLint")
 }
 
 tasks.register("maintainabilityLint") {
