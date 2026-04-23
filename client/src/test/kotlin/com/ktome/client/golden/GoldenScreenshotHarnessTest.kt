@@ -17,6 +17,12 @@ import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.render.TileRenderer
+import com.ktome.client.ui.combat.CombatDecisionFrame
+import com.ktome.client.ui.combat.CombatDecisionFrameState
+import com.ktome.client.ui.combat.CombatDecisionPhase
+import com.ktome.client.ui.layout.ModalFrame
+import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.layout.ModalFrameLocalState
 import com.ktome.core.ai.BossEncounterState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
@@ -85,13 +91,13 @@ class GoldenScreenshotHarnessTest {
                 "10c7931dc33386a9b673866a3c2b44e319855084093bef4459fc22c84bde46d7",
                 "28aae9fe1b77155a5493fec5c8c89be50f1d8d54ca833a7d1903518d51bc7372",
                 "9d46e24d8b5a27c6d59afaa8c431e28a73cdd21784fccda0112c856acd925011",
-                "7caf807bd32afe75fb7a30af36e4b4db9f04a7f2723611bdd084cc8acab243ab",
-                "e6839d604a9bc8d4086197a49cbf42442ab8478d21bd86511dd172ae73ce06fe",
+                "35103d614b12bb07199e8877f6c70e2a1fd21dcb9751d5fb4d7412544372007f",
+                "338c89b42d567313320418b2892af93dd23f7de1ed620181f2fd3e721e187656",
                 "93752d2697f8db4bdc40ff058ea62ec30836edb4f37770785557cef621d2eae9",
-                "16d9f452f671b4693e222583777c7cd76906d7c83aa7fdd9496bb9938b7f2f82",
-                "8946f26238bd9868ba2c2a3a1b7891fe2ce8edf677e337b27b322163620c088a",
-                "1d1f63acf98657bda1905e38877bb3a5403f9f96a6843baff6301d19af224f8a",
-                "774a50f45053c79566bf1bd330a3ca328348faf95557294ba58b30ea909c9531",
+                "daa7ece3ae4baad650885325e7665e597c010cd673592567550106273c4e3500",
+                "11e88a2a174781d9d123bded101024abcdbbe97361a8660f847cb8f569c508fe",
+                "747f271f363ecd3e03d49c40c88e096295c9e780cb35526689f7208a4bdb8bde",
+                "2bf46ef21ba580ff6415a7a63f19b161df0ba11c1d1db80fcb3717575585ed90",
             ),
             english + chinese,
         )
@@ -104,8 +110,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "1689b1e968ff1aeea7b5a431c770201920454338aa4c11f79f45badbec55e0a1",
-                "abaa150ff80491ff86f5c6cd8fc640c91c18c21388e25395bb9cbf6c399c93cf",
+                "4f0fb815e2bd81f238f0448268892d3f2c213113ea715de222d7a6c43e544424",
+                "def9c857a5e7ace8d20c9fa7908f6397877dc77e39a1184b5daa40759f5330b6",
             ),
             listOf(english, chinese),
         )
@@ -118,10 +124,10 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "e0cbd3cf5cabce1268d8c83d96b051236adf857bc7f6bcca397b4da2ba4c0a3f",
+                "73cf482512a7ef105e2c9a8309b6511e3d8e70cfa69538e43e5fa002240272f7",
                 "7ccc3c39b817100d7b9e0097523413e1ba999ff16659ce123ae11d3cbca19042",
                 "f34dc27b0dcfb8c6662af6f433c94ae8ade3898e4ea0de198e92e9a85c3e4edf",
-                "c78f2f73dfbee36b2d514ff92c9b9069d81c59cadef0c9239a01a24455034791",
+                "f37da3c12ce980573b4d9402b50072baab97cc30400292c234ec49c0da238c0d",
                 "a3de098e346815760c54ecb55eec12837d77002ad3feff2963bb34048ad00743",
                 "2210c03efbaaa0b0df3cc8cccd325548bb55eacca9a064e398982fe84efddc16",
             ),
@@ -180,9 +186,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "450e7caf5c08a15a48c92829f8bdfbacd38b2f5291fb61f4696ec0d325e53633",
-                "7e5d15d1d948ef456926c41920241fd35a4b088839962d4f6b87e6bbd1e95380",
+                "15b8a1aeab3d51faa02657f698dc48ec4a885def6ad3ecce493d2f43a365a04f",
                 "1b2502c2e7fd673dde69ef26ed55b91ba246883c2a10d3a470e74a9c7853647a",
-                "51348c17162656e88af4f9a9ae5a7e133b65d189048ead7b54ab7f79f9699654",
+                "6fed245de8629b06d168da07bf96f97fe7be5b4c2c53c338a75177a9c4c2b18b",
             ),
             english + chinese,
         )
@@ -192,7 +198,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("e15f9fe936b8eb5a346c82619ab594d73dc772dc1e6339d56752291664e6e0d5", hash)
+        assertEquals("5a094eb7ae08b14e16af1379ab093cf0f1a827a802994a1fbc4c7f73b611ed72", hash)
     }
 
     @Test
@@ -202,11 +208,11 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "8b1412ea6e83dfca388e85a0cfc10d690d0324bf373e19d57141023c31ca2926",
-                "1a9601988995ea2cb1d3facb905c98bbeee979ef37f8112be5c802ab39d39f4e",
-                "ec9534a6ca8acb041c63b96e711a714513e4367929efb76f0f9cf607dbd503b8",
-                "6abe371f0d88e9174c69101ee3c05858688cc02bcf3ee6a0d9c757e60ba39d4f",
-                "8f0aef27eca71c577efa4e0c903c03d7c9c1d9ced407fd8fabd84ea737de2760",
+                "923f1d345fa989e8ca51d56f851aa8d7671cfbca1dd2db4ce3e55b7a91f4692e",
+                "55a84be4c2c962b5e91d9a17d109da22ae85e012a1c00c601bbe57f7f0d9d8ab",
+                "98412cab5ee220d4ba8b8ef716082f8c39d513cec8147609a0fc9f0549826221",
+                "7cbbf6d47c0dd00ba0c4044f1968f6684e440216b40dc97499f8f6b282e1593c",
+                "661328ae5555ea9cd892f5200fbe264085fcd8cc4a0a1a53eda1d06c721ab2cf",
                 "ed9b72ac5db6a4a4754119dd41ce19ffb13513b5b53bed151e9f5744a423c37b",
                 "34bff855f7451f40cc7575ccdb72178dd57a62518dee4ebd50f3c2bb205d9b71",
                 "41b81929ffeb019137507bf71911c99777c763297ea5b2308ddc4cf36d9096f2",
@@ -214,6 +220,31 @@ class GoldenScreenshotHarnessTest {
                 "73c6a1fd4bea7173c62e861ef06c1e1db9650b849d546b20f2f9b6449cb41dd2",
             ),
             english + chinese,
+        )
+    }
+
+    @Test
+    fun `phase4 uiux pr05 telegraph and combat decision hashes remain stable`() {
+        val hashes =
+            listOf(
+                "phase4-uiux-pr05-telegraph-triple-surface",
+                "phase4-uiux-pr05-combat-action",
+                "phase4-uiux-pr05-combat-method",
+                "phase4-uiux-pr05-combat-target",
+                "phase4-uiux-pr05-combat-disabled-resource",
+                "phase4-uiux-pr05-combat-illegal-target",
+            ).zip(capturePhase4UiuxPr05Set()).toMap()
+
+        assertEquals(
+            mapOf(
+                "phase4-uiux-pr05-telegraph-triple-surface" to "7447dbb6b60ced5dc9f690ae91b7a0d91dcac5424969329e0f4a58a3678c0d50",
+                "phase4-uiux-pr05-combat-action" to "e089840584cca268afe708637ef2efa91c0b6df0c15a6a6aaeeb0ea267106346",
+                "phase4-uiux-pr05-combat-method" to "116391420e20d09ebfbc629e80f92d2c179d1680b4adb190b23f84357a692ddb",
+                "phase4-uiux-pr05-combat-target" to "e106c50c09013ee1c29b64578a78dad04dc3251720d204a26abe8c80d08b635d",
+                "phase4-uiux-pr05-combat-disabled-resource" to "e089840584cca268afe708637ef2efa91c0b6df0c15a6a6aaeeb0ea267106346",
+                "phase4-uiux-pr05-combat-illegal-target" to "7de9840fe785624823ed4e0212d427a1f98ba8e462affb0817ea31047ec873c9",
+            ),
+            hashes,
         )
     }
 
@@ -618,6 +649,126 @@ class GoldenScreenshotHarnessTest {
                 app.dispose()
             }
         }
+
+    private fun capturePhase4UiuxPr05Set(): List<String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("phase4-uiux-pr05-combat-decision")),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260412L,
+                            zoneId = "grey_gate_depths",
+                            playerProfessionId = "templar",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for phase4 UI/UX PR-05 golden capture." }
+                val stairsDown = requireNotNull(automationStairPoint(session, StairDirection.DOWN)) { "Expected downstairs entry for PR-05 golden capture." }
+                automationMovePlayerTo(session, stairsDown)
+                app.render()
+                check(session.perform(PlayerCommand.Descend)) { "Failed to descend into the boss floor for PR-05 golden capture." }
+                app.render()
+
+                val bossId = requireNotNull(automationBossEntity(session)) { "Expected a live boss entity for PR-05 golden capture." }
+                val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)) { "Expected boss position for PR-05 golden capture." }.toPoint()
+                automationMovePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+                prepareBossTelegraphFixture(session, bossId)
+                waitForBossTelegraph(session, app)
+
+                val snapshot = session.renderSnapshot()
+                val actionSlot = requireNotNull(snapshot.uiState.talents.firstOrNull()) { "Expected a combat action for PR-05 golden capture." }.slot
+                val actionId = "talent:$actionSlot"
+                val targetPoint = snapshot.uiState.targetablePositions.firstOrNull()?.let { point -> Point(point.x, point.y) } ?: bossPoint
+                val illegalPoint = Point(0, 0).takeUnless { point -> point == targetPoint } ?: Point(snapshot.metadata.width - 1, snapshot.metadata.height - 1)
+                val targetState =
+                    CombatDecisionFrameState(
+                        phase = CombatDecisionPhase.TARGET,
+                        selectedActionId = actionId,
+                        selectedMethodId = "default",
+                        skippedMethod = true,
+                    )
+
+                val hashes = mutableListOf<String>()
+                hashes +=
+                    captureHash {
+                        overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                        repeat(2) { app.render() }
+                    }
+                hashes +=
+                    captureHash {
+                        overlaySource.overlayState = combatDecisionOverlay(CombatDecisionFrame.initialState)
+                        repeat(2) { app.render() }
+                    }
+                hashes +=
+                    captureHash {
+                        overlaySource.overlayState =
+                            combatDecisionOverlay(
+                                CombatDecisionFrameState(
+                                    phase = CombatDecisionPhase.METHOD,
+                                    selectedActionId = actionId,
+                                    selectedMethodId = null,
+                                ),
+                            )
+                        repeat(2) { app.render() }
+                    }
+                hashes +=
+                    captureHash {
+                        overlaySource.overlayState = combatDecisionOverlay(targetState, targetPoint)
+                        repeat(2) { app.render() }
+                    }
+
+                requireNotNull(
+                    requireNotNull(automationWorld(session).get<ResourcePools>(session.playerId)) {
+                        "Expected player resource pools for PR-05 low-resource golden capture."
+                    }.pool(ResourceType.POSITIVE_ENERGY),
+                ) {
+                    "Expected positive energy pool for PR-05 low-resource golden capture."
+                }.current = 0
+                hashes +=
+                    captureHash {
+                        overlaySource.overlayState = combatDecisionOverlay(CombatDecisionFrame.initialState)
+                        repeat(2) { app.render() }
+                    }
+                hashes +=
+                    captureHash {
+                        overlaySource.overlayState = combatDecisionOverlay(targetState, illegalPoint)
+                        repeat(2) { app.render() }
+                    }
+                hashes
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun combatDecisionOverlay(
+        state: CombatDecisionFrameState,
+        cursor: Point? = null,
+    ): OverlayState =
+        OverlayState(
+            mode = UiMode.TARGETING,
+            targetingCursor = cursor,
+            modalFrames =
+                listOf(
+                    ModalFrame(
+                        kind = ModalFrameKind.COMBAT_DECISION,
+                        localState =
+                            ModalFrameLocalState(
+                                targetingCursor = cursor,
+                                combatDecisionState = state,
+                            ),
+                    ),
+                ),
+        )
 
     private fun captureHash(render: () -> Unit): String {
         render()

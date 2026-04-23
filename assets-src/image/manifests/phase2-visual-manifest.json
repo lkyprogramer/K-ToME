@@ -8127,6 +8127,91 @@
         "zone",
         "river"
       ]
+    },
+    {
+      "key": "ui.combat.action.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr05/ui_combat_action_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ],
+      "asciiGlyph": "?",
+      "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "ui.combat.method.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr05/ui_combat_method_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ],
+      "asciiGlyph": "?",
+      "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "ui.combat.target.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr05/ui_combat_target_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ],
+      "asciiGlyph": "?",
+      "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "ui.combat.lock.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr05/ui_combat_lock_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ],
+      "asciiGlyph": "?",
+      "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "ui.combat.invalid.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr05/ui_combat_invalid_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr05",
+        "combat",
+        "affordance"
+      ],
+      "asciiGlyph": "?",
+      "asciiColorHex": "#FFFFFF"
     }
   ],
   "prefixRules": [

@@ -26,6 +26,16 @@ SEED_SPREAD_THRESHOLD = 100
 PIXEL_SPREAD_THRESHOLD = 110
 COLOR_DISTANCE_THRESHOLD = 115
 ALPHA_THRESHOLD = 8
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
+def display_path(path: pathlib.Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(resolved)
+
 
 CANVAS_BY_CATEGORY = {
     "tile_ground": 256,
@@ -297,9 +307,9 @@ def main() -> int:
                         "assetId": spec.asset_id,
                         "category": spec.category,
                         "visualKey": spec.visual_key,
-                        "rawPath": str(raw_path),
-                        "processedPath": str(processed_path),
-                        "runtimePath": str(runtime_path),
+                        "rawPath": display_path(raw_path),
+                        "processedPath": display_path(processed_path),
+                        "runtimePath": display_path(runtime_path),
                         "rawBytes": raw_path.stat().st_size,
                         "processedBytes": processed_path.stat().st_size,
                         "processedSize": list(existing_image.size),
@@ -322,9 +332,9 @@ def main() -> int:
                 "assetId": spec.asset_id,
                 "category": spec.category,
                 "visualKey": spec.visual_key,
-                "rawPath": str(raw_path),
-                "processedPath": str(processed_path),
-                "runtimePath": str(runtime_path),
+                "rawPath": display_path(raw_path),
+                "processedPath": display_path(processed_path),
+                "runtimePath": display_path(runtime_path),
                 "rawBytes": source_bytes,
                 "processedBytes": processed_bytes,
                 "processedSize": list(processed.size),

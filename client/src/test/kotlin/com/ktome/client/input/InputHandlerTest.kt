@@ -92,7 +92,7 @@ class InputHandlerTest {
         input.frame(justPressed = setOf(Keys.DOWN))
         assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
-        assertEquals(ValidationOverlaySection.TRAVEL, handler.overlayState().validationCursor?.selectedSection)
+        assertEquals(ValidationOverlaySection.PR05_COMBAT, handler.overlayState().validationCursor?.selectedSection)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.F9))
@@ -129,6 +129,11 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.F9))
         assertNull(handler.pollCommand(session.renderSnapshot()))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(ValidationOverlaySection.PR05_COMBAT, handler.overlayState().validationCursor?.selectedSection)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.DOWN))
@@ -228,21 +233,91 @@ class InputHandlerTest {
                     )
                 assertTrue(descriptors.isNotEmpty(), "Expected actions for $preset / $section")
                 descriptors.forEachIndexed { index, descriptor ->
-                    assertEquals(
-                        descriptor.buildAction(inspectCursor),
-                        validationOverlayAction(
-                            ValidationOverlaySelection(
-                                preset = preset,
-                                restartNextSeedEnabled = restartNextSeedEnabled,
-                                section = section,
-                                index = index,
-                                inspectCursor = inspectCursor,
+                    if (descriptor.buildAction != null) {
+                        assertEquals(
+                            descriptor.requireGameAction(inspectCursor),
+                            validationOverlayAction(
+                                ValidationOverlaySelection(
+                                    preset = preset,
+                                    restartNextSeedEnabled = restartNextSeedEnabled,
+                                    section = section,
+                                    index = index,
+                                    inspectCursor = inspectCursor,
+                                ),
                             ),
-                        ),
-                    )
+                        )
+                    } else {
+                        assertEquals(
+                            descriptor,
+                            validationOverlayActionDescriptor(
+                                ValidationOverlaySelection(
+                                    preset = preset,
+                                    restartNextSeedEnabled = restartNextSeedEnabled,
+                                    section = section,
+                                    index = index,
+                                    inspectCursor = inspectCursor,
+                                ),
+                            ),
+                        )
+                    }
                 }
             }
         }
+    }
+
+    @Test
+    fun `pr05 validation combat decision fixtures open client only surfaces`() {
+        val input = ReplayInputSource()
+        val handler =
+            InputHandler(
+                input = input,
+                validationOverlayAvailability = ValidationOverlayAvailability.ENABLED,
+                validationPreset = ValidationPreset.BOSS_VARIANT,
+            )
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("pr05-combat-fixture-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.BOSS_VARIANT),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        input.clear()
+
+        repeat(ValidationOverlaySection.entries.indexOf(ValidationOverlaySection.PR05_COMBAT)) {
+            input.frame(justPressed = setOf(Keys.DOWN))
+            assertNull(handler.pollCommand(session.renderSnapshot()))
+            input.clear()
+        }
+        assertEquals(ValidationOverlaySection.PR05_COMBAT, handler.overlayState().validationCursor?.selectedSection)
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
+        assertEquals(
+            com.ktome.client.ui.combat.CombatDecisionValidationSurface.METHOD,
+            handler.overlayState().validationCombatDecisionSurface,
+        )
+        assertEquals(
+            com.ktome.client.ui.combat.CombatDecisionPhase.METHOD,
+            handler.overlayState().modalFrames.last().localState.combatDecisionState?.phase,
+        )
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(
+            com.ktome.client.ui.combat.CombatDecisionPhase.TARGET,
+            handler.overlayState().modalFrames.last().localState.combatDecisionState?.phase,
+        )
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals("ui.message.save.blocked-in-combat-decision", handler.overlayState().uiMessageKey)
     }
 
     @Test
@@ -423,6 +498,7 @@ class InputHandlerTest {
                     ),
                 reserveTalents = listOf(reserveTalent("charge", "talent.vanguard.charge.name")),
                 inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)),
+                targetablePositions = listOf(com.ktome.core.snapshot.GridPointSnapshot(3, 3)),
             )
 
         input.frame(justPressed = setOf(Keys.I))
@@ -441,11 +517,12 @@ class InputHandlerTest {
         input.frame(justPressed = setOf(Keys.NUM_5))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals("ui.message.save.blocked-in-targeting", handler.overlayState().uiMessageKey)
+        assertEquals("ui.message.save.blocked-in-combat-decision", handler.overlayState().uiMessageKey)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.ESCAPE))
@@ -547,41 +624,147 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `combat decision deferred frame blocks ctrl s without saving`() {
+    fun `combat decision frame blocks ctrl s without saving`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
-        val snapshot = snapshotWithLoadout(inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)))
+        val snapshot =
+            snapshotWithLoadout(
+                inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)),
+                targetablePositions = listOf(com.ktome.core.snapshot.GridPointSnapshot(3, 3)),
+            )
 
         input.frame(justPressed = setOf(Keys.NUM_5))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
         input.clear()
-
-        val stackField = InputHandler::class.java.getDeclaredField("modalStack")
-        stackField.isAccessible = true
-        val stack = stackField.get(handler) as ModalStack
-        stack.push(ModalFrame(ModalFrameKind.COMBAT_DECISION))
 
         input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals("DEBUG combat-decision.save-blocked.stub", handler.overlayState().debugMessageKey)
+        assertEquals("ui.message.save.blocked-in-combat-decision", handler.overlayState().uiMessageKey)
         assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
         input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+    }
+
+    @Test
+    fun `combat decision frame walks action target and save semantics`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talents =
+                    listOf(
+                        activeTalent(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            requiresTarget = true,
+                        ),
+                    ),
+                targetablePositions = listOf(com.ktome.core.snapshot.GridPointSnapshot(4, 3)),
+            )
 
         input.frame(justPressed = setOf(Keys.ENTER))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals("ui.message.save.blocked-in-combat-decision", handler.overlayState().uiMessageKey)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(Point(4, 3), handler.overlayState().targetingCursor)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.BACKSPACE))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals(ModalFrameKind.TARGETING, handler.overlayState().activeModalKind)
-        assertEquals(5, handler.overlayState().targetingInscriptionHotkey)
-        assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.ENTER))
-        assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(3, 3)), handler.pollCommand(snapshot))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.UseTalent(slot = 1, target = Point(4, 3)), handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+    }
+
+    @Test
+    fun `combat decision reports no legal target only after target phase has no targets`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talents =
+                    listOf(
+                        activeTalent(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            requiresTarget = true,
+                        ),
+                    ),
+                targetablePositions = emptyList(),
+            )
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(
+            com.ktome.client.ui.combat.CombatDecisionPhase.TARGET,
+            handler.overlayState().modalFrames.last().localState.combatDecisionState?.phase,
+        )
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals("ui.message.combat.no-legal-target", handler.overlayState().uiMessageKey)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
+    }
+
+    @Test
+    fun `combat decision target phase ignores out of range numeric shortcuts`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talents =
+                    listOf(
+                        activeTalent(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            requiresTarget = true,
+                        ),
+                    ),
+                targetablePositions = listOf(com.ktome.core.snapshot.GridPointSnapshot(4, 3)),
+            )
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(Point(4, 3), handler.overlayState().targetingCursor)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.NUM_9))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
+        assertEquals(Point(4, 3), handler.overlayState().targetingCursor)
+        assertNull(handler.overlayState().uiMessageKey)
     }
 
     @Test
@@ -635,16 +818,46 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `controlled inscription hotkey enters targeting mode and confirms targeted use`() {
+    fun `controlled inscription hotkey enters combat decision target phase and confirms targeted use`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
-        val snapshot = snapshotWithLoadout(inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)))
+        val snapshot =
+            snapshotWithLoadout(
+                inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)),
+                targetablePositions = listOf(com.ktome.core.snapshot.GridPointSnapshot(3, 3), com.ktome.core.snapshot.GridPointSnapshot(4, 3)),
+            )
 
         input.frame(justPressed = setOf(Keys.NUM_5))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
         assertEquals(5, handler.overlayState().targetingInscriptionHotkey)
         assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.RIGHT))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(Point(4, 3), handler.overlayState().targetingCursor)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(4, 3)), handler.pollCommand(snapshot))
+    }
+
+    @Test
+    fun `controlled inscription combat decision accepts arbitrary cursor target outside hostile list`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)),
+                targetablePositions = emptyList(),
+            )
+
+        input.frame(justPressed = setOf(Keys.NUM_5))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.RIGHT))
@@ -671,6 +884,7 @@ class InputHandlerTest {
                             requiresTarget = true,
                         ),
                     ),
+                targetablePositions = listOf(com.ktome.core.snapshot.GridPointSnapshot(3, 3)),
             )
 
         input.frame(justPressed = setOf(Keys.NUM_1))
@@ -684,7 +898,7 @@ class InputHandlerTest {
             assertEquals(PlayerCommand.UseTalent(slot = 1, target = Point(3, 3)), command)
             handler.onCommandResult(snapshot, command, consumed = false)
             assertEquals(UiMode.TARGETING, handler.overlayState().mode)
-            assertEquals(ModalFrameKind.TARGETING, handler.overlayState().activeModalKind)
+            assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
             assertEquals(1, handler.overlayState().modalFrames.size)
             assertEquals(1, handler.overlayState().targetingSlot)
             assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
@@ -696,7 +910,11 @@ class InputHandlerTest {
     fun `rejected targeted inscription command reuses current targeting frame`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
-        val snapshot = snapshotWithLoadout(inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)))
+        val snapshot =
+            snapshotWithLoadout(
+                inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)),
+                targetablePositions = listOf(com.ktome.core.snapshot.GridPointSnapshot(3, 3)),
+            )
 
         input.frame(justPressed = setOf(Keys.NUM_5))
         assertNull(handler.pollCommand(snapshot))
@@ -709,7 +927,7 @@ class InputHandlerTest {
             assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(3, 3)), command)
             handler.onCommandResult(snapshot, command, consumed = false)
             assertEquals(UiMode.TARGETING, handler.overlayState().mode)
-            assertEquals(ModalFrameKind.TARGETING, handler.overlayState().activeModalKind)
+            assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
             assertEquals(1, handler.overlayState().modalFrames.size)
             assertEquals(5, handler.overlayState().targetingInscriptionHotkey)
             assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
@@ -1221,6 +1439,7 @@ class InputHandlerTest {
         inventory: List<InventoryEntrySnapshot> = emptyList(),
         activeShop: ShopPanelSnapshot? = null,
         activeRouteSelection: RouteSelectionSnapshot? = null,
+        targetablePositions: List<com.ktome.core.snapshot.GridPointSnapshot> = emptyList(),
         talents: List<TalentSlotSnapshot> =
             listOf(
                 activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
@@ -1284,7 +1503,7 @@ class InputHandlerTest {
                     inventory = inventory,
                     activeShop = activeShop,
                     activeRouteSelection = activeRouteSelection,
-                    targetablePositions = emptyList(),
+                    targetablePositions = targetablePositions,
                 ),
         )
 

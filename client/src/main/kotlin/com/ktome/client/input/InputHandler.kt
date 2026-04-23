@@ -1,6 +1,12 @@
 package com.ktome.client.input
 
 import com.badlogic.gdx.Input.Keys
+import com.ktome.client.ui.combat.CombatDecisionFeedbackKeys
+import com.ktome.client.ui.combat.CombatDecisionFrame
+import com.ktome.client.ui.combat.CombatDecisionFrameState
+import com.ktome.client.ui.combat.CombatDecisionPhase
+import com.ktome.client.ui.combat.CombatDecisionValidationFixtures
+import com.ktome.client.ui.combat.CombatDecisionValidationSurface
 import com.ktome.client.ui.layout.ModalFrame
 import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.client.ui.layout.ModalFrameLocalState
@@ -60,6 +66,7 @@ data class OverlayState(
     val explainPaneOpen: Boolean = false,
     val validationCursor: ValidationOverlayCursor? = null,
     val validationPanel: ValidationOverlayPanelState? = null,
+    val validationCombatDecisionSurface: CombatDecisionValidationSurface? = null,
     val uiMessageKey: String? = null,
     val debugMessageKey: String? = null,
 ) {
@@ -117,6 +124,8 @@ class InputHandler(
     private var targetingSlot: Int? = null
     private var targetingInscriptionHotkey: Int? = null
     private var targetingCursor: Point? = null
+    private var combatDecisionState: CombatDecisionFrameState? = null
+    private var validationCombatDecisionSurface: CombatDecisionValidationSurface? = null
     private var inspectCursor: Point? = null
     private var explainPaneOpen: Boolean = false
     private var validationCursor: ValidationOverlayCursor = ValidationOverlayCursor()
@@ -149,6 +158,7 @@ class InputHandler(
             explainPaneOpen = explainPaneOpen,
             validationCursor =
                 validationCursor.takeIf { validationOverlayAvailability == ValidationOverlayAvailability.ENABLED },
+            validationCombatDecisionSurface = validationCombatDecisionSurface,
             uiMessageKey = uiMessageKey,
             debugMessageKey = debugMessageKey,
         )
@@ -339,6 +349,11 @@ class InputHandler(
             }
         }
 
+        if (isInteractBinding()) {
+            openCombatDecisionFrame(snapshot)
+            return null
+        }
+
         if (input.isKeyJustPressed(Keys.R)) {
             return PlayerCommand.Search
         }
@@ -402,20 +417,7 @@ class InputHandler(
             if (!inscription.requiresTarget) {
                 return PlayerCommand.UseInscription(inscription.hotkey)
             }
-            targetingSlot = inscription.hotkey
-            targetingInscriptionHotkey = inscription.hotkey
-            targetingCursor = playerPosition(snapshot)
-            openModalFrame(
-                ModalFrame(
-                    kind = ModalFrameKind.TARGETING,
-                    localState =
-                        ModalFrameLocalState(
-                            targetingSlot = inscription.hotkey,
-                            targetingInscriptionHotkey = inscription.hotkey,
-                            targetingCursor = targetingCursor,
-                        ),
-                ),
-            )
+            openCombatDecisionFrameForAction(snapshot, "inscription:${inscription.hotkey}")
             resetMovementRepeat()
             return null
         }
@@ -426,19 +428,7 @@ class InputHandler(
                 return PlayerCommand.UseTalent(slot)
             }
 
-            targetingSlot = slot
-            targetingInscriptionHotkey = null
-            targetingCursor = defaultTargetCursor(snapshot)
-            openModalFrame(
-                ModalFrame(
-                    kind = ModalFrameKind.TARGETING,
-                    localState =
-                        ModalFrameLocalState(
-                            targetingSlot = slot,
-                            targetingCursor = targetingCursor,
-                        ),
-                ),
-            )
+            openCombatDecisionFrameForAction(snapshot, "talent:$slot")
             resetMovementRepeat()
         }
 
@@ -669,21 +659,45 @@ class InputHandler(
             return null
         }
 
+        if (validationCursor.selectedSection == ValidationOverlaySection.PR05_COMBAT) {
+            val directSelection = combatDigitSelection()
+            if (directSelection != null && directSelection > 0) {
+                val selection =
+                    ValidationOverlaySelection(
+                        preset = validationPreset,
+                        restartNextSeedEnabled = validationRestartNextSeedEnabled,
+                        section = ValidationOverlaySection.PR05_COMBAT,
+                        index = directSelection - 1,
+                        inspectCursor = cursor,
+                )
+                validationOverlayActionDescriptor(selection)?.combatDecisionSurface?.let { surface ->
+                    validationCursor = validationCursor.copy(pr05CombatSelection = directSelection - 1)
+                    openValidationCombatDecisionSurface(snapshot, surface)
+                    return null
+                }
+            }
+        }
+
         if (
             input.isKeyJustPressed(Keys.ENTER) ||
             input.isKeyJustPressed(Keys.SPACE) ||
             input.isKeyJustPressed(Keys.E)
         ) {
+            val selection =
+                ValidationOverlaySelection(
+                    preset = validationPreset,
+                    restartNextSeedEnabled = validationRestartNextSeedEnabled,
+                    section = validationCursor.selectedSection,
+                    index = validationCursor.actionIndex(validationCursor.selectedSection),
+                    inspectCursor = cursor,
+                )
+            val descriptor = validationOverlayActionDescriptor(selection) ?: return null
+            descriptor.combatDecisionSurface?.let { surface ->
+                openValidationCombatDecisionSurface(snapshot, surface)
+                return null
+            }
             return PlayerCommand.Validation(
-                validationOverlayAction(
-                    ValidationOverlaySelection(
-                        preset = validationPreset,
-                        restartNextSeedEnabled = validationRestartNextSeedEnabled,
-                        section = validationCursor.selectedSection,
-                        index = validationCursor.actionIndex(validationCursor.selectedSection),
-                        inspectCursor = cursor,
-                    ),
-                ),
+                descriptor.requireGameAction(cursor),
             )
         }
         return null
@@ -787,7 +801,7 @@ class InputHandler(
 
     private fun pollTargetingCommand(snapshot: RenderSnapshot): PlayerCommand? {
         if (modalStack.top()?.kind == ModalFrameKind.COMBAT_DECISION) {
-            return pollCombatDecisionStubCommand()
+            return pollCombatDecisionCommand(snapshot)
         }
         if (input.isKeyJustPressed(Keys.ESCAPE)) {
             closeAllModalFrames()
@@ -824,12 +838,329 @@ class InputHandler(
         return null
     }
 
-    private fun pollCombatDecisionStubCommand(): PlayerCommand? {
-        if (isSaveBinding()) {
-            debugMessageKey = "DEBUG combat-decision.save-blocked.stub"
+    private fun pollCombatDecisionCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        validationCombatDecisionSurface?.let { surface ->
+            return pollValidationCombatDecisionCommand(snapshot, surface)
+        }
+        val state = combatDecisionState ?: CombatDecisionFrame.initialState.also(::setCombatDecisionState)
+        return when (state.phase) {
+            CombatDecisionPhase.ACTION -> pollCombatDecisionActionPhase(snapshot, state)
+            CombatDecisionPhase.METHOD -> pollCombatDecisionMethodPhase(snapshot, state)
+            CombatDecisionPhase.TARGET -> pollCombatDecisionTargetPhase(snapshot, state)
+        }
+    }
+
+    private fun pollValidationCombatDecisionCommand(
+        snapshot: RenderSnapshot,
+        surface: CombatDecisionValidationSurface,
+    ): PlayerCommand? {
+        val state = combatDecisionState ?: CombatDecisionValidationFixtures.initialState(surface).also(::setCombatDecisionState)
+        val focusCount = CombatDecisionValidationFixtures.focusCount(surface, state)
+        if (input.isKeyJustPressed(Keys.ESCAPE)) {
+            closeAllModalFrames()
             return null
         }
-        return pollDeferredModalCommand()
+        if (input.isKeyJustPressed(Keys.BACKSPACE)) {
+            when (state.phase) {
+                CombatDecisionPhase.ACTION -> closeAllModalFrames()
+                CombatDecisionPhase.METHOD -> {
+                    setCombatDecisionState(CombatDecisionFrame.initialState, focusIndex = 0)
+                }
+
+                CombatDecisionPhase.TARGET -> {
+                    if (surface == CombatDecisionValidationSurface.METHOD) {
+                        setCombatDecisionState(
+                            state.copy(phase = CombatDecisionPhase.METHOD, selectedMethodId = null, skippedMethod = false),
+                            focusIndex = 0,
+                        )
+                    } else {
+                        closeAllModalFrames()
+                    }
+                }
+            }
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleCombatDecisionFocus(focusCount)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
+            moveCombatDecisionFocus(focusCount, -1)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
+            moveCombatDecisionFocus(focusCount, 1)
+            return null
+        }
+        if (state.phase == CombatDecisionPhase.TARGET) {
+            val cursor = targetingCursor ?: CombatDecisionValidationFixtures.initialCursor(snapshot, surface)
+            val movement = movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.value
+            if (movement != null) {
+                targetingCursor =
+                    Point(
+                        x = (cursor.x + movement.x).coerceIn(0, snapshot.metadata.width - 1),
+                        y = (cursor.y + movement.y).coerceIn(0, snapshot.metadata.height - 1),
+                    )
+                updateTopModalState { localState -> localState.copy(targetingCursor = targetingCursor) }
+                return null
+            }
+        }
+
+        val selectedIndex = combatDigitSelection()
+        val confirmPressed = input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)
+        if (selectedIndex == 0 || (selectedIndex == null && !confirmPressed)) {
+            return null
+        }
+        return when (state.phase) {
+            CombatDecisionPhase.ACTION -> {
+                CombatDecisionValidationFixtures.disabledMessage(surface)?.let { messageKey ->
+                    showUiMessage(messageKey)
+                    return null
+                }
+                setCombatDecisionState(
+                    CombatDecisionFrameState(
+                        phase = CombatDecisionPhase.METHOD,
+                        selectedActionId = CombatDecisionValidationFixtures.ACTION_ID,
+                        selectedMethodId = null,
+                        skippedMethod = false,
+                    ),
+                    focusIndex = 0,
+                )
+                null
+            }
+
+            CombatDecisionPhase.METHOD -> {
+                setCombatDecisionState(
+                    CombatDecisionFrameState(
+                        phase = CombatDecisionPhase.TARGET,
+                        selectedActionId = CombatDecisionValidationFixtures.ACTION_ID,
+                        selectedMethodId = CombatDecisionValidationFixtures.METHOD_ID,
+                        skippedMethod = false,
+                    ),
+                    focusIndex = 0,
+                )
+                targetingCursor = CombatDecisionValidationFixtures.legalTargetPoint(snapshot)
+                updateTopModalState { localState -> localState.copy(targetingCursor = targetingCursor) }
+                null
+            }
+
+            CombatDecisionPhase.TARGET -> {
+                when (surface) {
+                    CombatDecisionValidationSurface.NO_LEGAL_TARGET -> showUiMessage(CombatDecisionFeedbackKeys.NO_LEGAL_TARGET)
+                    CombatDecisionValidationSurface.ILLEGAL_TARGET -> showUiMessage(CombatDecisionFeedbackKeys.ILLEGAL_TARGET)
+                    else -> closeAllModalFrames()
+                }
+                null
+            }
+        }
+    }
+
+    private fun pollCombatDecisionActionPhase(
+        snapshot: RenderSnapshot,
+        state: CombatDecisionFrameState,
+    ): PlayerCommand? {
+        val actions = CombatDecisionFrame.availableActions(snapshot)
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.BACKSPACE)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleCombatDecisionFocus(actions.size)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
+            moveCombatDecisionFocus(actions.size, -1)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
+            moveCombatDecisionFocus(actions.size, 1)
+            return null
+        }
+
+        val selectedIndex = combatDigitSelection()
+        if (selectedIndex == 0) {
+            return null
+        }
+        val actionIndex =
+            when {
+                selectedIndex != null -> selectedIndex - 1
+                input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE) -> currentCombatDecisionFocus(actions.size)
+                else -> null
+            } ?: return null
+        val action = actions.getOrNull(actionIndex) ?: return null
+        val disabledReason = CombatDecisionFrame.disabledReasonKey(snapshot, action)
+        if (disabledReason != null) {
+            showUiMessage(disabledReason)
+            return null
+        }
+        if (action.methodOptions.isEmpty()) {
+            showUiMessage(CombatDecisionFeedbackKeys.DISABLED_NO_METHOD)
+            return null
+        }
+        val nextState =
+            if (action.methodOptions.size == 1) {
+                CombatDecisionFrameState(
+                    phase = CombatDecisionPhase.TARGET,
+                    selectedActionId = action.id,
+                    selectedMethodId = action.methodOptions.single().id,
+                    skippedMethod = true,
+                )
+            } else {
+                CombatDecisionFrameState(
+                    phase = CombatDecisionPhase.METHOD,
+                    selectedActionId = action.id,
+                    selectedMethodId = null,
+                    skippedMethod = false,
+                )
+            }
+        setCombatDecisionState(nextState, focusIndex = 0)
+        targetingCursor = CombatDecisionFrame.legalTargets(snapshot, action).firstOrNull()?.point ?: playerPosition(snapshot)
+        updateTopModalState { localState -> localState.copy(targetingCursor = targetingCursor) }
+        return null
+    }
+
+    private fun pollCombatDecisionMethodPhase(
+        snapshot: RenderSnapshot,
+        state: CombatDecisionFrameState,
+    ): PlayerCommand? {
+        val action = CombatDecisionFrame.selectedAction(snapshot, state) ?: return resetCombatDecisionToAction()
+        val methods = action.methodOptions
+        if (input.isKeyJustPressed(Keys.ESCAPE)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE)) {
+            setCombatDecisionState(CombatDecisionFrame.initialState, focusIndex = 0)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleCombatDecisionFocus(methods.size)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
+            moveCombatDecisionFocus(methods.size, -1)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
+            moveCombatDecisionFocus(methods.size, 1)
+            return null
+        }
+        val selectedIndex = combatDigitSelection()
+        if (selectedIndex == 0) {
+            return null
+        }
+        val methodIndex =
+            when {
+                selectedIndex != null -> selectedIndex - 1
+                input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE) -> currentCombatDecisionFocus(methods.size)
+                else -> null
+            } ?: return null
+        val method = methods.getOrNull(methodIndex) ?: return null
+        setCombatDecisionState(
+            CombatDecisionFrameState(
+                phase = CombatDecisionPhase.TARGET,
+                selectedActionId = action.id,
+                selectedMethodId = method.id,
+                skippedMethod = false,
+            ),
+            focusIndex = 0,
+        )
+        targetingCursor = CombatDecisionFrame.legalTargets(snapshot, action).firstOrNull()?.point ?: playerPosition(snapshot)
+        updateTopModalState { localState -> localState.copy(targetingCursor = targetingCursor) }
+        return null
+    }
+
+    private fun pollCombatDecisionTargetPhase(
+        snapshot: RenderSnapshot,
+        state: CombatDecisionFrameState,
+    ): PlayerCommand? {
+        val action = CombatDecisionFrame.selectedAction(snapshot, state) ?: return resetCombatDecisionToAction()
+        val targets: List<com.ktome.client.ui.combat.CombatTargetOption> by lazy(LazyThreadSafetyMode.NONE) {
+            CombatDecisionFrame.legalTargets(snapshot, action)
+        }
+        if (input.isKeyJustPressed(Keys.ESCAPE)) {
+            closeAllModalFrames()
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE)) {
+            if (state.skippedMethod) {
+                setCombatDecisionState(CombatDecisionFrame.initialState, focusIndex = 0)
+            } else {
+                setCombatDecisionState(
+                    state.copy(phase = CombatDecisionPhase.METHOD, selectedMethodId = null, skippedMethod = false),
+                    focusIndex = 0,
+                )
+            }
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.TAB)) {
+            cycleCombatDecisionFocus(targets.size)
+            targetingCursor = targets.getOrNull(currentCombatDecisionFocus(targets.size))?.point ?: targetingCursor
+            updateTopModalState { localState -> localState.copy(targetingCursor = targetingCursor) }
+            return null
+        }
+        val cursor = targetingCursor ?: playerPosition(snapshot)
+        val movement = movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.value
+        if (movement != null) {
+            targetingCursor =
+                Point(
+                    x = (cursor.x + movement.x).coerceIn(0, snapshot.metadata.width - 1),
+                    y = (cursor.y + movement.y).coerceIn(0, snapshot.metadata.height - 1),
+                )
+            updateTopModalState { localState -> localState.copy(targetingCursor = targetingCursor) }
+            return null
+        }
+
+        val selectedIndex = combatDigitSelection()
+        if (selectedIndex == 0) {
+            return null
+        }
+        val confirmPressed = input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)
+        if (selectedIndex == null && !confirmPressed) {
+            return null
+        }
+        val target =
+            when {
+                action.usesFreeCursorTargeting() && confirmPressed -> {
+                    com.ktome.client.ui.combat.CombatTargetOption(
+                        id = "cursor",
+                        point = targetingCursor ?: playerPosition(snapshot),
+                    )
+                }
+                selectedIndex != null -> {
+                    if (selectedIndex > targets.size) {
+                        return null
+                    }
+                    targets[selectedIndex - 1]
+                }
+                confirmPressed -> {
+                    val confirmationCursor = targetingCursor ?: targets.firstOrNull()?.point ?: playerPosition(snapshot)
+                    if (targets.isEmpty()) {
+                        null
+                    } else {
+                        targets.firstOrNull { option -> option.point == confirmationCursor }
+                            ?: targets.getOrNull(currentCombatDecisionFocus(targets.size))
+                    }
+                }
+                else -> null
+            }
+        if (action.usesFreeCursorTargeting()) {
+            return action.command(targetingCursor ?: playerPosition(snapshot)).also {
+                closeAllModalFrames()
+            }
+        }
+        if (targets.isEmpty()) {
+            showUiMessage(CombatDecisionFeedbackKeys.NO_LEGAL_TARGET)
+            return null
+        }
+        val confirmationCursor = targetingCursor ?: targets.firstOrNull()?.point ?: playerPosition(snapshot)
+        if (target == null || (action.requiresTarget && target.point != confirmationCursor && selectedIndex == null)) {
+            showUiMessage(CombatDecisionFeedbackKeys.ILLEGAL_TARGET)
+            return null
+        }
+        return action.command(target.point).also {
+            closeAllModalFrames()
+        }
     }
 
     private fun pollStatAssignCommand(snapshot: RenderSnapshot): PlayerCommand? {
@@ -944,6 +1275,7 @@ class InputHandler(
         targetingSlot = null
         targetingInscriptionHotkey = null
         targetingCursor = null
+        validationCombatDecisionSurface = null
         removeModalFrames(ModalFrameKind.TARGETING, ModalFrameKind.COMBAT_DECISION)
     }
 
@@ -955,19 +1287,34 @@ class InputHandler(
         this.targetingSlot = targetingSlot
         this.targetingInscriptionHotkey = targetingInscriptionHotkey
         this.targetingCursor = targetingCursor
+        validationCombatDecisionSurface = null
+        combatDecisionState =
+            CombatDecisionFrameState(
+                phase = CombatDecisionPhase.TARGET,
+                selectedActionId =
+                    if (targetingInscriptionHotkey != null) {
+                        "inscription:$targetingInscriptionHotkey"
+                    } else {
+                        "talent:$targetingSlot"
+                    },
+                selectedMethodId = "default",
+                skippedMethod = true,
+            )
         val updateTargetingFrame: (ModalFrameLocalState) -> ModalFrameLocalState = { localState ->
             localState.copy(
                 targetingSlot = targetingSlot,
                 targetingInscriptionHotkey = targetingInscriptionHotkey,
                 targetingCursor = targetingCursor,
+                combatDecisionState = combatDecisionState,
             )
         }
-        if (modalStack.top()?.kind == ModalFrameKind.TARGETING) {
+        removeModalFrames(ModalFrameKind.TARGETING)
+        if (modalStack.top()?.kind == ModalFrameKind.COMBAT_DECISION) {
             updateTopModalState(updateTargetingFrame)
         } else {
             openModalFrame(
                 ModalFrame(
-                    kind = ModalFrameKind.TARGETING,
+                    kind = ModalFrameKind.COMBAT_DECISION,
                     localState = updateTargetingFrame(ModalFrameLocalState()),
                 ),
             )
@@ -998,6 +1345,7 @@ class InputHandler(
     private fun clearValidation() {
         mode = UiMode.MAP
         modalStack.clear()
+        validationCombatDecisionSurface = null
         explainPaneOpen = false
         paneFocusController.onPassiveTakeover()
         resetMovementRepeat()
@@ -1041,7 +1389,7 @@ class InputHandler(
             }
 
             ModalFrameKind.COMBAT_DECISION -> {
-                debugMessageKey = "DEBUG combat-decision.save-blocked.stub"
+                showUiMessage("ui.message.save.blocked-in-combat-decision")
                 null
             }
 
@@ -1092,6 +1440,103 @@ class InputHandler(
         )
     }
 
+    private fun openCombatDecisionFrame(snapshot: RenderSnapshot): Boolean {
+        val actions = CombatDecisionFrame.availableActions(snapshot)
+        if (actions.isEmpty()) {
+            showUiMessage(CombatDecisionFeedbackKeys.NO_AVAILABLE_ACTION)
+            return false
+        }
+        validationCombatDecisionSurface = null
+        combatDecisionState = CombatDecisionFrame.initialState
+        targetingCursor = playerPosition(snapshot)
+        return openModalFrame(
+            ModalFrame(
+                kind = ModalFrameKind.COMBAT_DECISION,
+                localState =
+                    ModalFrameLocalState(
+                        targetingCursor = targetingCursor,
+                        combatDecisionState = combatDecisionState,
+                    ),
+            ),
+        )
+    }
+
+    private fun openValidationCombatDecisionSurface(
+        snapshot: RenderSnapshot,
+        surface: CombatDecisionValidationSurface,
+    ): Boolean {
+        modalStack.clear()
+        validationCombatDecisionSurface = surface
+        combatDecisionState = CombatDecisionValidationFixtures.initialState(surface)
+        targetingCursor = CombatDecisionValidationFixtures.initialCursor(snapshot, surface)
+        return openModalFrame(
+            ModalFrame(
+                kind = ModalFrameKind.COMBAT_DECISION,
+                localState =
+                    ModalFrameLocalState(
+                        targetingCursor = targetingCursor,
+                        combatDecisionState = combatDecisionState,
+                    ),
+            ),
+        )
+    }
+
+    private fun openCombatDecisionFrameForAction(
+        snapshot: RenderSnapshot,
+        actionId: String,
+    ): Boolean {
+        val action = CombatDecisionFrame.availableActions(snapshot).firstOrNull { candidate -> candidate.id == actionId }
+        if (action == null) {
+            showUiMessage(CombatDecisionFeedbackKeys.NO_AVAILABLE_ACTION)
+            return false
+        }
+        CombatDecisionFrame.disabledReasonKey(snapshot, action)?.let { reasonKey ->
+            showUiMessage(reasonKey)
+            return false
+        }
+        val methods = action.methodOptions
+        if (methods.isEmpty()) {
+            showUiMessage(CombatDecisionFeedbackKeys.DISABLED_NO_METHOD)
+            return false
+        }
+        val actionIndex = action.commandIndex
+        if (actionId.startsWith("inscription:")) {
+            targetingSlot = actionIndex
+            targetingInscriptionHotkey = actionIndex
+        } else {
+            targetingSlot = actionIndex
+            targetingInscriptionHotkey = null
+        }
+        validationCombatDecisionSurface = null
+        combatDecisionState =
+            if (methods.size == 1) {
+                CombatDecisionFrameState(
+                    phase = CombatDecisionPhase.TARGET,
+                    selectedActionId = action.id,
+                    selectedMethodId = methods.single().id,
+                    skippedMethod = true,
+                )
+            } else {
+                CombatDecisionFrameState(
+                    phase = CombatDecisionPhase.METHOD,
+                    selectedActionId = action.id,
+                    selectedMethodId = null,
+                    skippedMethod = false,
+                )
+            }
+        targetingCursor = CombatDecisionFrame.legalTargets(snapshot, action).firstOrNull()?.point ?: playerPosition(snapshot)
+        return openModalFrame(
+            ModalFrame(
+                kind = ModalFrameKind.COMBAT_DECISION,
+                localState =
+                    ModalFrameLocalState(
+                        targetingCursor = targetingCursor,
+                        combatDecisionState = combatDecisionState,
+                    ),
+            ),
+        )
+    }
+
     private fun closeCurrentModalFrame() {
         val popped = modalStack.pop()
         val targetingFrameStillActive = modalStack.frames().any { frame -> frame.kind == ModalFrameKind.TARGETING }
@@ -1102,6 +1547,8 @@ class InputHandler(
             targetingSlot = null
             targetingInscriptionHotkey = null
             targetingCursor = null
+            combatDecisionState = null
+            validationCombatDecisionSurface = null
         }
         if (popped?.kind == ModalFrameKind.INSPECT) {
             inspectCursor = null
@@ -1119,6 +1566,8 @@ class InputHandler(
         targetingSlot = null
         targetingInscriptionHotkey = null
         targetingCursor = null
+        combatDecisionState = null
+        validationCombatDecisionSurface = null
         inspectCursor = null
         explainPaneOpen = false
         paneFocusController.onModalClosed()
@@ -1132,6 +1581,8 @@ class InputHandler(
         targetingSlot = null
         targetingInscriptionHotkey = null
         targetingCursor = null
+        combatDecisionState = null
+        validationCombatDecisionSurface = null
         inspectCursor = null
         explainPaneOpen = false
         paneFocusController.onPassiveTakeover()
@@ -1146,6 +1597,9 @@ class InputHandler(
         }
         val removedKinds = kinds.toSet()
         val retained = modalStack.frames().filterNot { frame -> frame.kind in removedKinds }
+        if (ModalFrameKind.COMBAT_DECISION in removedKinds) {
+            validationCombatDecisionSurface = null
+        }
         modalStack.clear()
         retained.forEach(modalStack::push)
         if (modalStack.isEmpty) {
@@ -1176,6 +1630,28 @@ class InputHandler(
         updateTopModalState { state -> state.copy(focusIndex = Math.floorMod(state.focusIndex + delta, 3)) }
     }
 
+    private fun cycleCombatDecisionFocus(size: Int) {
+        moveCombatDecisionFocus(size, if (shiftPressed()) -1 else 1)
+    }
+
+    private fun moveCombatDecisionFocus(
+        size: Int,
+        delta: Int,
+    ) {
+        if (size <= 0) {
+            updateTopModalState { state -> state.copy(focusIndex = 0) }
+            return
+        }
+        updateTopModalState { state -> state.copy(focusIndex = Math.floorMod(state.focusIndex + delta, size)) }
+    }
+
+    private fun currentCombatDecisionFocus(size: Int): Int {
+        if (size <= 0) {
+            return 0
+        }
+        return modalStack.top()?.localState?.focusIndex?.coerceIn(0, size - 1) ?: 0
+    }
+
     private fun updateTopModalState(transform: (ModalFrameLocalState) -> ModalFrameLocalState) {
         if (modalStack.isEmpty) {
             return
@@ -1186,6 +1662,24 @@ class InputHandler(
     private fun setExplainPaneOpen(open: Boolean) {
         explainPaneOpen = open
         updateTopModalState { state -> state.copy(explainPaneOpen = open) }
+    }
+
+    private fun setCombatDecisionState(
+        state: CombatDecisionFrameState,
+        focusIndex: Int = currentCombatDecisionFocus(Int.MAX_VALUE),
+    ) {
+        combatDecisionState = state
+        updateTopModalState { localState ->
+            localState.copy(
+                focusIndex = focusIndex.coerceAtLeast(0),
+                combatDecisionState = state,
+            )
+        }
+    }
+
+    private fun resetCombatDecisionToAction(): PlayerCommand? {
+        setCombatDecisionState(CombatDecisionFrame.initialState, focusIndex = 0)
+        return null
     }
 
     private fun updateModeFromModalStack() {
@@ -1248,6 +1742,21 @@ class InputHandler(
     }
 
     private fun isSaveBinding(): Boolean = controlPressed() && input.isKeyJustPressed(Keys.S)
+
+    private fun combatDigitSelection(): Int? =
+        when {
+            input.isKeyJustPressed(Keys.NUM_0) || input.isKeyJustPressed(Keys.NUMPAD_0) -> 0
+            input.isKeyJustPressed(Keys.NUM_1) || input.isKeyJustPressed(Keys.NUMPAD_1) -> 1
+            input.isKeyJustPressed(Keys.NUM_2) || input.isKeyJustPressed(Keys.NUMPAD_2) -> 2
+            input.isKeyJustPressed(Keys.NUM_3) || input.isKeyJustPressed(Keys.NUMPAD_3) -> 3
+            input.isKeyJustPressed(Keys.NUM_4) || input.isKeyJustPressed(Keys.NUMPAD_4) -> 4
+            input.isKeyJustPressed(Keys.NUM_5) || input.isKeyJustPressed(Keys.NUMPAD_5) -> 5
+            input.isKeyJustPressed(Keys.NUM_6) || input.isKeyJustPressed(Keys.NUMPAD_6) -> 6
+            input.isKeyJustPressed(Keys.NUM_7) || input.isKeyJustPressed(Keys.NUMPAD_7) -> 7
+            input.isKeyJustPressed(Keys.NUM_8) || input.isKeyJustPressed(Keys.NUMPAD_8) -> 8
+            input.isKeyJustPressed(Keys.NUM_9) || input.isKeyJustPressed(Keys.NUMPAD_9) -> 9
+            else -> null
+        }
 
     private fun isInteractBinding(): Boolean =
         input.isKeyJustPressed(Keys.ENTER) ||

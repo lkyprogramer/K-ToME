@@ -9,8 +9,13 @@ import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
+import com.ktome.client.ui.combat.CombatDecisionFrame
+import com.ktome.client.ui.combat.CombatDecisionFrameState
+import com.ktome.client.ui.combat.CombatDecisionPhase
 import com.ktome.client.ui.layout.ModalFrame
 import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.layout.ModalFrameLocalState
 import com.ktome.client.ui.layout.PaneFocusAnchor
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.snapshot.ActorRenderSnapshot
@@ -266,6 +271,253 @@ class TileRendererCanvasTest {
             )
 
         assertTrue(model.sidebar.rows.any { row -> row.text.contains("1t High telegraph.test") })
+    }
+
+    @Test
+    fun `target card and log prefix reuse the same telegraph presentation`() {
+        val warning =
+            OverlayRenderSnapshot(
+                id = "telegraph:test",
+                visualKey = "missing_visual",
+                previewTurns = 1,
+                dangerLevel = 3,
+                shape = OverlayShapeSnapshot.SINGLE_TILE,
+                sourceAbilityId = "telegraph.test",
+                cells = listOf(GridPointSnapshot(0, 0)),
+                warningMessage = RenderTextTokenSnapshot("log.boss.enrage"),
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        overlays = listOf(warning),
+                        logEvents = listOf(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.warning.telegraph"))),
+                    ),
+                overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
+            )
+
+        assertTrue(model.targetCard.lines.any { line -> line.contains("High risk") && line.contains("telegraph.test") })
+        assertTrue(model.messageLines.any { line -> line.text.startsWith("[1t High]") })
+        assertTrue(model.messageLines.any { line -> line.icon?.resolvedKey == "missing_visual" })
+    }
+
+    @Test
+    fun `warning log prefix follows overlay order instead of presentation sort order`() {
+        val lowWarning =
+            OverlayRenderSnapshot(
+                id = "telegraph:b",
+                visualKey = "missing_visual",
+                previewTurns = 2,
+                dangerLevel = 1,
+                shape = OverlayShapeSnapshot.SINGLE_TILE,
+                sourceAbilityId = "telegraph.low",
+                cells = listOf(GridPointSnapshot(0, 0)),
+                warningMessage = RenderTextTokenSnapshot("log.warning.telegraph"),
+            )
+        val highWarning =
+            OverlayRenderSnapshot(
+                id = "telegraph:a",
+                visualKey = CombatAffordanceResourceKeys.TARGET_ICON,
+                previewTurns = 1,
+                dangerLevel = 3,
+                shape = OverlayShapeSnapshot.SINGLE_TILE,
+                sourceAbilityId = "telegraph.high",
+                cells = listOf(GridPointSnapshot(1, 0)),
+                warningMessage = RenderTextTokenSnapshot("log.warning.telegraph"),
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        overlays = listOf(lowWarning, highWarning),
+                        logEvents =
+                            listOf(
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.warning.telegraph")),
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.warning.telegraph")),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertTrue(model.messageLines[0].text.startsWith("[2t Low]"))
+        assertEquals("missing_visual", model.messageLines[0].icon?.resolvedKey)
+        assertTrue(model.messageLines[1].text.startsWith("[1t High]"))
+        assertEquals(CombatAffordanceResourceKeys.TARGET_ICON, model.messageLines[1].icon?.resolvedKey)
+    }
+
+    @Test
+    fun `combat decision panel consumes formal phase icons in sidebar and action panel`() {
+        val state =
+            OverlayState(
+                mode = UiMode.TARGETING,
+                modalFrames =
+                    listOf(
+                        ModalFrame(
+                            kind = ModalFrameKind.COMBAT_DECISION,
+                            localState =
+                                ModalFrameLocalState(
+                                    combatDecisionState = CombatDecisionFrame.initialState,
+                                ),
+                        ),
+                    ),
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        talents =
+                            listOf(
+                                TalentSlotSnapshot(
+                                    slot = 1,
+                                    talentId = "power_strike",
+                                    nameKey = "talent.vanguard.power_strike.name",
+                                    iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                                    level = 1,
+                                    maxLevel = 5,
+                                    resourceCost = 3,
+                                    resourceLabelKey = "ui.hud.stamina.short",
+                                    range = 1,
+                                    minRange = 0,
+                                    currentCooldown = 0,
+                                    maxCooldown = 3,
+                                    requiresTarget = true,
+                                ),
+                            ),
+                    ),
+                overlayState = state,
+        )
+
+        assertEquals("Combat Decision", model.sidebar.title)
+        assertEquals("Choose Action", model.sidebar.rows.first().text)
+        assertEquals(CombatAffordanceResourceKeys.ACTION_ICON, model.sidebar.rows.first().icon?.resolvedKey)
+        assertTrue(model.actionPanel.entries.any { entry -> entry.icon?.resolvedKey == CombatAffordanceResourceKeys.ACTION_ICON })
+
+        val canvas = RecordingTileCanvas()
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot =
+                sampleSnapshot(
+                    talents =
+                        listOf(
+                            TalentSlotSnapshot(
+                                slot = 1,
+                                talentId = "power_strike",
+                                nameKey = "talent.vanguard.power_strike.name",
+                                iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                                level = 1,
+                                maxLevel = 5,
+                                resourceCost = 3,
+                                resourceLabelKey = "ui.hud.stamina.short",
+                                range = 1,
+                                minRange = 0,
+                                currentCooldown = 0,
+                                maxCooldown = 3,
+                                requiresTarget = true,
+                            ),
+                        ),
+                ),
+            overlayState = state,
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == CombatAffordanceResourceKeys.ACTION_ICON })
+    }
+
+    @Test
+    fun `combat decision target cursor marks illegal hover without relying on toast`() {
+        val targetState =
+            CombatDecisionFrameState(
+                phase = CombatDecisionPhase.TARGET,
+                selectedActionId = "talent:1",
+                selectedMethodId = "default",
+                skippedMethod = true,
+            )
+        val overlayState =
+            OverlayState(
+                mode = UiMode.TARGETING,
+                targetingCursor = com.ktome.core.map.Point(0, 1),
+                modalFrames =
+                    listOf(
+                        ModalFrame(
+                            kind = ModalFrameKind.COMBAT_DECISION,
+                            localState =
+                                ModalFrameLocalState(
+                                    targetingCursor = com.ktome.core.map.Point(0, 1),
+                                    combatDecisionState = targetState,
+                                ),
+                        ),
+                    ),
+            )
+        val snapshot =
+            sampleSnapshot(
+                height = 2,
+                cells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 1,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                    ),
+                talents =
+                    listOf(
+                        TalentSlotSnapshot(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 3,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 1,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = true,
+                        ),
+                    ),
+                targetablePositions = listOf(GridPointSnapshot(0, 0)),
+            )
+
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = overlayState,
+            )
+        assertEquals(TileTargetCursorState.ILLEGAL, model.targetCursorState)
+
+        val canvas = RecordingTileCanvas()
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = overlayState,
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+        val invalidCursorColor = UiDesignTokens.color.telegraph.high.color().toString()
+        assertTrue(canvas.rectDraws.any { draw -> draw.color.toString() == invalidCursorColor })
     }
 
     @Test
@@ -1267,6 +1519,36 @@ class TileRendererCanvasTest {
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(
+                                key = CombatAffordanceResourceKeys.ACTION_ICON,
+                                category = "ui_icon",
+                                rawOutputPath = "phase4/uiux_pr05/ui_combat_action_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = CombatAffordanceResourceKeys.METHOD_ICON,
+                                category = "ui_icon",
+                                rawOutputPath = "phase4/uiux_pr05/ui_combat_method_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = CombatAffordanceResourceKeys.TARGET_ICON,
+                                category = "ui_icon",
+                                rawOutputPath = "phase4/uiux_pr05/ui_combat_target_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = CombatAffordanceResourceKeys.LOCK_ICON,
+                                category = "ui_icon",
+                                rawOutputPath = "phase4/uiux_pr05/ui_combat_lock_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = CombatAffordanceResourceKeys.INVALID_ICON,
+                                category = "ui_icon",
+                                rawOutputPath = "phase4/uiux_pr05/ui_combat_invalid_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
                                 key = "vfx.boss.variant.molten_glass",
                                 category = "vfx_overlay",
                                 rawOutputPath = "phase4/pr06/boss_variant_molten_glass.png",
@@ -1288,6 +1570,7 @@ class TileRendererCanvasTest {
         talents: List<TalentSlotSnapshot> = emptyList(),
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         inventory: List<InventoryEntrySnapshot> = emptyList(),
+        targetablePositions: List<GridPointSnapshot> = listOf(GridPointSnapshot(0, 0)),
         logEvents: List<RenderLogEventSnapshot> = emptyList(),
         combatFeedbackEvents: List<CombatFeedbackSnapshot> = emptyList(),
     ): RenderSnapshot =
@@ -1370,7 +1653,7 @@ class TileRendererCanvasTest {
                     talents = talents,
                     reserveTalents = reserveTalents,
                     inventory = inventory,
-                    targetablePositions = listOf(GridPointSnapshot(0, 0)),
+                    targetablePositions = targetablePositions,
                 ),
             logEvents = logEvents,
             combatFeedbackEvents = combatFeedbackEvents,

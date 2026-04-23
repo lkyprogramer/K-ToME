@@ -9,6 +9,9 @@ import com.ktome.client.assets.AudioManifestResolver
 import com.ktome.client.assets.ResolvedAudioCue
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
+import com.ktome.client.ui.combat.CombatDecisionFeedbackKeys
+import com.ktome.client.ui.combat.CombatDecisionPhase
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.OverlayRenderSnapshot
@@ -149,6 +152,25 @@ class AudioRouter(
         previous: OverlayState,
         current: OverlayState,
     ) {
+        val currentCombatPhase = current.modalFrames.lastOrNull()?.localState?.combatDecisionState?.phase
+        val previousCombatPhase = previous.modalFrames.lastOrNull()?.localState?.combatDecisionState?.phase
+        if (currentCombatPhase != null && currentCombatPhase != previousCombatPhase) {
+            play(
+                when (currentCombatPhase) {
+                    CombatDecisionPhase.ACTION -> CombatAffordanceResourceKeys.ACTION_CONFIRM_AUDIO
+                    CombatDecisionPhase.METHOD -> CombatAffordanceResourceKeys.METHOD_CONFIRM_AUDIO
+                    CombatDecisionPhase.TARGET -> CombatAffordanceResourceKeys.TARGET_CONFIRM_AUDIO
+                },
+            )
+            return
+        }
+        if (
+            current.uiMessageKey in CombatDecisionFeedbackKeys.invalidSubmitMessageKeys &&
+            current.uiMessageKey != previous.uiMessageKey
+        ) {
+            play(CombatAffordanceResourceKeys.INVALID_SUBMIT_AUDIO)
+            return
+        }
         if (previous.mode != current.mode) {
             val cueKey =
                 if (current.mode == UiMode.MAP) {
@@ -247,8 +269,16 @@ class AudioRouter(
 
         when (command) {
             is PlayerCommand.Move -> play(moveCueKey(previousSnapshot, currentSnapshot))
-            is PlayerCommand.UseTalent -> talentCueKeys(previousSnapshot, currentSnapshot, command.slot).forEach(::play)
-            is PlayerCommand.UseInscription -> play("audio.ui.confirm")
+            is PlayerCommand.UseTalent -> {
+                playTargetLockCue(command.target)
+                talentCueKeys(previousSnapshot, currentSnapshot, command.slot).forEach(::play)
+            }
+
+            is PlayerCommand.UseInscription -> {
+                playTargetLockCue(command.target)
+                play("audio.ui.confirm")
+            }
+
             is PlayerCommand.DropInventoryItem,
             PlayerCommand.Interact,
             PlayerCommand.Search,
@@ -287,6 +317,12 @@ class AudioRouter(
             PlayerCommand.CloseShop -> play("audio.ui.cancel")
 
             PlayerCommand.Wait -> Unit
+        }
+    }
+
+    private fun playTargetLockCue(target: com.ktome.core.map.Point?) {
+        if (target != null) {
+            play(CombatAffordanceResourceKeys.TARGET_LOCK_AUDIO)
         }
     }
 

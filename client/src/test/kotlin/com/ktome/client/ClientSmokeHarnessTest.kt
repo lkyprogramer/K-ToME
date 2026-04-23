@@ -30,6 +30,8 @@ import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationCommandSource
 import com.ktome.client.input.ValidationOverlayAvailability
 import com.ktome.client.render.TileRenderer
+import com.ktome.client.ui.combat.CombatDecisionValidationSurface
+import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.EntityId
@@ -385,7 +387,7 @@ class ClientSmokeHarnessTest {
         withHeadlessGdx {
             val smokeSource =
                 SmokeCommandSource(
-                    overlayInput = ScriptedInputSource(Keys.F9, Keys.DOWN, Keys.ENTER),
+                    overlayInput = ScriptedInputSource(Keys.F9, Keys.DOWN, Keys.DOWN, Keys.ENTER),
                     validationOverlayAvailability = ValidationOverlayAvailability.ENABLED,
                     validationPreset = ValidationPreset.MAPGEN_DIFF,
                 )
@@ -420,6 +422,44 @@ class ClientSmokeHarnessTest {
                 assertEquals(localizer.text("ui.sidebar.validation"), capture.title)
                 assertTrue(capture.rows.any { row -> row == localizer.text("ui.validation.overlay.summary") })
                 assertTrue(capture.rows.any { row -> row.contains(localizer.text("ui.validation.section.travel")) })
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `validation overlay smoke opens pr05 combat decision surface`() {
+        withHeadlessGdx {
+            val smokeSource =
+                SmokeCommandSource(
+                    overlayInput = ScriptedInputSource(Keys.F9, Keys.DOWN, Keys.NUM_4),
+                    validationOverlayAvailability = ValidationOverlayAvailability.ENABLED,
+                    validationPreset = ValidationPreset.BOSS_VARIANT,
+                )
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("validation-pr05-combat-smoke/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("validation-pr05-combat-smoke/validation-save")),
+                    profileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("validation-pr05-combat-smoke/profile")),
+                    validationProfileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("validation-pr05-combat-smoke/validation-profile")),
+                    gameCommandSourceFactory = { smokeSource },
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(
+                    com.ktome.game.validation.validationSessionOptionsForPreset(ValidationPreset.BOSS_VARIANT),
+                )
+                repeat(4) {
+                    app.render()
+                }
+
+                val overlayState = smokeSource.overlayState()
+                assertEquals(UiMode.TARGETING, overlayState.mode)
+                assertEquals(ModalFrameKind.COMBAT_DECISION, overlayState.activeModalKind)
+                assertEquals(CombatDecisionValidationSurface.ILLEGAL_TARGET, overlayState.validationCombatDecisionSurface)
             } finally {
                 app.dispose()
             }
