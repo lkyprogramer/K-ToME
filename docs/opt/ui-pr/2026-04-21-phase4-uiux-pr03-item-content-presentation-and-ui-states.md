@@ -411,39 +411,50 @@ sdk env
 
 流程：
 
-1. 启动：
+1. 打包并按 Computer Use 白盒流程启动 repo packaged app：
 
 ```bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
-./gradlew :client:run
+./gradlew :client:packageMacApp
 ```
 
-2. 地面掉落：
-   - 制造单件 `NORMAL / MAGIC / RARE`
-   - 制造 special item
-   - 制造同格 `2~9` 和 `>=10`
-   - 站到掉落格，确认 marker 仍可见
-3. 三面一致性：
-   - 背包、商店、Look Mode 地面检视对同一 item 的 icon、品质名色、corner glyph、special accent 一致
-4. 共享卡片：
-   - 进入事件房、商店、奖励房
+2. Validation setup：
+   - 选择 `LOOT_LAB / 20260413`；该 preset 固定在 `greenwood_fringe`，用于直接覆盖背包、地面掉落、奖励卡片和商店入口。
+   - 进入会话后打开 validation overlay，执行 `准备 PR-03 物品展示场景`。
+3. 地面掉落：
+   - showcase action 会在玩家脚下生成 `unique / artifact / high-value / normal` 同格 stack。
+   - 站到掉落格，确认 marker 优先显示 high-value item，且普通掉落不会抢占 head marker。
+   - `>=10` badge 仍由 canvas/golden owner evidence 覆盖；若 live CUA 需要看该场景，再补单独 bulk-spawn action，不手动堆十次。
+4. 三面一致性：
+   - 背包里检查 `hunter_bow / war_maul / arcane_staff / shadow_cloak / apprentice_robe / bandit_trophy / emerald_charm / sanctified_seal`。
+   - 同类别不同职业装备必须能一眼区分；accessory/off-hand 不得显示成 weapon、shield、potion 或 scroll。
+   - 地面检视、背包和 reward recent card 对 special item 的 icon、品质名色、corner glyph、special accent 一致。
+5. 共享卡片：
+   - showcase action 会写入 recent reward card；`greenwood_fringe` 供给站可用于 live shop header 检查。
    - 检查标题、icon、说明、收益/代价、禁用原因、确认/取消语义一致
-5. 空态：
+6. 音频：
+   - 拾取 high-value/unique/artifact、装备成功/拒绝、compare 结果只播放关键反馈。
+   - 人工检查结论应写“增强关键反馈、不吵、不重复”；若环境不方便听音，必须注明未覆盖并保留 `AudioRouterTest` 作为自动化证据。
+7. 空态：
    - 空背包、空商店、无可检视目标、空日志
    - 检查有下一步引导，不只显示 `Empty`
-6. 错误态：
+8. 错误态：
    - 模拟 manifest 版本不匹配、save 恢复失败、snapshot 不完整
    - 检查 `Retry / Back To Menu / Copy Error Detail`
    - 复制 payload，核对 heading/detail/context/build hash 顺序
-7. 加载态：
+9. 加载态：
    - 进入大 modal 或资源 bootstrap
    - 确认没有长期遮罩或输入吞噬
-8. 保存证据：
+10. 保存证据：
    - `phase4-uiux-pr03-ground-loot-single`
    - `phase4-uiux-pr03-ground-loot-stack`
    - `phase4-uiux-pr03-quality-variants`
    - `phase4-uiux-pr03-card-shared`
+   - `phase4-uiux-pr03-resource-upgrade-inventory-matrix`
+   - `phase4-uiux-pr03-resource-upgrade-high-value-marker`
+   - `phase4-uiux-pr03-resource-upgrade-shop-reward-card`
+   - `phase4-uiux-pr03-resource-upgrade-audio-cues`
    - `phase4-uiux-pr03-empty-state`
    - `phase4-uiux-pr03-error-copy-detail`
 
@@ -475,12 +486,61 @@ assets-src/image/manifests/phase4-uiux-pr03-processing-report.jsonl
 2. special template item 正式 icon fallback
 3. 地面掉落 marker 缺口
 4. 共享卡片头部 icon、空态/错误态 fallback icon、必要商店/奖励房标识
+5. 装备类别/职业基础图标矩阵：`vanguard / arcanist / rogue / templar` x `weapon / armor / off_hand-accessory`
 
 禁止范围：
 
 1. 大幅插画背景
 2. 每个事件单独图
 3. 品质档位装饰图
+
+#### 7.1.1 High-Value Item Resource Upgrade
+
+本 PR 把资源视为正式交付面，不允许只以“key 可解析”作为玩家体验验收。
+
+必须交付三层 item icon 语义：
+
+1. `unique / artifact / special template` 继续使用 bespoke icon；不得降级到 base icon。
+2. 普通装备若没有 item-specific icon，必须使用装备基础图标矩阵。
+3. `ItemIconKeyCoverageRule` 必须阻塞语义错误复用，而不只是阻塞 missing/unresolved key。
+
+基础矩阵 key 固定为：
+
+```text
+item.base.vanguard.weapon.icon
+item.base.vanguard.armor.icon
+item.base.vanguard.off_hand.icon
+item.base.arcanist.weapon.icon
+item.base.arcanist.armor.icon
+item.base.arcanist.off_hand.icon
+item.base.rogue.weapon.icon
+item.base.rogue.armor.icon
+item.base.rogue.off_hand.icon
+item.base.templar.weapon.icon
+item.base.templar.armor.icon
+item.base.templar.off_hand.icon
+```
+
+本 PR 必须修正以下正式内容映射：
+
+| item | icon/visual rule |
+| --- | --- |
+| `hunter_bow` | 使用 `item.base.rogue.weapon.icon`，禁止继续复用 sword icon |
+| `war_maul` / `forgebreaker_pick` | 使用 `item.base.vanguard.weapon.icon` |
+| `shadow_cloak` | 使用 `item.base.rogue.armor.icon` |
+| `bandit_trophy` | 使用 `item.base.rogue.off_hand.icon` |
+| `emerald_charm` / `seal_reliquary` | 使用 `item.base.arcanist.off_hand.icon` |
+| `furnace_talisman` | 使用 `item.base.vanguard.off_hand.icon` |
+| `sanctified_seal` | 使用 `item.base.templar.off_hand.icon` |
+| `abyssal_heartstone` | 使用 dedicated `item.abyssal_heartstone.icon`，不能继续复用 scroll/potion/shield |
+
+lint 阻塞规则：
+
+1. 所有 official equipment 必须有可解析 `iconKey`。
+2. `unique / artifact / special template` 不能使用 `item.base.*`。
+3. 带职业 tag 的装备使用 base icon 时，base icon 的职业必须匹配 tag。
+4. `slot = OFF_HAND` 或 `accessory` 装备使用 base icon 时，必须使用 `.off_hand.icon`。
+5. `bow -> sword`、`accessory -> shield/potion/scroll`、`arcanist item -> non-arcanist base` 均为 fail-fast。
 
 ### 7.2 音频
 
@@ -491,6 +551,27 @@ assets-src/audio/specs/phase4-uiux-pr03-audio-plan.yaml
 assets-src/audio/manifests/phase4-uiux-pr03-audio-generation-report.jsonl
 assets-src/audio/manifests/phase4-uiux-pr03-audio-processing-report.jsonl
 ```
+
+本 PR 必须补齐最小 high-value item cue：
+
+```text
+audio.item.pickup.high_value
+audio.item.pickup.unique
+audio.item.pickup.artifact
+audio.item.equip.changed
+audio.item.equip.rejected
+audio.item.compare.upgrade
+audio.item.compare.sidegrade
+audio.item.compare.downgrade
+```
+
+使用规则：
+
+1. 普通拾取继续复用 item 自身 `audioProfile`。
+2. `RARE` 或更高价值拾取追加 `audio.item.pickup.high_value`。
+3. `UNIQUE / ARTIFACT` 拾取分别追加 `audio.item.pickup.unique / audio.item.pickup.artifact`。
+4. 装备成功/失败只在明确 inventory activate/equip 动作后播放。
+5. compare cue 只允许在正式 item compare UI 中消费，不得在 hover 时高频播放。
 
 ### 7.3 约束
 

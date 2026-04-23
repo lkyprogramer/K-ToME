@@ -146,14 +146,23 @@ private fun validationPresetGuideSpec(preset: ValidationPreset): ValidationPrese
                 preset = ValidationPreset.LOOT_LAB,
                 phase4Guide =
                     ValidationPhase4Guide(
-                        targetLabelKeys = listOf("ui.validation.phase4.target.loot"),
+                        targetLabelKeys =
+                            listOf(
+                                "ui.validation.phase4.target.loot",
+                                "ui.validation.phase4.target.pr03_item_resources",
+                            ),
                         quickPathLabelKeys =
                             listOf(
+                                "ui.validation.phase4.quick.loot.pr03_showcase",
                                 "ui.validation.phase4.quick.loot.present_reward",
                                 "ui.validation.phase4.quick.loot.spawn_item",
+                                "ui.validation.phase4.quick.loot.shop_anchor",
                             ),
                         evidenceLabelKeys =
                             listOf(
+                                "ui.validation.phase4.evidence.loot.pr03_inventory_matrix",
+                                "ui.validation.phase4.evidence.loot.pr03_high_value_marker",
+                                "ui.validation.phase4.evidence.loot.pr03_audio_cues",
                                 "ui.validation.phase4.evidence.loot.inspect",
                                 "ui.validation.phase4.evidence.loot.log_source",
                             ),

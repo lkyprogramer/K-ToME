@@ -3746,6 +3746,26 @@
       ]
     },
     {
+      "key": "item.abyssal_heartstone.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_abyssal_heartstone_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "high_value",
+        "abyssal",
+        "reward",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
       "key": "item.apprentice_robe.icon",
       "category": "icon",
       "rawOutputPath": "phase2/p2-b/icon_item_apprentice_robe.png",
@@ -4079,6 +4099,226 @@
         "abyssal_temple",
         "templar",
         "boss"
+      ]
+    },
+    {
+      "key": "item.base.arcanist.armor.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_arcanist_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "arcanist",
+        "armor"
+      ]
+    },
+    {
+      "key": "item.base.arcanist.off_hand.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_arcanist_off_hand_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "arcanist",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
+      "key": "item.base.arcanist.weapon.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_arcanist_weapon_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "arcanist",
+        "weapon"
+      ]
+    },
+    {
+      "key": "item.base.rogue.armor.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_rogue_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "rogue",
+        "armor"
+      ]
+    },
+    {
+      "key": "item.base.rogue.off_hand.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_rogue_off_hand_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "rogue",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
+      "key": "item.base.rogue.weapon.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_rogue_weapon_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "rogue",
+        "weapon"
+      ]
+    },
+    {
+      "key": "item.base.templar.armor.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_templar_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "templar",
+        "armor"
+      ]
+    },
+    {
+      "key": "item.base.templar.off_hand.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_templar_off_hand_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "templar",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
+      "key": "item.base.templar.weapon.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_templar_weapon_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "templar",
+        "weapon"
+      ]
+    },
+    {
+      "key": "item.base.vanguard.armor.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_vanguard_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "vanguard",
+        "armor"
+      ]
+    },
+    {
+      "key": "item.base.vanguard.off_hand.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_vanguard_off_hand_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "vanguard",
+        "off_hand",
+        "accessory"
+      ]
+    },
+    {
+      "key": "item.base.vanguard.weapon.icon",
+      "category": "icon_item",
+      "rawOutputPath": "phase4/uiux_pr03/item_base_vanguard_weapon_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equipment",
+        "base_icon",
+        "vanguard",
+        "weapon"
       ]
     },
     {

@@ -32,6 +32,14 @@ PROFILE_DEFAULTS_BY_KEY: dict[str, tuple[str, float]] = {
     "audio.shop.purchase_success": ("shop_purchase_success", 0.58),
     "audio.shop.purchase_failed": ("shop_purchase_failed", 0.46),
     "audio.item.high_value_pickup": ("high_value_pickup", 0.96),
+    "audio.item.pickup.high_value": ("item_pickup_high_value", 0.86),
+    "audio.item.pickup.unique": ("item_pickup_unique", 0.94),
+    "audio.item.pickup.artifact": ("item_pickup_artifact", 1.06),
+    "audio.item.equip.changed": ("item_equip_changed", 0.52),
+    "audio.item.equip.rejected": ("item_equip_rejected", 0.42),
+    "audio.item.compare.upgrade": ("item_compare_upgrade", 0.46),
+    "audio.item.compare.sidegrade": ("item_compare_sidegrade", 0.40),
+    "audio.item.compare.downgrade": ("item_compare_downgrade", 0.48),
 }
 
 
@@ -114,6 +122,44 @@ def add_profile(samples: list[float], sample_rate: int, profile: str, rng: rando
         mix_chime(samples, sample_rate, 0.08, 0.56, note(74.0), 0.06)
         mix_chime(samples, sample_rate, 0.24, 0.52, note(86.0), 0.035)
         mix_noise(samples, sample_rate, 0.0, 0.92, 0.012, rng, attack=0.12, release=0.46, smooth=0.18)
+        return
+    if profile == "item_pickup_high_value":
+        mix_click(samples, sample_rate, 0.02, 0.035)
+        mix_chime(samples, sample_rate, 0.08, 0.42, note(72.0), 0.052)
+        mix_chime(samples, sample_rate, 0.22, 0.38, note(79.0), 0.034)
+        return
+    if profile == "item_pickup_unique":
+        mix_click(samples, sample_rate, 0.02, 0.04)
+        mix_chime(samples, sample_rate, 0.07, 0.48, note(76.0), 0.058)
+        mix_chime(samples, sample_rate, 0.23, 0.44, note(83.0), 0.04)
+        mix_noise(samples, sample_rate, 0.0, 0.78, 0.009, rng, attack=0.14, release=0.42, smooth=0.2)
+        return
+    if profile == "item_pickup_artifact":
+        mix_click(samples, sample_rate, 0.02, 0.045)
+        mix_impact(samples, sample_rate, 0.05, 0.06, rng, heavy=False)
+        mix_chime(samples, sample_rate, 0.11, 0.56, note(79.0), 0.06)
+        mix_chime(samples, sample_rate, 0.31, 0.58, note(91.0), 0.035)
+        mix_noise(samples, sample_rate, 0.0, 0.96, 0.012, rng, attack=0.18, release=0.5, smooth=0.22)
+        return
+    if profile == "item_equip_changed":
+        mix_click(samples, sample_rate, 0.02, 0.035)
+        mix_chime(samples, sample_rate, 0.08, 0.30, note(69.0), 0.052)
+        return
+    if profile == "item_equip_rejected":
+        mix_click(samples, sample_rate, 0.01, 0.035)
+        mix_tone(samples, sample_rate, 0.05, 0.22, 0.06, note(49.0), note(45.0), waveform="triangle", attack=0.0, release=0.16)
+        return
+    if profile == "item_compare_upgrade":
+        mix_chime(samples, sample_rate, 0.04, 0.28, note(74.0), 0.045)
+        mix_chime(samples, sample_rate, 0.15, 0.24, note(81.0), 0.032)
+        return
+    if profile == "item_compare_sidegrade":
+        mix_click(samples, sample_rate, 0.02, 0.03)
+        mix_chime(samples, sample_rate, 0.10, 0.22, note(67.0), 0.028)
+        return
+    if profile == "item_compare_downgrade":
+        mix_click(samples, sample_rate, 0.01, 0.03)
+        mix_tone(samples, sample_rate, 0.07, 0.24, 0.045, note(57.0), note(53.0), waveform="triangle", attack=0.0, release=0.18)
         return
     raise ValueError(f"Unknown PR-03 audio profile: {profile}")
 

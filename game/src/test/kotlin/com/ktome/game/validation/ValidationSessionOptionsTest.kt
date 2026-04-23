@@ -71,10 +71,10 @@ class ValidationSessionOptionsTest {
                     ExpectedPresetConfig(
                         seed = 20260413L,
                         seedCorpus = listOf(20260413L),
-                        zoneId = "shattered_outpost",
+                        zoneId = "greenwood_fringe",
                         floor = 1,
                         maxFloor = 2,
-                        routeIndex = 0,
+                        routeIndex = 1,
                         bossVariantSelectionMode = BossVariantSelectionMode.DISABLED,
                         preferredBossVariantId = null,
                     ),

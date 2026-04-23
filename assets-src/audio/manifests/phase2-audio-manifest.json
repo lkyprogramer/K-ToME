@@ -647,6 +647,76 @@
       ]
     },
     {
+      "key": "audio.item.compare.downgrade",
+      "cueFamily": "item",
+      "eventId": "audio.item.compare.downgrade",
+      "sourcePath": "audio/phase4/uiux_pr03/item_compare_downgrade.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "compare",
+        "downgrade"
+      ]
+    },
+    {
+      "key": "audio.item.compare.sidegrade",
+      "cueFamily": "item",
+      "eventId": "audio.item.compare.sidegrade",
+      "sourcePath": "audio/phase4/uiux_pr03/item_compare_sidegrade.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "compare",
+        "sidegrade"
+      ]
+    },
+    {
+      "key": "audio.item.compare.upgrade",
+      "cueFamily": "item",
+      "eventId": "audio.item.compare.upgrade",
+      "sourcePath": "audio/phase4/uiux_pr03/item_compare_upgrade.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "compare",
+        "upgrade"
+      ]
+    },
+    {
+      "key": "audio.item.equip.changed",
+      "cueFamily": "item",
+      "eventId": "audio.item.equip.changed",
+      "sourcePath": "audio/phase4/uiux_pr03/item_equip_changed.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equip",
+        "success"
+      ]
+    },
+    {
+      "key": "audio.item.equip.rejected",
+      "cueFamily": "item",
+      "eventId": "audio.item.equip.rejected",
+      "sourcePath": "audio/phase4/uiux_pr03/item_equip_rejected.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "equip",
+        "failure"
+      ]
+    },
+    {
       "key": "audio.item.healing_potion",
       "cueFamily": "item",
       "eventId": "audio.item.healing_potion",
@@ -706,6 +776,48 @@
         "item",
         "starter_kit",
         "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.pickup.artifact",
+      "cueFamily": "item",
+      "eventId": "audio.item.pickup.artifact",
+      "sourcePath": "audio/phase4/uiux_pr03/item_pickup_artifact.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "pickup",
+        "artifact"
+      ]
+    },
+    {
+      "key": "audio.item.pickup.high_value",
+      "cueFamily": "item",
+      "eventId": "audio.item.pickup.high_value",
+      "sourcePath": "audio/phase4/uiux_pr03/item_pickup_high_value.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "pickup",
+        "high_value"
+      ]
+    },
+    {
+      "key": "audio.item.pickup.unique",
+      "cueFamily": "item",
+      "eventId": "audio.item.pickup.unique",
+      "sourcePath": "audio/phase4/uiux_pr03/item_pickup_unique.ogg",
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr03",
+        "item",
+        "pickup",
+        "unique"
       ]
     },
     {

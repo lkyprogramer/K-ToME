@@ -2,10 +2,10 @@ styleTag: ktome-middle-fantasy-painterly-tile-v1
 artStyleBible: docs/2026-03-13-art-style-bible.md
 stylePrompt: >-
   High fantasy, middle-earth inspired painterly UI companion pass for K-ToME
-  Phase 4 UI/UX PR-03. These assets are small formal UI anchors for empty
-  states, shop cards, and reward cards. Keep silhouettes readable at 20-32 px,
-  grounded in the existing K-ToME palette, never decorative background art,
-  never anime, and never sci-fi.
+  Phase 4 UI/UX PR-03. These assets are formal UI anchors for empty states,
+  shop cards, reward cards, and equipment category/profession identity. Keep
+  silhouettes readable at 20-32 px, grounded in the existing K-ToME palette,
+  never decorative background art, never anime, and never sci-fi.
 defaults:
   imageAspectRatio: "1:1"
   imageSize: "1K"
@@ -20,7 +20,7 @@ defaults:
     - no full background scene
 phase2AssetGates:
   P4-UIUX-PR03:
-    description: Formal UI companion visual plan for PR-03 empty states and shared card headers.
+    description: Formal UI companion visual plan for PR-03 empty states, shared card headers, and equipment category/profession base icons.
     assets:
       - id: phase4_uiux_pr03_empty_inventory_icon
         category: icon
@@ -61,4 +61,108 @@ phase2AssetGates:
         subject: reward card header icon with a sealed route cache marker and subtle golden glint, no text, no letters, not a unique item icon
         materialTags: [phase4, uiux, pr03, ui, reward, card]
         constraints: [ui-readable icon, header anchor, clean silhouette, readable beside reward title, no text or lettering]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_vanguard_weapon_icon
+        category: icon_item
+        visualKey: item.base.vanguard.weapon.icon
+        outputName: phase4/uiux_pr03/item_base_vanguard_weapon_icon.png
+        subject: vanguard weapon base icon with a disciplined steel blade and red guard mark, readable as frontline weapon not a specific named unique item
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, vanguard, weapon]
+        constraints: [single centered item silhouette, transparent-ready background, readable at inventory and ground-loot marker size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_vanguard_armor_icon
+        category: icon_item
+        visualKey: item.base.vanguard.armor.icon
+        outputName: phase4/uiux_pr03/item_base_vanguard_armor_icon.png
+        subject: vanguard armor base icon with heavy front plate and red guard strap, defensive frontline identity
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, vanguard, armor]
+        constraints: [single centered armor silhouette, transparent-ready background, readable at inventory and reward-card size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_vanguard_off_hand_icon
+        category: icon_item
+        visualKey: item.base.vanguard.off_hand.icon
+        outputName: phase4/uiux_pr03/item_base_vanguard_off_hand_icon.png
+        subject: vanguard off-hand accessory base icon with a compact iron talisman and shield boss motif, not a full shield
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, vanguard, off_hand, accessory]
+        constraints: [single centered accessory silhouette, not a weapon or potion, readable at shop row size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_arcanist_weapon_icon
+        category: icon_item
+        visualKey: item.base.arcanist.weapon.icon
+        outputName: phase4/uiux_pr03/item_base_arcanist_weapon_icon.png
+        subject: arcanist weapon base icon with a slim focus staff and small blue arcane crystal, readable as spell weapon
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, arcanist, weapon]
+        constraints: [single centered item silhouette, transparent-ready background, readable at inventory and ground-loot marker size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_arcanist_armor_icon
+        category: icon_item
+        visualKey: item.base.arcanist.armor.icon
+        outputName: phase4/uiux_pr03/item_base_arcanist_armor_icon.png
+        subject: arcanist armor base icon with a layered robe mantle and blue ward clasp, not heavy plate
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, arcanist, armor]
+        constraints: [single centered armor silhouette, transparent-ready background, readable at inventory and reward-card size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_arcanist_off_hand_icon
+        category: icon_item
+        visualKey: item.base.arcanist.off_hand.icon
+        outputName: phase4/uiux_pr03/item_base_arcanist_off_hand_icon.png
+        subject: arcanist off-hand accessory base icon with a faceted charm lens and blue rune ring, not a potion or scroll
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, arcanist, off_hand, accessory]
+        constraints: [single centered accessory silhouette, no readable glyph text, readable at shop row size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_rogue_weapon_icon
+        category: icon_item
+        visualKey: item.base.rogue.weapon.icon
+        outputName: phase4/uiux_pr03/item_base_rogue_weapon_icon.png
+        subject: rogue weapon base icon with a curved short bow and small dagger accent, readable as precision weapon not a sword
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, rogue, weapon]
+        constraints: [single centered weapon silhouette, transparent-ready background, readable at inventory and ground-loot marker size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_rogue_armor_icon
+        category: icon_item
+        visualKey: item.base.rogue.armor.icon
+        outputName: phase4/uiux_pr03/item_base_rogue_armor_icon.png
+        subject: rogue armor base icon with a dark hooded cloak and light leather shoulder, stealth and mobility identity
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, rogue, armor]
+        constraints: [single centered armor silhouette, transparent-ready background, readable at inventory and reward-card size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_rogue_off_hand_icon
+        category: icon_item
+        visualKey: item.base.rogue.off_hand.icon
+        outputName: phase4/uiux_pr03/item_base_rogue_off_hand_icon.png
+        subject: rogue off-hand accessory base icon with a small trophy token, lockpick hook, and muted green cord, not a shield
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, rogue, off_hand, accessory]
+        constraints: [single centered accessory silhouette, not a weapon or potion, readable at shop row size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_templar_weapon_icon
+        category: icon_item
+        visualKey: item.base.templar.weapon.icon
+        outputName: phase4/uiux_pr03/item_base_templar_weapon_icon.png
+        subject: templar weapon base icon with a radiant mace head and small white-gold seal, readable as holy weapon
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, templar, weapon]
+        constraints: [single centered item silhouette, transparent-ready background, readable at inventory and ground-loot marker size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_templar_armor_icon
+        category: icon_item
+        visualKey: item.base.templar.armor.icon
+        outputName: phase4/uiux_pr03/item_base_templar_armor_icon.png
+        subject: templar armor base icon with a white-gold mail mantle and small sanctuary seal, protective holy identity
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, templar, armor]
+        constraints: [single centered armor silhouette, transparent-ready background, readable at inventory and reward-card size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_base_templar_off_hand_icon
+        category: icon_item
+        visualKey: item.base.templar.off_hand.icon
+        outputName: phase4/uiux_pr03/item_base_templar_off_hand_icon.png
+        subject: templar off-hand accessory base icon with a sealed reliquary charm and white-gold cord, not a full shield
+        materialTags: [phase4, uiux, pr03, item, equipment, base_icon, templar, off_hand, accessory]
+        constraints: [single centered accessory silhouette, no readable lettering, readable at shop row size]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr03_item_abyssal_heartstone_icon
+        category: icon_item
+        visualKey: item.abyssal_heartstone.icon
+        outputName: phase4/uiux_pr03/item_abyssal_heartstone_icon.png
+        subject: abyssal heartstone reward accessory icon with a dark violet heart core inside a cracked ward ring, finale loot identity
+        materialTags: [phase4, uiux, pr03, item, equipment, high_value, abyssal, reward, off_hand, accessory]
+        constraints: [single centered accessory silhouette, not a scroll or potion, readable as high-value finale loot]
         geminiKeyRequired: true

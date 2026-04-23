@@ -294,6 +294,19 @@ visuals:
   - id: item.arcane_staff.icon
   - id: item.apprentice_robe.visual
   - id: item.apprentice_robe.icon
+  - id: item.base.vanguard.weapon.icon
+  - id: item.base.vanguard.armor.icon
+  - id: item.base.vanguard.off_hand.icon
+  - id: item.base.arcanist.weapon.icon
+  - id: item.base.arcanist.armor.icon
+  - id: item.base.arcanist.off_hand.icon
+  - id: item.base.rogue.weapon.icon
+  - id: item.base.rogue.armor.icon
+  - id: item.base.rogue.off_hand.icon
+  - id: item.base.templar.weapon.icon
+  - id: item.base.templar.armor.icon
+  - id: item.base.templar.off_hand.icon
+  - id: item.abyssal_heartstone.icon
   - id: item.unique.thornpath_crook.visual
   - id: item.unique.thornpath_crook.icon
   - id: item.unique.heartwood_talisman.visual

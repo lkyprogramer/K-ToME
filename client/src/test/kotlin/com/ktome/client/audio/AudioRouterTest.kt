@@ -6,6 +6,7 @@ import com.ktome.core.snapshot.ActorMutationRenderSnapshot
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.BossVariantRenderSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.EquipmentSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
@@ -588,7 +589,74 @@ class AudioRouterTest {
 
         router.onSnapshotUpdated(previous, current)
 
-        assertEquals(listOf("audio.item.artifact.heartroot_gambit", "audio.item.high_value_pickup"), sink.events)
+        assertEquals(listOf("audio.item.artifact.heartroot_gambit", "audio.item.pickup.artifact"), sink.events)
+    }
+
+    @Test
+    fun `new unique inventory item emits unique pickup accent`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous = sampleSnapshot()
+        val current =
+            previous.copy(
+                uiState =
+                    previous.uiState.copy(
+                        inventory =
+                            listOf(
+                                InventoryEntrySnapshot(
+                                    index = 0,
+                                    item =
+                                        ItemRenderSnapshot(
+                                            baseItemId = "thornpath_crook",
+                                            specialTemplateId = "unique.thornpath_crook",
+                                            specialTierId = "UNIQUE",
+                                            nameKey = "item.unique.thornpath_crook.name",
+                                            typeId = "WEAPON",
+                                            visualKey = "item.unique.thornpath_crook.visual",
+                                            iconKey = "item.unique.thornpath_crook.icon",
+                                            audioProfile = "audio.item.unique.thornpath_crook",
+                                        ),
+                                ),
+                            ),
+                    ),
+            )
+
+        router.onSnapshotUpdated(previous, current)
+
+        assertEquals(listOf("audio.item.unique.thornpath_crook", "audio.item.pickup.unique"), sink.events)
+    }
+
+    @Test
+    fun `equipment activation uses changed or rejected item cues`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous = sampleSnapshot()
+        val current =
+            previous.copy(
+                uiState =
+                    previous.uiState.copy(
+                        equipment =
+                            listOf(
+                                EquipmentSlotSnapshot(
+                                    slotId = "WEAPON",
+                                    item =
+                                        ItemRenderSnapshot(
+                                            baseItemId = "hunter_bow",
+                                            nameKey = "item.hunter_bow.name",
+                                            typeId = "WEAPON",
+                                            visualKey = "item.base.rogue.weapon.icon",
+                                            iconKey = "item.base.rogue.weapon.icon",
+                                            audioProfile = "audio.item.long_sword",
+                                        ),
+                                ),
+                            ),
+                    ),
+            )
+
+        router.onCommandResolved(previous, current, PlayerCommand.ActivateInventoryItem(index = 0), consumed = true)
+        router.onCommandResolved(previous, previous, PlayerCommand.ActivateInventoryItem(index = 0), consumed = false)
+
+        assertEquals(listOf("audio.item.equip.changed", "audio.item.equip.rejected"), sink.events)
     }
 
     @Test

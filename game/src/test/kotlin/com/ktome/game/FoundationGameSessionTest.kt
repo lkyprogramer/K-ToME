@@ -255,6 +255,39 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `validation pr03 item showcase stages inventory ground and reward card evidence`() {
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-runtime-pr03-showcase")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.LOOT_LAB),
+                ),
+            )
+        clearMonsters(session)
+
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.SpawnPr03ItemShowcase)))
+
+        val snapshot = session.renderSnapshot()
+        assertEquals("greenwood_fringe", snapshot.metadata.zoneId)
+        val inventoryByBase = snapshot.uiState.inventory.associateBy { entry -> entry.item.baseItemId }
+        assertEquals("item.base.rogue.weapon.icon", inventoryByBase.getValue("hunter_bow").item.iconKey)
+        assertEquals("item.base.vanguard.weapon.icon", inventoryByBase.getValue("war_maul").item.iconKey)
+        assertEquals("item.base.arcanist.off_hand.icon", inventoryByBase.getValue("emerald_charm").item.iconKey)
+        assertEquals("item.base.templar.off_hand.icon", inventoryByBase.getValue("sanctified_seal").item.iconKey)
+        val playerCell =
+            requireNotNull(
+                snapshot.mapCells.singleOrNull { cell ->
+                    cell.x == snapshot.metadata.playerX && cell.y == snapshot.metadata.playerY
+                },
+            )
+        assertTrue(playerCell.items.any { item -> item.specialTemplateId == "unique.briarbound_bow" })
+        assertTrue(playerCell.items.any { item -> item.specialTemplateId == "artifact.river_echo" })
+        assertTrue(playerCell.items.any { item -> item.iconKey == "item.abyssal_heartstone.icon" })
+        assertTrue(snapshot.uiState.recentRewards.isNotEmpty())
+        assertNotNull(logEventByKey(session, "log.validation.item.pr03_showcase"))
+    }
+
+    @Test
     fun `validation boss telegraph action materializes an active runtime overlay`() {
         val session =
             GameModule.newValidationSession(

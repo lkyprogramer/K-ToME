@@ -229,10 +229,13 @@ class AudioRouter(
                 PlayerCommand.PickUp,
                 -> {
                     val cueKey =
-                        if (command is PlayerCommand.BuyShopOffer || command is PlayerCommand.SellInventoryItem) {
-                            "audio.shop.purchase_failed"
-                        } else {
-                            "audio.ui.cancel"
+                        when (command) {
+                            is PlayerCommand.BuyShopOffer,
+                            is PlayerCommand.SellInventoryItem,
+                            -> "audio.shop.purchase_failed"
+
+                            is PlayerCommand.ActivateInventoryItem -> "audio.item.equip.rejected"
+                            else -> "audio.ui.cancel"
                         }
                     play(cueKey)
                 }
@@ -246,12 +249,21 @@ class AudioRouter(
             is PlayerCommand.Move -> play(moveCueKey(previousSnapshot, currentSnapshot))
             is PlayerCommand.UseTalent -> talentCueKeys(previousSnapshot, currentSnapshot, command.slot).forEach(::play)
             is PlayerCommand.UseInscription -> play("audio.ui.confirm")
-            is PlayerCommand.ActivateInventoryItem,
             is PlayerCommand.DropInventoryItem,
             PlayerCommand.Interact,
             PlayerCommand.Search,
             PlayerCommand.PickUp,
             -> play("audio.interactable.open")
+
+            is PlayerCommand.ActivateInventoryItem -> {
+                val cueKey =
+                    if (equipmentIdentities(previousSnapshot) != equipmentIdentities(currentSnapshot)) {
+                        "audio.item.equip.changed"
+                    } else {
+                        "audio.interactable.open"
+                    }
+                play(cueKey)
+            }
 
             PlayerCommand.Ascend,
             PlayerCommand.Descend,
@@ -490,7 +502,10 @@ class AudioRouter(
             val previousCount = previousCounts[identity] ?: 0
             if (previousCount == 0) {
                 if (item.specialTierId != null) {
-                    return "audio.item.high_value_pickup"
+                    return highValuePickupCueKey(item)
+                }
+                if (item.qualityTierId.equals("RARE", ignoreCase = true)) {
+                    return "audio.item.pickup.high_value"
                 }
             } else {
                 previousCounts[identity] = previousCount - 1
@@ -501,6 +516,19 @@ class AudioRouter(
 
     private fun itemIdentity(item: ItemRenderSnapshot): String =
         listOf(item.baseItemId, item.specialTemplateId.orEmpty(), item.specialTierId.orEmpty(), item.nameKey).joinToString("|")
+
+    private fun highValuePickupCueKey(item: ItemRenderSnapshot): String =
+        when (item.specialTierId?.uppercase()) {
+            "UNIQUE" -> "audio.item.pickup.unique"
+            "ARTIFACT" -> "audio.item.pickup.artifact"
+            else -> "audio.item.pickup.high_value"
+        }
+
+    private fun equipmentIdentities(snapshot: RenderSnapshot): List<String> =
+        snapshot.uiState.equipment.map { slot ->
+            val item = slot.item
+            "${slot.slotId}:${item?.let(::itemIdentity).orEmpty()}"
+        }
 
     private fun newlyVisibleGroundItemAudioProfile(
         previous: RenderSnapshot?,

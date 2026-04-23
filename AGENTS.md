@@ -8,53 +8,28 @@
 
 ### 1.1 项目定位
 
-K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike 项目。
+K-ToME 是 `Kotlin + libGDX` 单机 Roguelike。项目概况、当前状态、快速开始与完整阶段路线看 [README.md](README.md) 和 [docs/INDEX.md](docs/INDEX.md)，不要在本文件维护第二份说明。
 
-主线阶段路径固定为：
+本文件只固定 agent 容易做错、且跨任务稳定成立的仓库级规则：
 
-`Phase 1 可玩基线 -> Phase 2 语义合同 + Tile/i18n 短局 -> Phase 3 深层战斗/职业/长局 -> Phase 4 ProcGen/Loot/Content Pack -> Phase 5 战术 AI/稳定性/发布`
-
-本文件负责固定：
-
-1. 仓库级协作规则
-2. 模块职责与依赖边界
+1. 文档路由与覆盖纪律
+2. 模块边界和跨层红线
 3. 跨阶段稳定合同
 4. 全局验证纪律
-5. 高风险变更红线
+5. 高风险操作权限
 
-本文件不负责重复维护：
+本文件不重复维护 phase-specific 的完整命令块、固定 seed、量化阈值、白盒步骤、当前阻塞项或 `docs/rule/*.md` 中的细粒度规则。
 
-1. 当前 phase 的详细主题与出口定义
-2. phase-specific 的完整 Gradle 命令块
-3. checklist 中的量化阈值、固定 seed、白盒步骤
-4. `docs/rule/*.md` 中已经独立定义的细粒度规则
+### 1.2 文档路由
 
-### 1.2 权威文档顺序
-
-后续开发按以下顺序理解文档：
-
-1. [docs/2026-03-13-phase2-to-phase5-final-roadmap.md](docs/2026-03-13-phase2-to-phase5-final-roadmap.md)
-   - 阶段边界、检查点、工作包编号、进入/退出条件、长期门禁
-2. [docs/2026-03-13-core-systems-design-and-phase-supplements.md](docs/2026-03-13-core-systems-design-and-phase-supplements.md)
-   - 公式、数据结构、系统内部合同、阶段补充冻结决策
-3. [docs/2026-04-04-unified-white-box-verification-framework.md](docs/2026-04-04-unified-white-box-verification-framework.md)
-   - 统一白盒验证框架、artifact/report 合同、自动化与人工一致性策略
-4. [docs/INDEX.md](docs/INDEX.md)
-   - 文档索引、phase 入口、常见查找路径
-5. 当前 phase 的 `roadmap.md`、主文档、verification checklist、`P?-W*` 文档
-   - 当前阶段的执行范围、非目标、门禁与验收真相
-6. [docs/rule/kotlin.md](docs/rule/kotlin.md)
-   - Kotlin 改动的代码质量与边界纪律
-7. [docs/rule/ai-change-governance.md](docs/rule/ai-change-governance.md)
-   - non-trivial Kotlin 改动的 anti-bloat 治理、review taxonomy 与 gate 口径
-8. [docs/mvp-development-guide.md](docs/mvp-development-guide.md)
-   - 产品背景与历史 MVP 上下文；不覆盖上述更高优先级文档
+文档入口以 [docs/INDEX.md](docs/INDEX.md) 为准。开始非 trivial 任务前，先用它定位路线图、当前 phase roadmap、verification checklist、`P?-W*` 文档和规则文档。
 
 固定覆盖规则：
 
 1. 旧 `PR01 ~ PR12` 只作历史参考；执行编号统一使用 `P2-W1 ~ P5-W5`
 2. 下游文档与上游权威冲突时，先修上游权威，再回写下游文档
-3. 不允许在实现、prompt、skill 或 checklist 外再复制一套平行长期口径
+3. 不允许在实现、prompt、skill、checklist 或临时报告里复制一套平行长期口径
+4. verification / task perf monitor 语义以 [docs/verification/README.md](docs/verification/README.md) 和其下游文档为准，不在本文件展开实现细节
 
 ### 1.3 非 trivial 任务预检
 
@@ -82,22 +57,11 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 3. 没有绕过现有 harness、lint 或白盒门禁
 4. Kotlin 相关预检已经按触发条件完成
 
-### 1.4 非 trivial 任务的第一条输出
+### 1.4 非 trivial 任务输出要求
 
-对非 trivial 任务，第一条输出必须包含简短《预检摘要》，至少说明：
+对非 trivial 任务，第一条输出必须给出简短《预检摘要》：命中的 phase/checkpoint/doc、受影响模块、关键合同/风险/非目标、计划验证入口。若文档缺失、约束冲突或用户要求明显违背当前 phase 冻结目标，先指出冲突，不能直接实现。
 
-1. 当前命中的 phase、checkpoint 与文档
-2. 受影响模块及其权威职责
-3. 关键合同、风险与非目标
-4. 计划执行的自动化命令、owner gate 或白盒验证
-
-如果文档缺失、约束冲突、或用户要求与当前 phase 冻结目标明显矛盾，必须先指出冲突，不能直接实现。
-
-补充规则：
-
-1. 如果任务跨越多个 checkpoint，优先落上游 contract，再落内容与表现
-2. 如果一个工作包结束后主干不可玩，说明切分过大，必须继续拆分
-3. non-trivial Kotlin 改动提交前必须经过一次 anti-bloat review；具体 taxonomy 与阻塞规则以 [docs/rule/ai-change-governance.md](docs/rule/ai-change-governance.md) 为准
+如果任务跨 checkpoint，优先落上游 contract，再落内容与表现；如果一个工作包结束后主干不可玩，说明切分过大；non-trivial Kotlin 改动提交前必须按 [docs/rule/ai-change-governance.md](docs/rule/ai-change-governance.md) 完成 anti-bloat review。
 
 ## 2. Architecture Baseline
 
@@ -110,14 +74,16 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 5. 任何阶段都必须同时满足：可运行、可测试、可度量、可白盒验证
 6. 不允许为局部便利引入第二真源、第二套规则路径或跨层业务泄漏
 
-### 2.2 模块职责
+### 2.2 层级红线
 
-| 模块 | 负责 | 禁止 |
-| --- | --- | --- |
-| `core` | ECS、地图、FOV、移动、战斗、公式、状态、AI、世界推进、ProcGen、掉落、存档 DTO、回放语义、`RenderSnapshot` DTO；纯数据结构、纯函数、确定性算法；可被 JUnit 和固定 seed harness 直接验证的核心行为 | 依赖 libGDX / GUI / 音频 / 窗口 / 纹理句柄；输出 localized string、raw asset path 或 client-only 状态；为了 UI 便利引入第二份显示状态 |
-| `game` | 内容 schema、注册表、官方内容包、世界内容、职业 / 怪物 / 掉落 / zone 数据装配；把 `core` 规则能力组装成具体玩法会话；内容与 contract 校验 | 重新实现 `core` 已拥有的公式、状态、AI、地图或世界推进规则；保存表现层副本作为权威状态；绕过 `core` 直接定义第二套规则语义 |
-| `client` | 桌面入口、窗口生命周期、输入采集、Tile / HUD / UI、音频、Locale bundle、manifest resolve；把玩家输入转换成对 `game/core` 的调用；把 `RenderSnapshot`、日志 token、manifest 解析成可见表现 | 地图生成、战斗结算、AI 决策、world progress、loot budget 等规则逻辑直接写进 `client`；维护规则权威状态的独立副本；生成正式业务文案或资源映射真值 |
-| `tools` | `localeLint`、`contractLint`、`maintainabilityLint`、`assetLint`、`audioLint`、`manifestLint`、各类 smoke、harness、batch、perf/soak、release 验证 | 侵入运行时规则路径成为真源；以“测试方便”为由绕过正式 schema、manifest、snapshot、replay 合同；偷偷维护第二套内容解析或 AI 逻辑 |
+模块职责总览见 [README.md](README.md)。本文件只保留容易被 agent 误判的禁止项：
+
+| 模块 | 禁止 |
+| --- | --- |
+| `core` | 依赖 libGDX / GUI / 音频 / 窗口 / 纹理句柄；输出 localized string、raw asset path、tooltip 文案、视觉指令或 client-only 状态；为了 UI 便利引入第二份显示状态 |
+| `game` | 重新实现 `core` 已拥有的公式、状态、AI、地图或世界推进规则；保存表现层副本作为权威状态；绕过 `core` 直接定义第二套规则语义 |
+| `client` | 地图生成、战斗结算、AI 决策、world progress、loot budget 等规则逻辑直接写进 `client`；维护规则权威状态的独立副本；生成正式业务文案或资源映射真值 |
+| `tools` | 侵入运行时规则路径成为真源；以“测试方便”为由绕过正式 schema、manifest、snapshot、replay 合同；复制 runtime selector、reward legality、owner metric 等 authority 逻辑 |
 
 ### 2.3 模块依赖规则
 
@@ -151,15 +117,14 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 
 ### 3.2 跨阶段冻结合同
 
-以下概念一旦进入主线，就必须保持单一权威，不允许并行维护第二套：
+以下合同一旦进入主线，就必须保持单一权威，不允许并行维护第二套。完整设计细节回到 [docs/2026-03-13-core-systems-design-and-phase-supplements.md](docs/2026-03-13-core-systems-design-and-phase-supplements.md) 和当前 phase 文档。
 
-1. 版本与持久化：`saveContractVersion`、`visualManifestVersion`、`audioManifestVersion`、`styleVersion`、replay schema version
+1. 版本与持久化：save / replay / visual / audio / style version
 2. 事件与表现桥：`GameEvent`、`LogTokenEvent`、callback registry、`RenderSnapshot`、`VisualManifest`、`AudioManifest`
-3. 战斗与资源：`DamageType`、`DamageInstance`、`PowerType`、`ApplicationPolicy`、`CombatResolutionTrace`、`ResourcePool`、`ResourceType`、`ResourceAxis`
-4. 状态与天赋：`StatusEffectDef`、`StatusInstance`、`ActorEffect / AreaEffectEmitter / WorldEffect`、`TalentDef V2`、`EffectOp`、`DescriptionModel`、`telegraphRef`
-5. AI 与长局：`AIProfile`、`BossEncounter`、`BossPhaseDef`、`TelegraphSpec`、`WorldProgress`、`Quest`、`GateCondition`、`RouteReward`、`RunSummary`
-6. ProcGen / Loot / Pack：`TerrainTag`、`LootBudget`、`EliteMutationDef`、`HiddenEventDef`、`SecretZoneDef`、`ContentPackManifest`、`OverlayEntry`
-7. 战术 AI / 回放：`PerceptionState`、`HateFocus`、`ReplayHeader`、`DeathAnalysis`、`TacticalAIDecisionTrace`
+3. 战斗、资源、状态、天赋：`DamageType`、`PowerType`、`ResourceType`、`StatusEffectDef`、`TalentDef V2`、`EffectOp`
+4. AI、Boss、长局与世界推进：`AIProfile`、`BossEncounter`、`BossPhaseDef`、`WorldProgress`、`Quest`、`RunSummary`
+5. ProcGen、Loot 与 Content Pack：`TerrainTag`、`LootBudget`、`HiddenEventDef`、`SecretZoneDef`、`ContentPackManifest`、`OverlayEntry`
+6. 战术 AI、回放、死因分析：`PerceptionState`、`HateFocus`、`ReplayHeader`、`DeathAnalysis`、`TacticalAIDecisionTrace`
 
 ### 3.3 已冻结的基础决策
 
@@ -191,20 +156,9 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 
 ## 4. Phase Routing
 
-本文件不再重复维护 phase-specific 主题、边界、冻结项与命令清单。当前 phase 的执行真相，统一从下表入口进入：
+Phase 入口、执行编号、当前 checkpoint 真相、具体 gate、固定 seed、量化阈值、报告字段与白盒路径，统一从 [docs/INDEX.md](docs/INDEX.md) 路由到对应 phase roadmap / checklist / `P?-W*` 文档。本文件不写死 phase-specific 主题、边界、冻结项或命令清单。
 
-| Phase | 入口文档 |
-| --- | --- |
-| `Phase 2` | [docs/phase2/roadmap.md](docs/phase2/roadmap.md) + [docs/phase2/2026-03-13-phase2-semantic-contracts-tile-and-i18n.md](docs/phase2/2026-03-13-phase2-semantic-contracts-tile-and-i18n.md) + [docs/phase2/2026-03-13-phase2-verification-checklist.md](docs/phase2/2026-03-13-phase2-verification-checklist.md) + `P2-W1 ~ P2-W7` |
-| `Phase 3` | [docs/phase3/roadmap.md](docs/phase3/roadmap.md) + [docs/phase3/2026-03-13-phase3-deep-combat-classes-and-long-run.md](docs/phase3/2026-03-13-phase3-deep-combat-classes-and-long-run.md) + [docs/phase3/2026-03-13-phase3-verification-checklist.md](docs/phase3/2026-03-13-phase3-verification-checklist.md) + `P3-W1 ~ P3-W6` |
-| `Phase 4` | [docs/phase4/roadmap.md](docs/phase4/roadmap.md) + [docs/phase4/2026-03-13-phase4-procgen-loot-and-content-pack.md](docs/phase4/2026-03-13-phase4-procgen-loot-and-content-pack.md) + [docs/phase4/2026-03-13-phase4-verification-checklist.md](docs/phase4/2026-03-13-phase4-verification-checklist.md) + `P4-W1 ~ P4-W5` |
-| `Phase 5` | [docs/phase5/roadmap.md](docs/phase5/roadmap.md) + [docs/phase5/2026-03-13-phase5-tactical-ai-stability-and-release.md](docs/phase5/2026-03-13-phase5-tactical-ai-stability-and-release.md) + [docs/phase5/2026-03-13-phase5-regression-checklist.md](docs/phase5/2026-03-13-phase5-regression-checklist.md) + `P5-W1 ~ P5-W5` |
-
-补充规则：
-
-1. 当前 checkpoint 真相以下游 phase roadmap 和 checklist 为准，不在 `AGENTS.md` 写死
-2. 任何具体 gate、固定 seed、量化阈值、报告字段、白盒路径，统一回到当前 phase checklist 查
-3. 任何当前 sprint/PR 拆分，以命中的 `P?-W*` 文档为边界
+任何当前 sprint/PR 拆分，以命中的 `P?-W*` 或 PR 级设计文档为边界。
 
 ## 5. Global Verification Discipline
 
@@ -219,18 +173,7 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 7. `tools` 中任何用于验证 runtime selector、reward legality、owner metric 的派生逻辑，都必须复用 `game` 侧已冻结 authority 或共享 helper；禁止再手写一套 `sourceTier / professionSuitability / weight / forbiddenBaseIds` 等平行规则
 8. canonical owner evidence 一旦缺字段或缺 artifact，必须 fail fast；禁止用 default-success fallback、伪造 `1.0` 覆盖率或空数组占位把 report/materialization 继续跑绿
 
-长期保留的回归套件：
-
-1. `GoldenSeed`
-2. `LocaleLint + LocaleScreens`
-3. `ContractLint`
-4. `SoloClearLab`
-5. `HeadlessSmoke`
-6. `BossHarness`
-7. `SaveCurrentVersion`
-8. `Perf/Soak`
-
-一旦某个 suite 在当前 phase 被正式引入，就不能再退化成“可选工具”。
+长期回归套件包括 `GoldenSeed`、`LocaleLint + LocaleScreens`、`ContractLint`、`SoloClearLab`、`HeadlessSmoke`、`BossHarness`、`SaveCurrentVersion`、`Perf/Soak`。一旦某个 suite 在当前 phase 被正式引入，就不能再退化成“可选工具”。
 
 ### 5.2 环境与执行纪律
 
@@ -255,19 +198,13 @@ sdk env
 11. 如果当前机器存在 Maven / TLS 拉取问题，可先执行 `./scripts/bootstrap-deps.sh`
 12. 共享 PR CI 的默认 preflight 是 `./gradlew verifyChanged`；新增 verification/report/gate/governance 接线时，优先复用既有 `VerifyChangedPlanGate` / impact routing，不要在 workflow 或脚本里再造第二套变更判定逻辑
 13. 共享 nightly automation 的默认入口是 `./gradlew nightlyGovernanceGate`；需要增加 governance、freshness 或 aggregate smoke 时，优先扩这个 root task，而不是再手写一份并行 nightly inventory
-14. `com.ktome.build.testperf` 是 leaf-task、local-first 的 task perf monitor：plain `Test` 默认不进入监控面，只有显式 opt-in 才进入 baseline；CI 只允许保留 report-only summary，不得把 `.gradle/test-perf/` 的 lane、baseline 或 report-only 目录当成 unified verification registry 或 `reportPhase5` 的权威输入
+14. task perf monitor 的目标、边界与产物位置以 [docs/verification/README.md](docs/verification/README.md) 为准；不得把 `.gradle/test-perf/` 的 lane、baseline 或 report-only 目录升级成 unified verification registry 或 `reportPhase5` 的 canonical 输入
 
 ### 5.3 白盒验证与结果汇报
 
-1. 涉及 `client`、渲染、输入、交互、Tile、Boss telegraph、content pack、package 的改动，都必须保留明确白盒步骤
-2. 涉及安装包的改动，还必须补安装包启动与验收步骤
-3. 验证失败时必须保留对应 trace、hash、输入脚本、截图差异或 batch 摘要，不能只报一句“失败了”
-4. 完成任务后必须真实说明：
-   - 实际运行了哪些命令
-   - 哪些命令未运行以及原因
-   - 白盒验证是否实际执行
-   - 仍然存在的风险或未覆盖点
-5. 禁止把“理论上应该通过”当作已经验证
+涉及 `client`、渲染、输入、交互、Tile、Boss telegraph、content pack、package 的改动，必须保留明确白盒步骤；涉及安装包的改动，还必须补安装包启动与验收步骤。
+
+验证失败时保留 trace、hash、输入脚本、截图差异或 batch 摘要。完成任务后真实说明实际运行命令、未运行命令及原因、白盒验证是否执行、剩余风险；禁止把“理论上应该通过”当作已经验证。
 
 ### 5.4 Git 与 GitHub 操作优先级
 
@@ -278,7 +215,17 @@ sdk env
 
 ## 6. Red Lines & Completion
 
-### 6.1 文档同步
+### 6.1 操作权限
+
+| 级别 | 可做事项 |
+| --- | --- |
+| Allowed | 读取文件；搜索代码；运行非破坏性检查；执行 focused tests / lint / harness；做局部代码或文档编辑；使用 `git status` / `git diff` / `git show` / `gh pr view` 等只读命令 |
+| Ask First | schema/version/public contract 变化；依赖升级；大范围资源生成或替换；删除已跟踪文件；修改 release / CI / nightly gate 语义；跨模块重排；任何会显著扩大 diff 或改变验收口径的操作 |
+| Never | `git reset --hard`、强推、重写历史；删除用户未确认的本地成果；提交密钥或本地私有配置；绕过 verification gate；伪造验证结果；引入第二 authority 来让报告变绿 |
+
+这些权限不替代更严格的系统级 Git / 文件安全规则；遇到冲突时按更严格者执行。
+
+### 6.2 文档同步
 
 如果变更影响以下任一内容，必须同步更新对应文档：
 
@@ -292,7 +239,7 @@ sdk env
 1. 如果 `AGENTS.md` 发生变化，应同时评估 [docs/INDEX.md](docs/INDEX.md)、phase roadmap、verification checklist、相关 `P?-W*` 文档是否需要同步
 2. 如果新增目录承载明确职责，建议补简短 README，避免结构语义只存在于代码里
 
-### 6.2 高风险变更红线
+### 6.3 高风险变更红线
 
 以下变更不能静默做掉，必须先明确影响：
 
@@ -305,9 +252,9 @@ sdk env
 7. 引入 Lua / runtime script host / 第二套 AI 系统 / 第二套 telegraph 权威
 8. 修改 content pack 边界，使其越权定义核心规则语义
 9. 用“临时逻辑”污染长期 contract 或阶段出口
-10. 把 `testperf` lane / baseline / report-only 目录升级成共享 verification authority，或让它反向决定 `reportPhase5` / unified verification 的 canonical 结论
+10. 把 task perf lane / baseline / report-only 目录升级成共享 verification authority，或让它反向决定 `reportPhase5` / unified verification 的 canonical 结论
 
-### 6.3 完成定义
+### 6.4 完成定义
 
 一次合格提交，至少应满足：
 

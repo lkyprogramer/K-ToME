@@ -328,6 +328,10 @@ internal fun validationOverlayActionDescriptors(
                     labelKey = "ui.validation.action.reward.spawn_potion",
                     buildAction = { ValidationAction.SpawnItem(baseItemId = "healing_potion") },
                 ),
+                ValidationOverlayActionDescriptor(
+                    labelKey = "ui.validation.action.reward.pr03_showcase",
+                    buildAction = { ValidationAction.SpawnPr03ItemShowcase },
+                ),
             )
 
         ValidationOverlaySection.DISCOVERY ->
@@ -396,9 +400,17 @@ private fun validationTravelActions(preset: ValidationPreset): List<ValidationOv
                 labelKey = "ui.validation.action.travel.pending_objective",
                 buildAction = { ValidationAction.TravelToPendingObjective },
             ),
+            if (preset == ValidationPreset.LOOT_LAB) {
+                ValidationOverlayActionDescriptor(
+                    labelKey = "ui.validation.action.travel.merchant_stall",
+                    buildAction = { ValidationAction.TravelToInteractable("merchant_stall") },
+                )
+            } else {
+                null
+            },
             ValidationOverlayActionDescriptor(
                 labelKey = "ui.validation.action.travel.inspect_cursor",
                 buildAction = { inspectCursor -> ValidationAction.TravelToPoint(inspectCursor) },
             ),
-        )
+        ).filterNotNull()
     }

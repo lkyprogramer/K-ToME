@@ -154,11 +154,11 @@ internal fun validationFoundationConfig(preset: ValidationPreset): FoundationGam
         ValidationPreset.LOOT_LAB ->
             FoundationGameConfig(
                 seed = 20260413L,
-                zoneId = "shattered_outpost",
-                playerProfessionId = "arcanist",
+                zoneId = "greenwood_fringe",
+                playerProfessionId = "rogue",
                 floor = 1,
                 zoneRoute = FOUNDATION_ZONE_ROUTE,
-                routeIndex = 0,
+                routeIndex = 1,
                 bossVariantSelectionMode = BossVariantSelectionMode.DISABLED,
             )
 

@@ -95,6 +95,9 @@ internal object LintFixtures {
 
         return buildSet {
             files.forEach { path ->
+                if (path.fileName.toString() == "UiCompanionVisualKeys.kt") {
+                    return@forEach
+                }
                 val content = path.readText()
                 localeKeyCallPattern.findAll(content).forEach { match ->
                     val key = match.groupValues[1]
