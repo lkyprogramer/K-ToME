@@ -1,5 +1,6 @@
 package com.ktome.client.ui.combat
 
+import com.ktome.core.map.Point
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -85,6 +86,50 @@ class CombatDecisionPanelTest {
         assertTrue(model.rows.first().text.contains("ui.combat.fact.missing"))
         assertFalse(model.rows.first().text.contains("0"))
         assertFalse(model.rows.first().text.contains("none", ignoreCase = true))
+    }
+
+    @Test
+    fun `target panel keeps free cursor inscriptions out of no legal target state`() {
+        val model =
+            CombatDecisionPanel.build(
+                CombatDecisionPanelRequest(
+                    localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                    snapshot =
+                        snapshot(
+                            talents = emptyList(),
+                            inscriptions =
+                                listOf(
+                                    InscriptionSlotSnapshot(
+                                        hotkey = 5,
+                                        inscriptionId = "phase_door",
+                                        nameKey = "inscription.phase_door.name",
+                                        descKey = "inscription.phase_door.desc",
+                                        iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                                        categoryId = "MOVEMENT",
+                                        cooldownRemaining = 0,
+                                        maxCooldown = 10,
+                                        requiresTarget = true,
+                                    ),
+                                ),
+                        ),
+                    state =
+                        CombatDecisionFrameState(
+                            phase = CombatDecisionPhase.TARGET,
+                            selectedActionId = "inscription:5",
+                            selectedMethodId = "default",
+                            skippedMethod = true,
+                        ),
+                    focusIndex = 0,
+                    targetCursor = Point(3, 1),
+                    renderText = { token -> token.key },
+                ),
+            )
+
+        assertEquals(1, model.rows.size)
+        assertEquals(CombatAffordanceResourceKeys.LOCK_ICON, model.rows.single().iconKey)
+        assertTrue(model.rows.single().selected)
+        assertTrue(model.rows.single().enabled)
+        assertFalse(model.rows.single().text.contains(CombatDecisionFeedbackKeys.NO_LEGAL_TARGET))
     }
 
     private fun snapshot(

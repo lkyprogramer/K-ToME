@@ -292,6 +292,7 @@ internal object TileRenderModelBuilder {
                         snapshot = snapshot,
                         state = state,
                         focusIndex = focusIndex,
+                        targetCursor = overlayState.targetingCursor ?: overlayState.modalFrames.lastOrNull()?.localState?.targetingCursor,
                         renderText = { token -> renderTextToken(localizer, token) },
                     ),
                 )
@@ -1230,6 +1231,9 @@ internal object TileRenderModelBuilder {
             }
         }
         val action = CombatDecisionFrame.selectedAction(snapshot, state) ?: return TileTargetCursorState.ILLEGAL
+        if (action.usesFreeCursorTargeting()) {
+            return TileTargetCursorState.LEGAL
+        }
         val legalTargets = CombatDecisionFrame.legalTargets(snapshot, action)
         return if (legalTargets.any { target -> target.point == cursor }) {
             TileTargetCursorState.LEGAL

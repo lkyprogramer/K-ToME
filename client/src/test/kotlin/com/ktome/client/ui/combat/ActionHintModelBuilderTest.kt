@@ -4,6 +4,8 @@ import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
+import com.ktome.core.snapshot.OverlayRenderSnapshot
+import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
@@ -89,9 +91,34 @@ class ActionHintModelBuilderTest {
         assertEquals("ui.combat.fact.missing", hint.legalTargetSummary.missingReason?.key)
     }
 
+    @Test
+    fun `boss telegraph overlay does not inject missing fact into unrelated player action`() {
+        val snapshot =
+            snapshot(
+                overlays =
+                    listOf(
+                        OverlayRenderSnapshot(
+                            id = "telegraph:boss-cleave",
+                            visualKey = "telegraph.boss.cleave",
+                            previewTurns = 1,
+                            dangerLevel = 3,
+                            shape = OverlayShapeSnapshot.SINGLE_TILE,
+                            sourceAbilityId = "boss.cleave",
+                            cells = listOf(GridPointSnapshot(2, 1)),
+                        ),
+                    ),
+            )
+
+        val hint = ActionHintModelBuilder.build(snapshot, "talent:1")
+
+        assertNull(hint.telegraphLinkage)
+        assertNull(hint.missingFactReason)
+    }
+
     private fun snapshot(
         resourceCost: Int = 3,
         targetablePositions: List<GridPointSnapshot> = listOf(GridPointSnapshot(2, 1)),
+        overlays: List<OverlayRenderSnapshot> = emptyList(),
         talents: List<TalentSlotSnapshot> =
             listOf(
                 TalentSlotSnapshot(
@@ -138,6 +165,7 @@ class ActionHintModelBuilderTest {
                         terrainVisualKey = "tileset.test.ground_01",
                     ),
                 ),
+            overlays = overlays,
             uiState =
                 RenderUiStateSnapshot(
                     playerStatus =

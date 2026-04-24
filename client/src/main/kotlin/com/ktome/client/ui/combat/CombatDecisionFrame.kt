@@ -112,6 +112,21 @@ internal object CombatDecisionFrame {
         }
     }
 
+    fun freeCursorTarget(
+        snapshot: RenderSnapshot,
+        state: CombatDecisionFrameState,
+        fallbackFocusIndex: Int = 0,
+    ): Point =
+        selectedAction(snapshot, state)
+            ?.takeIf(CombatActionOption::usesFreeCursorTargeting)
+            ?.let {
+                Point(
+                    x = (snapshot.metadata.playerX + 1 + fallbackFocusIndex).coerceIn(0, snapshot.metadata.width - 1),
+                    y = snapshot.metadata.playerY.coerceIn(0, snapshot.metadata.height - 1),
+                )
+            }
+            ?: Point(snapshot.metadata.playerX, snapshot.metadata.playerY)
+
     fun isActionDisabled(
         snapshot: RenderSnapshot,
         action: CombatActionOption,
