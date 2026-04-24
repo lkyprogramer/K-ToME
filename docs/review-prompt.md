@@ -10,12 +10,13 @@
 phase4 的设计文档和优化改进文档位于：
 
 - `docs/phase4/` 
-- `docs/review/phase4/v2opt` 
+- `docs/review/phase4/v3`
+- `docs/opt/ui-pr`
 
 你需要同时站在以下几个视角进行审阅：
 
 1. **设计一致性视角**  
-   检查当前实现与`docs/phase4/`,`docs/review/phase4/v2opt` 是否存在：
+   检查当前实现与`docs/phase4/`, `docs/review/phase4/v3` ,`docs/opt/ui-pr`  是否存在：
    - 文档已设计但未实现
    - 已实现但与设计偏离
    - 实现细节破坏了原始设计目标
@@ -41,7 +42,7 @@ phase4 的设计文档和优化改进文档位于：
 请完成以下 4 个核心任务：
 
 ## 任务 A：Phase4设计实现一致性审查
-对照 `docs/phase4/`,`docs/review/phase4/v2opt` 的所有设计文档逐项核查当前项目实现情况，至少回答：
+对照 `docs/phase4/`, `docs/review/phase4/v3` ,`docs/opt/ui-pr` 的所有设计文档逐项核查当前项目实现情况，至少回答：
 
 - Phase4 承诺的功能是否全部存在？
 - 每个功能是否按文档预期工作？
@@ -226,7 +227,7 @@ phase4 的设计文档和优化改进文档位于：
 
 请按以下顺序开展审阅：
 
-1. 先阅读并归纳 `docs/phase4/`,`docs/review/phase4/v2opt` 中每份设计文档的目标、范围、承诺内容
+1. 先阅读并归纳`docs/phase4/`, `docs/review/phase4/v3` ,`docs/opt/ui-pr`  中每份设计文档的目标、范围、承诺内容
 2. 建立“设计项 -> 实现项”的映射关系
 3. 识别缺失项、偏离项、伪完成项
 4. 再从玩家视角重构当前 Phase4 的完整体验链路
@@ -240,7 +241,7 @@ phase4 的设计文档和优化改进文档位于：
 
 请输出为完整 Markdown 文档,分为 4 个 part，写入：
 
-- `docs/review/phase4/v3/phase4_opt_deep_review_phase4_claude_part1.md`  (part2,part3,part4依次顺序一个文件一个文件的生成)
+- `docs/review/phase4/v4/phase4_opt_deep_review_phase4_codex_part1.md`  (part2,part3,part4依次顺序一个文件一个文件的生成)
 
 如果目录不存在，请先创建目录再输出。
 

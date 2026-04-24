@@ -34,6 +34,41 @@ K-ToME macOS app 当前常用打包任务为：
 
 打包完成后，从任务文档或构建输出确认实际 app bundle 路径，并在人工记录里写明。
 
+## 2.1 K-ToME 快速 scenario 模式
+
+当当前 PR 文档声明 `scenario id` 时，白盒验证必须先使用游戏内 Validation Mode 的快速 scenario 入口生成运行材料，再启动 packaged app。
+
+K-ToME Phase4 v4 固定命令：
+
+```bash
+cd <repo-root>
+
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+
+./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=<scenario-id>
+```
+
+该命令必须生成：
+
+```text
+build/whitebox/<scenario-id>/
+  launch-packaged-app.sh
+  cua-runbook.md
+  manual-record-template.md
+  expected-evidence.json
+  app-executable.sha256
+  runtime-home/
+  evidence/
+```
+
+执行规则：
+
+1. `launch-packaged-app.sh` 必须通过 `-Dktome.validation.scenario=<scenario-id>` 启动现有游戏内 Validation Mode。
+2. 任务文档声明了 `scenario id` 后，不得跳过 `preparePhase4V4Whitebox` 直接人工选择 preset。
+3. `cua-runbook.md` 是本次 CUA 输入序列真源；执行者不得临场改写目标路径。
+4. 快速 scenario 只负责抵达验证目标态和生成证据骨架，不替代当前 PR 的 owner gate、自动化测试和 report。
+
 ## 3. 准备隔离运行目录
 
 每次白盒验证应使用独立运行目录，避免污染本机已有存档、设置或历史资源。
@@ -142,7 +177,7 @@ Evidence:
 Known limitations:
 ```
 
-截图和录屏优先使用 Computer Use 自身能力或当前任务规定的方式保存。禁止把裸 macOS `screencapture -x <file>` 当作 CUA 画面证据；它可能抓到真实桌面前台窗口，而不是目标 app 窗口。
+截图和录屏优先使用 Computer Use 自身能力或当前任务规定的方式保存。禁止把裸 macOS `screencapture -x <file>` 当作 CUA 画面证据；它会偏离目标 app 窗口绑定要求，抓到真实桌面前台窗口时证据失效。
 
 如果 Computer Use 当前不能直接持久化截图文件，使用仓库脚本捕获目标 app 的真实 macOS 窗口。该脚本先用 CoreGraphics 枚举可见窗口并解析 window id，再只对该 window id 执行截图，同时生成 metadata 与 SHA-256 sidecar。
 
@@ -153,7 +188,7 @@ scripts/capture-macos-app-window.sh \
   --out <whitebox-root>/evidence/<scenario-step>.png
 ```
 
-默认截图会按证据阅读用途压缩：输出 PNG 最宽 `1600px`、最高 `1200px`，并使用 PNG8 palette + strip 非必要 metadata。若某个细节必须保留 Retina 原始像素，显式加 `--raw`；若需要保留完整色彩但仍缩放压缩，使用 `--truecolor`；若需要更小的沟通用图，可以调低上限。
+默认截图会按证据阅读用途压缩：输出 PNG 最宽 `1600px`、最高 `1200px`，并使用 PNG8 palette + strip 非必要 metadata。若某个细节必须保留 Retina 原始像素，显式加 `--raw`；若需要保留完整色彩但仍缩放压缩，使用 `--truecolor`；沟通用小图统一调低上限。
 
 ```bash
 scripts/capture-macos-app-window.sh \
