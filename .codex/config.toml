@@ -1,0 +1,4 @@
+# K-ToME Codex workspace defaults.
+# Keep first-turn and plan-mode reasoning aligned with this repo's high-reasoning workflow.
+model_reasoning_effort = "xhigh"
+plan_mode_reasoning_effort = "xhigh"
