@@ -31,6 +31,7 @@ import com.ktome.core.snapshot.FrontstageActionCueSnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
@@ -518,6 +519,79 @@ class TileRendererCanvasTest {
         )
         val invalidCursorColor = UiDesignTokens.color.telegraph.high.color().toString()
         assertTrue(canvas.rectDraws.any { draw -> draw.color.toString() == invalidCursorColor })
+    }
+
+    @Test
+    fun `combat decision target cursor stays legal for free cursor inscriptions`() {
+        val targetState =
+            CombatDecisionFrameState(
+                phase = CombatDecisionPhase.TARGET,
+                selectedActionId = "inscription:5",
+                selectedMethodId = "default",
+                skippedMethod = true,
+            )
+        val overlayState =
+            OverlayState(
+                mode = UiMode.TARGETING,
+                targetingCursor = com.ktome.core.map.Point(0, 1),
+                modalFrames =
+                    listOf(
+                        ModalFrame(
+                            kind = ModalFrameKind.COMBAT_DECISION,
+                            localState =
+                                ModalFrameLocalState(
+                                    targetingCursor = com.ktome.core.map.Point(0, 1),
+                                    combatDecisionState = targetState,
+                                ),
+                        ),
+                    ),
+            )
+        val snapshot =
+            sampleSnapshot(
+                height = 2,
+                cells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 1,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                    ),
+                inscriptions =
+                    listOf(
+                        InscriptionSlotSnapshot(
+                            hotkey = 5,
+                            inscriptionId = "phase_door",
+                            nameKey = "inscription.phase_door.name",
+                            descKey = "inscription.phase_door.desc",
+                            iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                            categoryId = "MOVEMENT",
+                            cooldownRemaining = 0,
+                            maxCooldown = 10,
+                            requiresTarget = true,
+                        ),
+                    ),
+                targetablePositions = emptyList(),
+            )
+
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = overlayState,
+            )
+
+        assertEquals(TileTargetCursorState.LEGAL, model.targetCursorState)
     }
 
     @Test
@@ -1568,6 +1642,7 @@ class TileRendererCanvasTest {
         overlays: List<OverlayRenderSnapshot> = emptyList(),
         playerStatusEffects: List<StatusEffectRenderSnapshot> = emptyList(),
         talents: List<TalentSlotSnapshot> = emptyList(),
+        inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         inventory: List<InventoryEntrySnapshot> = emptyList(),
         targetablePositions: List<GridPointSnapshot> = listOf(GridPointSnapshot(0, 0)),
@@ -1651,6 +1726,7 @@ class TileRendererCanvasTest {
                     ),
                     equipment = emptyList(),
                     talents = talents,
+                    inscriptions = inscriptions,
                     reserveTalents = reserveTalents,
                     inventory = inventory,
                     targetablePositions = targetablePositions,

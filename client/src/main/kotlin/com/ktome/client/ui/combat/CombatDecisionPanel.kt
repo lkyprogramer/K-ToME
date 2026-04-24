@@ -24,6 +24,7 @@ internal data class CombatDecisionPanelRequest(
     val snapshot: RenderSnapshot,
     val state: CombatDecisionFrameState,
     val focusIndex: Int,
+    val targetCursor: com.ktome.core.map.Point? = null,
     val renderText: (RenderTextTokenSnapshot) -> String,
 )
 
@@ -111,7 +112,22 @@ internal object CombatDecisionPanel {
                     phaseIconKey = CombatAffordanceResourceKeys.TARGET_ICON,
                     confirmAudioCueKey = CombatAffordanceResourceKeys.TARGET_CONFIRM_AUDIO,
                     rows =
-                        if (targets.isEmpty()) {
+                        if (action?.usesFreeCursorTargeting() == true) {
+                            val cursor = request.targetCursor ?: CombatDecisionFrame.freeCursorTarget(snapshot, request.state, request.focusIndex)
+                            listOf(
+                                CombatDecisionPanelRow(
+                                    text =
+                                        localizer.text(
+                                            "ui.combat.target.tile",
+                                            "index" to 1,
+                                            "x" to cursor.x,
+                                            "y" to cursor.y,
+                                        ),
+                                    iconKey = CombatAffordanceResourceKeys.LOCK_ICON,
+                                    selected = true,
+                                ),
+                            )
+                        } else if (targets.isEmpty()) {
                             listOf(
                                 CombatDecisionPanelRow(
                                     text = localizer.text(CombatDecisionFeedbackKeys.NO_LEGAL_TARGET),

@@ -62,12 +62,6 @@ internal object ActionHintModelBuilder {
                         previewTurnsRemaining = overlay.previewTurns,
                     )
                 }
-        val missingTelegraphLinkage =
-            if (telegraphLinkage == null && snapshot.overlays.isNotEmpty()) {
-                missingFactToken
-            } else {
-                null
-            }
         val legalTargetSummary =
             if (action.requiresTarget) {
                 LegalTargetSummary(count = null, missingReason = missingFactToken)
@@ -122,7 +116,7 @@ internal object ActionHintModelBuilder {
             legalTargetSummary = legalTargetSummary,
             disabledReason = disabledReason,
             telegraphLinkage = telegraphLinkage,
-            missingFactReason = missingActionFact ?: missingTelegraphLinkage,
+            missingFactReason = missingActionFact,
         )
     }
 
