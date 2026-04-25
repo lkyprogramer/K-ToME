@@ -31,6 +31,31 @@ fun validationSeedCorpus(preset: ValidationPreset): List<Long> =
 fun validationPhase4Guide(preset: ValidationPreset): ValidationPhase4Guide =
     validationPresetGuideSpec(preset).phase4Guide
 
+fun validationPhase4Guide(summary: ValidationSummarySnapshot): ValidationPhase4Guide =
+    summary.scenarioId
+        ?.let(ValidationScenarioRegistry::find)
+        ?.let { scenario ->
+            ValidationPhase4Guide(
+                targetLabelKeys =
+                    listOf(
+                        "validation.phase4.v4.${scenario.id.value}.target",
+                    ),
+                quickPathLabelKeys =
+                    listOf(
+                        "validation.phase4.v4.${scenario.id.value}.quick.prepare",
+                        "validation.phase4.v4.${scenario.id.value}.quick.evidence",
+                    ),
+                evidenceLabelKeys =
+                    listOf(
+                        "validation.phase4.v4.${scenario.id.value}.evidence.bootstrap",
+                        "validation.phase4.v4.${scenario.id.value}.evidence.primary",
+                        "validation.phase4.v4.${scenario.id.value}.evidence.secondary",
+                        "validation.phase4.v4.${scenario.id.value}.evidence.summary",
+                    ),
+            )
+        }
+        ?: validationPhase4Guide(summary.preset)
+
 fun validationHiddenBindingForPreset(preset: ValidationPreset): SearchBindingId? =
     validationPresetGuideSpec(preset).hiddenBindingId
 

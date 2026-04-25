@@ -655,7 +655,7 @@ class GameAppLifecycleTest {
                 com.badlogic.gdx.Input.Keys.DOWN,
                 com.badlogic.gdx.Input.Keys.ENTER,
             )
-            repeat(11) {
+            repeat(12) {
                 input.push(com.badlogic.gdx.Input.Keys.DOWN)
             }
             input.push(com.badlogic.gdx.Input.Keys.ENTER)

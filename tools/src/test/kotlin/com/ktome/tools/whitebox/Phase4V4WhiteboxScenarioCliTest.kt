@@ -1,0 +1,115 @@
+package com.ktome.tools.whitebox
+
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.io.path.readText
+import kotlin.io.path.writeText
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+
+class Phase4V4WhiteboxScenarioCliTest {
+    @TempDir
+    lateinit var tempDir: Path
+
+    @Test
+    fun `missing scenario fails fast with legal ids`() {
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                Phase4V4WhiteboxScenarioCli.run(baseConfig(scenarioId = null))
+            }
+
+        assertTrue(exception.message?.contains("Missing -Pktome.whitebox.scenario") == true)
+        assertTrue(exception.message?.contains("phase4-v4-pr00-selftest") == true)
+    }
+
+    @Test
+    fun `valid scenario generates launch script runbook template evidence plan and executable hash`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "phase4-v4-pr00-selftest"),
+            )
+        val paths = result.paths
+
+        assertTrue(Files.isRegularFile(paths.launchScript))
+        assertTrue(Files.isRegularFile(paths.runbook))
+        assertTrue(Files.isRegularFile(paths.manualRecordTemplate))
+        assertTrue(Files.isRegularFile(paths.expectedEvidence))
+        assertTrue(Files.isRegularFile(paths.appExecutableSha256))
+        assertTrue(Files.isDirectory(paths.runtimeHome))
+        assertTrue(Files.isDirectory(paths.evidenceDir))
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("JAVA_TOOL_OPTIONS=\"-Duser.home=build/whitebox/phase4-v4-pr00-selftest/runtime-home"))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=phase4-v4-pr00-selftest"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.root=build/whitebox/phase4-v4-pr00-selftest"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.evidenceDir=build/whitebox/phase4-v4-pr00-selftest/evidence"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=docs/review/phase4/v4-pr/manual-records/phase4-v4-pr00-selftest.md"))
+        assertTrue(launchScript.contains("APP_EXECUTABLE_SHA256=\"${'$'}REPO_ROOT/build/whitebox/phase4-v4-pr00-selftest/app-executable.sha256\""))
+        assertTrue(launchScript.contains("APP_BUNDLE=\"${'$'}REPO_ROOT/client/build/release/K-ToME.app\""))
+        assertTrue(launchScript.contains("EXPECTED_HASH=\"$(awk '{print ${'$'}1}' \"${'$'}APP_EXECUTABLE_SHA256\")\""))
+        assertTrue(launchScript.contains("-Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"))
+        assertTrue(launchScript.contains("env JAVA_TOOL_OPTIONS=\"${'$'}JAVA_TOOL_OPTIONS\" open -n \"${'$'}APP_BUNDLE\""))
+        assertTrue(launchScript.contains("pgrep -f \"${'$'}APP_EXECUTABLE\" | head -1 > \"build/whitebox/phase4-v4-pr00-selftest/evidence/app.pid\""))
+        assertTrue(launchScript.contains("APP_HASH_MISMATCH"))
+        assertTrue(launchScript.contains("APP_LAUNCH_FAILED"))
+        assertFalseMachinePath(launchScript)
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("## 1. Scenario summary"))
+        assertTrue(runbook.contains("## 9. Failure retention"))
+        assertTrue(runbook.contains("| Step | Mode | Input | Expected visible result | Evidence file |"))
+        assertTrue(runbook.contains("| 5 | Keyboard | Right, Enter | Evidence summary shows expected paths, freshness, and app hash | `evidence/phase4-v4-pr00-evidence-summary.png` |"))
+        assertTrue(runbook.contains("docs/review/phase4/v4-pr/manual-records/phase4-v4-pr00-selftest.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"phase4-v4-pr00-selftest\""))
+        assertTrue(expectedEvidence.contains("\"manualRecordPath\": \"docs/review/phase4/v4-pr/manual-records/phase4-v4-pr00-selftest.md\""))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr00-scenario-bootstrap.png.metadata.txt"))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr00-scenario-bootstrap.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+
+        assertEquals(result.appHash, paths.appExecutableSha256.readText().substringBefore("  "))
+    }
+
+    @Test
+    fun `whitebox materialization catalog stays in parity with scenario registry`() {
+        val parity = Phase4V4WhiteboxScenarioMaterializationCatalog.validateRegistryParity()
+
+        assertTrue(
+            parity.isValid,
+            "missingFromMaterialization=${parity.missingFromMaterialization}, missingFromRegistry=${parity.missingFromRegistry}",
+        )
+    }
+
+    private fun baseConfig(scenarioId: String?): Phase4V4WhiteboxScenarioCliConfig {
+        val repoRoot = tempDir.resolve("repo")
+        val appExecutable = repoRoot.resolve("client/build/release/K-ToME.app/Contents/MacOS/K-ToME")
+        val scenarioYaml = repoRoot.resolve("tools/src/main/resources/phase4/whitebox/phase4-v4-scenarios.yaml")
+        Files.createDirectories(appExecutable.parent)
+        Files.createDirectories(scenarioYaml.parent)
+        appExecutable.writeText("fake packaged app")
+        scenarioYaml.writeText(
+            """
+            |scenarios:
+            |  - id: phase4-v4-pr00-selftest
+            |
+            """.trimMargin(),
+        )
+        return Phase4V4WhiteboxScenarioCliConfig(
+            repoRoot = repoRoot,
+            scenarioId = scenarioId,
+            appExecutable = appExecutable,
+            outputRoot = repoRoot.resolve("build/whitebox"),
+            scenarioYaml = scenarioYaml,
+        )
+    }
+
+    private fun assertFalseMachinePath(payload: String) {
+        assertTrue(!payload.contains("/Users/"))
+        assertTrue(!payload.contains("/tmp/"))
+    }
+}

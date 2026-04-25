@@ -10,6 +10,8 @@ import com.ktome.game.PlayerCreationState
 import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationScenarioDef
+import com.ktome.game.validation.ValidationScenarioRegistry
 import com.ktome.game.validation.ValidationSessionOptions
 import com.ktome.game.validation.validationSessionOptionsForPreset
 
@@ -26,6 +28,7 @@ internal enum class ValidationRouteMode {
 
 internal enum class ValidationSetupEntryId {
     PRESET,
+    SCENARIO,
     PROFESSION,
     RACE,
     SEED,
@@ -66,6 +69,7 @@ internal data class ValidationSetupContext(
     val zones: List<ValidationZoneOption>,
     val bossVariantIds: List<String>,
     val samplePackSelection: ContentPackSelection,
+    val scenarios: List<ValidationScenarioDef> = ValidationScenarioRegistry.all(),
     val continueEnabled: Boolean,
     val notice: String? = null,
 )
@@ -75,6 +79,7 @@ internal class ValidationSetupController(
     private val context: ValidationSetupContext,
 ) {
     private val presets: List<ValidationPreset> = ValidationPreset.entries
+    private val scenarioOptions: List<ValidationScenarioDef?> = listOf(null) + context.scenarios
     private val professionOptions =
         context.playerCreationState.professionOptions
             .filter { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }
@@ -88,6 +93,8 @@ internal class ValidationSetupController(
     private val entries: List<ValidationSetupEntryId> = ValidationSetupEntryId.entries
     private var selectedIndex: Int = 0
     private var presetIndex: Int = presets.indexOf(context.initialOptions.preset).takeIf { it >= 0 } ?: 0
+    private var scenarioIndex: Int =
+        scenarioOptions.indexOfFirst { scenario -> scenario?.id == context.initialOptions.scenarioId }.takeIf { it >= 0 } ?: 0
     private var professionIndex: Int =
         professionOptions.indexOfFirst { option -> option.id == context.initialOptions.foundationConfig.playerProfessionId }.takeIf { it >= 0 } ?: 0
     private var raceIndex: Int =
@@ -111,6 +118,9 @@ internal class ValidationSetupController(
     fun selectedEntry(): ValidationSetupEntryId = entries[selectedIndex]
 
     fun currentOptions(): ValidationSessionOptions {
+        selectedScenario()?.let { scenario ->
+            return scenario.toSessionOptions(context.samplePackSelection)
+        }
         val preset = presets[presetIndex]
         val baseOptions =
             validationSessionOptionsForPreset(
@@ -204,6 +214,7 @@ internal class ValidationSetupController(
     private fun adjustCurrentEntry(direction: Int): Boolean =
         when (selectedEntry()) {
             ValidationSetupEntryId.PRESET -> {
+                scenarioIndex = 0
                 val nextPresetIndex = (presetIndex + direction).floorMod(presets.size)
                 val nextPreset = presets[nextPresetIndex]
                 presetIndex = nextPresetIndex
@@ -228,22 +239,32 @@ internal class ValidationSetupController(
                 true
             }
 
+            ValidationSetupEntryId.SCENARIO -> {
+                scenarioIndex = (scenarioIndex + direction).floorMod(scenarioOptions.size)
+                selectedScenario()?.let(::applyScenario)
+                true
+            }
+
             ValidationSetupEntryId.PROFESSION -> {
+                scenarioIndex = 0
                 professionIndex = (professionIndex + direction).floorMod(professionOptions.size)
                 true
             }
 
             ValidationSetupEntryId.RACE -> {
+                scenarioIndex = 0
                 raceIndex = (raceIndex + direction).floorMod(raceOptions.size)
                 true
             }
 
             ValidationSetupEntryId.SEED -> {
+                scenarioIndex = 0
                 seed += direction.toLong()
                 true
             }
 
             ValidationSetupEntryId.ZONE -> {
+                scenarioIndex = 0
                 zoneIndex = (zoneIndex + direction).floorMod(zoneOptions.size)
                 if (routeMode == ValidationRouteMode.FOUNDATION_ROUTE && currentZone().id !in FOUNDATION_ZONE_ROUTE) {
                     routeMode = ValidationRouteMode.CURRENT_ZONE_ONLY
@@ -254,11 +275,13 @@ internal class ValidationSetupController(
             }
 
             ValidationSetupEntryId.FLOOR -> {
+                scenarioIndex = 0
                 floor = (floor + direction).coerceIn(1, currentZone().floorCount)
                 true
             }
 
             ValidationSetupEntryId.ROUTE -> {
+                scenarioIndex = 0
                 routeMode =
                     when (routeMode) {
                         ValidationRouteMode.CURRENT_ZONE_ONLY -> ValidationRouteMode.FOUNDATION_ROUTE
@@ -272,11 +295,13 @@ internal class ValidationSetupController(
             }
 
             ValidationSetupEntryId.ROUTE_INDEX -> {
+                scenarioIndex = 0
                 routeIndex = (routeIndex + direction).floorMod(currentZoneRoute().size)
                 true
             }
 
             ValidationSetupEntryId.BOSS_VARIANT_MODE -> {
+                scenarioIndex = 0
                 val modes = BossVariantSelectionMode.entries
                 val currentIndex = modes.indexOf(bossVariantMode).takeIf { it >= 0 } ?: 0
                 bossVariantMode = modes[(currentIndex + direction).floorMod(modes.size)]
@@ -287,11 +312,13 @@ internal class ValidationSetupController(
             }
 
             ValidationSetupEntryId.PREFERRED_VARIANT -> {
+                scenarioIndex = 0
                 preferredVariantIndex = (preferredVariantIndex + direction).floorMod(preferredVariantOptions.size)
                 true
             }
 
             ValidationSetupEntryId.SAMPLE_CONTENT_PACK -> {
+                scenarioIndex = 0
                 samplePackEnabled = !samplePackEnabled
                 true
             }
@@ -300,6 +327,25 @@ internal class ValidationSetupController(
             ValidationSetupEntryId.CONTINUE,
             ValidationSetupEntryId.BACK -> false
         }
+
+    private fun selectedScenario(): ValidationScenarioDef? = scenarioOptions[scenarioIndex]
+
+    private fun applyScenario(scenario: ValidationScenarioDef) {
+        val options = scenario.toSessionOptions(context.samplePackSelection)
+        presetIndex = presets.indexOf(options.preset).takeIf { it >= 0 } ?: presetIndex
+        professionIndex = professionOptions.indexOfFirst { option -> option.id == options.foundationConfig.playerProfessionId }.takeIf { it >= 0 } ?: professionIndex
+        raceIndex = raceOptions.indexOfFirst { option -> option.id == options.foundationConfig.playerRaceId }.takeIf { it >= 0 } ?: raceIndex
+        zoneIndex = zoneOptions.indexOfFirst { option -> option.id == options.foundationConfig.zoneId }.takeIf { it >= 0 } ?: zoneIndex
+        routeMode = inferRouteMode(options)
+        seed = options.foundationConfig.seed
+        floor = options.foundationConfig.floor
+        routeIndex = options.foundationConfig.routeIndex
+        bossVariantMode = options.foundationConfig.bossVariantSelectionMode
+        preferredVariantIndex = preferredVariantOptions.indexOf(options.foundationConfig.preferredBossVariantId).takeIf { it >= 0 } ?: 0
+        samplePackEnabled = options.contentPackSelection.activePackRoots.isNotEmpty()
+        clampFloor()
+        clampRouteIndex()
+    }
 
     private fun inferRouteMode(options: ValidationSessionOptions): ValidationRouteMode =
         if (options.foundationConfig.zoneRoute == FOUNDATION_ZONE_ROUTE) {

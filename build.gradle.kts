@@ -4,6 +4,7 @@ import org.gradle.api.tasks.Exec
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import com.ktome.build.testperf.TestPerfPlainTestBand
@@ -542,6 +543,28 @@ tasks.register("whiteBoxVerify") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs all currently registered unified white-box verification pilots."
     dependsOn("whiteBoxMapgen", "whiteBoxSolvability", "whiteBoxLoot", "whiteBoxHiddenContent", "whiteBoxContentPack")
+}
+
+tasks.register<JavaExec>("preparePhase4V4Whitebox") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Generates Phase4 v4 fast whitebox packaged-app launch material for one validation scenario."
+    dependsOn(":tools:classes", ":client:packageMacApp")
+    val toolsSourceSets = project(":tools").extensions.getByType(SourceSetContainer::class.java)
+    classpath = toolsSourceSets.named("main").get().runtimeClasspath
+    mainClass.set("com.ktome.tools.whitebox.Phase4V4WhiteboxScenarioCli")
+    val scenarioId = providers.gradleProperty("ktome.whitebox.scenario").orNull
+    args(
+        "--repo-root",
+        layout.projectDirectory.asFile.path,
+        "--scenario",
+        scenarioId ?: "",
+        "--app-executable",
+        layout.projectDirectory.file("client/build/release/K-ToME.app/Contents/MacOS/K-ToME").asFile.path,
+        "--output-root",
+        layout.buildDirectory.dir("whitebox").get().asFile.path,
+        "--scenario-yaml",
+        layout.projectDirectory.file("tools/src/main/resources/phase4/whitebox/phase4-v4-scenarios.yaml").asFile.path,
+    )
 }
 
 tasks.register("lootBalanceLab") {

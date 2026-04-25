@@ -2,32 +2,25 @@ package com.ktome.client.input
 
 import com.ktome.client.audio.AudioRouter
 import com.ktome.client.ui.combat.CombatDecisionValidationSurface
+import com.ktome.client.validation.ValidationScenarioPresentationCatalog
+import com.ktome.client.validation.validationScenarioRequiredEvidenceKeys
 import com.ktome.core.map.Point
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.validation.ValidationAction
+import com.ktome.game.validation.ValidationOverlaySection
 import com.ktome.game.validation.ValidationPhase4Guide
 import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioId
 import com.ktome.game.validation.ValidationSummarySnapshot
 import com.ktome.game.validation.hasMeaningfulNextSeedRestart
 import com.ktome.game.validation.validationHiddenBindingForPreset
 import com.ktome.game.validation.validationPhase4Guide
+import java.util.concurrent.ConcurrentHashMap
 
 enum class ValidationOverlayAvailability {
     DISABLED,
     ENABLED,
-}
-
-enum class ValidationOverlaySection(
-    val titleKey: String,
-) {
-    RESTART(titleKey = "ui.validation.section.restart"),
-    PR05_COMBAT(titleKey = "ui.validation.section.pr05_combat"),
-    TRAVEL(titleKey = "ui.validation.section.travel"),
-    RECOVERY(titleKey = "ui.validation.section.recovery"),
-    ENCOUNTER(titleKey = "ui.validation.section.encounter"),
-    TERRAIN(titleKey = "ui.validation.section.terrain"),
-    REWARD_AND_ITEM(titleKey = "ui.validation.section.reward_and_item"),
-    DISCOVERY(titleKey = "ui.validation.section.discovery"),
 }
 
 data class ValidationOverlayCursor(
@@ -40,11 +33,14 @@ data class ValidationOverlayCursor(
     val rewardAndItemSelection: Int = 0,
     val discoverySelection: Int = 0,
     val pr05CombatSelection: Int = 0,
+    val phase4V4FastSelection: Int = 0,
 ) {
-    fun moveSection(delta: Int): ValidationOverlayCursor {
-        val sections = ValidationOverlaySection.entries
+    fun moveSection(
+        delta: Int,
+        sections: List<ValidationOverlaySection> = ValidationOverlaySection.entries,
+    ): ValidationOverlayCursor {
         val currentIndex = sections.indexOf(selectedSection)
-        val nextIndex = (currentIndex + delta).coerceIn(0, sections.lastIndex)
+        val nextIndex = (currentIndex.coerceAtLeast(0) + delta).coerceIn(0, sections.lastIndex)
         return copy(selectedSection = sections[nextIndex])
     }
 
@@ -66,6 +62,7 @@ data class ValidationOverlayCursor(
             ValidationOverlaySection.REWARD_AND_ITEM -> rewardAndItemSelection
             ValidationOverlaySection.DISCOVERY -> discoverySelection
             ValidationOverlaySection.PR05_COMBAT -> pr05CombatSelection
+            ValidationOverlaySection.PHASE4_V4_FAST -> phase4V4FastSelection
         }
 
     private fun withActionIndex(
@@ -81,6 +78,7 @@ data class ValidationOverlayCursor(
             ValidationOverlaySection.REWARD_AND_ITEM -> copy(rewardAndItemSelection = index)
             ValidationOverlaySection.DISCOVERY -> copy(discoverySelection = index)
             ValidationOverlaySection.PR05_COMBAT -> copy(pr05CombatSelection = index)
+            ValidationOverlaySection.PHASE4_V4_FAST -> copy(phase4V4FastSelection = index)
         }
 }
 
@@ -100,12 +98,19 @@ data class ValidationOverlayPanelState(
     val zoneNameKey: String,
     val inspectCursor: Point,
     val phase4Guide: ValidationPhase4Guide,
+    val scenarioContext: ValidationOverlayScenarioContext?,
     val sections: List<ValidationOverlaySectionState>,
+)
+
+data class ValidationOverlayScenarioContext(
+    val titleKey: String,
+    val requiredEvidenceKeys: List<String>,
 )
 
 data class ValidationOverlaySelection(
     val preset: ValidationPreset,
     val restartNextSeedEnabled: Boolean,
+    val scenarioId: ValidationScenarioId? = null,
     val section: ValidationOverlaySection,
     val index: Int,
     val inspectCursor: Point,
@@ -119,6 +124,7 @@ internal enum class ValidationOverlayRestartMode {
 internal data class ValidationOverlayDescriptorScope(
     val preset: ValidationPreset,
     val restartMode: ValidationOverlayRestartMode,
+    val scenarioId: ValidationScenarioId? = null,
 )
 
 internal data class ValidationOverlayActionDescriptor(
@@ -131,6 +137,61 @@ internal data class ValidationOverlayActionDescriptor(
             ?: error("Validation action $labelKey is client-only and cannot be dispatched to the game session.")
 }
 
+internal data class ValidationOverlayDescriptorPlan(
+    val scope: ValidationOverlayDescriptorScope,
+    val sections: List<ValidationOverlaySection>,
+    val descriptorsBySection: Map<ValidationOverlaySection, List<ValidationOverlayActionDescriptor>>,
+) {
+    fun descriptors(section: ValidationOverlaySection): List<ValidationOverlayActionDescriptor> =
+        descriptorsBySection[section].orEmpty()
+
+    fun actionDescriptor(
+        section: ValidationOverlaySection,
+        index: Int,
+    ): ValidationOverlayActionDescriptor? = descriptors(section).getOrNull(index)
+
+    fun actionCount(section: ValidationOverlaySection): Int = descriptors(section).size
+
+    fun sectionStates(cursor: ValidationOverlayCursor): List<ValidationOverlaySectionState> =
+        sections.map { section ->
+            val selectedIndex = cursor.actionIndex(section)
+            ValidationOverlaySectionState(
+                titleKey = section.titleKey,
+                selected = cursor.selectedSection == section,
+                actions =
+                    descriptors(section).mapIndexed { index, descriptor ->
+                        ValidationOverlayActionState(
+                            labelKey = descriptor.labelKey,
+                            selected = cursor.selectedSection == section && selectedIndex == index,
+                        )
+                    },
+            )
+        }
+
+    companion object {
+        fun build(scope: ValidationOverlayDescriptorScope): ValidationOverlayDescriptorPlan {
+            val descriptorsBySection =
+                ValidationOverlaySection.entries
+                    .mapNotNull { section ->
+                        val descriptors = buildValidationOverlayActionDescriptors(scope = scope, section = section)
+                        section.takeIf { descriptors.isNotEmpty() }?.let { it to descriptors }
+                    }.toMap()
+            return ValidationOverlayDescriptorPlan(
+                scope = scope,
+                sections = descriptorsBySection.keys.toList(),
+                descriptorsBySection = descriptorsBySection,
+            )
+        }
+    }
+}
+
+internal object ValidationOverlayDescriptorPlanCache {
+    private val plans = ConcurrentHashMap<ValidationOverlayDescriptorScope, ValidationOverlayDescriptorPlan>()
+
+    fun plan(scope: ValidationOverlayDescriptorScope): ValidationOverlayDescriptorPlan =
+        plans.computeIfAbsent(scope) { key -> ValidationOverlayDescriptorPlan.build(key) }
+}
+
 class ValidationCommandSource(
     private val session: FoundationGameSession,
     private val delegate: CommandSource =
@@ -141,6 +202,7 @@ class ValidationCommandSource(
                     validationPreset = requireNotNull(session.validationSummarySnapshot()).preset,
                     validationRestartNextSeedEnabled =
                         requireNotNull(session.validationSummarySnapshot()).hasMeaningfulNextSeedRestart(),
+                    validationScenarioId = requireNotNull(session.validationSummarySnapshot()).scenarioId,
                 ),
         ),
 ) : CommandSource by delegate, AudioRouterAwareCommandSource {
@@ -172,9 +234,19 @@ internal fun enrichValidationOverlayState(
                 summary = summary,
                 zoneNameKey = snapshot.metadata.zoneNameKey,
                 inspectCursor = inspectCursor,
-                phase4Guide = validationPhase4Guide(summary.preset),
+                phase4Guide = validationPhase4Guide(summary),
+                scenarioContext = validationOverlayScenarioContext(summary),
                 sections = buildValidationOverlaySections(summary, cursor),
             ),
+    )
+}
+
+private fun validationOverlayScenarioContext(summary: ValidationSummarySnapshot): ValidationOverlayScenarioContext? {
+    val scenarioId = summary.scenarioId ?: return null
+    val presentation = ValidationScenarioPresentationCatalog.find(scenarioId) ?: return null
+    return ValidationOverlayScenarioContext(
+        titleKey = presentation.titleKey,
+        requiredEvidenceKeys = validationScenarioRequiredEvidenceKeys(scenarioId),
     )
 }
 
@@ -187,44 +259,32 @@ internal fun validationOverlayAction(
 internal fun validationOverlayActionDescriptor(
     selection: ValidationOverlaySelection,
 ): ValidationOverlayActionDescriptor? =
-    validationOverlayActionDescriptors(
-        scope =
-            ValidationOverlayDescriptorScope(
-                preset = selection.preset,
-                restartMode = selection.restartMode(),
-            ),
-        section = selection.section,
-    ).getOrNull(selection.index)
+    ValidationOverlayDescriptorPlanCache
+        .plan(selection.descriptorScope())
+        .actionDescriptor(section = selection.section, index = selection.index)
 
 private fun buildValidationOverlaySections(
     summary: ValidationSummarySnapshot,
     cursor: ValidationOverlayCursor,
-): List<ValidationOverlaySectionState> =
-    ValidationOverlaySection.entries.map { section ->
-        val selectedIndex = cursor.actionIndex(section)
-        val actionDescriptors =
-            validationOverlayActionDescriptors(
-                scope =
-                    ValidationOverlayDescriptorScope(
-                        preset = summary.preset,
-                        restartMode = summary.restartMode(),
-                    ),
-                section = section,
-            )
-        ValidationOverlaySectionState(
-            titleKey = section.titleKey,
-            selected = cursor.selectedSection == section,
-            actions =
-                actionDescriptors.mapIndexed { index, descriptor ->
-                    ValidationOverlayActionState(
-                        labelKey = descriptor.labelKey,
-                        selected = cursor.selectedSection == section && selectedIndex == index,
-                    )
-                },
+): List<ValidationOverlaySectionState> {
+    val scope =
+        ValidationOverlayDescriptorScope(
+            preset = summary.preset,
+            restartMode = summary.restartMode(),
+            scenarioId = summary.scenarioId,
         )
-    }
+    return ValidationOverlayDescriptorPlanCache.plan(scope).sectionStates(cursor)
+}
 
-internal fun validationOverlayActionDescriptors(
+internal fun availableValidationOverlaySections(scope: ValidationOverlayDescriptorScope): List<ValidationOverlaySection> =
+    ValidationOverlayDescriptorPlanCache.plan(scope).sections
+
+internal fun validationOverlayActionCount(
+    scope: ValidationOverlayDescriptorScope,
+    section: ValidationOverlaySection,
+): Int = ValidationOverlayDescriptorPlanCache.plan(scope).actionCount(section)
+
+private fun buildValidationOverlayActionDescriptors(
     scope: ValidationOverlayDescriptorScope,
     section: ValidationOverlaySection,
 ): List<ValidationOverlayActionDescriptor> =
@@ -380,6 +440,21 @@ internal fun validationOverlayActionDescriptors(
                     combatDecisionSurface = CombatDecisionValidationSurface.MISSING_FACT,
                 ),
             )
+
+        ValidationOverlaySection.PHASE4_V4_FAST ->
+            scope.scenarioId?.let { scenarioId ->
+                ValidationScenarioActionId.entries.map { actionId ->
+                    ValidationOverlayActionDescriptor(
+                        labelKey = "ui.validation.action.phase4_v4.${actionId.value}",
+                        buildAction = {
+                            ValidationAction.Phase4V4ScenarioAction(
+                                scenarioId = scenarioId,
+                                actionId = actionId,
+                            )
+                        },
+                    )
+                }
+            }.orEmpty()
     }
 
 private fun ValidationOverlaySelection.restartMode(): ValidationOverlayRestartMode =
@@ -388,6 +463,13 @@ private fun ValidationOverlaySelection.restartMode(): ValidationOverlayRestartMo
     } else {
         ValidationOverlayRestartMode.SAME_PRESET_ONLY
     }
+
+private fun ValidationOverlaySelection.descriptorScope(): ValidationOverlayDescriptorScope =
+    ValidationOverlayDescriptorScope(
+        preset = preset,
+        restartMode = restartMode(),
+        scenarioId = scenarioId,
+    )
 
 private fun ValidationSummarySnapshot.restartMode(): ValidationOverlayRestartMode =
     if (hasMeaningfulNextSeedRestart()) {

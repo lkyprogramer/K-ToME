@@ -6,6 +6,7 @@ import com.ktome.client.ui.layout.ModalFrame
 import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.client.ui.layout.ModalStack
 import com.ktome.client.ui.layout.PaneFocusAnchor
+import com.ktome.client.validation.ValidationScenarioPresentationCatalog
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
@@ -31,7 +32,10 @@ import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.validation.ValidationOverlaySection
 import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationScenarioId
+import com.ktome.game.validation.ValidationScenarioRegistry
 import com.ktome.game.validation.ValidationSessionRequest
 import com.ktome.game.validation.validationSessionOptionsForPreset
 import java.nio.file.Path
@@ -70,6 +74,34 @@ class InputHandlerTest {
         assertNull(enabledHandler.pollCommand(validationSession.renderSnapshot()))
         assertEquals(UiMode.VALIDATION, enabledHandler.overlayState().mode)
         assertEquals(ValidationOverlaySection.RESTART, enabledHandler.overlayState().validationCursor?.selectedSection)
+    }
+
+    @Test
+    fun `scenario validation overlay starts at scenario initial section`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr00-selftest"))
+        val input = ReplayInputSource()
+        val handler =
+            InputHandler(
+                input = input,
+                validationOverlayAvailability = ValidationOverlayAvailability.ENABLED,
+                validationPreset = scenario.runtime.preset,
+                validationScenarioId = scenario.id,
+            )
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-overlay-scenario-save")),
+                    options = validationSessionOptionsForPreset(scenario.runtime.preset),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+
+        assertEquals(
+            ValidationScenarioPresentationCatalog.require(scenario.id).initialOverlaySection,
+            handler.overlayState().validationCursor?.selectedSection,
+        )
     }
 
     @Test
@@ -216,21 +248,19 @@ class InputHandlerTest {
             )
 
         cases.forEach { (preset, restartNextSeedEnabled) ->
-            ValidationOverlaySection.entries.forEach { section ->
-                val descriptors =
-                    validationOverlayActionDescriptors(
-                        scope =
-                            ValidationOverlayDescriptorScope(
-                                preset = preset,
-                                restartMode =
-                                    if (restartNextSeedEnabled) {
-                                        ValidationOverlayRestartMode.NEXT_SEED_ENABLED
-                                    } else {
-                                        ValidationOverlayRestartMode.SAME_PRESET_ONLY
-                                    },
-                            ),
-                        section = section,
-                    )
+            val scope =
+                ValidationOverlayDescriptorScope(
+                    preset = preset,
+                    restartMode =
+                        if (restartNextSeedEnabled) {
+                            ValidationOverlayRestartMode.NEXT_SEED_ENABLED
+                        } else {
+                            ValidationOverlayRestartMode.SAME_PRESET_ONLY
+                        },
+                )
+            val plan = ValidationOverlayDescriptorPlanCache.plan(scope)
+            availableValidationOverlaySections(scope).forEach { section ->
+                val descriptors = plan.descriptors(section)
                 assertTrue(descriptors.isNotEmpty(), "Expected actions for $preset / $section")
                 descriptors.forEachIndexed { index, descriptor ->
                     if (descriptor.buildAction != null) {

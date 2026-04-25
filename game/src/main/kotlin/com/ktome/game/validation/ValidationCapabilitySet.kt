@@ -8,6 +8,7 @@ enum class ValidationActionFamily {
     TERRAIN,
     REWARD_AND_ITEM,
     DISCOVERY,
+    PHASE4_V4_FAST,
 }
 
 data class ValidationCapabilitySet(
@@ -18,6 +19,7 @@ data class ValidationCapabilitySet(
     val terrain: Boolean = true,
     val rewardAndItem: Boolean = true,
     val discovery: Boolean = true,
+    val phase4V4Fast: Boolean = true,
 ) {
     fun allows(family: ValidationActionFamily): Boolean =
         when (family) {
@@ -28,6 +30,7 @@ data class ValidationCapabilitySet(
             ValidationActionFamily.TERRAIN -> terrain
             ValidationActionFamily.REWARD_AND_ITEM -> rewardAndItem
             ValidationActionFamily.DISCOVERY -> discovery
+            ValidationActionFamily.PHASE4_V4_FAST -> phase4V4Fast
         }
 
     companion object {
