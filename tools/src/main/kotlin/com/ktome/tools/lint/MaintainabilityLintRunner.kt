@@ -31,12 +31,14 @@ private val packageDeclarationRegex: Regex = Regex("""(?m)^[ \t]*package\s+([A-Z
 private val importDeclarationRegex: Regex =
     Regex("""(?m)^[ \t]*import\s+([A-Za-z_][A-Za-z0-9_.*`]+)(?:\s+as\s+([A-Za-z_][A-Za-z0-9_]*))?\s*$""")
 private const val DECLARATION_ANNOTATION_PREFIX: String =
-    """(?:@[A-Za-z_][A-Za-z0-9_.]*(?:\([^)\n]*\))?\s*)*"""
+    """(?:@[A-Za-z_][A-Za-z0-9_.]*(?:\([^)\n]*\))?[ \t]*)*"""
+private const val DECLARATION_MODIFIER_PATTERN: String =
+    """(?:public|internal|private|protected|sealed|data|value|annotation|abstract|open|final|enum|expect|actual|companion|[ \t])*"""
 
 private val topLevelContainerDeclarationRegex: Regex =
     Regex(
         pattern =
-            """(?m)^[ \t]*$DECLARATION_ANNOTATION_PREFIX(?<modifiers>(?:public|internal|private|protected|sealed|data|value|annotation|abstract|open|final|enum|expect|actual|companion|\s)*)\b(?:class|interface|object)\s+(?<name>[A-Za-z_][A-Za-z0-9_]*)\b""",
+            """(?m)^[ \t]*$DECLARATION_ANNOTATION_PREFIX(?<modifiers>$DECLARATION_MODIFIER_PATTERN)\b(?:class|interface|object)\s+(?<name>[A-Za-z_][A-Za-z0-9_]*)\b""",
     )
 
 private val maintainabilityJson: Json =
@@ -105,12 +107,12 @@ internal object MaintainabilityLintRunner {
     private val helperTypeDeclarationRegex: Regex =
         Regex(
             pattern =
-                """(?m)^[ \t]*$DECLARATION_ANNOTATION_PREFIX(?:public|internal|private|protected|sealed|data|value|annotation|abstract|open|final|enum|expect|actual|companion|\s)*\b(?:class|interface|object)\s+([A-Za-z_][A-Za-z0-9_]*)\b""",
+                """(?m)^[ \t]*$DECLARATION_ANNOTATION_PREFIX$DECLARATION_MODIFIER_PATTERN\b(?:class|interface|object)\s+([A-Za-z_][A-Za-z0-9_]*)\b""",
         )
     private val declarationRegex: Regex =
         Regex(
             pattern =
-                """(?m)^[ \t]*$DECLARATION_ANNOTATION_PREFIX(?:public|internal|private|protected|override|open|abstract|suspend|operator|infix|inline|tailrec|external|final|actual|expect|sealed|data|value|enum|annotation|companion|\s)*\b(fun|class|interface|object)\b""",
+                """(?m)^[ \t]*$DECLARATION_ANNOTATION_PREFIX(?:public|internal|private|protected|override|open|abstract|suspend|operator|infix|inline|tailrec|external|final|actual|expect|sealed|data|value|enum|annotation|companion|[ \t])*\b(fun|class|interface|object)\b""",
         )
 
     fun run(): MaintainabilityLintRun {
