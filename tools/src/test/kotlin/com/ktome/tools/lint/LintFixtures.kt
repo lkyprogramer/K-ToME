@@ -4,6 +4,8 @@ import com.ktome.core.talent.DynamicDescriptionResolver
 import com.ktome.core.talent.KeywordRegistry
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.UiGlyphCatalog
+import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioRegistry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -24,10 +26,10 @@ internal object LintFixtures {
             },
         )
     private val localeKeyCallPattern =
-        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*=\s*)?"((?:ui|log|tile|terrain|actor|stairs|status|ai|profession|race|inscription|talent_tree|talent|monster|boss|zone|shop|difficulty|material|affix|item|interactable|objective|mutation|prop)\.[A-Za-z0-9_.-]+)""""
+        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*=\s*)?"((?:ui|log|tile|terrain|actor|stairs|status|ai|profession|race|inscription|talent_tree|talent|monster|boss|zone|shop|difficulty|material|affix|item|interactable|objective|mutation|prop|validation\.phase4\.v4)\.[A-Za-z0-9_.-]+)""""
             .toRegex()
     private val directLocaleLiteralPattern =
-        """"((?:ui|log|stairs|status|ai|damage_type|terrain)\.[A-Za-z0-9_.-]+|(?:actor|profession|race|inscription|talent_tree|talent|monster|boss|shop|difficulty|material|affix|interactable|prop)\.[A-Za-z0-9_.-]+\.(?:name|desc|role|resource_hint)|mutation\.[A-Za-z0-9_.-]+\.(?:name|desc)|zone\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|zone\.mechanic_hint\.[A-Za-z0-9_.-]+|objective\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.step\.[A-Za-z0-9_.-]+|item\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|item\.(?:quality|display)\.[A-Za-z0-9_.-]+|monster\.tag\.[A-Za-z0-9_.-]+)""""
+        """"((?:ui|log|stairs|status|ai|damage_type|terrain|validation\.phase4\.v4)\.[A-Za-z0-9_.-]+|(?:actor|profession|race|inscription|talent_tree|talent|monster|boss|shop|difficulty|material|affix|interactable|prop)\.[A-Za-z0-9_.-]+\.(?:name|desc|role|resource_hint)|mutation\.[A-Za-z0-9_.-]+\.(?:name|desc)|zone\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|zone\.mechanic_hint\.[A-Za-z0-9_.-]+|objective\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.step\.[A-Za-z0-9_.-]+|item\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|item\.(?:quality|display)\.[A-Za-z0-9_.-]+|monster\.tag\.[A-Za-z0-9_.-]+)""""
             .toRegex()
     private val keywordMarkupPattern = Regex("\\[\\[([a-z0-9_]+)]]")
 
@@ -119,6 +121,7 @@ internal object LintFixtures {
             }
             addAll(DynamicDescriptionResolver.BREAKPOINT_TEMPLATE_KEYS)
             addAll(bossVariantLocaleKeys())
+            addAll(validationScenarioLocaleKeys())
         }
     }
 
@@ -199,4 +202,21 @@ internal object LintFixtures {
             add("boss.variant.unknown.name")
         }
     }
+
+    private fun validationScenarioLocaleKeys(): Set<String> =
+        buildSet {
+            ValidationScenarioActionId.entries.forEach { actionId ->
+                add("ui.validation.action.phase4_v4.${actionId.value}")
+            }
+            ValidationScenarioRegistry.all().forEach { scenario ->
+                val prefix = "validation.phase4.v4.${scenario.id.value}"
+                add("$prefix.target")
+                add("$prefix.quick.prepare")
+                add("$prefix.quick.evidence")
+                add("$prefix.evidence.bootstrap")
+                add("$prefix.evidence.primary")
+                add("$prefix.evidence.secondary")
+                add("$prefix.evidence.summary")
+            }
+        }
 }

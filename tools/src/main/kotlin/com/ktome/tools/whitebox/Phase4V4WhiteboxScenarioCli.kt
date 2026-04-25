@@ -128,15 +128,25 @@ object Phase4V4WhiteboxScenarioCli {
             |  echo "zone=${runtime.zoneId}"
             |  echo "floor=${runtime.floor}"
             |} > "$evidenceDir/app.log"
+            |BEFORE_PIDS="$(pgrep -f "${'$'}APP_EXECUTABLE" || true)"
             |JAVA_TOOL_OPTIONS="-Duser.home=$runtimeHome -Dktome.validation.scenario=${scenario.id.value} -Dktome.whitebox.root=$whiteboxRoot -Dktome.whitebox.evidenceDir=$evidenceDir -Dktome.whitebox.manualRecord=$manualRecord -Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"
             |env JAVA_TOOL_OPTIONS="${'$'}JAVA_TOOL_OPTIONS" open -n "${'$'}APP_BUNDLE"
-            |sleep 2
-            |pgrep -f "${'$'}APP_EXECUTABLE" | head -1 > "$evidenceDir/app.pid"
-            |APP_PID="$(cat "$evidenceDir/app.pid")"
+            |APP_PID=""
+            |for _ in {1..20}; do
+            |  CANDIDATE_PIDS="$(pgrep -f "${'$'}APP_EXECUTABLE" || true)"
+            |  for PID in ${'$'}CANDIDATE_PIDS; do
+            |    if ! printf '%s\n' "${'$'}BEFORE_PIDS" | grep -qx "${'$'}PID"; then
+            |      APP_PID="${'$'}PID"
+            |      break 2
+            |    fi
+            |  done
+            |  sleep 0.5
+            |done
             |if [ -z "${'$'}APP_PID" ]; then
             |  echo "APP_LAUNCH_FAILED app=$appExecutable" >&2
             |  exit 21
             |fi
+            |printf '%s\n' "${'$'}APP_PID" > "$evidenceDir/app.pid"
             |echo "Started K-ToME scenario ${scenario.id.value} pid=${'$'}APP_PID"
             |
         """.trimMargin()
