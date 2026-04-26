@@ -25,11 +25,14 @@ import com.ktome.client.screen.GameOverScreen
 import com.ktome.client.screen.ContinueAvailability
 import com.ktome.client.screen.ContinueUnavailableReasonCode
 import com.ktome.client.screen.MainMenuScreen
+import com.ktome.client.screen.ValidationScenarioBootstrap
+import com.ktome.client.screen.ValidationScenarioBootstrapResult
 import com.ktome.client.screen.ValidationSetupContext
 import com.ktome.client.screen.ValidationSetupScreen
 import com.ktome.client.screen.ValidationZoneOption
 import com.ktome.client.screen.UiErrorScreen
 import com.ktome.client.screen.VictoryScreen
+import com.ktome.client.screen.validationScenarioErrorState
 import com.ktome.client.ui.state.UiErrorState
 import com.ktome.client.ui.state.UiLoadingState
 import com.ktome.core.profile.AvailabilityContext
@@ -166,7 +169,23 @@ class GameApp(
         if (assetError != null) {
             showAssetContractError(assetError)
         } else {
-            showMainMenu(saveCurrent = false)
+            when (
+                val scenarioBootstrap =
+                    ValidationScenarioBootstrap.resolve(
+                        samplePackSelection = validationSamplePackSelectionProvider(),
+                    )
+            ) {
+                ValidationScenarioBootstrapResult.NotRequested -> showMainMenu(saveCurrent = false)
+
+                is ValidationScenarioBootstrapResult.Start -> {
+                    currentLocale = scenarioBootstrap.scenario.runtime.locale
+                    currentLocalizer = localizationBundle.translator(currentLocale)
+                    startValidationSession(scenarioBootstrap.options)
+                }
+
+                is ValidationScenarioBootstrapResult.Error ->
+                    showValidationScenarioError(scenarioBootstrap)
+            }
         }
     }
 
@@ -486,6 +505,21 @@ class GameApp(
                         showAssetContractError(retryError)
                     }
                 },
+                backToMenu = {
+                    showMainMenu(saveCurrent = false, notice = errorState.payload.detail)
+                },
+                renderEnabled = renderEnabled,
+            ),
+        )
+    }
+
+    private fun showValidationScenarioError(error: ValidationScenarioBootstrapResult.Error) {
+        val errorState = validationScenarioErrorState(error, currentLocalizer)
+        replaceScreen(
+            UiErrorScreen(
+                app = this,
+                errorState = errorState,
+                retry = { create() },
                 backToMenu = {
                     showMainMenu(saveCurrent = false, notice = errorState.payload.detail)
                 },

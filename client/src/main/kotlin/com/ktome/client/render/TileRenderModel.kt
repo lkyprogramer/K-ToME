@@ -1352,6 +1352,15 @@ internal object TileRenderModelBuilder {
         panel.phase4Guide.evidenceLabelKeys.forEach { labelKey ->
             rows += TileTextRow("  ${localizer.text(labelKey)}", TileTextTone.LIGHT_GRAY)
         }
+        panel.scenarioContext?.requiredEvidenceKeys.orEmpty().forEach { evidencePath ->
+            rows += TileTextRow("  $evidencePath", TileTextTone.LIGHT_GRAY)
+        }
+        panel.summary.scenarioEvidenceSummary?.let { evidenceSummary ->
+            rows += TileTextRow(localizer.text("ui.validation.phase4.v4.evidence_summary"), TileTextTone.GOLD)
+            validationScenarioEvidenceSummaryLines(localizer, evidenceSummary).forEach { row ->
+                rows += TileTextRow("  $row", TileTextTone.LIGHT_GRAY)
+            }
+        }
         rows += TileTextRow(localizer.text("ui.controls.validation"), TileTextTone.LIGHT_GRAY)
         panel.sections.forEach { section ->
             rows +=

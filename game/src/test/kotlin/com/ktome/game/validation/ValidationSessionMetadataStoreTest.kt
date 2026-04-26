@@ -70,6 +70,29 @@ class ValidationSessionMetadataStoreTest {
     }
 
     @Test
+    fun `legacy metadata without phase4 v4 capability restores default enabled`() {
+        val saveManager = SaveManager(tempDir.resolve("validation/legacy-save"))
+        val options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = saveManager,
+                    options = options,
+                ),
+            )
+
+        assertTrue(session.saveOnExit())
+        val metadataFile = saveManager.savePath().parent.resolve(ValidationSessionMetadataStore.DEFAULT_FILE_NAME)
+        Files.writeString(
+            metadataFile,
+            Files.readString(metadataFile).replace(",\"phase4V4Fast\":true", ""),
+        )
+
+        val restored = requireNotNull(loadPersistedValidationSessionOptions(saveManager))
+        assertTrue(restored.capabilities.phase4V4Fast)
+    }
+
+    @Test
     fun `existing validation save without metadata fails fast`() {
         val saveManager = SaveManager(tempDir.resolve("validation/save"))
         val session =

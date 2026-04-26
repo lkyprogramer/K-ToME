@@ -58,6 +58,9 @@ data class ValidationSessionOptions(
     val contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
     val capabilities: ValidationCapabilitySet = ValidationCapabilitySet.ALL_ENABLED,
     val profileRunPersistenceMode: ProfileRunPersistenceMode = ProfileRunPersistenceMode.NO_OP,
+    val scenarioId: ValidationScenarioId? = null,
+    val scenarioRouteIndex: Int? = null,
+    val scenarioEvidenceSummary: ValidationScenarioEvidenceSummary? = null,
 )
 
 data class ValidationSessionRequest(

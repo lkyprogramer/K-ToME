@@ -755,6 +755,15 @@ internal object AsciiRenderModelBuilder {
         panel.phase4Guide.evidenceLabelKeys.forEach { labelKey ->
             lines += AsciiTextLine("  ${localizer.text(labelKey)}", AsciiTextTone.LIGHT_GRAY)
         }
+        panel.scenarioContext?.requiredEvidenceKeys.orEmpty().forEach { evidencePath ->
+            lines += AsciiTextLine("  $evidencePath", AsciiTextTone.LIGHT_GRAY)
+        }
+        panel.summary.scenarioEvidenceSummary?.let { evidenceSummary ->
+            lines += AsciiTextLine(localizer.text("ui.validation.phase4.v4.evidence_summary"), AsciiTextTone.GOLD)
+            validationScenarioEvidenceSummaryLines(localizer, evidenceSummary).forEach { line ->
+                lines += AsciiTextLine("  $line", AsciiTextTone.LIGHT_GRAY)
+            }
+        }
         lines += AsciiTextLine(localizer.text("ui.controls.validation"), AsciiTextTone.LIGHT_GRAY)
         panel.sections.forEach { section ->
             lines +=

@@ -58,7 +58,7 @@ internal class UiErrorScreen(
         font.draw(batch, app.text(errorState.detail), 40f, y)
         y -= 60f
         errorState.actions.forEach { action ->
-            font.draw(batch, uiErrorActionLabel(action, app::text), 40f, y)
+            font.draw(batch, uiErrorActionLabel(action, app::text, errorState.copyDetailLabelKey), 40f, y)
             y -= 32f
         }
         batch.end()
@@ -111,10 +111,11 @@ internal class UiErrorScreen(
 internal fun uiErrorActionLabel(
     action: ModalCardAction,
     text: (String) -> String,
+    copyDetailLabelKey: String = ModalCardAction.COPY_ERROR_DETAIL.labelKey,
 ): String =
     when (action) {
         ModalCardAction.RETRY -> "R - ${text(action.labelKey)}"
         ModalCardAction.BACK_TO_MENU -> "Esc - ${text(action.labelKey)}"
-        ModalCardAction.COPY_ERROR_DETAIL -> "C - ${text(action.labelKey)}"
+        ModalCardAction.COPY_ERROR_DETAIL -> "C - ${text(copyDetailLabelKey)}"
         else -> text(action.labelKey)
     }

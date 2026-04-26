@@ -168,6 +168,7 @@ data class ValidationCapabilitySnapshot(
     val terrain: Boolean = true,
     val rewardAndItem: Boolean = true,
     val discovery: Boolean = true,
+    val phase4V4Fast: Boolean = true,
 ) {
     fun toValidationCapabilitySet(): ValidationCapabilitySet =
         ValidationCapabilitySet(
@@ -178,6 +179,7 @@ data class ValidationCapabilitySnapshot(
             terrain = terrain,
             rewardAndItem = rewardAndItem,
             discovery = discovery,
+            phase4V4Fast = phase4V4Fast,
         )
 }
 
@@ -210,6 +212,7 @@ private class ValidationSessionMetadataCodec(
                         terrain = capabilities.requireBoolean("terrain"),
                         rewardAndItem = capabilities.requireBoolean("rewardAndItem"),
                         discovery = capabilities.requireBoolean("discovery"),
+                        phase4V4Fast = capabilities.optionalBoolean("phase4V4Fast", defaultValue = true),
                     )
                 },
             profileRunPersistenceModeId = root.requireString("profileRunPersistenceModeId"),
@@ -233,6 +236,7 @@ private fun ValidationSessionOptions.toMetadataSnapshot(): ValidationSessionMeta
                 terrain = capabilities.terrain,
                 rewardAndItem = capabilities.rewardAndItem,
                 discovery = capabilities.discovery,
+                phase4V4Fast = capabilities.phase4V4Fast,
             ),
         profileRunPersistenceModeId = profileRunPersistenceMode.name,
         bossVariantSelectionModeId = foundationConfig.bossVariantSelectionMode.name,
@@ -263,6 +267,7 @@ private fun ValidationCapabilitySnapshot.toJson(): JsonObject =
             "terrain" to JsonPrimitive(terrain),
             "rewardAndItem" to JsonPrimitive(rewardAndItem),
             "discovery" to JsonPrimitive(discovery),
+            "phase4V4Fast" to JsonPrimitive(phase4V4Fast),
         ),
     )
 
@@ -281,6 +286,15 @@ private fun JsonObject.requireInt(fieldName: String): Int =
 private fun JsonObject.requireBoolean(fieldName: String): Boolean =
     this[fieldName]?.jsonPrimitive?.booleanOrNull
         ?: throw IllegalArgumentException("Validation metadata field '$fieldName' must be a boolean.")
+
+private fun JsonObject.optionalBoolean(
+    fieldName: String,
+    defaultValue: Boolean,
+): Boolean {
+    val element = this[fieldName] ?: return defaultValue
+    return (element as? JsonPrimitive)?.booleanOrNull
+        ?: throw IllegalArgumentException("Validation metadata field '$fieldName' must be a boolean.")
+}
 
 private fun JsonObject.requireLongArray(fieldName: String): List<Long> =
     (this[fieldName] as? JsonArray)?.mapIndexed { index, element ->

@@ -286,6 +286,8 @@ import com.ktome.game.validation.ValidationAction
 import com.ktome.game.validation.ValidationActionFamily
 import com.ktome.game.validation.ProfileRunPersistenceMode
 import com.ktome.game.validation.persistValidationSessionMetadata
+import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioRegistry
 import com.ktome.game.validation.ValidationSessionOptions
 import com.ktome.game.validation.ValidationSummarySnapshot
 import com.ktome.game.validation.hasMeaningfulNextSeedRestart
@@ -556,6 +558,7 @@ class FoundationGameSession internal constructor(
     private var renderSnapshotRevision: Long = 1L
     private var cachedRenderSnapshot: RenderSnapshot? = null
     private var lastValidationResult: RenderTextTokenSnapshot? = null
+    private var validationScenarioEvidenceSummaryOpen: Boolean = false
     private var pendingValidationRestartOptions: ValidationSessionOptions? = null
     private var cachedCurrentBuildHash: String? = null
     private var cachedCommittedBuildHash: String? = null
@@ -928,6 +931,13 @@ class FoundationGameSession internal constructor(
                 bossVariantModeId = options.foundationConfig.bossVariantSelectionMode.name,
                 preferredBossVariantId = options.foundationConfig.preferredBossVariantId,
                 lastResult = lastValidationResult,
+                scenarioId = options.scenarioId,
+                scenarioEvidenceSummary =
+                    if (validationScenarioEvidenceSummaryOpen) {
+                        options.scenarioEvidenceSummary
+                    } else {
+                        null
+                    },
             )
         }
 
@@ -949,7 +959,12 @@ class FoundationGameSession internal constructor(
                 TalentAllocationPlanner.hasPendingChanges(liveRanks = loadout.talentLevels, draft = talentDraft())
             } == true
 
-    fun saveOnExit(): Boolean = if (runOutcome.isTerminal) false else persistRun()
+    fun saveOnExit(): Boolean =
+        if (runOutcome.isTerminal || validationSessionOptions?.scenarioId != null) {
+            false
+        } else {
+            persistRun()
+        }
 
     internal fun automationWorld(): World = world
 
@@ -1395,8 +1410,86 @@ class FoundationGameSession internal constructor(
             ValidationAction.ExecuteSearch -> executeValidationSearch()
 
             is ValidationAction.RevealBinding -> revealValidationBinding(action.bindingId)
+
+            is ValidationAction.Phase4V4ScenarioAction -> executePhase4V4ScenarioAction(options, action)
         }
     }
+
+    private fun executePhase4V4ScenarioAction(
+        options: ValidationSessionOptions,
+        action: ValidationAction.Phase4V4ScenarioAction,
+    ): CommandResolution {
+        val activeScenarioId =
+            options.scenarioId
+                ?: return rejectValidationScenarioAction(
+                    scenarioId = action.scenarioId.value,
+                    actionId = action.actionId.value,
+                    result = "missing_scenario_session",
+                )
+        if (activeScenarioId != action.scenarioId) {
+            return rejectValidationScenarioAction(
+                scenarioId = action.scenarioId.value,
+                actionId = action.actionId.value,
+                result = "scenario_mismatch",
+            )
+        }
+        val scenario = ValidationScenarioRegistry.require(activeScenarioId)
+        return when (action.actionId) {
+            ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+            ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+            -> acceptValidationScenarioAction(
+                scenarioId = scenario.id.value,
+                actionId = action.actionId.value,
+                result = "ok",
+            )
+
+            ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY -> {
+                validationScenarioEvidenceSummaryOpen = true
+                acceptValidationScenarioAction(
+                    scenarioId = scenario.id.value,
+                    actionId = action.actionId.value,
+                    result = "evidence_summary_opened",
+                )
+            }
+
+            ValidationScenarioActionId.RESET_SCENARIO ->
+                queueValidationRestart(
+                    options =
+                        scenario.toSessionOptions(
+                            samplePackSelection = options.contentPackSelection,
+                            evidenceSummary = options.scenarioEvidenceSummary,
+                        ),
+                    key = "log.validation.phase4_v4.action",
+                    literalArg("scenarioId", scenario.id.value),
+                    literalArg("actionId", action.actionId.value),
+                    literalArg("result", "reset_queued"),
+                )
+        }
+    }
+
+    private fun acceptValidationScenarioAction(
+        scenarioId: String,
+        actionId: String,
+        result: String,
+    ): CommandResolution =
+        acceptValidationAction(
+            "log.validation.phase4_v4.action",
+            literalArg("scenarioId", scenarioId),
+            literalArg("actionId", actionId),
+            literalArg("result", result),
+        )
+
+    private fun rejectValidationScenarioAction(
+        scenarioId: String,
+        actionId: String,
+        result: String,
+    ): CommandResolution =
+        rejectValidationAction(
+            "log.validation.phase4_v4.action",
+            literalArg("scenarioId", scenarioId),
+            literalArg("actionId", actionId),
+            literalArg("result", result),
+        )
 
     private fun triggerBossTelegraphForValidation(): CommandResolution {
         val bossId =

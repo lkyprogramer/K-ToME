@@ -21,7 +21,7 @@ class ValidationSetupControllerTest {
         val input = ValidationQueueInputSource()
         val controller = ValidationSetupController(input = input, context = setupContext())
 
-        repeat(10) {
+        repeat(11) {
             input.push(Keys.DOWN)
             controller.pollAction()
         }
@@ -56,7 +56,7 @@ class ValidationSetupControllerTest {
         val input = ValidationQueueInputSource()
         val controller = ValidationSetupController(input = input, context = setupContext())
 
-        repeat(11) {
+        repeat(12) {
             input.push(Keys.DOWN)
             controller.pollAction()
         }
@@ -67,6 +67,25 @@ class ValidationSetupControllerTest {
         val action = result.action as ValidationSetupAction.StartSession
         assertEquals(ValidationPreset.MAPGEN_DIFF, action.options.preset)
         assertEquals("greenwood_fringe", action.options.foundationConfig.zoneId)
+    }
+
+    @Test
+    fun `scenario entry fills fixed phase4 v4 session options`() {
+        val input = ValidationQueueInputSource()
+        val controller = ValidationSetupController(input = input, context = setupContext())
+
+        input.push(Keys.DOWN)
+        controller.pollAction()
+        input.push(Keys.RIGHT)
+        controller.pollAction()
+
+        val options = controller.currentOptions()
+
+        assertEquals("phase4-v4-pr00-selftest", options.scenarioId?.value)
+        assertEquals(ValidationPreset.MAPGEN_DIFF, options.preset)
+        assertEquals(2026042430L, options.foundationConfig.seed)
+        assertEquals("vanguard", options.foundationConfig.playerProfessionId)
+        assertEquals("human", options.foundationConfig.playerRaceId)
     }
 
     private fun setupContext(): ValidationSetupContext =

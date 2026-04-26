@@ -13,6 +13,7 @@ import com.ktome.client.ui.layout.ModalFrameLocalState
 import com.ktome.client.ui.layout.ModalStack
 import com.ktome.client.ui.layout.PaneFocusAnchor
 import com.ktome.client.ui.layout.PaneFocusController
+import com.ktome.client.validation.ValidationScenarioPresentationCatalog
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
@@ -23,7 +24,9 @@ import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.PrimaryStat
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.PlayerCommand
+import com.ktome.game.validation.ValidationOverlaySection
 import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationScenarioId
 
 enum class UiMode {
     MAP,
@@ -79,6 +82,7 @@ class InputHandler(
     private val validationOverlayAvailability: ValidationOverlayAvailability = ValidationOverlayAvailability.DISABLED,
     private val validationPreset: ValidationPreset = ValidationPreset.CUSTOM,
     private val validationRestartNextSeedEnabled: Boolean = false,
+    private val validationScenarioId: ValidationScenarioId? = null,
 ) {
     private val uiMessageDisplayFrames = 90
     private val overlayCloseBindings = listOf(Keys.F)
@@ -128,7 +132,7 @@ class InputHandler(
     private var validationCombatDecisionSurface: CombatDecisionValidationSurface? = null
     private var inspectCursor: Point? = null
     private var explainPaneOpen: Boolean = false
-    private var validationCursor: ValidationOverlayCursor = ValidationOverlayCursor()
+    private var validationCursor: ValidationOverlayCursor = defaultValidationCursor()
     private var heldMovementKey: Int? = null
     private var movementRepeatCountdown: Int = repeatInitialDelayFrames
     private val modalStack = ModalStack()
@@ -624,11 +628,11 @@ class InputHandler(
         }
 
         if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
-            validationCursor = validationCursor.moveSection(delta = -1)
+            validationCursor = validationCursor.moveSection(delta = -1, sections = availableValidationSections())
             return null
         }
         if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
-            validationCursor = validationCursor.moveSection(delta = 1)
+            validationCursor = validationCursor.moveSection(delta = 1, sections = availableValidationSections())
             return null
         }
         if (input.isKeyJustPressed(Keys.LEFT) || input.isKeyJustPressed(Keys.A)) {
@@ -666,10 +670,11 @@ class InputHandler(
                     ValidationOverlaySelection(
                         preset = validationPreset,
                         restartNextSeedEnabled = validationRestartNextSeedEnabled,
+                        scenarioId = validationScenarioId,
                         section = ValidationOverlaySection.PR05_COMBAT,
                         index = directSelection - 1,
                         inspectCursor = cursor,
-                )
+                    )
                 validationOverlayActionDescriptor(selection)?.combatDecisionSurface?.let { surface ->
                     validationCursor = validationCursor.copy(pr05CombatSelection = directSelection - 1)
                     openValidationCombatDecisionSurface(snapshot, surface)
@@ -687,6 +692,7 @@ class InputHandler(
                 ValidationOverlaySelection(
                     preset = validationPreset,
                     restartNextSeedEnabled = validationRestartNextSeedEnabled,
+                    scenarioId = validationScenarioId,
                     section = validationCursor.selectedSection,
                     index = validationCursor.actionIndex(validationCursor.selectedSection),
                     inspectCursor = cursor,
@@ -1352,19 +1358,34 @@ class InputHandler(
     }
 
     private fun validationActionCount(section: ValidationOverlaySection): Int =
-        validationOverlayActionDescriptors(
-            scope =
-                ValidationOverlayDescriptorScope(
-                    preset = validationPreset,
-                    restartMode =
-                        if (validationRestartNextSeedEnabled) {
-                            ValidationOverlayRestartMode.NEXT_SEED_ENABLED
-                        } else {
-                            ValidationOverlayRestartMode.SAME_PRESET_ONLY
-                        },
-                ),
+        validationOverlayActionCount(
+            scope = validationDescriptorScope(),
             section = section,
-        ).size
+        )
+
+    private fun availableValidationSections(): List<ValidationOverlaySection> =
+        availableValidationOverlaySections(validationDescriptorScope())
+
+    private fun validationDescriptorScope(): ValidationOverlayDescriptorScope =
+        ValidationOverlayDescriptorScope(
+            preset = validationPreset,
+            restartMode =
+                if (validationRestartNextSeedEnabled) {
+                    ValidationOverlayRestartMode.NEXT_SEED_ENABLED
+                } else {
+                    ValidationOverlayRestartMode.SAME_PRESET_ONLY
+                },
+            scenarioId = validationScenarioId,
+        )
+
+    private fun defaultValidationCursor(): ValidationOverlayCursor =
+        validationScenarioId?.let { scenarioId ->
+            ValidationOverlayCursor(
+                selectedSection =
+                    ValidationScenarioPresentationCatalog.find(scenarioId)?.initialOverlaySection
+                        ?: ValidationOverlaySection.PHASE4_V4_FAST,
+            )
+        } ?: ValidationOverlayCursor()
 
     private fun enterLoadoutEdit(snapshot: RenderSnapshot) {
         loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
@@ -1718,7 +1739,7 @@ class InputHandler(
                 modalStack.clear()
                 paneFocusController.onPassiveTakeover()
                 mode = UiMode.VALIDATION
-                validationCursor = ValidationOverlayCursor()
+                validationCursor = defaultValidationCursor()
                 inspectCursor = inspectCursor ?: defaultInspectCursor(snapshot)
                 explainPaneOpen = false
                 resetMovementRepeat()

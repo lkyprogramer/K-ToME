@@ -12,6 +12,8 @@ data class ValidationSummarySnapshot(
     val bossVariantModeId: String,
     val preferredBossVariantId: String?,
     val lastResult: RenderTextTokenSnapshot?,
+    val scenarioId: ValidationScenarioId? = null,
+    val scenarioEvidenceSummary: ValidationScenarioEvidenceSummary? = null,
 )
 
 fun ValidationSummarySnapshot.hasMeaningfulNextSeedRestart(): Boolean =

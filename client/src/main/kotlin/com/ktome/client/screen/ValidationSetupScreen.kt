@@ -12,7 +12,9 @@ import com.ktome.client.bossVariantModeLabelKey
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.validation.ValidationScenarioPresentationCatalog
 import com.ktome.game.elites.BossVariantSelectionMode
+import com.ktome.game.validation.ValidationScenarioId
 import com.ktome.game.validation.ValidationSessionOptions
 
 internal data class ValidationSetupTextSnapshot(
@@ -130,6 +132,10 @@ internal class ValidationSetupScreen(
             listOf(
                 app.text("ui.validation.entry.preset", "value" to localizer.text(options.preset.titleKey)),
                 app.text(
+                    "ui.validation.entry.scenario",
+                    "value" to scenarioLabel(options.scenarioId),
+                ),
+                app.text(
                     "ui.validation.entry.profession",
                     "value" to app.text("profession.${options.foundationConfig.playerProfessionId}.name"),
                 ),
@@ -177,6 +183,12 @@ internal class ValidationSetupScreen(
         } else {
             app.text("ui.validation.route.foundation")
         }
+
+    private fun scenarioLabel(scenarioId: ValidationScenarioId?): String {
+        scenarioId ?: return app.text("ui.validation.none")
+        val titleKey = ValidationScenarioPresentationCatalog.find(scenarioId)?.titleKey
+        return titleKey?.let(app::text) ?: scenarioId.value
+    }
 
     private fun bossVariantModeLabel(mode: BossVariantSelectionMode): String =
         app.text(bossVariantModeLabelKey(mode.name))

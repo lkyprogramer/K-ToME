@@ -160,4 +160,11 @@ sealed interface ValidationAction {
     ) : ValidationAction {
         override val family: ValidationActionFamily = ValidationActionFamily.DISCOVERY
     }
+
+    data class Phase4V4ScenarioAction(
+        val scenarioId: ValidationScenarioId,
+        val actionId: ValidationScenarioActionId,
+    ) : ValidationAction {
+        override val family: ValidationActionFamily = ValidationActionFamily.PHASE4_V4_FAST
+    }
 }

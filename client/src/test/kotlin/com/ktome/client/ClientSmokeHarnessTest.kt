@@ -54,6 +54,7 @@ import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.MainMenuTextSnapshot
+import com.ktome.client.screen.ValidationSetupEntryId
 import com.ktome.client.screen.ValidationSetupScreen
 import com.ktome.core.save.AssetVersionContract
 import com.ktome.core.save.SaveManager
@@ -333,20 +334,7 @@ class ClientSmokeHarnessTest {
         withHeadlessGdx {
             val menuInput =
                 ScriptedInputSource(
-                    Keys.DOWN,
-                    Keys.ENTER,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.DOWN,
-                    Keys.ENTER,
+                    *validationSetupStartKeys(),
                 )
             val app =
                 GameApp(
@@ -380,6 +368,16 @@ class ClientSmokeHarnessTest {
             }
         }
     }
+
+    private fun validationSetupStartKeys(): IntArray =
+        buildList {
+            add(Keys.DOWN)
+            add(Keys.ENTER)
+            repeat(ValidationSetupEntryId.entries.indexOf(ValidationSetupEntryId.START)) {
+                add(Keys.DOWN)
+            }
+            add(Keys.ENTER)
+        }.toIntArray()
 
     @Test
     @Tag("clientSmoke")

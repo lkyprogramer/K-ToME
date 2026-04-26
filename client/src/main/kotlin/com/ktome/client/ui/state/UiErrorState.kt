@@ -24,6 +24,7 @@ internal data class UiErrorState(
     val heading: RenderTextTokenSnapshot,
     val detail: RenderTextTokenSnapshot,
     val actions: List<ModalCardAction>,
+    val copyDetailLabelKey: String = ModalCardAction.COPY_ERROR_DETAIL.labelKey,
     val payload: UiErrorPayload,
 ) {
     init {
@@ -32,6 +33,7 @@ internal data class UiErrorState(
         require(actions.containsAll(defaultActions)) {
             "UiErrorState must expose Retry, Back To Menu, and Copy Error Detail actions."
         }
+        require(copyDetailLabelKey.isNotBlank()) { "UiErrorState.copyDetailLabelKey must not be blank." }
     }
 
     companion object {
