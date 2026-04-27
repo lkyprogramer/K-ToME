@@ -238,6 +238,18 @@ internal object LongRunKernelCache {
             lateRunReliquaryTagDistribution = payload.requiredObject("lateRunReliquaryTagDistribution").entries.associate { (tag, count) -> tag to count.jsonPrimitive.content.toInt() },
             affixSynergyActivationCount = payload.requiredString("affixSynergyActivationCount").toInt(),
             affixSynergyActivationDistribution = payload.requiredObject("affixSynergyActivationDistribution").entries.associate { (affixId, count) -> affixId to count.jsonPrimitive.content.toInt() },
+            starterProfessionTalentCount = payload.optionalInt("starterProfessionTalentCount"),
+            learnedTalentChoiceEventCount = payload.optionalInt("learnedTalentChoiceEventCount"),
+            learnableNonStarterTalentCount = payload.optionalInt("learnableNonStarterTalentCount"),
+            breakpointChoiceEventCount = payload.optionalInt("breakpointChoiceEventCount"),
+            breakpointPreviewAvailable = payload.optionalBoolean("breakpointPreviewAvailable"),
+            talentTreeInvestmentByTree = payload.optionalObject("talentTreeInvestmentByTree").entries.associate { (treeId, points) -> treeId to points.jsonPrimitive.content.toInt() },
+            talentTreePrimaryInvestmentTreeId = payload["talentTreePrimaryInvestmentTreeId"]?.jsonPrimitive?.contentOrNull,
+            talentTreePrimaryInvestmentPoints = payload.optionalInt("talentTreePrimaryInvestmentPoints"),
+            multiTreeInvestmentAboveThreshold = payload.optionalBoolean("multiTreeInvestmentAboveThreshold"),
+            talentReserveSwapCount = payload.optionalInt("talentReserveSwapCount"),
+            rankBreakpointAdoptionByTalent = payload.optionalObject("rankBreakpointAdoptionByTalent").entries.associate { (talentId, count) -> talentId to count.jsonPrimitive.content.toInt() },
+            autoLearnedNonStarterTalentCount = payload.optionalInt("autoLearnedNonStarterTalentCount"),
             goalReached = payload.requiredString("goalReached").toBooleanStrict(),
             failureReason = payload["failureReason"]?.jsonPrimitive?.contentOrNull,
             stuckReason = payload["stuckReason"]?.jsonPrimitive?.contentOrNull,
@@ -364,6 +376,12 @@ internal object LongRunKernelCache {
     private fun JsonObject.requiredArray(key: String) = getValue(key).jsonArray
 
     private fun JsonObject.requiredObject(key: String) = getValue(key).jsonObject
+
+    private fun JsonObject.optionalObject(key: String): JsonObject = this[key]?.jsonObject ?: JsonObject(emptyMap())
+
+    private fun JsonObject.optionalInt(key: String): Int = this[key]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
+
+    private fun JsonObject.optionalBoolean(key: String): Boolean = this[key]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false
 }
 
-private const val LONGRUN_KERNEL_CACHE_VERSION: String = "uvr-pr05-longrun-kernel-v3"
+private const val LONGRUN_KERNEL_CACHE_VERSION: String = "phase4-v4-pr01-profession-tree-run-choice-v4"

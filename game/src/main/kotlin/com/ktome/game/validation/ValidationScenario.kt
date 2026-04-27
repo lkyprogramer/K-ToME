@@ -50,6 +50,7 @@ data class ValidationScenarioEvidenceSummary(
     val runbookPath: String,
     val appExecutableSha256Path: String,
     val appExecutableSha256: String?,
+    val requiredLogEventKeys: List<String> = emptyList(),
     val producerFreshnessLabelKey: String = "validation.phase4.v4.evidence.producer_freshness.not_applicable",
 ) {
     init {
@@ -59,6 +60,9 @@ data class ValidationScenarioEvidenceSummary(
         require(expectedEvidencePath.isNotBlank()) { "Validation scenario evidence summary must declare expectedEvidencePath." }
         require(runbookPath.isNotBlank()) { "Validation scenario evidence summary must declare runbookPath." }
         require(appExecutableSha256Path.isNotBlank()) { "Validation scenario evidence summary must declare appExecutableSha256Path." }
+        require(requiredLogEventKeys.all(String::isNotBlank)) {
+            "Validation scenario evidence summary requiredLogEventKeys must not contain blank entries."
+        }
         require(producerFreshnessLabelKey.isNotBlank()) { "Validation scenario evidence summary must declare producerFreshnessLabelKey." }
     }
 }
@@ -152,6 +156,7 @@ data class ValidationScenarioEvidenceSpec(
     val requiredEvidenceFiles: List<String>,
     val cuaSteps: List<ValidationScenarioEvidenceStep>,
     val manualRecordPath: String,
+    val requiredLogEventKeys: List<String> = emptyList(),
 ) {
     init {
         require(requiredEvidenceFiles.count { evidenceFile -> evidenceFile.endsWith(".png") } >= 4) {
@@ -165,5 +170,8 @@ data class ValidationScenarioEvidenceSpec(
             "Validation scenario evidence CUA steps must reference required evidence files."
         }
         require(manualRecordPath.isNotBlank()) { "Validation scenario evidence must declare manualRecordPath." }
+        require(requiredLogEventKeys.all(String::isNotBlank)) {
+            "Validation scenario evidence requiredLogEventKeys must not contain blank entries."
+        }
     }
 }

@@ -18,6 +18,8 @@ import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.RouteSelectionSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.core.snapshot.TalentTreeNodeSnapshot
+import com.ktome.core.snapshot.TalentTreeSnapshot
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.InventoryItemView
 import com.ktome.game.PlayerResourceView
@@ -26,6 +28,8 @@ import com.ktome.game.PlayerCommand
 import com.ktome.game.SecondaryPlayerResourceView
 import com.ktome.game.TalentReserveView
 import com.ktome.game.TalentSlotView
+import com.ktome.game.TalentTreeNodeView
+import com.ktome.game.TalentTreeView
 import com.ktome.game.validation.ValidationAction
 import com.ktome.core.talent.TalentTreeOwnerType
 import java.nio.file.Files
@@ -174,6 +178,7 @@ object RunObservationCapture {
                 },
             talentSlots = uiState.talents.map(::toTalentSlotView),
             reserveTalents = uiState.reserveTalents.map(::toTalentReserveView),
+            talentTrees = uiState.talentTrees.map(::toTalentTreeView),
             canAscend = session.canAscend(),
             canDescend = session.canDescend(),
             runOutcome = session.runOutcome(),
@@ -299,6 +304,31 @@ private fun toTalentReserveView(snapshot: TalentReserveSnapshot): TalentReserveV
         hasPendingAllocation = snapshot.hasPendingAllocation,
     )
 
+private fun toTalentTreeView(snapshot: TalentTreeSnapshot): TalentTreeView =
+    TalentTreeView(
+        treeId = snapshot.treeId,
+        ownerType = TalentTreeOwnerType.valueOf(snapshot.ownerType),
+        treeOwnerId = snapshot.treeOwnerId,
+        nameKey = snapshot.nameKey,
+        nodes = snapshot.nodes.map(::toTalentTreeNodeView),
+    )
+
+private fun toTalentTreeNodeView(snapshot: TalentTreeNodeSnapshot): TalentTreeNodeView =
+    TalentTreeNodeView(
+        talentId = snapshot.talentId,
+        treeId = snapshot.treeId,
+        ownerType = TalentTreeOwnerType.valueOf(snapshot.ownerType),
+        treeOwnerId = snapshot.treeOwnerId,
+        nameKey = snapshot.nameKey,
+        category = snapshot.category,
+        state = snapshot.state,
+        level = snapshot.rank,
+        committedLevel = snapshot.committedRank,
+        maxLevel = snapshot.maxRank,
+        unlockLevel = snapshot.unlockLevel,
+        hasPendingAllocation = snapshot.hasPendingAllocation,
+    )
+
 fun RunObservation.signature(): String =
     buildString {
         append(floor)
@@ -334,6 +364,14 @@ fun RunObservation.signature(): String =
         append(
             reserveTalents.joinToString(separator = ",") { talent ->
                 "${talent.talentId}:${talent.level}:${talent.committedLevel}:${talent.hasPendingAllocation}:${talent.currentCooldown}"
+            },
+        )
+        append('|')
+        append(
+            talentTrees.joinToString(separator = ",") { tree ->
+                tree.nodes.joinToString(separator = ";") { node ->
+                    "${tree.treeId}:${node.talentId}:${node.state}:${node.level}:${node.committedLevel}:${node.hasPendingAllocation}"
+                }
             },
         )
         append('|')
@@ -493,6 +531,7 @@ fun renderCommand(command: PlayerCommand): String =
         is PlayerCommand.AssignStat -> "AssignStat(${command.stat.name})"
         is PlayerCommand.AssignTalent -> "AssignTalent(${command.talentId})"
         is PlayerCommand.RespecTalentTree -> "RespecTalentTree(${command.ownerType},${command.treeOwnerId})"
+        is PlayerCommand.ConfirmTalentDraftReplacingSlot -> "ConfirmTalentDraftReplacingSlot(${command.slot})"
         is PlayerCommand.Validation -> "Validation(${command.action})"
         else -> command.commandName()
     }
@@ -521,6 +560,8 @@ fun PlayerCommand.consumesTurn(): Boolean =
         is PlayerCommand.AssignTalent,
         is PlayerCommand.RespecTalentTree,
         PlayerCommand.ConfirmTalentDraft,
+        PlayerCommand.ConfirmTalentDraftToReserve,
+        is PlayerCommand.ConfirmTalentDraftReplacingSlot,
         PlayerCommand.RollbackTalentDraft,
         PlayerCommand.SaveGame,
         -> false

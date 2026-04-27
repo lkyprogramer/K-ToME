@@ -5,6 +5,14 @@ import org.junit.jupiter.api.Test
 
 class TalentAllocationDraftTest {
     @Test
+    fun `loadout reports missing talents as rank zero`() {
+        val loadout = TalentLoadout(talentLevels = linkedMapOf("power_strike" to 1))
+
+        assertEquals(1, loadout.levelOf("power_strike"))
+        assertEquals(0, loadout.levelOf("war_cry"))
+    }
+
+    @Test
     fun `preview computes pending deltas without mutating live ranks`() {
         val liveRanks = linkedMapOf("power_strike" to 1, "charge" to 2)
         val minimumRanks = linkedMapOf("power_strike" to 1, "charge" to 1)

@@ -593,6 +593,9 @@ tasks.register<VerificationTask>("contentPackHarness") {
     outputDir.set(contentPackOwnerOutputDir)
     systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
     systemPropertiesMap.put("ktome.phase4.contentPack.reportDir", contentPackOwnerOutputDir.get().asFile.absolutePath)
+    doNotTrackState("contentPackHarness must stay fresh when paired with whiteBoxContentPack artifact freshness checks.")
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
 }
 
 tasks.register<VerificationTask>("whiteBoxMapgen") {
@@ -760,6 +763,7 @@ val phase4OwnerBaselineInputs =
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-loot-local-reward-identity-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-24-phase4-profession-tree-run-choice-owner-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-16-phase4-boss-phase-identity-owner-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-terrain-per-zone-lower-bound-baseline.json",

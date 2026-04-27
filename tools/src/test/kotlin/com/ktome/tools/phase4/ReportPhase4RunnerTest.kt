@@ -48,7 +48,7 @@ class ReportPhase4RunnerTest {
             assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-            assertEquals("31", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+            assertEquals("39", payload.getValue("ownerMetricCount").jsonPrimitive.content)
             assertEquals(
                 ownerMetrics.count { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "UNEXPECTED_REGRESSION" }.toString(),
                 payload.getValue("unexpectedRegressionCount").jsonPrimitive.content,
@@ -65,7 +65,7 @@ class ReportPhase4RunnerTest {
             assertTrue(payload.containsKey("artifactReuseRate"))
             assertTrue(payload.containsKey("topInvalidationReasons"))
             assertEquals(14, inputs.size)
-            assertEquals(31, ownerMetrics.size)
+            assertEquals(39, ownerMetrics.size)
 
             val terrainInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
@@ -178,7 +178,7 @@ class ReportPhase4RunnerTest {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("31", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals("39", comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }

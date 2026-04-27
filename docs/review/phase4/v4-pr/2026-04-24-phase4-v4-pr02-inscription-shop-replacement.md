@@ -59,6 +59,12 @@
 - `client/src/main/kotlin/com/ktome/client/audio/AudioRouter.kt`
 - `tools/src/main/kotlin/com/ktome/tools/phase4/**`
 
+PR-01 继承约束：
+
+1. 本 PR 修改 `InputHandler` 或 renderer 时，不得改变 `TalentSidebarPresenter` 作为 talent tree sidebar 单一 presentation authority 的边界。
+2. `AsciiRenderModel` / `TileRenderModel` 中不得恢复 talent tree 文案、glyph、rank label、preview、active-slot-choice 或 footer 拼装逻辑；它们只能继续消费 `TalentSidebarLine.role` 并映射 tone / icon。
+3. 铭文替换 UI 可新增自己的 modal/card presentation，但不得复用或改写 PR-01 的 active-slot-choice modal 语义；`1~4` 仍只属于 active talent slot choice，铭文槽继续使用 inscription hotkey 空间。
+
 数据与文档：
 
 - `game/src/main/resources/data/inscriptions/index.yaml`
@@ -84,6 +90,7 @@
 4. 不把铭文变成背包物品。
 5. 不提供旧铭文出售或返还金币。
 6. 不引入数值型局外成长。
+7. 不重组 Talent tree sidebar presenter，不改 `TalentTreeNodeSnapshot.category` typed enum 合同。
 
 ## 4. 资源要求
 

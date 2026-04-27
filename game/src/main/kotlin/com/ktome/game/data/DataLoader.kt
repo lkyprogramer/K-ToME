@@ -166,6 +166,7 @@ import com.ktome.game.data.schema.TalentTreeSchemaV2
 import com.ktome.game.data.schema.WorldGraphSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.data.schema.ZoneConnectionSchemaV2
+import com.ktome.game.TalentProgression
 import com.ktome.game.contentpack.ContentPackResources
 import com.ktome.game.contentpack.ContentPackLoadException
 import com.ktome.game.contentpack.ContentPackRuntimeResolver
@@ -359,8 +360,82 @@ class DataLoader(
             zoneRewardProfiles = zoneRewardProfiles,
             visualKeys = parseStringIdSet(loadYamlMap("/data/visuals/index.yaml"), "visuals"),
             audioProfiles = parseStringIdSet(loadYamlMap("/data/audio/index.yaml"), "audioProfiles"),
-        )
+        ).also(::validateProfessionTreeRunChoiceContract)
     }
+
+    private fun validateProfessionTreeRunChoiceContract(catalog: SchemaCatalog) {
+        val talentsById = catalog.talents.associateBy(TalentSchemaV2::id)
+        val treesById = catalog.talentTrees.associateBy(TalentTreeSchemaV2::id)
+        catalog.professions.forEach { profession ->
+            profession.talentTrees.forEach { treeId ->
+                require('.' !in treeId) {
+                    "Profession '${profession.id}' talent tree '$treeId' must keep repository-native underscore ids; dot-format ids are not allowed."
+                }
+            }
+            val isFrozen = "frozen" in profession.tags
+            if (isFrozen) {
+                require(profession.startingTalents.isEmpty()) {
+                    "Frozen profession '${profession.id}' must not materialize starter profession talents."
+                }
+                return@forEach
+            }
+            require(profession.startingTalents.size == 3) {
+                "Profession '${profession.id}' must start with exactly 3 learned profession talents for phase4-v4-pr01."
+            }
+            val professionTreeIds = profession.talentTrees.toSet()
+            profession.startingTalents.forEach { talentId ->
+                val talent = requireNotNull(talentsById[talentId]) {
+                    "Profession '${profession.id}' references unknown starter talent '$talentId'."
+                }
+                require(talent.treeId in professionTreeIds) {
+                    "Profession '${profession.id}' starter talent '$talentId' must belong to one of its profession trees."
+                }
+            }
+            val treeNodeIds = profession.talentTrees.flatMap { treeId -> treesById[treeId]?.nodes.orEmpty() }
+            require(treeNodeIds.any { talentId -> talentId !in profession.startingTalents }) {
+                "Profession '${profession.id}' must expose at least one non-starter learnable talent."
+            }
+            validateProfessionTreePrerequisites(
+                profession = profession,
+                talentsById = talentsById,
+                treesById = treesById,
+            )
+        }
+    }
+
+    private fun validateProfessionTreePrerequisites(
+        profession: ProfessionSchemaV2,
+        talentsById: Map<String, TalentSchemaV2>,
+        treesById: Map<String, TalentTreeSchemaV2>,
+    ) {
+        profession.talentTrees.forEach { treeId ->
+            val tree = requireNotNull(treesById[treeId]) {
+                "Profession '${profession.id}' references unknown talent tree '$treeId'."
+            }
+            val tier2Nodes = tree.nodes.filter { talentId -> TalentProgression.talentNodeTier(tree, talentId) == 2 }
+            val tier3Nodes = tree.nodes.filter { talentId -> TalentProgression.talentNodeTier(tree, talentId) == 3 }
+            tier2Nodes.forEach { talentId ->
+                require(maxPrerequisiteRank(talentsById, talentId) >= 2) {
+                    "Profession tree '$treeId' Tier 2 talent '$talentId' must declare a specified prerequisite with minRank >= 2 for phase4-v4-pr01."
+                }
+            }
+            tier3Nodes.forEach { talentId ->
+                require(maxPrerequisiteRank(talentsById, talentId) >= 3) {
+                    "Profession tree '$treeId' Tier 3 talent '$talentId' must declare a specified prerequisite with minRank >= 3 for phase4-v4-pr01."
+                }
+            }
+        }
+    }
+
+    private fun maxPrerequisiteRank(
+        talentsById: Map<String, TalentSchemaV2>,
+        talentId: String,
+    ): Int =
+        talentsById[talentId]
+            ?.requirements
+            ?.talentPrereqs
+            ?.maxOfOrNull(TalentPrerequisiteSchemaV2::minRank)
+            ?: 0
 
     private fun applyContentPackOverlays(
         baseCatalog: SchemaCatalog,

@@ -203,8 +203,13 @@ import com.ktome.core.snapshot.ShopSellEntrySnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
+import com.ktome.core.snapshot.TalentNodeLockReasonSnapshot
+import com.ktome.core.snapshot.TalentNodeLockReasonTypeSnapshot
+import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.core.snapshot.TalentTreeNodeSnapshot
+import com.ktome.core.snapshot.TalentTreeSnapshot
 import com.ktome.core.snapshot.TerrainOverrideRenderSnapshot
 import com.ktome.core.status.EffectCategory
 import com.ktome.core.status.EffectCarrierKind
@@ -224,10 +229,10 @@ import com.ktome.core.status.StatusEffectType
 import com.ktome.core.talent.RollbackManager
 import com.ktome.core.talent.TalentAllocationDraft
 import com.ktome.core.talent.TalentAllocationPlanner
+import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentCombatCallbackResolver
 import com.ktome.core.talent.TalentFailureCode
 import com.ktome.core.talent.TalentLoadout
-import com.ktome.core.talent.TalentPrerequisiteValidator
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentTreeOwnerType
@@ -252,6 +257,7 @@ import com.ktome.game.data.schema.SchemaLevelRange
 import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
+import com.ktome.game.data.schema.TalentTreeSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
@@ -287,6 +293,7 @@ import com.ktome.game.validation.ValidationActionFamily
 import com.ktome.game.validation.ProfileRunPersistenceMode
 import com.ktome.game.validation.persistValidationSessionMetadata
 import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioId
 import com.ktome.game.validation.ValidationScenarioRegistry
 import com.ktome.game.validation.ValidationSessionOptions
 import com.ktome.game.validation.ValidationSummarySnapshot
@@ -319,6 +326,7 @@ private const val ABYSSAL_WARD_PROTECTION_MAGNITUDE: Double = 0.12
 private const val VOID_ERUPTION_WEAKEN_MAGNITUDE: Double = 0.12
 private const val ABYSSAL_OVERLAY_VISUAL_KEY: String = "vfx.zone.effect.void_pressure_01"
 private const val ABYSSAL_WARNING_AUDIO_PROFILE: String = "audio.boss.warning"
+private const val TALENT_MULTI_TREE_INVESTMENT_THRESHOLD: Int = 3
 private const val HIDDEN_ENTRANCE_PROP_TYPE_ID: String = "hidden_entrance"
 private const val SECRET_REWARD_PROP_TYPE_ID: String = "secret_reward"
 private const val SECRET_RETURN_PROP_TYPE_ID: String = "secret_return"
@@ -445,6 +453,55 @@ class FoundationGameSession internal constructor(
         val nextBreakpointPreview: TalentBreakpointPreviewSnapshot?,
         val hasPendingAllocation: Boolean,
     )
+
+    private data class TalentTreeSnapshotBuildContext(
+        val loadout: TalentLoadout,
+        val activeTalentIds: Set<String>,
+        val cooldowns: Map<String, Int>,
+        val effectiveRanks: Map<String, Int>,
+        val progressionRequest: TalentProgressionRequest,
+        val progressionContext: TalentProgressionEvaluationContext,
+    )
+
+    data class TalentChoiceRunSummary(
+        val starterProfessionTalentCount: Int,
+        val learnedTalentChoiceEventCount: Int,
+        val learnableNonStarterTalentCount: Int,
+        val breakpointChoiceEventCount: Int,
+        val breakpointPreviewAvailable: Boolean,
+        val treeInvestmentByTree: Map<String, Int>,
+        val primaryInvestmentTreeId: String?,
+        val primaryInvestmentPoints: Int,
+        val multiTreeInvestmentAboveThreshold: Boolean,
+        val reserveSwapCount: Int,
+        val rankBreakpointAdoptionByTalent: Map<String, Int>,
+        val autoLearnedNonStarterTalentCount: Int,
+    )
+
+    private data class TalentChoiceEventRecord(
+        val kind: TalentChoiceEventKind,
+        val professionId: String,
+        val ownerType: TalentTreeOwnerType,
+        val treeOwnerId: String,
+        val talentId: String,
+        val treeId: String,
+        val rankBefore: Int,
+        val rankAfter: Int,
+        val remainingTalentPoints: Int,
+        val breakpointRank: Int? = null,
+    )
+
+    private enum class TalentChoiceEventKind {
+        LEARNED,
+        RANK_UP,
+        BREAKPOINT_CHOSEN,
+    }
+
+    private enum class TalentDraftActiveSlotCommitMode {
+        AUTO,
+        RESERVE,
+        REPLACE,
+    }
 
     private data class BossPhaseTurnUpdate(
         val profile: com.ktome.core.ai.AIProfile?,
@@ -577,6 +634,9 @@ class FoundationGameSession internal constructor(
         restoredMilestoneRewardSummaries
             .mapTo(linkedSetOf()) { summary -> summary.rewardSource to summary.sourceId }
     private val affixSynergyActivationCounts = linkedMapOf<String, Int>()
+    private val talentChoiceEvents = mutableListOf<TalentChoiceEventRecord>()
+    private var talentReserveSwapCount: Int = 0
+    private var talentBreakpointPreviewSeen: Boolean = false
     private val respecManager: RespecManager = RespecManager()
     private val encounterDecorationService: EncounterDecorationService = EncounterDecorationService(content)
     private var activeShopId: String? = null
@@ -614,7 +674,7 @@ class FoundationGameSession internal constructor(
             }
         initialMessageLog.forEach(::addMessage)
         restorePendingTurnState()
-        syncUnlockedPlayerTalents()
+        syncPlayerStarterTalents()
         refreshActorDerivedStats(playerId)
         ensurePlayerResourcePools()
         ensurePlayerInscriptions()
@@ -837,6 +897,74 @@ class FoundationGameSession internal constructor(
         recordedMilestoneRewardSummaries.map(::finalizeMilestoneRewardSummary)
 
     fun currentAffixSynergyActivationCount(): Int = affixSynergyActivationCounts.values.sum()
+
+    fun currentTalentChoiceRunSummary(): TalentChoiceRunSummary {
+        val profession = currentProfessionSchema()
+        val loadout = world.get<TalentLoadout>(playerId)
+        val starterIds = profession?.startingTalents.orEmpty().toSet()
+        val learnedRanks = loadout?.talentLevels.orEmpty()
+        val treeInvestmentByTree = TalentProgression.treeInvestmentByTree(content.schemaCatalog, learnedRanks)
+        val professionTreeIds = profession?.talentTrees.orEmpty().toSet()
+        val professionTalentIds =
+            content.schemaCatalog.talentTrees
+                .filter { tree -> tree.id in professionTreeIds }
+                .flatMapTo(linkedSetOf(), TalentTreeSchemaV2::nodes)
+        val learnedProfessionTalentIds =
+            learnedRanks
+                .filter { (talentId, rank) -> rank > 0 && talentId in professionTalentIds }
+                .keys
+        val professionTreeInvestmentByTree =
+            treeInvestmentByTree.filterKeys { treeId -> treeId in professionTreeIds }
+        val primaryInvestment =
+            professionTreeInvestmentByTree.entries
+                .sortedWith(compareByDescending<Map.Entry<String, Int>> { entry -> entry.value }.thenBy { entry -> entry.key })
+                .firstOrNull()
+        val learnedNonStarterProfessionEvents =
+            talentChoiceEvents
+                .filter { event ->
+                    event.kind == TalentChoiceEventKind.LEARNED &&
+                        event.ownerType == TalentTreeOwnerType.PROFESSION &&
+                        event.treeOwnerId == profession?.id &&
+                        event.rankBefore <= 0 &&
+                        event.rankAfter > 0 &&
+                        event.talentId !in starterIds
+                }
+        val learnedNonStarterProfessionEventIds = learnedNonStarterProfessionEvents.mapTo(linkedSetOf()) { event -> event.talentId }
+        val runtimeStarterMaterializedIds = learnedProfessionTalentIds - learnedNonStarterProfessionEventIds
+        val learnableNonStarterTalentCount =
+            profession
+                ?.let { schema ->
+                    TalentProgression.learnableTalentIds(
+                        TalentProgressionRequest(
+                            schemaCatalog = content.schemaCatalog,
+                            profession = schema,
+                            level = world.get<Experience>(playerId)?.level ?: 1,
+                            learnedRanks = learnedRanks,
+                            race = currentRaceSchema(),
+                        ),
+                    ).count { talentId -> talentId in professionTalentIds && talentId !in starterIds }
+                } ?: 0
+        return TalentChoiceRunSummary(
+            starterProfessionTalentCount = runtimeStarterMaterializedIds.size,
+            learnedTalentChoiceEventCount = learnedNonStarterProfessionEvents.size,
+            learnableNonStarterTalentCount = learnableNonStarterTalentCount,
+            breakpointChoiceEventCount = talentChoiceEvents.count { event -> event.kind == TalentChoiceEventKind.BREAKPOINT_CHOSEN },
+            breakpointPreviewAvailable = talentBreakpointPreviewSeen,
+            treeInvestmentByTree = treeInvestmentByTree,
+            primaryInvestmentTreeId = primaryInvestment?.key,
+            primaryInvestmentPoints = primaryInvestment?.value ?: 0,
+            multiTreeInvestmentAboveThreshold =
+                professionTreeInvestmentByTree.values.count { points -> points >= TALENT_MULTI_TREE_INVESTMENT_THRESHOLD } >= 2,
+            reserveSwapCount = talentReserveSwapCount,
+            rankBreakpointAdoptionByTalent =
+                talentChoiceEvents
+                    .filter { event -> event.kind == TalentChoiceEventKind.BREAKPOINT_CHOSEN && event.breakpointRank != null }
+                    .groupingBy { event -> "${event.talentId}@${event.breakpointRank}" }
+                    .eachCount()
+                    .toSortedMap(),
+            autoLearnedNonStarterTalentCount = (runtimeStarterMaterializedIds - starterIds).size,
+        )
+    }
 
     fun currentAffixSynergyActivationDistribution(): Map<String, Int> =
         cachedAffixSynergyActivationDistribution ?: affixSynergyActivationCounts.toMap(linkedMapOf()).also { distribution ->
@@ -1435,12 +1563,16 @@ class FoundationGameSession internal constructor(
         }
         val scenario = ValidationScenarioRegistry.require(activeScenarioId)
         return when (action.actionId) {
-            ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
-            ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
-            -> acceptValidationScenarioAction(
+            ValidationScenarioActionId.PREPARE_PRIMARY_SCENE -> acceptValidationScenarioAction(
                 scenarioId = scenario.id.value,
                 actionId = action.actionId.value,
-                result = "ok",
+                result = preparePhase4V4ScenarioPrimaryScene(scenario.id),
+            )
+
+            ValidationScenarioActionId.PREPARE_SECONDARY_SCENE -> acceptValidationScenarioAction(
+                scenarioId = scenario.id.value,
+                actionId = action.actionId.value,
+                result = preparePhase4V4ScenarioSecondaryScene(scenario.id),
             )
 
             ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY -> {
@@ -1465,6 +1597,56 @@ class FoundationGameSession internal constructor(
                     literalArg("result", "reset_queued"),
                 )
         }
+    }
+
+    private fun preparePhase4V4ScenarioPrimaryScene(scenarioId: ValidationScenarioId): String =
+        when (scenarioId.value) {
+            "phase4-v4-pr01" -> {
+                preparePhase4V4Pr01TalentTreeStart()
+                "profession_tree_start_ready"
+            }
+            else -> "ok"
+        }
+
+    private fun preparePhase4V4ScenarioSecondaryScene(scenarioId: ValidationScenarioId): String =
+        when (scenarioId.value) {
+            "phase4-v4-pr01" -> {
+                preparePhase4V4Pr01ReserveChoiceTarget()
+                "profession_tree_reserve_choice_ready"
+            }
+            else -> "ok"
+        }
+
+    private fun preparePhase4V4Pr01TalentTreeStart() {
+        val experience = requireNotNull(world.get<Experience>(playerId))
+        experience.level = maxOf(experience.level, 3)
+        experience.unspentTalentPoints = maxOf(experience.unspentTalentPoints, 1)
+        val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+        loadout.talentLevels.clear()
+        loadout.slotToTalentId.clear()
+        setTalentDraft(null)
+        syncPlayerStarterTalents()
+        invalidateRenderSnapshot()
+    }
+
+    private fun preparePhase4V4Pr01ReserveChoiceTarget() {
+        preparePhase4V4Pr01TalentTreeStart()
+        val experience = requireNotNull(world.get<Experience>(playerId))
+        experience.unspentTalentPoints = maxOf(experience.unspentTalentPoints, 1)
+        val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+        loadout.talentLevels["charge"] = maxOf(loadout.levelOf("charge"), 2)
+        loadout.slotToTalentId[PLAYER_ACTIVE_TALENT_SLOT_COUNT] = "charge"
+        canonicalizePlayerLoadout(loadout)
+        storeNormalizedTalentDraft(
+            loadout,
+            TalentAllocationDraft(
+                ownerType = TalentTreeOwnerType.PROFESSION,
+                treeOwnerId = "vanguard",
+                pendingRanks = linkedMapOf("sunder_armor" to 1),
+                previousPendingRanks = emptyMap(),
+            ),
+        )
+        invalidateRenderSnapshot()
     }
 
     private fun acceptValidationScenarioAction(
@@ -1885,7 +2067,9 @@ class FoundationGameSession internal constructor(
         loadout: TalentLoadout,
         owner: TalentTreeOwnerRef? = null,
     ): Map<String, Int> =
-        scopedTalentRanks(loadout = loadout, owner = owner).keys.associateWith { 1 }
+        scopedTalentRanks(loadout = loadout, owner = owner).mapValues { (talentId, _) ->
+            if (talentId in currentStarterTalentIds()) 1 else 0
+        }
 
     private fun effectiveTalentRanks(loadout: TalentLoadout): Map<String, Int> =
         TalentAllocationPlanner.effectiveRanks(liveRanks = loadout.talentLevels, draft = talentDraft())
@@ -1939,9 +2123,14 @@ class FoundationGameSession internal constructor(
     }
 
     private fun canOpenTalentAllocation(): Boolean {
-        val loadout = world.get<TalentLoadout>(playerId) ?: return false
-        return loadout.talentLevels.isNotEmpty()
+        val profession = currentProfessionSchema() ?: return false
+        return profession.talentTrees.isNotEmpty()
     }
+
+    private fun currentStarterTalentIds(): Set<String> =
+        currentProfessionSchema()
+            ?.let { profession -> TalentProgression.startingTalentIds(profession, currentRaceSchema()).toSet() }
+            .orEmpty()
 
     private fun isPlayerInCombat(): Boolean = turnCount <= lastPlayerCombatTurn
 
@@ -2024,8 +2213,9 @@ class FoundationGameSession internal constructor(
     private fun buildTalentSlotViews(): List<TalentSlotView> {
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
+        val effectiveRanks = effectiveTalentRanks(loadout)
         return activeTalentMappings(loadout).mapNotNull { (slot, talentId) ->
-            val details = playerTalentDetails(loadout, talentId, cooldowns) ?: return@mapNotNull null
+            val details = playerTalentDetails(loadout, talentId, cooldowns, effectiveRanks) ?: return@mapNotNull null
             TalentSlotView(
                 slot = slot,
                 talentId = details.talentId,
@@ -2054,8 +2244,9 @@ class FoundationGameSession internal constructor(
     private fun buildReserveTalentViews(): List<TalentReserveView> {
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
+        val effectiveRanks = effectiveTalentRanks(loadout)
         return reserveTalentIds(loadout).mapNotNull { talentId ->
-            val details = playerTalentDetails(loadout, talentId, cooldowns) ?: return@mapNotNull null
+            val details = playerTalentDetails(loadout, talentId, cooldowns, effectiveRanks) ?: return@mapNotNull null
             TalentReserveView(
                 talentId = details.talentId,
                 name = details.name,
@@ -2080,23 +2271,33 @@ class FoundationGameSession internal constructor(
 
     private fun activeTalentMappings(loadout: TalentLoadout): List<Pair<Int, String>> =
         (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).mapNotNull { slot ->
-            loadout.talentIdAt(slot)?.let { talentId -> slot to talentId }
+            loadout.talentIdAt(slot)
+                ?.takeIf(::isActiveSlotTalent)
+                ?.let { talentId -> slot to talentId }
+        }
+
+    private fun isActiveSlotTalent(talentId: String): Boolean =
+        when (talentRegistry.get(talentId)?.category) {
+            TalentCategory.ACTIVE, TalentCategory.SUSTAINED -> true
+            else -> false
         }
 
     private fun reserveTalentIds(loadout: TalentLoadout): List<String> {
         val activeTalentIds = activeTalentMappings(loadout).mapTo(linkedSetOf()) { (_, talentId) -> talentId }
-        return orderedUnlockedTalentIds(loadout).filterNot(activeTalentIds::contains)
+        return orderedLearnedTalentIds(loadout).filterNot(activeTalentIds::contains)
     }
 
-    private fun orderedUnlockedTalentIds(loadout: TalentLoadout): List<String> {
+    private fun orderedLearnedTalentIds(loadout: TalentLoadout): List<String> {
         val ordered = linkedSetOf<String>()
         val profession = currentProfessionSchema()
-        val experience = world.get<Experience>(playerId)
-        if (profession != null && experience != null) {
-            TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, experience.level)
-                .filterTo(ordered) { talentId -> talentId in loadout.talentLevels }
+        if (profession != null) {
+            val treesById = content.schemaCatalog.talentTrees.associateBy { tree -> tree.id }
+            (profession.talentTrees + currentRaceSchema()?.talentTrees.orEmpty())
+                .mapNotNull(treesById::get)
+                .flatMap { tree -> tree.nodes }
+                .filterTo(ordered) { talentId -> (loadout.talentLevels[talentId] ?: 0) > 0 }
         }
-        loadout.talentLevels.keys.forEach(ordered::add)
+        loadout.talentLevels.filterValues { rank -> rank > 0 }.keys.forEach(ordered::add)
         return ordered.toList()
     }
 
@@ -2104,18 +2305,30 @@ class FoundationGameSession internal constructor(
         loadout: TalentLoadout,
         talentId: String,
         cooldowns: Map<String, Int>,
+        effectiveRanks: Map<String, Int> = effectiveTalentRanks(loadout),
+        allowUnlearned: Boolean = false,
     ): TalentUiDetails? {
         val definition = talentRegistry.get(talentId) ?: return null
         val schema = talentSchemaFor(talentId)
         val ownerType = schema?.let(talentTreeOwnerResolver::ownerForTalent)?.ownerType ?: TalentTreeOwnerType.PROFESSION
-        val committedLevel = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
-        val level = (effectiveTalentRanks(loadout)[talentId] ?: committedLevel).coerceIn(1, definition.maxLevel)
+        val minLevel = if (allowUnlearned) 0 else 1
+        val liveLevel = loadout.levelOf(talentId)
+        val committedLevel = liveLevel.coerceIn(minLevel, definition.maxLevel)
+        val level = (effectiveRanks[talentId] ?: liveLevel).coerceIn(minLevel, definition.maxLevel)
+        val descriptionLevel = level.coerceAtLeast(1)
         val schemaResource = schema?.resourceCosts?.firstOrNull()
         val definitionResource = definition.resolvedResourceCosts().entries.firstOrNull()
         val resourceTypeId = schemaResource?.axis ?: definitionResource?.key?.name ?: currentProfessionSchema()?.resourceType ?: ResourceType.STAMINA.name
         val resourceCost = schemaResource?.amount ?: definitionResource?.value ?: 0
-        val effectiveRange = definition.range + (definition.levelEffects[level]?.rangeBonus ?: 0)
-        val descriptionModel = DynamicDescriptionResolver.resolve(definition, com.ktome.core.talent.DescriptionContext(currentRank = committedLevel, previewRank = level))
+        val effectiveRange = definition.range + (definition.levelEffects[descriptionLevel]?.rangeBonus ?: 0)
+        val descriptionModel =
+            DynamicDescriptionResolver.resolve(
+                definition,
+                com.ktome.core.talent.DescriptionContext(
+                    currentRank = committedLevel.coerceAtLeast(1),
+                    previewRank = descriptionLevel,
+                ),
+            )
         return TalentUiDetails(
             talentId = talentId,
             name = tr(definition.nameKey),
@@ -3553,6 +3766,239 @@ class FoundationGameSession internal constructor(
         return CommandResolution.rejected()
     }
 
+    private fun addTalentLockReasonMessage(
+        talentId: String,
+        reason: TalentLockReason,
+    ) {
+        when (reason.type) {
+            TalentLockReasonType.LEVEL ->
+                addMessage(
+                    "log.talent.locked_level",
+                    keyArg("talent", talentNameKey(talentId)),
+                    literalArg("level", reason.requiredLevel ?: 1),
+                )
+
+            TalentLockReasonType.PREREQUISITE_RANK ->
+                addMessage(
+                    "log.talent.requirement_missing",
+                    keyArg("talent", talentNameKey(talentId)),
+                    keyArg("required", talentNameKey(reason.talentId.orEmpty())),
+                    literalArg("rank", reason.requiredRank ?: 1),
+                )
+
+            TalentLockReasonType.TREE_INVESTMENT ->
+                addMessage(
+                    "log.talent.locked_tree_investment",
+                    keyArg("talent", talentNameKey(talentId)),
+                    keyArg("tree", reason.treeId?.let(::talentTreeNameKey) ?: "ui.talent.tree.unknown"),
+                    literalArg("points", reason.requiredPoints ?: 0),
+                )
+
+            TalentLockReasonType.CROSS_TREE_INVESTMENT ->
+                addMessage(
+                    "log.talent.locked_cross_tree_investment",
+                    keyArg("talent", talentNameKey(talentId)),
+                    literalArg("trees", reason.requiredPoints ?: 0),
+                )
+        }
+    }
+
+    private fun bindNewlyLearnedActiveTalents(
+        loadout: TalentLoadout,
+        beforeRanks: Map<String, Int>,
+        afterRanks: Map<String, Int>,
+        commitMode: TalentDraftActiveSlotCommitMode,
+        replacementSlot: Int? = null,
+    ) {
+        val activeTalentIds = activeTalentMappings(loadout).mapTo(linkedSetOf()) { (_, talentId) -> talentId }
+        val newlyLearnedActiveTalentIds = newlyLearnedActiveTalentIds(beforeRanks, afterRanks)
+        var replacementConsumed = false
+        newlyLearnedActiveTalentIds.forEach { talentId ->
+            if (commitMode == TalentDraftActiveSlotCommitMode.RESERVE) {
+                talentReserveSwapCount += 1
+                return@forEach
+            }
+            if (commitMode == TalentDraftActiveSlotCommitMode.REPLACE && !replacementConsumed && replacementSlot != null) {
+                loadout.slotToTalentId[replacementSlot] = talentId
+                activeTalentIds += talentId
+                replacementConsumed = true
+                return@forEach
+            }
+            if (talentId in activeTalentIds) {
+                return@forEach
+            }
+            val freeSlot = (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).firstOrNull { slot -> loadout.talentIdAt(slot) == null }
+            if (freeSlot == null) {
+                talentReserveSwapCount += 1
+            } else {
+                loadout.slotToTalentId[freeSlot] = talentId
+                activeTalentIds += talentId
+            }
+        }
+    }
+
+    private fun newlyLearnedActiveTalentIds(
+        beforeRanks: Map<String, Int>,
+        afterRanks: Map<String, Int>,
+    ): List<String> =
+        afterRanks.entries
+            .filter { (talentId, rank) -> rank > 0 && (beforeRanks[talentId] ?: 0) <= 0 && isActiveSlotTalent(talentId) }
+            .sortedWith(compareBy<Map.Entry<String, Int>> { entry -> talentTreeIdForTalent(entry.key) }.thenBy { entry -> entry.key })
+            .map { entry -> entry.key }
+
+    private fun requiresActiveSlotChoice(
+        loadout: TalentLoadout,
+        beforeRanks: Map<String, Int>,
+        afterRanks: Map<String, Int>,
+    ): Boolean =
+        newlyLearnedActiveTalentIds(beforeRanks, afterRanks).isNotEmpty() &&
+            (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).none { slot -> loadout.talentIdAt(slot) == null }
+
+    private fun commitTalentDraft(
+        commitMode: TalentDraftActiveSlotCommitMode,
+        replacementSlot: Int? = null,
+    ): CommandResolution {
+        val draft = talentDraft()
+        val experience = requireNotNull(world.get<Experience>(playerId))
+        val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+        if (draft == null) {
+            return CommandResolution.rejected()
+        }
+        if (isPlayerInCombat()) {
+            addMessage("log.talent.draft_confirm_blocked")
+            return CommandResolution.rejected()
+        }
+        if (commitMode == TalentDraftActiveSlotCommitMode.REPLACE && replacementSlot !in 1..PLAYER_ACTIVE_TALENT_SLOT_COUNT) {
+            addMessage("log.talent.active_slot_choice_invalid_slot", literalArg("slot", replacementSlot ?: 0))
+            return CommandResolution.rejected()
+        }
+
+        val owner = TalentTreeOwnerRef(draft.ownerType, draft.treeOwnerId)
+        val preview = talentAllocationPreview(loadout, availableTalentPointsForOwner(owner.ownerType, experience), owner)
+        val beforeRanks = loadout.talentLevels.toMap(linkedMapOf())
+        val afterRanks = TalentAllocationPlanner.effectiveRanks(loadout.talentLevels, draft)
+        if (commitMode == TalentDraftActiveSlotCommitMode.AUTO && requiresActiveSlotChoice(loadout, beforeRanks, afterRanks)) {
+            addMessage("log.talent.active_slot_choice_required")
+            return CommandResolution.rejected()
+        }
+
+        draft.pendingRanks.forEach { (talentId, rank) ->
+            if (rank <= 0) {
+                loadout.talentLevels.remove(talentId)
+                loadout.slotToTalentId.entries.removeIf { (_, activeTalentId) -> activeTalentId == talentId }
+            } else {
+                loadout.talentLevels[talentId] = rank
+            }
+        }
+        storeRemainingTalentPointsForOwner(owner.ownerType, preview.remainingPoints, experience)
+        setTalentDraft(null)
+        bindNewlyLearnedActiveTalents(loadout, beforeRanks, afterRanks, commitMode, replacementSlot)
+        canonicalizePlayerLoadout(loadout)
+        recordTalentChoiceEvents(beforeRanks, afterRanks, preview.remainingPoints)
+        addMessage("log.talent.draft_confirmed")
+        return CommandResolution(accepted = true, consumesTurn = false)
+    }
+
+    private fun recordTalentChoiceEvents(
+        beforeRanks: Map<String, Int>,
+        afterRanks: Map<String, Int>,
+        remainingTalentPoints: Int,
+    ) {
+        val professionId = currentProfessionSchema()?.id.orEmpty()
+        fun eventRecord(
+            kind: TalentChoiceEventKind,
+            talentId: String,
+            treeId: String,
+            rankBefore: Int,
+            rankAfter: Int,
+            breakpointRank: Int? = null,
+        ): TalentChoiceEventRecord {
+            val owner = talentSchemaFor(talentId)?.let(::resolveTalentTreeOwner)
+            return TalentChoiceEventRecord(
+                kind = kind,
+                professionId = professionId,
+                ownerType = owner?.ownerType ?: TalentTreeOwnerType.PROFESSION,
+                treeOwnerId = owner?.treeOwnerId.orEmpty(),
+                talentId = talentId,
+                treeId = treeId,
+                rankBefore = rankBefore,
+                rankAfter = rankAfter,
+                remainingTalentPoints = remainingTalentPoints,
+                breakpointRank = breakpointRank,
+            )
+        }
+        val changedTalents =
+            afterRanks.entries
+                .filter { (talentId, rankAfter) -> rankAfter > (beforeRanks[talentId] ?: 0) }
+                .sortedWith(compareBy<Map.Entry<String, Int>> { entry -> talentTreeIdForTalent(entry.key) }.thenBy { entry -> entry.key })
+        changedTalents.forEach { (talentId, rankAfter) ->
+            val rankBefore = beforeRanks[talentId] ?: 0
+            val treeId = talentTreeIdForTalent(talentId)
+            if (rankBefore <= 0) {
+                talentChoiceEvents +=
+                    eventRecord(
+                        kind = TalentChoiceEventKind.LEARNED,
+                        talentId = talentId,
+                        treeId = treeId,
+                        rankBefore = rankBefore,
+                        rankAfter = rankAfter,
+                    )
+                addMessage("log.talent.learned", keyArg("talent", talentNameKey(talentId)))
+            } else {
+                talentChoiceEvents +=
+                    eventRecord(
+                        kind = TalentChoiceEventKind.RANK_UP,
+                        talentId = talentId,
+                        treeId = treeId,
+                        rankBefore = rankBefore,
+                        rankAfter = rankAfter,
+                    )
+                addMessage("log.talent.rank_up", keyArg("talent", talentNameKey(talentId)), literalArg("rank", rankAfter))
+            }
+        }
+        changedTalents
+            .flatMap { (talentId, rankAfter) ->
+                val rankBefore = beforeRanks[talentId] ?: 0
+                val treeId = talentTreeIdForTalent(talentId)
+                talentRegistry.get(talentId)
+                    ?.breakpoints
+                    .orEmpty()
+                    .filter { breakpoint -> breakpoint.atRank > rankBefore && breakpoint.atRank <= rankAfter }
+                    .map { breakpoint ->
+                        eventRecord(
+                            kind = TalentChoiceEventKind.BREAKPOINT_CHOSEN,
+                            talentId = talentId,
+                            treeId = treeId,
+                            rankBefore = rankBefore,
+                            rankAfter = rankAfter,
+                            breakpointRank = breakpoint.atRank,
+                        )
+                    }
+            }
+            .sortedWith(
+                compareBy<TalentChoiceEventRecord> { event -> event.treeId }
+                    .thenBy { event -> event.talentId }
+                    .thenBy { event -> event.breakpointRank ?: 0 },
+            )
+            .forEach { event ->
+                talentChoiceEvents += event
+                addMessage(
+                    "log.talent.breakpoint_chosen",
+                    keyArg("talent", talentNameKey(event.talentId)),
+                    literalArg("professionId", event.professionId),
+                    literalArg("talentId", event.talentId),
+                    literalArg("treeId", event.treeId),
+                    literalArg("breakpointRank", event.breakpointRank ?: event.rankAfter),
+                    literalArg("rankBefore", event.rankBefore),
+                    literalArg("rankAfter", event.rankAfter),
+                    literalArg("remainingTalentPoints", event.remainingTalentPoints),
+                )
+            }
+    }
+
+    private fun talentTreeIdForTalent(talentId: String): String =
+        content.schemaCatalog.talents.firstOrNull { talent -> talent.id == talentId }?.treeId.orEmpty()
+
     private fun projectSingleTarget(
         origin: Point,
         target: Point,
@@ -3653,6 +4099,7 @@ class FoundationGameSession internal constructor(
             equipment = buildEquipmentSnapshots(),
             talents = buildTalentSnapshots(),
             reserveTalents = buildReserveTalentSnapshots(),
+            talentTrees = buildTalentTreeSnapshots(),
             inscriptions = buildInscriptionSnapshots(),
             inventory = buildInventoryEntries(),
             recentRewards = buildRecentRewardSnapshots(),
@@ -3896,12 +4343,14 @@ class FoundationGameSession internal constructor(
         world.get<TalentLoadout>(playerId)
             ?.let { loadout ->
                 val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
+                val effectiveRanks = effectiveTalentRanks(loadout)
                 activeTalentMappings(loadout).mapNotNull { (slot, talentId) ->
                     buildTalentSlotSnapshot(
                         slot = slot,
                         talentId = talentId,
                         loadout = loadout,
                         cooldowns = cooldowns,
+                        effectiveRanks = effectiveRanks,
                     )
                 }
             }.orEmpty()
@@ -3910,22 +4359,178 @@ class FoundationGameSession internal constructor(
         world.get<TalentLoadout>(playerId)
             ?.let { loadout ->
                 val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
+                val effectiveRanks = effectiveTalentRanks(loadout)
                 reserveTalentIds(loadout).mapNotNull { talentId ->
                     buildReserveTalentSnapshot(
                         talentId = talentId,
                         loadout = loadout,
                         cooldowns = cooldowns,
+                        effectiveRanks = effectiveRanks,
                     )
                 }
             }.orEmpty()
+
+    private fun buildTalentTreeSnapshots(): List<TalentTreeSnapshot> {
+        val profession = currentProfessionSchema() ?: return emptyList()
+        val race = currentRaceSchema()
+        val treesById = content.schemaCatalog.talentTrees.associateBy(TalentTreeSchemaV2::id)
+        val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
+        val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
+        val effectiveRanks = effectiveTalentRanks(loadout)
+        val activeTalentIds = activeTalentMappings(loadout).mapTo(linkedSetOf()) { (_, talentId) -> talentId }
+        val progressionRequest =
+            TalentProgressionRequest(
+                schemaCatalog = content.schemaCatalog,
+                profession = profession,
+                level = requireNotNull(world.get<Experience>(playerId)).level,
+                learnedRanks = effectiveRanks,
+                race = race,
+            )
+        val context =
+            TalentTreeSnapshotBuildContext(
+                loadout = loadout,
+                activeTalentIds = activeTalentIds,
+                cooldowns = cooldowns,
+                effectiveRanks = effectiveRanks,
+                progressionRequest = progressionRequest,
+                progressionContext = TalentProgression.evaluationContext(progressionRequest),
+            )
+        val treeIds = profession.talentTrees + race?.talentTrees.orEmpty()
+        val snapshots = treeIds.mapNotNull { treeId ->
+            val tree = treesById[treeId] ?: return@mapNotNull null
+            val owner = tree.ownerRef()
+            TalentTreeSnapshot(
+                treeId = tree.id,
+                ownerType = owner.ownerType.name,
+                treeOwnerId = owner.treeOwnerId,
+                nameKey = tree.nameKey,
+                descKey = tree.descKey,
+                visualKey = tree.visualKey,
+                iconKey = tree.iconKey,
+                audioProfile = tree.audioProfile,
+                nodes =
+                    tree.nodes.mapNotNull { talentId ->
+                        buildTalentTreeNodeSnapshot(
+                            tree = tree,
+                            talentId = talentId,
+                            context = context,
+                        )
+                    },
+            )
+        }
+        recordTalentBreakpointPreviewExposure(snapshots)
+        return snapshots
+    }
+
+    private fun recordTalentBreakpointPreviewExposure(snapshots: List<TalentTreeSnapshot>) {
+        val hasVisibleBreakpointPreview =
+            snapshots.any { tree ->
+                tree.nodes.any { node -> node.nextBreakpointPreview != null }
+            }
+        if (!talentBreakpointPreviewSeen && hasVisibleBreakpointPreview) {
+            talentBreakpointPreviewSeen = true
+        }
+    }
+
+    private fun buildTalentTreeNodeSnapshot(
+        tree: TalentTreeSchemaV2,
+        talentId: String,
+        context: TalentTreeSnapshotBuildContext,
+    ): TalentTreeNodeSnapshot? {
+        val schema = context.progressionContext.talentById[talentId] ?: return null
+        val definition = talentRegistry.get(talentId) ?: return null
+        val details =
+            playerTalentDetails(
+                loadout = context.loadout,
+                talentId = talentId,
+                cooldowns = context.cooldowns,
+                effectiveRanks = context.effectiveRanks,
+                allowUnlearned = true,
+            ) ?: return null
+        val owner = tree.ownerRef()
+        val committedRank = details.committedLevel
+        val rank = details.level
+        val lockReasons =
+            if (rank > 0) {
+                emptyList()
+            } else {
+                TalentProgression.talentLockReasons(
+                    request = context.progressionRequest,
+                    talentId = talentId,
+                    context = context.progressionContext,
+                )
+            }
+        val state =
+            when {
+                rank <= 0 && lockReasons.isNotEmpty() -> TalentNodeStateSnapshot.LOCKED
+                rank <= 0 -> TalentNodeStateSnapshot.LEARNABLE
+                talentId in context.activeTalentIds -> TalentNodeStateSnapshot.LEARNED_ACTIVE
+                else -> TalentNodeStateSnapshot.LEARNED_RESERVE
+            }
+        val resourceTypeId = schema.resourceCosts.firstOrNull()?.axis ?: details.resourceTypeId
+        return TalentTreeNodeSnapshot(
+            talentId = talentId,
+            treeId = tree.id,
+            ownerType = owner.ownerType.name,
+            treeOwnerId = owner.treeOwnerId,
+            nameKey = schema.nameKey,
+            descKey = definition.descriptionTemplateKey,
+            visualKey = schema.visualKey,
+            iconKey = schema.iconKey,
+            damageTypeIconKey = schema.damageType?.let(::damageTypeIconKey),
+            audioProfile = schema.audioProfile,
+            category = definition.category,
+            state = state,
+            rank = rank,
+            committedRank = committedRank,
+            maxRank = details.maxLevel,
+            unlockLevel = schema.unlockLevel,
+            resourceCost = schema.resourceCosts.firstOrNull { cost -> cost.axis == resourceTypeId }?.amount ?: details.resourceCost,
+            resourceLabelKey = resourceLabelKey(resourceTypeId),
+            resourceTypeId = resourceTypeId,
+            range = details.range,
+            minRange = details.minRange,
+            currentCooldown = details.currentCooldown,
+            maxCooldown = details.maxCooldown,
+            requiresTarget = details.requiresTarget,
+            descriptionModel = details.descriptionModel.toSnapshot(),
+            nextBreakpointPreview = details.nextBreakpointPreview,
+            lockReasons = lockReasons.map(::toTalentNodeLockReasonSnapshot),
+            isMaxRank = rank >= details.maxLevel,
+            hasPendingAllocation = details.hasPendingAllocation,
+        )
+    }
+
+    private fun toTalentNodeLockReasonSnapshot(reason: TalentLockReason): TalentNodeLockReasonSnapshot =
+        TalentNodeLockReasonSnapshot(
+            type =
+                when (reason.type) {
+                    TalentLockReasonType.LEVEL -> TalentNodeLockReasonTypeSnapshot.LEVEL
+                    TalentLockReasonType.PREREQUISITE_RANK -> TalentNodeLockReasonTypeSnapshot.PREREQUISITE_RANK
+                    TalentLockReasonType.TREE_INVESTMENT -> TalentNodeLockReasonTypeSnapshot.TREE_INVESTMENT
+                    TalentLockReasonType.CROSS_TREE_INVESTMENT -> TalentNodeLockReasonTypeSnapshot.CROSS_TREE_INVESTMENT
+                },
+            messageKey = reason.messageKey,
+            talentId = reason.talentId,
+            talentNameKey = reason.talentId?.let(::talentNameKey),
+            treeId = reason.treeId,
+            treeNameKey = reason.treeId?.let(::talentTreeNameKey),
+            requiredLevel = reason.requiredLevel,
+            currentLevel = reason.currentLevel,
+            requiredRank = reason.requiredRank,
+            currentRank = reason.currentRank,
+            requiredPoints = reason.requiredPoints,
+            currentPoints = reason.currentPoints,
+        )
 
     private fun buildTalentSlotSnapshot(
         slot: Int,
         talentId: String,
         loadout: TalentLoadout,
         cooldowns: Map<String, Int>,
+        effectiveRanks: Map<String, Int>,
     ): TalentSlotSnapshot? {
-        val details = playerTalentDetails(loadout, talentId, cooldowns) ?: return null
+        val details = playerTalentDetails(loadout, talentId, cooldowns, effectiveRanks) ?: return null
         val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talentId }) {
             "Unknown talent schema '$talentId'."
         }
@@ -3964,8 +4569,9 @@ class FoundationGameSession internal constructor(
         talentId: String,
         loadout: TalentLoadout,
         cooldowns: Map<String, Int>,
+        effectiveRanks: Map<String, Int>,
     ): TalentReserveSnapshot? {
-        val details = playerTalentDetails(loadout, talentId, cooldowns) ?: return null
+        val details = playerTalentDetails(loadout, talentId, cooldowns, effectiveRanks) ?: return null
         val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talentId }) {
             "Unknown talent schema '$talentId'."
         }
@@ -6567,10 +7173,7 @@ class FoundationGameSession internal constructor(
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
                 val talentId = command.talentId
                 val talentSchema = talentSchemaFor(talentId)
-                if (talentId !in loadout.talentLevels) {
-                    addMessage("log.loadout.not_unlocked", keyArg("talent", talentNameKey(talentId)))
-                    CommandResolution.rejected()
-                } else if (talentSchema == null) {
+                if (talentSchema == null) {
                     rejectTalentOwnerConflict("log.talent.owner_unresolved")
                 } else {
                     val owner = resolveTalentTreeOwner(talentSchema)
@@ -6586,7 +7189,7 @@ class FoundationGameSession internal constructor(
                             CommandResolution.rejected()
                         } else {
                             val definition = requireNotNull(talentRegistry.get(talentId))
-                            val currentLevel = effectiveTalentRanks(loadout)[talentId] ?: loadout.levelOf(talentId)
+                            val currentLevel = effectiveTalentRanks(loadout)[talentId] ?: 0
                             if (currentLevel >= definition.maxLevel) {
                                 addMessage("log.talent.max_level", keyArg("talent", talentNameKey(talentId)))
                                 CommandResolution.rejected()
@@ -6600,15 +7203,21 @@ class FoundationGameSession internal constructor(
                                         talentId = talentId,
                                         nextLevel = nextLevel,
                                     )
-                                val candidateRanks = TalentAllocationPlanner.effectiveRanks(loadout.talentLevels, nextDraft)
-                                val missingPrerequisites = TalentPrerequisiteValidator.missingPrerequisites(definition.prerequisites, candidateRanks)
-                                if (missingPrerequisites.isNotEmpty()) {
-                                    addMessage(
-                                        "log.talent.requirement_missing",
-                                        keyArg("talent", talentNameKey(talentId)),
-                                        keyArg("required", talentNameKey(missingPrerequisites.first().talentId)),
-                                        literalArg("rank", missingPrerequisites.first().minRank),
+                                val currentDraftRanks = TalentAllocationPlanner.effectiveRanks(loadout.talentLevels, existingDraft)
+                                val lockReasons =
+                                    TalentProgression.talentLockReasons(
+                                        request =
+                                            TalentProgressionRequest(
+                                                schemaCatalog = content.schemaCatalog,
+                                                profession = requireNotNull(currentProfessionSchema()),
+                                                level = experience.level,
+                                                learnedRanks = currentDraftRanks,
+                                                race = currentRaceSchema(),
+                                            ),
+                                        talentId = talentId,
                                     )
+                                if (lockReasons.isNotEmpty()) {
+                                    addTalentLockReasonMessage(talentId, lockReasons.first())
                                     CommandResolution.rejected()
                                 } else {
                                     storeNormalizedTalentDraft(loadout, nextDraft)
@@ -6625,28 +7234,15 @@ class FoundationGameSession internal constructor(
                 }
             }
 
-            PlayerCommand.ConfirmTalentDraft -> {
-                val draft = talentDraft()
-                val experience = requireNotNull(world.get<Experience>(playerId))
-                val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
-                if (draft == null) {
-                    CommandResolution.rejected()
-                } else if (isPlayerInCombat()) {
-                    addMessage("log.talent.draft_confirm_blocked")
-                    CommandResolution.rejected()
-                } else {
-                    val owner = TalentTreeOwnerRef(draft.ownerType, draft.treeOwnerId)
-                    val preview = talentAllocationPreview(loadout, availableTalentPointsForOwner(owner.ownerType, experience), owner)
-                    draft.pendingRanks.forEach { (talentId, rank) ->
-                        loadout.talentLevels[talentId] = rank
-                    }
-                    storeRemainingTalentPointsForOwner(owner.ownerType, preview.remainingPoints, experience)
-                    setTalentDraft(null)
-                    canonicalizePlayerLoadout(loadout)
-                    addMessage("log.talent.draft_confirmed")
-                    CommandResolution(accepted = true, consumesTurn = false)
-                }
-            }
+            PlayerCommand.ConfirmTalentDraft -> commitTalentDraft(TalentDraftActiveSlotCommitMode.AUTO)
+
+            PlayerCommand.ConfirmTalentDraftToReserve -> commitTalentDraft(TalentDraftActiveSlotCommitMode.RESERVE)
+
+            is PlayerCommand.ConfirmTalentDraftReplacingSlot ->
+                commitTalentDraft(
+                    commitMode = TalentDraftActiveSlotCommitMode.REPLACE,
+                    replacementSlot = command.slot,
+                )
 
             PlayerCommand.RollbackTalentDraft -> {
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
@@ -6687,12 +7283,14 @@ class FoundationGameSession internal constructor(
 
             is PlayerCommand.EquipTalentToSlot -> {
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId)) { "Missing TalentLoadout for $playerId." }
-                syncUnlockedPlayerTalents()
                 if (command.slot !in 1..PLAYER_ACTIVE_TALENT_SLOT_COUNT) {
                     addMessage("log.loadout.invalid_slot", literalArg("slot", command.slot))
                     CommandResolution.rejected()
-                } else if (command.talentId !in loadout.talentLevels) {
-                    addMessage("log.loadout.not_unlocked", keyArg("talent", talentNameKey(command.talentId)))
+                } else if ((loadout.talentLevels[command.talentId] ?: 0) <= 0) {
+                    addMessage("log.loadout.not_learned", keyArg("talent", talentNameKey(command.talentId)))
+                    CommandResolution.rejected()
+                } else if (!isActiveSlotTalent(command.talentId)) {
+                    addMessage("log.loadout.not_active_talent", keyArg("talent", talentNameKey(command.talentId)))
                     CommandResolution.rejected()
                 } else {
                     val equippedBefore = loadout.talentIdAt(command.slot)
@@ -8645,11 +9243,36 @@ class FoundationGameSession internal constructor(
                 bank.unspentPoints += raceTalentDelta
             }
         }
-        var unlockedTalentIds = emptyList<String>()
+        val loadoutBeforeLevel = world.get<TalentLoadout>(playerId)
+        val learnableBefore =
+            profession
+                ?.let { schema ->
+                    TalentProgression.learnableTalentIds(
+                        TalentProgressionRequest(
+                            schemaCatalog = content.schemaCatalog,
+                            profession = schema,
+                            level = previousLevel,
+                            learnedRanks = loadoutBeforeLevel?.talentLevels.orEmpty(),
+                            race = currentRaceSchema(),
+                        ),
+                    )
+                }.orEmpty()
+                .toSet()
+        var newlyLearnableTalentIds = emptyList<String>()
         if (result.levelsGained > 0) {
             profession?.let { schema ->
                 applyLevelGrowth(schema, result.levelsGained)
-                unlockedTalentIds = syncUnlockedPlayerTalents()
+                val loadout = world.get<TalentLoadout>(playerId)
+                newlyLearnableTalentIds =
+                    TalentProgression.learnableTalentIds(
+                        TalentProgressionRequest(
+                            schemaCatalog = content.schemaCatalog,
+                            profession = schema,
+                            level = experience.level,
+                            learnedRanks = loadout?.talentLevels.orEmpty(),
+                            race = currentRaceSchema(),
+                        ),
+                    ).filterNot(learnableBefore::contains)
             }
         }
         ensurePlayerResourcePools()
@@ -8670,8 +9293,8 @@ class FoundationGameSession internal constructor(
             )
             addMessage("log.level_up", literalArg("level", experience.level))
             logLevelUpGrowth(baseline, updated)
-            unlockedTalentIds.forEach { talentId ->
-                addMessage("log.talent.unlock", keyArg("talent", talentNameKey(talentId)))
+            newlyLearnableTalentIds.forEach { talentId ->
+                addMessage("log.talent.learnable", keyArg("talent", talentNameKey(talentId)))
             }
         }
     }
@@ -8993,40 +9616,32 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun syncUnlockedPlayerTalents(
-        notify: Boolean = false,
-    ): List<String> {
+    private fun syncPlayerStarterTalents(): List<String> {
         val profession = currentProfessionSchema() ?: return emptyList()
         val race = currentRaceSchema()
-        val experience = world.get<Experience>(playerId) ?: return emptyList()
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
-        val unlockedTalentIds = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, experience.level, race)
-        val newlyUnlockedTalentIds = mutableListOf<String>()
-        unlockedTalentIds.forEach { talentId ->
-            val wasUnlocked = talentId in loadout.talentLevels
+        val starterTalentIds = TalentProgression.startingTalentIds(profession, race)
+        val newlyMaterializedTalentIds = mutableListOf<String>()
+        starterTalentIds.forEach { talentId ->
+            val wasLearned = talentId in loadout.talentLevels
             loadout.talentLevels.putIfAbsent(talentId, 1)
-            if (!wasUnlocked) {
-                newlyUnlockedTalentIds += talentId
+            if (!wasLearned) {
+                newlyMaterializedTalentIds += talentId
             }
         }
         canonicalizePlayerLoadout(loadout)
-        if (notify) {
-            newlyUnlockedTalentIds.forEach { talentId ->
-                addMessage("log.talent.unlock", keyArg("talent", talentNameKey(talentId)))
-            }
-        }
-        return newlyUnlockedTalentIds
+        return newlyMaterializedTalentIds
     }
 
     private fun canonicalizePlayerLoadout(loadout: TalentLoadout) {
         val activeTalentIds = linkedSetOf<String>()
         (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).forEach { slot ->
             loadout.talentIdAt(slot)
-                ?.takeIf { talentId -> talentId in loadout.talentLevels }
+                ?.takeIf { talentId -> (loadout.talentLevels[talentId] ?: 0) > 0 && isActiveSlotTalent(talentId) }
                 ?.takeUnless(activeTalentIds::contains)
                 ?.let(activeTalentIds::add)
         }
-        orderedUnlockedTalentIds(loadout).forEach { talentId ->
+        orderedLearnedTalentIds(loadout).filter(::isActiveSlotTalent).forEach { talentId ->
             if (activeTalentIds.size >= PLAYER_ACTIVE_TALENT_SLOT_COUNT) {
                 return@forEach
             }
@@ -12102,6 +12717,10 @@ class FoundationGameSession internal constructor(
 
     private fun talentNameKeyOrNull(talentId: String): String? =
         content.schemaCatalog.talents.firstOrNull { schema -> schema.id == talentId }?.nameKey
+
+    private fun talentTreeNameKey(treeId: String): String =
+        content.schemaCatalog.talentTrees.firstOrNull { tree -> tree.id == treeId }?.nameKey
+            ?: "ui.talent.tree.unknown"
 
     private fun talentArg(
         name: String,

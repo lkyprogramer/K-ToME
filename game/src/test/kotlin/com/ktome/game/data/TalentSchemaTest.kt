@@ -82,6 +82,43 @@ class TalentSchemaTest {
     }
 
     @Test
+    fun `profession tier two and tier three nodes declare specified prerequisite ranks`() {
+        val catalog = DataLoader().loadSchemaCatalog()
+        val talentsById = catalog.talents.associateBy { talent -> talent.id }
+        val treesById = catalog.talentTrees.associateBy { tree -> tree.id }
+
+        catalog.professions
+            .filterNot { profession -> "frozen" in profession.tags }
+            .forEach { profession ->
+                profession.talentTrees
+                    .mapNotNull(treesById::get)
+                    .forEach { tree ->
+                        tree.nodes.forEachIndexed { index, talentId ->
+                            val requiredRank =
+                                when {
+                                    tree.nodes.size <= 4 && index == 2 -> 2
+                                    tree.nodes.size <= 4 && index >= 3 -> 3
+                                    tree.nodes.size > 4 && index in 2..3 -> 2
+                                    tree.nodes.size > 4 && index >= 4 -> 3
+                                    else -> return@forEachIndexed
+                                }
+                            val maxPrerequisiteRank =
+                                talentsById.getValue(talentId)
+                                    .requirements
+                                    .talentPrereqs
+                                    .maxOfOrNull { prerequisite -> prerequisite.minRank }
+                                    ?: 0
+
+                            assertTrue(
+                                maxPrerequisiteRank >= requiredRank,
+                                "Expected ${tree.id}/$talentId to require a specified prerequisite rank >= $requiredRank.",
+                            )
+                        }
+                    }
+            }
+    }
+
+    @Test
     fun `base class breakpoint payoff talents freeze documented gameplay pivots`() {
         val loader = DataLoader()
         val catalog = loader.loadSchemaCatalog()

@@ -1385,17 +1385,16 @@ object GameModule {
         content: GameContent,
         profession: ProfessionSchemaV2,
         race: RaceDef? = null,
-    ) = resolveStartingTalentIds(content, profession, race).map { talentId ->
+    ) = resolveStartingTalentIds(profession, race).map { talentId ->
         requireNotNull(content.talents.firstOrNull { it.id == talentId }) {
             "Profession '${profession.id}' references unknown starter talent '$talentId'."
         }
     }
 
     private fun resolveStartingTalentIds(
-        content: GameContent,
         profession: ProfessionSchemaV2,
         race: RaceDef? = null,
-    ): List<String> = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, level = 1, race = race)
+    ): List<String> = TalentProgression.startingTalentIds(profession, race)
 
     private fun resolveStarterItems(
         content: GameContent,

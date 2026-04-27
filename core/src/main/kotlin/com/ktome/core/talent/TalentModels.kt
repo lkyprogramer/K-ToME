@@ -308,7 +308,7 @@ data class TalentLoadout(
 ) {
     fun talentIdAt(slot: Int): String? = slotToTalentId[slot]
 
-    fun levelOf(talentId: String): Int = talentLevels[talentId] ?: 1
+    fun levelOf(talentId: String): Int = talentLevels[talentId] ?: 0
 
     fun effectiveLevels(draft: TalentAllocationDraft?): Map<String, Int> =
         if (draft == null) {

@@ -66,6 +66,17 @@ Phase4 v4 的职业统计固定按以下 release classification 执行：
 4. `FROZEN` 由 `tags contains frozen` 派生，只用于 report / eligibility classification，不属于职业发布层级枚举。
 5. 本轮 PR 不在 `ProfessionTier` 增加 frozen 成员，不把 `shadowblade / warden` 的 YAML `tier` 改成 `FROZEN`。
 
+### 2.3 PR-01 后续继承的 Talent UI / snapshot 合同
+
+PR-01 合入后，后续 PR 必须继承以下实现边界：
+
+1. `TalentTreeNodeSnapshot.category` 是 `TalentCategory` typed enum；JSON wire 仍是 `"ACTIVE" / "PASSIVE" / "SUSTAINED"` 字符串枚举名。
+2. client、game harness、tools 不得再对 `snapshot.category` 做 `TalentCategory.valueOf(...)` 或字符串分支；snapshot consumer 必须直接消费 typed enum。
+3. Talent tree sidebar 的 presentation authority 固定为 `client.ui.talent.TalentSidebarPresenter`。
+4. `AsciiRenderModel` 和 `TileRenderModel` 只能把 `TalentSidebarLine.role` 映射为各自 tone；Tile 可以额外 resolve `iconKey`。不得在 renderer 内重新拼装 talent tree 文案、glyph、rank label、preview 展开/折叠、active-slot-choice 文案或 footer。
+5. `DescriptionPresenter.presentTalentTreeNodeLines` 继续负责 talent node 描述文本；renderer 不得绕过 presenter 直接为 talent tree sidebar 组装描述行。
+6. 后续 PR 若触碰 talent sidebar、active-slot-choice modal、`TalentTreeNodeSnapshot` 或相关 RenderSnapshot serialization，必须同步更新 `TalentSidebarPresenterTest`、`InputHandlerTest`、ASCII/Tile render model 测试，以及 snapshot serialization 测试。
+
 ## 3. 资源管线结论
 
 本轮 v4 后续优化优先修玩法结构、构筑选择、奖励采用、探索学习链、验证效率和验证代表性。当前仓库已经存在足够的职业、天赋、铭文、Boss variant、special item、sample pack visual/audio 资源。因此 8 个 PR 均不生成新图片、不生成新音频。
@@ -182,13 +193,14 @@ Phase4 canonical report 产物固定为 `tools/build/reports/verification/phase4
 
 | PR | UI surface | 必测测试面 |
 | --- | --- | --- |
-| PR-01 | Talent tree 三列 UI、active slot 替换 modal | `client/src/test/kotlin/com/ktome/client/ui/talent/**/*SnapshotTest.kt` |
+| PR-01 | Talent tree sidebar、active slot choice modal | `client/src/test/kotlin/com/ktome/client/ui/talent/TalentSidebarPresenterTest.kt`、`AsciiRenderModelTest`、`TileRendererCanvasTest` |
 | PR-02 | Inscription replacement modal | `client/src/test/kotlin/com/ktome/client/ui/card/**/*SnapshotTest.kt` |
 | PR-04 | Frontstage cue / log priority | `client/src/test/kotlin/com/ktome/client/render/**/*SnapshotTest.kt` |
 | PR-05 | Boss variant warning / telegraph presentation | `client/src/test/kotlin/com/ktome/client/render/**/*SnapshotTest.kt` |
 | PR-07 | Main menu pack summary / validation overlay pack summary | `client/src/test/kotlin/com/ktome/client/screen/**/*SnapshotTest.kt` |
 
 测试必须覆盖 `1280x800` 和窄屏等价布局，证明文本不溢出、modal 不遮挡关键前台信息、empty state 与 active state 都可读。
+Talent tree sidebar 是 presenter-first surface：新增或调整 sidebar line role 时，必须先更新 `TalentSidebarPresenterTest`，再用 ASCII/Tile render model 测试证明 renderer 只做 role 到 tone/icon 的映射。
 
 ## 6. 串行开发与破坏性改造守则
 

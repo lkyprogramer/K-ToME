@@ -1,5 +1,6 @@
 package com.ktome.core.snapshot
 
+import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentTreeOwnerType
 import kotlinx.serialization.Serializable
 
@@ -204,6 +205,7 @@ data class RenderUiStateSnapshot(
     val equipment: List<EquipmentSlotSnapshot>,
     val talents: List<TalentSlotSnapshot>,
     val reserveTalents: List<TalentReserveSnapshot> = emptyList(),
+    val talentTrees: List<TalentTreeSnapshot> = emptyList(),
     val inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
     val inventory: List<InventoryEntrySnapshot>,
     val recentRewards: List<RewardPresentationEntrySnapshot> = emptyList(),
@@ -353,6 +355,84 @@ data class TalentReserveSnapshot(
     val committedLevel: Int = level,
     val descriptionModel: DescriptionModelSnapshot? = null,
     val nextBreakpointPreview: TalentBreakpointPreviewSnapshot? = null,
+    val isMaxRank: Boolean = false,
+    val hasPendingAllocation: Boolean = false,
+)
+
+@Serializable
+enum class TalentNodeStateSnapshot {
+    LOCKED,
+    LEARNABLE,
+    LEARNED_RESERVE,
+    LEARNED_ACTIVE,
+}
+
+@Serializable
+enum class TalentNodeLockReasonTypeSnapshot {
+    LEVEL,
+    PREREQUISITE_RANK,
+    TREE_INVESTMENT,
+    CROSS_TREE_INVESTMENT,
+}
+
+@Serializable
+data class TalentNodeLockReasonSnapshot(
+    val type: TalentNodeLockReasonTypeSnapshot,
+    val messageKey: String,
+    val talentId: String? = null,
+    val talentNameKey: String? = null,
+    val treeId: String? = null,
+    val treeNameKey: String? = null,
+    val requiredLevel: Int? = null,
+    val currentLevel: Int? = null,
+    val requiredRank: Int? = null,
+    val currentRank: Int? = null,
+    val requiredPoints: Int? = null,
+    val currentPoints: Int? = null,
+)
+
+@Serializable
+data class TalentTreeSnapshot(
+    val treeId: String,
+    val ownerType: String = TalentTreeOwnerType.PROFESSION.name,
+    val treeOwnerId: String = "",
+    val nameKey: String,
+    val descKey: String,
+    val visualKey: String? = null,
+    val iconKey: String? = null,
+    val audioProfile: String? = null,
+    val nodes: List<TalentTreeNodeSnapshot> = emptyList(),
+)
+
+@Serializable
+data class TalentTreeNodeSnapshot(
+    val talentId: String,
+    val treeId: String,
+    val ownerType: String = TalentTreeOwnerType.PROFESSION.name,
+    val treeOwnerId: String = "",
+    val nameKey: String,
+    val descKey: String? = null,
+    val visualKey: String? = null,
+    val iconKey: String? = null,
+    val damageTypeIconKey: String? = null,
+    val audioProfile: String? = null,
+    val category: TalentCategory = TalentCategory.ACTIVE,
+    val state: TalentNodeStateSnapshot,
+    val rank: Int,
+    val committedRank: Int = rank,
+    val maxRank: Int,
+    val unlockLevel: Int,
+    val resourceCost: Int,
+    val resourceLabelKey: String,
+    val resourceTypeId: String = "STAMINA",
+    val range: Int,
+    val minRange: Int,
+    val currentCooldown: Int,
+    val maxCooldown: Int,
+    val requiresTarget: Boolean,
+    val descriptionModel: DescriptionModelSnapshot? = null,
+    val nextBreakpointPreview: TalentBreakpointPreviewSnapshot? = null,
+    val lockReasons: List<TalentNodeLockReasonSnapshot> = emptyList(),
     val isMaxRank: Boolean = false,
     val hasPendingAllocation: Boolean = false,
 )

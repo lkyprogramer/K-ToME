@@ -341,6 +341,10 @@ internal object Phase4DomainArtifactRegistry {
         val professionCapstoneAdoptionRate = payload.requireArtifactMetric("longRunLab", "professionCapstoneAdoptionRate")
         val nonWeaponBuildPayoffRate = payload.requireArtifactMetric("longRunLab", "nonWeaponBuildPayoffRate")
         val professionCapstoneBreakdown = payload.requireArtifactMetric("longRunLab", "professionCapstoneBreakdown")
+        val starterProfessionTalentMaxCount = payload.requireArtifactMetric("longRunLab", "starterProfessionTalentMaxCount")
+        val learnedTalentChoiceEventRate = payload.requireArtifactMetric("longRunLab", "learnedTalentChoiceEventRate")
+        val multiTreeInvestmentAboveThresholdRate = payload.requireArtifactMetric("longRunLab", "multiTreeInvestmentAboveThresholdRate")
+        val breakpointChoiceEventRate = payload.requireArtifactMetric("longRunLab", "breakpointChoiceEventRate")
         val professionTopWeaponBaseIds =
             payload["professionTopWeaponBaseIds"] ?: deriveProfessionTopWeaponBaseIds(professionTerminalWeaponDistribution.jsonObject)
         val professionTopWeaponSemanticTags =
@@ -366,6 +370,17 @@ internal object Phase4DomainArtifactRegistry {
                     put("professionCapstoneSeenRate", professionCapstoneSeenRate)
                     put("professionCapstoneAdoptionRate", professionCapstoneAdoptionRate)
                     put("nonWeaponBuildPayoffRate", nonWeaponBuildPayoffRate)
+                    put("starterProfessionTalentMaxCount", starterProfessionTalentMaxCount)
+                    put("learnedTalentChoiceEventRate", learnedTalentChoiceEventRate)
+                    put("multiTreeInvestmentAboveThresholdRate", multiTreeInvestmentAboveThresholdRate)
+                    put("breakpointChoiceEventRate", breakpointChoiceEventRate)
+                    put("talentTreePrimaryInvestmentDistribution", payload.getValue("talentTreePrimaryInvestmentDistribution"))
+                    put("talentReserveSwapCount", payload.intValue("talentReserveSwapCount"))
+                    put("rankBreakpointAdoptionByTalent", payload.getValue("rankBreakpointAdoptionByTalent"))
+                    put("autoLearnedNonStarterTalentCount", payload.intValue("autoLearnedNonStarterTalentCount"))
+                    put("includedProfessions", payload.getValue("includedProfessions"))
+                    put("advancedReportOnlyProfessions", payload.getValue("advancedReportOnlyProfessions"))
+                    put("excludedFrozenProfessions", payload.getValue("excludedFrozenProfessions"))
                     put("alignedFullRouteSampleCount", payload.intValue("alignedFullRouteSampleCount"))
                     put("crossProfessionTopWeaponCount", payload.intValue("crossProfessionTopWeaponCount"))
                     payload["crossProfessionTopWeaponBaseId"]?.let { topWeaponBaseId -> put("crossProfessionTopWeaponBaseId", topWeaponBaseId) }

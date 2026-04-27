@@ -7,7 +7,9 @@ import com.ktome.core.item.ItemType
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.Point
 import com.ktome.core.run.RunOutcome
+import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.validation.ValidationAction
 
@@ -54,6 +56,10 @@ sealed interface PlayerCommand {
     data class AssignTalent(val talentId: String) : PlayerCommand
 
     data object ConfirmTalentDraft : PlayerCommand
+
+    data object ConfirmTalentDraftToReserve : PlayerCommand
+
+    data class ConfirmTalentDraftReplacingSlot(val slot: Int) : PlayerCommand
 
     data object RollbackTalentDraft : PlayerCommand
 
@@ -187,6 +193,34 @@ data class TalentReserveView(
     val nextBreakpointPreview: com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot? = null,
     val hasPendingAllocation: Boolean = false,
 )
+
+data class TalentTreeView(
+    val treeId: String,
+    val ownerType: TalentTreeOwnerType = TalentTreeOwnerType.PROFESSION,
+    val treeOwnerId: String = "",
+    val nameKey: String,
+    val nodes: List<TalentTreeNodeView> = emptyList(),
+)
+
+data class TalentTreeNodeView(
+    val talentId: String,
+    val treeId: String,
+    val ownerType: TalentTreeOwnerType = TalentTreeOwnerType.PROFESSION,
+    val treeOwnerId: String = "",
+    val nameKey: String,
+    val category: TalentCategory = TalentCategory.ACTIVE,
+    val state: TalentNodeStateSnapshot,
+    val level: Int,
+    val committedLevel: Int = level,
+    val maxLevel: Int,
+    val unlockLevel: Int,
+    val hasPendingAllocation: Boolean = false,
+) {
+    val isAssignable: Boolean
+        get() = state == TalentNodeStateSnapshot.LEARNABLE ||
+            state == TalentNodeStateSnapshot.LEARNED_ACTIVE ||
+            state == TalentNodeStateSnapshot.LEARNED_RESERVE
+}
 
 data class OutcomeSummary(
     val outcome: RunOutcome,

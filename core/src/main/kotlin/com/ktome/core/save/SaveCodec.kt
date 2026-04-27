@@ -48,6 +48,8 @@ class SaveCodec(
             ignoreUnknownKeys = false
         },
 ) {
+    private val incompatibleTalentSchemaMessage: String = "INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA: Start a new run."
+
     fun encode(snapshot: SaveSnapshot): String {
         snapshot.validateOrThrow()
         return json.encodeToString(snapshot)
@@ -62,17 +64,25 @@ class SaveCodec(
             }
 
         val root = rootElement as? JsonObject ?: throw MalformedSaveException("Save file root must be a JSON object.")
-        val contractElement = root["saveContractVersion"] ?: throw LegacySaveFormatException()
         val contract =
-            try {
-                json.decodeFromJsonElement<SaveContractVersion>(contractElement)
-            } catch (exception: SerializationException) {
-                throw InvalidSaveException("Save file is missing a valid saveContractVersion.", exception)
-            } catch (exception: IllegalArgumentException) {
-                throw InvalidSaveException("Save file is missing a valid saveContractVersion.", exception)
-            }
+            decodeRequiredField<SaveContractVersion>(
+                root = root,
+                fieldName = "saveContractVersion",
+                missingException = ::LegacySaveFormatException,
+                invalidMessage = "Save file is missing a valid saveContractVersion.",
+            )
         if (!contract.isSupported()) {
             throw UnsupportedSaveContractVersionException(found = contract)
+        }
+        val talentSchemaVersion =
+            decodeRequiredField<Int>(
+                root = root,
+                fieldName = "talentSchemaVersion",
+                missingException = { InvalidSaveException(incompatibleTalentSchemaMessage) },
+                invalidMessage = incompatibleTalentSchemaMessage,
+            )
+        if (talentSchemaVersion != SaveSnapshot.CURRENT_TALENT_SCHEMA_VERSION) {
+            throw InvalidSaveException(incompatibleTalentSchemaMessage)
         }
         requireFields(root, REQUIRED_TOP_LEVEL_FIELDS, context = "Save file")
         val worldProgressElement = root.getValue("worldProgress")
@@ -101,6 +111,22 @@ class SaveCodec(
         return snapshot
     }
 
+    private inline fun <reified T> decodeRequiredField(
+        root: JsonObject,
+        fieldName: String,
+        missingException: () -> SaveLoadException,
+        invalidMessage: String,
+    ): T {
+        val element = root[fieldName] ?: throw missingException()
+        return try {
+            json.decodeFromJsonElement<T>(element)
+        } catch (exception: SerializationException) {
+            throw InvalidSaveException(invalidMessage, exception)
+        } catch (exception: IllegalArgumentException) {
+            throw InvalidSaveException(invalidMessage, exception)
+        }
+    }
+
     private fun requireFields(
         root: JsonObject,
         requiredFields: Set<String>,
@@ -127,6 +153,7 @@ class SaveCodec(
                 "schemaVersion",
                 "saveContractVersion",
                 "buildMetadata",
+                "talentSchemaVersion",
                 "phase4RunState",
                 "timestampEpochMillis",
                 "worldSeed",

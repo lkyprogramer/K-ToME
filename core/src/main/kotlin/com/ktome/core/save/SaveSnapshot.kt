@@ -34,6 +34,7 @@ data class SaveSnapshot(
     val buildMetadata: String = DEFAULT_BUILD_METADATA,
     val buildId: String = buildMetadata,
     val contentSchemaVersion: Int = Phase4ContractVersions.CONTENT_SCHEMA_VERSION,
+    val talentSchemaVersion: Int = CURRENT_TALENT_SCHEMA_VERSION,
     val activePackIds: List<PackId> = emptyList(),
     val activePackManifestVersions: Map<PackId, String> = emptyMap(),
     val topologyFingerprintVersion: Int = Phase4ContractVersions.TOPOLOGY_FINGERPRINT_VERSION,
@@ -87,6 +88,9 @@ data class SaveSnapshot(
         require(buildId.isNotBlank()) { "buildId must not be blank." }
         require(buildId == buildMetadata) { "buildId must match buildMetadata." }
         require(contentSchemaVersion > 0) { "contentSchemaVersion must be positive." }
+        require(talentSchemaVersion == CURRENT_TALENT_SCHEMA_VERSION) {
+            "INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA: Start a new run."
+        }
         require(activePackIds.distinct().size == activePackIds.size) {
             "activePackIds must not contain duplicates."
         }
@@ -160,6 +164,7 @@ data class SaveSnapshot(
 
     companion object {
         const val CURRENT_SCHEMA_VERSION: Int = 14
+        const val CURRENT_TALENT_SCHEMA_VERSION: Int = 2
         const val DEFAULT_BUILD_METADATA: String = "phase4-opt-pr05-dev"
     }
 }

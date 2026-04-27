@@ -103,6 +103,44 @@ class SmokeBotTalentAllocationTest {
     }
 
     @Test
+    fun `smoke bot ranks templar holy strike before holy mark prerequisite unlock`() {
+        val command =
+            bot.decide(
+                observation(
+                    playerStatus = healthyStatus(talentPoints = 1, raceTalentPoints = 0),
+                    playerResource = PlayerResourceView(current = 40, max = 100, typeId = "POSITIVE_ENERGY"),
+                    talentSlots =
+                        listOf(
+                            talentSlot(slot = 1, talentId = "holy_strike", ownerType = TalentTreeOwnerType.PROFESSION),
+                            talentSlot(slot = 2, talentId = "holy_light", ownerType = TalentTreeOwnerType.PROFESSION),
+                            talentSlot(slot = 3, talentId = "holy_shield", ownerType = TalentTreeOwnerType.PROFESSION),
+                        ),
+                ),
+            )
+
+        assertEquals(PlayerCommand.AssignTalent("holy_strike"), command)
+    }
+
+    @Test
+    fun `smoke bot ranks rogue stealth before shadowstep prerequisite unlock`() {
+        val command =
+            bot.decide(
+                observation(
+                    playerStatus = healthyStatus(talentPoints = 1, raceTalentPoints = 0),
+                    playerResource = PlayerResourceView(current = 40, max = 100, typeId = "ENERGY"),
+                    talentSlots =
+                        listOf(
+                            talentSlot(slot = 1, talentId = "backstab", ownerType = TalentTreeOwnerType.PROFESSION),
+                            talentSlot(slot = 2, talentId = "stealth", ownerType = TalentTreeOwnerType.PROFESSION),
+                            talentSlot(slot = 3, talentId = "roll", ownerType = TalentTreeOwnerType.PROFESSION),
+                        ),
+                ),
+            )
+
+        assertEquals(PlayerCommand.AssignTalent("stealth"), command)
+    }
+
+    @Test
     fun `smoke bot unlocks rogue shadowstep before spending filler points when shadow bind path is gated`() {
         val command =
             bot.decide(

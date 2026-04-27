@@ -4,17 +4,17 @@ import com.ktome.game.PlayerCommand
 
 internal object LoadoutPlanner {
     fun preferredLoadoutCommand(observation: RunObservation): PlayerCommand? {
-        val unlockedTalentIds =
+        val learnedTalentIds =
             linkedSetOf<String>().apply {
                 observation.talentSlots.mapTo(this) { slot -> slot.talentId }
                 observation.reserveTalents.mapTo(this) { talent -> talent.talentId }
             }
-        val desiredOrder = desiredLoadoutOrder(observation, unlockedTalentIds)
+        val desiredOrder = desiredLoadoutOrder(observation, learnedTalentIds)
         if (desiredOrder.isEmpty()) {
             return null
         }
         desiredOrder
-            .filter(unlockedTalentIds::contains)
+            .filter(learnedTalentIds::contains)
             .take(4)
             .forEachIndexed { index, talentId ->
                 val targetSlot = index + 1
@@ -28,10 +28,10 @@ internal object LoadoutPlanner {
 
     private fun desiredLoadoutOrder(
         observation: RunObservation,
-        unlockedTalentIds: Set<String>,
+        learnedTalentIds: Set<String>,
     ): List<String> =
         when {
-            unlockedTalentIds.any(SPELLBLADE_TALENT_IDS::contains) ->
+            learnedTalentIds.any(SPELLBLADE_TALENT_IDS::contains) ->
                 listOf(
                     "arcane_edge",
                     "runic_edge",

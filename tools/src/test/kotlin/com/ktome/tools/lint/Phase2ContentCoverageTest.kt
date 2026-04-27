@@ -56,7 +56,15 @@ class Phase2ContentCoverageTest {
         professionById.values.forEach { profession ->
             assertTrue(profession.talentTrees.size >= 3, "Profession ${profession.id} must expose at least 3 trees.")
             if ("frozen" !in profession.tags) {
-                assertTrue(profession.startingTalents.size >= 4, "Profession ${profession.id} must expose at least 4 starting talents.")
+                assertEquals(3, profession.startingTalents.size, "Profession ${profession.id} must expose exactly 3 starting talents.")
+                val ownedNonStarterTalents =
+                    catalog.talents.filter { talent ->
+                        talent.treeId in profession.talentTrees && talent.id !in profession.startingTalents
+                    }
+                assertTrue(
+                    ownedNonStarterTalents.isNotEmpty(),
+                    "Profession ${profession.id} must expose at least one non-starter talent for explicit run choices.",
+                )
             } else {
                 assertTrue(profession.startingTalents.isEmpty(), "Frozen profession ${profession.id} must keep starter runtime frozen.")
             }

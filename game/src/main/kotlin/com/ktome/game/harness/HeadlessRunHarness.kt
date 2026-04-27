@@ -2,6 +2,7 @@ package com.ktome.game.harness
 
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.get
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.profile.AvailabilityContext
@@ -35,6 +36,7 @@ class HeadlessRunHarness(
         saveManager.deleteSave()
 
         var session = newSession(spec, saveManager)
+        applyInitialTalentPointGrant(session, spec)
         val schemaCatalog = schemaCatalogFor(session)
         val zoneObjectiveBindings = buildZoneObjectiveBindings(schemaCatalog)
         val commandStats = linkedMapOf<String, Int>()
@@ -280,6 +282,7 @@ class HeadlessRunHarness(
                         .map { accumulator ->
                             accumulator.toDiagnostic(objectiveStateAtExit = objectiveStateByZone[accumulator.zoneId])
                         }.sortedBy { diagnostic -> zoneDepth(diagnostic.zoneId) }
+                val talentChoiceSummary = session.currentTalentChoiceRunSummary()
 
             ScenarioReport(
                 name = spec.name,
@@ -320,6 +323,18 @@ class HeadlessRunHarness(
                 lateRunReliquaryTagDistribution = session.currentLateRunReliquaryPurchaseTagDistribution(),
                 affixSynergyActivationCount = affixSynergyActivationTotals.values.sum(),
                 affixSynergyActivationDistribution = affixSynergyActivationTotals.toMap(linkedMapOf()),
+                starterProfessionTalentCount = talentChoiceSummary.starterProfessionTalentCount,
+                learnedTalentChoiceEventCount = talentChoiceSummary.learnedTalentChoiceEventCount,
+                learnableNonStarterTalentCount = talentChoiceSummary.learnableNonStarterTalentCount,
+                breakpointChoiceEventCount = talentChoiceSummary.breakpointChoiceEventCount,
+                breakpointPreviewAvailable = talentChoiceSummary.breakpointPreviewAvailable,
+                talentTreeInvestmentByTree = talentChoiceSummary.treeInvestmentByTree,
+                talentTreePrimaryInvestmentTreeId = talentChoiceSummary.primaryInvestmentTreeId,
+                talentTreePrimaryInvestmentPoints = talentChoiceSummary.primaryInvestmentPoints,
+                multiTreeInvestmentAboveThreshold = talentChoiceSummary.multiTreeInvestmentAboveThreshold,
+                talentReserveSwapCount = talentChoiceSummary.reserveSwapCount,
+                rankBreakpointAdoptionByTalent = talentChoiceSummary.rankBreakpointAdoptionByTalent,
+                autoLearnedNonStarterTalentCount = talentChoiceSummary.autoLearnedNonStarterTalentCount,
                 goalReached = goalSatisfied(spec, observation, checkpointTurn),
                 failureReason = failureReason,
                 stuckReason = stuckReason,
@@ -342,6 +357,20 @@ class HeadlessRunHarness(
             success = success,
             assertionFailures = assertionFailures,
         )
+    }
+
+    private fun applyInitialTalentPointGrant(
+        session: FoundationGameSession,
+        spec: ScenarioSpec,
+    ) {
+        if (spec.initialTalentPointGrant <= 0) {
+            return
+        }
+        val experience =
+            requireNotNull(session.automationWorld().get<Experience>(session.playerId)) {
+                "Missing Experience for ${session.playerId}."
+            }
+        experience.unspentTalentPoints += spec.initialTalentPointGrant
     }
 
     private fun recordNewBreakpointPayoffObservations(

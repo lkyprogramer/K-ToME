@@ -119,6 +119,8 @@ object Phase4V4WhiteboxScenarioCli {
             |fi
             |
             |mkdir -p "$runtimeHome" "$evidenceDir"
+            |APP_LOG="$evidenceDir/app.log"
+            |SCENARIO_APP_LOG="$evidenceDir/${scenario.id.value}-app.log"
             |{
             |  echo "scenarioId=${scenario.id.value}"
             |  echo "preset=${runtime.preset}"
@@ -127,7 +129,8 @@ object Phase4V4WhiteboxScenarioCli {
             |  echo "race=${runtime.raceId}"
             |  echo "zone=${runtime.zoneId}"
             |  echo "floor=${runtime.floor}"
-            |} > "$evidenceDir/app.log"
+            |} > "${'$'}APP_LOG"
+            |cp "${'$'}APP_LOG" "${'$'}SCENARIO_APP_LOG"
             |BEFORE_PIDS="$(pgrep -f "${'$'}APP_EXECUTABLE" || true)"
             |JAVA_TOOL_OPTIONS="-Duser.home=$runtimeHome -Dktome.validation.scenario=${scenario.id.value} -Dktome.whitebox.root=$whiteboxRoot -Dktome.whitebox.evidenceDir=$evidenceDir -Dktome.whitebox.manualRecord=$manualRecord -Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"
             |env JAVA_TOOL_OPTIONS="${'$'}JAVA_TOOL_OPTIONS" open -n "${'$'}APP_BUNDLE"
@@ -147,6 +150,8 @@ object Phase4V4WhiteboxScenarioCli {
             |  exit 21
             |fi
             |printf '%s\n' "${'$'}APP_PID" > "$evidenceDir/app.pid"
+            |echo "pid=${'$'}APP_PID" >> "${'$'}APP_LOG"
+            |cp "${'$'}APP_LOG" "${'$'}SCENARIO_APP_LOG"
             |echo "Started K-ToME scenario ${scenario.id.value} pid=${'$'}APP_PID"
             |
         """.trimMargin()
@@ -192,6 +197,9 @@ object Phase4V4WhiteboxScenarioCli {
             appendLine("- window: `${materialization.windowWidth}x${materialization.windowHeight}`")
             appendLine("- app executable: `$appExecutable`")
             appendLine("- manual record: `${evidence.manualRecordPath}`")
+            if (evidence.requiredLogEventKeys.isNotEmpty()) {
+                appendLine("- required log events: `${evidence.requiredLogEventKeys.joinToString("`, `")}`")
+            }
             appendLine()
             appendLine("## 2. Launch command")
             appendLine()
@@ -310,6 +318,7 @@ object Phase4V4WhiteboxScenarioCli {
                     "manualRecordPath" to JsonPrimitive(scenario.evidence.manualRecordPath),
                     "runtimeHome" to JsonPrimitive(repoRelative(repoRoot, paths.runtimeHome)),
                     "evidenceDir" to JsonPrimitive(repoRelative(repoRoot, paths.evidenceDir)),
+                    "requiredLogEventKeys" to JsonArray(scenario.evidence.requiredLogEventKeys.map(::JsonPrimitive)),
                     "evidence" to JsonArray(evidenceItems),
                 ),
             )

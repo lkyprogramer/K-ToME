@@ -43,7 +43,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v8"
+private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v9"
 private const val AGGREGATION_INPUT_DIRECTORY_NAME: String = "inputs"
 private const val AGGREGATION_INPUT_SUMMARY_FILE: String = "aggregation-input-summary.json"
 
@@ -267,6 +267,7 @@ internal object Phase4AggregationInputRunner {
             "longRunLab" -> {
                 evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
                 evaluations += criticalPathPacingEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
+                evaluations += professionTreeRunChoiceEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.professionTreeRunChoiceBaselinePath()))
             }
             "bossHarness" ->
                 evaluations += bossPhaseIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.bossPhaseIdentityBaselinePath()))
@@ -1116,6 +1117,113 @@ internal object Phase4AggregationInputRunner {
             ),
         )
     }
+
+    internal fun professionTreeRunChoiceEvaluation(
+        task: Phase4TaskAggregate,
+        baseline: VerificationBaseline,
+    ): EvaluationResult {
+        val metricIds =
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "longRunLab",
+                outputSection = "profession-tree-run-choice",
+            )
+        val blockingMetricIds = metricIds.filter { metricId -> baseline.expectedMetricRange(metricId) != null }
+        val supportingMetricIds = metricIds.filterNot(blockingMetricIds::contains)
+        val blockingEntries =
+            blockingMetricIds.map { metricId ->
+                val range = baseline.requiredMetric(metricId)
+                val actualValue = task.metrics.getValue(metricId).jsonPrimitive.content.toDouble()
+                val passes = Phase4OwnerMetricTargets.passes(range, actualValue)
+                EvaluationEntry(
+                    metricId = metricId,
+                    status = if (passes) EvaluationEntryStatus.PASS else EvaluationEntryStatus.UNEXPECTED_REGRESSION,
+                    currentValue =
+                        buildJsonObject {
+                            put("value", task.metrics.getValue(metricId))
+                            put("includedProfessions", task.metrics.getValue("includedProfessions"))
+                            put("advancedReportOnlyProfessions", task.metrics.getValue("advancedReportOnlyProfessions"))
+                            put("excludedFrozenProfessions", task.metrics.getValue("excludedFrozenProfessions"))
+                        },
+                    currentValueText =
+                        when (metricId) {
+                            "starterProfessionTalentMaxCount" -> formatCompactNumber(actualValue)
+                            else -> formatPercent(actualValue)
+                        },
+                    targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
+                    note = professionTreeRunChoiceNote(task.metrics),
+                    details =
+                        professionTreeRunChoiceDetails(
+                            task = task,
+                            metricKind = "blockingOwner",
+                            ownerBaseline = Phase4OwnerBaselineRegistry.professionTreeRunChoiceBaselinePath(),
+                            failSemantics = "fail owner gate",
+                        ),
+                )
+            }
+        val supportingEntries =
+            supportingMetricIds.map { metricId ->
+                EvaluationEntry(
+                    metricId = metricId,
+                    status = EvaluationEntryStatus.PASS,
+                    currentValue = task.metrics.getValue(metricId),
+                    currentValueText =
+                        when (metricId) {
+                            "talentReserveSwapCount",
+                            "autoLearnedNonStarterTalentCount",
+                            -> task.metrics.getValue(metricId).jsonPrimitive.content
+                            else -> task.metrics.getValue(metricId).toString()
+                        },
+                    targetText = "display only",
+                    note = professionTreeRunChoiceNote(task.metrics),
+                    details =
+                        professionTreeRunChoiceDetails(
+                            task = task,
+                            metricKind = "supporting",
+                            ownerBaseline = "N/A",
+                            failSemantics = "display only",
+                        ),
+                )
+            }
+        val entries = blockingEntries + supportingEntries
+        return EvaluationResult(
+            evaluationId = "longrun.professionTreeRunChoice",
+            domainId = "longrun",
+            mode = baseline.mode,
+            verdict = if (blockingEntries.any { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
+            baselineId = baseline.baselineId,
+            metricDefinitionVersion = baseline.metricDefinitionVersion,
+            passCount = entries.count { entry -> entry.status == EvaluationEntryStatus.PASS },
+            approvedDebtCount = 0,
+            expectedFailureCount = 0,
+            unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION },
+            improvedDebtCount = 0,
+            entries = entries,
+        )
+    }
+
+    private fun professionTreeRunChoiceDetails(
+        task: Phase4TaskAggregate,
+        metricKind: String,
+        ownerBaseline: String,
+        failSemantics: String,
+    ): JsonObject =
+        buildJsonObject {
+            put("metricKind", metricKind)
+            put("producer", "longRunLab")
+            put("ownerBaseline", ownerBaseline)
+            put("failSemantics", failSemantics)
+            put("includedProfessions", task.metrics.getValue("includedProfessions"))
+            put("advancedReportOnlyProfessions", task.metrics.getValue("advancedReportOnlyProfessions"))
+            put("excludedFrozenProfessions", task.metrics.getValue("excludedFrozenProfessions"))
+            put("talentTreePrimaryInvestmentDistribution", task.metrics.getValue("talentTreePrimaryInvestmentDistribution"))
+            put("rankBreakpointAdoptionByTalent", task.metrics.getValue("rankBreakpointAdoptionByTalent"))
+            put("autoLearnedNonStarterTalentCount", task.metrics.getValue("autoLearnedNonStarterTalentCount"))
+        }
+
+    private fun professionTreeRunChoiceNote(metrics: JsonObject): String =
+        "included=${metrics.getValue("includedProfessions").jsonArray.joinToString { profession -> profession.jsonPrimitive.content }}; " +
+            "advancedReportOnly=${metrics.getValue("advancedReportOnlyProfessions").jsonArray.joinToString { profession -> profession.jsonPrimitive.content }}; " +
+            "excludedFrozen=${metrics.getValue("excludedFrozenProfessions").jsonArray.joinToString { profession -> profession.jsonPrimitive.content }}"
 
     internal fun bossPhaseIdentityEvaluation(
         task: Phase4TaskAggregate,

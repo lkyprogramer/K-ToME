@@ -622,6 +622,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: vanguard_arms
+    requirements:
+      talentPrereqs:
+        - talentId: power_strike
+          minRank: 2
     keywords: [damage, cleave]
     levelEffects:
       1: { damageMultiplier: 1.2 }
@@ -652,6 +656,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: vanguard_arms
+    requirements:
+      talentPrereqs:
+        - talentId: charge
+          minRank: 2
     keywords: [damage, armor_break]
     levelEffects:
       1:
@@ -887,6 +895,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: vanguard_warcry
+    requirements:
+      talentPrereqs:
+        - talentId: intimidation
+          minRank: 2
     keywords: [panic, defense]
     levelEffects:
       1:
@@ -1170,6 +1182,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: arcanist_frost
+    requirements:
+      talentPrereqs:
+        - talentId: ice_bolt
+          minRank: 2
     keywords: [control]
     levelEffects:
       1:
@@ -1370,6 +1386,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: arcanist_arcane
+    requirements:
+      talentPrereqs:
+        - talentId: arcane_shield
+          minRank: 2
     keywords: [resource, buff]
     levelEffects:
       1:
@@ -1760,6 +1780,10 @@ talents:
     callbacks: []
     telegraphRef: charge_lane
     treeId: rogue_subtlety
+    requirements:
+      talentPrereqs:
+        - talentId: stealth
+          minRank: 2
     keywords: [movement, damage, marked]
     breakpoints:
       - atRank: 2
@@ -1829,6 +1853,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: rogue_assassination
+    requirements:
+      talentPrereqs:
+        - talentId: backstab
+          minRank: 2
     keywords: [damage, resource]
     levelEffects:
       1: { damageMultiplier: 1.60, resourceRestoreFraction: 0.10 }
@@ -2206,6 +2234,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: templar_grace
+    requirements:
+      talentPrereqs:
+        - talentId: holy_light
+          minRank: 2
     keywords: [heal, cleanse, shield]
     breakpoints:
       - atRank: 4
@@ -2289,6 +2321,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: templar_faith
+    requirements:
+      talentPrereqs:
+        - talentId: devotion
+          minRank: 2
     keywords: [heal, buff, defense]
     levelEffects:
       1:
@@ -2364,6 +2400,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: vanguard_shield
+    requirements:
+      talentPrereqs:
+        - talentId: shield_bash
+          minRank: 2
     keywords: [control, taunt, guard]
     breakpoints:
       - atRank: 4
@@ -2450,6 +2490,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: vanguard_shield
+    requirements:
+      talentPrereqs:
+        - talentId: guard_stance
+          minRank: 2
     keywords: [buff, defense]
     levelEffects:
       1:
@@ -2519,6 +2563,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: vanguard_warcry
+    requirements:
+      talentPrereqs:
+        - talentId: war_cry
+          minRank: 2
     keywords: [heal, panic]
     levelEffects:
       1: { healFraction: 0.08 }
@@ -2550,6 +2598,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: arcanist_flame
+    requirements:
+      talentPrereqs:
+        - talentId: fireball
+          minRank: 2
     keywords: [damage, boss]
     levelEffects:
       1: { damageMultiplier: 1.7 }
@@ -2581,6 +2633,10 @@ talents:
     callbacks: []
     telegraphRef: charge_lane
     treeId: arcanist_flame
+    requirements:
+      talentPrereqs:
+        - talentId: flame_wall
+          minRank: 2
     keywords: [damage, area, boss]
     levelEffects:
       1: { damageMultiplier: 1.8 }
@@ -2610,6 +2666,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: arcanist_arcane
+    requirements:
+      talentPrereqs:
+        - talentId: blink
+          minRank: 2
     keywords: [buff, resource, boss]
     levelEffects:
       1:
@@ -2685,6 +2745,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: rogue_assassination
+    requirements:
+      talentPrereqs:
+        - talentId: poison_blade
+          minRank: 2
     keywords: [damage, finisher, boss]
     levelEffects:
       1: { damageMultiplier: 2.1 }
@@ -2714,6 +2778,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: rogue_agility
+    requirements:
+      talentPrereqs:
+        - talentId: roll
+          minRank: 2
     keywords: [buff, crit]
     levelEffects:
       1:
@@ -2783,6 +2851,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: rogue_agility
+    requirements:
+      talentPrereqs:
+        - talentId: blade_flurry
+          minRank: 2
     keywords: [stealth, panic, mobility]
     levelEffects:
       1:
@@ -2854,6 +2926,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: templar_smite
+    requirements:
+      talentPrereqs:
+        - talentId: holy_strike
+          minRank: 2
     keywords: [damage, mark, bane]
     breakpoints:
       - atRank: 3
@@ -2957,6 +3033,10 @@ talents:
     callbacks: []
     telegraphRef: charge_lane
     treeId: templar_smite
+    requirements:
+      talentPrereqs:
+        - talentId: judgment_hammer
+          minRank: 2
     keywords: [damage, area, boss]
     levelEffects:
       1: { damageMultiplier: 1.8 }
@@ -2991,7 +3071,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: sweeping_strike
-          minRank: 1
+          minRank: 3
     keywords: [damage, area, knockback]
     levelEffects:
       1: { damageMultiplier: 1.15, knockback: 1 }
@@ -3036,7 +3116,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: linebreaker
-          minRank: 1
+          minRank: 3
     keywords: [damage, area, stun]
     levelEffects:
       1:
@@ -3114,7 +3194,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: guard_stance
-          minRank: 1
+          minRank: 3
     keywords: [buff, defense, movement]
     levelEffects:
       1:
@@ -3188,7 +3268,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: rallying_banner
-          minRank: 1
+          minRank: 3
     keywords: [buff, debuff, control]
     levelEffects:
       1:
@@ -3303,7 +3383,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: flame_wall
-          minRank: 1
+          minRank: 3
     keywords: [damage, burn, ranged]
     levelEffects:
       1:
@@ -3388,7 +3468,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: cinder_burst
-          minRank: 1
+          minRank: 3
     keywords: [damage, area, burn]
     levelEffects:
       1:
@@ -3473,7 +3553,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: ice_prison
-          minRank: 1
+          minRank: 2
     keywords: [damage, freeze, control]
     levelEffects:
       1:
@@ -3553,7 +3633,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: glacial_seal
-          minRank: 1
+          minRank: 3
     keywords: [damage, area, slow]
     levelEffects:
       1:
@@ -3638,7 +3718,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: arcane_overload
-          minRank: 1
+          minRank: 3
     keywords: [damage, burst, boss]
     levelEffects:
       1:
@@ -3723,7 +3803,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: poison_blade
-          minRank: 1
+          minRank: 3
     keywords: [damage, debuff, control]
     levelEffects:
       1:
@@ -3808,7 +3888,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: execution
-          minRank: 1
+          minRank: 3
     keywords: [damage, finisher, boss]
     levelEffects:
       1: { damageMultiplier: 1.85, resourceRestoreFraction: 0.08 }
@@ -3843,7 +3923,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: shadowstep
-          minRank: 1
+          minRank: 2
     keywords: [control, curse, ranged, marked]
     breakpoints:
       - atRank: 4
@@ -3938,7 +4018,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: shadow_bind
-          minRank: 1
+          minRank: 3
     keywords: [stealth, panic, buff]
     levelEffects:
       1:
@@ -4043,7 +4123,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: blade_flurry
-          minRank: 1
+          minRank: 3
     keywords: [damage, area, ranged]
     levelEffects:
       1:
@@ -4123,7 +4203,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: holy_mark
-          minRank: 1
+          minRank: 3
     keywords: [holy, ranged, mark]
     levelEffects:
       1:
@@ -4208,7 +4288,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: radiant_lance
-          minRank: 1
+          minRank: 3
     keywords: [holy, area, control]
     levelEffects:
       1:
@@ -4291,7 +4371,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: holy_shield
-          minRank: 1
+          minRank: 2
     keywords: [shield, buff, defense]
     levelEffects:
       1:
@@ -4364,7 +4444,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: sanctuary
-          minRank: 1
+          minRank: 3
     keywords: [heal, cleanse, panic]
     levelEffects:
       1:
@@ -4432,7 +4512,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: devotion
-          minRank: 1
+          minRank: 2
     keywords: [buff, holy, defense]
     levelEffects:
       1:
@@ -4507,7 +4587,7 @@ talents:
     requirements:
       talentPrereqs:
         - talentId: beacon_of_zeal
-          minRank: 1
+          minRank: 3
     keywords: [holy, boss, debuff]
     levelEffects:
       1:
@@ -5089,6 +5169,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: berserker_wrath
+    requirements:
+      talentPrereqs:
+        - talentId: savage_hew
+          minRank: 2
     keywords: [damage, boss]
     levelEffects:
       1:
@@ -5170,6 +5254,10 @@ talents:
     callbacks: []
     telegraphRef: charge_lane
     treeId: berserker_wrath
+    requirements:
+      talentPrereqs:
+        - talentId: riven_edge
+          minRank: 3
     keywords: [mobility, burst]
     levelEffects:
       1: { damageMultiplier: 1.15, healFraction: 0.05, resourceRestoreFraction: 0.06 }
@@ -5201,6 +5289,10 @@ talents:
     callbacks: []
     telegraphRef: charge_lane
     treeId: berserker_ruin
+    requirements:
+      talentPrereqs:
+        - talentId: reckless_slam
+          minRank: 2
     keywords: [damage, area, control]
     levelEffects:
       1:
@@ -5287,6 +5379,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: berserker_ruin
+    requirements:
+      talentPrereqs:
+        - talentId: fault_line
+          minRank: 3
     keywords: [damage, area]
     levelEffects:
       1: { damageMultiplier: 0.95, knockback: 1 }
@@ -5316,6 +5412,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: berserker_bloodwar
+    requirements:
+      talentPrereqs:
+        - talentId: kill_frenzy
+          minRank: 2
     keywords: [panic, buff]
     levelEffects:
       1:
@@ -5390,6 +5490,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: berserker_bloodwar
+    requirements:
+      talentPrereqs:
+        - talentId: pain_fuel
+          minRank: 3
     keywords: [resource, buff]
     levelEffects:
       1:
@@ -5467,6 +5571,10 @@ talents:
     telegraphRef: melee_single
     equilibriumAffinity: ARCANE
     treeId: spellblade_enchanted_blade
+    requirements:
+      talentPrereqs:
+        - talentId: arcane_edge
+          minRank: 2
     keywords: [damage, hybrid]
     levelEffects:
       1:
@@ -5549,6 +5657,10 @@ talents:
     telegraphRef: melee_single
     equilibriumAffinity: ARCANE
     treeId: spellblade_enchanted_blade
+    requirements:
+      talentPrereqs:
+        - talentId: runic_edge
+          minRank: 3
     keywords: [damage, boss]
     levelEffects:
       1:
@@ -5629,6 +5741,10 @@ talents:
     telegraphRef: self_buff_aura
     equilibriumAffinity: NEUTRAL
     treeId: spellblade_elemental_flux
+    requirements:
+      talentPrereqs:
+        - talentId: flux_anchor
+          minRank: 2
     keywords: [buff, resource]
     levelEffects:
       1:
@@ -5704,6 +5820,10 @@ talents:
     telegraphRef: self_buff_aura
     equilibriumAffinity: NEUTRAL
     treeId: spellblade_elemental_flux
+    requirements:
+      talentPrereqs:
+        - talentId: balance_point
+          minRank: 3
     keywords: [resource, defense]
     levelEffects:
       1:
@@ -5781,6 +5901,10 @@ talents:
     telegraphRef: charge_lane
     equilibriumAffinity: ARCANE
     treeId: spellblade_battle_spell
+    requirements:
+      talentPrereqs:
+        - talentId: spell_parry
+          minRank: 2
     keywords: [mobility, hybrid]
     levelEffects:
       1: { damageMultiplier: 1.15 }
@@ -5811,6 +5935,10 @@ talents:
     telegraphRef: self_buff_aura
     equilibriumAffinity: NEUTRAL
     treeId: spellblade_battle_spell
+    requirements:
+      talentPrereqs:
+        - talentId: blink_strike
+          minRank: 3
     keywords: [defense, counter]
     levelEffects:
       1:

@@ -235,21 +235,22 @@ class RenderSnapshotContractTest {
 
         val leveledSnapshot = session.renderSnapshot()
 
-        assertEquals(listOf(1, 2, 3, 4), leveledSnapshot.uiState.talents.map { talent -> talent.slot })
-        assertTrue(leveledSnapshot.uiState.talents.none { talent -> talent.talentId == "charge" })
-        assertTrue(leveledSnapshot.uiState.reserveTalents.any { talent -> talent.talentId == "charge" && talent.descKey != null })
+        assertEquals(listOf(1, 2, 3), leveledSnapshot.uiState.talents.map { talent -> talent.slot })
+        assertTrue(leveledSnapshot.uiState.talents.none { talent -> talent.talentId == "war_cry" })
+        assertTrue(leveledSnapshot.uiState.reserveTalents.none { talent -> talent.talentId == "war_cry" })
         assertTrue(
-            leveledSnapshot.uiState.reserveTalents.none { reserve ->
-                leveledSnapshot.uiState.talents.any { active -> active.talentId == reserve.talentId }
-            },
+            leveledSnapshot.uiState.talentTrees
+                .flatMap { tree -> tree.nodes }
+                .any { node -> node.talentId == "war_cry" && node.state == com.ktome.core.snapshot.TalentNodeStateSnapshot.LEARNABLE },
         )
 
-        assertTrue(session.perform(PlayerCommand.EquipTalentToSlot(slot = 4, talentId = "charge")))
+        assertTrue(session.perform(PlayerCommand.AssignTalent("war_cry")))
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
         val remappedSnapshot = session.renderSnapshot()
 
-        assertEquals("charge", remappedSnapshot.uiState.talents.first { talent -> talent.slot == 4 }.talentId)
-        assertFalse(remappedSnapshot.uiState.reserveTalents.any { talent -> talent.talentId == "charge" })
-        assertTrue(remappedSnapshot.uiState.reserveTalents.any { talent -> talent.talentId == "war_cry" })
+        assertEquals(listOf(1, 2, 3, 4), remappedSnapshot.uiState.talents.map { talent -> talent.slot })
+        assertEquals("war_cry", remappedSnapshot.uiState.talents.first { talent -> talent.slot == 4 }.talentId)
+        assertFalse(remappedSnapshot.uiState.reserveTalents.any { talent -> talent.talentId == "war_cry" })
     }
 
     @Test

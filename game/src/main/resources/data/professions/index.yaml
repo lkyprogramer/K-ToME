@@ -19,7 +19,7 @@ professions:
     combatProfile: { baseAttack: 6, baseDefense: 3, baseAccuracy: 10, baseEvasion: 5, baseSpeed: 101, baseHp: 54, baseStamina: 44, baseHpRegen: 1.2 }
     statGrowth: { str: 3, dex: 2, con: 3, wil: 1 }
     talentTrees: [vanguard_arms, vanguard_shield, vanguard_warcry]
-    startingTalents: [power_strike, shield_bash, guard_stance, war_cry]
+    startingTalents: [power_strike, shield_bash, guard_stance]
     startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
@@ -49,7 +49,7 @@ professions:
     combatProfile: { baseAttack: 5, baseDefense: 3, baseAccuracy: 11, baseEvasion: 6, baseSpeed: 103, baseHp: 54, baseStamina: 34, baseHpRegen: 1.0 }
     statGrowth: { str: 1, dex: 2, con: 1, wil: 4 }
     talentTrees: [arcanist_flame, arcanist_frost, arcanist_arcane]
-    startingTalents: [fireball, ice_bolt, blink, arcane_shield]
+    startingTalents: [fireball, blink, arcane_shield]
     startingKit: [arcane_staff, apprentice_robe, mana_potion]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
@@ -83,7 +83,7 @@ professions:
     combatProfile: { baseAttack: 8, baseDefense: 3, baseAccuracy: 12, baseEvasion: 8, baseSpeed: 112, baseHp: 52, baseStamina: 40, baseHpRegen: 1.0 }
     statGrowth: { str: 2, dex: 4, con: 2, wil: 1 }
     talentTrees: [rogue_assassination, rogue_subtlety, rogue_agility]
-    startingTalents: [backstab, poison_blade, stealth, roll]
+    startingTalents: [backstab, stealth, roll]
     startingKit: [short_sword, leather_armor, healing_potion, scroll_teleport]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
@@ -118,7 +118,7 @@ professions:
     combatProfile: { baseAttack: 8, baseDefense: 6, baseAccuracy: 13, baseEvasion: 5, baseSpeed: 102, baseHp: 60, baseStamina: 42, baseHpRegen: 1.2 }
     statGrowth: { str: 2, dex: 1, con: 2, wil: 3 }
     talentTrees: [templar_smite, templar_grace, templar_faith]
-    startingTalents: [holy_strike, holy_light, holy_shield, devotion]
+    startingTalents: [holy_strike, holy_light, holy_shield]
     startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
@@ -155,7 +155,7 @@ professions:
     combatProfile: { baseAttack: 7, baseDefense: 2, baseAccuracy: 11, baseEvasion: 5, baseSpeed: 104, baseHp: 58, baseStamina: 36, baseHpRegen: 1.1 }
     statGrowth: { str: 3, dex: 2, con: 2, wil: 1 }
     talentTrees: [berserker_wrath, berserker_ruin, berserker_bloodwar]
-    startingTalents: [blood_rush, savage_hew, reckless_slam, kill_frenzy]
+    startingTalents: [blood_rush, savage_hew, kill_frenzy]
     startingKit: [war_maul, chain_mail, healing_potion]
     initialUnlockState: DEV_UNLOCKED
     releaseUnlockCondition:
@@ -194,7 +194,7 @@ professions:
     combatProfile: { baseAttack: 5, baseDefense: 3, baseAccuracy: 11, baseEvasion: 6, baseSpeed: 104, baseHp: 50, baseStamina: 34, baseHpRegen: 1.0 }
     statGrowth: { str: 2, dex: 2, con: 1, wil: 3 }
     talentTrees: [spellblade_enchanted_blade, spellblade_elemental_flux, spellblade_battle_spell]
-    startingTalents: [arcane_edge, mana_lunge, flux_anchor, spell_parry]
+    startingTalents: [arcane_edge, mana_lunge, spell_parry]
     startingKit: [long_sword, apprentice_robe, mana_potion, scroll_teleport]
     initialUnlockState: DEV_UNLOCKED
     releaseUnlockCondition:

@@ -66,6 +66,8 @@
 3. `shadowblade` 和 `warden` 继续冻结，不在本改造中补内容。
 4. 职业树感不足的根因是运行时自动获得和 UI 选择结构，不是 YAML 节点数量。
 
+PR01 实现后，`vanguard / arcanist / rogue / templar / berserker / spellblade` 的 `startingTalents` 已固定为 `3`，`unlockLevel` 不再自动 materialize 非 starter rank 1；`shadowblade / warden` 仍保持 frozen 占位且 starter 为空。
+
 ### 3.2 当前实现偏差
 
 | 偏差 | 证据 |
@@ -123,7 +125,7 @@
 
 `startingTalents` 从“开局四槽满配”改成“开局三技能保底”。四个基础职业固定如下：
 
-| 职业 | 保留 startingTalents | 移出开局、进入 level 2 起可学习池 | 目的 |
+| 职业 | 保留 startingTalents | 移出开局、进入显式 LEARNABLE 池 | 目的 |
 | --- | --- | --- | --- |
 | `vanguard` | `power_strike`, `shield_bash`, `guard_stance` | `war_cry` | 保留单体输出、盾击控制、防御架势；把团队/范围节奏留给升级选择 |
 | `arcanist` | `fireball`, `blink`, `arcane_shield` | `ice_bolt` | 保留远程输出、位移、防护；把冰控路线留给升级选择 |
@@ -132,10 +134,12 @@
 
 进阶 DEV_UNLOCKED 职业固定如下：
 
-| 职业 | 保留 startingTalents | 移出开局、进入 level 2 起可学习池 | 目的 |
+| 职业 | 保留 startingTalents | 移出开局、进入显式 LEARNABLE 池 | 目的 |
 | --- | --- | --- | --- |
 | `berserker` | `blood_rush`, `savage_hew`, `kill_frenzy` | `reckless_slam` | 保留接战、主输出、击杀滚动；把范围/风险动作留给升级选择 |
 | `spellblade` | `arcane_edge`, `mana_lunge`, `spell_parry` | `flux_anchor` | 保留混合输出、位移接战、防御；把资源稳定器留给升级选择 |
+
+`spellblade` 的 starter 分布固定为 `spellblade_enchanted_blade=1`、`spellblade_battle_spell=2`、`spellblade_elemental_flux=0`；`flux_anchor` 是 `spellblade_elemental_flux` 的首次升级 learnable 节点。
 
 锁定职业固定如下：
 
@@ -173,16 +177,30 @@ treeInvestedPoints = sum(rank for learned talents whose talentId is in tree.node
 | 层级 | 位置 | 门槛 | 作用 |
 | --- | --- | --- | --- |
 | Tier 1 | 树内第 1、2 个节点 | `unlockLevel <= 2` | 建立树主题，形成第一轮路线选择 |
-| Tier 2 | 树内第 3、4 个节点 | `unlockLevel >= 3`，同树投入 `>= 2` | 形成路线承诺，提供控制、AOE、资源、机动、增伤中的一个 build pivot |
-| Tier 3 | 树内第 5、6 个节点 | `unlockLevel >= 5`，同树投入 `>= 5`，指定前置 rank `>= 2` | 提供 capstone 或 build-defining payoff |
+| Tier 2 | 树内第 3、4 个节点 | `unlockLevel >= 3`，同树投入 `>= 2`，其他任一职业树投入 `>= 1`，指定前置 rank `>= 2` | 形成路线承诺，提供控制、AOE、资源、机动、增伤中的一个 build pivot |
+| Tier 3 | 树内第 5、6 个节点 | `unlockLevel >= 5`，同树投入 `>= 5`，指定前置 rank `>= 3` | 提供 capstone 或 build-defining payoff |
 
 固定数据要求：
 
-1. 每条基础职业树至少 1 个 Tier 2 节点要求前置 rank `>= 2`。
-2. 每条基础职业树至少 1 个 Tier 3 节点要求前置 rank `>= 3`。
+1. 每条非 frozen 职业树的每个 Tier 2 节点都必须要求指定前置 rank `>= 2`。
+2. 每条非 frozen 职业树的每个 Tier 3 节点都必须要求指定前置 rank `>= 3`。
 3. 每个基础职业至少 2 条树拥有 Tier 3 payoff。
 4. Tier 3 payoff 必须改变玩法，不得只有线性数值。
 5. 进阶 DEV_UNLOCKED 职业不扩数量，但必须补齐 Tier 2、Tier 3 前置关系。
+6. `berserker / spellblade` 保持 4 节点 compact tree：第 3 个节点按 Tier 2 校验，第 4 个节点按 Tier 3 校验；每棵 compact tree 仍必须满足 Tier 2 `minRank >= 2` 与 Tier 3 `minRank >= 3` 前置校验。
+
+PR01 data review 结论：
+
+| 职业 | 最小 Tier 3 路线所需职业点数 | 等级上限内可获得职业点数 | 结论 |
+| --- | ---: | ---: | --- |
+| `vanguard` | 5 | 19 | 满足至少一条 Tier 3 路线 |
+| `arcanist` | 5 | 19 | 满足至少一条 Tier 3 路线 |
+| `rogue` | 5 | 19 | 满足至少一条 Tier 3 路线 |
+| `templar` | 5 | 19 | 满足至少一条 Tier 3 路线 |
+| `berserker` | 5 | 19 | report-only compact tree 满足至少一条 Tier 3 路线 |
+| `spellblade` | 5 | 19 | report-only compact tree 满足至少一条 Tier 3 路线 |
+
+最小路线按 `同树 starter rank 1 -> 前置 rank 2 -> Tier 2 rank 3 -> Tier 3` 计算，并包含 Tier 2 所需的副树 `>= 1` 投入；`ExperienceSystem.talentPointsGrantedForLevel(level) = 1` 且 level cap 为 `20`，因此四个 BASE 职业有充足点数完成至少一条 Tier 3 路线。`berserker / spellblade` 只作为 ADVANCED report-only compact tree 可行性记录，不进入 release-facing blocking 分母。
 
 ### 5.5 点数消耗
 
@@ -235,16 +253,25 @@ treeInvestedPoints = sum(rank for learned talents whose talentId is in tree.node
 
 ### 6.1 UI 布局
 
-Talent UI 固定为三列树布局：
+Talent UI 固定为 sidebar 列式树视图：三棵职业树按 tree header 分段顺序展示；输入语义仍保留树列切换，视觉不要求水平三栏。
 
 ```text
 Profession: Vanguard          Talent Points: 2
 
-[Arms]                 [Shield]               [Warcry]
-power_strike R2        shield_bash R1         war_cry Learn
-charge Learn           guard_stance R1        intimidation Locked: requires war_cry R2
-sweeping_strike Locked taunt Locked           rallying_banner Locked
-...
+[Arms]
+* power_strike R2
++ charge Learn
+x sweeping_strike Locked: requires charge R2
+
+[Shield]
+r shield_bash R1
+r guard_stance R1
+x taunt Locked: requires guard_stance R2
+
+[Warcry]
++ war_cry Learn
+x intimidation Locked: requires war_cry R2
+x rallying_banner Locked
 
 Preview:
 - Learn war_cry: costs 1 point, unlocks intimidation at rank 2.

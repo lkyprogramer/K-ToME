@@ -28,6 +28,9 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.snapshot.TalentNodeStateSnapshot
+import com.ktome.core.snapshot.TalentTreeNodeSnapshot
+import com.ktome.core.snapshot.TalentTreeSnapshot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -77,6 +80,72 @@ class AsciiRenderModelTest {
             ),
             model.messageLines.map { line -> line.tone },
         )
+    }
+
+    @Test
+    fun `ascii talent sidebar uses shared talent presentation lines`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            AsciiRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        talentTrees =
+                            listOf(
+                                TalentTreeSnapshot(
+                                    treeId = "vanguard_arms",
+                                    treeOwnerId = "vanguard",
+                                    nameKey = "talent_tree.vanguard_arms.name",
+                                    descKey = "talent_tree.vanguard_arms.desc",
+                                    nodes =
+                                        listOf(
+                                            TalentTreeNodeSnapshot(
+                                                talentId = "charge",
+                                                treeId = "vanguard_arms",
+                                                treeOwnerId = "vanguard",
+                                                nameKey = "talent.vanguard.charge.name",
+                                                descKey = "talent.vanguard.charge.desc",
+                                                state = TalentNodeStateSnapshot.LEARNABLE,
+                                                rank = 0,
+                                                maxRank = 5,
+                                                unlockLevel = 1,
+                                                resourceCost = 8,
+                                                resourceLabelKey = "ui.hud.stamina.short",
+                                                range = 3,
+                                                minRange = 1,
+                                                currentCooldown = 0,
+                                                maxCooldown = 4,
+                                                requiresTarget = true,
+                                            ),
+                                            TalentTreeNodeSnapshot(
+                                                talentId = "war_cry",
+                                                treeId = "vanguard_arms",
+                                                treeOwnerId = "vanguard",
+                                                nameKey = "talent.vanguard.war_cry.name",
+                                                descKey = "talent.vanguard.war_cry.desc",
+                                                state = TalentNodeStateSnapshot.LEARNED_ACTIVE,
+                                                rank = 1,
+                                                maxRank = 5,
+                                                unlockLevel = 1,
+                                                resourceCost = 12,
+                                                resourceLabelKey = "ui.hud.stamina.short",
+                                                range = 0,
+                                                minRange = 0,
+                                                currentCooldown = 0,
+                                                maxCooldown = 6,
+                                                requiresTarget = false,
+                                            ),
+                                        ),
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.TALENT_ASSIGN, talentTreeSelection = 0, talentTreePreviewExpanded = false),
+            )
+
+        assertTrue(model.sidebarLines.any { line -> line.text == "[+] Charge 0/5" && line.tone == AsciiTextTone.CYAN })
+        assertTrue(model.sidebarLines.any { line -> line.text == "[*] War Cry 1/5" && line.tone == AsciiTextTone.GOLD })
+        assertTrue(model.sidebarLines.any { line -> line.text == "Preview collapsed. Press P to expand." && line.tone == AsciiTextTone.LIGHT_GRAY })
     }
 
     @Test
@@ -263,8 +332,9 @@ class AsciiRenderModelTest {
         )
 
     private fun sampleSnapshot(
-        logEvents: List<RenderLogEventSnapshot>,
+        logEvents: List<RenderLogEventSnapshot> = emptyList(),
         combatFeedbackEvents: List<CombatFeedbackSnapshot> = emptyList(),
+        talentTrees: List<TalentTreeSnapshot> = emptyList(),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -330,6 +400,7 @@ class AsciiRenderModelTest {
                     equipment = emptyList(),
                     talents = emptyList(),
                     reserveTalents = emptyList(),
+                    talentTrees = talentTrees,
                     inventory = emptyList(),
                     targetablePositions = listOf(GridPointSnapshot(0, 0)),
                 ),

@@ -17,6 +17,9 @@ import com.ktome.client.ui.talent.DescriptionLine
 import com.ktome.client.ui.talent.DescriptionLineKind
 import com.ktome.client.ui.talent.DescriptionPresenter
 import com.ktome.client.ui.talent.DescriptionSurface
+import com.ktome.client.ui.talent.TalentSidebarLine
+import com.ktome.client.ui.talent.TalentSidebarLineRole
+import com.ktome.client.ui.talent.TalentSidebarPresenter
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -594,67 +597,9 @@ internal object AsciiRenderModelBuilder {
             UiMode.TALENT_ASSIGN -> {
                 lines += blankLine()
                 lines += AsciiTextLine(AsciiRenderer.sidebarTitle(localizer, UiMode.TALENT_ASSIGN), AsciiTextTone.GOLD)
-                lines += AsciiTextLine(
-                    localizer.text("ui.sidebar.talent_points", "value" to snapshot.uiState.playerStatus.talentPoints),
-                    AsciiTextTone.WHITE,
-                )
-                if (snapshot.uiState.playerStatus.raceTalentPoints > 0) {
-                    lines += AsciiTextLine(
-                        localizer.text("ui.sidebar.race_talent_points", "value" to snapshot.uiState.playerStatus.raceTalentPoints),
-                        AsciiTextTone.WHITE,
-                    )
+                TalentSidebarPresenter.present(localizer, snapshot.uiState, overlayState).forEach { line ->
+                    lines += AsciiTextLine(line.text, talentSidebarTone(line))
                 }
-                snapshot.uiState.talents.forEach { talent ->
-                    lines += AsciiTextLine(
-                        "${talent.slot}. ${localizer.text(talent.nameKey)} ${talentRankLabel(talent.level, talent.committedLevel, talent.maxLevel)}${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}",
-                        if (
-                            overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
-                            overlayState.loadoutSlotSelection == talent.slot
-                        ) {
-                            AsciiTextTone.CYAN
-                        } else {
-                            AsciiTextTone.WHITE
-                        },
-                    )
-                }
-                if (snapshot.uiState.reserveTalents.isNotEmpty()) {
-                    lines += AsciiTextLine(localizer.text("ui.sidebar.reserve_talents"), AsciiTextTone.GOLD)
-                    snapshot.uiState.reserveTalents.forEachIndexed { index, talent ->
-                        lines +=
-                            AsciiTextLine(
-                                reserveTalentLabel(localizer, talent),
-                                if (
-                                    overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE &&
-                                    overlayState.loadoutReserveSelection == index
-                                ) {
-                                    AsciiTextTone.CYAN
-                                } else {
-                                    AsciiTextTone.WHITE
-                                },
-                            )
-                    }
-                }
-                val focusedActiveTalent =
-                    snapshot.uiState.talents.firstOrNull { talent ->
-                        overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
-                            talent.slot == overlayState.loadoutSlotSelection
-                    }
-                val focusedReserveTalent =
-                    snapshot.uiState.reserveTalents.getOrNull(overlayState.loadoutReserveSelection)
-                        ?.takeIf { overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE }
-                focusedActiveTalent?.let { talent ->
-                    DescriptionPresenter.presentTalentLines(localizer, talent).forEach { line ->
-                        lines += AsciiTextLine(line.text, descriptionTone(line))
-                    }
-                    lines += AsciiTextLine(talentUsageSummary(localizer, talent.resourceCost, talent.resourceLabelKey, talent.requiresTarget, talent.range), AsciiTextTone.LIGHT_GRAY)
-                }
-                focusedReserveTalent?.let { talent ->
-                    DescriptionPresenter.presentReserveTalentLines(localizer, talent).forEach { line ->
-                        lines += AsciiTextLine(line.text, descriptionTone(line))
-                    }
-                    lines += AsciiTextLine(talentUsageSummary(localizer, talent.resourceCost, talent.resourceLabelKey, talent.requiresTarget, talent.range), AsciiTextTone.LIGHT_GRAY)
-                }
-                lines += AsciiTextLine(localizer.text("ui.controls.talent_assign"), AsciiTextTone.LIGHT_GRAY)
             }
         }
 
@@ -981,6 +926,29 @@ internal object AsciiRenderModelBuilder {
             DescriptionLineKind.KEYWORD,
             DescriptionLineKind.STATE,
             -> AsciiTextTone.LIGHT_GRAY
+        }
+
+    private fun talentSidebarTone(line: TalentSidebarLine): AsciiTextTone =
+        if (line.selected) {
+            AsciiTextTone.CYAN
+        } else {
+            when (line.role) {
+                TalentSidebarLineRole.POINTS,
+                TalentSidebarLineRole.ACTION_HINT,
+                -> AsciiTextTone.WHITE
+
+                TalentSidebarLineRole.ACTION_TITLE -> AsciiTextTone.CYAN
+                TalentSidebarLineRole.TREE_HEADER -> AsciiTextTone.GOLD
+                TalentSidebarLineRole.NODE_LOCKED -> AsciiTextTone.GRAY
+                TalentSidebarLineRole.NODE_LEARNABLE -> AsciiTextTone.GREEN
+                TalentSidebarLineRole.NODE_LEARNED_RESERVE -> AsciiTextTone.WHITE
+                TalentSidebarLineRole.NODE_LEARNED_ACTIVE -> AsciiTextTone.GOLD
+                TalentSidebarLineRole.DESCRIPTION_SECONDARY -> AsciiTextTone.GRAY
+                TalentSidebarLineRole.DESCRIPTION_PRIMARY,
+                TalentSidebarLineRole.DESCRIPTION_STATE,
+                TalentSidebarLineRole.FOOTER,
+                -> AsciiTextTone.LIGHT_GRAY
+            }
         }
 
     private fun combatFeedbackText(

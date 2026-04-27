@@ -68,12 +68,14 @@ import com.ktome.core.random.RandomSource
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.resource.StaminaPools
+import com.ktome.core.race.RaceTalentPointBank
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
+import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
@@ -1450,17 +1452,17 @@ class FoundationGameSessionTest {
         assertTrue(session.playerStatus().attack > baseline.attack)
         assertTrue(session.playerStatus().maxHp > baseline.maxHp)
         assertEquals(
-            listOf("猛击", "盾击", "格挡姿态", "战吼"),
+            listOf("猛击", "盾击", "格挡姿态"),
             session.talentSlots().map { slot -> slot.name },
         )
-        val reserveTalentNames = session.reserveTalentSlots().map { slot -> slot.name }
-        assertTrue(reserveTalentNames.containsAll(listOf("冲锋", "横扫", "碎甲", "嘲讽", "不屈")))
-        assertTrue(reserveTalentNames.any { name -> name == "集结战旗" || name == "威压" })
-        assertTrue(session.messageLog().any { message -> message.contains("冲锋") || message.contains("Charge") })
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "war_cry").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "charge").state)
+        assertFalse(session.talentSlots().any { slot -> slot.talentId == "war_cry" })
         val logKeys = session.renderSnapshot().logEvents.map { event -> event.message.key }
         assertTrue(logKeys.contains("log.level_up.stats"))
         assertTrue(logKeys.contains("log.level_up.hp_max"))
         assertTrue(logKeys.contains("log.level_up.resource_max"))
+        assertTrue(logKeys.contains("log.talent.learnable"))
         val levelUpStats = requireNotNull(logEventByKey(session, "log.level_up.stats")).message.arguments.associateBy { argument -> argument.name }
         assertEquals("ui.stat.str", levelUpStats.getValue("strLabel").valueKey)
         assertEquals("+12", levelUpStats.getValue("str").value)
@@ -1495,7 +1497,7 @@ class FoundationGameSessionTest {
                 .first { argument -> argument.name == "resource" }
                 .valueKey,
         )
-        assertTrue(logKeys.indexOf("log.level_up") < logKeys.indexOf("log.talent.unlock"))
+        assertTrue(logKeys.indexOf("log.level_up") < logKeys.indexOf("log.talent.learnable"))
     }
 
     @Test
@@ -1516,8 +1518,8 @@ class FoundationGameSessionTest {
         val blink = session.talentSlots().first { slot -> slot.talentId == "blink" }
         assertEquals(5, requireNotNull(runtimeWorld(session).get<Experience>(session.playerId)).level)
         assertTrue(blink.range > baselineBlink.range)
-        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "mana_surge" })
-        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "ice_prison" })
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "flame_wall").state)
+        assertEquals(TalentNodeStateSnapshot.LOCKED, talentTreeNode(session, "mana_surge").state)
         assertEquals(
             "96",
             requireNotNull(logEventByKey(session, "log.level_up.resource_max"))
@@ -1612,7 +1614,7 @@ class FoundationGameSessionTest {
     }
 
     @Test
-    fun `reserve talent can be assigned directly without equipping it first`() {
+    fun `learnable tree talent can be assigned directly without equipping it first`() {
         val session =
             GameModule.newFoundationSession(
                 FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
@@ -1624,16 +1626,110 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
 
         val liveLoadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
-        val committedRank = liveLoadout.levelOf("mana_surge")
+        val committedRank = liveLoadout.levelOf("flame_wall")
 
-        assertTrue(session.perform(PlayerCommand.AssignTalent("mana_surge")))
-        val preview = session.reserveTalentSlots().first { slot -> slot.talentId == "mana_surge" }
-        assertEquals(committedRank + 1, preview.level)
-        assertEquals(committedRank, preview.committedLevel)
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "flame_wall").state)
+        assertTrue(session.perform(PlayerCommand.AssignTalent("flame_wall")))
+        val preview = talentTreeNode(session, "flame_wall")
+        assertEquals(committedRank + 1, preview.rank)
+        assertEquals(committedRank, preview.committedRank)
         assertTrue(preview.hasPendingAllocation)
 
         assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
-        assertEquals(committedRank + 1, liveLoadout.levelOf("mana_surge"))
+        assertEquals(committedRank + 1, liveLoadout.levelOf("flame_wall"))
+        assertEquals("flame_wall", session.talentSlots().first { slot -> slot.slot == 4 }.talentId)
+    }
+
+    @Test
+    fun `full active slots require explicit reserve choice before new active talent commits`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260424L, zoneId = "greenwood_fringe", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("full-active-slot-choice-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val experience = requireNotNull(world.get<Experience>(session.playerId))
+        experience.level = 3
+        experience.unspentTalentPoints = 3
+        val loadout = requireNotNull(world.get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+
+        assertTrue(session.perform(PlayerCommand.AssignTalent("charge")))
+        assertTrue(session.perform(PlayerCommand.AssignTalent("charge")))
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
+        assertEquals("charge", session.talentSlots().first { slot -> slot.slot == 4 }.talentId)
+        assertEquals(2, loadout.levelOf("charge"))
+
+        assertTrue(session.perform(PlayerCommand.AssignTalent("sunder_armor")))
+        assertFalse(session.perform(PlayerCommand.ConfirmTalentDraft))
+        assertEquals(0, loadout.levelOf("sunder_armor"))
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.talent.active_slot_choice_required" })
+
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraftToReserve))
+        assertEquals(1, loadout.levelOf("sunder_armor"))
+        assertEquals("charge", session.talentSlots().first { slot -> slot.slot == 4 }.talentId)
+        assertTrue(session.renderSnapshot().uiState.reserveTalents.any { talent -> talent.talentId == "sunder_armor" })
+        assertEquals(0, experience.unspentTalentPoints)
+    }
+
+    @Test
+    fun `profession learned choice metric ignores race talent learns`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260424L, zoneId = "greenwood_fringe", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("race-learned-choice-metric-save")),
+            )
+        val world = runtimeWorld(session)
+        requireNotNull(world.get<RaceTalentPointBank>(session.playerId)).unspentPoints = 1
+
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "human_resolve").state)
+        assertTrue(session.perform(PlayerCommand.AssignTalent("human_resolve")))
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
+
+        val summary = session.currentTalentChoiceRunSummary()
+        assertEquals(0, summary.learnedTalentChoiceEventCount)
+        assertEquals(1, summary.learnableNonStarterTalentCount)
+        assertEquals(3, summary.starterProfessionTalentCount)
+        assertEquals(0, summary.autoLearnedNonStarterTalentCount)
+    }
+
+    @Test
+    fun `starter metric inspects runtime materialized profession talents`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260424L, zoneId = "greenwood_fringe", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("starter-runtime-loadout-metric-save")),
+            )
+        val loadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        loadout.talentLevels["war_cry"] = 1
+
+        val summary = session.currentTalentChoiceRunSummary()
+
+        assertEquals(4, summary.starterProfessionTalentCount)
+        assertEquals(0, summary.learnableNonStarterTalentCount)
+        assertEquals(1, summary.autoLearnedNonStarterTalentCount)
+    }
+
+    @Test
+    fun `breakpoint preview metric remains true after an exposed preview disappears`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260424L, zoneId = "greenwood_fringe", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("breakpoint-preview-exposure-metric-save")),
+            )
+        val exposedSnapshot = session.renderSnapshot()
+        assertTrue(
+            exposedSnapshot.uiState.talentTrees
+                .flatMap { tree -> tree.nodes }
+                .any { node -> node.nextBreakpointPreview != null },
+        )
+
+        val loadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        exposedSnapshot.uiState.talentTrees
+            .flatMap { tree -> tree.nodes }
+            .forEach { node -> loadout.talentLevels[node.talentId] = node.maxRank }
+
+        assertTrue(session.currentTalentChoiceRunSummary().breakpointPreviewAvailable)
     }
 
     @Test
@@ -1652,6 +1748,19 @@ class FoundationGameSessionTest {
 
         repeat(3) { assertTrue(session.perform(PlayerCommand.AssignTalent("blink"))) }
         assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
+
+        val breakpointLog =
+            requireNotNull(
+                session.renderSnapshot().logEvents.lastOrNull { event -> event.message.key == "log.talent.breakpoint_chosen" },
+            )
+        val breakpointArgs = breakpointLog.message.arguments.associateBy { argument -> argument.name }
+        assertEquals("arcanist", breakpointArgs.getValue("professionId").value)
+        assertEquals("blink", breakpointArgs.getValue("talentId").value)
+        assertEquals("arcanist_arcane", breakpointArgs.getValue("treeId").value)
+        assertEquals("4", breakpointArgs.getValue("breakpointRank").value)
+        assertEquals("1", breakpointArgs.getValue("rankBefore").value)
+        assertEquals("4", breakpointArgs.getValue("rankAfter").value)
+        assertNotNull(breakpointArgs["remainingTalentPoints"]?.value)
 
         assertNotEquals(beforeHash, session.currentBuildHash())
         val reserveBlink = session.renderSnapshot().uiState.reserveTalents.firstOrNull { it.talentId == "blink" }
@@ -1814,23 +1923,23 @@ class FoundationGameSessionTest {
 
         val liveLoadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
         val committedBlink = liveLoadout.levelOf("blink")
-        val committedManaSurge = liveLoadout.levelOf("mana_surge")
+        val committedFlameWall = liveLoadout.levelOf("flame_wall")
 
         assertTrue(session.perform(PlayerCommand.AssignTalent("blink")))
-        assertTrue(session.perform(PlayerCommand.AssignTalent("mana_surge")))
+        assertTrue(session.perform(PlayerCommand.AssignTalent("flame_wall")))
         assertTrue(session.saveOnExit())
 
         val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
         assertTrue(loaded.perform(PlayerCommand.RollbackTalentDraft))
 
         val blink = loaded.talentSlots().first { slot -> slot.talentId == "blink" }
-        val manaSurge = loaded.reserveTalentSlots().first { slot -> slot.talentId == "mana_surge" }
+        val flameWall = talentTreeNode(loaded, "flame_wall")
         assertEquals(committedBlink + 1, blink.level)
         assertEquals(committedBlink, blink.committedLevel)
         assertTrue(blink.hasPendingAllocation)
-        assertEquals(committedManaSurge, manaSurge.level)
-        assertEquals(committedManaSurge, manaSurge.committedLevel)
-        assertFalse(manaSurge.hasPendingAllocation)
+        assertEquals(committedFlameWall, flameWall.rank)
+        assertEquals(committedFlameWall, flameWall.committedRank)
+        assertFalse(flameWall.hasPendingAllocation)
         assertFalse(loaded.perform(PlayerCommand.RollbackTalentDraft))
     }
 
@@ -1901,15 +2010,14 @@ class FoundationGameSessionTest {
         assertTrue(session.playerStatus().attack > baseline.attack)
         assertTrue(session.playerStatus().maxHp > baseline.maxHp)
         assertTrue(session.talentSlots().any { slot -> slot.talentId == "roll" })
-        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "shadowstep" })
-        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "deathblow" })
-        assertTrue(session.messageLog().any { message -> message.contains("影袭") || message.contains("Shadowstep") })
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "poison_blade").state)
+        assertEquals(TalentNodeStateSnapshot.LOCKED, talentTreeNode(session, "shadowstep").state)
 
         val logKeys = session.renderSnapshot().logEvents.map { event -> event.message.key }
         assertTrue(logKeys.contains("log.level_up.stats"))
         assertTrue(logKeys.contains("log.level_up.hp_max"))
         assertFalse(logKeys.contains("log.level_up.resource_max"))
-        assertTrue(logKeys.indexOf("log.level_up") < logKeys.indexOf("log.talent.unlock"))
+        assertTrue(logKeys.indexOf("log.level_up") < logKeys.indexOf("log.talent.learnable"))
     }
 
     @Test
@@ -1925,11 +2033,11 @@ class FoundationGameSessionTest {
         val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
 
         assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
-        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "charge" })
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "charge").state)
 
-        assertTrue(session.perform(PlayerCommand.EquipTalentToSlot(slot = 4, talentId = "charge")))
+        assertTrue(session.perform(PlayerCommand.AssignTalent("charge")))
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
         assertEquals("charge", session.talentSlots().first { slot -> slot.slot == 4 }.talentId)
-        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "war_cry" })
 
         requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.CooldownState>(session.playerId)).remainingByTalentId["charge"] = 2
         val cooldownAfterUse = playerCooldown(session, "charge")
@@ -1945,7 +2053,7 @@ class FoundationGameSessionTest {
         assertEquals("charge", loaded.talentSlots().first { slot -> slot.slot == 1 }.talentId)
         assertEquals("power_strike", loaded.talentSlots().first { slot -> slot.slot == 4 }.talentId)
         assertEquals(cooldownAfterUse, playerCooldown(loaded, "charge"))
-        assertTrue(loaded.reserveTalentSlots().any { slot -> slot.talentId == "war_cry" })
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(loaded, "war_cry").state)
     }
 
     @Test
@@ -1960,7 +2068,9 @@ class FoundationGameSessionTest {
         val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
 
         assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
-        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "judgment_hammer" })
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "judgment_hammer").state)
+        assertTrue(session.perform(PlayerCommand.AssignTalent("judgment_hammer")))
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
         requireNotNull(requireNotNull(runtimeWorld(session).get<ResourcePools>(session.playerId)).pool(ResourceType.POSITIVE_ENERGY)).current = 30
 
         assertTrue(session.perform(PlayerCommand.EquipTalentToSlot(slot = 2, talentId = "judgment_hammer")))
@@ -6553,6 +6663,13 @@ class FoundationGameSessionTest {
         field.isAccessible = true
         return field.get(session) as World
     }
+
+    private fun talentTreeNode(
+        session: FoundationGameSession,
+        talentId: String,
+    ) = session.renderSnapshot().uiState.talentTrees
+        .flatMap { tree -> tree.nodes }
+        .first { node -> node.talentId == talentId }
 
     private fun activeFloorState(session: FoundationGameSession): FloorRuntimeState {
         val field = FoundationGameSession::class.java.getDeclaredField("activeFloorState")
