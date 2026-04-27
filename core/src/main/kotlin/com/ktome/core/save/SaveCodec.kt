@@ -176,6 +176,7 @@ class SaveCodec(
                 "player",
                 "floors",
                 "milestoneRewards",
+                "talentChoiceTelemetry",
             )
         private val REQUIRED_WORLD_PROGRESS_FIELDS =
             setOf(

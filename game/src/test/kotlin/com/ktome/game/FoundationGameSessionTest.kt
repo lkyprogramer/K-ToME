@@ -1673,6 +1673,47 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `talent choice telemetry survives save load`() {
+        val saveManager = SaveManager(tempDir.resolve("talent-choice-telemetry-save"))
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260424L, zoneId = "greenwood_fringe", playerProfessionId = "vanguard"),
+                saveManager,
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val experience = requireNotNull(world.get<Experience>(session.playerId))
+        experience.level = 3
+        experience.unspentTalentPoints = 3
+
+        assertTrue(
+            session.renderSnapshot().uiState.talentTrees
+                .flatMap { tree -> tree.nodes }
+                .any { node -> node.nextBreakpointPreview != null },
+        )
+        assertTrue(session.perform(PlayerCommand.AssignTalent("charge")))
+        assertTrue(session.perform(PlayerCommand.AssignTalent("charge")))
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
+        assertTrue(session.perform(PlayerCommand.AssignTalent("sunder_armor")))
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraftToReserve))
+
+        val expectedSummary = session.currentTalentChoiceRunSummary()
+        assertEquals(2, expectedSummary.learnedTalentChoiceEventCount)
+        assertEquals(1, expectedSummary.reserveSwapCount)
+        assertTrue(expectedSummary.breakpointPreviewAvailable)
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        val restoredSummary = loaded.currentTalentChoiceRunSummary()
+
+        assertEquals(expectedSummary.learnedTalentChoiceEventCount, restoredSummary.learnedTalentChoiceEventCount)
+        assertEquals(expectedSummary.breakpointChoiceEventCount, restoredSummary.breakpointChoiceEventCount)
+        assertEquals(expectedSummary.reserveSwapCount, restoredSummary.reserveSwapCount)
+        assertEquals(expectedSummary.rankBreakpointAdoptionByTalent, restoredSummary.rankBreakpointAdoptionByTalent)
+        assertEquals(expectedSummary.breakpointPreviewAvailable, restoredSummary.breakpointPreviewAvailable)
+    }
+
+    @Test
     fun `profession learned choice metric ignores race talent learns`() {
         val session =
             GameModule.newFoundationSession(

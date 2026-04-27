@@ -1,11 +1,65 @@
 package com.ktome.game
 
 import com.ktome.game.data.DataLoader
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class TalentProgressionTest {
+    @Test
+    fun `starter talent materialization honors unlock level gates`() {
+        val catalog = DataLoader().loadSchemaCatalog()
+        val berserker = catalog.professions.first { profession -> profession.id == "berserker" }
+        val spellblade = catalog.professions.first { profession -> profession.id == "spellblade" }
+
+        val berserkerLevelOne =
+            TalentProgression.startingTalentIds(
+                TalentProgressionRequest(
+                    schemaCatalog = catalog,
+                    profession = berserker,
+                    level = 1,
+                    learnedRanks = emptyMap(),
+                ),
+            )
+        val spellbladeLevelOne =
+            TalentProgression.startingTalentIds(
+                TalentProgressionRequest(
+                    schemaCatalog = catalog,
+                    profession = spellblade,
+                    level = 1,
+                    learnedRanks = emptyMap(),
+                ),
+            )
+
+        assertEquals(listOf("blood_rush", "savage_hew"), berserkerLevelOne)
+        assertFalse(berserkerLevelOne.contains("kill_frenzy"))
+        assertEquals(listOf("arcane_edge", "mana_lunge"), spellbladeLevelOne)
+        assertFalse(spellbladeLevelOne.contains("spell_parry"))
+
+        val berserkerLevelTwo =
+            TalentProgression.startingTalentIds(
+                TalentProgressionRequest(
+                    schemaCatalog = catalog,
+                    profession = berserker,
+                    level = 2,
+                    learnedRanks = emptyMap(),
+                ),
+            )
+        val spellbladeLevelTwo =
+            TalentProgression.startingTalentIds(
+                TalentProgressionRequest(
+                    schemaCatalog = catalog,
+                    profession = spellblade,
+                    level = 2,
+                    learnedRanks = emptyMap(),
+                ),
+            )
+
+        assertEquals(listOf("blood_rush", "savage_hew", "kill_frenzy"), berserkerLevelTwo)
+        assertEquals(listOf("arcane_edge", "mana_lunge", "spell_parry"), spellbladeLevelTwo)
+    }
+
     @Test
     fun `tier investment gates use committed learned ranks only`() {
         val catalog = DataLoader().loadSchemaCatalog()

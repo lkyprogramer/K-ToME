@@ -1,6 +1,7 @@
 package com.ktome.core.save
 
 import com.ktome.core.loot.PityTracker
+import com.ktome.core.talent.TalentTreeOwnerType
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -22,6 +23,7 @@ class SaveCodecTest {
         assertTrue(encoded.contains("\"saveContractVersion\""))
         assertTrue(encoded.contains("\"schemaVersion\""))
         assertTrue(encoded.contains("\"phase4RunState\""))
+        assertTrue(encoded.contains("\"talentChoiceTelemetry\""))
         assertFalse(encoded.contains("glyph"))
         assertFalse(encoded.contains("colorHex"))
         assertFalse(encoded.contains("\"messageLog\""))
@@ -41,6 +43,36 @@ class SaveCodecTest {
         val restored = codec.decode(codec.encode(snapshot))
 
         assertEquals(snapshot.phase4RunState, restored.phase4RunState)
+    }
+
+    @Test
+    fun `save codec round trip preserves talent choice telemetry`() {
+        val snapshot =
+            SaveFixtures.resourceHeavyScene().copy(
+                talentChoiceTelemetry =
+                    TalentChoiceTelemetrySnapshot(
+                        events =
+                            listOf(
+                                TalentChoiceEventSnapshot(
+                                    kind = TalentChoiceEventKindSnapshot.LEARNED,
+                                    professionId = "vanguard",
+                                    ownerType = TalentTreeOwnerType.PROFESSION,
+                                    treeOwnerId = "vanguard",
+                                    talentId = "war_cry",
+                                    treeId = "vanguard_warcry",
+                                    rankBefore = 0,
+                                    rankAfter = 1,
+                                    remainingTalentPoints = 0,
+                                ),
+                            ),
+                        reserveSwapCount = 1,
+                        breakpointPreviewSeen = true,
+                    ),
+            )
+
+        val restored = codec.decode(codec.encode(snapshot))
+
+        assertEquals(snapshot.talentChoiceTelemetry, restored.talentChoiceTelemetry)
     }
 
     @Test

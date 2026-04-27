@@ -157,6 +157,9 @@ import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.FloorRewardStateSnapshot
+import com.ktome.core.save.TalentChoiceEventKindSnapshot
+import com.ktome.core.save.TalentChoiceEventSnapshot
+import com.ktome.core.save.TalentChoiceTelemetrySnapshot
 import com.ktome.core.economy.ShopInventoryState
 import com.ktome.core.economy.ShardEconomy
 import com.ktome.core.economy.ShopNode
@@ -407,6 +410,7 @@ class FoundationGameSession internal constructor(
     private var cadenceRewardCount: Int = 0,
     restoredPityTracker: PityTracker = PityTracker(),
     restoredMilestoneRewardSummaries: List<MilestoneRewardSummary> = emptyList(),
+    private val restoredTalentChoiceTelemetry: TalentChoiceTelemetrySnapshot = TalentChoiceTelemetrySnapshot(),
     private val inventoryManager: InventoryManager = InventoryManager(),
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
     private val combatResolver: CombatResolver = CombatResolver(combatRandomSource),
@@ -496,6 +500,48 @@ class FoundationGameSession internal constructor(
         RANK_UP,
         BREAKPOINT_CHOSEN,
     }
+
+    private fun restoreTalentChoiceEventRecord(snapshot: TalentChoiceEventSnapshot): TalentChoiceEventRecord =
+        TalentChoiceEventRecord(
+            kind = snapshot.kind.toRuntimeTalentChoiceEventKind(),
+            professionId = snapshot.professionId,
+            ownerType = snapshot.ownerType,
+            treeOwnerId = snapshot.treeOwnerId,
+            talentId = snapshot.talentId,
+            treeId = snapshot.treeId,
+            rankBefore = snapshot.rankBefore,
+            rankAfter = snapshot.rankAfter,
+            remainingTalentPoints = snapshot.remainingTalentPoints,
+            breakpointRank = snapshot.breakpointRank,
+        )
+
+    private fun TalentChoiceEventKindSnapshot.toRuntimeTalentChoiceEventKind(): TalentChoiceEventKind =
+        when (this) {
+            TalentChoiceEventKindSnapshot.LEARNED -> TalentChoiceEventKind.LEARNED
+            TalentChoiceEventKindSnapshot.RANK_UP -> TalentChoiceEventKind.RANK_UP
+            TalentChoiceEventKindSnapshot.BREAKPOINT_CHOSEN -> TalentChoiceEventKind.BREAKPOINT_CHOSEN
+        }
+
+    private fun TalentChoiceEventRecord.toSaveSnapshot(): TalentChoiceEventSnapshot =
+        TalentChoiceEventSnapshot(
+            kind = kind.toSaveSnapshot(),
+            professionId = professionId,
+            ownerType = ownerType,
+            treeOwnerId = treeOwnerId,
+            talentId = talentId,
+            treeId = treeId,
+            rankBefore = rankBefore,
+            rankAfter = rankAfter,
+            remainingTalentPoints = remainingTalentPoints,
+            breakpointRank = breakpointRank,
+        )
+
+    private fun TalentChoiceEventKind.toSaveSnapshot(): TalentChoiceEventKindSnapshot =
+        when (this) {
+            TalentChoiceEventKind.LEARNED -> TalentChoiceEventKindSnapshot.LEARNED
+            TalentChoiceEventKind.RANK_UP -> TalentChoiceEventKindSnapshot.RANK_UP
+            TalentChoiceEventKind.BREAKPOINT_CHOSEN -> TalentChoiceEventKindSnapshot.BREAKPOINT_CHOSEN
+        }
 
     private enum class TalentDraftActiveSlotCommitMode {
         AUTO,
@@ -634,9 +680,9 @@ class FoundationGameSession internal constructor(
         restoredMilestoneRewardSummaries
             .mapTo(linkedSetOf()) { summary -> summary.rewardSource to summary.sourceId }
     private val affixSynergyActivationCounts = linkedMapOf<String, Int>()
-    private val talentChoiceEvents = mutableListOf<TalentChoiceEventRecord>()
-    private var talentReserveSwapCount: Int = 0
-    private var talentBreakpointPreviewSeen: Boolean = false
+    private val talentChoiceEvents = restoredTalentChoiceTelemetry.events.map(::restoreTalentChoiceEventRecord).toMutableList()
+    private var talentReserveSwapCount: Int = restoredTalentChoiceTelemetry.reserveSwapCount
+    private var talentBreakpointPreviewSeen: Boolean = restoredTalentChoiceTelemetry.breakpointPreviewSeen
     private val respecManager: RespecManager = RespecManager()
     private val encounterDecorationService: EncounterDecorationService = EncounterDecorationService(content)
     private var activeShopId: String? = null
@@ -2129,7 +2175,7 @@ class FoundationGameSession internal constructor(
 
     private fun currentStarterTalentIds(): Set<String> =
         currentProfessionSchema()
-            ?.let { profession -> TalentProgression.startingTalentIds(profession, currentRaceSchema()).toSet() }
+            ?.let { profession -> starterTalentIdsForCurrentLevel(profession).toSet() }
             .orEmpty()
 
     private fun isPlayerInCombat(): Boolean = turnCount <= lastPlayerCombatTurn
@@ -9439,7 +9485,7 @@ class FoundationGameSession internal constructor(
                     activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
                     activePackIds = content.activePackIds,
                     activePackManifestVersions = content.activePackManifestVersions,
-                ),
+                ).copy(talentChoiceTelemetry = talentChoiceTelemetrySnapshot()),
             )
         if (!saved) {
             return false
@@ -9448,6 +9494,13 @@ class FoundationGameSession internal constructor(
             persistValidationSessionMetadata(saveManager, options)
         } ?: true
     }
+
+    private fun talentChoiceTelemetrySnapshot(): TalentChoiceTelemetrySnapshot =
+        TalentChoiceTelemetrySnapshot(
+            events = talentChoiceEvents.map { event -> event.toSaveSnapshot() },
+            reserveSwapCount = talentReserveSwapCount,
+            breakpointPreviewSeen = talentBreakpointPreviewSeen,
+        )
 
     private fun maybePersistCheckpoint(resolution: CommandResolution) {
         val shouldPersist = resolution.persistCheckpointAfterTurn || checkpointRequested
@@ -9618,9 +9671,8 @@ class FoundationGameSession internal constructor(
 
     private fun syncPlayerStarterTalents(): List<String> {
         val profession = currentProfessionSchema() ?: return emptyList()
-        val race = currentRaceSchema()
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
-        val starterTalentIds = TalentProgression.startingTalentIds(profession, race)
+        val starterTalentIds = starterTalentIdsForCurrentLevel(profession)
         val newlyMaterializedTalentIds = mutableListOf<String>()
         starterTalentIds.forEach { talentId ->
             val wasLearned = talentId in loadout.talentLevels
@@ -9632,6 +9684,17 @@ class FoundationGameSession internal constructor(
         canonicalizePlayerLoadout(loadout)
         return newlyMaterializedTalentIds
     }
+
+    private fun starterTalentIdsForCurrentLevel(profession: ProfessionSchemaV2): List<String> =
+        TalentProgression.startingTalentIds(
+            TalentProgressionRequest(
+                schemaCatalog = content.schemaCatalog,
+                profession = profession,
+                level = world.get<Experience>(playerId)?.level ?: 1,
+                learnedRanks = world.get<TalentLoadout>(playerId)?.talentLevels.orEmpty(),
+                race = currentRaceSchema(),
+            ),
+        )
 
     private fun canonicalizePlayerLoadout(loadout: TalentLoadout) {
         val activeTalentIds = linkedSetOf<String>()

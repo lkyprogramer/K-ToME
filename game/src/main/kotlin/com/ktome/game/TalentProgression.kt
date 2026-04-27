@@ -43,14 +43,19 @@ internal data class TalentProgressionEvaluationContext(
 )
 
 internal object TalentProgression {
-    fun startingTalentIds(
-        profession: ProfessionSchemaV2,
-        race: RaceDef? = null,
-    ): List<String> =
-        buildList {
-            profession.startingTalents.distinct().forEach { talentId -> addUnique(talentId) }
-            race?.startingTalents.orEmpty().distinct().forEach { talentId -> addUnique(talentId) }
+    fun startingTalentIds(request: TalentProgressionRequest): List<String> {
+        val talentById = request.schemaCatalog.talents.associateBy(TalentSchemaV2::id)
+        val treeById = request.schemaCatalog.talentTrees.associateBy(TalentTreeSchemaV2::id)
+        return buildList {
+            request.profession.startingTalents.distinct().forEach { talentId -> addUnique(talentId) }
+            request.race?.startingTalents.orEmpty().distinct().forEach { talentId -> addUnique(talentId) }
+        }.filter { talentId ->
+            val talent = talentById[talentId] ?: return@filter true
+            val tree = treeById[talent.treeId]
+            val nodeTier = tree?.let { candidate -> talentNodeTier(candidate, talentId) } ?: 1
+            request.level >= maxOf(talent.unlockLevel, tierUnlockLevelRequirement(nodeTier))
         }
+    }
 
     fun learnableTalentIds(request: TalentProgressionRequest): List<String> {
         val context = evaluationContext(request)

@@ -324,6 +324,7 @@ object GameModule {
             cadenceRewardCount = restored.cadenceRewardCount,
             restoredPityTracker = restored.pityTracker,
             restoredMilestoneRewardSummaries = restored.milestoneRewards,
+            restoredTalentChoiceTelemetry = restored.talentChoiceTelemetry,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)
                     ?: FoundationGameSession.defaultCombatRandomSource(sessionConfig, restored.turnCount),
@@ -1385,16 +1386,27 @@ object GameModule {
         content: GameContent,
         profession: ProfessionSchemaV2,
         race: RaceDef? = null,
-    ) = resolveStartingTalentIds(profession, race).map { talentId ->
+    ) = resolveStartingTalentIds(content, profession, race, level = 1).map { talentId ->
         requireNotNull(content.talents.firstOrNull { it.id == talentId }) {
             "Profession '${profession.id}' references unknown starter talent '$talentId'."
         }
     }
 
     private fun resolveStartingTalentIds(
+        content: GameContent,
         profession: ProfessionSchemaV2,
         race: RaceDef? = null,
-    ): List<String> = TalentProgression.startingTalentIds(profession, race)
+        level: Int,
+    ): List<String> =
+        TalentProgression.startingTalentIds(
+            TalentProgressionRequest(
+                schemaCatalog = content.schemaCatalog,
+                profession = profession,
+                level = level,
+                learnedRanks = emptyMap(),
+                race = race,
+            ),
+        )
 
     private fun resolveStarterItems(
         content: GameContent,

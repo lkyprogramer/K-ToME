@@ -329,6 +329,7 @@ Preview:
 3. `FoundationGameSession` 只 canonicalize 当前新 run 的 starter / learnable state，不读取旧 unlocked 字段。
 4. validation fixture、long-run seed fixture、golden fixture 必须按新 schema 全量刷新。
 5. `RunSummary` 不输出 migration 字段，只输出 `starterProfessionTalentCount`、`learnableNonStarterTalentCount`、`autoLearnedNonStarterTalentCount=0`。
+6. `SaveSnapshot` 必须持久化当前 run 内的 talent choice telemetry，至少覆盖 learn/rank/breakpoint event、reserve swap count 与 breakpoint preview exposure，避免 checkpoint reload 后 owner metric 低估。
 
 ## 6. 测试与自证
 
