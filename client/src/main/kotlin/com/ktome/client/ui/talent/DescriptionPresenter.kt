@@ -14,8 +14,10 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
+import com.ktome.core.snapshot.TalentNodeLockReasonTypeSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.core.snapshot.TalentTreeNodeSnapshot
 import com.ktome.core.snapshot.TerrainOverrideRenderSnapshot
 import com.ktome.core.status.StatusDefinitions
 import com.ktome.core.status.StatusEffectType
@@ -265,6 +267,43 @@ object DescriptionPresenter {
             isMaxRank = talent.isMaxRank,
             hasPendingAllocation = talent.hasPendingAllocation,
         )
+
+    fun presentTalentTreeNodeLines(
+        localizer: Localizer,
+        node: TalentTreeNodeSnapshot,
+    ): List<DescriptionLine> {
+        val lines =
+            presentLines(
+                localizer = localizer,
+                model = node.descriptionModel,
+                nextBreakpoint = node.nextBreakpointPreview,
+                currentRank = node.rank,
+                committedRank = node.committedRank,
+                maxRank = node.maxRank,
+                isMaxRank = node.isMaxRank,
+                hasPendingAllocation = node.hasPendingAllocation,
+            ).toMutableList()
+        node.lockReasons.forEach { reason ->
+            val args =
+                when (reason.type) {
+                    TalentNodeLockReasonTypeSnapshot.LEVEL ->
+                        arrayOf("level" to (reason.requiredLevel ?: 1).toString())
+
+                    TalentNodeLockReasonTypeSnapshot.PREREQUISITE_RANK ->
+                        arrayOf(
+                            "talent" to localizer.text(reason.talentNameKey ?: "log.talent.failure.unknown"),
+                            "rank" to (reason.requiredRank ?: 1).toString(),
+                        )
+
+                    TalentNodeLockReasonTypeSnapshot.TREE_INVESTMENT ->
+                        arrayOf("points" to (reason.requiredPoints ?: 0).toString())
+
+                    TalentNodeLockReasonTypeSnapshot.CROSS_TREE_INVESTMENT -> emptyArray()
+                }
+            lines += DescriptionLine(localizer.text(reason.messageKey, *args), DescriptionLineKind.STATE)
+        }
+        return lines
+    }
 
     private fun presentLines(
         localizer: Localizer,

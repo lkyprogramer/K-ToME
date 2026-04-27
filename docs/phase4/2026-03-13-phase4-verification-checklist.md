@@ -107,6 +107,8 @@
    - `long-run-full.json` 必须保留 `professionCapstoneAdoptionRate`
    - `long-run-full.json` 必须保留 `nonWeaponBuildPayoffRate`
    - `long-run-full.json` 必须保留 `professionCapstoneBreakdown`
+   - `long-run-full.json` 必须保留 `starterProfessionTalentMaxCount / learnedTalentChoiceEventRate / multiTreeInvestmentAboveThresholdRate / breakpointChoiceEventRate`
+   - `long-run-full.json` 必须保留 `talentTreePrimaryInvestmentDistribution / talentReserveSwapCount / rankBreakpointAdoptionByTalent / autoLearnedNonStarterTalentCount`
    - `long-run-full.json` 必须保留 `professionTerminalWeaponDistribution`
    - `long-run-full.json` 必须保留 `fullRouteZoneTraversalDiagnostics`
    - `long-run-full.json` 必须保留 `criticalPathZoneIds`

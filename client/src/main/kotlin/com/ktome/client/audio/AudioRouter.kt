@@ -309,7 +309,9 @@ class AudioRouter(
             is PlayerCommand.AssignTalent,
             is PlayerCommand.RespecTalentTree,
             is PlayerCommand.Validation,
+            is PlayerCommand.ConfirmTalentDraftReplacingSlot,
             PlayerCommand.ConfirmTalentDraft,
+            PlayerCommand.ConfirmTalentDraftToReserve,
             PlayerCommand.RollbackTalentDraft,
             PlayerCommand.SaveGame,
             -> play("audio.ui.confirm")
@@ -416,7 +418,7 @@ class AudioRouter(
     private fun logCueKey(messageKey: String): String? =
         when (messageKey) {
             "log.level_up" -> "audio.ui.level_up"
-            "log.talent.unlock" -> "audio.ui.talent_unlock"
+            "log.talent.learnable", "log.talent.learned" -> "audio.ui.talent_unlock"
             "log.objective.progress", "log.objective.advance" -> "audio.objective.progress"
             "log.route.advance" -> "audio.route.transition"
             "log.victory", "log.victory.escape" -> "audio.route.complete"

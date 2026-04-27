@@ -338,7 +338,7 @@ class TileRenderer(
             val playerCard = model.playerCard
             val targetCard = model.targetCard
             val actionPanel = model.actionPanel
-            val textTopY = layout.cardY + layout.cardHeight - 16f
+            val textTopY = layout.cardY + layout.cardHeight - 10f
             val smallLineHeight = 26f
             val focusNameY = layout.cardY + 72f
             val focusBodyTopY = layout.cardY + 40f
@@ -365,13 +365,10 @@ class TileRenderer(
             )
             val gaugeHeight = 14f
             val gaugeGap = 4f
-            val secondaryGaugeY = layout.cardY + 4f
-            val resourceGaugeY = secondaryGaugeY + gaugeHeight + gaugeGap
-            val hpGaugeY = resourceGaugeY + gaugeHeight + gaugeGap
-            drawGauge(canvas, hud.hpGauge, layout.infoX + 12f, hpGaugeY, layout.infoWidth - 24f, gaugeHeight)
-            drawGauge(canvas, hud.resourceGauge, layout.infoX + 12f, resourceGaugeY, layout.infoWidth - 24f, gaugeHeight)
-            hud.secondaryResourceGauge?.let { gauge ->
-                drawGauge(canvas, gauge, layout.infoX + 12f, secondaryGaugeY, layout.infoWidth - 24f, gaugeHeight)
+            val gauges = listOfNotNull(hud.secondaryResourceGauge, hud.resourceGauge, hud.hpGauge)
+            gauges.forEachIndexed { index, gauge ->
+                val gaugeY = layout.cardY + 8f + index * (gaugeHeight + gaugeGap)
+                drawGauge(canvas, gauge, layout.infoX + 12f, gaugeY, layout.infoWidth - 24f, gaugeHeight)
             }
 
             summaryLines.forEachIndexed { index, line ->
@@ -476,7 +473,8 @@ class TileRenderer(
                     emptyList()
                 }
             val displayLines = messageLines.take(logPresentation.entries.size) + overlayMessages
-            displayLines.takeLast(messageRows).forEachIndexed { index, line ->
+            val wrappedLines = displayLines.flatMap { line -> wrapMessageLine(line, maxChars) }
+            wrappedLines.takeLast(messageRows).forEachIndexed { index, line ->
                 val iconOffset =
                     line.icon?.let { icon ->
                         canvas.drawAsset(icon, layout.logX + 12f, topY - index * 26f - 16f, 18f, 18f)
@@ -489,6 +487,16 @@ class TileRenderer(
                     topY - index * 26f,
                     tone(line.tone),
                 )
+            }
+        }
+
+        private fun wrapMessageLine(
+            line: TileMessageLine,
+            maxChars: Int,
+        ): List<TileMessageLine> {
+            val firstLineMaxChars = (maxChars - if (line.icon == null) 0 else 3).coerceAtLeast(1)
+            return wrapText(line.text, firstLineMaxChars, maxChars.coerceAtLeast(1)).mapIndexed { index, text ->
+                line.copy(text = text, icon = line.icon.takeIf { index == 0 })
             }
         }
 
@@ -814,6 +822,39 @@ class TileRenderer(
             }
         }
 
+        private fun wrapText(
+            text: String,
+            firstLineMaxChars: Int,
+            continuationMaxChars: Int,
+        ): List<String> {
+            val lines = mutableListOf<String>()
+            var remaining = text
+            var maxChars = firstLineMaxChars.coerceAtLeast(1)
+            while (remaining.length > maxChars) {
+                val splitIndex = wrapSplitIndex(remaining, maxChars)
+                lines += remaining.take(splitIndex).trimEnd()
+                remaining = remaining.drop(splitIndex).trimStart()
+                maxChars = continuationMaxChars.coerceAtLeast(1)
+            }
+            if (remaining.isNotBlank()) {
+                lines += remaining
+            }
+            return lines.ifEmpty { listOf("") }
+        }
+
+        private fun wrapSplitIndex(
+            text: String,
+            maxChars: Int,
+        ): Int {
+            val searchEnd = (maxChars + 1).coerceAtMost(text.length)
+            val whitespaceSplit = text.take(searchEnd).indexOfLast(Char::isWhitespace)
+            return if (whitespaceSplit > 0) {
+                whitespaceSplit
+            } else {
+                maxChars.coerceAtLeast(1)
+            }
+        }
+
         private fun truncateTextToWidth(
             text: String,
             maxWidth: Float,
@@ -823,7 +864,7 @@ class TileRenderer(
         private fun maxCharsForWidth(
             maxWidth: Float,
             style: TileTextStyle,
-        ): Int = (maxWidth / approximateCharWidth(style)).toInt().coerceAtLeast(4)
+        ): Int = (maxWidth / approximateCharWidth(style)).toInt().coerceAtLeast(1)
 
         private fun approximateCharWidth(style: TileTextStyle): Float =
             when (style) {
@@ -841,10 +882,16 @@ class TileRenderer(
             text: String,
             maxChars: Int,
         ): String {
-            if (maxChars <= 0 || text.length <= maxChars) {
+            if (maxChars <= 0) {
+                return ""
+            }
+            if (text.length <= maxChars) {
                 return text
             }
-            return text.take((maxChars - 1).coerceAtLeast(1)) + "…"
+            if (maxChars == 1) {
+                return "…"
+            }
+            return text.take(maxChars - 1) + "…"
         }
 
         private fun tone(tone: TileTextTone): Color =

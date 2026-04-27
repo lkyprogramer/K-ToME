@@ -23,6 +23,7 @@ class Phase4V4WhiteboxScenarioCliTest {
 
         assertTrue(exception.message?.contains("Missing -Pktome.whitebox.scenario") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr00-selftest") == true)
+        assertTrue(exception.message?.contains("phase4-v4-pr01") == true)
     }
 
     @Test
@@ -78,6 +79,36 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `pr01 scenario generates profession tree evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "phase4-v4-pr01"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/phase4-v4-pr01/evidence/phase4-v4-pr01-app.log\""))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("phase4-v4-pr01-talent-tree-start.png"))
+        assertTrue(runbook.contains("phase4-v4-pr01-reserve-active-slot.png"))
+        assertTrue(runbook.contains("| 5 | Keyboard (initial UI mode: MAP) | F9, Right, Enter, Esc, T, Enter | Capture after the final Enter: ACTIVE_TALENT_SLOT_CHOICE"))
+        assertTrue(!runbook.contains("select another active node"))
+        assertTrue(!runbook.contains("Move to a tier-3 node"))
+        assertTrue(!runbook.contains("arcanist validation restart"))
+        assertTrue(runbook.contains("log.talent.rank_up"))
+        assertTrue(runbook.contains("docs/review/phase4/v4-pr/manual-records/phase4-v4-pr01-profession-tree-run-choice.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"phase4-v4-pr01\""))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr01-app.log"))
+        assertTrue(expectedEvidence.contains("log.talent.breakpoint_chosen"))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr01-tier3-locked-reason.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `whitebox materialization catalog stays in parity with scenario registry`() {
         val parity = Phase4V4WhiteboxScenarioMaterializationCatalog.validateRegistryParity()
 
@@ -98,6 +129,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             """
             |scenarios:
             |  - id: phase4-v4-pr00-selftest
+            |  - id: phase4-v4-pr01
             |
             """.trimMargin(),
         )
@@ -111,7 +143,7 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     private fun assertFalseMachinePath(payload: String) {
-        assertTrue(!payload.contains("/Users/"))
-        assertTrue(!payload.contains("/tmp/"))
+        assertTrue(!payload.contains("/" + "Users/"))
+        assertTrue(!payload.contains("/" + "tmp/"))
     }
 }

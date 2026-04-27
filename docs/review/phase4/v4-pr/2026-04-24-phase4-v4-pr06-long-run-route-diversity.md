@@ -191,6 +191,7 @@ zoneRouteHash = sha256(routeToken).take(16)
 6. `VerifyChangedPlanGate` 必须覆盖本 PR 的 long-run owner case。
 7. `scopeCoverageLint` 必须包含正反两类 fixture：long-run owner surface 触发 `:game:longRunLab`，presentation-only client surface 不触发 `:game:longRunLab`。
 8. route diversity 的最小 owner subset 必须保留 reward/build/affix/hidden 影响面，不得只看 `game/harness` 目录。
+9. `client/src/main/kotlin/com/ktome/client/ui/talent/TalentSidebarPresenter.kt` 的文案、role、tone 映射调用面属于 presentation-only client surface；未改变 talent rule、event、harness 或 report 字段时，不得路由 full long-run。
 
 ### 5.4 Report 展示
 
@@ -215,8 +216,9 @@ zoneRouteHash = sha256(routeToken).take(16)
 5. 每条 branch 样本覆盖不同 mandatory/secret 组合。
 6. 修改 long-run corpus / route hash / harness runner 时，`verifyChanged` 包含 `:game:longRunLab`。
 7. 修改 presentation-only client UI 文件时，`verifyChanged` 不包含 `:game:longRunLab`。
-8. `reportPhase4` 与 `reportPhase4Only` 输出 route diversity 字段。
-9. `fullRouteIntentDistinctCount == 12`。
+8. 修改 `TalentSidebarPresenter` 的 presentation-only 行为时，`verifyChanged` 不包含 `:game:longRunLab`，但仍需走 client render / golden 相关验证。
+9. `reportPhase4` 与 `reportPhase4Only` 输出 route diversity 字段。
+10. `fullRouteIntentDistinctCount == 12`。
 
 ### 6.2 自动化命令
 
@@ -321,8 +323,9 @@ sdk env
 6. 修改 long-run corpus / route hash / harness runner 时，`verifyChanged` 包含 `:game:longRunLab`。
 7. 修改 reward/build/affix/hidden route owner surface 时，`verifyChanged` 包含 long-run owner subset。
 8. 修改 presentation-only client UI 文件时，`verifyChanged` 不包含 `:game:longRunLab`。
-9. `scopeCoverageLint` 和 `VerifyChangedPlanGate` 测试覆盖上述正反路由。
-10. `reportPhase4` 输出 `routeTokenSample` 与 `zoneRouteHash`。
-11. `fullRouteIntentDistinctCount == 12`。
-12. 没有新增图片计划文件。
-13. 没有新增音频计划文件。
+9. 修改 `TalentSidebarPresenter` 的 presentation-only 行为时，`verifyChanged` 不包含 `:game:longRunLab`，但 `goldenScreenshot / clientSmoke` 仍按 UI 变更执行。
+10. `scopeCoverageLint` 和 `VerifyChangedPlanGate` 测试覆盖上述正反路由。
+11. `reportPhase4` 输出 `routeTokenSample` 与 `zoneRouteHash`。
+12. `fullRouteIntentDistinctCount == 12`。
+13. 没有新增图片计划文件。
+14. 没有新增音频计划文件。

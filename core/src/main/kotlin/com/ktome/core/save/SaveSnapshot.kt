@@ -18,6 +18,7 @@ import com.ktome.core.status.StackingRule
 import com.ktome.core.status.StatusEffectType
 import com.ktome.core.status.StatusTickPriority
 import com.ktome.core.status.StatusTickTiming
+import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.world.solvability.ContentRef
 import com.ktome.core.world.solvability.ResolvedEntranceBinding
 import com.ktome.core.world.solvability.SearchBindingId
@@ -34,6 +35,7 @@ data class SaveSnapshot(
     val buildMetadata: String = DEFAULT_BUILD_METADATA,
     val buildId: String = buildMetadata,
     val contentSchemaVersion: Int = Phase4ContractVersions.CONTENT_SCHEMA_VERSION,
+    val talentSchemaVersion: Int = CURRENT_TALENT_SCHEMA_VERSION,
     val activePackIds: List<PackId> = emptyList(),
     val activePackManifestVersions: Map<PackId, String> = emptyMap(),
     val topologyFingerprintVersion: Int = Phase4ContractVersions.TOPOLOGY_FINGERPRINT_VERSION,
@@ -69,6 +71,7 @@ data class SaveSnapshot(
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
+    val talentChoiceTelemetry: TalentChoiceTelemetrySnapshot = TalentChoiceTelemetrySnapshot(),
     val pendingActionIds: List<Int> = emptyList(),
     val activeTurnActorId: Int? = null,
 ) {
@@ -87,6 +90,9 @@ data class SaveSnapshot(
         require(buildId.isNotBlank()) { "buildId must not be blank." }
         require(buildId == buildMetadata) { "buildId must match buildMetadata." }
         require(contentSchemaVersion > 0) { "contentSchemaVersion must be positive." }
+        require(talentSchemaVersion == CURRENT_TALENT_SCHEMA_VERSION) {
+            "INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA: Start a new run."
+        }
         require(activePackIds.distinct().size == activePackIds.size) {
             "activePackIds must not contain duplicates."
         }
@@ -145,6 +151,7 @@ data class SaveSnapshot(
         require(milestoneRewards.distinctBy { reward -> "${reward.rewardSource}:${reward.sourceId}" }.size == milestoneRewards.size) {
             "Milestone rewards must not contain duplicate source entries."
         }
+        talentChoiceTelemetry.validateOrThrow()
         require(pendingActionIds.all { pendingId -> pendingId > 0 }) {
             "Pending action entity ids must be positive."
         }
@@ -159,7 +166,8 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 14
+        const val CURRENT_SCHEMA_VERSION: Int = 15
+        const val CURRENT_TALENT_SCHEMA_VERSION: Int = 2
         const val DEFAULT_BUILD_METADATA: String = "phase4-opt-pr05-dev"
     }
 }
@@ -179,6 +187,52 @@ data class FloorRewardStateSnapshot(
     val meaningfulRewardSeenThisFloor: Boolean = false,
     val cadenceRewardGrantedThisFloor: Boolean = false,
 )
+
+@Serializable
+data class TalentChoiceTelemetrySnapshot(
+    val events: List<TalentChoiceEventSnapshot> = emptyList(),
+    val reserveSwapCount: Int = 0,
+    val breakpointPreviewSeen: Boolean = false,
+) {
+    fun validateOrThrow() {
+        require(reserveSwapCount >= 0) { "Talent choice reserve swap count must not be negative." }
+        events.forEach(TalentChoiceEventSnapshot::validateOrThrow)
+    }
+}
+
+@Serializable
+data class TalentChoiceEventSnapshot(
+    val kind: TalentChoiceEventKindSnapshot,
+    val professionId: String,
+    val ownerType: TalentTreeOwnerType,
+    val treeOwnerId: String,
+    val talentId: String,
+    val treeId: String,
+    val rankBefore: Int,
+    val rankAfter: Int,
+    val remainingTalentPoints: Int,
+    val breakpointRank: Int? = null,
+) {
+    fun validateOrThrow() {
+        require(professionId.isNotBlank()) { "Talent choice event professionId must not be blank." }
+        require(treeOwnerId.isNotBlank()) { "Talent choice event treeOwnerId must not be blank." }
+        require(talentId.isNotBlank()) { "Talent choice event talentId must not be blank." }
+        require(treeId.isNotBlank()) { "Talent choice event treeId must not be blank." }
+        require(rankBefore >= 0) { "Talent choice event rankBefore must not be negative." }
+        require(rankAfter >= 0) { "Talent choice event rankAfter must not be negative." }
+        require(remainingTalentPoints >= 0) { "Talent choice event remainingTalentPoints must not be negative." }
+        require(breakpointRank == null || breakpointRank > 0) {
+            "Talent choice event breakpointRank must be positive when present."
+        }
+    }
+}
+
+@Serializable
+enum class TalentChoiceEventKindSnapshot {
+    LEARNED,
+    RANK_UP,
+    BREAKPOINT_CHOSEN,
+}
 
 @Serializable
 data class PlayerSnapshot(

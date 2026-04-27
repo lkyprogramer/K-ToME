@@ -63,6 +63,67 @@ object ValidationScenarioRegistry {
                         manualRecordPath = "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr00-selftest.md",
                     ),
             ),
+            ValidationScenarioDef(
+                id = ValidationScenarioId("phase4-v4-pr01"),
+                prId = "PR-01",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.MAPGEN_DIFF,
+                        seed = 2026042431L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "vanguard",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 2,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/phase4-v4-pr01-talent-tree-start.png",
+                                "evidence/phase4-v4-pr01-learnable-confirm.png",
+                                "evidence/phase4-v4-pr01-tier3-locked-reason.png",
+                                "evidence/phase4-v4-pr01-reserve-active-slot.png",
+                                "evidence/phase4-v4-pr01-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter, Esc, T",
+                                    expectedVisibleResult = "Capture after T: Talent tree shows three vanguard starter talents, one empty active slot, learnable non-starter nodes, and locked higher-tier nodes",
+                                    evidenceFile = "evidence/phase4-v4-pr01-talent-tree-start.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: TALENT_ASSIGN from talent-tree-start)",
+                                    input = "Down, Enter, Enter",
+                                    expectedVisibleResult = "Capture after the second Enter: Charge consumes one point after confirm and binds to the fourth active slot",
+                                    evidenceFile = "evidence/phase4-v4-pr01-learnable-confirm.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: TALENT_ASSIGN from learnable-confirm)",
+                                    input = "Down, Down, Down",
+                                    expectedVisibleResult = "Capture after the third Down: Linebreaker remains visible with concrete lock reasons",
+                                    evidenceFile = "evidence/phase4-v4-pr01-tier3-locked-reason.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter, Esc, T, Enter",
+                                    expectedVisibleResult = "Capture after the final Enter: ACTIVE_TALENT_SLOT_CHOICE is visible with 1-4 replacement options, R reserve, and Esc cancel; Charge remains in slot 4",
+                                    evidenceFile = "evidence/phase4-v4-pr01-reserve-active-slot.png",
+                                ),
+                            ),
+                        manualRecordPath = "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr01-profession-tree-run-choice.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.talent.learned",
+                                "log.talent.rank_up",
+                                "log.talent.breakpoint_chosen",
+                            ),
+                    ),
+            ),
         )
 
     fun all(): List<ValidationScenarioDef> = scenarios

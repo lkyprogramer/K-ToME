@@ -200,6 +200,8 @@ class OfficialSliceStabilityTest {
             is PlayerCommand.AssignStat -> "AssignStat(${command.stat})"
             is PlayerCommand.AssignTalent -> "AssignTalent(${command.talentId})"
             PlayerCommand.ConfirmTalentDraft -> "ConfirmTalentDraft"
+            PlayerCommand.ConfirmTalentDraftToReserve -> "ConfirmTalentDraftToReserve"
+            is PlayerCommand.ConfirmTalentDraftReplacingSlot -> "ConfirmTalentDraftReplacingSlot(${command.slot})"
             PlayerCommand.RollbackTalentDraft -> "RollbackTalentDraft"
             is PlayerCommand.RespecTalentTree -> "RespecTalentTree(${command.ownerType},${command.treeOwnerId})"
             is PlayerCommand.Validation -> com.ktome.game.harness.renderCommand(command)

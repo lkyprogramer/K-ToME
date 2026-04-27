@@ -29,7 +29,7 @@
 4. 学习新技能 rank 0 -> 1 消耗 1 点职业天赋点。
 5. 提升已学技能 rank N -> N+1 消耗 1 点职业天赋点。
 6. Tier 2 / Tier 3 同时受等级、前置 rank、树内投入约束。
-7. Talent UI 展示三列树、全量节点、锁定原因、学习预览、断点预览。
+7. Talent UI 以 sidebar 列式展示三棵职业树、全量节点、锁定原因、学习预览、断点预览。
 8. `RunSummary`、`longRunLab`、`phase4Report` 能统计学习事件、断点事件和多树投入。
 9. release-facing blocking 指标只统计 `vanguard / arcanist / rogue / templar` 四个 `BASE` 职业。
 10. 数据改造同步覆盖 `berserker / spellblade` 的 3 starter 与 learnable 第四技能；这两个 `ADVANCED` 职业进入 report-only coverage，不扩技能数量。
@@ -39,7 +39,7 @@
 1. `TalentProgression.unlockedTalentIds` 按 `unlockLevel` 返回节点后，被 `FoundationGameSession.syncUnlockedPlayerTalents` 自动写入 `TalentLoadout.talentLevels`。
 2. 当前基础职业 `startingTalents=4`，第 1 层已经填满四个职业行动槽。
 3. `TalentAllocationDraft` 的玩家体验主要是已有技能 rank 提升，学习新技能压力不足。
-4. UI 侧只围绕 active/reserve loadout 展示技能，没有三列树、locked/learnable/learned 的完整树视图。
+4. UI 侧只围绕 active/reserve loadout 展示技能，没有完整的三树 sidebar、locked/learnable/learned 树视图。
 5. report 侧没有直接统计“玩家学了什么”和“断点选择是否发生”，只能从装备 payoff 间接推断构筑。
 
 ## 3. 范围与非目标
@@ -123,13 +123,7 @@
 新增函数：
 
 ```kotlin
-fun learnableTalentIds(
-    schemaCatalog: SchemaCatalog,
-    profession: ProfessionSchemaV2,
-    level: Int,
-    learnedRanks: Map<String, Int>,
-    race: RaceDef? = null,
-): List<String>
+fun learnableTalentIds(request: TalentProgressionRequest): List<String>
 ```
 
 规则：
@@ -137,8 +131,9 @@ fun learnableTalentIds(
 1. `learnableTalentIds` 返回当前条件下能投入点数的候选。
 2. 返回值不代表玩家已学会技能。
 3. 旧 `unlockedTalentIds` 删除；正式调用点必须改为 `learnableTalentIds`。
-4. `learnableTalentIds` 必须从 `schemaCatalog.talents` 与 `schemaCatalog.talentTrees` 解析节点、`unlockLevel`、tree membership 与 race tree。
-5. `syncUnlockedPlayerTalents` 不再消费该列表自动学习。
+4. `TalentProgressionRequest` 是调用合同，必须聚合 `schemaCatalog`、`profession`、`level`、`learnedRanks` 与可选 `race`；不得在生产路径新增 5-arg facade 形成第二入口。
+5. `learnableTalentIds` 必须从 `schemaCatalog.talents` 与 `schemaCatalog.talentTrees` 解析节点、`unlockLevel`、tree membership 与 race tree。
+6. `syncUnlockedPlayerTalents` 不再消费该列表自动学习。
 
 待删除调用点清单：
 
@@ -193,7 +188,7 @@ enum class TalentNodeState {
 | `berserker` | `blood_rush`, `savage_hew`, `kill_frenzy` |
 | `spellblade` | `arcane_edge`, `mana_lunge`, `spell_parry` |
 
-移出的第 4 个技能进入 level 2 起的 `LEARNABLE` 池。
+移出的第 4 个技能从开局 loadout 中移除，进入显式 `LEARNABLE` 池；具体 `unlockLevel` 以 `game/src/main/resources/data/talents/index.yaml` 为准，并必须满足本 PR 的 first-screen validation 场景能看到至少 1 个可学习节点。
 
 范围口径：
 
@@ -212,7 +207,7 @@ enum class TalentNodeState {
 | `rogue` | `rogue_assassination` `1`、`rogue_subtlety` `1`、`rogue_agility` `1` | 无 | 三树均有 starter，避免 rogue 初期被动等待 |
 | `templar` | `templar_smite` `1`、`templar_grace` `2` | `templar_faith` | Faith 路线第一点必须学习 `devotion`，形成治疗防护之外的长期投入选择 |
 | `berserker` | `berserker_wrath` `2`、`berserker_bloodwar` `1` | `berserker_ruin` | ADVANCED 只做 starter / learnable coverage |
-| `spellblade` | `spellblade_enchanted_blade` `1`、`spellblade_battle_spell` `2` | `spellblade_elemental_flux` | ADVANCED 只做 starter / learnable coverage |
+| `spellblade` | `spellblade_enchanted_blade` `1`、`spellblade_battle_spell` `2` | `spellblade_elemental_flux` | ADVANCED 只做 starter / learnable coverage；`flux_anchor` 是 `elemental_flux` 的首次升级 learnable |
 
 树 id 映射固定为：
 
@@ -247,14 +242,16 @@ Tier 门槛：
 | Tier 2 | 树内第 3、4 个节点 | `unlockLevel >= 3`，同树投入 `>= 2`，其他任一职业树投入 `>= 1`，指定前置 rank `>= 2` |
 | Tier 3 | 树内第 5、6 个节点 | `unlockLevel >= 5`，同树投入 `>= 5`，指定前置 rank `>= 3` |
 
+`berserker / spellblade` 的 ADVANCED compact tree 只有 4 个节点，切片固定为：树内第 1、2 个节点按 Tier 1，第 3 个节点按 Tier 2，第 4 个节点按 Tier 3；compact tree 仍必须满足 Tier 2 `minRank >= 2` 与 Tier 3 `minRank >= 3` 前置校验，并进入 report-only coverage。
+
 执行要求：
 
 1. Tier 2 / Tier 3 锁定原因必须进入 snapshot。
 2. 锁定原因必须能被 `DescriptionPresenter` 转成 tokenized line。
-3. data loader 必须 fail fast 校验每条基础职业树至少 1 个 Tier 2 前置 rank `>= 2` 和 1 个 Tier 3 前置 rank `>= 3`。
+3. data loader 必须 fail fast 校验每条非 frozen 职业树中每个 Tier 2 节点都有指定前置 rank `>= 2`，每个 Tier 3 节点都有指定前置 rank `>= 3`。
 4. `multiTreeInvestmentAboveThresholdRate` 的跨树定义固定为：terminal run 中至少两棵职业树各投入 `>= 3` 点。
 5. Tier 3 路线与跨树投入共存口径固定为：Tier 3 主树满足同树 `>= 5`，副树满足 `>= 1` 即计入 multi-tree；不得用“只冲主树”绕过 Tier 2 的副树投入门槛。
-6. `careerTalentPointsByLevel` 必须证明基础职业在等级上限内满足至少一条 Tier 3 路线的点数需求；data review 记录每个基础职业的最小所需点数与实际可获得点数。
+6. `careerTalentPointsByLevel` 必须证明基础职业在等级上限内满足至少一条 Tier 3 路线的点数需求；data review 记录每个基础职业的最小所需点数与实际可获得点数，并对 ADVANCED compact tree 保留 report-only 可行性记录。
 
 ### 5.5 Allocation Draft
 
@@ -286,15 +283,25 @@ Tier 门槛：
 
 ### 5.6 Talent UI
 
-Talent UI 固定为三列树布局：
+Talent UI 固定为 sidebar 列式树视图：三棵职业树按 tree header 分段顺序展示；输入语义仍保留树列切换，视觉不要求水平三栏。
 
 ```text
 Profession: Vanguard          Talent Points: 2
 
-[Arms]                 [Shield]               [Warcry]
-power_strike R2        shield_bash R1         war_cry Learn
-charge Learn           guard_stance R1        intimidation Locked: requires war_cry R2
-sweeping_strike Locked taunt Locked           rallying_banner Locked
+[Arms]
+* power_strike R2
++ charge Learn
+x sweeping_strike Locked: requires charge R2
+
+[Shield]
+r shield_bash R1
+r guard_stance R1
+x taunt Locked: requires guard_stance R2
+
+[Warcry]
++ war_cry Learn
+x intimidation Locked: requires war_cry R2
+x rallying_banner Locked
 
 Preview:
 - Learn war_cry: costs 1 point.
@@ -305,12 +312,12 @@ Preview:
 
 输入规则：
 
-1. `T` 打开三列树 UI。
+1. `T` 打开三树 sidebar UI。
 2. 方向键移动节点。
 3. `P` 切换 draft preview 展开状态。
 4. `Enter` 确认当前 draft；没有 draft 时，先对当前节点创建 draft 并立即展示 preview。
 5. `Esc` 取消 draft 并返回地图。
-6. `1~4` 只在 active slot 绑定 modal 中生效；三列树 UI 打开时按 `1~4` 不改变选择，并在 footer 显示 `Active slots are edited from the slot panel`。
+6. `1~4` 只在 active slot 绑定 modal 中生效；三树 sidebar UI 打开时按 `1~4` 不改变选择，并在 footer 显示 `Active slots are edited from the slot panel`。
 7. footer 文案 i18n key 固定为 `ui.talent.tree.footer.active_slots_from_slot_panel`。
 
 ### 5.7 存档与 fixture 破坏性边界
@@ -322,6 +329,7 @@ Preview:
 3. `FoundationGameSession` 只 canonicalize 当前新 run 的 starter / learnable state，不读取旧 unlocked 字段。
 4. validation fixture、long-run seed fixture、golden fixture 必须按新 schema 全量刷新。
 5. `RunSummary` 不输出 migration 字段，只输出 `starterProfessionTalentCount`、`learnableNonStarterTalentCount`、`autoLearnedNonStarterTalentCount=0`。
+6. `SaveSnapshot` 必须持久化当前 run 内的 talent choice telemetry，至少覆盖 learn/rank/breakpoint event、reserve swap count 与 breakpoint preview exposure，避免 checkpoint reload 后 owner metric 低估。
 
 ## 6. 测试与自证
 
@@ -332,7 +340,7 @@ Preview:
 3. 升级到 `unlockLevel` 后，非 starter 技能不会自动写入 rank 1。
 4. `LEARNABLE` rank 0 -> 1 与已学技能 rank N -> N+1 都消耗 1 点职业天赋点。
 5. Tier 2 / Tier 3 锁定原因同时展示等级、树内投入、前置 rank；Tier 3 至少一个节点要求前置 rank `>= 3`。
-6. Talent UI 三列树展示 `LOCKED / LEARNABLE / LEARNED_RESERVE / LEARNED_ACTIVE` 四类状态。
+6. Talent UI 三树 sidebar 展示 `LOCKED / LEARNABLE / LEARNED_RESERVE / LEARNED_ACTIVE` 四类状态。
 7. 新学习主动技能在存在空槽时绑定到第一个空槽，四槽已满时打开 pre-commit active slot modal；选择 reserve 后技能保留在 reserve，按 `Esc` 后 draft 取消且点数不变。
 8. 取消 draft 不改 live state，确认 draft 后输出 `log.talent.learned / log.talent.rank_up / log.talent.breakpoint_chosen`。
 9. `longRunLab`、`reportPhase4Only`、`reportPhase4` 输出本 PR 新增 owner metrics，且 `metricKind / producer / ownerBaseline / failSemantics` 一致。
@@ -363,7 +371,7 @@ sdk env
 已有游戏 Validation Mode 改造要求：
 
 1. 本 PR 必须接入 PR-00 的 `PHASE4_V4_FAST` section，scenario id 固定为 `phase4-v4-pr01`。
-2. `prepare-primary-scene` 必须在现有游戏内 validation session 中完成以下状态：`vanguard` 有 1 点职业天赋点，Talent UI 三列树可打开，starter 三技能 learned，第 4 职业行动槽为空，至少 1 个同职业技能为 `LEARNABLE`。
+2. `prepare-primary-scene` 必须在现有游戏内 validation session 中完成以下状态：`vanguard` 有 1 点职业天赋点，Talent UI 三树 sidebar 可打开，starter 三技能 learned，第 4 职业行动槽为空，至少 1 个同职业技能为 `LEARNABLE`。
 3. `prepare-secondary-scene` 必须切换或重启到 `arcanist` 快速场景，展示 `fireball / blink / arcane_shield` learned 与第 4 技能 learnable。
 4. `show-evidence-summary` 必须在 validation overlay 中列出本 PR 的 4 个证据截图名和 `log.talent.learned / log.talent.rank_up / log.talent.breakpoint_chosen`。
 5. 这些状态必须由 game 层 validation action materialize，不得由 client 伪造 snapshot。
@@ -391,7 +399,7 @@ sdk env
 
 2. 执行 `build/whitebox/phase4-v4-pr01/launch-packaged-app.sh` 启动 packaged app，Computer Use 目标 app 固定为 `com.ktome.client`。
 3. 按 `build/whitebox/phase4-v4-pr01/cua-runbook.md` 打开 validation overlay，执行 `PHASE4_V4_FAST / prepare-primary-scene`。
-4. 记录开局三列树：starter 技能为 learned，第四职业槽为空，至少 1 个同职业技能处于 `LEARNABLE`。
+4. 记录开局三树 sidebar：starter 技能为 learned，第四职业槽为空，至少 1 个同职业技能处于 `LEARNABLE`。
 5. 升级或使用 validation preset 触发 1 点职业天赋点，学习一个 rank 0 技能，确认点数扣除、空槽绑定、日志出现 `log.talent.learned`。
 6. 对同一技能再投入 1 点，确认 rank 提升、断点预览更新、日志出现 `log.talent.rank_up`。
 7. 移动到 Tier 3 节点，截图记录锁定原因包含等级、树内投入、前置 rank `>= 3`。

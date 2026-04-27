@@ -23,7 +23,7 @@ class SpellbladeEquilibriumTest {
         val dummyPoint = ClassFormalizationTestSupport.entityPoint(session, dummyId)
         val manaPool = ClassFormalizationTestSupport.resourcePool(session, ResourceType.MANA)
         val equilibriumPool = ClassFormalizationTestSupport.resourcePool(session, ResourceType.EQUILIBRIUM)
-        val neutralSlot = ClassFormalizationTestSupport.talentSlot(session, "flux_anchor")
+        val neutralSlot = ensureTalentEquipped(session, "spell_parry", slot = 3)
         val arcaneSlot = ClassFormalizationTestSupport.talentSlot(session, "arcane_edge")
 
         manaPool.current = manaPool.max

@@ -36,6 +36,7 @@ import com.ktome.game.PlayerCommand
 import com.ktome.game.PlayerResourceService
 import com.ktome.game.SessionSnapshotMapper
 import com.ktome.game.TalentProgression
+import com.ktome.game.TalentProgressionRequest
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.factory.BossFactory
@@ -539,18 +540,32 @@ internal class SoloClearLabHarness(
     ) {
         val profession = requireNotNull(professionsById[professionId]) { "Unknown profession '$professionId'." }
         val loadout = requireNotNull(world.get<TalentLoadout>(playerId)) { "Missing TalentLoadout for $playerId." }
-        TalentProgression
-            .unlockedTalentIds(
-                schemaCatalog = content.schemaCatalog,
-                profession = profession,
-                level = scenario.level,
-            ).forEach { talentId ->
-                loadout.talentLevels.putIfAbsent(talentId, 1)
+        var materializedChoice = true
+        while (materializedChoice) {
+            val learnableTalentIds =
+                TalentProgression.learnableTalentIds(
+                    TalentProgressionRequest(
+                        schemaCatalog = content.schemaCatalog,
+                        profession = profession,
+                        level = scenario.level,
+                        learnedRanks = loadout.talentLevels,
+                    ),
+                )
+            materializedChoice = false
+            learnableTalentIds.forEach { talentId ->
+                if (talentId !in loadout.talentLevels) {
+                    loadout.talentLevels[talentId] = 1
+                    materializedChoice = true
+                }
             }
+        }
 
         val desiredActiveTalents =
             preferredScenarioTalentOrder(professionId = professionId, scenario = scenario)
-                .filter(loadout.talentLevels::containsKey)
+                .filter(talentsById::containsKey)
+        desiredActiveTalents.forEach { talentId ->
+            loadout.talentLevels.putIfAbsent(talentId, 1)
+        }
 
         val activeTalentIds =
             linkedSetOf<String>().apply {
@@ -580,7 +595,7 @@ internal class SoloClearLabHarness(
             "arcanist" ->
                 when (scenario) {
                     SoloClearScenario.BOSS -> listOf("fireball", "void_breach", "inferno_orb", "glacial_seal")
-                    SoloClearScenario.MOB_PACK -> listOf("fireball", "inferno_orb", "frost_nova", "glacial_seal")
+                    SoloClearScenario.MOB_PACK -> listOf("fireball", "blink", "arcane_shield", "frost_nova")
                     SoloClearScenario.ELITE -> listOf("fireball", "blink", "arcane_shield", "void_breach")
                 }
 
@@ -936,6 +951,8 @@ internal class SoloClearLabHarness(
             is PlayerCommand.AssignStat -> "AssignStat(${command.stat})"
             is PlayerCommand.AssignTalent -> "AssignTalent(${command.talentId})"
             PlayerCommand.ConfirmTalentDraft -> "ConfirmTalentDraft"
+            PlayerCommand.ConfirmTalentDraftToReserve -> "ConfirmTalentDraftToReserve"
+            is PlayerCommand.ConfirmTalentDraftReplacingSlot -> "ConfirmTalentDraftReplacingSlot(${command.slot})"
             PlayerCommand.RollbackTalentDraft -> "RollbackTalentDraft"
             is PlayerCommand.RespecTalentTree -> "RespecTalentTree(${command.ownerType},${command.treeOwnerId})"
             is PlayerCommand.Validation -> com.ktome.game.harness.renderCommand(command)
@@ -1037,7 +1054,7 @@ private class SoloClearScriptBot : RunBot {
         if (!usesSpecializedPackLoadout(observation)) {
             return null
         }
-        val unlockedTalentIds =
+        val learnedTalentIds =
             linkedSetOf<String>().apply {
                 observation.talentSlots.mapTo(this) { slot -> slot.talentId }
                 observation.reserveTalents.mapTo(this) { talent -> talent.talentId }
@@ -1053,7 +1070,7 @@ private class SoloClearScriptBot : RunBot {
                         listOf("power_strike", "shield_bash", "linebreaker", "earthshaker", "battlefield_command", "charge")
                     }
                 "MANA" ->
-                    if (listOf("arcane_edge", "mana_lunge", "spell_parry", "spell_rend", "flux_burst", "flux_anchor").any(unlockedTalentIds::contains)) {
+                    if (listOf("arcane_edge", "mana_lunge", "spell_parry", "spell_rend", "flux_burst", "flux_anchor").any(learnedTalentIds::contains)) {
                         if (observation.visibleBossPositions.isNotEmpty()) {
                             listOf("sunder_sigil", "arcane_edge", "blink_strike", "spell_parry", "balance_point", "spell_rend")
                         } else if (isDensePackScenario(observation)) {
@@ -1100,7 +1117,7 @@ private class SoloClearScriptBot : RunBot {
             return null
         }
         desiredOrder
-            .filter(unlockedTalentIds::contains)
+            .filter(learnedTalentIds::contains)
             .take(4)
             .forEachIndexed { index, talentId ->
                 val targetSlot = index + 1

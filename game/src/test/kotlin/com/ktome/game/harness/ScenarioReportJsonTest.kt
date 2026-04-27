@@ -82,6 +82,7 @@ class ScenarioReportJsonTest {
                         "of_smite" to 2,
                         "of_cleansing" to 1,
                     ),
+                learnableNonStarterTalentCount = 2,
                 goalReached = true,
                 zonePath = listOf("shattered_outpost"),
                 zoneHeadlessMilestones =
@@ -152,6 +153,7 @@ class ScenarioReportJsonTest {
         assertEquals("full_route", json.requiredString("scenarioType"))
         assertEquals("true", json.requiredString("isFullRoute"))
         assertEquals("3", json.requiredString("affixSynergyActivationCount"))
+        assertEquals("2", json.requiredString("learnableNonStarterTalentCount"))
         assertEquals("0", json.requiredString("lateRunReliquaryPurchaseCount"))
         assertEquals("0", json.requiredString("lateRunReliquaryVisitCount"))
         assertEquals("0", json.requiredString("lateRunReliquaryRefreshCount"))

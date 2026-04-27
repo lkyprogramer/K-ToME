@@ -317,6 +317,7 @@ class GameModuleTest {
             {
               "schemaVersion": 2,
               "saveContractVersion": { "major": ${SaveContractVersion.CURRENT.major}, "minor": ${SaveContractVersion.CURRENT.minor} },
+              "talentSchemaVersion": ${SaveSnapshot.CURRENT_TALENT_SCHEMA_VERSION},
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
               "worldSeed": 20260318,
@@ -357,6 +358,46 @@ class GameModuleTest {
         assertThrows(InvalidSaveException::class.java) {
             GameModule.loadFoundationSession(saveManager)
         }
+    }
+
+    @Test
+    fun `load foundation session rejects saves without current phase4 v4 talent schema marker`() {
+        val saveManager = SaveManager(tempDir.resolve("missing-talent-schema-save"))
+        Files.createDirectories(saveManager.savePath().parent)
+        saveManager.savePath().writeText(
+            """
+            {
+              "schemaVersion": ${SaveSnapshot.CURRENT_SCHEMA_VERSION},
+              "saveContractVersion": { "major": ${SaveContractVersion.CURRENT.major}, "minor": ${SaveContractVersion.CURRENT.minor} },
+              "buildMetadata": "phase4-v4-pr01-dev"
+            }
+            """.trimIndent(),
+        )
+
+        val missingMarker =
+            assertThrows(InvalidSaveException::class.java) {
+                GameModule.loadFoundationSession(saveManager)
+            }
+
+        assertTrue(missingMarker.message!!.contains("INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA"))
+
+        saveManager.savePath().writeText(
+            """
+            {
+              "schemaVersion": ${SaveSnapshot.CURRENT_SCHEMA_VERSION},
+              "saveContractVersion": { "major": ${SaveContractVersion.CURRENT.major}, "minor": ${SaveContractVersion.CURRENT.minor} },
+              "talentSchemaVersion": ${SaveSnapshot.CURRENT_TALENT_SCHEMA_VERSION - 1},
+              "buildMetadata": "phase4-v4-pr01-dev"
+            }
+            """.trimIndent(),
+        )
+
+        val staleMarker =
+            assertThrows(InvalidSaveException::class.java) {
+                GameModule.loadFoundationSession(saveManager)
+            }
+
+        assertTrue(staleMarker.message!!.contains("INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA"))
     }
 
     @Test
@@ -472,10 +513,14 @@ class GameModuleTest {
                 SaveManager(tempDir.resolve("templar-save")),
             )
 
-        assertEquals(listOf("猛击", "盾击", "格挡姿态", "战吼"), vanguardSession.talentSlots().map { slot -> slot.name })
-        assertEquals(listOf("火球", "冰箭", "闪现", "奥术护盾"), arcanistSession.talentSlots().map { slot -> slot.name })
-        assertEquals(listOf("背刺", "毒刃", "潜行", "翻滚"), rogueSession.talentSlots().map { slot -> slot.name })
-        assertEquals(listOf("圣击", "圣光术", "神圣护盾", "虔信"), templarSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("猛击", "盾击", "格挡姿态"), vanguardSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("火球", "闪现", "奥术护盾"), arcanistSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("背刺", "潜行", "翻滚"), rogueSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("圣击", "圣光术", "神圣护盾"), templarSession.talentSlots().map { slot -> slot.name })
+        listOf(vanguardSession, arcanistSession, rogueSession, templarSession).forEach { session ->
+            assertEquals(listOf(1, 2, 3), session.talentSlots().map { slot -> slot.slot })
+            assertFalse(session.talentSlots().any { slot -> slot.slot == 4 })
+        }
         assertEquals(listOf("长剑", "基础盾牌", "锁甲", "治疗药水"), vanguardSession.inventoryItems().map { item -> item.name })
         assertEquals(listOf("奥术法杖", "学徒法袍", "法力药水"), arcanistSession.inventoryItems().map { item -> item.name })
         assertEquals(listOf("短剑", "皮甲", "治疗药水", "传送卷轴"), rogueSession.inventoryItems().map { item -> item.name })
@@ -709,6 +754,7 @@ class GameModuleTest {
             {
               "schemaVersion": 3,
               "saveContractVersion": { "major": ${SaveContractVersion.CURRENT.major}, "minor": ${SaveContractVersion.CURRENT.minor} },
+              "talentSchemaVersion": ${SaveSnapshot.CURRENT_TALENT_SCHEMA_VERSION},
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
               "worldSeed": 20260318,

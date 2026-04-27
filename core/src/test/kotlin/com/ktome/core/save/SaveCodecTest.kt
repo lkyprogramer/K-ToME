@@ -1,9 +1,11 @@
 package com.ktome.core.save
 
 import com.ktome.core.loot.PityTracker
+import com.ktome.core.talent.TalentTreeOwnerType
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -21,6 +23,7 @@ class SaveCodecTest {
         assertTrue(encoded.contains("\"saveContractVersion\""))
         assertTrue(encoded.contains("\"schemaVersion\""))
         assertTrue(encoded.contains("\"phase4RunState\""))
+        assertTrue(encoded.contains("\"talentChoiceTelemetry\""))
         assertFalse(encoded.contains("glyph"))
         assertFalse(encoded.contains("colorHex"))
         assertFalse(encoded.contains("\"messageLog\""))
@@ -43,6 +46,36 @@ class SaveCodecTest {
     }
 
     @Test
+    fun `save codec round trip preserves talent choice telemetry`() {
+        val snapshot =
+            SaveFixtures.resourceHeavyScene().copy(
+                talentChoiceTelemetry =
+                    TalentChoiceTelemetrySnapshot(
+                        events =
+                            listOf(
+                                TalentChoiceEventSnapshot(
+                                    kind = TalentChoiceEventKindSnapshot.LEARNED,
+                                    professionId = "vanguard",
+                                    ownerType = TalentTreeOwnerType.PROFESSION,
+                                    treeOwnerId = "vanguard",
+                                    talentId = "war_cry",
+                                    treeId = "vanguard_warcry",
+                                    rankBefore = 0,
+                                    rankAfter = 1,
+                                    remainingTalentPoints = 0,
+                                ),
+                            ),
+                        reserveSwapCount = 1,
+                        breakpointPreviewSeen = true,
+                    ),
+            )
+
+        val restored = codec.decode(codec.encode(snapshot))
+
+        assertEquals(snapshot.talentChoiceTelemetry, restored.talentChoiceTelemetry)
+    }
+
+    @Test
     fun `decode rejects save payloads missing phase4 run state`() {
         val json = Json { prettyPrint = true }
         val root = json.parseToJsonElement(codec.encode(SaveFixtures.emptyScene())).jsonObject
@@ -51,6 +84,44 @@ class SaveCodecTest {
         assertThrows(InvalidSaveException::class.java) {
             codec.decode(json.encodeToString(JsonObject.serializer(), corrupted))
         }
+    }
+
+    @Test
+    fun `decode rejects missing malformed and stale talent schema version`() {
+        val json = Json { prettyPrint = true }
+        val root = json.parseToJsonElement(codec.encode(SaveFixtures.emptyScene())).jsonObject
+        val expectedMessage = "INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA: Start a new run."
+
+        val missing = JsonObject(root.filterKeys { key -> key != "talentSchemaVersion" })
+        val missingException =
+            assertThrows(InvalidSaveException::class.java) {
+                codec.decode(json.encodeToString(JsonObject.serializer(), missing))
+            }
+        assertEquals(expectedMessage, missingException.message)
+
+        val malformed = JsonObject(root + ("talentSchemaVersion" to JsonPrimitive("legacy-unlocked")))
+        val malformedException =
+            assertThrows(InvalidSaveException::class.java) {
+                codec.decode(json.encodeToString(JsonObject.serializer(), malformed))
+            }
+        assertEquals(expectedMessage, malformedException.message)
+
+        val stale = JsonObject(root + ("talentSchemaVersion" to JsonPrimitive(SaveSnapshot.CURRENT_TALENT_SCHEMA_VERSION - 1)))
+        val staleException =
+            assertThrows(InvalidSaveException::class.java) {
+                codec.decode(json.encodeToString(JsonObject.serializer(), stale))
+            }
+        assertEquals(expectedMessage, staleException.message)
+    }
+
+    @Test
+    fun `snapshot validation rejects stale talent schema version`() {
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                SaveFixtures.emptyScene().copy(talentSchemaVersion = SaveSnapshot.CURRENT_TALENT_SCHEMA_VERSION - 1)
+            }
+
+        assertEquals("INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA: Start a new run.", exception.message)
     }
 
     @Test

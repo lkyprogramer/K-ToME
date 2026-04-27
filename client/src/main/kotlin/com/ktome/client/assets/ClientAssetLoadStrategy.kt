@@ -153,30 +153,16 @@ class ClientAssetLoadStrategy(
                 item.iconKey?.let(iconVisualKeys::add)
             }
         }
-        snapshot.uiState.talents.forEach { talent ->
-            talent.visualKey?.let(visualKeys::add)
-            talent.iconKey?.let {
-                visualKeys += it
-                iconVisualKeys += it
-            }
-            talent.damageTypeIconKey?.let {
-                visualKeys += it
-                iconVisualKeys += it
-            }
-            talent.audioProfile?.let(audioKeys::add)
-        }
-        snapshot.uiState.reserveTalents.forEach { talent ->
-            talent.visualKey?.let(visualKeys::add)
-            talent.iconKey?.let {
-                visualKeys += it
-                iconVisualKeys += it
-            }
-            talent.damageTypeIconKey?.let {
-                visualKeys += it
-                iconVisualKeys += it
-            }
-            talent.audioProfile?.let(audioKeys::add)
-        }
+        snapshot.forEachTalentAssetReference(
+            visual = { key -> key?.let(visualKeys::add) },
+            iconVisual = { key ->
+                key?.let {
+                    visualKeys += it
+                    iconVisualKeys += it
+                }
+            },
+            audio = { key -> key?.let(audioKeys::add) },
+        )
         snapshot.uiState.inventory.forEach { entry ->
             collectItem(entry.item, visualKeys, audioKeys)
             entry.item.iconKey?.let(iconVisualKeys::add)

@@ -27,10 +27,15 @@ import com.ktome.core.snapshot.RouteSelectionSnapshot
 import com.ktome.core.snapshot.ShopOfferSnapshot
 import com.ktome.core.snapshot.ShopPanelSnapshot
 import com.ktome.core.snapshot.ShopSellEntrySnapshot
+import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.core.snapshot.TalentTreeNodeSnapshot
+import com.ktome.core.snapshot.TalentTreeSnapshot
+import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.GameModule
+import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.PlayerCommand
 import com.ktome.game.validation.ValidationOverlaySection
 import com.ktome.game.validation.ValidationPreset
@@ -1044,7 +1049,16 @@ class InputHandlerTest {
     fun `talent assign mode maps confirm rollback and respec commands`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
-        val snapshot = snapshotWithLoadout(talentPoints = 2, reserveTalents = listOf(reserveTalent("charge", "talent.vanguard.charge.name")))
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talents =
+                    listOf(
+                        activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name", hasPendingAllocation = true),
+                        activeTalent(slot = 2, talentId = "shield_bash", nameKey = "talent.vanguard.shield_bash.name"),
+                        activeTalent(slot = 3, talentId = "guard_stance", nameKey = "talent.vanguard.guard_stance.name"),
+                    ),
+            )
 
         input.frame(justPressed = setOf(Keys.T))
         assertNull(handler.pollCommand(snapshot))
@@ -1210,19 +1224,28 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `talent assign respec follows focused reserve tree owner`() {
+    fun `talent assign respec follows focused tree owner`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val snapshot =
             snapshotWithLoadout(
                 talentPoints = 2,
-                reserveTalents =
+                talentTrees =
                     listOf(
-                        reserveTalent(
-                            talentId = "moon_blessing",
-                            nameKey = "talent.shalore.moon_blessing.name",
+                        talentTree(
+                            treeId = "shalore_moon",
                             ownerType = TalentTreeOwnerType.RACE,
                             treeOwnerId = "shalore",
+                            nodes =
+                                listOf(
+                                    talentTreeNode(
+                                        talentId = "moon_blessing",
+                                        treeId = "shalore_moon",
+                                        nameKey = "talent.shalore.moon_blessing.name",
+                                        ownerType = TalentTreeOwnerType.RACE,
+                                        treeOwnerId = "shalore",
+                                    ),
+                                ),
                         ),
                     ),
             )
@@ -1246,16 +1269,22 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `talent assign mode can invest selected reserve talent directly`() {
+    fun `talent assign mode can invest selected tree talent directly`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val snapshot =
             snapshotWithLoadout(
                 talentPoints = 2,
-                reserveTalents =
+                talentTrees =
                     listOf(
-                        reserveTalent("charge", "talent.vanguard.charge.name"),
-                        reserveTalent("sweeping_strike", "talent.vanguard.sweeping_strike.name"),
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                listOf(
+                                    talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name"),
+                                    talentTreeNode("sweeping_strike", "vanguard_arms", "talent.vanguard.sweeping_strike.name"),
+                                ),
+                        ),
                     ),
             )
 
@@ -1266,12 +1295,80 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.DOWN))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals(1, handler.overlayState().loadoutReserveSelection)
-        assertEquals(TalentAssignFocus.RESERVE, handler.overlayState().talentAssignFocus)
+        assertEquals(1, handler.overlayState().talentTreeSelection)
+        assertEquals(TalentAssignFocus.TREE, handler.overlayState().talentAssignFocus)
         input.clear()
 
-        input.frame(justPressed = setOf(Keys.E))
+        input.frame(justPressed = setOf(Keys.ENTER))
         assertEquals(PlayerCommand.AssignTalent("sweeping_strike"), handler.pollCommand(snapshot))
+    }
+
+    @Test
+    fun `pending active or sustained tree talent opens active slot choice when loadout is full`() {
+        listOf(TalentCategory.ACTIVE, TalentCategory.SUSTAINED).forEach { category ->
+            val input = ReplayInputSource()
+            val handler = InputHandler(input)
+            val snapshot = snapshotWithPendingTreeTalent(category)
+
+            input.frame(justPressed = setOf(Keys.T))
+            assertNull(handler.pollCommand(snapshot))
+            input.clear()
+
+            input.frame(justPressed = setOf(Keys.ENTER))
+            assertNull(handler.pollCommand(snapshot))
+            assertEquals(ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE, handler.overlayState().activeModalKind)
+        }
+    }
+
+    @Test
+    fun `pending passive tree talent confirms without active slot choice when loadout is full`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithPendingTreeTalent(TalentCategory.PASSIVE)
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.ConfirmTalentDraft, handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.TALENT_ASSIGN, handler.overlayState().activeModalKind)
+    }
+
+    @Test
+    fun `talent assign p toggles tree preview without creating a command`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 1,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                listOf(
+                                    talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name"),
+                                ),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        assertTrue(handler.overlayState().talentTreePreviewExpanded)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.P))
+        assertNull(handler.pollCommand(snapshot))
+        assertFalse(handler.overlayState().talentTreePreviewExpanded)
+        assertFalse(handler.overlayState().modalFrames.last().localState.talentTreePreviewExpanded)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.P))
+        assertNull(handler.pollCommand(snapshot))
+        assertTrue(handler.overlayState().talentTreePreviewExpanded)
+        assertTrue(handler.overlayState().modalFrames.last().localState.talentTreePreviewExpanded)
     }
 
     @Test
@@ -1470,6 +1567,7 @@ class InputHandlerTest {
         activeShop: ShopPanelSnapshot? = null,
         activeRouteSelection: RouteSelectionSnapshot? = null,
         targetablePositions: List<com.ktome.core.snapshot.GridPointSnapshot> = emptyList(),
+        talentTrees: List<TalentTreeSnapshot> = emptyList(),
         talents: List<TalentSlotSnapshot> =
             listOf(
                 activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
@@ -1529,11 +1627,93 @@ class InputHandlerTest {
                     equipment = emptyList(),
                     talents = talents,
                     reserveTalents = reserveTalents,
+                    talentTrees = talentTrees,
                     inscriptions = inscriptions,
                     inventory = inventory,
                     activeShop = activeShop,
                     activeRouteSelection = activeRouteSelection,
                     targetablePositions = targetablePositions,
+                ),
+        )
+
+    private fun talentTree(
+        treeId: String,
+        ownerType: TalentTreeOwnerType = TalentTreeOwnerType.PROFESSION,
+        treeOwnerId: String = "vanguard",
+        nodes: List<TalentTreeNodeSnapshot>,
+    ): TalentTreeSnapshot =
+        TalentTreeSnapshot(
+            treeId = treeId,
+            ownerType = ownerType.name,
+            treeOwnerId = treeOwnerId,
+            nameKey = "talent_tree.$treeId.name",
+            descKey = "talent_tree.$treeId.desc",
+            nodes = nodes,
+        )
+
+    private fun talentTreeNode(
+        talentId: String,
+        treeId: String,
+        nameKey: String,
+        ownerType: TalentTreeOwnerType = TalentTreeOwnerType.PROFESSION,
+        treeOwnerId: String = "vanguard",
+        state: TalentNodeStateSnapshot = TalentNodeStateSnapshot.LEARNABLE,
+        category: TalentCategory = TalentCategory.ACTIVE,
+        rank: Int = if (state == TalentNodeStateSnapshot.LEARNED_ACTIVE || state == TalentNodeStateSnapshot.LEARNED_RESERVE) 1 else 0,
+        committedRank: Int = rank,
+        hasPendingAllocation: Boolean = false,
+    ): TalentTreeNodeSnapshot =
+        TalentTreeNodeSnapshot(
+            talentId = talentId,
+            treeId = treeId,
+            ownerType = ownerType.name,
+            treeOwnerId = treeOwnerId,
+            nameKey = nameKey,
+            descKey = nameKey.replace(".name", ".desc"),
+            category = category,
+            state = state,
+            rank = rank,
+            committedRank = committedRank,
+            maxRank = 5,
+            unlockLevel = 1,
+            resourceCost = 8,
+            resourceLabelKey = "ui.hud.stamina.short",
+            range = 3,
+            minRange = 1,
+            currentCooldown = 0,
+            maxCooldown = 3,
+            requiresTarget = true,
+            hasPendingAllocation = hasPendingAllocation,
+        )
+
+    private fun snapshotWithPendingTreeTalent(category: TalentCategory): RenderSnapshot =
+        snapshotWithLoadout(
+            talents =
+                (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).map { slot ->
+                    activeTalent(
+                        slot = slot,
+                        talentId = "active_$slot",
+                        nameKey = "talent.vanguard.power_strike.name",
+                    )
+                },
+            talentTrees =
+                listOf(
+                    talentTree(
+                        treeId = "vanguard_arms",
+                        nodes =
+                            listOf(
+                                talentTreeNode(
+                                    talentId = "charge",
+                                    treeId = "vanguard_arms",
+                                    nameKey = "talent.vanguard.charge.name",
+                                    state = TalentNodeStateSnapshot.LEARNED_RESERVE,
+                                    category = category,
+                                    rank = 1,
+                                    committedRank = 0,
+                                    hasPendingAllocation = true,
+                                ),
+                            ),
+                    ),
                 ),
         )
 

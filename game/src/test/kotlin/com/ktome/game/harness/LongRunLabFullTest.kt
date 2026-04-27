@@ -98,6 +98,7 @@ class LongRunLabFullTest {
                 .eachCount()
                 .toSortedMap()
         val professionCapstoneSummary = professionCapstoneSummary(fullRouteReports)
+        val professionTreeChoiceMetrics = professionTreeChoiceMetrics(fullRouteReports)
         val reportPath = HarnessReportWriter.reportDir().resolve("long-run-full.json")
         val failingReports = reports.filterNot(ScenarioReport::success)
 
@@ -183,6 +184,27 @@ class LongRunLabFullTest {
                     put("professionCapstoneSeenRate", professionCapstoneSummary.professionCapstoneSeenRate)
                     put("professionCapstoneAdoptionRate", professionCapstoneSummary.professionCapstoneAdoptionRate)
                     put("nonWeaponBuildPayoffRate", professionCapstoneSummary.nonWeaponBuildPayoffRate)
+                    put("starterProfessionTalentMaxCount", professionTreeChoiceMetrics.starterProfessionTalentMaxCount)
+                    put("learnedTalentChoiceEventRate", professionTreeChoiceMetrics.learnedTalentChoiceEventRate)
+                    put("multiTreeInvestmentAboveThresholdRate", professionTreeChoiceMetrics.multiTreeInvestmentAboveThresholdRate)
+                    put("breakpointChoiceEventRate", professionTreeChoiceMetrics.breakpointChoiceEventRate)
+                    putJsonObject("talentTreePrimaryInvestmentDistribution") {
+                        professionTreeChoiceMetrics.talentTreePrimaryInvestmentDistribution.forEach { (treeId, count) -> put(treeId, count) }
+                    }
+                    put("talentReserveSwapCount", professionTreeChoiceMetrics.talentReserveSwapCount)
+                    putJsonObject("rankBreakpointAdoptionByTalent") {
+                        professionTreeChoiceMetrics.rankBreakpointAdoptionByTalent.forEach { (talentId, count) -> put(talentId, count) }
+                    }
+                    put("autoLearnedNonStarterTalentCount", professionTreeChoiceMetrics.autoLearnedNonStarterTalentCount)
+                    putJsonArray("includedProfessions") {
+                        PROFESSION_TREE_RELEASE_PROFESSIONS.forEach { professionId -> add(JsonPrimitive(professionId)) }
+                    }
+                    putJsonArray("advancedReportOnlyProfessions") {
+                        PROFESSION_TREE_ADVANCED_REPORT_ONLY_PROFESSIONS.forEach { professionId -> add(JsonPrimitive(professionId)) }
+                    }
+                    putJsonArray("excludedFrozenProfessions") {
+                        PROFESSION_TREE_EXCLUDED_FROZEN_PROFESSIONS.forEach { professionId -> add(JsonPrimitive(professionId)) }
+                    }
                     terminalWeaponIdentity.topWeaponBaseId?.let { topWeaponBaseId -> put("crossProfessionTopWeaponBaseId", topWeaponBaseId) }
                     put("crossProfessionTopWeaponCount", terminalWeaponIdentity.topWeaponCount)
                     putJsonObject("professionTerminalWeaponDistribution") {
@@ -359,6 +381,17 @@ class LongRunLabFullTest {
                     appendLine("- professionCapstoneSeenRate: ${professionCapstoneSummary.professionCapstoneSeenRate}")
                     appendLine("- professionCapstoneAdoptionRate: ${professionCapstoneSummary.professionCapstoneAdoptionRate}")
                     appendLine("- nonWeaponBuildPayoffRate: ${professionCapstoneSummary.nonWeaponBuildPayoffRate}")
+                    appendLine("- starterProfessionTalentMaxCount: ${professionTreeChoiceMetrics.starterProfessionTalentMaxCount}")
+                    appendLine("- learnedTalentChoiceEventRate: ${professionTreeChoiceMetrics.learnedTalentChoiceEventRate}")
+                    appendLine("- multiTreeInvestmentAboveThresholdRate: ${professionTreeChoiceMetrics.multiTreeInvestmentAboveThresholdRate}")
+                    appendLine("- breakpointChoiceEventRate: ${professionTreeChoiceMetrics.breakpointChoiceEventRate}")
+                    appendLine("- talentTreePrimaryInvestmentDistribution: ${if (professionTreeChoiceMetrics.talentTreePrimaryInvestmentDistribution.isEmpty()) "none" else professionTreeChoiceMetrics.talentTreePrimaryInvestmentDistribution}")
+                    appendLine("- talentReserveSwapCount: ${professionTreeChoiceMetrics.talentReserveSwapCount}")
+                    appendLine("- rankBreakpointAdoptionByTalent: ${if (professionTreeChoiceMetrics.rankBreakpointAdoptionByTalent.isEmpty()) "none" else professionTreeChoiceMetrics.rankBreakpointAdoptionByTalent}")
+                    appendLine("- autoLearnedNonStarterTalentCount: ${professionTreeChoiceMetrics.autoLearnedNonStarterTalentCount}")
+                    appendLine("- includedProfessions: ${PROFESSION_TREE_RELEASE_PROFESSIONS.joinToString()}")
+                    appendLine("- advancedReportOnlyProfessions: ${PROFESSION_TREE_ADVANCED_REPORT_ONLY_PROFESSIONS.joinToString()}")
+                    appendLine("- excludedFrozenProfessions: ${PROFESSION_TREE_EXCLUDED_FROZEN_PROFESSIONS.joinToString()}")
                     appendLine("- crossProfessionTopWeaponBaseId: ${terminalWeaponIdentity.topWeaponBaseId ?: "none"}")
                     appendLine("- crossProfessionTopWeaponCount: ${terminalWeaponIdentity.topWeaponCount}/${terminalWeaponIdentity.fullRouteSampleCount}")
                     appendLine("- professionTerminalWeaponDistribution: ${if (terminalWeaponIdentity.professionTerminalWeaponDistribution.isEmpty()) "none" else terminalWeaponIdentity.professionTerminalWeaponDistribution}")
@@ -447,6 +480,13 @@ class LongRunLabFullTest {
         assertTrue(longRunPayload.containsKey("professionCapstoneSeenRate"))
         assertTrue(longRunPayload.containsKey("professionCapstoneAdoptionRate"))
         assertTrue(longRunPayload.containsKey("nonWeaponBuildPayoffRate"))
+        assertTrue(longRunPayload.containsKey("starterProfessionTalentMaxCount"))
+        assertTrue(longRunPayload.containsKey("learnedTalentChoiceEventRate"))
+        assertTrue(longRunPayload.containsKey("multiTreeInvestmentAboveThresholdRate"))
+        assertTrue(longRunPayload.containsKey("breakpointChoiceEventRate"))
+        assertTrue(longRunPayload.containsKey("talentTreePrimaryInvestmentDistribution"))
+        assertTrue(longRunPayload.containsKey("rankBreakpointAdoptionByTalent"))
+        assertTrue(longRunPayload.containsKey("autoLearnedNonStarterTalentCount"))
         assertTrue(longRunPayload.containsKey("professionCapstoneBreakdown"))
         assertTrue(
             branchInclusiveReports.all { report ->
@@ -734,6 +774,7 @@ class LongRunLabFullTest {
                     corpusId = HarnessMetadata.LONG_RUN_FULL_CORPUS_ID,
                     maxTurns = 1800,
                     goal = ScenarioGoal.ReachTerminal,
+                    initialTalentPointGrant = PROFESSION_TREE_CHOICE_PROBE_TALENT_POINTS,
                     assertions = emptyList(),
                 )
             }
@@ -1003,6 +1044,46 @@ class LongRunLabFullTest {
         )
     }
 
+    private fun professionTreeChoiceMetrics(reports: List<ScenarioReport>): ProfessionTreeChoiceMetrics {
+        val includedTerminalReports =
+            reports
+                .filter { report -> report.professionId in PROFESSION_TREE_RELEASE_PROFESSIONS }
+                .filter { report -> report.outcome.isTerminal }
+        val breakpointPreviewReports = includedTerminalReports.filter(ScenarioReport::breakpointPreviewAvailable)
+        return ProfessionTreeChoiceMetrics(
+            starterProfessionTalentMaxCount = includedTerminalReports.maxOfOrNull(ScenarioReport::starterProfessionTalentCount) ?: 0,
+            learnedTalentChoiceEventRate =
+                ratio(
+                    includedTerminalReports.count { report -> report.learnedTalentChoiceEventCount > 0 },
+                    includedTerminalReports.size,
+                ),
+            multiTreeInvestmentAboveThresholdRate =
+                ratio(
+                    includedTerminalReports.count(ScenarioReport::multiTreeInvestmentAboveThreshold),
+                    includedTerminalReports.size,
+                ),
+            breakpointChoiceEventRate =
+                ratio(
+                    breakpointPreviewReports.count { report -> report.breakpointChoiceEventCount > 0 },
+                    breakpointPreviewReports.size,
+                ),
+            talentTreePrimaryInvestmentDistribution =
+                includedTerminalReports
+                    .map { report -> report.talentTreePrimaryInvestmentTreeId ?: "none" }
+                    .groupingBy { treeId -> treeId }
+                    .eachCount()
+                    .toSortedMap(),
+            talentReserveSwapCount = includedTerminalReports.sumOf(ScenarioReport::talentReserveSwapCount),
+            rankBreakpointAdoptionByTalent =
+                includedTerminalReports
+                    .flatMap { report -> report.rankBreakpointAdoptionByTalent.entries }
+                    .groupingBy { (talentId, _) -> talentId }
+                    .fold(0) { accumulator, (_, count) -> accumulator + count }
+                    .toSortedMap(),
+            autoLearnedNonStarterTalentCount = includedTerminalReports.sumOf(ScenarioReport::autoLearnedNonStarterTalentCount),
+        )
+    }
+
     private fun countMilestoneItems(
         reports: List<ScenarioReport>,
         capstoneIds: Set<String>,
@@ -1134,6 +1215,17 @@ class LongRunLabFullTest {
         val nonWeaponPayoffItems: Map<String, Int>,
     )
 
+    private data class ProfessionTreeChoiceMetrics(
+        val starterProfessionTalentMaxCount: Int,
+        val learnedTalentChoiceEventRate: Double,
+        val multiTreeInvestmentAboveThresholdRate: Double,
+        val breakpointChoiceEventRate: Double,
+        val talentTreePrimaryInvestmentDistribution: Map<String, Int>,
+        val talentReserveSwapCount: Int,
+        val rankBreakpointAdoptionByTalent: Map<String, Int>,
+        val autoLearnedNonStarterTalentCount: Int,
+    )
+
     private data class ZoneTraversalDiagnosticAggregate(
         val sampleCount: Int,
         val visitCount: Int,
@@ -1176,6 +1268,8 @@ class LongRunLabFullTest {
     }
 
     private companion object {
+        private const val PROFESSION_TREE_CHOICE_PROBE_TALENT_POINTS = 6
+
         private val schemaCatalog = DataLoader().loadSchemaCatalog()
         private val DEDICATED_RUNTIME_MECHANICS: Set<String> =
             setOf(
@@ -1215,6 +1309,9 @@ class LongRunLabFullTest {
                     ),
             )
         private val PROFESSION_CAPSTONE_ITEM_IDS: Map<String, Set<String>> = foundationProfessionCapstoneBaseIdsByProfessionId
+        private val PROFESSION_TREE_RELEASE_PROFESSIONS: List<String> = listOf("vanguard", "arcanist", "rogue", "templar")
+        private val PROFESSION_TREE_ADVANCED_REPORT_ONLY_PROFESSIONS: List<String> = listOf("berserker", "spellblade")
+        private val PROFESSION_TREE_EXCLUDED_FROZEN_PROFESSIONS: List<String> = listOf("shadowblade", "warden")
         private val itemTagsById: Map<String, Set<String>> =
             schemaCatalog.itemBundle.items.associate { item -> item.id to item.tags.toSet() }
         private val itemSemanticTagsById: Map<String, Set<String>> =

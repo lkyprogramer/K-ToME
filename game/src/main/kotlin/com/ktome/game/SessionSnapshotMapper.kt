@@ -117,6 +117,7 @@ import com.ktome.core.save.StatModifierSnapshot
 import com.ktome.core.save.StatusEffectDefinitionSnapshot
 import com.ktome.core.save.TerrainOverrideSnapshot
 import com.ktome.core.save.TalentAllocationDraftSnapshot
+import com.ktome.core.save.TalentChoiceTelemetrySnapshot
 import com.ktome.core.save.StatsSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
 import com.ktome.core.save.AbyssalTemplePressureStateSnapshot
@@ -300,6 +301,7 @@ internal data class RestoredRunState(
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
+    val talentChoiceTelemetry: TalentChoiceTelemetrySnapshot = TalentChoiceTelemetrySnapshot(),
     val pendingActionIds: List<Int> = emptyList(),
     val activeTurnActorId: Int? = null,
 )
@@ -536,6 +538,7 @@ internal object SessionSnapshotMapper {
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
             milestoneRewards = snapshot.milestoneRewards,
+            talentChoiceTelemetry = snapshot.talentChoiceTelemetry,
             pendingActionIds = snapshot.pendingActionIds.toList(),
             activeTurnActorId = snapshot.activeTurnActorId,
             floors =

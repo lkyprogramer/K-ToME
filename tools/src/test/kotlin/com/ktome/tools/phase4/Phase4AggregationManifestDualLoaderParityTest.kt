@@ -126,7 +126,7 @@ class Phase4AggregationManifestDualLoaderParityTest {
                 artifactRelativePath = task.getValue("artifactRelativePath").toString(),
                 role = task.getValue("role").toString(),
             )
-            }
+        }
     }
 
     private fun repoRoot(): Path =

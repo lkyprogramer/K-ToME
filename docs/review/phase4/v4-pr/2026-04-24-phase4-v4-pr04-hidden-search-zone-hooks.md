@@ -186,6 +186,7 @@ snapshot 合同：
 3. `SessionSnapshotMapper` 只映射 core semantic cue，不生成 client-only 第二状态。
 4. client 只消费 snapshot cue，不从日志文本反推 hidden 状态。
 5. fixed-seed golden 必须证明四类 cue 在玩家行动前可见，并且不遮挡 CRITICAL / HIGH priority frontstage cue。
+6. 若同批触碰 `RenderSnapshot.kt`，必须保留 PR-01 的 `TalentTreeNodeSnapshot.category: TalentCategory` typed enum 合同；JSON wire 仍是枚举名字符串，client / harness 不得重新引入 `valueOf(snapshot.category)` 字符串解析。
 
 cue TTL / dedup 固定为：
 

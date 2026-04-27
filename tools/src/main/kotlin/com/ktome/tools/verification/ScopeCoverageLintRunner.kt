@@ -141,6 +141,7 @@ object ScopeCoverageLintRunner {
                         listOf(
                             "docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json",
                             "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json",
+                            "docs/review/phase4/opt/baselines/2026-04-24-phase4-profession-tree-run-choice-owner-baseline.json",
                         ),
                 ),
                 planCase(

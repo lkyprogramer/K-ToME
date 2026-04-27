@@ -17,6 +17,7 @@ import com.ktome.game.PlayerResourceView
 import com.ktome.game.PlayerStatus
 import com.ktome.game.TalentReserveView
 import com.ktome.game.TalentSlotView
+import com.ktome.game.TalentTreeView
 
 enum class ScenarioType(
     val reportValue: String,
@@ -43,12 +44,16 @@ data class ScenarioSpec(
     val corpusId: String = HarnessMetadata.DEFAULT_CORPUS_ID,
     val maxTurns: Int,
     val goal: ScenarioGoal,
+    val initialTalentPointGrant: Int = 0,
     val saveLoadCheckpoint: SaveLoadCheckpoint? = null,
     val assertions: List<ScenarioAssertion> = emptyList(),
 ) {
     init {
         require(isCompatibleScenarioType(scenarioType = scenarioType, zoneId = zoneId, zoneRoute = zoneRoute, routeIndex = routeIndex)) {
             "Scenario '$name' uses incompatible scenarioType=${scenarioType.reportValue} for zoneId=$zoneId, routeIndex=$routeIndex, zoneRoute=$zoneRoute."
+        }
+        require(initialTalentPointGrant >= 0) {
+            "Scenario '$name' initialTalentPointGrant must be non-negative, got $initialTalentPointGrant."
         }
     }
 }
@@ -184,6 +189,18 @@ data class ScenarioReport(
     val lateRunReliquaryTagDistribution: Map<String, Int> = emptyMap(),
     val affixSynergyActivationCount: Int = 0,
     val affixSynergyActivationDistribution: Map<String, Int> = emptyMap(),
+    val starterProfessionTalentCount: Int = 0,
+    val learnedTalentChoiceEventCount: Int = 0,
+    val learnableNonStarterTalentCount: Int = 0,
+    val breakpointChoiceEventCount: Int = 0,
+    val breakpointPreviewAvailable: Boolean = false,
+    val talentTreeInvestmentByTree: Map<String, Int> = emptyMap(),
+    val talentTreePrimaryInvestmentTreeId: String? = null,
+    val talentTreePrimaryInvestmentPoints: Int = 0,
+    val multiTreeInvestmentAboveThreshold: Boolean = false,
+    val talentReserveSwapCount: Int = 0,
+    val rankBreakpointAdoptionByTalent: Map<String, Int> = emptyMap(),
+    val autoLearnedNonStarterTalentCount: Int = 0,
     val goalReached: Boolean,
     val failureReason: String? = null,
     val stuckReason: String? = null,
@@ -422,6 +439,7 @@ data class RunObservation(
     val inscriptions: List<ObservedInscription> = emptyList(),
     val talentSlots: List<TalentSlotView>,
     val reserveTalents: List<TalentReserveView> = emptyList(),
+    val talentTrees: List<TalentTreeView> = emptyList(),
     val canAscend: Boolean,
     val canDescend: Boolean,
     val runOutcome: RunOutcome,

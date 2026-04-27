@@ -219,6 +219,22 @@ internal fun ScenarioReport.toJson() =
                 put(affixId, count)
             }
         }
+        put("starterProfessionTalentCount", starterProfessionTalentCount)
+        put("learnedTalentChoiceEventCount", learnedTalentChoiceEventCount)
+        put("learnableNonStarterTalentCount", learnableNonStarterTalentCount)
+        put("breakpointChoiceEventCount", breakpointChoiceEventCount)
+        put("breakpointPreviewAvailable", breakpointPreviewAvailable)
+        putJsonObject("talentTreeInvestmentByTree") {
+            talentTreeInvestmentByTree.forEach { (treeId, points) -> put(treeId, points) }
+        }
+        talentTreePrimaryInvestmentTreeId?.let { treeId -> put("talentTreePrimaryInvestmentTreeId", treeId) }
+        put("talentTreePrimaryInvestmentPoints", talentTreePrimaryInvestmentPoints)
+        put("multiTreeInvestmentAboveThreshold", multiTreeInvestmentAboveThreshold)
+        put("talentReserveSwapCount", talentReserveSwapCount)
+        putJsonObject("rankBreakpointAdoptionByTalent") {
+            rankBreakpointAdoptionByTalent.forEach { (talentId, count) -> put(talentId, count) }
+        }
+        put("autoLearnedNonStarterTalentCount", autoLearnedNonStarterTalentCount)
         putJsonArray("milestoneRewards") {
             milestoneRewards.forEach { reward ->
                 add(

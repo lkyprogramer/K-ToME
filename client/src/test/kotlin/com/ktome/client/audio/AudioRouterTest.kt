@@ -368,7 +368,7 @@ class AudioRouterTest {
                 logEvents =
                     listOf(
                         RenderLogEventSnapshot(RenderTextTokenSnapshot(key = "log.level_up")),
-                        RenderLogEventSnapshot(RenderTextTokenSnapshot(key = "log.talent.unlock")),
+                        RenderLogEventSnapshot(RenderTextTokenSnapshot(key = "log.talent.learned")),
                     ),
             )
 

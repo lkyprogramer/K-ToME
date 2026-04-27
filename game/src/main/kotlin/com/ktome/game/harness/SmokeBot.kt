@@ -6,6 +6,7 @@ import com.ktome.core.item.ItemType
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
+import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.AbyssalRuntimeKeys
 import com.ktome.game.InventoryItemView
@@ -40,6 +41,12 @@ class SmokeBot : RunBot {
     private val visitedSpecialShopIds = linkedSetOf<String>()
     private val recentPositions = ArrayDeque<Point>()
 
+    private data class TalentUpgradePriorityContext(
+        val currentLevelByTalentId: Map<String, Int>,
+        val professionTreeIdByTalentId: Map<String, String>,
+        val professionTreeInvestments: Map<String, Int>,
+    )
+
     private fun pickImmediateAction(observation: RunObservation): PlayerCommand? {
         observation.activeRouteSelection?.let { routeSelection ->
             return PlayerCommand.SelectRoute(preferredRouteIndex(routeSelection))
@@ -55,7 +62,11 @@ class SmokeBot : RunBot {
             }
         }
         if (hasPendingTalentDraft(observation)) {
-            return PlayerCommand.ConfirmTalentDraft
+            return if (pendingDraftNeedsActiveSlotChoice(observation)) {
+                PlayerCommand.ConfirmTalentDraftToReserve
+            } else {
+                PlayerCommand.ConfirmTalentDraft
+            }
         }
         expireRecentDroppedPositions(observation)
         if (observation.playerStatus.statPoints > 0) {
@@ -90,7 +101,19 @@ class SmokeBot : RunBot {
 
     private fun hasPendingTalentDraft(observation: RunObservation): Boolean =
         observation.talentSlots.any(TalentSlotView::hasPendingAllocation) ||
-            observation.reserveTalents.any { talent -> talent.hasPendingAllocation }
+            observation.reserveTalents.any { talent -> talent.hasPendingAllocation } ||
+            observation.talentTrees.any { tree -> tree.nodes.any { node -> node.hasPendingAllocation } }
+
+    private fun pendingDraftNeedsActiveSlotChoice(observation: RunObservation): Boolean =
+        observation.talentSlots.size >= 4 &&
+            observation.talentTrees
+                .flatMap { tree -> tree.nodes }
+                .any { node ->
+                    node.hasPendingAllocation &&
+                        node.committedLevel <= 0 &&
+                        node.level > 0 &&
+                        node.category in activeTalentCategories
+                }
 
     private fun shouldRefreshLoadout(observation: RunObservation): Boolean {
         if (observation.visibleHostilePositions.isEmpty() && observation.visibleBossPositions.isEmpty()) {
@@ -124,14 +147,40 @@ class SmokeBot : RunBot {
     private fun preferredTalentUpgrade(
         observation: RunObservation,
         ownerType: TalentTreeOwnerType,
-    ): TalentUpgradeCandidate? =
-        (observation.talentSlots.map(::TalentUpgradeCandidate) + observation.reserveTalents.map(::TalentUpgradeCandidate))
+    ): TalentUpgradeCandidate? {
+        val priorityContext = talentUpgradePriorityContext(observation)
+        return (
+            observation.talentSlots.map(::TalentUpgradeCandidate) +
+                observation.reserveTalents.map(::TalentUpgradeCandidate) +
+                observation.talentTrees.flatMap { tree -> tree.nodes }.filter { node -> node.isAssignable }.map(::TalentUpgradeCandidate)
+            )
             .filter { talent -> talent.ownerType == ownerType && talent.level < talent.maxLevel }
             .maxWithOrNull(
-                compareBy<TalentUpgradeCandidate> { talentUpgradePriority(observation, it) }
+                compareBy<TalentUpgradeCandidate> { talentUpgradePriority(observation, it, priorityContext) }
                     .thenBy { -it.level }
                     .thenBy { it.sourcePriority },
             )
+    }
+
+    private fun talentUpgradePriorityContext(observation: RunObservation): TalentUpgradePriorityContext {
+        val levelByTalentId = linkedMapOf<String, Int>()
+        val professionTreeIdByTalentId = linkedMapOf<String, String>()
+        val professionTreeInvestments = linkedMapOf<String, Int>()
+        observation.talentTrees.forEach { tree ->
+            if (tree.ownerType == TalentTreeOwnerType.PROFESSION) {
+                professionTreeInvestments[tree.treeId] = tree.nodes.sumOf { node -> node.level }
+                tree.nodes.forEach { node -> professionTreeIdByTalentId[node.talentId] = tree.treeId }
+            }
+            tree.nodes.forEach { node -> levelByTalentId[node.talentId] = node.level }
+        }
+        observation.reserveTalents.forEach { talent -> levelByTalentId[talent.talentId] = talent.level }
+        observation.talentSlots.forEach { talent -> levelByTalentId[talent.talentId] = talent.level }
+        return TalentUpgradePriorityContext(
+            currentLevelByTalentId = levelByTalentId,
+            professionTreeIdByTalentId = professionTreeIdByTalentId,
+            professionTreeInvestments = professionTreeInvestments,
+        )
+    }
 
     private fun preferredInventoryAction(observation: RunObservation): PlayerCommand? {
         val bossVisible = observation.visibleBossPositions.isNotEmpty()
@@ -1304,14 +1353,14 @@ class SmokeBot : RunBot {
         return true
     }
 
-    private fun unlockedTalentIds(observation: RunObservation): Set<String> =
+    private fun learnedTalentIds(observation: RunObservation): Set<String> =
         buildSet {
             observation.talentSlots.mapTo(this) { slot -> slot.talentId }
             observation.reserveTalents.mapTo(this) { talent -> talent.talentId }
         }
 
     private fun isSpellblade(observation: RunObservation): Boolean =
-        unlockedTalentIds(observation).any(SPELLBLADE_TALENT_IDS::contains)
+        learnedTalentIds(observation).any(SPELLBLADE_TALENT_IDS::contains)
 
     private fun visibleThreatPositions(observation: RunObservation): List<Point> =
         (observation.visibleHostilePositions + observation.visibleBossPositions)
@@ -1353,8 +1402,10 @@ class SmokeBot : RunBot {
     private fun talentUpgradePriority(
         observation: RunObservation,
         talent: TalentUpgradeCandidate,
-    ): Int =
-        when (observation.playerResource.typeId) {
+        context: TalentUpgradePriorityContext,
+    ): Int {
+        val basePriority =
+            when (observation.playerResource.typeId) {
             "STAMINA" ->
                 when (talent.talentId) {
                     "guard_stance" -> 120
@@ -1371,15 +1422,16 @@ class SmokeBot : RunBot {
                 }
 
             "ENERGY" ->
-                if (currentTalentLevel(observation, "shadowstep") < 2) {
+                if (currentTalentLevel(context, "shadowstep") < 2) {
                     when (talent.talentId) {
+                        "stealth" -> if (currentTalentLevel(context, "stealth") < 2) 133 else 30
                         "shadowstep" -> 132
                         "shadow_bind" -> 131
                         "backstab" -> 34
-                        "roll", "stealth", "poison_blade" -> 30
+                        "roll", "poison_blade" -> 30
                         else -> 24
                     }
-                } else if (currentTalentLevel(observation, "shadow_bind") < 4) {
+                } else if (currentTalentLevel(context, "shadow_bind") < 4) {
                     when (talent.talentId) {
                         "shadow_bind" -> 130
                         "shadowstep" -> 72
@@ -1398,11 +1450,16 @@ class SmokeBot : RunBot {
                 }
 
             "POSITIVE_ENERGY" ->
-                if (currentTalentLevel(observation, "holy_mark") < 4) {
+                if (currentTalentLevel(context, "holy_mark") < 4) {
                     when (talent.talentId) {
+                        "holy_strike" ->
+                            if (currentTalentLevel(context, "holy_mark") <= 0 && currentTalentLevel(context, "holy_strike") < 2) {
+                                131
+                            } else {
+                                42
+                            }
                         "holy_mark" -> 130
                         "holy_light" -> 94
-                        "holy_strike" -> 42
                         "judgment_hammer" -> 38
                         "holy_shield", "devotion" -> 34
                         "purify" -> if (talent.level == 0) 32 else 28
@@ -1422,14 +1479,56 @@ class SmokeBot : RunBot {
 
             else -> baseTalentUpgradePriority(talent.talentId)
         }
+        return basePriority +
+            professionTreeDiversityBonus(talent, context) +
+            breakpointRouteBonus(talent, context)
+    }
+
+    private fun breakpointRouteBonus(
+        talent: TalentUpgradeCandidate,
+        context: TalentUpgradePriorityContext,
+    ): Int =
+        when (talent.talentId) {
+            "guard_stance", "blink" ->
+                if (currentTalentLevel(context, talent.talentId) in 1..3) 360 else 0
+            "shadowstep" ->
+                if (currentTalentLevel(context, talent.talentId) == 1) 360 else 0
+            "holy_mark" ->
+                if (currentTalentLevel(context, talent.talentId) in 1..2) 360 else 0
+            else -> 0
+        }
+
+    private fun professionTreeDiversityBonus(
+        talent: TalentUpgradeCandidate,
+        context: TalentUpgradePriorityContext,
+    ): Int {
+        if (talent.ownerType != TalentTreeOwnerType.PROFESSION) {
+            return 0
+        }
+        val treeId = context.professionTreeIdByTalentId[talent.talentId] ?: return 0
+        val treeInvestments = context.professionTreeInvestments
+        if (treeInvestments.values.count { points -> points >= TALENT_TREE_DIVERSITY_THRESHOLD } >= 2) {
+            return 0
+        }
+        val currentPoints = treeInvestments[treeId] ?: return 0
+        if (currentPoints !in 1 until TALENT_TREE_DIVERSITY_THRESHOLD) {
+            return 0
+        }
+        val highestUnderThreshold =
+            treeInvestments
+                .filterValues { points -> points in 1 until TALENT_TREE_DIVERSITY_THRESHOLD }
+                .maxOfOrNull { (_, points) -> points }
+                ?: return 0
+        if (currentPoints < highestUnderThreshold) {
+            return 0
+        }
+        return 220 + currentPoints * 10
+    }
 
     private fun currentTalentLevel(
-        observation: RunObservation,
+        context: TalentUpgradePriorityContext,
         talentId: String,
-    ): Int =
-        observation.talentSlots.firstOrNull { slot -> slot.talentId == talentId }?.level
-            ?: observation.reserveTalents.firstOrNull { talent -> talent.talentId == talentId }?.level
-            ?: 0
+    ): Int = context.currentLevelByTalentId[talentId] ?: 0
 
     private fun baseTalentUpgradePriority(talentId: String): Int =
         when (talentId) {
@@ -1584,11 +1683,22 @@ class SmokeBot : RunBot {
             maxLevel = talent.maxLevel,
             sourcePriority = Int.MIN_VALUE,
         )
+
+        constructor(node: com.ktome.game.TalentTreeNodeView) : this(
+            talentId = node.talentId,
+            ownerType = node.ownerType,
+            level = node.level,
+            maxLevel = node.maxLevel,
+            sourcePriority = Int.MIN_VALUE + 1,
+        )
     }
 
     private companion object {
+        private val activeTalentCategories = setOf(TalentCategory.ACTIVE, TalentCategory.SUSTAINED)
+
         const val RECENT_POSITION_WINDOW: Int = 8
         const val MAX_ITEM_DETOUR_DISTANCE: Int = 3
+        const val TALENT_TREE_DIVERSITY_THRESHOLD: Int = 3
         const val NAVIGATION_REPEAT_THRESHOLD: Int = 2
         const val BOSS_MEMORY_CONFIRM_RADIUS: Int = 2
         const val SMOKE_BOT_AUTO_PICKUP_LIMIT: Int = 10

@@ -46,18 +46,11 @@ class RenderSnapshotAssetAudit(
         snapshot.uiState.equipment.forEach { equipment ->
             equipment.item?.let(::auditItem)
         }
-        snapshot.uiState.talents.forEach { talent ->
-            resolveVisual(talent.visualKey)
-            resolveVisual(talent.iconKey)
-            resolveVisual(talent.damageTypeIconKey)
-            resolveAudio(talent.audioProfile)
-        }
-        snapshot.uiState.reserveTalents.forEach { talent ->
-            resolveVisual(talent.visualKey)
-            resolveVisual(talent.iconKey)
-            resolveVisual(talent.damageTypeIconKey)
-            resolveAudio(talent.audioProfile)
-        }
+        snapshot.forEachTalentAssetReference(
+            visual = { key -> resolveVisual(key) },
+            iconVisual = { key -> resolveVisual(key) },
+            audio = { key -> resolveAudio(key) },
+        )
         snapshot.uiState.inventory.forEach { item ->
             auditItem(item.item)
         }

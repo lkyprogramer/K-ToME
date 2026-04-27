@@ -101,6 +101,16 @@ class Phase4ReportRunnerTest {
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("fullRouteZoneTraversalDiagnostics"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneIds"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneDesignAudit"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("starterProfessionTalentMaxCount"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("learnedTalentChoiceEventRate"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("multiTreeInvestmentAboveThresholdRate"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("breakpointChoiceEventRate"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("talentTreePrimaryInvestmentDistribution"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("talentReserveSwapCount"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("rankBreakpointAdoptionByTalent"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("autoLearnedNonStarterTalentCount"))
+        assertEquals("3", longRunTask.getValue("metrics").jsonObject.getValue("starterProfessionTalentMaxCount").jsonPrimitive.content)
+        assertEquals("0", longRunTask.getValue("metrics").jsonObject.getValue("autoLearnedNonStarterTalentCount").jsonPrimitive.content)
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("phaseTransitionObservedRatio"))
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("variantTraceDivergenceRatio"))
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("minVariantActionTraceDivergenceScore"))
@@ -177,8 +187,8 @@ class Phase4ReportRunnerTest {
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
             "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
-        assertEquals(31, experienceMetrics.size)
-        assertEquals(31, metricCatalog.size)
+        assertEquals(39, experienceMetrics.size)
+        assertEquals(39, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
@@ -202,6 +212,14 @@ class Phase4ReportRunnerTest {
                 "nonWeaponBuildPayoffRate",
                 "professionCapstoneAdoptionFloor.reportOnly",
                 "nonWeaponBuildPayoffFloor.reportOnly",
+                "starterProfessionTalentMaxCount",
+                "learnedTalentChoiceEventRate",
+                "multiTreeInvestmentAboveThresholdRate",
+                "breakpointChoiceEventRate",
+                "talentTreePrimaryInvestmentDistribution",
+                "talentReserveSwapCount",
+                "rankBreakpointAdoptionByTalent",
+                "autoLearnedNonStarterTalentCount",
                 "avgObjectiveAcquireTurn",
                 "avgVisibleHostileTurnCount",
                 "avgEnemyTurns",

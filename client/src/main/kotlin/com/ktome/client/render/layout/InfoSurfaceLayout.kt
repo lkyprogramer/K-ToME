@@ -2,6 +2,7 @@ package com.ktome.client.render.layout
 
 import com.ktome.client.render.TileLayoutMetrics
 import com.ktome.client.ui.token.UiDesignTokens
+import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 
 internal sealed interface InfoSurfaceLayout {
     data object MapDominant : InfoSurfaceLayout
@@ -43,13 +44,14 @@ internal object InfoSurfaceLayoutSolver {
         val panelGap = tokens.spacing.md
         val hotbarX = bottomInset
         val hotbarY = tokens.spacing.md
-        val hotbarCardWidth = 126f
+        val hotbarGap = 12f
+        val availableHotbarWidth =
+            (worldWidth - bottomInset * 2 - hotbarGap * (PLAYER_ACTIVE_TALENT_SLOT_COUNT - 1)).coerceAtLeast(0f)
+        val hotbarCardWidth = (availableHotbarWidth / PLAYER_ACTIVE_TALENT_SLOT_COUNT).coerceAtMost(156f)
         val hotbarCardHeight = 84f
-        val hotbarGap = 14f
         val cardY = hotbarY + hotbarCardHeight + tokens.spacing.md
         val cardHeight = (mapOffsetY - cardY - tokens.spacing.md).coerceAtLeast(96f)
         val panelWidth = worldWidth - bottomInset * 2
-        val preferredLogWidth = (panelWidth * 0.19f).coerceIn(300f, 420f)
         val minLogWidth = 180f
         var infoWidth = (panelWidth * 0.28f).coerceIn(360f, 480f)
         var focusWidth = (panelWidth * 0.17f).coerceIn(250f, 340f)
@@ -72,8 +74,8 @@ internal object InfoSurfaceLayoutSolver {
             focusX = bottomInset + panelWidth - focusWidth
             availableLogWidth = focusX - panelGap - (infoX + infoWidth)
         }
-        val logWidth = minOf(preferredLogWidth, availableLogWidth.coerceAtLeast(minLogWidth))
-        val logX = focusX - panelGap - logWidth
+        val logX = infoX + infoWidth + panelGap
+        val logWidth = (focusX - panelGap - logX).coerceAtLeast(minLogWidth)
         return TileLayoutMetrics(
             mapOffsetY = mapOffsetY,
             worldWidth = worldWidth,

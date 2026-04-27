@@ -42,6 +42,9 @@ import com.ktome.client.ui.talent.DescriptionLine
 import com.ktome.client.ui.talent.DescriptionLineKind
 import com.ktome.client.ui.talent.DescriptionPresenter
 import com.ktome.client.ui.talent.DescriptionSurface
+import com.ktome.client.ui.talent.TalentSidebarLine
+import com.ktome.client.ui.talent.TalentSidebarLineRole
+import com.ktome.client.ui.talent.TalentSidebarPresenter
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -1024,72 +1027,15 @@ internal object TileRenderModelBuilder {
             }
 
             UiMode.TALENT_ASSIGN -> {
-                rows += TileTextRow(localizer.text("ui.sidebar.talent_points", "value" to snapshot.uiState.playerStatus.talentPoints), TileTextTone.WHITE)
-                if (snapshot.uiState.playerStatus.raceTalentPoints > 0) {
-                    rows += TileTextRow(localizer.text("ui.sidebar.race_talent_points", "value" to snapshot.uiState.playerStatus.raceTalentPoints), TileTextTone.WHITE)
-                }
-                snapshot.uiState.talents.forEach { talent ->
+                TalentSidebarPresenter.present(localizer, snapshot.uiState, overlayState).forEach { line ->
                     rows +=
                         TileTextRow(
-                            text = talentSidebarLabel(localizer, talent),
-                            tone =
-                                if (
-                                    overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
-                                    overlayState.loadoutSlotSelection == talent.slot
-                                ) {
-                                    TileTextTone.CYAN
-                                } else {
-                                    TileTextTone.WHITE
-                                },
-                            icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
-                            selected =
-                                overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
-                                    overlayState.loadoutSlotSelection == talent.slot,
+                            text = line.text,
+                            tone = talentSidebarTone(line),
+                            icon = line.iconKey?.let { resolveVisual(visualResolver, it) },
+                            selected = line.selected,
                         )
                 }
-                if (snapshot.uiState.reserveTalents.isNotEmpty()) {
-                    rows += TileTextRow(localizer.text("ui.sidebar.reserve_talents"), TileTextTone.GOLD)
-                    snapshot.uiState.reserveTalents.forEachIndexed { index, talent ->
-                        rows +=
-                            TileTextRow(
-                                text = reserveTalentLabel(localizer, talent),
-                                tone =
-                                    if (
-                                        overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE &&
-                                        overlayState.loadoutReserveSelection == index
-                                    ) {
-                                        TileTextTone.CYAN
-                                    } else {
-                                        TileTextTone.WHITE
-                                    },
-                                icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
-                                selected =
-                                    overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE &&
-                                        overlayState.loadoutReserveSelection == index,
-                            )
-                    }
-                }
-                val focusedActiveTalent =
-                    snapshot.uiState.talents.firstOrNull { talent ->
-                        overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
-                            talent.slot == overlayState.loadoutSlotSelection
-                    }
-                val focusedReserveTalent =
-                    snapshot.uiState.reserveTalents.getOrNull(overlayState.loadoutReserveSelection)
-                        ?.takeIf { overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE }
-                focusedActiveTalent?.let { talent ->
-                    DescriptionPresenter.presentTalentLines(localizer, talent).forEach { line ->
-                        rows += TileTextRow(line.text, descriptionTone(line))
-                    }
-                    rows += TileTextRow(talentUsageSummary(localizer, talent), TileTextTone.LIGHT_GRAY)
-                }
-                focusedReserveTalent?.let { talent ->
-                    DescriptionPresenter.presentReserveTalentLines(localizer, talent).forEach { line ->
-                        rows += TileTextRow(line.text, descriptionTone(line))
-                    }
-                    rows += TileTextRow(talentUsageSummary(localizer, talent), TileTextTone.LIGHT_GRAY)
-                }
-                rows += TileTextRow(localizer.text("ui.controls.talent_assign"), TileTextTone.LIGHT_GRAY)
             }
         }
 
@@ -1522,6 +1468,29 @@ internal object TileRenderModelBuilder {
             DescriptionLineKind.KEYWORD,
             DescriptionLineKind.STATE,
             -> TileTextTone.LIGHT_GRAY
+        }
+
+    private fun talentSidebarTone(line: TalentSidebarLine): TileTextTone =
+        if (line.selected) {
+            TileTextTone.CYAN
+        } else {
+            when (line.role) {
+                TalentSidebarLineRole.POINTS,
+                TalentSidebarLineRole.ACTION_HINT,
+                -> TileTextTone.WHITE
+
+                TalentSidebarLineRole.ACTION_TITLE -> TileTextTone.CYAN
+                TalentSidebarLineRole.TREE_HEADER -> TileTextTone.GOLD
+                TalentSidebarLineRole.NODE_LOCKED -> TileTextTone.GRAY
+                TalentSidebarLineRole.NODE_LEARNABLE -> TileTextTone.GREEN
+                TalentSidebarLineRole.NODE_LEARNED_RESERVE -> TileTextTone.WHITE
+                TalentSidebarLineRole.NODE_LEARNED_ACTIVE -> TileTextTone.GOLD
+                TalentSidebarLineRole.DESCRIPTION_SECONDARY -> TileTextTone.GRAY
+                TalentSidebarLineRole.DESCRIPTION_PRIMARY,
+                TalentSidebarLineRole.DESCRIPTION_STATE,
+                TalentSidebarLineRole.FOOTER,
+                -> TileTextTone.LIGHT_GRAY
+            }
         }
 
     private fun resolveVisual(

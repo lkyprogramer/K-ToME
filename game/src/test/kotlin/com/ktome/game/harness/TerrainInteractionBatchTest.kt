@@ -39,6 +39,7 @@ import com.ktome.core.status.StatusEffectType
 import com.ktome.core.status.StatusLifecycle
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.EffectTracker
+import com.ktome.core.talent.TalentLoadout
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
@@ -1097,10 +1098,19 @@ class TerrainInteractionBatchTest {
         seed: Long,
         zoneId: String,
     ): FoundationGameSession =
-        GameModule.newFoundationSession(
-            config = FoundationGameConfig(seed = seed, zoneId = zoneId, playerProfessionId = "arcanist"),
-            saveManager = SaveManager(tempDir.resolve("terrain-probe-$zoneId-$seed")),
-        )
+        GameModule
+            .newFoundationSession(
+                config = FoundationGameConfig(seed = seed, zoneId = zoneId, playerProfessionId = "arcanist"),
+                saveManager = SaveManager(tempDir.resolve("terrain-probe-$zoneId-$seed")),
+            ).also(::installTerrainProbeLoadout)
+
+    private fun installTerrainProbeLoadout(session: FoundationGameSession) {
+        val loadout = requireNotNull(session.automationWorld().get<TalentLoadout>(session.playerId)) {
+            "Terrain exposure probe requires a player TalentLoadout."
+        }
+        loadout.talentLevels.putIfAbsent("ice_bolt", 1)
+        loadout.slotToTalentId.putIfAbsent(4, "ice_bolt")
+    }
 
     private fun sha256(payload: String): String =
         MessageDigest.getInstance("SHA-256")

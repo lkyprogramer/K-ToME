@@ -49,8 +49,11 @@ import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
+import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.core.snapshot.TalentTreeNodeSnapshot
+import com.ktome.core.snapshot.TalentTreeSnapshot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -723,23 +726,183 @@ class TileRendererCanvasTest {
     @Test
     fun `render canvas keeps hud gauges clear of the title line`() {
         val canvas = RecordingTileCanvas()
+        val snapshot = sampleSnapshot(width = 18, height = 17)
 
         TileRenderer.renderToCanvas(
             localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
             visualResolver = sampleResolver(),
-            snapshot = sampleSnapshot(),
+            snapshot = snapshot,
             overlayState = OverlayState(mode = UiMode.MAP),
             canvas = canvas,
             cellWidth = 32f,
             cellHeight = 32f,
         )
 
-        val subtitleDraw = requireNotNull(canvas.textDraws.getOrNull(1))
+        val subtitleDraw =
+            canvas.textDraws.first { draw ->
+                draw.text.contains("Shattered Outpost")
+            }
+        val subtitleBounds =
+            TileRenderer.textApproximationBounds(
+                style = subtitleDraw.style,
+                text = subtitleDraw.text,
+                x = subtitleDraw.x,
+                y = subtitleDraw.y,
+            )
+        val subtitleTextBottom = subtitleDraw.y - subtitleBounds[3]
         val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 14f }
         val topGauge = requireNotNull(gaugeBackgrounds.maxByOrNull { draw -> draw.y })
 
-        assertTrue(topGauge.y + topGauge.height <= subtitleDraw.y)
-        assertTrue(subtitleDraw.y - (topGauge.y + topGauge.height) >= 4f)
+        assertTrue(topGauge.y + topGauge.height <= subtitleTextBottom)
+        assertTrue(subtitleTextBottom - (topGauge.y + topGauge.height) >= 4f)
+    }
+
+    @Test
+    fun `render canvas keeps chinese hotbar labels inside their slot cards`() {
+        val canvas = RecordingTileCanvas()
+        val snapshot =
+            sampleSnapshot(
+                width = 18,
+                height = 17,
+                talents =
+                    listOf(
+                        TalentSlotSnapshot(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 8,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 1,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = false,
+                        ),
+                        TalentSlotSnapshot(
+                            slot = 2,
+                            talentId = "shield_bash",
+                            nameKey = "talent.vanguard.shield_bash.name",
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 10,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 1,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = false,
+                        ),
+                        TalentSlotSnapshot(
+                            slot = 3,
+                            talentId = "guard_stance",
+                            nameKey = "talent.vanguard.guard_stance.name",
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 8,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 0,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = false,
+                        ),
+                        TalentSlotSnapshot(
+                            slot = 4,
+                            talentId = "charge",
+                            nameKey = "talent.vanguard.charge.name",
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 12,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 5,
+                            minRange = 1,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = true,
+                        ),
+                    ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
+        val guardLabel = canvas.textDraws.single { draw -> draw.text == "格挡姿态" }
+        val guardBounds =
+            TileRenderer.textApproximationBounds(
+                style = guardLabel.style,
+                text = guardLabel.text,
+                x = guardLabel.x,
+                y = guardLabel.y,
+            )
+        val slotFourX = layout.hotbarX + 3 * (layout.hotbarCardWidth + layout.hotbarGap)
+
+        assertTrue(guardLabel.x + guardBounds[2] <= slotFourX - 4f)
+    }
+
+    @Test
+    fun `render canvas keeps long chinese route hints readable in bottom log`() {
+        val canvas = RecordingTileCanvas()
+        val snapshot =
+            sampleSnapshot(
+                width = 18,
+                height = 17,
+                logEvents =
+                    listOf(
+                        RenderLogEventSnapshot(
+                            RenderTextTokenSnapshot(
+                                key = "log.zone.mechanic_hint",
+                                arguments =
+                                    listOf(
+                                        RenderTextArgumentSnapshot(
+                                            name = "hint",
+                                            value = "如果在 Boss 线外拖得太久，这层会持续有巡逻增援补进来。",
+                                        ),
+                                    ),
+                            ),
+                        ),
+                    ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
+        val routeHintDraws =
+            canvas.textDraws.filter { draw ->
+                draw.text.contains("路线提示") ||
+                    draw.text.contains("Boss") ||
+                    draw.text.contains("持续") ||
+                    draw.text.contains("增援") ||
+                    draw.text.contains("补进来")
+            }
+
+        assertTrue(routeHintDraws.isNotEmpty())
+        assertTrue(routeHintDraws.none { draw -> draw.text.contains("…") })
+        val routeHintText = routeHintDraws.joinToString(separator = "") { draw -> draw.text }
+        assertTrue(routeHintText.contains("持续有巡逻增援补进来"), routeHintText)
+        assertTrue(
+            routeHintDraws.all { draw ->
+                val bounds = TileRenderer.textApproximationBounds(draw.style, draw.text, draw.x, draw.y)
+                draw.x + bounds[2] <= layout.logX + layout.logWidth + 0.5f
+            },
+        )
     }
 
     @Test
@@ -979,10 +1142,11 @@ class TileRendererCanvasTest {
     }
 
     @Test
-    fun `responsive layout leaves spacer between info and log on wide maps`() {
+    fun `responsive layout expands log panel across available center space`() {
         val metrics = TileRenderer.layoutMetrics(mapWidth = 24, mapHeight = 10, cellWidth = 32f, cellHeight = 32f)
 
-        assertTrue(metrics.logX > metrics.infoX + metrics.infoWidth + 40f)
+        assertEquals(metrics.infoX + metrics.infoWidth + metrics.panelGap, metrics.logX)
+        assertTrue(metrics.logWidth >= 520f)
     }
 
     @Test
@@ -1353,6 +1517,82 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `tile talent sidebar uses shared talent presentation lines and resolves icons`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        talentTrees =
+                            listOf(
+                                TalentTreeSnapshot(
+                                    treeId = "vanguard_arms",
+                                    treeOwnerId = "vanguard",
+                                    nameKey = "talent_tree.vanguard_arms.name",
+                                    descKey = "talent_tree.vanguard_arms.desc",
+                                    iconKey = "item.short_sword.icon",
+                                    nodes =
+                                        listOf(
+                                            TalentTreeNodeSnapshot(
+                                                talentId = "charge",
+                                                treeId = "vanguard_arms",
+                                                treeOwnerId = "vanguard",
+                                                nameKey = "talent.vanguard.charge.name",
+                                                descKey = "talent.vanguard.charge.desc",
+                                                iconKey = "item.short_sword.icon",
+                                                state = TalentNodeStateSnapshot.LEARNABLE,
+                                                rank = 0,
+                                                maxRank = 5,
+                                                unlockLevel = 1,
+                                                resourceCost = 8,
+                                                resourceLabelKey = "ui.hud.stamina.short",
+                                                range = 3,
+                                                minRange = 1,
+                                                currentCooldown = 0,
+                                                maxCooldown = 4,
+                                                requiresTarget = true,
+                                            ),
+                                            TalentTreeNodeSnapshot(
+                                                talentId = "war_cry",
+                                                treeId = "vanguard_arms",
+                                                treeOwnerId = "vanguard",
+                                                nameKey = "talent.vanguard.war_cry.name",
+                                                descKey = "talent.vanguard.war_cry.desc",
+                                                iconKey = "item.short_sword.icon",
+                                                state = TalentNodeStateSnapshot.LOCKED,
+                                                rank = 0,
+                                                maxRank = 5,
+                                                unlockLevel = 2,
+                                                resourceCost = 12,
+                                                resourceLabelKey = "ui.hud.stamina.short",
+                                                range = 0,
+                                                minRange = 0,
+                                                currentCooldown = 0,
+                                                maxCooldown = 6,
+                                                requiresTarget = false,
+                                            ),
+                                        ),
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.TALENT_ASSIGN, talentTreeSelection = 0, talentTreePreviewExpanded = false),
+            )
+
+        val treeRow = model.sidebar.rows.first { row -> row.text == "Arms" }
+        val selectedNodeRow = model.sidebar.rows.first { row -> row.text == "[+] Charge 0/5" }
+        val lockedNodeRow = model.sidebar.rows.first { row -> row.text == "[x] War Cry 0/5" }
+
+        assertEquals(TileTextTone.GOLD, treeRow.tone)
+        assertNotNull(treeRow.icon)
+        assertEquals(TileTextTone.CYAN, selectedNodeRow.tone)
+        assertTrue(selectedNodeRow.selected)
+        assertNotNull(selectedNodeRow.icon)
+        assertEquals(TileTextTone.GRAY, lockedNodeRow.tone)
+    }
+
+    @Test
     fun `loadout edit sidebar renders breakpoint preview rows with secondary gray tone`() {
         val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
         val model =
@@ -1644,6 +1884,7 @@ class TileRendererCanvasTest {
         talents: List<TalentSlotSnapshot> = emptyList(),
         inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
+        talentTrees: List<TalentTreeSnapshot> = emptyList(),
         inventory: List<InventoryEntrySnapshot> = emptyList(),
         targetablePositions: List<GridPointSnapshot> = listOf(GridPointSnapshot(0, 0)),
         logEvents: List<RenderLogEventSnapshot> = emptyList(),
@@ -1728,6 +1969,7 @@ class TileRendererCanvasTest {
                     talents = talents,
                     inscriptions = inscriptions,
                     reserveTalents = reserveTalents,
+                    talentTrees = talentTrees,
                     inventory = inventory,
                     targetablePositions = targetablePositions,
                 ),
