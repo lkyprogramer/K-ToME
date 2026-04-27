@@ -18,7 +18,8 @@
 1. 所有新 UI/视觉 prompt 必须显式包含该 style tag。
 2. 所有雪碧图 spec、切分 report、contact sheet、manifest patch 必须记录该 style tag。
 3. 旧 `ktome-middle-fantasy-painterly-tile-v1` 是父级世界观风格；新 tag 是 UI/资源替换专项风格。
-4. 如果后续改变核心调色、材质或图标语言，必须 bump 到 `v2`，不能静默漂移。
+4. 新 tag 是父级风格的暗黑 UI/资源子纪元，不重置 K-ToME 的高幻想世界观。
+5. 如果后续改变核心调色、材质或图标语言，必须 bump 到 `v2`，不能静默漂移。
 
 ## 2. 视觉方向
 
@@ -69,12 +70,22 @@ UI 与资源必须以暗色为主，不做单色蓝紫主题。
 | `muted-text` | `#AEB5BF` | 次级文本 |
 | `primary-text` | `#E7E1D3` | 主文本 |
 
+职业树四态 tone：
+
+| State | Token | Usage |
+| --- | --- | --- |
+| `LOCKED` | `talent-locked` / `#59616C` | 锁定节点、锁定原因、不可点边框 |
+| `LEARNABLE` | `talent-learnable` / `#1CB7C8` | 可学习节点、焦点边缘 |
+| `LEARNED_RESERVE` | `talent-reserve` / `#D99A2B` | 已学但未激活、reserve 提示 |
+| `LEARNED_ACTIVE` | `talent-active` / `#52C989` | 已激活节点、主动槽确认态 |
+
 纪律：
 
 1. 高亮面积必须小，主要用于交互、危险、稀有和当前选中态。
 2. 冷青色只能做边缘和焦点，不允许大面积铺底。
 3. 紫色只用于奥术/暗影，不得成为全局 UI 主色。
 4. 图标必须在 `32x32` 缩放下仍能读出主体轮廓。
+5. 职业树四态必须使用上表 tone；不得在 renderer 中临场拍颜色。
 
 ## 4. UI 材质语言
 
@@ -123,6 +134,12 @@ UI chrome 应表现为：
 3. `portrait` 默认处理到 `256x256` canvas。
 4. UI frame 是否九宫格拉伸，由 client UI 实现决定，不由源图烘焙文字或尺寸。
 
+尺寸分层纪律：
+
+1. source sheet cell 尺寸只来自本节三类 sheet。
+2. runtime PNG canvas 尺寸只来自切分/后处理策略。
+3. HUD `32x32`、背包 `48x48`、装备 `64x64` 等显示尺寸只属于 renderer/layout，不能写成 source sheet cell 尺寸。
+
 ## 7. 资源族群
 
 ### 7.1 UI Chrome
@@ -161,10 +178,12 @@ UI chrome 应表现为：
 
 1. player
 2. Vanguard / Rogue / Templar / Arcanist
-3. humanoid enemy
-4. beast / undead
-5. abyssal / crystal / forge / river faction
-6. Boss
+3. Berserker / Spellblade
+4. frozen Shadowblade / Warden 仅用于锁定态或后续解冻占位，不参与 v1 技能图标全量交付
+5. humanoid enemy
+6. beast / undead
+7. abyssal / crystal / forge / river faction
+8. Boss
 
 ### 7.4 Icon
 
@@ -225,6 +244,8 @@ row 0 col 2: focused target reticle over a worn stone tile.
 5. `outputName` 决定最终 `rawOutputPath`。
 
 任何 `targetKey` 缺失、重复、路径不一致、cell 越界，都必须 fail fast。
+
+QA 状态不是 plan 真相。`qaStatus / rawSheetHash / cellRect / cellHash / outputHash / reviewer / rejectionReason` 必须写入 report 或 contact-sheet metadata，不得替代 `sheet-plan.yaml` 的输入字段。
 
 ## 10. 评审清单
 
