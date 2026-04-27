@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     base
     id("com.ktome.build.testperf")
-    kotlin("jvm") version "2.2.21" apply false
+    kotlin("jvm") version "2.3.21" apply false
     kotlin("plugin.serialization") version "2.2.21" apply false
     jacoco
 }
