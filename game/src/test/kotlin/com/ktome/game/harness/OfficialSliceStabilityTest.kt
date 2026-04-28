@@ -188,6 +188,7 @@ class OfficialSliceStabilityTest {
             PlayerCommand.Descend -> "Descend"
             PlayerCommand.SaveGame -> "SaveGame"
             PlayerCommand.CloseShop -> "CloseShop"
+            PlayerCommand.CancelInscriptionReplacementPurchase -> "CancelInscriptionReplacementPurchase"
             is PlayerCommand.BuyShopOffer -> "BuyShopOffer(${command.index})"
             is PlayerCommand.SellInventoryItem -> "SellInventoryItem(${command.index})"
             is PlayerCommand.DropInventoryItem -> "DropInventoryItem(${command.index})"

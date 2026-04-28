@@ -12,6 +12,7 @@ internal data class Phase4AggregationManifestTask(
     val taskPath: String,
     val artifactRelativePath: String,
     val role: Phase4AggregationTaskRole,
+    val metricIds: List<String> = emptyList(),
 )
 
 internal data class Phase4AggregationManifestModel(
@@ -31,7 +32,7 @@ internal object Phase4AggregationManifestRuntime {
     private const val SCHEMA_VERSION: String = "phase4-aggregation-manifest-v1"
     private const val PHASE_ID: String = "P4"
     private val ROOT_KEYS: Set<String> = setOf("schemaVersion", "phaseId", "tasks")
-    private val TASK_KEYS: Set<String> = setOf("taskId", "taskPath", "artifactRelativePath", "role")
+    private val TASK_KEYS: Set<String> = setOf("taskId", "taskPath", "artifactRelativePath", "role", "metricIds")
 
     private val loadedManifest: Phase4AggregationManifestModel by lazy {
         val yamlText =
@@ -87,6 +88,7 @@ internal object Phase4AggregationManifestRuntime {
                 val taskPath = requiredString(taskNode, "taskPath", taskDescription)
                 val artifactRelativePath = requiredString(taskNode, "artifactRelativePath", taskDescription)
                 val roleName = requiredString(taskNode, "role", taskDescription)
+                val metricIds = optionalStringList(taskNode, "metricIds", taskDescription)
                 require(taskPath.startsWith(":tools:") || taskPath.startsWith(":game:")) {
                     "Phase 4 aggregation manifest taskPath must target :tools:* or :game:* at $taskDescription."
                 }
@@ -103,6 +105,9 @@ internal object Phase4AggregationManifestRuntime {
                 require(artifactRelativePaths.add(artifactRelativePath)) {
                     "Duplicate Phase 4 aggregation manifest artifactRelativePath '$artifactRelativePath' at $taskDescription."
                 }
+                require(metricIds.size == metricIds.toSet().size) {
+                    "Duplicate Phase 4 aggregation manifest metricIds at $taskDescription."
+                }
                 Phase4AggregationManifestTask(
                     taskId = taskId,
                     taskPath = taskPath,
@@ -115,6 +120,7 @@ internal object Phase4AggregationManifestRuntime {
                                     cause,
                                 )
                             },
+                    metricIds = metricIds,
                 )
             }
         return Phase4AggregationManifestModel(schemaVersion = schemaVersion, phaseId = phaseId, tasks = tasks)
@@ -166,5 +172,20 @@ internal object Phase4AggregationManifestRuntime {
             "Expected $description.$key to be a string."
         }
         return value
+    }
+
+    private fun optionalStringList(
+        map: Map<String, Any?>,
+        key: String,
+        description: String,
+    ): List<String> {
+        val node = map[key] ?: return emptyList()
+        val values = requireList(node = node, description = "$description.$key")
+        return values.mapIndexed { index, value ->
+            require(value is String && value.isNotBlank()) {
+                "Expected $description.$key[$index] to be a non-blank string."
+            }
+            value
+        }
     }
 }

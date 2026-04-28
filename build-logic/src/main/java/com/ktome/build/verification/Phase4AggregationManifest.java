@@ -75,17 +75,28 @@ public final class Phase4AggregationManifest implements Serializable {
         private final String taskPath;
         private final String artifactRelativePath;
         private final TaskRole role;
+        private final List<String> metricIds;
 
         public TaskEntry(
                 String taskId,
                 String taskPath,
                 String artifactRelativePath,
                 TaskRole role) {
+            this(taskId, taskPath, artifactRelativePath, role, List.of());
+        }
+
+        public TaskEntry(
+                String taskId,
+                String taskPath,
+                String artifactRelativePath,
+                TaskRole role,
+                List<String> metricIds) {
             this.taskId = Objects.requireNonNull(taskId, "taskId");
             this.taskPath = Objects.requireNonNull(taskPath, "taskPath");
             this.artifactRelativePath =
                     Objects.requireNonNull(artifactRelativePath, "artifactRelativePath");
             this.role = Objects.requireNonNull(role, "role");
+            this.metricIds = List.copyOf(Objects.requireNonNull(metricIds, "metricIds"));
         }
 
         public String getTaskId() {
@@ -104,6 +115,10 @@ public final class Phase4AggregationManifest implements Serializable {
             return role;
         }
 
+        public List<String> getMetricIds() {
+            return metricIds;
+        }
+
         @Override
         public boolean equals(Object other) {
             if (this == other) {
@@ -115,12 +130,13 @@ public final class Phase4AggregationManifest implements Serializable {
             return taskId.equals(taskEntry.taskId)
                     && taskPath.equals(taskEntry.taskPath)
                     && artifactRelativePath.equals(taskEntry.artifactRelativePath)
-                    && role == taskEntry.role;
+                    && role == taskEntry.role
+                    && metricIds.equals(taskEntry.metricIds);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(taskId, taskPath, artifactRelativePath, role);
+            return Objects.hash(taskId, taskPath, artifactRelativePath, role, metricIds);
         }
 
         @Override
@@ -130,6 +146,7 @@ public final class Phase4AggregationManifest implements Serializable {
                     + ", taskPath='" + taskPath + '\''
                     + ", artifactRelativePath='" + artifactRelativePath + '\''
                     + ", role=" + role
+                    + ", metricIds=" + metricIds
                     + '}';
         }
     }

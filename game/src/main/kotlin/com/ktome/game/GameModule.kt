@@ -324,6 +324,7 @@ object GameModule {
             cadenceRewardCount = restored.cadenceRewardCount,
             restoredPityTracker = restored.pityTracker,
             restoredMilestoneRewardSummaries = restored.milestoneRewards,
+            restoredInscriptionTelemetry = restored.inscriptionTelemetry,
             restoredTalentChoiceTelemetry = restored.talentChoiceTelemetry,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)

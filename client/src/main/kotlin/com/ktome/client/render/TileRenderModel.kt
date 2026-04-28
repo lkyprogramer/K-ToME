@@ -640,8 +640,18 @@ internal object TileRenderModelBuilder {
                     shop.hintLabelKeys.forEach { hintLabelKey ->
                         rows += TileTextRow(localizer.text(hintLabelKey), TileTextTone.LIGHT_GRAY)
                     }
+                    shop.inscriptionReplacementPrompt?.let { prompt ->
+                        rows +=
+                            inscriptionReplacementPromptLines(
+                                localizer = localizer,
+                                prompt = prompt,
+                                selectedHotkey = overlayState.inscriptionReplacementHotkeySelection,
+                            ).map(::inscriptionReplacementPromptTileRow)
+                    }
                 }
-                rows += TileTextRow(localizer.text("ui.controls.shop.close_hint"), TileTextTone.LIGHT_GRAY)
+                if (shop?.inscriptionReplacementPrompt == null) {
+                    rows += TileTextRow(localizer.text("ui.controls.shop.close_hint"), TileTextTone.LIGHT_GRAY)
+                }
                 if (shop != null) {
                     rows += TileTextRow(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) TileTextTone.GOLD else TileTextTone.WHITE)
                     if (shop.offers.isEmpty()) {
@@ -1710,6 +1720,23 @@ internal object TileRenderModelBuilder {
                 item?.let { selected -> DescriptionPresenter.presentShopItemLines(localizer, selected) }.orEmpty()
             }
         }
+
+    private fun inscriptionReplacementPromptTileRow(line: InscriptionReplacementPromptLine): TileTextRow =
+        TileTextRow(
+            text = line.text,
+            tone =
+                if (line.selected) {
+                    TileTextTone.CYAN
+                } else {
+                    when (line.tone) {
+                        InscriptionReplacementPromptTone.TITLE -> TileTextTone.GOLD
+                        InscriptionReplacementPromptTone.PRIMARY -> TileTextTone.WHITE
+                        InscriptionReplacementPromptTone.SECONDARY -> TileTextTone.LIGHT_GRAY
+                        InscriptionReplacementPromptTone.WARNING -> TileTextTone.RED
+                    }
+                },
+            selected = line.selected,
+        )
 
     private fun statModifierLines(
         localizer: Localizer,

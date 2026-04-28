@@ -1204,6 +1204,8 @@ data class WorldStateChangedEvent(
 ) : GameEvent
 ```
 
+Phase 4 v4 PR-02 在 sealed `GameEvent` 集合中补充 `InscriptionReplacedEvent(hotkey, oldInscriptionId, newInscriptionId)`。该事件只作为 runtime 语义事件供日志、反馈摘要与验证消费；save、replay 和 snapshot 仍只保存 inscription id / hotkey / token，不保存最终本地化文案或 client-only 状态。所有 exhaustive `when (GameEvent)` 消费者必须显式处理该事件。
+
 #### 3.6.2 EventBus 与回调接口
 
 ```kotlin

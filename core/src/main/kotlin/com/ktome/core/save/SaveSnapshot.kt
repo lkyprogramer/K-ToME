@@ -36,6 +36,7 @@ data class SaveSnapshot(
     val buildId: String = buildMetadata,
     val contentSchemaVersion: Int = Phase4ContractVersions.CONTENT_SCHEMA_VERSION,
     val talentSchemaVersion: Int = CURRENT_TALENT_SCHEMA_VERSION,
+    val inscriptionSchemaVersion: Int = CURRENT_INSCRIPTION_SCHEMA_VERSION,
     val activePackIds: List<PackId> = emptyList(),
     val activePackManifestVersions: Map<PackId, String> = emptyMap(),
     val topologyFingerprintVersion: Int = Phase4ContractVersions.TOPOLOGY_FINGERPRINT_VERSION,
@@ -92,6 +93,9 @@ data class SaveSnapshot(
         require(contentSchemaVersion > 0) { "contentSchemaVersion must be positive." }
         require(talentSchemaVersion == CURRENT_TALENT_SCHEMA_VERSION) {
             "INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA: Start a new run."
+        }
+        require(inscriptionSchemaVersion == CURRENT_INSCRIPTION_SCHEMA_VERSION) {
+            "INCOMPATIBLE_PHASE4_V4_INSCRIPTION_SCHEMA: Start a new run."
         }
         require(activePackIds.distinct().size == activePackIds.size) {
             "activePackIds must not contain duplicates."
@@ -168,6 +172,7 @@ data class SaveSnapshot(
     companion object {
         const val CURRENT_SCHEMA_VERSION: Int = 15
         const val CURRENT_TALENT_SCHEMA_VERSION: Int = 2
+        const val CURRENT_INSCRIPTION_SCHEMA_VERSION: Int = 2
         const val DEFAULT_BUILD_METADATA: String = "phase4-opt-pr05-dev"
     }
 }
@@ -176,9 +181,47 @@ data class SaveSnapshot(
 data class Phase4RunStateSnapshot(
     val pityTracker: PityTracker = PityTracker(),
     val terrainOverrideVersion: Int = Phase4ContractVersions.TERRAIN_OVERRIDE_VERSION,
+    val inscriptionTelemetry: InscriptionRunTelemetrySnapshot = InscriptionRunTelemetrySnapshot(),
 ) {
     fun validateOrThrow() {
         require(terrainOverrideVersion > 0) { "terrainOverrideVersion must be positive." }
+        inscriptionTelemetry.validateOrThrow()
+    }
+}
+
+@Serializable
+data class InscriptionRunTelemetrySnapshot(
+    val startingInscriptionCount: Int = 0,
+    val inscriptionInstallCount: Int = 0,
+    val inscriptionReplaceCount: Int = 0,
+    val fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: Int = 0,
+    val inscriptionPurchaseCancelledAfterReplacementPrompt: Int = 0,
+    val shopPurchaseDeniedInsufficientGoldCount: Int = 0,
+    val shopInscriptionOfferSeenCount: Int = 0,
+    val shopInscriptionOfferPurchaseCount: Int = 0,
+    val inscriptionReplaceReasonDistribution: Map<String, Int> = emptyMap(),
+) {
+    fun validateOrThrow() {
+        require(startingInscriptionCount >= 0) { "startingInscriptionCount must not be negative." }
+        require(inscriptionInstallCount >= 0) { "inscriptionInstallCount must not be negative." }
+        require(inscriptionReplaceCount >= 0) { "inscriptionReplaceCount must not be negative." }
+        require(fullSlotInscriptionPurchaseBlockedWithoutReplacementCount >= 0) {
+            "fullSlotInscriptionPurchaseBlockedWithoutReplacementCount must not be negative."
+        }
+        require(inscriptionPurchaseCancelledAfterReplacementPrompt >= 0) {
+            "inscriptionPurchaseCancelledAfterReplacementPrompt must not be negative."
+        }
+        require(shopPurchaseDeniedInsufficientGoldCount >= 0) {
+            "shopPurchaseDeniedInsufficientGoldCount must not be negative."
+        }
+        require(shopInscriptionOfferSeenCount >= 0) { "shopInscriptionOfferSeenCount must not be negative." }
+        require(shopInscriptionOfferPurchaseCount >= 0) { "shopInscriptionOfferPurchaseCount must not be negative." }
+        require(inscriptionReplaceReasonDistribution.keys.none(String::isBlank)) {
+            "inscriptionReplaceReasonDistribution must not contain blank keys."
+        }
+        require(inscriptionReplaceReasonDistribution.values.all { count -> count >= 0 }) {
+            "inscriptionReplaceReasonDistribution must not contain negative counts."
+        }
     }
 }
 

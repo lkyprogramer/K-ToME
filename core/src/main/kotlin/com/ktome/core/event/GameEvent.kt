@@ -118,3 +118,9 @@ data class StatusInteractionEvent(
     override val statusId: String = statusType.schemaId,
     val interactionId: String,
 ) : StatusEvent
+
+data class InscriptionReplacedEvent(
+    val hotkey: Int,
+    val oldInscriptionId: String,
+    val newInscriptionId: String,
+) : GameEvent

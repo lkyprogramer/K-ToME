@@ -403,10 +403,11 @@ Preview:
 固定规则：
 
 1. 开局只写入 2 个 `InscriptionSlot`。
-2. 热键从 `5` 开始连续分配。
-3. 第 3、4 槽不是永久解锁系统，只是 run 内装备空位。
-4. 最大槽数继续使用 `MAX_INSCRIPTION_SLOTS = 4`。
-5. 单类别上限继续使用 `MAX_INSCRIPTION_PER_CATEGORY = 2`。
+2. 起始铭文真源为 `game/src/main/resources/data/professions/index.yaml` 的 `startingInscriptions` 字段；session、validation、long-run 不得再按职业 id 维护第二张起始铭文表。
+3. 热键从 `5` 开始连续分配。
+4. 第 3、4 槽不是永久解锁系统，只是 run 内装备空位。
+5. 最大槽数继续使用 `MAX_INSCRIPTION_SLOTS = 4`。
+6. 单类别上限继续使用 `MAX_INSCRIPTION_PER_CATEGORY = 2`。
 
 ## 9. 铭文安装与替换规则
 
@@ -429,7 +430,7 @@ Preview:
 3. 玩家选择目标槽。
 4. 系统临时移除目标槽中的旧铭文，再检查候选铭文类别上限。
 5. 检查通过后用候选铭文覆盖目标槽，热键保持不变。
-6. 旧铭文销毁，不进入背包，不返还金币。
+6. 旧铭文销毁，不进入背包，不返还碎晶。
 7. 替换成功后写入 run event：`INSCRIPTION_REPLACED`。
 
 拒绝规则：
@@ -437,7 +438,7 @@ Preview:
 1. 候选铭文不存在时拒绝。
 2. 目标槽不存在时拒绝。
 3. 替换后类别上限超过 2 时拒绝。
-4. 金币不足时拒绝。
+4. 碎晶不足时拒绝。
 5. 同一铭文替换自己时拒绝，并提示已装备。
 
 ### 9.3 商店流程
@@ -445,13 +446,13 @@ Preview:
 商店 purchase flow 固定如下：
 
 1. 玩家选择 inscription offer。
-2. 商店先做金币检查。
+2. 商店先做碎晶检查。
 3. 商店调用 inscription install/replace 预检。
 4. 槽位未满时直接安装。
 5. 槽位已满时进入替换界面。
-6. 替换成功后扣金币。
-7. 安装成功后扣金币。
-8. 任一步失败都不扣金币。
+6. 替换成功后扣碎晶。
+7. 安装成功后扣碎晶。
+8. 任一步失败都不扣碎晶。
 9. 成功后刷新 UI、日志、run summary。
 
 ### 9.4 铭文 UI 字段
@@ -475,7 +476,7 @@ Preview:
 
 1. **改开局装配**
    - `FoundationGameSession.ensurePlayerInscriptions` 不再补满四槽。
-   - 根据职业 id 写入 2 个起始铭文。
+   - 根据 profession schema 的 `startingInscriptions` 写入 2 个起始铭文。
    - 已有 save 缺铭文时只补本职业起始 2 个。
 
 2. **改 `InscriptionManager`**
@@ -512,7 +513,8 @@ Preview:
 | `breakpointChoiceEventRate` | `>= 75% terminal runs` | 终局 run 至少触发一次玩法断点选择 |
 | `starterInscriptionMaxCount` | `<= 2` | 开局铭文不能满槽 |
 | `inscriptionInstallOrReplaceRate` | `>= 50% terminal runs` | 终局 run 至少一半发生安装或替换 |
-| `fullSlotInscriptionPurchaseRejectedCount` | `0` | 满槽购买不得因缺替换流程被直接拒绝 |
+| `fullSlotInscriptionPurchaseBlockedWithoutReplacementCount` | `0` | 满槽购买不得因缺替换流程被直接拒绝 |
+| `inscriptionReplacementProbeSuccessCount` | `>= 1` | owner evidence 必须证明满槽替换 prompt 可由 SmokeBot 完成 |
 
 ### 11.2 Supporting 指标
 
@@ -536,8 +538,9 @@ Preview:
 | `TalentProgressionTest` | level 达标后节点进入 learnable，不自动 learned |
 | `TalentAllocationPlannerTest` | rank 0 -> 1 学习消耗 1 点；rank 1 -> 2 升级消耗 1 点 |
 | `TalentPrerequisiteValidatorTest` | 前置 rank 和树投入不足时拒绝 |
-| `InscriptionManagerTest` | 空槽安装、满槽替换、类别上限、热键保持 |
-| `ShopPurchaseFlowTest` | 满槽 inscription offer 进入替换，不直接拒绝 |
+| `InscriptionSlotTest` | 铭文槽位、类别上限、热键保持的 core 规则 |
+| `FoundationGameSessionTest` | 空槽购买直接安装、满槽 inscription offer 进入替换、不直接拒绝 |
+| `SmokeBotTest` | 满槽 replacement prompt 下选择 5-8 目标或取消 |
 
 ### 12.2 Harness
 

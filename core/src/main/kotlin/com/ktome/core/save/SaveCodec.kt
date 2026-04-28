@@ -49,6 +49,7 @@ class SaveCodec(
         },
 ) {
     private val incompatibleTalentSchemaMessage: String = "INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA: Start a new run."
+    private val incompatibleInscriptionSchemaMessage: String = "INCOMPATIBLE_PHASE4_V4_INSCRIPTION_SCHEMA: Start a new run."
 
     fun encode(snapshot: SaveSnapshot): String {
         snapshot.validateOrThrow()
@@ -83,6 +84,16 @@ class SaveCodec(
             )
         if (talentSchemaVersion != SaveSnapshot.CURRENT_TALENT_SCHEMA_VERSION) {
             throw InvalidSaveException(incompatibleTalentSchemaMessage)
+        }
+        val inscriptionSchemaVersion =
+            decodeRequiredField<Int>(
+                root = root,
+                fieldName = "inscriptionSchemaVersion",
+                missingException = { InvalidSaveException(incompatibleInscriptionSchemaMessage) },
+                invalidMessage = incompatibleInscriptionSchemaMessage,
+            )
+        if (inscriptionSchemaVersion != SaveSnapshot.CURRENT_INSCRIPTION_SCHEMA_VERSION) {
+            throw InvalidSaveException(incompatibleInscriptionSchemaMessage)
         }
         requireFields(root, REQUIRED_TOP_LEVEL_FIELDS, context = "Save file")
         val worldProgressElement = root.getValue("worldProgress")
@@ -154,6 +165,7 @@ class SaveCodec(
                 "saveContractVersion",
                 "buildMetadata",
                 "talentSchemaVersion",
+                "inscriptionSchemaVersion",
                 "phase4RunState",
                 "timestampEpochMillis",
                 "worldSeed",

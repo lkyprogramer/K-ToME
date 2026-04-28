@@ -65,8 +65,10 @@ class Phase2ContentCoverageTest {
                     ownedNonStarterTalents.isNotEmpty(),
                     "Profession ${profession.id} must expose at least one non-starter talent for explicit run choices.",
                 )
+                assertEquals(2, profession.startingInscriptions.size, "Profession ${profession.id} must expose exactly 2 starting inscriptions.")
             } else {
                 assertTrue(profession.startingTalents.isEmpty(), "Frozen profession ${profession.id} must keep starter runtime frozen.")
+                assertTrue(profession.startingInscriptions.isEmpty(), "Frozen profession ${profession.id} must keep starter inscriptions frozen.")
             }
             assertTrue(profession.startingKit.isNotEmpty(), "Profession ${profession.id} must expose starting kit.")
             assertTrue(profession.resourceProfiles.isNotEmpty(), "Profession ${profession.id} must expose at least one resource profile.")

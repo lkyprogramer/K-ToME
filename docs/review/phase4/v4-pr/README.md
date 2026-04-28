@@ -131,7 +131,7 @@ producer freshness 纪律：
 | --- | --- |
 | PR-00 | `./gradlew :tools:test --tests com.ktome.tools.whitebox.Phase4V4WhiteboxScenarioCliTest :client:test --tests com.ktome.client.screen.ValidationScenarioBootstrapTest` |
 | PR-01 | `./gradlew :core:test --tests com.ktome.core.talent.TalentAllocationPlannerTest :game:test --tests com.ktome.game.TalentProgressionTest :game:test --tests com.ktome.game.FoundationGameSessionTest` |
-| PR-02 | `./gradlew :core:test --tests com.ktome.core.inscription.InscriptionManagerTest :game:test --tests com.ktome.game.ShopPurchaseFlowTest` |
+| PR-02 | `./gradlew :core:test --tests com.ktome.core.inscription.InscriptionSlotTest :game:test --tests com.ktome.game.FoundationGameSessionTest --tests com.ktome.game.harness.SmokeBotTest :client:test --tests com.ktome.client.input.InputHandlerTest` |
 | PR-03 | `./gradlew :game:test --tests com.ktome.game.loot.MilestoneRewardSelectorTest :tools:test --tests com.ktome.tools.loot.WhiteBoxLootRunnerTest` |
 | PR-04 | `./gradlew :game:test --tests 'com.ktome.game.hidden.*' :tools:test --tests 'com.ktome.tools.hidden.*'` |
 | PR-05 | `./gradlew :core:test --tests com.ktome.core.ai.BossPhaseManagerTest :game:test --tests com.ktome.game.BossVariantDataLoaderTest` |

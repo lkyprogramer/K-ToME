@@ -277,8 +277,18 @@ internal object AsciiRenderModelBuilder {
                     shop.hintLabelKeys.forEach { hintLabelKey ->
                         lines += AsciiTextLine(localizer.text(hintLabelKey), AsciiTextTone.LIGHT_GRAY)
                     }
+                    shop.inscriptionReplacementPrompt?.let { prompt ->
+                        lines +=
+                            inscriptionReplacementPromptLines(
+                                localizer = localizer,
+                                prompt = prompt,
+                                selectedHotkey = overlayState.inscriptionReplacementHotkeySelection,
+                            ).map(::inscriptionReplacementPromptAsciiLine)
+                    }
                 }
-                lines += AsciiTextLine(localizer.text("ui.controls.shop.close_hint"), AsciiTextTone.LIGHT_GRAY)
+                if (snapshot.uiState.activeShop?.inscriptionReplacementPrompt == null) {
+                    lines += AsciiTextLine(localizer.text("ui.controls.shop.close_hint"), AsciiTextTone.LIGHT_GRAY)
+                }
                 lines += AsciiTextLine(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) AsciiTextTone.GOLD else AsciiTextTone.WHITE)
                 snapshot.uiState.activeShop?.offers?.forEach { offer ->
                     lines +=
@@ -1126,6 +1136,22 @@ internal object AsciiRenderModelBuilder {
                 item?.let { selected -> DescriptionPresenter.presentShopItemLines(localizer, selected) }.orEmpty()
             }
         }
+
+    private fun inscriptionReplacementPromptAsciiLine(line: InscriptionReplacementPromptLine): AsciiTextLine =
+        AsciiTextLine(
+            text = line.text,
+            tone =
+                if (line.selected) {
+                    AsciiTextTone.CYAN
+                } else {
+                    when (line.tone) {
+                        InscriptionReplacementPromptTone.TITLE -> AsciiTextTone.GOLD
+                        InscriptionReplacementPromptTone.PRIMARY -> AsciiTextTone.WHITE
+                        InscriptionReplacementPromptTone.SECONDARY -> AsciiTextTone.LIGHT_GRAY
+                        InscriptionReplacementPromptTone.WARNING -> AsciiTextTone.RED
+                    }
+                },
+        )
 
     private fun statModifierLines(
         localizer: Localizer,

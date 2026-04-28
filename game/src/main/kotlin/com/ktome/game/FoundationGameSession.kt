@@ -77,6 +77,7 @@ import com.ktome.core.event.EntityDeathEvent
 import com.ktome.core.event.GameEvent
 import com.ktome.core.event.ExperienceGainedEvent
 import com.ktome.core.event.HealEvent
+import com.ktome.core.event.InscriptionReplacedEvent
 import com.ktome.core.event.LevelUpEvent
 import com.ktome.core.event.MissEvent
 import com.ktome.core.event.MovementBlockedEvent
@@ -92,9 +93,15 @@ import com.ktome.core.fov.Shadowcasting
 import com.ktome.core.inscription.InscriptionCategory
 import com.ktome.core.inscription.InscriptionCooldownState
 import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.inscription.InscriptionEquipCheck
+import com.ktome.core.inscription.InscriptionEquipFailure
 import com.ktome.core.inscription.InscriptionEffect
 import com.ktome.core.inscription.InscriptionLoadout
 import com.ktome.core.inscription.InscriptionManager
+import com.ktome.core.inscription.InscriptionReplaceRequest
+import com.ktome.core.inscription.InscriptionReplaceOutcome
+import com.ktome.core.inscription.MAX_INSCRIPTION_PER_CATEGORY
+import com.ktome.core.inscription.MAX_INSCRIPTION_SLOTS
 import com.ktome.core.item.AffixSelectionContext
 import com.ktome.core.item.AffixEquipType
 import com.ktome.core.item.AffixGenerator
@@ -157,6 +164,7 @@ import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.FloorRewardStateSnapshot
+import com.ktome.core.save.InscriptionRunTelemetrySnapshot
 import com.ktome.core.save.TalentChoiceEventKindSnapshot
 import com.ktome.core.save.TalentChoiceEventSnapshot
 import com.ktome.core.save.TalentChoiceTelemetrySnapshot
@@ -164,6 +172,7 @@ import com.ktome.core.economy.ShopInventoryState
 import com.ktome.core.economy.ShardEconomy
 import com.ktome.core.economy.ShopNode
 import com.ktome.core.economy.ShopOffer
+import com.ktome.core.economy.ShopPurchaseFailure
 import com.ktome.core.economy.ShopServiceType
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorMutationRenderSnapshot
@@ -181,6 +190,9 @@ import com.ktome.core.snapshot.FrontstageActionCueSnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.InscriptionReplacementCategoryChangeSnapshot
+import com.ktome.core.snapshot.InscriptionReplacementEntrySnapshot
+import com.ktome.core.snapshot.InscriptionReplacementPromptSnapshot
 import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
@@ -307,6 +319,7 @@ import com.ktome.game.professionAffixBuildContext
 import com.ktome.game.routeRewardBiasTags
 import com.ktome.game.zoneRouteHash
 import java.nio.file.Files
+import java.security.MessageDigest
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -410,6 +423,7 @@ class FoundationGameSession internal constructor(
     private var cadenceRewardCount: Int = 0,
     restoredPityTracker: PityTracker = PityTracker(),
     restoredMilestoneRewardSummaries: List<MilestoneRewardSummary> = emptyList(),
+    private val restoredInscriptionTelemetry: InscriptionRunTelemetrySnapshot = InscriptionRunTelemetrySnapshot(),
     private val restoredTalentChoiceTelemetry: TalentChoiceTelemetrySnapshot = TalentChoiceTelemetrySnapshot(),
     private val inventoryManager: InventoryManager = InventoryManager(),
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
@@ -480,6 +494,28 @@ class FoundationGameSession internal constructor(
         val reserveSwapCount: Int,
         val rankBreakpointAdoptionByTalent: Map<String, Int>,
         val autoLearnedNonStarterTalentCount: Int,
+    )
+
+    data class InscriptionRunSummary(
+        val startingInscriptionCount: Int,
+        val installCount: Int,
+        val replaceCount: Int,
+        val fullSlotPurchaseBlockedWithoutReplacementCount: Int,
+        val purchaseCancelledAfterReplacementPrompt: Int,
+        val deniedInsufficientGoldCount: Int,
+        val shopInscriptionOfferSeenCount: Int,
+        val shopInscriptionOfferPurchaseCount: Int,
+        val terminalLoadout: List<String>,
+        val terminalCategoryCounts: Map<String, Int>,
+        val replaceReasonDistribution: Map<String, Int>,
+    )
+
+    private data class PendingInscriptionReplacementPurchase(
+        val shopId: String,
+        val offerIndex: Int,
+        val offerId: String,
+        val offerFingerprint: String,
+        val rejectedReason: InscriptionEquipFailure? = null,
     )
 
     private data class TalentChoiceEventRecord(
@@ -686,6 +722,19 @@ class FoundationGameSession internal constructor(
     private val respecManager: RespecManager = RespecManager()
     private val encounterDecorationService: EncounterDecorationService = EncounterDecorationService(content)
     private var activeShopId: String? = null
+    private var pendingInscriptionReplacementPurchase: PendingInscriptionReplacementPurchase? = null
+    private var startingInscriptionCount: Int = restoredInscriptionTelemetry.startingInscriptionCount
+    private var inscriptionInstallCount: Int = restoredInscriptionTelemetry.inscriptionInstallCount
+    private var inscriptionReplaceCount: Int = restoredInscriptionTelemetry.inscriptionReplaceCount
+    private var fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: Int =
+        restoredInscriptionTelemetry.fullSlotInscriptionPurchaseBlockedWithoutReplacementCount
+    private var inscriptionPurchaseCancelledAfterReplacementPrompt: Int =
+        restoredInscriptionTelemetry.inscriptionPurchaseCancelledAfterReplacementPrompt
+    private var shopPurchaseDeniedInsufficientGoldCount: Int = restoredInscriptionTelemetry.shopPurchaseDeniedInsufficientGoldCount
+    private var shopInscriptionOfferSeenCount: Int = restoredInscriptionTelemetry.shopInscriptionOfferSeenCount
+    private var shopInscriptionOfferPurchaseCount: Int = restoredInscriptionTelemetry.shopInscriptionOfferPurchaseCount
+    private val inscriptionReplaceReasonDistribution: MutableMap<String, Int> =
+        restoredInscriptionTelemetry.inscriptionReplaceReasonDistribution.toMutableMap()
     private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
     private val playerBaseResistanceValues: Map<DamageType, Int> =
         world.get<ResistanceProfile>(playerId)?.values?.toMap(linkedMapOf()) ?: emptyMap()
@@ -1012,6 +1061,34 @@ class FoundationGameSession internal constructor(
         )
     }
 
+    fun currentInscriptionRunSummary(): InscriptionRunSummary {
+        ensurePlayerInscriptions()
+        val loadout = world.get<InscriptionLoadout>(playerId)
+        val terminalDefinitions = loadout?.let(::equippedInscriptionDefinitions).orEmpty()
+        return InscriptionRunSummary(
+            startingInscriptionCount = startingInscriptionCount,
+            installCount = inscriptionInstallCount,
+            replaceCount = inscriptionReplaceCount,
+            fullSlotPurchaseBlockedWithoutReplacementCount = fullSlotInscriptionPurchaseBlockedWithoutReplacementCount,
+            purchaseCancelledAfterReplacementPrompt = inscriptionPurchaseCancelledAfterReplacementPrompt,
+            deniedInsufficientGoldCount = shopPurchaseDeniedInsufficientGoldCount,
+            shopInscriptionOfferSeenCount = shopInscriptionOfferSeenCount,
+            shopInscriptionOfferPurchaseCount = shopInscriptionOfferPurchaseCount,
+            terminalLoadout =
+                loadout
+                    ?.slots
+                    .orEmpty()
+                    .sortedBy { slot -> slot.hotkey }
+                    .map { slot -> slot.inscriptionId },
+            terminalCategoryCounts =
+                terminalDefinitions
+                    .groupingBy { definition -> definition.category.name }
+                    .eachCount()
+                    .toSortedMap(),
+            replaceReasonDistribution = inscriptionReplaceReasonDistribution.toSortedMap(),
+        )
+    }
+
     fun currentAffixSynergyActivationDistribution(): Map<String, Int> =
         cachedAffixSynergyActivationDistribution ?: affixSynergyActivationCounts.toMap(linkedMapOf()).also { distribution ->
             cachedAffixSynergyActivationDistribution = distribution
@@ -1082,6 +1159,9 @@ class FoundationGameSession internal constructor(
                 shardBalance = shardBalance,
                 buildHash = currentBuildHash(),
                 milestoneRewards = milestoneRewardSummaries(),
+                startingInscriptionCount = startingInscriptionCount,
+                inscriptionInstallCount = inscriptionInstallCount,
+                inscriptionReplaceCount = inscriptionReplaceCount,
                 rulesetVersion = CombatRuleset.RULESET_VERSION,
                 victory = isVictory(),
                 defeatReason = if (isVictory()) null else runOutcome.toString(),
@@ -1651,6 +1731,10 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr01TalentTreeStart()
                 "profession_tree_start_ready"
             }
+            "phase4-v4-pr02" -> {
+                preparePhase4V4Pr02PrimaryScene()
+                "inscription_shop_primary_ready"
+            }
             else -> "ok"
         }
 
@@ -1659,6 +1743,10 @@ class FoundationGameSession internal constructor(
             "phase4-v4-pr01" -> {
                 preparePhase4V4Pr01ReserveChoiceTarget()
                 "profession_tree_reserve_choice_ready"
+            }
+            "phase4-v4-pr02" -> {
+                preparePhase4V4Pr02ReplacementScene()
+                "inscription_shop_replacement_ready"
             }
             else -> "ok"
         }
@@ -1693,6 +1781,53 @@ class FoundationGameSession internal constructor(
             ),
         )
         invalidateRenderSnapshot()
+    }
+
+    private fun preparePhase4V4Pr02PrimaryScene() {
+        resetPlayerInscriptionsForValidation(starterInscriptionIdsForCurrentProfession())
+        shardBalance = maxOf(shardBalance, 200)
+        pendingInscriptionReplacementPurchase = null
+        openConfiguredValidationShop()
+        invalidateRenderSnapshot()
+    }
+
+    private fun preparePhase4V4Pr02ReplacementScene() {
+        resetPlayerInscriptionsForValidation(listOf("healing_light", "phase_door", "iron_shield", "purge"))
+        shardBalance = maxOf(shardBalance, 200)
+        pendingInscriptionReplacementPurchase = null
+        openConfiguredValidationShop()
+        invalidateRenderSnapshot()
+    }
+
+    private fun resetPlayerInscriptionsForValidation(inscriptionIds: List<String>) {
+        val loadout = world.get<InscriptionLoadout>(playerId) ?: InscriptionLoadout().also { world.add(playerId, it) }
+        val cooldowns = world.get<InscriptionCooldownState>(playerId) ?: InscriptionCooldownState().also { world.add(playerId, it) }
+        loadout.slots.clear()
+        cooldowns.remainingByInscriptionId.clear()
+        val definitionsById = inscriptionDefinitions().associateBy(InscriptionDef::id)
+        inscriptionIds
+            .map { inscriptionId ->
+                requireNotNull(definitionsById[inscriptionId]) {
+                    "Validation starter inscription '$inscriptionId' is not present in the inscription catalog."
+                }
+            }
+            .forEach { definition ->
+                val equippedDefinitions =
+                    loadout.slots.map { slot ->
+                        requireNotNull(definitionsById[slot.inscriptionId]) {
+                            "Validation loadout references unknown inscription '${slot.inscriptionId}'."
+                        }
+                    }
+                InscriptionManager.equip(loadout, equippedDefinitions, definition)
+            }
+        startingInscriptionCount = minOf(startingInscriptionCount.takeIf { count -> count > 0 } ?: loadout.slots.size, loadout.slots.size)
+    }
+
+    private fun openConfiguredValidationShop() {
+        val shop = configuredShopNode() ?: return
+        activeShopId = shop.id
+        markShopVisited(shop.id)
+        automationInteractablePoint("merchant_stall")?.let { point -> automationMovePlayerTo(point) }
     }
 
     private fun acceptValidationScenarioAction(
@@ -4289,6 +4424,7 @@ class FoundationGameSession internal constructor(
                         index = index,
                         labelKey = shopOfferLabelKey(offer),
                         price = offer.price,
+                        offerFingerprint = shopOfferFingerprint(shop = shop, index = index, offer = offer),
                         tags = offer.tags.sorted(),
                         tagLabelKeys = shopOfferTagLabelKeys(shop = shop, offer = offer),
                     )
@@ -4301,8 +4437,133 @@ class FoundationGameSession internal constructor(
                             price = sellValueForInventoryIndex(itemView.index),
                         )
                     },
+            inscriptionReplacementPrompt = buildInscriptionReplacementPromptSnapshot(shop),
         )
     }
+
+    private fun buildInscriptionReplacementPromptSnapshot(shop: ShopNode): InscriptionReplacementPromptSnapshot? {
+        val pending = pendingInscriptionReplacementPurchase ?: return null
+        if (pending.shopId != shop.id) {
+            return null
+        }
+        val offer = availableShopOffers().getOrNull(pending.offerIndex) ?: return null
+        if (offer.id != pending.offerId || shopOfferFingerprint(shop = shop, index = pending.offerIndex, offer = offer) != pending.offerFingerprint) {
+            return null
+        }
+        val candidate = inscriptionDefinitionForOffer(offer) ?: return null
+        val loadout = world.get<InscriptionLoadout>(playerId) ?: return null
+        val cooldowns = world.get<InscriptionCooldownState>(playerId)?.remainingByInscriptionId.orEmpty()
+        val definitionsById = inscriptionDefinitions().associateBy(InscriptionDef::id)
+        val sortedSlots = loadout.slots.sortedBy { slot -> slot.hotkey }
+        val currentDefinitions =
+            sortedSlots.map { slot ->
+                requireNotNull(definitionsById[slot.inscriptionId]) {
+                    "Inscription loadout references unknown inscription '${slot.inscriptionId}'."
+                }
+            }
+        val beforeCounts = currentDefinitions.groupingBy(InscriptionDef::category).eachCount()
+        val candidateEntry = inscriptionReplacementEntry(definition = candidate, hotkey = null, cooldownRemaining = 0)
+        val currentEntries =
+            sortedSlots
+                .zip(currentDefinitions)
+                .map { (slot, definition) ->
+                    inscriptionReplacementEntry(
+                        definition = definition,
+                        hotkey = slot.hotkey,
+                        cooldownRemaining = cooldowns[definition.id] ?: 0,
+                    )
+                }
+        return InscriptionReplacementPromptSnapshot(
+            offerIndex = pending.offerIndex,
+            offerFingerprint = pending.offerFingerprint,
+            candidate = candidateEntry,
+            currentSlots = currentEntries,
+            categoryChanges =
+                sortedSlots
+                    .zip(currentDefinitions)
+                    .flatMap { (slot, target) ->
+                        inscriptionReplacementCategoryChanges(
+                            targetHotkey = slot.hotkey,
+                            beforeCounts = beforeCounts,
+                            target = target,
+                            candidate = candidate,
+                        )
+                    },
+            price = offer.price,
+            rejectedReasonKey = pending.rejectedReason?.let(::inscriptionEquipFailureMessageKey),
+        )
+    }
+
+    private fun inscriptionReplacementEntry(
+        definition: InscriptionDef,
+        hotkey: Int?,
+        cooldownRemaining: Int,
+    ): InscriptionReplacementEntrySnapshot =
+        InscriptionReplacementEntrySnapshot(
+            hotkey = hotkey,
+            inscriptionId = definition.id,
+            nameKey = definition.nameKey,
+            descKey = definition.descKey,
+            iconKey = definition.iconKey,
+            categoryId = definition.category.name,
+            categoryLabelKey = inscriptionCategoryLabelKey(definition.category),
+            effectTagLabelKeys = inscriptionEffectTagLabelKeys(definition.effect),
+            cooldownRemaining = cooldownRemaining,
+            maxCooldown = definition.cooldown,
+            upgradeFromInscriptionId = inscriptionUpgradeSource(definition.id),
+        )
+
+    private fun inscriptionReplacementCategoryChanges(
+        targetHotkey: Int,
+        beforeCounts: Map<InscriptionCategory, Int>,
+        target: InscriptionDef,
+        candidate: InscriptionDef,
+    ): List<InscriptionReplacementCategoryChangeSnapshot> {
+        val affectedCategories = listOf(candidate.category, target.category).distinct()
+        return affectedCategories.map { category ->
+            val before = beforeCounts[category] ?: 0
+            val after =
+                before -
+                    (if (target.category == category) 1 else 0) +
+                    (if (candidate.category == category) 1 else 0)
+            InscriptionReplacementCategoryChangeSnapshot(
+                targetHotkey = targetHotkey,
+                categoryId = category.name,
+                categoryLabelKey = inscriptionCategoryLabelKey(category),
+                beforeCount = before,
+                afterCount = after,
+                limit = MAX_INSCRIPTION_PER_CATEGORY,
+            )
+        }
+    }
+
+    private fun inscriptionCategoryLabelKey(category: InscriptionCategory): String =
+        when (category) {
+            InscriptionCategory.HEALING -> "ui.inscription.category.HEALING"
+            InscriptionCategory.MOVEMENT -> "ui.inscription.category.MOVEMENT"
+            InscriptionCategory.PROTECTION -> "ui.inscription.category.PROTECTION"
+            InscriptionCategory.CLEANSING -> "ui.inscription.category.CLEANSING"
+            InscriptionCategory.OFFENSE -> "ui.inscription.category.OFFENSE"
+        }
+
+    private fun inscriptionEffectTagLabelKeys(effect: InscriptionEffect): List<String> =
+        when (effect) {
+            is InscriptionEffect.Heal -> listOf("ui.inscription.effect_tag.heal")
+            is InscriptionEffect.Teleport ->
+                if (effect.controlled) {
+                    listOf("ui.inscription.effect_tag.mobility", "ui.inscription.effect_tag.control")
+                } else {
+                    listOf("ui.inscription.effect_tag.mobility")
+                }
+            is InscriptionEffect.Shield -> listOf("ui.inscription.effect_tag.shield")
+            is InscriptionEffect.Cleanse ->
+                if (effect.alsoHeal > 0) {
+                    listOf("ui.inscription.effect_tag.cleanse", "ui.inscription.effect_tag.heal")
+                } else {
+                    listOf("ui.inscription.effect_tag.cleanse")
+                }
+            is InscriptionEffect.DamageBoost -> listOf("ui.inscription.effect_tag.damage")
+        }
 
     private fun buildRouteSelectionSnapshot(): RouteSelectionSnapshot? {
         if (pendingRouteSelection.isEmpty()) {
@@ -4654,7 +4915,7 @@ class FoundationGameSession internal constructor(
     private fun buildInscriptionSnapshots(): List<InscriptionSlotSnapshot> {
         val loadout = world.get<InscriptionLoadout>(playerId) ?: return emptyList()
         val cooldowns = world.get<InscriptionCooldownState>(playerId)
-        val defsById = content.inscriptions.associateBy(InscriptionDef::id)
+        val defsById = inscriptionDefinitions().associateBy(InscriptionDef::id)
         return loadout.slots.mapNotNull { slot ->
             val definition = defsById[slot.inscriptionId] ?: return@mapNotNull null
             InscriptionSlotSnapshot(
@@ -4886,6 +5147,76 @@ class FoundationGameSession internal constructor(
     private fun shopStateFor(shop: ShopNode): ShopInventoryState =
         shopStates.getOrPut(shop.id) { ShopInventoryState(shopId = shop.id) }
 
+    private fun shopOfferFingerprint(
+        shop: ShopNode,
+        index: Int,
+        offer: ShopOffer,
+    ): String {
+        val stockVersion = shopStateFor(shop).stockVersion
+        val offerKind =
+            when {
+                offer.itemBaseId != null -> "ITEM"
+                offer.inscriptionId != null -> "INSCRIPTION"
+                offer.serviceType != null -> "SERVICE"
+                else -> "UNKNOWN"
+            }
+        return sha256(
+            listOf(
+                shop.id,
+                index.toString(),
+                offer.id,
+                offer.price.toString(),
+                offerKind,
+                stockVersion.toString(),
+            ).joinToString(separator = "|"),
+        )
+    }
+
+    private fun inscriptionDefinitionForOffer(offer: ShopOffer): InscriptionDef? =
+        offer.inscriptionId?.let { inscriptionId ->
+            inscriptionDefinitions().firstOrNull { inscription -> inscription.id == inscriptionId }
+        }
+
+    private fun inscriptionDefinitions(): List<InscriptionDef> =
+        content.inscriptions.ifEmpty { content.schemaCatalog.inscriptions }
+
+    private fun equippedInscriptionDefinitions(loadout: InscriptionLoadout): List<InscriptionDef> =
+        loadout.slots.map { slot ->
+            requireNotNull(inscriptionDefinitions().firstOrNull { inscription -> inscription.id == slot.inscriptionId }) {
+                "Inscription loadout references unknown inscription '${slot.inscriptionId}'."
+            }
+        }
+
+    private fun inscriptionUpgradeSource(inscriptionId: String): String? =
+        when (inscriptionId) {
+            "controlled_phase" -> "phase_door"
+            "diamond_shield" -> "iron_shield"
+            "greater_purge" -> "purge"
+            else -> null
+        }
+
+    private fun inscriptionEquipFailureMessageKey(reason: InscriptionEquipFailure): String =
+        when (reason) {
+            InscriptionEquipFailure.FULL_REQUIRES_REPLACEMENT -> "shop.purchase.requires_replacement_target"
+            InscriptionEquipFailure.CATEGORY_LIMIT -> "log.shop.inscription.category_limit"
+            InscriptionEquipFailure.TARGET_SLOT_MISSING -> "log.shop.inscription.target_missing"
+            InscriptionEquipFailure.SAME_INSCRIPTION -> "log.shop.inscription.same"
+        }
+
+    private fun shopPurchaseFailureMessageKey(failure: ShopPurchaseFailure): String =
+        when (failure) {
+            ShopPurchaseFailure.InsufficientGold -> "log.shop.cannot_afford"
+            ShopPurchaseFailure.StaleOffer -> "log.shop.offer_stale"
+            ShopPurchaseFailure.RequiresReplacementTarget -> "shop.purchase.requires_replacement_target"
+            is ShopPurchaseFailure.InscriptionEquipRejected -> inscriptionEquipFailureMessageKey(failure.reason)
+        }
+
+    private fun sha256(value: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        digest.update(value.toByteArray())
+        return digest.digest().joinToString(separator = "") { byte -> "%02x".format(byte) }
+    }
+
     private fun mandatoryRescueOfferIds(shop: ShopNode): Set<String> {
         val nonServiceOffers = shop.inventory.filter { offer -> offer.serviceType == null }
         val selected = linkedSetOf<String>()
@@ -4972,7 +5303,11 @@ class FoundationGameSession internal constructor(
         if (replacementOffers.size != replacementCount) {
             return false
         }
-        shopStates[shop.id] = state.copy(activeRefreshableOffers = replacementOffers)
+        shopStates[shop.id] =
+            state.copy(
+                activeRefreshableOffers = replacementOffers,
+                stockVersion = state.stockVersion + 1,
+            )
         return true
     }
 
@@ -5074,7 +5409,7 @@ class FoundationGameSession internal constructor(
                 requireNotNull(itemSchemaFor(itemBaseId)) { "Unknown shop item '$itemBaseId'." }.nameKey
             }
             offer.inscriptionId != null ->
-                requireNotNull(content.inscriptions.firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
+                requireNotNull(inscriptionDefinitions().firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
                     "Unknown shop inscription '${offer.inscriptionId}'."
                 }.nameKey
             offer.serviceType != null ->
@@ -7134,6 +7469,7 @@ class FoundationGameSession internal constructor(
             command !is PlayerCommand.CloseShop &&
             command !is PlayerCommand.BuyShopOffer &&
             command !is PlayerCommand.SellInventoryItem &&
+            command !is PlayerCommand.CancelInscriptionReplacementPurchase &&
             command != PlayerCommand.SaveGame &&
             command !is PlayerCommand.Validation
         ) {
@@ -7180,12 +7516,20 @@ class FoundationGameSession internal constructor(
                     CommandResolution.rejected()
                 } else {
                     activeShopId = null
+                    pendingInscriptionReplacementPurchase = null
                     addMessage("log.shop.close")
                     CommandResolution(accepted = true, consumesTurn = false)
                 }
             }
 
-            is PlayerCommand.BuyShopOffer -> buyShopOffer(command.index)
+            is PlayerCommand.BuyShopOffer ->
+                buyShopOffer(
+                    index = command.index,
+                    offerFingerprint = command.offerFingerprint,
+                    replacementHotkey = command.replacementHotkey,
+                )
+
+            PlayerCommand.CancelInscriptionReplacementPurchase -> cancelInscriptionReplacementPurchase()
 
             is PlayerCommand.SellInventoryItem -> sellInventoryItem(command.index)
 
@@ -7468,15 +7812,27 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun buyShopOffer(index: Int): CommandResolution {
+    private fun buyShopOffer(
+        index: Int,
+        offerFingerprint: String,
+        replacementHotkey: Int?,
+    ): CommandResolution {
         val shop = currentShopNode() ?: return CommandResolution.rejected()
         val offer = availableShopOffers().getOrNull(index)
         if (offer == null) {
             addMessage("log.shop.offer_missing")
             return CommandResolution.rejected()
         }
+        val expectedFingerprint = shopOfferFingerprint(shop = shop, index = index, offer = offer)
+        if (offerFingerprint != expectedFingerprint) {
+            addMessage(shopPurchaseFailureMessageKey(ShopPurchaseFailure.StaleOffer))
+            return CommandResolution.rejected()
+        }
         if (!ShardEconomy.canAfford(shardBalance, offer.price)) {
-            addMessage("log.shop.cannot_afford", literalArg("price", offer.price))
+            if (offer.inscriptionId != null) {
+                shopPurchaseDeniedInsufficientGoldCount += 1
+            }
+            addMessage(shopPurchaseFailureMessageKey(ShopPurchaseFailure.InsufficientGold), literalArg("price", offer.price))
             return CommandResolution.rejected()
         }
 
@@ -7502,28 +7858,123 @@ class FoundationGameSession internal constructor(
                 ensurePlayerInscriptions()
                 val loadout = world.get<InscriptionLoadout>(playerId) ?: return CommandResolution.rejected()
                 val definition =
-                    requireNotNull(content.inscriptions.firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
-                        "Unknown shop inscription '${offer.inscriptionId}'."
+                    requireNotNull(inscriptionDefinitionForOffer(offer)) { "Unknown shop inscription '${offer.inscriptionId}'." }
+                val equippedDefinitions = equippedInscriptionDefinitions(loadout)
+                val equipCheck = InscriptionManager.canEquip(loadout, equippedDefinitions, definition)
+                if (equipCheck is InscriptionEquipCheck.Allowed) {
+                    InscriptionManager.equip(loadout, equippedDefinitions, definition)
+                    observeRewardInscription()
+                    inscriptionInstallCount += 1
+                    shopInscriptionOfferPurchaseCount += 1
+                    shardBalance -= offer.price
+                    pendingInscriptionReplacementPurchase = null
+                    markShopOfferPurchased(shop.id, offer.id)
+                    addMessage(
+                        "log.shop.buy.inscription",
+                        keyArg("shop", shop.nameKey),
+                        keyArg("inscription", definition.nameKey),
+                        literalArg("price", offer.price),
+                    )
+                    return CommandResolution(accepted = true, consumesTurn = false)
+                }
+                if (replacementHotkey == null) {
+                    val reason =
+                        (equipCheck as? InscriptionEquipCheck.Rejected)?.reason
+                            ?: InscriptionEquipFailure.FULL_REQUIRES_REPLACEMENT
+                    if (reason == InscriptionEquipFailure.FULL_REQUIRES_REPLACEMENT) {
+                        pendingInscriptionReplacementPurchase =
+                            PendingInscriptionReplacementPurchase(
+                                shopId = shop.id,
+                                offerIndex = index,
+                                offerId = offer.id,
+                                offerFingerprint = expectedFingerprint,
+                            )
+                        addMessage(
+                            shopPurchaseFailureMessageKey(ShopPurchaseFailure.RequiresReplacementTarget),
+                            keyArg("inscription", definition.nameKey),
+                        )
+                        return CommandResolution(accepted = true, consumesTurn = false)
                     }
-                val equippedDefinitions =
-                    loadout.slots.mapNotNull { slot ->
-                        content.inscriptions.firstOrNull { inscription -> inscription.id == slot.inscriptionId }
-                    }
-                if (!InscriptionManager.canEquip(loadout, equippedDefinitions, definition)) {
-                    addMessage("log.shop.inscription_slots_full", keyArg("inscription", definition.nameKey))
+                    addMessage(
+                        shopPurchaseFailureMessageKey(ShopPurchaseFailure.InscriptionEquipRejected(reason)),
+                        keyArg("inscription", definition.nameKey),
+                    )
                     return CommandResolution.rejected()
                 }
-                InscriptionManager.equip(loadout, equippedDefinitions, definition)
-                observeRewardInscription()
-                shardBalance -= offer.price
-                markShopOfferPurchased(shop.id, offer.id)
-                addMessage(
-                    "log.shop.buy.inscription",
-                    keyArg("shop", shop.nameKey),
-                    keyArg("inscription", definition.nameKey),
-                    literalArg("price", offer.price),
-                )
-                return CommandResolution(accepted = true, consumesTurn = false)
+                if (loadout.slots.size < MAX_INSCRIPTION_SLOTS) {
+                    val reason =
+                        (equipCheck as? InscriptionEquipCheck.Rejected)?.reason
+                            ?: InscriptionEquipFailure.TARGET_SLOT_MISSING
+                    addMessage(
+                        shopPurchaseFailureMessageKey(ShopPurchaseFailure.InscriptionEquipRejected(reason)),
+                        keyArg("inscription", definition.nameKey),
+                    )
+                    return CommandResolution.rejected()
+                }
+                val pending = pendingInscriptionReplacementPurchase
+                if (
+                    pending == null ||
+                    pending.shopId != shop.id ||
+                    pending.offerIndex != index ||
+                    pending.offerId != offer.id ||
+                    pending.offerFingerprint != expectedFingerprint
+                ) {
+                    addMessage(shopPurchaseFailureMessageKey(ShopPurchaseFailure.StaleOffer))
+                    return CommandResolution.rejected()
+                }
+
+                val outcome =
+                    InscriptionManager.replace(
+                        InscriptionReplaceRequest(
+                            loadout = loadout,
+                            cooldowns = world.get<InscriptionCooldownState>(playerId) ?: InscriptionCooldownState().also { world.add(playerId, it) },
+                            equippedDefinitions = equippedDefinitions,
+                            candidate = definition,
+                            targetHotkey = replacementHotkey,
+                        ),
+                    )
+                return when (outcome) {
+                    is InscriptionReplaceOutcome.Applied -> {
+                        loadout.slots.clear()
+                        loadout.slots += outcome.newLoadout.slots
+                        val cooldowns = world.get<InscriptionCooldownState>(playerId) ?: InscriptionCooldownState().also { world.add(playerId, it) }
+                        cooldowns.remainingByInscriptionId.clear()
+                        cooldowns.remainingByInscriptionId += outcome.newCooldownState.remainingByInscriptionId
+                        logEvent(outcome.event)
+                        observeRewardInscription()
+                        inscriptionReplaceCount += 1
+                        shopInscriptionOfferPurchaseCount += 1
+                        shardBalance -= offer.price
+                        pendingInscriptionReplacementPurchase = null
+                        markShopOfferPurchased(shop.id, offer.id)
+                        addMessage(
+                            "log.shop.inscription.replaced",
+                            keyArg("shop", shop.nameKey),
+                            keyArg("inscription", definition.nameKey),
+                            literalArg("hotkey", replacementHotkey),
+                            literalArg("price", offer.price),
+                        )
+                        CommandResolution(accepted = true, consumesTurn = false)
+                    }
+
+                    is InscriptionReplaceOutcome.Rejected -> {
+                        inscriptionReplaceReasonDistribution[outcome.reason.name] =
+                            (inscriptionReplaceReasonDistribution[outcome.reason.name] ?: 0) + 1
+                        pendingInscriptionReplacementPurchase =
+                            PendingInscriptionReplacementPurchase(
+                                shopId = shop.id,
+                                offerIndex = index,
+                                offerId = offer.id,
+                                offerFingerprint = expectedFingerprint,
+                                rejectedReason = outcome.reason,
+                        )
+                        addMessage(
+                            shopPurchaseFailureMessageKey(ShopPurchaseFailure.InscriptionEquipRejected(outcome.reason)),
+                            keyArg("inscription", definition.nameKey),
+                        )
+                        CommandResolution.rejected()
+                    }
+                }
             }
 
             offer.serviceType != null -> {
@@ -7551,6 +8002,16 @@ class FoundationGameSession internal constructor(
         }
     }
 
+    private fun cancelInscriptionReplacementPurchase(): CommandResolution {
+        if (pendingInscriptionReplacementPurchase == null) {
+            return CommandResolution.rejected()
+        }
+        pendingInscriptionReplacementPurchase = null
+        inscriptionPurchaseCancelledAfterReplacementPrompt += 1
+        addMessage("log.shop.inscription.purchase_cancelled")
+        return CommandResolution(accepted = true, consumesTurn = false)
+    }
+
     private fun canPurchaseShopOffer(offer: ShopOffer): Boolean {
         if (!ShardEconomy.canAfford(shardBalance, offer.price)) {
             return false
@@ -7561,14 +8022,12 @@ class FoundationGameSession internal constructor(
                 ensurePlayerInscriptions()
                 val loadout = world.get<InscriptionLoadout>(playerId) ?: return false
                 val definition =
-                    requireNotNull(content.inscriptions.firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
+                    requireNotNull(inscriptionDefinitions().firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
                         "Unknown shop inscription '${offer.inscriptionId}'."
                     }
-                val equippedDefinitions =
-                    loadout.slots.mapNotNull { slot ->
-                        content.inscriptions.firstOrNull { inscription -> inscription.id == slot.inscriptionId }
-                    }
-                InscriptionManager.canEquip(loadout, equippedDefinitions, definition)
+                val equippedDefinitions = equippedInscriptionDefinitions(loadout)
+                InscriptionManager.canEquip(loadout, equippedDefinitions, definition) is InscriptionEquipCheck.Allowed ||
+                    loadout.slots.size >= MAX_INSCRIPTION_SLOTS
             }
             offer.serviceType != null ->
                 when (requireNotNull(offer.serviceType)) {
@@ -7699,7 +8158,7 @@ class FoundationGameSession internal constructor(
                     return false
                 }
         val definition =
-            content.inscriptions.firstOrNull { inscription -> inscription.id == slot.inscriptionId }
+            inscriptionDefinitions().firstOrNull { inscription -> inscription.id == slot.inscriptionId }
                 ?: run {
                     addMessage("log.inscription.missing", literalArg("slot", hotkey))
                     return false
@@ -9467,24 +9926,27 @@ class FoundationGameSession internal constructor(
         val saved =
             saveManager.save(
                 SessionSnapshotMapper.toSaveSnapshot(
-                    config = config,
-                    currentFloor = currentFloor(),
-                    turnCount = turnCount,
-                    headlessTurnEquivalent = headlessTurnEquivalent,
-                    player = playerSnapshot,
-                    floors = floors,
-                    worldProgress = worldProgress,
-                    shardBalance = shardBalance,
-                    shopStates = shopStates(),
-                    cadenceRewardCount = cadenceRewardCount,
-                    pityTracker = pityTracker,
-                    combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
-                    sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
-                    milestoneRewards = persistedMilestoneRewardSummaries(),
-                    pendingActionIds = serializedPendingActionIds,
-                    activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
-                    activePackIds = content.activePackIds,
-                    activePackManifestVersions = content.activePackManifestVersions,
+                    SessionSaveSnapshotRequest(
+                        config = config,
+                        currentFloor = currentFloor(),
+                        turnCount = turnCount,
+                        headlessTurnEquivalent = headlessTurnEquivalent,
+                        player = playerSnapshot,
+                        floors = floors,
+                        worldProgress = worldProgress,
+                        shardBalance = shardBalance,
+                        shopStates = shopStates(),
+                        cadenceRewardCount = cadenceRewardCount,
+                        pityTracker = pityTracker,
+                        inscriptionTelemetry = inscriptionRunTelemetrySnapshot(),
+                        combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
+                        sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
+                        milestoneRewards = persistedMilestoneRewardSummaries(),
+                        pendingActionIds = serializedPendingActionIds,
+                        activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
+                        activePackIds = content.activePackIds,
+                        activePackManifestVersions = content.activePackManifestVersions,
+                    ),
                 ).copy(talentChoiceTelemetry = talentChoiceTelemetrySnapshot()),
             )
         if (!saved) {
@@ -9500,6 +9962,19 @@ class FoundationGameSession internal constructor(
             events = talentChoiceEvents.map { event -> event.toSaveSnapshot() },
             reserveSwapCount = talentReserveSwapCount,
             breakpointPreviewSeen = talentBreakpointPreviewSeen,
+        )
+
+    private fun inscriptionRunTelemetrySnapshot(): InscriptionRunTelemetrySnapshot =
+        InscriptionRunTelemetrySnapshot(
+            startingInscriptionCount = startingInscriptionCount,
+            inscriptionInstallCount = inscriptionInstallCount,
+            inscriptionReplaceCount = inscriptionReplaceCount,
+            fullSlotInscriptionPurchaseBlockedWithoutReplacementCount = fullSlotInscriptionPurchaseBlockedWithoutReplacementCount,
+            inscriptionPurchaseCancelledAfterReplacementPrompt = inscriptionPurchaseCancelledAfterReplacementPrompt,
+            shopPurchaseDeniedInsufficientGoldCount = shopPurchaseDeniedInsufficientGoldCount,
+            shopInscriptionOfferSeenCount = shopInscriptionOfferSeenCount,
+            shopInscriptionOfferPurchaseCount = shopInscriptionOfferPurchaseCount,
+            inscriptionReplaceReasonDistribution = inscriptionReplaceReasonDistribution.toSortedMap(),
         )
 
     private fun maybePersistCheckpoint(resolution: CommandResolution) {
@@ -9641,16 +10116,37 @@ class FoundationGameSession internal constructor(
             world.add(playerId, InscriptionCooldownState())
         }
         if (loadout.slots.isNotEmpty()) {
+            if (startingInscriptionCount == 0) {
+                startingInscriptionCount = loadout.slots.size
+            }
             return
         }
-        val defaultsById = content.inscriptions.associateBy(InscriptionDef::id)
-        listOf("healing_light", "phase_door", "iron_shield", "purge")
-            .mapNotNull(defaultsById::get)
+        val defaultsById = inscriptionDefinitions().associateBy(InscriptionDef::id)
+        starterInscriptionIdsForCurrentProfession()
+            .map { inscriptionId ->
+                requireNotNull(defaultsById[inscriptionId]) {
+                    "Profession '${config.playerProfessionId}' references unknown starter inscription '$inscriptionId'."
+                }
+            }
             .forEach { definition ->
-                val equippedDefinitions = loadout.slots.mapNotNull { slot -> defaultsById[slot.inscriptionId] }
+                val equippedDefinitions =
+                    loadout.slots.map { slot ->
+                        requireNotNull(defaultsById[slot.inscriptionId]) {
+                            "Inscription loadout references unknown inscription '${slot.inscriptionId}'."
+                        }
+                    }
                 InscriptionManager.equip(loadout, equippedDefinitions, definition)
             }
+        startingInscriptionCount = loadout.slots.size
     }
+
+    private fun starterInscriptionIdsForCurrentProfession(): List<String> =
+        currentProfessionSchema()?.startingInscriptions
+            ?: if (content.schemaCatalog.professions.isEmpty() && inscriptionDefinitions().isEmpty()) {
+                emptyList()
+            } else {
+                error("Unknown profession '${config.playerProfessionId}' cannot resolve starter inscriptions.")
+            }
 
     private fun recordSuccessfulPlayerAffinity(talentId: String) {
         val profession = currentProfessionSchema() ?: return
@@ -10515,6 +11011,8 @@ class FoundationGameSession internal constructor(
     ): CommandResolution {
         markShopVisited(shop.id)
         activeShopId = shop.id
+        pendingInscriptionReplacementPurchase = null
+        shopInscriptionOfferSeenCount += availableShopOffers().count { offer -> offer.inscriptionId != null }
         addMessage("log.shop.open", keyArg("shop", shop.nameKey))
         return CommandResolution(accepted = true, consumesTurn = consumesTurn)
     }
@@ -12950,6 +13448,7 @@ class FoundationGameSession internal constructor(
             is StatusInteractionEvent -> "status_interaction:${event.target.value}:${event.statusId}:${event.interactionId}"
             is TauntOverrideEvent -> "taunt_override:${event.target.value}:${event.statusId}:${event.newSource?.value ?: "none"}"
             is StealthBrokenEvent -> "stealth_break:${event.target.value}:${event.statusId}:${event.damage}"
+            is InscriptionReplacedEvent -> "inscription_replace:${event.hotkey}:${event.oldInscriptionId}->${event.newInscriptionId}"
             is SearchResolvedEvent -> "search:${event.actor.value}:${event.bindingId?.value ?: "-"}:${event.result.name}:${event.perceptionTotal}:${event.difficulty ?: "-"}"
         }
 

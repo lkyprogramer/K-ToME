@@ -113,6 +113,9 @@ import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.validation.ValidationAction
 import com.ktome.game.validation.ValidationCapabilitySet
 import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioId
+import com.ktome.game.validation.ValidationScenarioRegistry
 import com.ktome.game.validation.ValidationSessionRequest
 import com.ktome.game.validation.validationSessionOptionsForPreset
 import java.nio.file.Files
@@ -1336,7 +1339,7 @@ class FoundationGameSessionTest {
                     ?.firstOrNull { offer -> "OFFENSE" in offer.tags }
                     ?.index,
             )
-        assertTrue(session.perform(PlayerCommand.BuyShopOffer(offensiveOfferIndex)))
+        assertTrue(session.perform(buyShopOfferCommand(session, offensiveOfferIndex)))
         assertTrue(session.perform(PlayerCommand.CloseShop))
 
         movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
@@ -1345,6 +1348,167 @@ class FoundationGameSessionTest {
         assertEquals(0, session.currentCadenceRewardCount())
         assertNull(logEventByKey(session, "log.reward.cadence.claimed"))
         assertNull(logEventByKey(session, "log.reward.cadence.dropped"))
+    }
+
+    @Test
+    fun `phase4 v4 pr02 replacement hotkey with free slot installs without replacing existing inscription`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr02"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("phase4-v4-pr02-inscription-shop-free-slot")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+        clearMonsters(session)
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        val initialLoadout = requireNotNull(runtimeWorld(session).get<InscriptionLoadout>(session.playerId))
+        val initialSlots = initialLoadout.slots.map { slot -> slot.copy() }
+        assertTrue(initialSlots.size < 4)
+        val preservedSlot = initialSlots.first()
+        val installOffer =
+            requireNotNull(
+                session.renderSnapshot().uiState.activeShop?.offers?.firstOrNull { offer ->
+                    offer.labelKey == "inscription.iron_shield.name"
+                },
+            )
+        val goldBeforeInstall = session.currentShardBalance()
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.BuyShopOffer(
+                    index = installOffer.index,
+                    offerFingerprint = installOffer.offerFingerprint,
+                    replacementHotkey = preservedSlot.hotkey,
+                ),
+            ),
+        )
+
+        val installedLoadout = requireNotNull(runtimeWorld(session).get<InscriptionLoadout>(session.playerId))
+        assertEquals(initialSlots.size + 1, installedLoadout.slots.size)
+        assertEquals(preservedSlot.inscriptionId, installedLoadout.slots.single { slot -> slot.hotkey == preservedSlot.hotkey }.inscriptionId)
+        assertEquals("iron_shield", installedLoadout.slots.single { slot -> slot.hotkey == 5 + initialSlots.size }.inscriptionId)
+        assertEquals(goldBeforeInstall - installOffer.price, session.currentShardBalance())
+        assertNull(session.renderSnapshot().uiState.activeShop?.inscriptionReplacementPrompt)
+    }
+
+    @Test
+    fun `phase4 v4 pr02 full slot inscription purchase requires explicit replacement and preserves hotkey`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr02"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("phase4-v4-pr02-inscription-shop-flow")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+        clearMonsters(session)
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        val initialLoadout = requireNotNull(runtimeWorld(session).get<InscriptionLoadout>(session.playerId))
+        assertEquals(listOf(5, 6, 7, 8), initialLoadout.slots.map(InscriptionSlot::hotkey))
+        assertEquals(listOf("healing_light", "phase_door", "iron_shield", "purge"), initialLoadout.slots.map(InscriptionSlot::inscriptionId))
+
+        val ironShieldOffer =
+            requireNotNull(
+                session.renderSnapshot().uiState.activeShop?.offers?.firstOrNull { offer ->
+                    offer.labelKey == "inscription.iron_shield.name"
+                },
+            )
+        val goldBeforeRejectedReplacement = session.currentShardBalance()
+        assertFalse(
+            session.perform(
+                PlayerCommand.BuyShopOffer(
+                    index = ironShieldOffer.index,
+                    offerFingerprint = ironShieldOffer.offerFingerprint,
+                    replacementHotkey = 7,
+                ),
+            ),
+        )
+        assertEquals(goldBeforeRejectedReplacement, session.currentShardBalance())
+        assertNull(session.renderSnapshot().uiState.activeShop?.inscriptionReplacementPrompt)
+        assertNotNull(logEventByKey(session, "log.shop.offer_stale"))
+
+        assertTrue(session.perform(PlayerCommand.BuyShopOffer(index = ironShieldOffer.index, offerFingerprint = ironShieldOffer.offerFingerprint)))
+        val sameReplacementPrompt = requireNotNull(session.renderSnapshot().uiState.activeShop?.inscriptionReplacementPrompt)
+        assertFalse(
+            session.perform(
+                PlayerCommand.BuyShopOffer(
+                    index = sameReplacementPrompt.offerIndex,
+                    offerFingerprint = sameReplacementPrompt.offerFingerprint,
+                    replacementHotkey = 7,
+                ),
+            ),
+        )
+        assertEquals(goldBeforeRejectedReplacement, session.currentShardBalance())
+        assertEquals(
+            "log.shop.inscription.same",
+            requireNotNull(session.renderSnapshot().uiState.activeShop?.inscriptionReplacementPrompt).rejectedReasonKey,
+        )
+        assertTrue(session.perform(PlayerCommand.CancelInscriptionReplacementPurchase))
+
+        val controlledPhaseOffer =
+            requireNotNull(
+                session.renderSnapshot().uiState.activeShop?.offers?.firstOrNull { offer ->
+                    offer.labelKey == "inscription.controlled_phase.name"
+                },
+            )
+        val goldBeforePrompt = session.currentShardBalance()
+        assertTrue(session.perform(PlayerCommand.BuyShopOffer(index = controlledPhaseOffer.index, offerFingerprint = controlledPhaseOffer.offerFingerprint)))
+        assertEquals(goldBeforePrompt, session.currentShardBalance())
+        assertEquals("shop.purchase.requires_replacement_target", requireNotNull(logEventByKey(session, "shop.purchase.requires_replacement_target")).message.key)
+
+        val prompt = requireNotNull(session.renderSnapshot().uiState.activeShop?.inscriptionReplacementPrompt)
+        assertEquals("controlled_phase", prompt.candidate.inscriptionId)
+        assertEquals("ui.inscription.category.MOVEMENT", prompt.candidate.categoryLabelKey)
+        assertEquals(listOf("ui.inscription.effect_tag.mobility", "ui.inscription.effect_tag.control"), prompt.candidate.effectTagLabelKeys)
+        assertEquals(15, prompt.candidate.maxCooldown)
+        assertEquals(4, prompt.currentSlots.size)
+        assertTrue(prompt.currentSlots.all { slot -> slot.descKey.isNotBlank() && slot.categoryLabelKey.isNotBlank() && slot.effectTagLabelKeys.isNotEmpty() })
+        assertTrue(prompt.categoryChanges.any { change -> change.targetHotkey == 6 && change.categoryId == "MOVEMENT" && change.beforeCount == 1 && change.afterCount == 1 })
+        assertTrue(prompt.categoryChanges.any { change -> change.targetHotkey == 5 && change.categoryId == "MOVEMENT" && change.beforeCount == 1 && change.afterCount == 2 })
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.BuyShopOffer(
+                    index = prompt.offerIndex,
+                    offerFingerprint = prompt.offerFingerprint,
+                    replacementHotkey = 6,
+                ),
+            ),
+        )
+
+        val replacedLoadout = requireNotNull(runtimeWorld(session).get<InscriptionLoadout>(session.playerId))
+        assertEquals(listOf(5, 6, 7, 8), replacedLoadout.slots.map(InscriptionSlot::hotkey))
+        assertEquals("controlled_phase", replacedLoadout.slots.single { slot -> slot.hotkey == 6 }.inscriptionId)
+        assertEquals(goldBeforePrompt - controlledPhaseOffer.price, session.currentShardBalance())
+        assertNull(session.renderSnapshot().uiState.activeShop?.inscriptionReplacementPrompt)
+        assertNotNull(logEventByKey(session, "log.shop.inscription.replaced"))
+
+        val summary = session.currentInscriptionRunSummary()
+        assertEquals(2, summary.startingInscriptionCount)
+        assertEquals(0, summary.installCount)
+        assertEquals(1, summary.replaceCount)
+        assertEquals(0, summary.fullSlotPurchaseBlockedWithoutReplacementCount)
     }
 
     @Test
@@ -3724,7 +3888,7 @@ class FoundationGameSessionTest {
         setShardBalance(session, 200)
         val reliquaryShop = requireNotNull(session.renderSnapshot().uiState.activeShop)
         assertEquals(AbyssalRuntimeKeys.Temple.SHOP_NODE_ID, reliquaryShop.shopId)
-        assertTrue(session.perform(PlayerCommand.BuyShopOffer(1)))
+        assertTrue(session.perform(buyShopOfferCommand(session, 1)))
         assertEquals(1, session.currentLateRunReliquaryPurchaseCount())
         assertEquals(1, session.currentLateRunReliquaryVisitCount())
         assertEquals(1, session.currentLateRunReliquaryItemPurchaseCount())
@@ -7533,6 +7697,17 @@ class FoundationGameSessionTest {
         val field = FoundationGameSession::class.java.getDeclaredField("saveManager")
         field.isAccessible = true
         return field.get(session) as SaveManager
+    }
+
+    private fun buyShopOfferCommand(
+        session: FoundationGameSession,
+        index: Int,
+    ): PlayerCommand.BuyShopOffer {
+        val offer =
+            requireNotNull(session.renderSnapshot().uiState.activeShop?.offers?.firstOrNull { offer -> offer.index == index }) {
+                "Expected visible shop offer at index $index."
+            }
+        return PlayerCommand.BuyShopOffer(index = index, offerFingerprint = offer.offerFingerprint)
     }
 
     private fun advanceTurnsUntil(

@@ -81,6 +81,26 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `pr02 inscription replacement scenario uses exact keyboard evidence inputs`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr02"))
+
+        assertEquals(
+            listOf(
+                "F9, Enter",
+                "Down, Down, Enter",
+                "F9, Right, Enter, Down, Down, Enter",
+                "5, Enter",
+                "F9, Right, Enter, Down, Down, Enter, 7, Enter",
+            ),
+            scenario.evidence.cuaSteps.map { step -> step.input },
+        )
+        val runbookText = scenario.evidence.cuaSteps.joinToString("\n") { step -> "${step.mode} ${step.input} ${step.expectedVisibleResult}" }
+        listOf("Select inscription offer", "buy inscription", "5-8, Enter", "retry").forEach { vagueTerm ->
+            assertFalse(runbookText.contains(vagueTerm), "PR-02 runbook must use exact key sequences instead of vague term: $vagueTerm")
+        }
+    }
+
+    @Test
     fun `scenario yaml ids stay in parity with typed registry`() {
         val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
         val parity =

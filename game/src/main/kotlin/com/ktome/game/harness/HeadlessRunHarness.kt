@@ -283,6 +283,7 @@ class HeadlessRunHarness(
                             accumulator.toDiagnostic(objectiveStateAtExit = objectiveStateByZone[accumulator.zoneId])
                         }.sortedBy { diagnostic -> zoneDepth(diagnostic.zoneId) }
                 val talentChoiceSummary = session.currentTalentChoiceRunSummary()
+                val inscriptionSummary = session.currentInscriptionRunSummary()
 
             ScenarioReport(
                 name = spec.name,
@@ -335,6 +336,17 @@ class HeadlessRunHarness(
                 talentReserveSwapCount = talentChoiceSummary.reserveSwapCount,
                 rankBreakpointAdoptionByTalent = talentChoiceSummary.rankBreakpointAdoptionByTalent,
                 autoLearnedNonStarterTalentCount = talentChoiceSummary.autoLearnedNonStarterTalentCount,
+                startingInscriptionCount = inscriptionSummary.startingInscriptionCount,
+                inscriptionInstallCount = inscriptionSummary.installCount,
+                inscriptionReplaceCount = inscriptionSummary.replaceCount,
+                fullSlotInscriptionPurchaseBlockedWithoutReplacementCount = inscriptionSummary.fullSlotPurchaseBlockedWithoutReplacementCount,
+                inscriptionPurchaseCancelledAfterReplacementPrompt = inscriptionSummary.purchaseCancelledAfterReplacementPrompt,
+                shopPurchaseDeniedInsufficientGoldCount = inscriptionSummary.deniedInsufficientGoldCount,
+                shopInscriptionOfferSeenCount = inscriptionSummary.shopInscriptionOfferSeenCount,
+                shopInscriptionOfferPurchaseCount = inscriptionSummary.shopInscriptionOfferPurchaseCount,
+                terminalInscriptionLoadout = inscriptionSummary.terminalLoadout,
+                terminalInscriptionCategoryCounts = inscriptionSummary.terminalCategoryCounts,
+                inscriptionReplaceReasonDistribution = inscriptionSummary.replaceReasonDistribution,
                 goalReached = goalSatisfied(spec, observation, checkpointTurn),
                 failureReason = failureReason,
                 stuckReason = stuckReason,

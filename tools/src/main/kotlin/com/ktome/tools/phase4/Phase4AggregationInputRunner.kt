@@ -46,6 +46,15 @@ import kotlinx.serialization.json.putJsonObject
 private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v9"
 private const val AGGREGATION_INPUT_DIRECTORY_NAME: String = "inputs"
 private const val AGGREGATION_INPUT_SUMMARY_FILE: String = "aggregation-input-summary.json"
+private val INSCRIPTION_SHOP_REPLACEMENT_EVIDENCE_METRIC_IDS: List<String> =
+    listOf(
+        "terminalInscriptionLoadoutDiversity",
+        "inscriptionReplacementProbeSuccessCount",
+        "inscriptionReplacementProbe",
+        "inscriptionCategoryCountDistribution",
+        "shopInscriptionOfferConversionRate",
+        "inscriptionReplaceReasonDistribution",
+    )
 
 private val phase4AggregationJson: Json =
     Json {
@@ -268,6 +277,7 @@ internal object Phase4AggregationInputRunner {
                 evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
                 evaluations += criticalPathPacingEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
                 evaluations += professionTreeRunChoiceEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.professionTreeRunChoiceBaselinePath()))
+                evaluations += inscriptionShopReplacementEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.inscriptionShopReplacementBaselinePath()))
             }
             "bossHarness" ->
                 evaluations += bossPhaseIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.bossPhaseIdentityBaselinePath()))
@@ -1224,6 +1234,105 @@ internal object Phase4AggregationInputRunner {
         "included=${metrics.getValue("includedProfessions").jsonArray.joinToString { profession -> profession.jsonPrimitive.content }}; " +
             "advancedReportOnly=${metrics.getValue("advancedReportOnlyProfessions").jsonArray.joinToString { profession -> profession.jsonPrimitive.content }}; " +
             "excludedFrozen=${metrics.getValue("excludedFrozenProfessions").jsonArray.joinToString { profession -> profession.jsonPrimitive.content }}"
+
+    internal fun inscriptionShopReplacementEvaluation(
+        task: Phase4TaskAggregate,
+        baseline: VerificationBaseline,
+    ): EvaluationResult {
+        val metricIds =
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "longRunLab",
+                outputSection = "inscription-shop-replacement",
+            )
+        val blockingMetricIds = metricIds.filter { metricId -> baseline.expectedMetricRange(metricId) != null }
+        val supportingMetricIds = metricIds.filterNot(blockingMetricIds::contains)
+        val note = inscriptionShopReplacementNote(task.metrics)
+        val evidence = inscriptionShopReplacementEvidence(task)
+        val blockingDetails =
+            inscriptionShopReplacementDetails(
+                task = task,
+                ownerBaseline = Phase4OwnerBaselineRegistry.inscriptionShopReplacementBaselinePath(),
+                evidence = evidence,
+            )
+        val supportingDetails = inscriptionShopReplacementDetails(task = task, ownerBaseline = "N/A", evidence = evidence)
+        val blockingEntries =
+            blockingMetricIds.map { metricId ->
+                val range = baseline.requiredMetric(metricId)
+                val actualValue = task.metrics.getValue(metricId).jsonPrimitive.content.toDouble()
+                val passes = Phase4OwnerMetricTargets.passes(range, actualValue)
+                EvaluationEntry(
+                    metricId = metricId,
+                    status = if (passes) EvaluationEntryStatus.PASS else EvaluationEntryStatus.UNEXPECTED_REGRESSION,
+                    currentValue =
+                        buildJsonObject {
+                            put("value", task.metrics.getValue(metricId))
+                            evidence.forEach { (key, value) -> put(key, value) }
+                        },
+                    currentValueText =
+                        when (metricId) {
+                            "inscriptionInstallOrReplaceRate" -> formatPercent(actualValue)
+                            else -> formatCompactNumber(actualValue)
+                        },
+                    targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
+                    note = note,
+                    details = blockingDetails,
+                )
+            }
+        val supportingEntries =
+            supportingMetricIds.map { metricId ->
+                EvaluationEntry(
+                    metricId = metricId,
+                    status = EvaluationEntryStatus.PASS,
+                    currentValue = task.metrics.getValue(metricId),
+                    currentValueText = task.metrics.getValue(metricId).toString(),
+                    targetText = "display only",
+                    note = "supporting inscription shop replacement evidence",
+                    details = supportingDetails,
+                )
+            }
+        val entries = blockingEntries + supportingEntries
+        return EvaluationResult(
+            evaluationId = "longrun.inscriptionShopReplacement",
+            domainId = "longrun",
+            mode = baseline.mode,
+            verdict = if (blockingEntries.any { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
+            baselineId = baseline.baselineId,
+            metricDefinitionVersion = baseline.metricDefinitionVersion,
+            passCount = entries.count { entry -> entry.status == EvaluationEntryStatus.PASS },
+            approvedDebtCount = 0,
+            expectedFailureCount = 0,
+            unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION },
+            improvedDebtCount = 0,
+            entries = entries,
+        )
+    }
+
+    private fun inscriptionShopReplacementNote(metrics: JsonObject): String =
+        "starterMax=${metrics.getValue("starterInscriptionMaxCount").jsonPrimitive.content}; " +
+            "installOrReplaceRate=${metrics.getValue("inscriptionInstallOrReplaceRate").jsonPrimitive.content}; " +
+            "replacementProbe=${metrics.getValue("inscriptionReplacementProbeSuccessCount").jsonPrimitive.content}"
+
+    private fun inscriptionShopReplacementEvidence(task: Phase4TaskAggregate): JsonObject =
+        buildJsonObject {
+            INSCRIPTION_SHOP_REPLACEMENT_EVIDENCE_METRIC_IDS.forEach { metricId ->
+                put(metricId, task.metrics.getValue(metricId))
+            }
+        }
+
+    private fun inscriptionShopReplacementDetails(
+        task: Phase4TaskAggregate,
+        ownerBaseline: String,
+        evidence: JsonObject,
+    ): JsonObject =
+        buildJsonObject {
+            put("metricKind", if (ownerBaseline == "N/A") "supporting" else "blockingOwner")
+            put("producer", "longRunLab")
+            put("ownerBaseline", ownerBaseline)
+            put("failSemantics", if (ownerBaseline == "N/A") "display only" else "fail owner gate")
+            evidence.forEach { (key, value) -> put(key, value) }
+            put("inscriptionPurchaseCancelledAfterReplacementPrompt", task.metrics.getValue("inscriptionPurchaseCancelledAfterReplacementPrompt"))
+            put("shopPurchaseDeniedInsufficientGoldCount", task.metrics.getValue("shopPurchaseDeniedInsufficientGoldCount"))
+        }
 
     internal fun bossPhaseIdentityEvaluation(
         task: Phase4TaskAggregate,

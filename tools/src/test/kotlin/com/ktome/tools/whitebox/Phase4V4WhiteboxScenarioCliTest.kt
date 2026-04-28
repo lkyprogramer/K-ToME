@@ -24,6 +24,7 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(exception.message?.contains("Missing -Pktome.whitebox.scenario") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr00-selftest") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr01") == true)
+        assertTrue(exception.message?.contains("phase4-v4-pr02") == true)
     }
 
     @Test
@@ -130,6 +131,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |scenarios:
             |  - id: phase4-v4-pr00-selftest
             |  - id: phase4-v4-pr01
+            |  - id: phase4-v4-pr02
             |
             """.trimMargin(),
         )

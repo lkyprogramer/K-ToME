@@ -1,3 +1,4 @@
 scenarios:
   - id: phase4-v4-pr00-selftest
   - id: phase4-v4-pr01
+  - id: phase4-v4-pr02

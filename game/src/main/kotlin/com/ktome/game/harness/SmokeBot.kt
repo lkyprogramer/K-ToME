@@ -475,6 +475,18 @@ class SmokeBot : RunBot {
     }
 
     private fun preferredShopAction(observation: RunObservation): PlayerCommand? {
+        observation.activeInscriptionReplacementPrompt?.let { prompt ->
+            val replacementHotkey = preferredInscriptionReplacementHotkey(prompt)
+            return if (replacementHotkey != null) {
+                PlayerCommand.BuyShopOffer(
+                    index = prompt.offerIndex,
+                    offerFingerprint = prompt.offerFingerprint,
+                    replacementHotkey = replacementHotkey,
+                )
+            } else {
+                PlayerCommand.CancelInscriptionReplacementPurchase
+            }
+        }
         val affordableRescueOffer =
             observation.activeShopOffers
                 .asSequence()
@@ -485,7 +497,7 @@ class SmokeBot : RunBot {
                         .thenBy(ObservedShopOffer::index),
                 )
                 ?.takeIf { offer -> rescueOfferPriority(offer) < Int.MAX_VALUE }
-        affordableRescueOffer?.let { offer -> return PlayerCommand.BuyShopOffer(offer.index) }
+        affordableRescueOffer?.let { offer -> return PlayerCommand.BuyShopOffer(offer.index, offer.offerFingerprint) }
         val refreshOffer =
             observation.activeShopOffers
                 .asSequence()
@@ -495,7 +507,7 @@ class SmokeBot : RunBot {
                         "REFRESH_STOCK" in offer.tags &&
                         observation.shardBalance >= offer.price + 15
                 }.minWithOrNull(compareBy<ObservedShopOffer>(ObservedShopOffer::price).thenBy(ObservedShopOffer::index))
-        return refreshOffer?.let { offer -> PlayerCommand.BuyShopOffer(offer.index) }
+        return refreshOffer?.let { offer -> PlayerCommand.BuyShopOffer(offer.index, offer.offerFingerprint) }
     }
 
     private fun chooseEmergencyTalent(observation: RunObservation): PlayerCommand? {
@@ -1397,6 +1409,37 @@ class SmokeBot : RunBot {
             "PROTECTION" in offer.tags -> 2
             "RECOVERY" in offer.tags -> 3
             else -> Int.MAX_VALUE
+        }
+
+    private fun preferredInscriptionReplacementHotkey(prompt: ObservedInscriptionReplacementPrompt): Int? {
+        prompt.upgradeFromInscriptionId?.let { upgradeSource ->
+            prompt.currentSlots.firstOrNull { slot -> slot.inscriptionId == upgradeSource }?.let { slot ->
+                return slot.hotkey
+            }
+        }
+        val candidateCategoryCount = prompt.currentSlots.count { slot -> slot.categoryId == prompt.candidateCategoryId }
+        return prompt.currentSlots
+            .asSequence()
+            .filter { slot -> slot.inscriptionId != prompt.candidateInscriptionId }
+            .filter { slot ->
+                val afterCount =
+                    candidateCategoryCount -
+                        (if (slot.categoryId == prompt.candidateCategoryId) 1 else 0) +
+                        1
+                afterCount <= prompt.categoryLimit
+            }.minWithOrNull(
+                compareBy<ObservedInscriptionReplacementSlot> { slot -> replacementSacrificePriority(slot.categoryId) }
+                    .thenByDescending(ObservedInscriptionReplacementSlot::hotkey),
+            )?.hotkey
+    }
+
+    private fun replacementSacrificePriority(categoryId: String): Int =
+        when (categoryId) {
+            "HEALING" -> 4
+            "PROTECTION" -> 3
+            "CLEANSING" -> 2
+            "MOVEMENT" -> 1
+            else -> 0
         }
 
     private fun talentUpgradePriority(

@@ -28,6 +28,11 @@ internal object Phase4V4WhiteboxScenarioMaterializationCatalog {
                 windowWidth = 1280,
                 windowHeight = 800,
             ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("phase4-v4-pr02"),
+                windowWidth = 1280,
+                windowHeight = 800,
+            ),
         )
     private val specsById: Map<ValidationScenarioId, Phase4V4WhiteboxScenarioMaterializationSpec> = specs.associateBy { spec -> spec.id }
 

@@ -185,6 +185,7 @@ class AudioRouter(
         val selectionChanged =
             previous.inventorySelection != current.inventorySelection ||
                 previous.shopOfferSelection != current.shopOfferSelection ||
+                previous.inscriptionReplacementHotkeySelection != current.inscriptionReplacementHotkeySelection ||
                 previous.routeSelection != current.routeSelection ||
                 previous.shopFocus != current.shopFocus ||
                 previous.loadoutSlotSelection != current.loadoutSlotSelection ||
@@ -241,6 +242,7 @@ class AudioRouter(
             when (command) {
                 is PlayerCommand.ActivateInventoryItem,
                 is PlayerCommand.BuyShopOffer,
+                PlayerCommand.CancelInscriptionReplacementPurchase,
                 is PlayerCommand.EquipTalentToSlot,
                 is PlayerCommand.SellInventoryItem,
                 PlayerCommand.Interact,
@@ -299,9 +301,21 @@ class AudioRouter(
             PlayerCommand.Descend,
             -> play("audio.interactable.stairs")
 
-            is PlayerCommand.BuyShopOffer,
-            is PlayerCommand.SellInventoryItem,
-            -> play("audio.shop.purchase_success")
+            is PlayerCommand.BuyShopOffer ->
+                play(
+                    if (command.replacementHotkey != null) {
+                        "audio.item.equip.changed"
+                    } else if (
+                        previousSnapshot.uiState.activeShop?.inscriptionReplacementPrompt == null &&
+                        currentSnapshot.uiState.activeShop?.inscriptionReplacementPrompt != null
+                    ) {
+                        "audio.ui.confirm"
+                    } else {
+                        "audio.shop.purchase_success"
+                    },
+                )
+
+            is PlayerCommand.SellInventoryItem -> play("audio.shop.purchase_success")
 
             is PlayerCommand.SelectRoute,
             is PlayerCommand.EquipTalentToSlot,
@@ -317,6 +331,7 @@ class AudioRouter(
             -> play("audio.ui.confirm")
 
             PlayerCommand.CloseShop -> play("audio.ui.cancel")
+            PlayerCommand.CancelInscriptionReplacementPurchase -> play("audio.ui.cancel")
 
             PlayerCommand.Wait -> Unit
         }

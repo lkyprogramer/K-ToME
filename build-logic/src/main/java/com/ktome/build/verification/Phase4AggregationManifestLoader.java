@@ -15,7 +15,7 @@ import org.yaml.snakeyaml.Yaml;
 public final class Phase4AggregationManifestLoader {
     private static final Set<String> ROOT_KEYS = Set.of("schemaVersion", "phaseId", "tasks");
     private static final Set<String> TASK_KEYS =
-            Set.of("taskId", "taskPath", "artifactRelativePath", "role");
+            Set.of("taskId", "taskPath", "artifactRelativePath", "role", "metricIds");
 
     private final Yaml yaml = new Yaml();
 
@@ -56,6 +56,7 @@ public final class Phase4AggregationManifestLoader {
             String taskPath = requiredString(taskNode, "taskPath", taskDescription);
             String artifactRelativePath = requiredString(taskNode, "artifactRelativePath", taskDescription);
             String roleName = requiredString(taskNode, "role", taskDescription);
+            List<String> metricIds = optionalStringList(taskNode, "metricIds", taskDescription);
             Phase4AggregationManifest.TaskRole role;
             try {
                 role = Phase4AggregationManifest.TaskRole.valueOf(roleName);
@@ -77,7 +78,10 @@ public final class Phase4AggregationManifestLoader {
             require(
                     artifactPaths.add(artifactRelativePath),
                     "Duplicate Phase 4 aggregation manifest artifactRelativePath '" + artifactRelativePath + "' at " + taskDescription + ".");
-            tasks.add(new Phase4AggregationManifest.TaskEntry(taskId, taskPath, artifactRelativePath, role));
+            require(
+                    new LinkedHashSet<>(metricIds).size() == metricIds.size(),
+                    "Duplicate Phase 4 aggregation manifest metricIds at " + taskDescription + ".");
+            tasks.add(new Phase4AggregationManifest.TaskEntry(taskId, taskPath, artifactRelativePath, role, metricIds));
         }
         return new Phase4AggregationManifest(schemaVersion, phaseId, tasks);
     }
@@ -109,6 +113,23 @@ public final class Phase4AggregationManifestLoader {
         Object value = map.get(key);
         require(value instanceof String, "Expected " + description + "." + key + " to be a string.");
         return (String) value;
+    }
+
+    private static List<String> optionalStringList(Map<String, Object> map, String key, String description) {
+        Object node = map.get(key);
+        if (node == null) {
+            return List.of();
+        }
+        List<?> rawValues = requireList(node, description + "." + key);
+        List<String> values = new ArrayList<>();
+        for (int index = 0; index < rawValues.size(); index++) {
+            Object value = rawValues.get(index);
+            require(
+                    value instanceof String && !((String) value).isBlank(),
+                    "Expected " + description + "." + key + "[" + index + "] to be a non-blank string.");
+            values.add((String) value);
+        }
+        return values;
     }
 
     private static void require(boolean condition, String message) {

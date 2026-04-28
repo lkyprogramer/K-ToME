@@ -147,6 +147,35 @@
         "templar": "long_sword",
         "vanguard": "long_sword"
     },
+    "starterInscriptionMaxCount": 2,
+    "fullSlotInscriptionPurchaseBlockedWithoutReplacementCount": 0,
+    "inscriptionInstallOrReplaceRate": 0.5,
+    "inscriptionReplacementProbeSuccessCount": 1,
+    "inscriptionReplacementProbe": {
+        "successCount": 1,
+        "replaceCount": 1,
+        "installCount": 0,
+        "selectedHotkey": 6,
+        "candidateInscriptionId": "controlled_phase",
+        "terminalLoadout": [
+            "healing_light",
+            "controlled_phase",
+            "iron_shield",
+            "purge"
+        ]
+    },
+    "terminalInscriptionLoadoutDiversity": 4,
+    "inscriptionCategoryCountDistribution": {
+        "mobility=1,utility=1": 6,
+        "defense=1,utility=1": 6
+    },
+    "shopInscriptionOfferConversionRate": 0.5,
+    "inscriptionReplaceReasonDistribution": {
+        "mobility_to_mobility": 3,
+        "defense_to_defense": 3
+    },
+    "inscriptionPurchaseCancelledAfterReplacementPrompt": 1,
+    "shopPurchaseDeniedInsufficientGoldCount": 1,
     "professionTopWeaponSemanticTags": {
         "arcanist": [
             "item",

@@ -1,6 +1,8 @@
 package com.ktome.core.inscription
 
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -74,4 +76,103 @@ class InscriptionSlotTest {
         assertTrue(InscriptionManager.equip(loadout, listOf(first), second))
         assertFalse(InscriptionManager.equip(loadout, listOf(first, second), third))
     }
+
+    @Test
+    fun `replacement keeps hotkey removes old cooldown and applies half candidate cooldown`() {
+        val healing = inscription(id = "healing_light", category = InscriptionCategory.HEALING, cooldown = 12)
+        val phase = inscription(id = "phase_door", category = InscriptionCategory.MOVEMENT, cooldown = 9)
+        val controlledPhase = phase.copy(id = "controlled_phase", cooldown = 7)
+        val loadout =
+            InscriptionLoadout(
+                mutableListOf(
+                    InscriptionSlot(hotkey = 5, inscriptionId = healing.id),
+                    InscriptionSlot(hotkey = 6, inscriptionId = phase.id),
+                ),
+            )
+        val cooldowns = InscriptionCooldownState(mutableMapOf(phase.id to 3))
+
+        val outcome =
+            InscriptionManager.replace(
+                InscriptionReplaceRequest(
+                    loadout = loadout,
+                    cooldowns = cooldowns,
+                    equippedDefinitions = listOf(healing, phase),
+                    candidate = controlledPhase,
+                    targetHotkey = 6,
+                ),
+            )
+
+        val applied = outcome as InscriptionReplaceOutcome.Applied
+        assertEquals(listOf(5 to healing.id, 6 to controlledPhase.id), applied.newLoadout.slots.map { slot -> slot.hotkey to slot.inscriptionId })
+        assertFalse(applied.newCooldownState.remainingByInscriptionId.containsKey(phase.id))
+        assertEquals(4, applied.newCooldownState.remainingByInscriptionId[controlledPhase.id])
+        assertEquals(6, applied.event.hotkey)
+    }
+
+    @Test
+    fun `replacement fails fast when target definition is missing`() {
+        val healing = inscription(id = "healing_light", category = InscriptionCategory.HEALING)
+        val phase = inscription(id = "phase_door", category = InscriptionCategory.MOVEMENT)
+        val loadout =
+            InscriptionLoadout(
+                mutableListOf(
+                    InscriptionSlot(hotkey = 5, inscriptionId = healing.id),
+                    InscriptionSlot(hotkey = 6, inscriptionId = phase.id),
+                ),
+            )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            InscriptionManager.canReplace(
+                loadout = loadout,
+                equippedDefinitions = listOf(healing),
+                candidate = phase.copy(id = "controlled_phase"),
+                targetHotkey = 6,
+            )
+        }
+    }
+
+    @Test
+    fun `replacement validates target same inscription and category limit`() {
+        val healing = inscription(id = "healing_light", category = InscriptionCategory.HEALING)
+        val healingSurge = inscription(id = "healing_surge", category = InscriptionCategory.HEALING)
+        val phase = inscription(id = "phase_door", category = InscriptionCategory.MOVEMENT)
+        val loadout =
+            InscriptionLoadout(
+                mutableListOf(
+                    InscriptionSlot(hotkey = 5, inscriptionId = healing.id),
+                    InscriptionSlot(hotkey = 6, inscriptionId = healingSurge.id),
+                    InscriptionSlot(hotkey = 7, inscriptionId = phase.id),
+                ),
+            )
+
+        assertEquals(
+            InscriptionEquipCheck.Rejected(InscriptionEquipFailure.SAME_INSCRIPTION),
+            InscriptionManager.canReplace(loadout, listOf(healing, healingSurge, phase), healing, targetHotkey = 5),
+        )
+        assertEquals(
+            InscriptionEquipCheck.Rejected(InscriptionEquipFailure.CATEGORY_LIMIT),
+            InscriptionManager.canReplace(
+                loadout = loadout,
+                equippedDefinitions = listOf(healing, healingSurge, phase),
+                candidate = inscription(id = "healing_miracle", category = InscriptionCategory.HEALING),
+                targetHotkey = 7,
+            ),
+        )
+    }
+
+    private fun inscription(
+        id: String,
+        category: InscriptionCategory,
+        cooldown: Int = 10,
+    ): InscriptionDef =
+        InscriptionDef(
+            id = id,
+            nameKey = "inscription.$id.name",
+            descKey = "inscription.$id.desc",
+            iconKey = "icon.$id",
+            category = category,
+            cooldown = cooldown,
+            effect = InscriptionEffect.Heal(percentMax = 0.2),
+            tier = 1,
+        )
 }

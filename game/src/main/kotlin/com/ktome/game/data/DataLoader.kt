@@ -366,6 +366,7 @@ class DataLoader(
     private fun validateProfessionTreeRunChoiceContract(catalog: SchemaCatalog) {
         val talentsById = catalog.talents.associateBy(TalentSchemaV2::id)
         val treesById = catalog.talentTrees.associateBy(TalentTreeSchemaV2::id)
+        val inscriptionIds = catalog.inscriptions.mapTo(linkedSetOf(), InscriptionDef::id)
         catalog.professions.forEach { profession ->
             profession.talentTrees.forEach { treeId ->
                 require('.' !in treeId) {
@@ -377,10 +378,21 @@ class DataLoader(
                 require(profession.startingTalents.isEmpty()) {
                     "Frozen profession '${profession.id}' must not materialize starter profession talents."
                 }
+                require(profession.startingInscriptions.isEmpty()) {
+                    "Frozen profession '${profession.id}' must not materialize starter inscriptions."
+                }
                 return@forEach
             }
             require(profession.startingTalents.size == 3) {
                 "Profession '${profession.id}' must start with exactly 3 learned profession talents for phase4-v4-pr01."
+            }
+            require(profession.startingInscriptions.size == 2) {
+                "Profession '${profession.id}' must start with exactly 2 inscriptions for phase4-v4-pr02."
+            }
+            profession.startingInscriptions.forEach { inscriptionId ->
+                require(inscriptionId in inscriptionIds) {
+                    "Profession '${profession.id}' references unknown starter inscription '$inscriptionId'."
+                }
             }
             val professionTreeIds = profession.talentTrees.toSet()
             profession.startingTalents.forEach { talentId ->
@@ -1075,6 +1087,7 @@ class DataLoader(
                 talentTrees = profession.optionalStringList("talentTrees"),
                 startingTalents = profession.optionalStringList("startingTalents"),
                 startingKit = profession.optionalStringList("startingKit"),
+                startingInscriptions = profession.optionalStringList("startingInscriptions"),
                 initialUnlockState =
                     profession.optionalString("initialUnlockState")
                         ?.uppercase()

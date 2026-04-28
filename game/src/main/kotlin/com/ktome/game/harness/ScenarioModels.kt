@@ -201,6 +201,17 @@ data class ScenarioReport(
     val talentReserveSwapCount: Int = 0,
     val rankBreakpointAdoptionByTalent: Map<String, Int> = emptyMap(),
     val autoLearnedNonStarterTalentCount: Int = 0,
+    val startingInscriptionCount: Int = 0,
+    val inscriptionInstallCount: Int = 0,
+    val inscriptionReplaceCount: Int = 0,
+    val fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: Int = 0,
+    val inscriptionPurchaseCancelledAfterReplacementPrompt: Int = 0,
+    val shopPurchaseDeniedInsufficientGoldCount: Int = 0,
+    val shopInscriptionOfferSeenCount: Int = 0,
+    val shopInscriptionOfferPurchaseCount: Int = 0,
+    val terminalInscriptionLoadout: List<String> = emptyList(),
+    val terminalInscriptionCategoryCounts: Map<String, Int> = emptyMap(),
+    val inscriptionReplaceReasonDistribution: Map<String, Int> = emptyMap(),
     val goalReached: Boolean,
     val failureReason: String? = null,
     val stuckReason: String? = null,
@@ -435,6 +446,7 @@ data class RunObservation(
     val activeRouteSelection: RouteSelectionSnapshot? = null,
     val activeShopId: String? = null,
     val activeShopOffers: List<ObservedShopOffer> = emptyList(),
+    val activeInscriptionReplacementPrompt: ObservedInscriptionReplacementPrompt? = null,
     val inventoryItems: List<InventoryItemView>,
     val inscriptions: List<ObservedInscription> = emptyList(),
     val talentSlots: List<TalentSlotView>,
@@ -455,9 +467,26 @@ data class ObservedInteractable(
 
 data class ObservedShopOffer(
     val index: Int,
+    val offerFingerprint: String = "",
     val price: Int,
     val tags: Set<String> = emptySet(),
     val purchasable: Boolean = true,
+)
+
+data class ObservedInscriptionReplacementPrompt(
+    val offerIndex: Int,
+    val offerFingerprint: String,
+    val candidateInscriptionId: String,
+    val candidateCategoryId: String,
+    val upgradeFromInscriptionId: String? = null,
+    val categoryLimit: Int = Int.MAX_VALUE,
+    val currentSlots: List<ObservedInscriptionReplacementSlot> = emptyList(),
+)
+
+data class ObservedInscriptionReplacementSlot(
+    val hotkey: Int,
+    val inscriptionId: String,
+    val categoryId: String,
 )
 
 data class ObservedInscription(
