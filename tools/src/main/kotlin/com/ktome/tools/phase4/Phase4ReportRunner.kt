@@ -156,6 +156,7 @@ object Phase4ReportRunner {
         val lootBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath()))
         val terminalBuildBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
         val professionTreeRunChoiceBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.professionTreeRunChoiceBaselinePath()))
+        val inscriptionShopReplacementBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.inscriptionShopReplacementBaselinePath()))
         val criticalPathPacingBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
         val bossPhaseIdentityBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.bossPhaseIdentityBaselinePath()))
         val terrainUnifiedBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
@@ -227,6 +228,10 @@ object Phase4ReportRunner {
                 .associateBy(EvaluationEntry::metricId)
         val professionTreeRunChoiceEntriesByMetricId =
             Phase4AggregationInputRunner.professionTreeRunChoiceEvaluation(task = longRun, baseline = professionTreeRunChoiceBaseline)
+                .entries
+                .associateBy(EvaluationEntry::metricId)
+        val inscriptionShopReplacementEntriesByMetricId =
+            Phase4AggregationInputRunner.inscriptionShopReplacementEvaluation(task = longRun, baseline = inscriptionShopReplacementBaseline)
                 .entries
                 .associateBy(EvaluationEntry::metricId)
         val criticalPathPacingEvaluation =
@@ -455,6 +460,12 @@ object Phase4ReportRunner {
                 outputSection = "profession-tree-run-choice",
             ).forEach { metricId ->
                 add(professionTreeRunChoiceEntriesByMetricId.getValue(metricId).toLegacyExperienceMetric(longRun.taskId))
+            }
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "longRunLab",
+                outputSection = "inscription-shop-replacement",
+            ).forEach { metricId ->
+                add(inscriptionShopReplacementEntriesByMetricId.getValue(metricId).toLegacyExperienceMetric(longRun.taskId))
             }
             addAll(
                 criticalPathPacingEvaluation.toExperienceMetrics(longRun.taskId).map { metric ->

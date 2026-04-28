@@ -96,6 +96,7 @@ import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.CrystalShardPressureStateSnapshot
 import com.ktome.core.save.FurnacePressureStateSnapshot
 import com.ktome.core.save.InscriptionLoadoutSnapshot
+import com.ktome.core.save.InscriptionRunTelemetrySnapshot
 import com.ktome.core.save.InscriptionSlotSaveSnapshot
 import com.ktome.core.save.InventorySnapshot
 import com.ktome.core.save.InvalidSaveException
@@ -286,6 +287,28 @@ internal data class FloorRuntimeState(
     )
 }
 
+internal data class SessionSaveSnapshotRequest(
+    val config: FoundationGameConfig,
+    val currentFloor: Int,
+    val turnCount: Int,
+    val headlessTurnEquivalent: Int,
+    val player: PlayerSnapshot,
+    val floors: List<FloorState<FloorRuntimeState>>,
+    val worldProgress: WorldProgressDef = WorldProgressDef(),
+    val shardBalance: Int = 0,
+    val shopStates: List<ShopInventoryState> = emptyList(),
+    val cadenceRewardCount: Int = 0,
+    val pityTracker: PityTracker = PityTracker(),
+    val inscriptionTelemetry: InscriptionRunTelemetrySnapshot = InscriptionRunTelemetrySnapshot(),
+    val combatRandomState: Long?,
+    val sessionRandomState: Long?,
+    val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
+    val pendingActionIds: List<Int>,
+    val activeTurnActorId: Int?,
+    val activePackIds: List<PackId> = emptyList(),
+    val activePackManifestVersions: Map<PackId, String> = emptyMap(),
+)
+
 internal data class RestoredRunState(
     val config: FoundationGameConfig,
     val currentFloor: Int,
@@ -298,6 +321,7 @@ internal data class RestoredRunState(
     val shopStates: List<ShopInventoryState> = emptyList(),
     val cadenceRewardCount: Int = 0,
     val pityTracker: PityTracker = PityTracker(),
+    val inscriptionTelemetry: InscriptionRunTelemetrySnapshot = InscriptionRunTelemetrySnapshot(),
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
@@ -420,26 +444,8 @@ internal object SessionSnapshotMapper {
         return world
     }
 
-    fun toSaveSnapshot(
-        config: FoundationGameConfig,
-        currentFloor: Int,
-        turnCount: Int,
-        headlessTurnEquivalent: Int,
-        player: PlayerSnapshot,
-        floors: List<FloorState<FloorRuntimeState>>,
-        worldProgress: WorldProgressDef = WorldProgressDef(),
-        shardBalance: Int = 0,
-        shopStates: List<ShopInventoryState> = emptyList(),
-        cadenceRewardCount: Int = 0,
-        pityTracker: PityTracker = PityTracker(),
-        combatRandomState: Long?,
-        sessionRandomState: Long?,
-        milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
-        pendingActionIds: List<Int>,
-        activeTurnActorId: Int?,
-        activePackIds: List<PackId> = emptyList(),
-        activePackManifestVersions: Map<PackId, String> = emptyMap(),
-    ): SaveSnapshot =
+    fun toSaveSnapshot(request: SessionSaveSnapshotRequest): SaveSnapshot =
+        with(request) {
         SaveSnapshot(
             timestampEpochMillis = System.currentTimeMillis(),
             worldSeed = config.seed,
@@ -452,7 +458,11 @@ internal object SessionSnapshotMapper {
             shardBalance = shardBalance,
             shopStates = shopStates.sortedBy(ShopInventoryState::shopId),
             cadenceRewardCount = cadenceRewardCount,
-            phase4RunState = Phase4RunStateSnapshot(pityTracker = pityTracker),
+            phase4RunState =
+                Phase4RunStateSnapshot(
+                    pityTracker = pityTracker,
+                    inscriptionTelemetry = inscriptionTelemetry,
+                ),
             currentFloorRewardState =
                 floors.firstOrNull { floorState -> floorState.floor == currentFloor }?.payload?.rewardState
                     ?: FloorRewardStateSnapshot(),
@@ -502,6 +512,7 @@ internal object SessionSnapshotMapper {
                     )
                 },
         )
+        }
 
     fun fromSaveSnapshot(snapshot: SaveSnapshot): RestoredRunState =
         fromSaveSnapshot(snapshot = snapshot, mapgenPipeline = null)
@@ -535,6 +546,7 @@ internal object SessionSnapshotMapper {
             shopStates = snapshot.shopStates.sortedBy(ShopInventoryState::shopId),
             cadenceRewardCount = snapshot.cadenceRewardCount,
             pityTracker = snapshot.phase4RunState.pityTracker,
+            inscriptionTelemetry = snapshot.phase4RunState.inscriptionTelemetry,
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
             milestoneRewards = snapshot.milestoneRewards,

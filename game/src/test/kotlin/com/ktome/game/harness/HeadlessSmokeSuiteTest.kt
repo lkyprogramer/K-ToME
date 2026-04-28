@@ -235,6 +235,24 @@ internal fun ScenarioReport.toJson() =
             rankBreakpointAdoptionByTalent.forEach { (talentId, count) -> put(talentId, count) }
         }
         put("autoLearnedNonStarterTalentCount", autoLearnedNonStarterTalentCount)
+        put("startingInscriptionCount", startingInscriptionCount)
+        put("inscriptionInstallCount", inscriptionInstallCount)
+        put("inscriptionReplaceCount", inscriptionReplaceCount)
+        put("fullSlotInscriptionPurchaseBlockedWithoutReplacementCount", fullSlotInscriptionPurchaseBlockedWithoutReplacementCount)
+        put("fullSlotInscriptionPurchaseReplacementPromptCount", fullSlotInscriptionPurchaseReplacementPromptCount)
+        put("inscriptionPurchaseCancelledAfterReplacementPrompt", inscriptionPurchaseCancelledAfterReplacementPrompt)
+        put("shopPurchaseDeniedInsufficientGoldCount", shopPurchaseDeniedInsufficientGoldCount)
+        put("shopInscriptionOfferSeenCount", shopInscriptionOfferSeenCount)
+        put("shopInscriptionOfferPurchaseCount", shopInscriptionOfferPurchaseCount)
+        putJsonArray("terminalInscriptionLoadout") {
+            terminalInscriptionLoadout.forEach { inscriptionId -> add(JsonPrimitive(inscriptionId)) }
+        }
+        putJsonObject("terminalInscriptionCategoryCounts") {
+            terminalInscriptionCategoryCounts.forEach { (categoryId, count) -> put(categoryId, count) }
+        }
+        putJsonObject("inscriptionReplaceReasonDistribution") {
+            inscriptionReplaceReasonDistribution.forEach { (reason, count) -> put(reason, count) }
+        }
         putJsonArray("milestoneRewards") {
             milestoneRewards.forEach { reward ->
                 add(

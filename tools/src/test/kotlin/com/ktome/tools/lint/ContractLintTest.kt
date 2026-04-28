@@ -88,6 +88,9 @@ class ContractLintTest {
             profession.talentTrees.forEach { treeId -> assertTrue(treeIds.contains(treeId), "Unknown profession tree $treeId") }
             profession.startingTalents.forEach { talentId -> assertTrue(talentIds.contains(talentId), "Unknown starter talent $talentId") }
             profession.startingKit.forEach { itemId -> assertTrue(itemIds.contains(itemId), "Unknown starter item $itemId") }
+            profession.startingInscriptions.forEach { inscriptionId ->
+                assertTrue(inscriptionId in uniqueInscriptionIds, "Unknown starter inscription $inscriptionId")
+            }
         }
 
         catalog.talentTrees.forEach { tree ->

@@ -24,6 +24,7 @@ class SaveCodecTest {
         assertTrue(encoded.contains("\"schemaVersion\""))
         assertTrue(encoded.contains("\"phase4RunState\""))
         assertTrue(encoded.contains("\"talentChoiceTelemetry\""))
+        assertTrue(encoded.contains("\"inscriptionSchemaVersion\""))
         assertFalse(encoded.contains("glyph"))
         assertFalse(encoded.contains("colorHex"))
         assertFalse(encoded.contains("\"messageLog\""))
@@ -115,6 +116,34 @@ class SaveCodecTest {
     }
 
     @Test
+    fun `decode rejects missing malformed and stale inscription schema version`() {
+        val json = Json { prettyPrint = true }
+        val root = json.parseToJsonElement(codec.encode(SaveFixtures.emptyScene())).jsonObject
+        val expectedMessage = "INCOMPATIBLE_PHASE4_V4_INSCRIPTION_SCHEMA: Start a new run."
+
+        val missing = JsonObject(root.filterKeys { key -> key != "inscriptionSchemaVersion" })
+        val missingException =
+            assertThrows(InvalidSaveException::class.java) {
+                codec.decode(json.encodeToString(JsonObject.serializer(), missing))
+            }
+        assertEquals(expectedMessage, missingException.message)
+
+        val malformed = JsonObject(root + ("inscriptionSchemaVersion" to JsonPrimitive("legacy-four-starters")))
+        val malformedException =
+            assertThrows(InvalidSaveException::class.java) {
+                codec.decode(json.encodeToString(JsonObject.serializer(), malformed))
+            }
+        assertEquals(expectedMessage, malformedException.message)
+
+        val stale = JsonObject(root + ("inscriptionSchemaVersion" to JsonPrimitive(SaveSnapshot.CURRENT_INSCRIPTION_SCHEMA_VERSION - 1)))
+        val staleException =
+            assertThrows(InvalidSaveException::class.java) {
+                codec.decode(json.encodeToString(JsonObject.serializer(), stale))
+            }
+        assertEquals(expectedMessage, staleException.message)
+    }
+
+    @Test
     fun `snapshot validation rejects stale talent schema version`() {
         val exception =
             assertThrows(IllegalArgumentException::class.java) {
@@ -122,6 +151,16 @@ class SaveCodecTest {
             }
 
         assertEquals("INCOMPATIBLE_PHASE4_V4_TALENT_SCHEMA: Start a new run.", exception.message)
+    }
+
+    @Test
+    fun `snapshot validation rejects stale inscription schema version`() {
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                SaveFixtures.emptyScene().copy(inscriptionSchemaVersion = SaveSnapshot.CURRENT_INSCRIPTION_SCHEMA_VERSION - 1)
+            }
+
+        assertEquals("INCOMPATIBLE_PHASE4_V4_INSCRIPTION_SCHEMA: Start a new run.", exception.message)
     }
 
     @Test

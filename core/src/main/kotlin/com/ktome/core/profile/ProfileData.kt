@@ -71,6 +71,9 @@ data class RunSummary(
     val shardBalance: Int = 0,
     val buildHash: String,
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
+    val startingInscriptionCount: Int = 0,
+    val inscriptionInstallCount: Int = 0,
+    val inscriptionReplaceCount: Int = 0,
     val rulesetVersion: String,
     val victory: Boolean,
     val defeatReason: String? = null,
@@ -88,6 +91,9 @@ data class RunSummary(
         require(milestoneRewards.distinctBy { reward -> "${reward.rewardSource}:${reward.sourceId}" }.size == milestoneRewards.size) {
             "RunSummary.milestoneRewards must not contain duplicate entries."
         }
+        require(startingInscriptionCount >= 0) { "RunSummary.startingInscriptionCount must not be negative." }
+        require(inscriptionInstallCount >= 0) { "RunSummary.inscriptionInstallCount must not be negative." }
+        require(inscriptionReplaceCount >= 0) { "RunSummary.inscriptionReplaceCount must not be negative." }
         require(rulesetVersion.isNotBlank()) { "RunSummary.rulesetVersion must not be blank." }
         require(turnCount >= 0) { "RunSummary.turnCount must not be negative." }
         require(headlessTurnEquivalent >= 0) { "RunSummary.headlessTurnEquivalent must not be negative." }

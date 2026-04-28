@@ -21,6 +21,7 @@ professions:
     talentTrees: [vanguard_arms, vanguard_shield, vanguard_warcry]
     startingTalents: [power_strike, shield_bash, guard_stance]
     startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
+    startingInscriptions: [healing_light, iron_shield]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
       offenseTags: [melee, burst, armor_break]
@@ -51,6 +52,7 @@ professions:
     talentTrees: [arcanist_flame, arcanist_frost, arcanist_arcane]
     startingTalents: [fireball, blink, arcane_shield]
     startingKit: [arcane_staff, apprentice_robe, mana_potion]
+    startingInscriptions: [healing_light, phase_door]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
       offenseTags: [spell, ranged, burst]
@@ -85,6 +87,7 @@ professions:
     talentTrees: [rogue_assassination, rogue_subtlety, rogue_agility]
     startingTalents: [backstab, stealth, roll]
     startingKit: [short_sword, leather_armor, healing_potion, scroll_teleport]
+    startingInscriptions: [healing_light, phase_door]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
       offenseTags: [burst, crit, stealth]
@@ -120,6 +123,7 @@ professions:
     talentTrees: [templar_smite, templar_grace, templar_faith]
     startingTalents: [holy_strike, holy_light, holy_shield]
     startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
+    startingInscriptions: [healing_light, purge]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
       offenseTags: [holy, smite, execute, melee]
@@ -157,6 +161,7 @@ professions:
     talentTrees: [berserker_wrath, berserker_ruin, berserker_bloodwar]
     startingTalents: [blood_rush, savage_hew, kill_frenzy]
     startingKit: [war_maul, chain_mail, healing_potion]
+    startingInscriptions: [healing_light, iron_shield]
     initialUnlockState: DEV_UNLOCKED
     releaseUnlockCondition:
       type: REQUIRE_PROFESSION_CLEARED
@@ -196,6 +201,7 @@ professions:
     talentTrees: [spellblade_enchanted_blade, spellblade_elemental_flux, spellblade_battle_spell]
     startingTalents: [arcane_edge, mana_lunge, spell_parry]
     startingKit: [long_sword, apprentice_robe, mana_potion, scroll_teleport]
+    startingInscriptions: [healing_light, phase_door]
     initialUnlockState: DEV_UNLOCKED
     releaseUnlockCondition:
       type: REQUIRE_PROFESSION_CLEARED
@@ -233,6 +239,7 @@ professions:
     talentTrees: [shadowblade_assassination_plus, shadowblade_shadowstep_mastery, shadowblade_venom_night]
     startingTalents: []
     startingKit: [short_sword, leather_armor, healing_potion]
+    startingInscriptions: []
     initialUnlockState: LOCKED
     soloContract:
       offenseTags: [shadow, burst]
@@ -268,6 +275,7 @@ professions:
     talentTrees: [warden_nature_guard, warden_life_ward, warden_earth_bastion]
     startingTalents: []
     startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
+    startingInscriptions: []
     initialUnlockState: LOCKED
     soloContract:
       offenseTags: [holy, control]

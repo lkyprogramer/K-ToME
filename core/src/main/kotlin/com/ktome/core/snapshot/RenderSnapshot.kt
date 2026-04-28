@@ -500,6 +500,7 @@ data class ShopPanelSnapshot(
     val hintLabelKeys: List<String> = emptyList(),
     val offers: List<ShopOfferSnapshot>,
     val sellEntries: List<ShopSellEntrySnapshot> = emptyList(),
+    val inscriptionReplacementPrompt: InscriptionReplacementPromptSnapshot? = null,
 )
 
 @Serializable
@@ -507,8 +508,45 @@ data class ShopOfferSnapshot(
     val index: Int,
     val labelKey: String,
     val price: Int,
+    val offerFingerprint: String,
     val tags: List<String> = emptyList(),
     val tagLabelKeys: List<String> = emptyList(),
+)
+
+@Serializable
+data class InscriptionReplacementPromptSnapshot(
+    val offerIndex: Int,
+    val offerFingerprint: String,
+    val candidate: InscriptionReplacementEntrySnapshot,
+    val currentSlots: List<InscriptionReplacementEntrySnapshot>,
+    val categoryChanges: List<InscriptionReplacementCategoryChangeSnapshot>,
+    val price: Int,
+    val rejectedReasonKey: String? = null,
+)
+
+@Serializable
+data class InscriptionReplacementEntrySnapshot(
+    val hotkey: Int? = null,
+    val inscriptionId: String,
+    val nameKey: String,
+    val descKey: String,
+    val iconKey: String,
+    val categoryId: String,
+    val categoryLabelKey: String = "",
+    val effectTagLabelKeys: List<String> = emptyList(),
+    val cooldownRemaining: Int = 0,
+    val maxCooldown: Int = 0,
+    val upgradeFromInscriptionId: String? = null,
+)
+
+@Serializable
+data class InscriptionReplacementCategoryChangeSnapshot(
+    val targetHotkey: Int? = null,
+    val categoryId: String,
+    val categoryLabelKey: String = "",
+    val beforeCount: Int,
+    val afterCount: Int,
+    val limit: Int,
 )
 
 @Serializable

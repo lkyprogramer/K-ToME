@@ -161,11 +161,33 @@ object RunObservationCapture {
                     ?.map { offer ->
                         ObservedShopOffer(
                             index = offer.index,
+                            offerFingerprint = offer.offerFingerprint,
                             price = offer.price,
                             tags = offer.tags.toSet(),
                             purchasable = session.automationCanPurchaseShopOffer(offer.index),
                         )
                     }.orEmpty(),
+            activeInscriptionReplacementPrompt =
+                activeShop?.inscriptionReplacementPrompt?.let { prompt ->
+                    ObservedInscriptionReplacementPrompt(
+                        offerIndex = prompt.offerIndex,
+                        offerFingerprint = prompt.offerFingerprint,
+                        candidateInscriptionId = prompt.candidate.inscriptionId,
+                        candidateCategoryId = prompt.candidate.categoryId,
+                        upgradeFromInscriptionId = prompt.candidate.upgradeFromInscriptionId,
+                        categoryLimit = prompt.categoryChanges.firstOrNull()?.limit ?: Int.MAX_VALUE,
+                        currentSlots =
+                            prompt.currentSlots.mapNotNull { slot ->
+                                slot.hotkey?.let { hotkey ->
+                                    ObservedInscriptionReplacementSlot(
+                                        hotkey = hotkey,
+                                        inscriptionId = slot.inscriptionId,
+                                        categoryId = slot.categoryId,
+                                    )
+                                }
+                            },
+                    )
+                },
             inventoryItems = uiState.inventory.map(::toInventoryItemView),
             inscriptions =
                 uiState.inscriptions.map { inscription ->
@@ -551,6 +573,7 @@ fun PlayerCommand.consumesTurn(): Boolean =
         -> true
 
         PlayerCommand.CloseShop,
+        PlayerCommand.CancelInscriptionReplacementPurchase,
         is PlayerCommand.DropInventoryItem,
         is PlayerCommand.BuyShopOffer,
         is PlayerCommand.SellInventoryItem,

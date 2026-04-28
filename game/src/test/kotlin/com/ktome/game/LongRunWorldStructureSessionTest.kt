@@ -12,6 +12,7 @@ import com.ktome.core.item.ItemInstance
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.save.SaveManager
+import com.ktome.core.snapshot.ShopOfferSnapshot
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
@@ -292,7 +293,7 @@ class LongRunWorldStructureSessionTest {
         }
 
         val beforeBuy = session.currentShardBalance()
-        assertTrue(session.perform(PlayerCommand.BuyShopOffer(0)))
+        assertTrue(session.perform(buyShopOfferCommand(session, 0)))
         assertTrue(session.currentShardBalance() < beforeBuy)
         assertTrue("offer.healing_potion" in requireNotNull(session.shopStates().firstOrNull { it.shopId == "greenwood_supply_post" }).purchasedOfferIds)
 
@@ -330,9 +331,10 @@ class LongRunWorldStructureSessionTest {
                     offer.serviceType == ShopServiceType.REFRESH_STOCK
                 },
             )
-        assertTrue(session.perform(PlayerCommand.BuyShopOffer(indexOfOffer(session, offensiveOffer.id))))
+        assertTrue(session.perform(buyShopOfferCommand(session, indexOfOffer(session, offensiveOffer.id))))
         val refreshIndex = indexOfOffer(session, initialServiceOffer.id)
-        assertTrue(session.perform(PlayerCommand.BuyShopOffer(refreshIndex)))
+        val refreshOfferSnapshot = visibleShopOfferSnapshot(session, refreshIndex)
+        assertTrue(session.perform(buyShopOfferCommand(refreshOfferSnapshot)))
 
         val refreshedOffers = session.automationVisibleShopOffers()
         assertTrue(refreshedOffers.none { offer -> offer.id == offensiveOffer.id })
@@ -355,7 +357,7 @@ class LongRunWorldStructureSessionTest {
         assertTrue("RECOVERY" in affordableTags)
         assertTrue("PROTECTION" in affordableTags)
 
-        assertFalse(session.perform(PlayerCommand.BuyShopOffer(refreshIndex)))
+        assertFalse(session.perform(buyShopOfferCommand(refreshOfferSnapshot)))
     }
 
     @Test
@@ -598,7 +600,7 @@ class LongRunWorldStructureSessionTest {
         session.automationMovePlayerTo(interactablePoint(session, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID))
         assertTrue(session.perform(PlayerCommand.Interact))
         assertEquals(AbyssalRuntimeKeys.Temple.SHOP_NODE_ID, requireNotNull(session.renderSnapshot().uiState.activeShop).shopId)
-        assertTrue(session.perform(PlayerCommand.BuyShopOffer(indexOfOffer(session, "offer.reliquary.sanctified_seal"))))
+        assertTrue(session.perform(buyShopOfferCommand(session, indexOfOffer(session, "offer.reliquary.sanctified_seal"))))
         assertEquals(1, session.currentLateRunReliquaryPurchaseCount())
         assertEquals(1, session.currentLateRunReliquaryVisitCount())
         assertEquals(1, session.currentLateRunReliquaryItemPurchaseCount())
@@ -762,6 +764,22 @@ class LongRunWorldStructureSessionTest {
             session.automationVisibleShopOffers().indexOfFirst { offer -> offer.id == offerId }.takeIf { index -> index >= 0 },
         ) {
             "Expected visible offer '$offerId'."
+        }
+
+    private fun buyShopOfferCommand(
+        session: FoundationGameSession,
+        index: Int,
+    ): PlayerCommand.BuyShopOffer = buyShopOfferCommand(visibleShopOfferSnapshot(session, index))
+
+    private fun buyShopOfferCommand(offer: ShopOfferSnapshot): PlayerCommand.BuyShopOffer =
+        PlayerCommand.BuyShopOffer(index = offer.index, offerFingerprint = offer.offerFingerprint)
+
+    private fun visibleShopOfferSnapshot(
+        session: FoundationGameSession,
+        index: Int,
+    ): ShopOfferSnapshot =
+        requireNotNull(session.renderSnapshot().uiState.activeShop?.offers?.firstOrNull { offer -> offer.index == index }) {
+            "Expected visible shop offer at index $index."
         }
 
     private fun invokeHandleDeath(

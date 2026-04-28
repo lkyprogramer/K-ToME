@@ -32,7 +32,13 @@ sealed interface PlayerCommand {
 
     data object CloseShop : PlayerCommand
 
-    data class BuyShopOffer(val index: Int) : PlayerCommand
+    data class BuyShopOffer(
+        val index: Int,
+        val offerFingerprint: String,
+        val replacementHotkey: Int? = null,
+    ) : PlayerCommand
+
+    data object CancelInscriptionReplacementPurchase : PlayerCommand
 
     data class SellInventoryItem(val index: Int) : PlayerCommand
 

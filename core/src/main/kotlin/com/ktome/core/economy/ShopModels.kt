@@ -1,5 +1,6 @@
 package com.ktome.core.economy
 
+import com.ktome.core.inscription.InscriptionEquipFailure
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -85,13 +86,27 @@ data class ShopInventoryState(
     val visitCount: Int = 0,
     val purchasedOfferIds: Set<String> = emptySet(),
     val activeRefreshableOffers: List<ShopOffer> = emptyList(),
+    val stockVersion: Int = 0,
 ) {
     init {
         require(shopId.isNotBlank()) { "ShopInventoryState.shopId must not be blank." }
         require(visitCount >= 0) { "ShopInventoryState.visitCount must not be negative." }
         require(purchasedOfferIds.none(String::isBlank)) { "ShopInventoryState.purchasedOfferIds must not contain blank values." }
+        require(stockVersion >= 0) { "ShopInventoryState.stockVersion must not be negative." }
         require(activeRefreshableOffers.distinctBy(ShopOffer::id).size == activeRefreshableOffers.size) {
             "ShopInventoryState.activeRefreshableOffers must not contain duplicate offer ids."
         }
     }
+}
+
+sealed interface ShopPurchaseFailure {
+    data object InsufficientGold : ShopPurchaseFailure
+
+    data object StaleOffer : ShopPurchaseFailure
+
+    data object RequiresReplacementTarget : ShopPurchaseFailure
+
+    data class InscriptionEquipRejected(
+        val reason: InscriptionEquipFailure,
+    ) : ShopPurchaseFailure
 }

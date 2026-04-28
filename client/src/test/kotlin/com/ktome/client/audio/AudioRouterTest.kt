@@ -773,9 +773,9 @@ class AudioRouterTest {
         val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
         val snapshot = sampleSnapshot()
 
-        router.onCommandResolved(snapshot, snapshot, PlayerCommand.BuyShopOffer(index = 0), consumed = true)
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.BuyShopOffer(index = 0, offerFingerprint = "fingerprint"), consumed = true)
         router.onCommandResolved(snapshot, snapshot, PlayerCommand.SellInventoryItem(index = 0), consumed = true)
-        router.onCommandResolved(snapshot, snapshot, PlayerCommand.BuyShopOffer(index = 0), consumed = false)
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.BuyShopOffer(index = 0, offerFingerprint = "fingerprint"), consumed = false)
 
         assertEquals(
             listOf("audio.shop.purchase_success", "audio.shop.purchase_success", "audio.shop.purchase_failed"),

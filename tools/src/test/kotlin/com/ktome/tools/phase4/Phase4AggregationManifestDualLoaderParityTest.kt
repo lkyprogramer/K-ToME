@@ -28,6 +28,7 @@ class Phase4AggregationManifestDualLoaderParityTest {
                     taskPath = task.taskPath,
                     artifactRelativePath = task.artifactRelativePath,
                     role = task.role.name,
+                    metricIds = task.metricIds,
                 )
             }
         val buildLogicTasks = buildLogicLoaderHandle.parse(yamlText = yamlText, sourceDescription = "inline-manifest")
@@ -125,6 +126,7 @@ class Phase4AggregationManifestDualLoaderParityTest {
                 taskPath = task.getValue("taskPath").toString(),
                 artifactRelativePath = task.getValue("artifactRelativePath").toString(),
                 role = task.getValue("role").toString(),
+                metricIds = (task["metricIds"] as? List<*>)?.map { value -> value.toString() } ?: emptyList(),
             )
         }
     }
@@ -141,6 +143,7 @@ class Phase4AggregationManifestDualLoaderParityTest {
         val taskPath: String,
         val artifactRelativePath: String,
         val role: String,
+        val metricIds: List<String>,
     )
 
     private class BuildLogicLoaderHandle(
@@ -157,6 +160,7 @@ class Phase4AggregationManifestDualLoaderParityTest {
         private val getTaskPathMethod = taskEntryClass.getMethod("getTaskPath")
         private val getArtifactRelativePathMethod = taskEntryClass.getMethod("getArtifactRelativePath")
         private val getRoleMethod = taskEntryClass.getMethod("getRole")
+        private val getMetricIdsMethod = taskEntryClass.getMethod("getMetricIds")
 
         fun parse(
             yamlText: String,
@@ -171,6 +175,7 @@ class Phase4AggregationManifestDualLoaderParityTest {
                     taskPath = getTaskPathMethod.invoke(task).toString(),
                     artifactRelativePath = getArtifactRelativePathMethod.invoke(task).toString(),
                     role = getRoleMethod.invoke(task).toString(),
+                    metricIds = (getMetricIdsMethod.invoke(task) as List<*>).map { value -> value.toString() },
                 )
             }
         }

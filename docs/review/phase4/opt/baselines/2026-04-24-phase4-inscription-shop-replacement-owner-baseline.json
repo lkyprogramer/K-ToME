@@ -1,0 +1,39 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-inscription-shop-replacement-v1",
+    "domainId": "longrun",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-v4-pr02-inscription-shop-replacement-v1",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "starterInscriptionMaxCount",
+            "maxValue": 2.0,
+            "notes": "Every formal new run must start with at most two inscriptions."
+        },
+        {
+            "metricId": "fullSlotInscriptionPurchaseBlockedWithoutReplacementCount",
+            "maxValue": 0.0,
+            "notes": "Full-slot inscription purchases must enter the replacement flow instead of hard-rejecting."
+        },
+        {
+            "metricId": "inscriptionInstallOrReplaceRate",
+            "minValue": 0.5,
+            "notes": "At least 50% of terminal full-route runs must install or replace an inscription through the shop path."
+        },
+        {
+            "metricId": "inscriptionReplacementProbeSuccessCount",
+            "minValue": 1.0,
+            "notes": "Owner evidence must include at least one deterministic full-slot replacement completed through RunObservation and SmokeBot."
+        }
+    ],
+    "notes": [
+        "Phase4 v4 PR-02 owner baseline for inscription starter count, shop reachability, and full-slot replacement reachability.",
+        "Supporting diversity, category, conversion, and rejection-distribution metrics are emitted by longRunLab but remain display-only."
+    ],
+    "metadata": {
+        "scope": "terminal full-route runs"
+    }
+}

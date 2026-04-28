@@ -5,14 +5,21 @@ import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.run.RunOutcome
+import com.ktome.core.save.SaveManager
 import com.ktome.game.FOUNDATION_SYNERGY_AFFIX_IDS
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
+import com.ktome.game.GameModule
+import com.ktome.game.PlayerCommand
 import com.ktome.game.data.DataLoader
 import com.ktome.game.loot.foundationBuildIdentityByProfessionId
 import com.ktome.game.loot.foundationProfessionCapstoneBaseIdsByProfessionId
+import com.ktome.game.validation.ValidationAction
+import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioId
+import com.ktome.game.validation.ValidationScenarioRegistry
+import com.ktome.game.validation.ValidationSessionRequest
 import java.nio.file.Path
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
@@ -99,6 +106,8 @@ class LongRunLabFullTest {
                 .toSortedMap()
         val professionCapstoneSummary = professionCapstoneSummary(fullRouteReports)
         val professionTreeChoiceMetrics = professionTreeChoiceMetrics(fullRouteReports)
+        val inscriptionReplacementProbe = inscriptionReplacementProbe()
+        val inscriptionShopMetrics = inscriptionShopMetrics(fullRouteReports, inscriptionReplacementProbe)
         val reportPath = HarnessReportWriter.reportDir().resolve("long-run-full.json")
         val failingReports = reports.filterNot(ScenarioReport::success)
 
@@ -196,6 +205,31 @@ class LongRunLabFullTest {
                         professionTreeChoiceMetrics.rankBreakpointAdoptionByTalent.forEach { (talentId, count) -> put(talentId, count) }
                     }
                     put("autoLearnedNonStarterTalentCount", professionTreeChoiceMetrics.autoLearnedNonStarterTalentCount)
+                    put("starterInscriptionMaxCount", inscriptionShopMetrics.starterInscriptionMaxCount)
+                    put("fullSlotInscriptionPurchaseBlockedWithoutReplacementCount", inscriptionShopMetrics.fullSlotInscriptionPurchaseBlockedWithoutReplacementCount)
+                    put("fullSlotInscriptionPurchaseReplacementPromptCount", inscriptionShopMetrics.fullSlotInscriptionPurchaseReplacementPromptCount)
+                    put("inscriptionInstallOrReplaceRate", inscriptionShopMetrics.inscriptionInstallOrReplaceRate)
+                    put("inscriptionReplacementProbeSuccessCount", inscriptionShopMetrics.replacementProbeSuccessCount)
+                    putJsonObject("inscriptionReplacementProbe") {
+                        put("successCount", inscriptionReplacementProbe.successCount)
+                        put("replaceCount", inscriptionReplacementProbe.replaceCount)
+                        put("installCount", inscriptionReplacementProbe.installCount)
+                        put("selectedHotkey", inscriptionReplacementProbe.selectedHotkey)
+                        put("candidateInscriptionId", inscriptionReplacementProbe.candidateInscriptionId)
+                        putJsonArray("terminalLoadout") {
+                            inscriptionReplacementProbe.terminalLoadout.forEach { inscriptionId -> add(JsonPrimitive(inscriptionId)) }
+                        }
+                    }
+                    put("terminalInscriptionLoadoutDiversity", inscriptionShopMetrics.terminalInscriptionLoadoutDiversity)
+                    putJsonObject("inscriptionCategoryCountDistribution") {
+                        inscriptionShopMetrics.inscriptionCategoryCountDistribution.forEach { (categorySummary, count) -> put(categorySummary, count) }
+                    }
+                    put("shopInscriptionOfferConversionRate", inscriptionShopMetrics.shopInscriptionOfferConversionRate)
+                    putJsonObject("inscriptionReplaceReasonDistribution") {
+                        inscriptionShopMetrics.inscriptionReplaceReasonDistribution.forEach { (reason, count) -> put(reason, count) }
+                    }
+                    put("inscriptionPurchaseCancelledAfterReplacementPrompt", inscriptionShopMetrics.inscriptionPurchaseCancelledAfterReplacementPrompt)
+                    put("shopPurchaseDeniedInsufficientGoldCount", inscriptionShopMetrics.shopPurchaseDeniedInsufficientGoldCount)
                     putJsonArray("includedProfessions") {
                         PROFESSION_TREE_RELEASE_PROFESSIONS.forEach { professionId -> add(JsonPrimitive(professionId)) }
                     }
@@ -389,6 +423,16 @@ class LongRunLabFullTest {
                     appendLine("- talentReserveSwapCount: ${professionTreeChoiceMetrics.talentReserveSwapCount}")
                     appendLine("- rankBreakpointAdoptionByTalent: ${if (professionTreeChoiceMetrics.rankBreakpointAdoptionByTalent.isEmpty()) "none" else professionTreeChoiceMetrics.rankBreakpointAdoptionByTalent}")
                     appendLine("- autoLearnedNonStarterTalentCount: ${professionTreeChoiceMetrics.autoLearnedNonStarterTalentCount}")
+                    appendLine("- starterInscriptionMaxCount: ${inscriptionShopMetrics.starterInscriptionMaxCount}")
+                    appendLine("- fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: ${inscriptionShopMetrics.fullSlotInscriptionPurchaseBlockedWithoutReplacementCount}")
+                    appendLine("- fullSlotInscriptionPurchaseReplacementPromptCount: ${inscriptionShopMetrics.fullSlotInscriptionPurchaseReplacementPromptCount}")
+                    appendLine("- inscriptionInstallOrReplaceRate: ${inscriptionShopMetrics.inscriptionInstallOrReplaceRate}")
+                    appendLine("- inscriptionReplacementProbeSuccessCount: ${inscriptionShopMetrics.replacementProbeSuccessCount}")
+                    appendLine("- inscriptionReplacementProbe: hotkey=${inscriptionReplacementProbe.selectedHotkey}, candidate=${inscriptionReplacementProbe.candidateInscriptionId}, replace=${inscriptionReplacementProbe.replaceCount}, install=${inscriptionReplacementProbe.installCount}, terminal=${inscriptionReplacementProbe.terminalLoadout}")
+                    appendLine("- terminalInscriptionLoadoutDiversity: ${inscriptionShopMetrics.terminalInscriptionLoadoutDiversity}")
+                    appendLine("- inscriptionCategoryCountDistribution: ${if (inscriptionShopMetrics.inscriptionCategoryCountDistribution.isEmpty()) "none" else inscriptionShopMetrics.inscriptionCategoryCountDistribution}")
+                    appendLine("- shopInscriptionOfferConversionRate: ${inscriptionShopMetrics.shopInscriptionOfferConversionRate}")
+                    appendLine("- inscriptionReplaceReasonDistribution: ${if (inscriptionShopMetrics.inscriptionReplaceReasonDistribution.isEmpty()) "none" else inscriptionShopMetrics.inscriptionReplaceReasonDistribution}")
                     appendLine("- includedProfessions: ${PROFESSION_TREE_RELEASE_PROFESSIONS.joinToString()}")
                     appendLine("- advancedReportOnlyProfessions: ${PROFESSION_TREE_ADVANCED_REPORT_ONLY_PROFESSIONS.joinToString()}")
                     appendLine("- excludedFrozenProfessions: ${PROFESSION_TREE_EXCLUDED_FROZEN_PROFESSIONS.joinToString()}")
@@ -575,6 +619,19 @@ class LongRunLabFullTest {
             fullRouteSynergyRewardMetrics.adoptionCount >= 1,
             "Expected full-route matrix to keep at least one documented synergy affix in the final build, actual=${fullRouteSynergyRewardMetrics.distribution}",
         )
+        assertTrue(longRunPayload.containsKey("starterInscriptionMaxCount"))
+        assertTrue(longRunPayload.containsKey("fullSlotInscriptionPurchaseBlockedWithoutReplacementCount"))
+        assertTrue(longRunPayload.containsKey("fullSlotInscriptionPurchaseReplacementPromptCount"))
+        assertTrue(longRunPayload.containsKey("inscriptionInstallOrReplaceRate"))
+        assertTrue(longRunPayload.containsKey("inscriptionReplacementProbeSuccessCount"))
+        assertTrue(longRunPayload.containsKey("inscriptionReplacementProbe"))
+        assertEquals(
+            1,
+            inscriptionShopMetrics.replacementProbeSuccessCount,
+            "Expected longRun owner evidence to prove the full-slot replacement path with SmokeBot.",
+        )
+        assertTrue(longRunPayload.containsKey("terminalInscriptionLoadoutDiversity"))
+        assertTrue(longRunPayload.containsKey("shopInscriptionOfferConversionRate"))
         assertTrue(
             fullRouteReports.any { report -> report.lateRunReliquaryShardSpent > 0 },
             "Expected at least one full-route matrix run to spend shards at abyssal_reliquary_post, actual=${fullRouteReports.map { report -> "${report.professionId}/${report.raceId}:spent=${report.lateRunReliquaryShardSpent},visits=${report.lateRunReliquaryVisitCount},purchases=${report.lateRunReliquaryPurchaseCount}" }}",
@@ -1084,6 +1141,122 @@ class LongRunLabFullTest {
         )
     }
 
+    private fun inscriptionShopMetrics(
+        reports: List<ScenarioReport>,
+        replacementProbe: InscriptionReplacementProbe,
+    ): InscriptionShopMetrics {
+        val terminalReports = reports.filter { report -> report.isFullRoute && report.outcome.isTerminal }
+        val installOrReplaceCount = terminalReports.count { report -> report.inscriptionInstallCount + report.inscriptionReplaceCount > 0 }
+        val seenOfferCount = terminalReports.sumOf(ScenarioReport::shopInscriptionOfferSeenCount)
+        val purchaseCount = terminalReports.sumOf(ScenarioReport::shopInscriptionOfferPurchaseCount)
+        return InscriptionShopMetrics(
+            starterInscriptionMaxCount = terminalReports.maxOfOrNull(ScenarioReport::startingInscriptionCount) ?: 0,
+            fullSlotInscriptionPurchaseBlockedWithoutReplacementCount =
+                terminalReports.sumOf(ScenarioReport::fullSlotInscriptionPurchaseBlockedWithoutReplacementCount),
+            fullSlotInscriptionPurchaseReplacementPromptCount =
+                terminalReports.sumOf(ScenarioReport::fullSlotInscriptionPurchaseReplacementPromptCount),
+            inscriptionInstallOrReplaceRate = ratio(installOrReplaceCount, terminalReports.size),
+            terminalInscriptionLoadoutDiversity =
+                terminalReports
+                    .map { report -> report.terminalInscriptionLoadout.joinToString(separator = "|") }
+                    .filter(String::isNotBlank)
+                    .toSet()
+                    .size,
+            inscriptionCategoryCountDistribution =
+                terminalReports
+                    .map { report ->
+                        report.terminalInscriptionCategoryCounts.entries.joinToString(separator = "|") { (categoryId, count) -> "$categoryId:$count" }
+                    }.filter(String::isNotBlank)
+                    .groupingBy { summary -> summary }
+                    .eachCount()
+                    .toSortedMap(),
+            shopInscriptionOfferConversionRate = ratio(purchaseCount, seenOfferCount),
+            inscriptionReplaceReasonDistribution =
+                terminalReports
+                    .flatMap { report -> report.inscriptionReplaceReasonDistribution.entries }
+                    .groupBy(Map.Entry<String, Int>::key)
+                    .mapValues { (_, entries) -> entries.sumOf(Map.Entry<String, Int>::value) }
+                    .toSortedMap(),
+            replacementProbeSuccessCount = replacementProbe.successCount,
+            inscriptionPurchaseCancelledAfterReplacementPrompt =
+                terminalReports.sumOf(ScenarioReport::inscriptionPurchaseCancelledAfterReplacementPrompt),
+            shopPurchaseDeniedInsufficientGoldCount =
+                terminalReports.sumOf(ScenarioReport::shopPurchaseDeniedInsufficientGoldCount),
+        )
+    }
+
+    private fun inscriptionReplacementProbe(): InscriptionReplacementProbe {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr02"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("phase4-v4-pr02-longrun-replacement-probe")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+        check(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        ) {
+            "Phase4 v4 PR-02 replacement probe could not prepare the full-slot validation scene."
+        }
+        val controlledPhaseOffer =
+            requireNotNull(
+                session.renderSnapshot().uiState.activeShop?.offers?.firstOrNull { offer ->
+                    offer.labelKey == "inscription.controlled_phase.name"
+                },
+            ) {
+                "Phase4 v4 PR-02 replacement probe requires a controlled_phase shop offer."
+            }
+        check(
+            session.perform(
+                PlayerCommand.BuyShopOffer(
+                    index = controlledPhaseOffer.index,
+                    offerFingerprint = controlledPhaseOffer.offerFingerprint,
+                ),
+            ),
+        ) {
+            "Phase4 v4 PR-02 replacement probe could not open the replacement prompt."
+        }
+        val prompt = requireNotNull(session.renderSnapshot().uiState.activeShop?.inscriptionReplacementPrompt) {
+            "Phase4 v4 PR-02 replacement probe expected an active replacement prompt."
+        }
+        check(prompt.currentSlots.size == 4) {
+            "Phase4 v4 PR-02 replacement probe must exercise a full-slot loadout, actual=${prompt.currentSlots.size}."
+        }
+        val botCommand = SmokeBot().decide(RunObservationCapture.capture(session, turnIndex = 0))
+        val replacementCommand =
+            botCommand as? PlayerCommand.BuyShopOffer
+                ?: error("SmokeBot must choose a replacement BuyShopOffer, actual=$botCommand.")
+        val selectedHotkey =
+            replacementCommand.replacementHotkey
+                ?: error("SmokeBot replacement command must include replacementHotkey.")
+        check(session.perform(replacementCommand)) {
+            "Phase4 v4 PR-02 replacement probe command was rejected: $replacementCommand."
+        }
+        val summary = session.currentInscriptionRunSummary()
+        val expectedTerminalLoadout = listOf("healing_light", "controlled_phase", "iron_shield", "purge")
+        val probePassed =
+            summary.replaceCount > 0 &&
+                selectedHotkey == 6 &&
+                prompt.candidate.inscriptionId == "controlled_phase" &&
+                summary.terminalLoadout == expectedTerminalLoadout
+        return InscriptionReplacementProbe(
+            successCount = if (probePassed) 1 else 0,
+            installCount = summary.installCount,
+            replaceCount = summary.replaceCount,
+            selectedHotkey = selectedHotkey,
+            candidateInscriptionId = prompt.candidate.inscriptionId,
+            terminalLoadout = summary.terminalLoadout,
+        )
+    }
+
     private fun countMilestoneItems(
         reports: List<ScenarioReport>,
         capstoneIds: Set<String>,
@@ -1224,6 +1397,29 @@ class LongRunLabFullTest {
         val talentReserveSwapCount: Int,
         val rankBreakpointAdoptionByTalent: Map<String, Int>,
         val autoLearnedNonStarterTalentCount: Int,
+    )
+
+    private data class InscriptionShopMetrics(
+        val starterInscriptionMaxCount: Int,
+        val fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: Int,
+        val fullSlotInscriptionPurchaseReplacementPromptCount: Int,
+        val inscriptionInstallOrReplaceRate: Double,
+        val replacementProbeSuccessCount: Int,
+        val terminalInscriptionLoadoutDiversity: Int,
+        val inscriptionCategoryCountDistribution: Map<String, Int>,
+        val shopInscriptionOfferConversionRate: Double,
+        val inscriptionReplaceReasonDistribution: Map<String, Int>,
+        val inscriptionPurchaseCancelledAfterReplacementPrompt: Int,
+        val shopPurchaseDeniedInsufficientGoldCount: Int,
+    )
+
+    private data class InscriptionReplacementProbe(
+        val successCount: Int,
+        val installCount: Int,
+        val replaceCount: Int,
+        val selectedHotkey: Int,
+        val candidateInscriptionId: String,
+        val terminalLoadout: List<String>,
     )
 
     private data class ZoneTraversalDiagnosticAggregate(

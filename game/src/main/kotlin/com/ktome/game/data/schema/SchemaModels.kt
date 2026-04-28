@@ -302,6 +302,7 @@ data class ProfessionSchemaV2(
     val talentTrees: List<String>,
     val startingTalents: List<String>,
     val startingKit: List<String>,
+    val startingInscriptions: List<String> = emptyList(),
     val initialUnlockState: ClassUnlockState = ClassUnlockState.RELEASE_UNLOCKED,
     val releaseUnlockCondition: ReleaseUnlockCondition? = null,
     val soloContract: SoloContractDef =

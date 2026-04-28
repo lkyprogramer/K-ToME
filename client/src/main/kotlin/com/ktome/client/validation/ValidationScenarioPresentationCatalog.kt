@@ -35,6 +35,12 @@ internal object ValidationScenarioPresentationCatalog {
                 startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
                 initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
             ),
+            ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("phase4-v4-pr02"),
+                titleKey = "validation.phase4.v4.phase4-v4-pr02.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
         )
     private val specsById: Map<ValidationScenarioId, ValidationScenarioPresentationSpec> = specs.associateBy { spec -> spec.id }
 

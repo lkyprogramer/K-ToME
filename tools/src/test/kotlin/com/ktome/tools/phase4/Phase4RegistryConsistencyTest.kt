@@ -1,5 +1,7 @@
 package com.ktome.tools.phase4
 
+import com.ktome.tools.verification.VerificationBaseline
+import com.ktome.tools.verification.VerificationCacheSupport
 import com.ktome.tools.verification.VerificationTaskRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -52,5 +54,35 @@ class Phase4RegistryConsistencyTest {
                 "Non-aggregated owner '$taskId' must not appear in the aggregation manifest.",
             )
         }
+    }
+
+    @Test
+    fun `phase4 aggregation manifest metric ids stay aligned with metric catalog`() {
+        val catalogMetricIdsByTaskId =
+            Phase4MetricCatalog.specs
+                .groupBy(Phase4MetricSpec::ownerTaskId)
+                .mapValues { (_, specs) -> specs.mapTo(linkedSetOf(), Phase4MetricSpec::id) }
+
+        Phase4AggregationManifestRuntime.manifest().tasks.forEach { task ->
+            val manifestMetricIds = task.metricIds.toSet()
+            val catalogMetricIds = catalogMetricIdsByTaskId[task.taskId].orEmpty()
+            assertTrue(
+                catalogMetricIds.containsAll(manifestMetricIds),
+                "Aggregation manifest metricIds for '${task.taskId}' must be backed by Phase4MetricCatalog.",
+            )
+        }
+
+        val inscriptionBaseline =
+            VerificationBaseline.read(
+                VerificationCacheSupport.repoRoot().resolve(Phase4OwnerBaselineRegistry.inscriptionShopReplacementBaselinePath()),
+            )
+        assertEquals(
+            inscriptionBaseline.expectedMetricRanges.mapTo(linkedSetOf()) { range -> range.metricId },
+            Phase4AggregationManifestRuntime.manifest()
+                .tasks
+                .single { task -> task.taskId == "longRunLab" }
+                .metricIds
+                .toCollection(linkedSetOf()),
+        )
     }
 }

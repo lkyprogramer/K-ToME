@@ -77,7 +77,14 @@ class ModalCardModelTest {
         val offer =
             ModalCardModel.shopOffer(
                 shopId = "reliquary",
-                offer = ShopOfferSnapshot(index = 1, labelKey = "item.healing_potion.name", price = 12, tagLabelKeys = listOf("ui.shop.tag.once")),
+                offer =
+                    ShopOfferSnapshot(
+                        index = 1,
+                        labelKey = "item.healing_potion.name",
+                        price = 12,
+                        offerFingerprint = "offer-1",
+                        tagLabelKeys = listOf("ui.shop.tag.once"),
+                    ),
             )
         val sell =
             ModalCardModel.shopSellEntry(

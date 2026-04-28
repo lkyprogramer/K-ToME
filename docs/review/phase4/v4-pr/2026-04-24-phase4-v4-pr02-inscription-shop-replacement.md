@@ -76,9 +76,10 @@ PR-01 继承约束：
 
 测试：
 
-- `core/src/test/kotlin/com/ktome/core/inscription/InscriptionManagerTest.kt`
-- `game/src/test/kotlin/com/ktome/game/ShopPurchaseFlowTest.kt`
+- `core/src/test/kotlin/com/ktome/core/inscription/InscriptionSlotTest.kt`
 - `game/src/test/kotlin/com/ktome/game/FoundationGameSessionTest.kt`
+- `game/src/test/kotlin/com/ktome/game/harness/SmokeBotTest.kt`
+- `game/src/test/kotlin/com/ktome/game/harness/LongRunLabFullTest.kt`
 - `client/src/test/kotlin/com/ktome/client/input/InputHandlerTest.kt`
 - `tools/src/test/kotlin/com/ktome/tools/phase4/**`
 
@@ -88,7 +89,7 @@ PR-01 继承约束：
 2. 不新增铭文总数。
 3. 不新增永久铭文槽解锁。
 4. 不把铭文变成背包物品。
-5. 不提供旧铭文出售或返还金币。
+5. 不提供旧铭文出售或返还碎晶。
 6. 不引入数值型局外成长。
 7. 不重组 Talent tree sidebar presenter，不改 `TalentTreeNodeSnapshot.category` typed enum 合同。
 
@@ -114,7 +115,7 @@ PR-01 继承约束：
 
 1. 安装成功使用已有 `audio.shop.purchase_success`。
 2. 替换成功使用已有 `audio.item.equip.changed`。
-3. 类别上限、金币不足、同铭文拒绝使用已有 `audio.shop.purchase_failed`。
+3. 类别上限、碎晶不足、同铭文拒绝使用已有 `audio.shop.purchase_failed`。
 4. 本 PR 不新增 audio plan、generation report、processing report。
 
 ## 5. 技术方案
@@ -131,6 +132,8 @@ PR-01 继承约束：
 | `templar` | `healing_light`, `purge` |
 | `berserker` | `healing_light`, `iron_shield` |
 | `spellblade` | `healing_light`, `phase_door` |
+
+起始铭文的 runtime 真源为 `game/src/main/resources/data/professions/index.yaml` 的 `startingInscriptions` 字段；`FoundationGameSession` 和 validation scene 都只能消费该字段，不得在 session / validation 里再维护平行职业表。
 
 规则：
 
@@ -172,11 +175,17 @@ sealed interface InscriptionReplaceOutcome {
     data class Applied(
         val newLoadout: InscriptionLoadout,
         val newCooldownState: InscriptionCooldownState,
-        val event: GameEvent,
+        val event: InscriptionReplacedEvent,
     ) : InscriptionReplaceOutcome
 
     data class Rejected(val reason: InscriptionEquipFailure) : InscriptionReplaceOutcome
 }
+
+data class InscriptionReplacedEvent(
+    val hotkey: Int,
+    val oldInscriptionId: String,
+    val newInscriptionId: String,
+) : GameEvent
 
 fun canEquip(
     loadout: InscriptionLoadout,
@@ -192,12 +201,16 @@ fun canReplace(
 ): InscriptionEquipCheck
 
 fun replace(
+    request: InscriptionReplaceRequest,
+): InscriptionReplaceOutcome
+
+data class InscriptionReplaceRequest(
     loadout: InscriptionLoadout,
-    cooldownState: InscriptionCooldownState,
+    cooldowns: InscriptionCooldownState,
     equippedDefinitions: List<InscriptionDef>,
     candidate: InscriptionDef,
     targetHotkey: Int,
-): InscriptionReplaceOutcome
+)
 ```
 
 替换规则：
@@ -274,15 +287,15 @@ sealed interface ShopPurchaseFailure {
 流程：
 
 1. 玩家选择 inscription offer。
-2. 商店先做金币检查。
+2. 商店先做碎晶检查。
 3. 槽位 `< 4` 时走安装。
 4. 槽位 `== 4` 且 `replacementHotkey == null` 时返回 `RequiresReplacementTarget`，对应 stable diagnostic token 固定为 `shop.purchase.requires_replacement_target`。
 5. client 打开替换界面。
 6. 玩家选择 `INSCRIPTION_HOTKEY_START .. (INSCRIPTION_HOTKEY_START + MAX_INSCRIPTION_SLOTS - 1)` 的目标槽。
 7. client 再次提交 purchase command，携带 `replacementHotkey` 与原始 `offerFingerprint`。
-8. 替换成功后扣金币。
-9. 任何失败路径不扣金币。
-10. 服务端必须校验 `offerFingerprint == sha256(join("|", shopId, offerIndex, offerDef.id, offerPrice, offerKind, stockVersion))`；不一致返回 `StaleOffer`，不扣金币。
+8. 替换成功后扣碎晶。
+9. 任何失败路径不扣碎晶。
+10. 服务端必须校验 `offerFingerprint == sha256(join("|", shopId, offerIndex, offerDef.id, offerPrice, offerKind, stockVersion))`；不一致返回 `StaleOffer`，不扣碎晶。
 11. 热键区间必须满足 `INSCRIPTION_HOTKEY_START + MAX_INSCRIPTION_SLOTS - 1 <= 9`；当前 `5 + 4 - 1 = 8`，不会覆盖数字栏 `9` 的独立输入。
 
 ### 5.4 替换界面
@@ -293,7 +306,7 @@ sealed interface ShopPurchaseFailure {
 2. 四个现有铭文名称、类别、冷却、作用标签、效果。
 3. 替换前类别数量。
 4. 替换后类别数量，格式固定为 `Recovery: 2/2 -> 2/2 | Movement: 1/2 -> 2/2`。
-5. 金币消耗。
+5. 碎晶消耗。
 6. 拒绝原因。
 
 输入：
@@ -309,12 +322,12 @@ sealed interface ShopPurchaseFailure {
 
 1. 新 run 开局铭文数固定为 `2`，热键从 `5` 开始连续分配。
 2. 旧 save / replay 命中旧铭文 schema 时 fail fast，不执行兼容 canonicalize。
-3. 槽位 `< 4` 时购买铭文直接安装，成功后扣金币。
-4. 槽位 `== 4` 且未提供 `replacementHotkey` 时返回 `RequiresReplacementTarget`，不扣金币；UI / log 使用 `shop.purchase.requires_replacement_target` token。
+3. 槽位 `< 4` 时购买铭文直接安装，成功后扣碎晶。
+4. 槽位 `== 4` 且未提供 `replacementHotkey` 时返回 `RequiresReplacementTarget`，不扣碎晶；UI / log 使用 `shop.purchase.requires_replacement_target` token。
 5. 满槽购买铭文打开替换界面，玩家选择目标热键后再次提交 `BuyShopOffer(index, offerFingerprint, replacementHotkey)`。
 6. 替换成功后保留热键、旧铭文销毁、不进背包、不返钱。
-7. 类别上限、金币不足、同铭文替换失败时不扣金币，并显示拒绝原因。
-8. `fullSlotInscriptionPurchaseBlockedWithoutReplacementCount=0`，`inscriptionInstallOrReplaceRate` 进入 owner evidence。
+7. 类别上限、碎晶不足、同铭文替换失败时不扣碎晶，并显示拒绝原因。
+8. `fullSlotInscriptionPurchaseBlockedWithoutReplacementCount=0`，`inscriptionInstallOrReplaceRate` 与 `inscriptionReplacementProbeSuccessCount` 进入 owner evidence。
 
 ### 6.2 自动化命令
 
@@ -329,7 +342,7 @@ sdk env
 
 必须保留以下自证产物：
 
-1. `build/reports/tests/` 中 `InscriptionManagerTest`、`ShopPurchaseFlowTest`、`FoundationGameSessionTest`、`InputHandlerTest` 的结果。
+1. `build/reports/tests/` 中 `InscriptionSlotTest`、`FoundationGameSessionTest`、`SmokeBotTest`、`LongRunLabFullTest`、`InputHandlerTest` 的结果。
 2. `tools/build/reports/` 中 `longRunLab` producer 产物。
 3. `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` canonical report 产物，且 `reportPhase4Only` 与 `reportPhase4` 对 inscription 指标读取同一 producer artifact。
 4. `build/reports/verification/` 中 `verifyChanged` 和 `maintainabilityLint` 产物。
@@ -342,10 +355,10 @@ sdk env
 已有游戏 Validation Mode 改造要求：
 
 1. 本 PR 必须接入 PR-00 的 `PHASE4_V4_FAST` section，scenario id 固定为 `phase4-v4-pr02`。
-2. `prepare-primary-scene` 必须在现有游戏内 validation session 中进入 `rogue` 商人摊位附近，玩家开局只有 2 个铭文，商店至少展示 2 个可购买铭文，玩家拥有足够金币购买第 3 和第 4 个铭文。
+2. `prepare-primary-scene` 必须在现有游戏内 validation session 中进入 `rogue` 商人摊位附近，玩家开局只有 2 个铭文，商店至少展示 2 个可购买铭文，玩家拥有足够碎晶购买第 3 和第 4 个铭文。
 3. `prepare-secondary-scene` 必须把玩家置于 4 铭文满槽、商店仍有 inscription offer 的状态，用于直接验证替换 modal、保留热键和取消不扣资源。
-4. `show-evidence-summary` 必须列出本 PR 的 5 个截图名、金币变化检查、铭文槽位检查和 `fullSlotInscriptionPurchaseBlockedWithoutReplacementCount=0`。
-5. 铭文槽、金币、商店 offer、替换结果必须由 game 层 validation action materialize，不得由 client 伪造 UI 行。
+4. `show-evidence-summary` 必须列出本 PR 的 5 个截图名、碎晶变化检查、铭文槽位检查和 `fullSlotInscriptionPurchaseBlockedWithoutReplacementCount=0`。
+5. 铭文槽、碎晶、商店 offer、替换结果必须由 game 层 validation action materialize，不得由 client 伪造 UI 行。
 
 固定环境：
 
@@ -371,25 +384,25 @@ sdk env
 2. 执行 `build/whitebox/phase4-v4-pr02/launch-packaged-app.sh` 启动 packaged app，Computer Use 目标 app 固定为 `com.ktome.client`。
 3. 按 `build/whitebox/phase4-v4-pr02/cua-runbook.md` 打开 validation overlay，执行 `PHASE4_V4_FAST / prepare-primary-scene`。
 4. 截图记录开局只有 `healing_light / phase_door` 两个铭文，热键为 `5 / 6`。
-5. 进入商店，购买一个铭文到第 3 槽，确认热键为 `7`，金币减少，日志显示安装成功。
-6. 购买第 4 个铭文，确认热键为 `8`，金币减少。
+5. 进入商店，购买一个铭文到第 3 槽，确认热键为 `7`，碎晶减少，日志显示安装成功。
+6. 购买第 4 个铭文，确认热键为 `8`，碎晶减少。
 7. 执行 `PHASE4_V4_FAST / prepare-secondary-scene`，选择一个 inscription offer，确认界面进入替换流程而不是直接失败。
-8. 在替换界面选择热键 `6`，确认新铭文占用热键 `6`，旧铭文消失，不出现在背包，金币只扣一次。
-9. 触发同铭文替换或类别上限拒绝路径，确认显示拒绝原因且金币不变。
+8. 在替换界面选择热键 `6`，确认新铭文占用热键 `6`，旧铭文消失，不出现在背包，碎晶只扣一次。
+9. 触发同铭文替换或类别上限拒绝路径，确认显示拒绝原因且碎晶不变。
 10. 执行 `PHASE4_V4_FAST / show-evidence-summary`，确认证据清单与本节文件名一致。
 11. 保存证据：
     - `phase4-v4-pr02-start-inscriptions.png`
     - `phase4-v4-pr02-install-third-slot.png`
     - `phase4-v4-pr02-replacement-modal.png`
     - `phase4-v4-pr02-replace-keep-hotkey.png`
-    - `phase4-v4-pr02-reject-no-gold-loss.png`
+    - `phase4-v4-pr02-reject-no-shard-loss.png`
     - `phase4-v4-pr02-app.log`
 
 通过标准：
 
 1. 玩家能明确看到“购买新铭文 = 替换一个现有铭文”的取舍。
 2. 满槽购买不再被系统静默拒绝。
-3. 替换结果、热键、金币、拒绝原因全部可解释。
+3. 替换结果、热键、碎晶、拒绝原因全部可解释。
 4. manual record 写明 packaged app 路径、runtime home、seed、输入序列、截图路径和结论。
 
 ### 6.4 统一验证框架关系
@@ -399,10 +412,10 @@ sdk env
 ### 6.5 玩家体验 Golden Path
 
 1. 玩家从 `rogue` 新 run 开始，必须只看到 `healing_light / phase_door` 两个铭文，热键为 `5 / 6`，第 7、8 热键为空。
-2. 玩家在商店买入第 3 个铭文时，必须看到安装成功、金币减少、热键为 `7`。
+2. 玩家在商店买入第 3 个铭文时，必须看到安装成功、碎晶减少、热键为 `7`。
 3. 玩家满 4 槽后再买铭文，必须进入替换 modal，而不是收到失败 toast。
-4. 替换 modal 必须同时展示候选铭文、四个现有铭文、类别前后变化、金币消耗、upgrade 标签或拒绝原因。
-5. 玩家选择替换后，旧铭文消失，新铭文保留目标热键，金币只扣一次，新铭文进入初始冷却。
+4. 替换 modal 必须同时展示候选铭文、四个现有铭文、类别前后变化、碎晶消耗、upgrade 标签或拒绝原因。
+5. 玩家选择替换后，旧铭文消失，新铭文保留目标热键，碎晶只扣一次，新铭文进入初始冷却。
 
 ## 7. Report 与验收指标
 
@@ -413,6 +426,7 @@ sdk env
 | `starterInscriptionMaxCount` | `<= 2` | `blockingOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-24-phase4-inscription-shop-replacement-owner-baseline.json` | `fail owner gate` |
 | `fullSlotInscriptionPurchaseBlockedWithoutReplacementCount` | `0` | `blockingOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-24-phase4-inscription-shop-replacement-owner-baseline.json` | `fail owner gate` |
 | `inscriptionInstallOrReplaceRate` | `>= 50% terminal runs` | `blockingOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-24-phase4-inscription-shop-replacement-owner-baseline.json` | `fail owner gate` |
+| `inscriptionReplacementProbeSuccessCount` | `>= 1` | `blockingOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-24-phase4-inscription-shop-replacement-owner-baseline.json` | `fail owner gate` |
 
 新增 supporting 指标：
 
@@ -428,7 +442,7 @@ owner 接线要求：
 1. 新 blocking 指标必须进入 `Phase4MetricCatalog`、`Phase4OwnerMetricTargets`、`Phase4OwnerBaselineRegistry` 和 `tools/src/main/resources/phase4/aggregation-manifest.yaml`。
 2. `phase4Report` 与 `reportPhase4Only` 必须使用同一 producer artifact，不得从 Markdown 或 client UI 反推。
 3. `fullSlotInscriptionPurchaseBlockedWithoutReplacementCount` 只统计“满槽 inscription purchase 没有进入替换流程就被阻断”的失败；玩家进入替换 UI 后按 `Esc` 放弃计入 `inscriptionPurchaseCancelledAfterReplacementPrompt` supporting 字段，不计入 blocking。
-4. 金币不足计入 `shopPurchaseDeniedInsufficientGoldCount` supporting 字段，不计入本 PR blocking。
+4. 碎晶不足计入 `shopPurchaseDeniedInsufficientGoldCount` supporting 字段，不计入本 PR blocking。
 
 ## 8. 验证命令
 
@@ -443,9 +457,9 @@ sdk env
 1. 新 run 开局铭文数为 `2`。
 2. 满槽购买铭文进入替换界面。
 3. 替换保持热键不变。
-4. 替换成功后扣金币，失败不扣金币。
+4. 替换成功后扣碎晶，失败不扣碎晶。
 5. `fullSlotInscriptionPurchaseBlockedWithoutReplacementCount=0`。
-6. `reportPhase4Only` 与 `reportPhase4` 对 `starterInscriptionMaxCount`、`fullSlotInscriptionPurchaseBlockedWithoutReplacementCount`、`inscriptionInstallOrReplaceRate` 输出一致。
+6. `reportPhase4Only` 与 `reportPhase4` 对 `starterInscriptionMaxCount`、`fullSlotInscriptionPurchaseBlockedWithoutReplacementCount`、`inscriptionInstallOrReplaceRate`、`inscriptionReplacementProbeSuccessCount` 输出一致。
 7. `BuyShopOffer` 保留字段名 `index`，新增 `offerFingerprint` 与 `replacementHotkey`。
 8. `phase4Report` 输出铭文安装与替换指标，并进入 canonical owner evidence。
 9. `verifyChanged` 覆盖 core/game/client/report 影响面。

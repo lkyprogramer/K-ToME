@@ -61,6 +61,7 @@ data class OverlayState(
     val paneFocusAnchor: PaneFocusAnchor = PaneFocusAnchor.WORLD,
     val inventorySelection: Int = 0,
     val shopOfferSelection: Int = 0,
+    val inscriptionReplacementHotkeySelection: Int? = null,
     val routeSelection: Int = 0,
     val shopFocus: ShopFocus = ShopFocus.BUY,
     val loadoutSlotSelection: Int = 1,
@@ -126,6 +127,7 @@ class InputHandler(
     private var mode: UiMode = UiMode.MAP
     private var inventorySelection: Int = 0
     private var shopOfferSelection: Int = 0
+    private var inscriptionReplacementHotkeySelection: Int? = null
     private var routeSelection: Int = 0
     private var shopFocus: ShopFocus = ShopFocus.BUY
     private var loadoutSlotSelection: Int = 1
@@ -158,6 +160,7 @@ class InputHandler(
             paneFocusAnchor = paneFocusController.currentAnchor,
             inventorySelection = inventorySelection,
             shopOfferSelection = shopOfferSelection,
+            inscriptionReplacementHotkeySelection = inscriptionReplacementHotkeySelection,
             routeSelection = routeSelection,
             shopFocus = shopFocus,
             loadoutSlotSelection = loadoutSlotSelection,
@@ -289,8 +292,16 @@ class InputHandler(
             mode = UiMode.SHOP
             shopOfferSelection = shopOfferSelection.coerceIn(0, (activeShop.offers.size - 1).coerceAtLeast(0))
             inventorySelection = inventorySelection.coerceIn(0, (activeShop.sellEntries.size - 1).coerceAtLeast(0))
+            val replacementHotkeys = activeShop.inscriptionReplacementPrompt?.currentSlots?.mapNotNull { slot -> slot.hotkey }.orEmpty()
+            inscriptionReplacementHotkeySelection =
+                if (replacementHotkeys.isEmpty()) {
+                    null
+                } else {
+                    inscriptionReplacementHotkeySelection?.takeIf { hotkey -> hotkey in replacementHotkeys } ?: replacementHotkeys.first()
+                }
             return
         } else if (mode == UiMode.SHOP) {
+            inscriptionReplacementHotkeySelection = null
             mode = UiMode.MAP
         }
 
@@ -452,6 +463,43 @@ class InputHandler(
 
     private fun pollShopCommand(snapshot: RenderSnapshot): PlayerCommand? {
         val shop = snapshot.uiState.activeShop ?: return null
+        shop.inscriptionReplacementPrompt?.let { prompt ->
+            if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.BACKSPACE)) {
+                inscriptionReplacementHotkeySelection = null
+                return PlayerCommand.CancelInscriptionReplacementPurchase
+            }
+            val hotkeys = prompt.currentSlots.mapNotNull { slot -> slot.hotkey }
+            if (hotkeys.isEmpty()) {
+                return null
+            }
+            inscriptionReplacementHotkeySelection =
+                inscriptionReplacementHotkeySelection?.takeIf { hotkey -> hotkey in hotkeys } ?: hotkeys.first()
+            if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W) || input.isKeyJustPressed(Keys.LEFT) || input.isKeyJustPressed(Keys.A)) {
+                inscriptionReplacementHotkeySelection = cycleReplacementHotkey(hotkeys, step = -1)
+                return null
+            }
+            if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S) || input.isKeyJustPressed(Keys.RIGHT) || input.isKeyJustPressed(Keys.D)) {
+                inscriptionReplacementHotkeySelection = cycleReplacementHotkey(hotkeys, step = 1)
+                return null
+            }
+            combatDigitSelection()?.takeIf { hotkey -> hotkey in hotkeys }?.let { hotkey ->
+                inscriptionReplacementHotkeySelection = hotkey
+                return null
+            }
+            if (
+                input.isKeyJustPressed(Keys.ENTER) ||
+                input.isKeyJustPressed(Keys.SPACE) ||
+                input.isKeyJustPressed(Keys.E)
+            ) {
+                val replacementHotkey = inscriptionReplacementHotkeySelection ?: hotkeys.first()
+                return PlayerCommand.BuyShopOffer(
+                    index = prompt.offerIndex,
+                    offerFingerprint = prompt.offerFingerprint,
+                    replacementHotkey = replacementHotkey,
+                )
+            }
+            return null
+        }
         if (input.isKeyJustPressed(Keys.I)) {
             return PlayerCommand.CloseShop
         }
@@ -479,7 +527,8 @@ class InputHandler(
                 input.isKeyJustPressed(Keys.SPACE) ||
                 input.isKeyJustPressed(Keys.E)
             ) {
-                return PlayerCommand.BuyShopOffer(shopOfferSelection)
+                val offer = shop.offers.firstOrNull { offer -> offer.index == shopOfferSelection } ?: return null
+                return PlayerCommand.BuyShopOffer(shopOfferSelection, offer.offerFingerprint)
             }
             return null
         }
@@ -501,6 +550,15 @@ class InputHandler(
             return PlayerCommand.SellInventoryItem(sellEntry.inventoryIndex)
         }
         return null
+    }
+
+    private fun cycleReplacementHotkey(
+        hotkeys: List<Int>,
+        step: Int,
+    ): Int {
+        val current = inscriptionReplacementHotkeySelection ?: hotkeys.first()
+        val currentIndex = hotkeys.indexOf(current).takeIf { index -> index >= 0 } ?: 0
+        return hotkeys[(currentIndex + step + hotkeys.size) % hotkeys.size]
     }
 
     private fun pollWorldMapCommand(snapshot: RenderSnapshot): PlayerCommand? {

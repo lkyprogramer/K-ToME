@@ -21,6 +21,7 @@ internal object Phase4OwnerMetricTargets {
             "learnedTalentChoiceEventRate",
             "multiTreeInvestmentAboveThresholdRate",
             "breakpointChoiceEventRate",
+            "inscriptionInstallOrReplaceRate",
             "phaseTransitionObservedRatio",
             "variantTraceDivergenceRatio",
             "frontstageHighPriorityCueRetainedRate",

@@ -19,6 +19,8 @@ internal object Phase4OwnerBaselineRegistry {
         "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json"
     const val PROFESSION_TREE_RUN_CHOICE_BASELINE_RELATIVE_PATH: String =
         "docs/review/phase4/opt/baselines/2026-04-24-phase4-profession-tree-run-choice-owner-baseline.json"
+    const val INSCRIPTION_SHOP_REPLACEMENT_BASELINE_RELATIVE_PATH: String =
+        "docs/review/phase4/opt/baselines/2026-04-24-phase4-inscription-shop-replacement-owner-baseline.json"
     const val BOSS_PHASE_IDENTITY_BASELINE_RELATIVE_PATH: String =
         "docs/review/phase4/opt/baselines/2026-04-16-phase4-boss-phase-identity-owner-baseline.json"
     const val TERRAIN_UNIFIED_BASELINE_RELATIVE_PATH: String =
@@ -36,6 +38,7 @@ internal object Phase4OwnerBaselineRegistry {
                     TERMINAL_BUILD_BASELINE_RELATIVE_PATH,
                     CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH,
                     PROFESSION_TREE_RUN_CHOICE_BASELINE_RELATIVE_PATH,
+                    INSCRIPTION_SHOP_REPLACEMENT_BASELINE_RELATIVE_PATH,
                 ),
             "bossHarness" to listOf(BOSS_PHASE_IDENTITY_BASELINE_RELATIVE_PATH),
             "terrainInteractionBatch" to listOf(TERRAIN_UNIFIED_BASELINE_RELATIVE_PATH, TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH),
@@ -57,6 +60,8 @@ internal object Phase4OwnerBaselineRegistry {
     fun criticalPathPacingBaselinePath(): String = ownerBaselinePaths("longRunLab")[1]
 
     fun professionTreeRunChoiceBaselinePath(): String = ownerBaselinePaths("longRunLab")[2]
+
+    fun inscriptionShopReplacementBaselinePath(): String = ownerBaselinePaths("longRunLab")[3]
 
     fun bossPhaseIdentityBaselinePath(): String = ownerBaselinePaths("bossHarness").single()
 

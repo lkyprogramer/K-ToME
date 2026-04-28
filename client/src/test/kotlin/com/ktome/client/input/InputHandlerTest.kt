@@ -14,6 +14,9 @@ import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
+import com.ktome.core.snapshot.InscriptionReplacementCategoryChangeSnapshot
+import com.ktome.core.snapshot.InscriptionReplacementEntrySnapshot
+import com.ktome.core.snapshot.InscriptionReplacementPromptSnapshot
 import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
@@ -656,6 +659,36 @@ class InputHandlerTest {
         assertEquals(UiMode.SHOP, handler.overlayState().mode)
         assertTrue(handler.overlayState().modalFrames.isEmpty())
         assertEquals("ui.message.force-switch.shop", handler.overlayState().uiMessageKey)
+    }
+
+    @Test
+    fun `shop inscription replacement accepts number selection enter confirm and escape cancel`() {
+        val prompt = sampleInscriptionReplacementPrompt()
+        val snapshot = snapshotWithLoadout(activeShop = sampleShop(inscriptionReplacementPrompt = prompt))
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+
+        input.frame(justPressed = setOf(Keys.NUM_6))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.SHOP, handler.overlayState().mode)
+        assertEquals(6, handler.overlayState().inscriptionReplacementHotkeySelection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.BuyShopOffer(index = 2, offerFingerprint = "prompt-fp", replacementHotkey = 6), handler.pollCommand(snapshot))
+        input.clear()
+
+        val cancelInput = ReplayInputSource()
+        val cancelHandler = InputHandler(cancelInput)
+        cancelInput.frame(justPressed = setOf(Keys.ESCAPE))
+        assertEquals(PlayerCommand.CancelInscriptionReplacementPurchase, cancelHandler.pollCommand(snapshot))
+
+        val noHotkeyPrompt = prompt.copy(currentSlots = prompt.currentSlots.map { slot -> slot.copy(hotkey = null) })
+        val noHotkeySnapshot = snapshotWithLoadout(activeShop = sampleShop(inscriptionReplacementPrompt = noHotkeyPrompt))
+        val noHotkeyCancelInput = ReplayInputSource()
+        val noHotkeyCancelHandler = InputHandler(noHotkeyCancelInput)
+        noHotkeyCancelInput.frame(justPressed = setOf(Keys.ESCAPE))
+        assertEquals(PlayerCommand.CancelInscriptionReplacementPurchase, noHotkeyCancelHandler.pollCommand(noHotkeySnapshot))
     }
 
     @Test
@@ -1787,12 +1820,78 @@ class InputHandlerTest {
             requiresTarget = requiresTarget,
         )
 
-    private fun sampleShop(): ShopPanelSnapshot =
+    private fun sampleShop(
+        inscriptionReplacementPrompt: InscriptionReplacementPromptSnapshot? = null,
+    ): ShopPanelSnapshot =
         ShopPanelSnapshot(
             shopId = "test_shop",
             shopNameKey = "ui.sidebar.shop",
-            offers = listOf(ShopOfferSnapshot(index = 0, labelKey = "item.long_sword.name", price = 10)),
+            offers =
+                listOf(
+                    ShopOfferSnapshot(
+                        index = 0,
+                        labelKey = "item.long_sword.name",
+                        price = 10,
+                        offerFingerprint = "offer-0",
+                    ),
+                ),
             sellEntries = listOf(ShopSellEntrySnapshot(inventoryIndex = 0, price = 4)),
+            inscriptionReplacementPrompt = inscriptionReplacementPrompt,
+        )
+
+    private fun sampleInscriptionReplacementPrompt(): InscriptionReplacementPromptSnapshot =
+        InscriptionReplacementPromptSnapshot(
+            offerIndex = 2,
+            offerFingerprint = "prompt-fp",
+            candidate =
+                InscriptionReplacementEntrySnapshot(
+                    inscriptionId = "controlled_phase",
+                    nameKey = "inscription.controlled_phase.name",
+                    descKey = "inscription.controlled_phase.desc",
+                    iconKey = "icon.skill.arcanist.blink",
+                    categoryId = "MOVEMENT",
+                    categoryLabelKey = "ui.inscription.category.MOVEMENT",
+                    effectTagLabelKeys = listOf("ui.inscription.effect_tag.mobility", "ui.inscription.effect_tag.control"),
+                    maxCooldown = 15,
+                    upgradeFromInscriptionId = "phase_door",
+                ),
+            currentSlots =
+                listOf(
+                    InscriptionReplacementEntrySnapshot(
+                        hotkey = 5,
+                        inscriptionId = "healing_light",
+                        nameKey = "inscription.healing_light.name",
+                        descKey = "inscription.healing_light.desc",
+                        iconKey = "icon.inscription.heal",
+                        categoryId = "HEALING",
+                        categoryLabelKey = "ui.inscription.category.HEALING",
+                        effectTagLabelKeys = listOf("ui.inscription.effect_tag.heal"),
+                        maxCooldown = 8,
+                    ),
+                    InscriptionReplacementEntrySnapshot(
+                        hotkey = 6,
+                        inscriptionId = "phase_door",
+                        nameKey = "inscription.phase_door.name",
+                        descKey = "inscription.phase_door.desc",
+                        iconKey = "icon.skill.arcanist.blink",
+                        categoryId = "MOVEMENT",
+                        categoryLabelKey = "ui.inscription.category.MOVEMENT",
+                        effectTagLabelKeys = listOf("ui.inscription.effect_tag.mobility"),
+                        maxCooldown = 12,
+                    ),
+                ),
+            categoryChanges =
+                listOf(
+                    InscriptionReplacementCategoryChangeSnapshot(
+                        targetHotkey = 6,
+                        categoryId = "MOVEMENT",
+                        categoryLabelKey = "ui.inscription.category.MOVEMENT",
+                        beforeCount = 1,
+                        afterCount = 1,
+                        limit = 2,
+                    ),
+                ),
+            price = 45,
         )
 
     private fun sampleRouteSelection(): RouteSelectionSnapshot =

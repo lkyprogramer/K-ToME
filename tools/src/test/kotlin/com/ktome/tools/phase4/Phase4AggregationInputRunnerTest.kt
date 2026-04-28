@@ -82,13 +82,22 @@ class Phase4AggregationInputRunnerTest {
         val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-baseline-test")
         val terminalBuildBaselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
         val criticalPathPacingBaselineCopy = tempReportDir.resolve("phase4-critical-path-pacing-baseline.json")
+        val professionTreeRunChoiceBaselineCopy = tempReportDir.resolve("phase4-profession-tree-run-choice-baseline.json")
+        val inscriptionShopReplacementBaselineCopy = tempReportDir.resolve("phase4-inscription-shop-replacement-baseline.json")
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.PROFESSION_TREE_RUN_CHOICE_BASELINE_RELATIVE_PATH), professionTreeRunChoiceBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.INSCRIPTION_SHOP_REPLACEMENT_BASELINE_RELATIVE_PATH), inscriptionShopReplacementBaselineCopy)
         try {
             System.setProperty("ktome.phase4.aggregate.reportDir", tempReportDir.toString())
             System.setProperty(
                 "ktome.phase4.ownerBaselineOverride.longRunLab",
-                listOf(terminalBuildBaselineCopy, criticalPathPacingBaselineCopy).joinToString(separator = File.pathSeparator) { path ->
+                listOf(
+                    terminalBuildBaselineCopy,
+                    criticalPathPacingBaselineCopy,
+                    professionTreeRunChoiceBaselineCopy,
+                    inscriptionShopReplacementBaselineCopy,
+                ).joinToString(separator = File.pathSeparator) { path ->
                     path.toString()
                 },
             )
@@ -145,13 +154,22 @@ class Phase4AggregationInputRunnerTest {
         val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-critical-path-baseline-test")
         val terminalBuildBaselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
         val criticalPathPacingBaselineCopy = tempReportDir.resolve("phase4-critical-path-pacing-baseline.json")
+        val professionTreeRunChoiceBaselineCopy = tempReportDir.resolve("phase4-profession-tree-run-choice-baseline.json")
+        val inscriptionShopReplacementBaselineCopy = tempReportDir.resolve("phase4-inscription-shop-replacement-baseline.json")
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.PROFESSION_TREE_RUN_CHOICE_BASELINE_RELATIVE_PATH), professionTreeRunChoiceBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.INSCRIPTION_SHOP_REPLACEMENT_BASELINE_RELATIVE_PATH), inscriptionShopReplacementBaselineCopy)
         try {
             System.setProperty("ktome.phase4.aggregate.reportDir", tempReportDir.toString())
             System.setProperty(
                 "ktome.phase4.ownerBaselineOverride.longRunLab",
-                listOf(terminalBuildBaselineCopy, criticalPathPacingBaselineCopy).joinToString(separator = File.pathSeparator) { path ->
+                listOf(
+                    terminalBuildBaselineCopy,
+                    criticalPathPacingBaselineCopy,
+                    professionTreeRunChoiceBaselineCopy,
+                    inscriptionShopReplacementBaselineCopy,
+                ).joinToString(separator = File.pathSeparator) { path ->
                     path.toString()
                 },
             )

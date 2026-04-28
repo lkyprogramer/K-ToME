@@ -11,6 +11,7 @@ class ProfessionSchemaTest {
         val treeIds = catalog.talentTrees.map { it.id }.toSet()
         val talentIds = catalog.talents.map { it.id }.toSet()
         val itemIds = catalog.itemBundle.items.map { it.id }.toSet()
+        val inscriptionIds = catalog.inscriptions.map { it.id }.toSet()
 
         assertEquals(
             setOf("vanguard", "arcanist", "rogue", "templar", "berserker", "spellblade", "shadowblade", "warden"),
@@ -34,6 +35,9 @@ class ProfessionSchemaTest {
             profession.talentTrees.forEach { treeId -> assertTrue(treeIds.contains(treeId), "Unknown talent tree $treeId") }
             profession.startingTalents.forEach { talentId -> assertTrue(talentIds.contains(talentId), "Unknown starter talent $talentId") }
             profession.startingKit.forEach { itemId -> assertTrue(itemIds.contains(itemId), "Unknown starter item $itemId") }
+            profession.startingInscriptions.forEach { inscriptionId ->
+                assertTrue(inscriptionIds.contains(inscriptionId), "Unknown starter inscription $inscriptionId")
+            }
         }
         listOf("vanguard", "arcanist", "rogue", "templar").forEach { professionId ->
             val profession = catalog.professions.first { it.id == professionId }
@@ -67,6 +71,10 @@ class ProfessionSchemaTest {
         assertEquals(
             listOf("arcane_staff", "apprentice_robe", "mana_potion"),
             catalog.professions.first { it.id == "arcanist" }.startingKit,
+        )
+        assertEquals(
+            listOf("healing_light", "phase_door"),
+            catalog.professions.first { it.id == "rogue" }.startingInscriptions,
         )
     }
 }

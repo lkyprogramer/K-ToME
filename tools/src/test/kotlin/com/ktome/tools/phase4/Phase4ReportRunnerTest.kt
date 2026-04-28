@@ -187,8 +187,8 @@ class Phase4ReportRunnerTest {
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
             "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
-        assertEquals(39, experienceMetrics.size)
-        assertEquals(39, metricCatalog.size)
+        assertEquals(47, experienceMetrics.size)
+        assertEquals(47, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
@@ -220,6 +220,14 @@ class Phase4ReportRunnerTest {
                 "talentReserveSwapCount",
                 "rankBreakpointAdoptionByTalent",
                 "autoLearnedNonStarterTalentCount",
+                "starterInscriptionMaxCount",
+                "fullSlotInscriptionPurchaseBlockedWithoutReplacementCount",
+                "inscriptionInstallOrReplaceRate",
+                "inscriptionReplacementProbeSuccessCount",
+                "terminalInscriptionLoadoutDiversity",
+                "inscriptionCategoryCountDistribution",
+                "shopInscriptionOfferConversionRate",
+                "inscriptionReplaceReasonDistribution",
                 "avgObjectiveAcquireTurn",
                 "avgVisibleHostileTurnCount",
                 "avgEnemyTurns",

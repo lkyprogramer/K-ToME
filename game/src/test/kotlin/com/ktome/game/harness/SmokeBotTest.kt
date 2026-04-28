@@ -596,12 +596,22 @@ class SmokeBotTest {
                 activeShopId = "greenwood_supply_post",
                 activeShopOffers =
                     listOf(
-                        ObservedShopOffer(index = 0, price = 18, tags = setOf("RECOVERY")),
-                        ObservedShopOffer(index = 1, price = 42, tags = setOf("MOVEMENT")),
+                        ObservedShopOffer(
+                            index = 0,
+                            offerFingerprint = "offer-0",
+                            price = 18,
+                            tags = setOf("RECOVERY"),
+                        ),
+                        ObservedShopOffer(
+                            index = 1,
+                            offerFingerprint = "offer-1",
+                            price = 42,
+                            tags = setOf("MOVEMENT"),
+                        ),
                     ),
             )
 
-        assertEquals(PlayerCommand.BuyShopOffer(1), bot.decide(observation))
+        assertEquals(PlayerCommand.BuyShopOffer(1, "offer-1"), bot.decide(observation))
     }
 
     @Test
@@ -614,12 +624,81 @@ class SmokeBotTest {
                 activeShopId = "greenwood_supply_post",
                 activeShopOffers =
                     listOf(
-                        ObservedShopOffer(index = 0, price = 18, tags = setOf("RECOVERY"), purchasable = true),
-                        ObservedShopOffer(index = 1, price = 42, tags = setOf("MOVEMENT"), purchasable = false),
+                        ObservedShopOffer(
+                            index = 0,
+                            offerFingerprint = "offer-0",
+                            price = 18,
+                            tags = setOf("RECOVERY"),
+                            purchasable = true,
+                        ),
+                        ObservedShopOffer(
+                            index = 1,
+                            offerFingerprint = "offer-1",
+                            price = 42,
+                            tags = setOf("MOVEMENT"),
+                            purchasable = false,
+                        ),
                     ),
             )
 
-        assertEquals(PlayerCommand.BuyShopOffer(0), bot.decide(observation))
+        assertEquals(PlayerCommand.BuyShopOffer(0, "offer-0"), bot.decide(observation))
+    }
+
+    @Test
+    fun `active inscription replacement prompt chooses upgrade source hotkey`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                zoneId = "greenwood_fringe",
+                shardBalance = 90,
+                activeShopId = "greenwood_supply_post",
+                activeInscriptionReplacementPrompt =
+                    ObservedInscriptionReplacementPrompt(
+                        offerIndex = 2,
+                        offerFingerprint = "prompt-fp",
+                        candidateInscriptionId = "controlled_phase",
+                        candidateCategoryId = "MOVEMENT",
+                        upgradeFromInscriptionId = "phase_door",
+                        categoryLimit = 2,
+                        currentSlots =
+                            listOf(
+                                ObservedInscriptionReplacementSlot(hotkey = 5, inscriptionId = "healing_light", categoryId = "HEALING"),
+                                ObservedInscriptionReplacementSlot(hotkey = 6, inscriptionId = "phase_door", categoryId = "MOVEMENT"),
+                                ObservedInscriptionReplacementSlot(hotkey = 7, inscriptionId = "iron_shield", categoryId = "PROTECTION"),
+                                ObservedInscriptionReplacementSlot(hotkey = 8, inscriptionId = "purge", categoryId = "CLEANSING"),
+                            ),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.BuyShopOffer(index = 2, offerFingerprint = "prompt-fp", replacementHotkey = 6), bot.decide(observation))
+    }
+
+    @Test
+    fun `active inscription replacement prompt cancels when no legal target is available`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                zoneId = "greenwood_fringe",
+                shardBalance = 90,
+                activeShopId = "greenwood_supply_post",
+                activeInscriptionReplacementPrompt =
+                    ObservedInscriptionReplacementPrompt(
+                        offerIndex = 1,
+                        offerFingerprint = "prompt-fp",
+                        candidateInscriptionId = "phase_door",
+                        candidateCategoryId = "MOVEMENT",
+                        categoryLimit = 2,
+                        currentSlots =
+                            listOf(
+                                ObservedInscriptionReplacementSlot(hotkey = 5, inscriptionId = "phase_door", categoryId = "MOVEMENT"),
+                                ObservedInscriptionReplacementSlot(hotkey = 6, inscriptionId = "phase_door", categoryId = "MOVEMENT"),
+                                ObservedInscriptionReplacementSlot(hotkey = 7, inscriptionId = "iron_shield", categoryId = "PROTECTION"),
+                                ObservedInscriptionReplacementSlot(hotkey = 8, inscriptionId = "purge", categoryId = "CLEANSING"),
+                            ),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.CancelInscriptionReplacementPurchase, bot.decide(observation))
     }
 
     @Test
@@ -1588,6 +1667,7 @@ class SmokeBotTest {
         visibleInteractables: List<ObservedInteractable> = emptyList(),
         activeShopId: String? = null,
         activeShopOffers: List<ObservedShopOffer> = emptyList(),
+        activeInscriptionReplacementPrompt: ObservedInscriptionReplacementPrompt? = null,
         map: GameMap = this.map,
         playerPosition: Point = Point(1, 1),
         playerStatusTypeIds: Set<String> = emptySet(),
@@ -1614,6 +1694,7 @@ class SmokeBotTest {
             playerStatusTypeIds = playerStatusTypeIds,
             activeShopId = activeShopId,
             activeShopOffers = activeShopOffers,
+            activeInscriptionReplacementPrompt = activeInscriptionReplacementPrompt,
             inventoryItems = inventoryItems,
             talentSlots = talentSlots,
             reserveTalents = reserveTalents,

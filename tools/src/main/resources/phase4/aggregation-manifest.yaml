@@ -29,6 +29,11 @@ tasks:
     taskPath: :game:longRunLab
     artifactRelativePath: build/reports/harness/long-run-full.json
     role: OWNER
+    metricIds:
+      - starterInscriptionMaxCount
+      - fullSlotInscriptionPurchaseBlockedWithoutReplacementCount
+      - inscriptionInstallOrReplaceRate
+      - inscriptionReplacementProbeSuccessCount
   - taskId: terrainInteractionBatch
     taskPath: :tools:terrainInteractionBatch
     artifactRelativePath: tools/build/reports/phase4/whitebox/terrain/whitebox-terrain-summary.json

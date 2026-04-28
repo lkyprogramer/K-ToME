@@ -124,6 +124,73 @@ object ValidationScenarioRegistry {
                             ),
                     ),
             ),
+            ValidationScenarioDef(
+                id = ValidationScenarioId("phase4-v4-pr02"),
+                prId = "PR-02",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.LOOT_LAB,
+                        seed = 2026042432L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "rogue",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/phase4-v4-pr02-start-inscriptions.png",
+                                "evidence/phase4-v4-pr02-install-third-slot.png",
+                                "evidence/phase4-v4-pr02-replacement-modal.png",
+                                "evidence/phase4-v4-pr02-replace-keep-hotkey.png",
+                                "evidence/phase4-v4-pr02-reject-no-shard-loss.png",
+                                "evidence/phase4-v4-pr02-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "Rogue starts with exactly two inscriptions and a nearby shop with purchasable inscription offers.",
+                                    evidenceFile = "evidence/phase4-v4-pr02-start-inscriptions.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: SHOP)",
+                                    input = "Down, Down, Enter",
+                                    expectedVisibleResult = "A third inscription installs directly, spends shards once, and keeps hotkeys consecutive from 5.",
+                                    evidenceFile = "evidence/phase4-v4-pr02-install-third-slot.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter, Down, Down, Enter",
+                                    expectedVisibleResult = "Four filled slots open the replacement prompt with candidate, current slots, category deltas, price, and hotkeys 5-8.",
+                                    evidenceFile = "evidence/phase4-v4-pr02-replacement-modal.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: SHOP replacement prompt)",
+                                    input = "5, Enter",
+                                    expectedVisibleResult = "Replacement succeeds, keeps the selected hotkey, writes log.shop.inscription.replaced, and plays equip-changed audio.",
+                                    evidenceFile = "evidence/phase4-v4-pr02-replace-keep-hotkey.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter, Down, Down, Enter, 7, Enter",
+                                    expectedVisibleResult = "Rejected replacement leaves shards and loadout unchanged.",
+                                    evidenceFile = "evidence/phase4-v4-pr02-reject-no-shard-loss.png",
+                                ),
+                            ),
+                        manualRecordPath = "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr02-inscription-shop-replacement.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "shop.purchase.requires_replacement_target",
+                                "log.shop.inscription.replaced",
+                            ),
+                    ),
+            ),
         )
 
     fun all(): List<ValidationScenarioDef> = scenarios

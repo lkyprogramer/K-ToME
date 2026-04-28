@@ -343,25 +343,27 @@ class SessionSnapshotMapperTest {
 
         val snapshot =
             SessionSnapshotMapper.toSaveSnapshot(
-                config =
-                    FoundationGameConfig(
-                        width = 5,
-                        height = 5,
-                        zoneId = "greenwood_fringe",
-                        playerProfessionId = "vanguard",
-                        zoneRoute = FOUNDATION_ZONE_ROUTE,
-                        routeIndex = 1,
-                    ),
-                currentFloor = 1,
-                turnCount = 12,
-                headlessTurnEquivalent = 21,
-                player = player,
-                floors = floors,
-                combatRandomState = null,
-                sessionRandomState = null,
-                milestoneRewards = milestoneRewards,
-                pendingActionIds = listOf(1, 7),
-                activeTurnActorId = 1,
+                SessionSaveSnapshotRequest(
+                    config =
+                        FoundationGameConfig(
+                            width = 5,
+                            height = 5,
+                            zoneId = "greenwood_fringe",
+                            playerProfessionId = "vanguard",
+                            zoneRoute = FOUNDATION_ZONE_ROUTE,
+                            routeIndex = 1,
+                        ),
+                    currentFloor = 1,
+                    turnCount = 12,
+                    headlessTurnEquivalent = 21,
+                    player = player,
+                    floors = floors,
+                    combatRandomState = null,
+                    sessionRandomState = null,
+                    milestoneRewards = milestoneRewards,
+                    pendingActionIds = listOf(1, 7),
+                    activeTurnActorId = 1,
+                ),
             )
 
         assertEquals("greenwood_fringe", snapshot.currentZoneId)
@@ -502,22 +504,24 @@ class SessionSnapshotMapperTest {
 
         val snapshot =
             SessionSnapshotMapper.toSaveSnapshot(
-                config =
-                    FoundationGameConfig(
-                        width = 32,
-                        height = 24,
-                        zoneId = "greenwood_fringe",
-                        playerProfessionId = "vanguard",
-                    ),
-                currentFloor = 1,
-                turnCount = 5,
-                headlessTurnEquivalent = 5,
-                player = player,
-                floors = floors,
-                combatRandomState = null,
-                sessionRandomState = null,
-                pendingActionIds = listOf(1),
-                activeTurnActorId = 1,
+                SessionSaveSnapshotRequest(
+                    config =
+                        FoundationGameConfig(
+                            width = 32,
+                            height = 24,
+                            zoneId = "greenwood_fringe",
+                            playerProfessionId = "vanguard",
+                        ),
+                    currentFloor = 1,
+                    turnCount = 5,
+                    headlessTurnEquivalent = 5,
+                    player = player,
+                    floors = floors,
+                    combatRandomState = null,
+                    sessionRandomState = null,
+                    pendingActionIds = listOf(1),
+                    activeTurnActorId = 1,
+                ),
             )
 
         val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot, mapgenPipeline = pipeline)
@@ -740,34 +744,36 @@ class SessionSnapshotMapperTest {
         val discoveryTags = linkedSetOf("hidden.primer.greenwood.hidden_cache")
         val snapshot =
             SessionSnapshotMapper.toSaveSnapshot(
-                config =
-                    FoundationGameConfig(
-                        width = generatedFloor.map.width,
-                        height = generatedFloor.map.height,
-                        zoneId = generatedFloor.zoneId,
-                        playerProfessionId = "vanguard",
-                    ),
-                currentFloor = generatedFloor.floorIndex,
-                turnCount = 1,
-                headlessTurnEquivalent = 1,
-                player = player,
-                floors =
-                    listOf(
-                        FloorState(
-                            floor = generatedFloor.floorIndex,
-                            payload =
-                                FloorRuntimeState(
-                                    generatedFloor = generatedFloor,
-                                    entities = mutableListOf(),
-                                    enteredRoomNodeIds = linkedSetOf<NodeId>().apply { addAll(enteredRoomNodeIds) },
-                                    discoveryTags = linkedSetOf<String>().apply { addAll(discoveryTags) },
+                SessionSaveSnapshotRequest(
+                    config =
+                        FoundationGameConfig(
+                            width = generatedFloor.map.width,
+                            height = generatedFloor.map.height,
+                            zoneId = generatedFloor.zoneId,
+                            playerProfessionId = "vanguard",
+                        ),
+                    currentFloor = generatedFloor.floorIndex,
+                    turnCount = 1,
+                    headlessTurnEquivalent = 1,
+                    player = player,
+                    floors =
+                        listOf(
+                            FloorState(
+                                floor = generatedFloor.floorIndex,
+                                payload =
+                                    FloorRuntimeState(
+                                        generatedFloor = generatedFloor,
+                                        entities = mutableListOf(),
+                                        enteredRoomNodeIds = linkedSetOf<NodeId>().apply { addAll(enteredRoomNodeIds) },
+                                        discoveryTags = linkedSetOf<String>().apply { addAll(discoveryTags) },
+                                    ),
                                 ),
                         ),
-                    ),
-                combatRandomState = null,
-                sessionRandomState = null,
-                pendingActionIds = emptyList(),
-                activeTurnActorId = null,
+                    combatRandomState = null,
+                    sessionRandomState = null,
+                    pendingActionIds = emptyList(),
+                    activeTurnActorId = null,
+                ),
             )
 
         val savedFloor = snapshot.floors.single()
@@ -814,22 +820,24 @@ class SessionSnapshotMapperTest {
             )
 
         return SessionSnapshotMapper.toSaveSnapshot(
-            config =
-                FoundationGameConfig(
-                    width = generatedFloor.map.width,
-                    height = generatedFloor.map.height,
-                    zoneId = generatedFloor.zoneId,
-                    playerProfessionId = "vanguard",
-                ),
-            currentFloor = generatedFloor.floorIndex,
-            turnCount = 1,
-            headlessTurnEquivalent = 1,
-            player = player,
-            floors = floors,
-            combatRandomState = null,
-            sessionRandomState = null,
-            pendingActionIds = listOf(1),
-            activeTurnActorId = 1,
+            SessionSaveSnapshotRequest(
+                config =
+                    FoundationGameConfig(
+                        width = generatedFloor.map.width,
+                        height = generatedFloor.map.height,
+                        zoneId = generatedFloor.zoneId,
+                        playerProfessionId = "vanguard",
+                    ),
+                currentFloor = generatedFloor.floorIndex,
+                turnCount = 1,
+                headlessTurnEquivalent = 1,
+                player = player,
+                floors = floors,
+                combatRandomState = null,
+                sessionRandomState = null,
+                pendingActionIds = listOf(1),
+                activeTurnActorId = 1,
+            ),
         )
     }
 
