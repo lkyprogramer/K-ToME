@@ -80,6 +80,9 @@ object InscriptionManager {
         if (targetSlot.inscriptionId == candidate.id) {
             return InscriptionEquipCheck.Rejected(InscriptionEquipFailure.SAME_INSCRIPTION)
         }
+        if (loadout.slots.any { slot -> slot.hotkey != targetHotkey && slot.inscriptionId == candidate.id }) {
+            return InscriptionEquipCheck.Rejected(InscriptionEquipFailure.SAME_INSCRIPTION)
+        }
         val targetDefinition =
             requireNotNull(equippedDefinitions.firstOrNull { definition -> definition.id == targetSlot.inscriptionId }) {
                 "Inscription replacement target '${targetSlot.inscriptionId}' is missing from equipped definitions."

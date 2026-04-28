@@ -110,6 +110,36 @@ class InscriptionSlotTest {
     }
 
     @Test
+    fun `replacement rejects already equipped candidate in another slot`() {
+        val healing = inscription(id = "healing_light", category = InscriptionCategory.HEALING)
+        val phase = inscription(id = "phase_door", category = InscriptionCategory.MOVEMENT, cooldown = 9)
+        val purge = inscription(id = "purge", category = InscriptionCategory.CLEANSING)
+        val loadout =
+            InscriptionLoadout(
+                mutableListOf(
+                    InscriptionSlot(hotkey = 5, inscriptionId = healing.id),
+                    InscriptionSlot(hotkey = 6, inscriptionId = phase.id),
+                    InscriptionSlot(hotkey = 7, inscriptionId = purge.id),
+                ),
+            )
+        val cooldowns = InscriptionCooldownState(mutableMapOf(phase.id to 6))
+
+        val outcome =
+            InscriptionManager.replace(
+                InscriptionReplaceRequest(
+                    loadout = loadout,
+                    cooldowns = cooldowns,
+                    equippedDefinitions = listOf(healing, phase, purge),
+                    candidate = phase,
+                    targetHotkey = 7,
+                ),
+            )
+
+        assertEquals(InscriptionReplaceOutcome.Rejected(InscriptionEquipFailure.SAME_INSCRIPTION), outcome)
+        assertEquals(mapOf(phase.id to 6), cooldowns.remainingByInscriptionId)
+    }
+
+    @Test
     fun `replacement fails fast when target definition is missing`() {
         val healing = inscription(id = "healing_light", category = InscriptionCategory.HEALING)
         val phase = inscription(id = "phase_door", category = InscriptionCategory.MOVEMENT)

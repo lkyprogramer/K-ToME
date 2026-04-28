@@ -7914,8 +7914,12 @@ class FoundationGameSession internal constructor(
                     return CommandResolution.rejected()
                 }
                 val pending = pendingInscriptionReplacementPurchase
+                if (pending == null) {
+                    fullSlotInscriptionPurchaseBlockedWithoutReplacementCount += 1
+                    addMessage(shopPurchaseFailureMessageKey(ShopPurchaseFailure.StaleOffer))
+                    return CommandResolution.rejected()
+                }
                 if (
-                    pending == null ||
                     pending.shopId != shop.id ||
                     pending.offerIndex != index ||
                     pending.offerId != offer.id ||

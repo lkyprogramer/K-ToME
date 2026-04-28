@@ -1508,7 +1508,7 @@ class FoundationGameSessionTest {
         assertEquals(2, summary.startingInscriptionCount)
         assertEquals(0, summary.installCount)
         assertEquals(1, summary.replaceCount)
-        assertEquals(0, summary.fullSlotPurchaseBlockedWithoutReplacementCount)
+        assertEquals(1, summary.fullSlotPurchaseBlockedWithoutReplacementCount)
         assertEquals(2, summary.fullSlotPurchaseReplacementPromptCount)
     }
 
