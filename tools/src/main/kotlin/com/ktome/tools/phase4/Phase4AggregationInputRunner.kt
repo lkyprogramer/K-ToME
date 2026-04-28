@@ -1330,6 +1330,9 @@ internal object Phase4AggregationInputRunner {
             put("ownerBaseline", ownerBaseline)
             put("failSemantics", if (ownerBaseline == "N/A") "display only" else "fail owner gate")
             evidence.forEach { (key, value) -> put(key, value) }
+            task.metrics["fullSlotInscriptionPurchaseReplacementPromptCount"]?.let { promptCount ->
+                put("fullSlotInscriptionPurchaseReplacementPromptCount", promptCount)
+            }
             put("inscriptionPurchaseCancelledAfterReplacementPrompt", task.metrics.getValue("inscriptionPurchaseCancelledAfterReplacementPrompt"))
             put("shopPurchaseDeniedInsufficientGoldCount", task.metrics.getValue("shopPurchaseDeniedInsufficientGoldCount"))
         }

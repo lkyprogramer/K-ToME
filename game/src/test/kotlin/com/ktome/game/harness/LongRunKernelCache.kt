@@ -254,6 +254,7 @@ internal object LongRunKernelCache {
             inscriptionInstallCount = payload.optionalInt("inscriptionInstallCount"),
             inscriptionReplaceCount = payload.optionalInt("inscriptionReplaceCount"),
             fullSlotInscriptionPurchaseBlockedWithoutReplacementCount = payload.optionalInt("fullSlotInscriptionPurchaseBlockedWithoutReplacementCount"),
+            fullSlotInscriptionPurchaseReplacementPromptCount = payload.optionalInt("fullSlotInscriptionPurchaseReplacementPromptCount"),
             inscriptionPurchaseCancelledAfterReplacementPrompt = payload.optionalInt("inscriptionPurchaseCancelledAfterReplacementPrompt"),
             shopPurchaseDeniedInsufficientGoldCount = payload.optionalInt("shopPurchaseDeniedInsufficientGoldCount"),
             shopInscriptionOfferSeenCount = payload.optionalInt("shopInscriptionOfferSeenCount"),

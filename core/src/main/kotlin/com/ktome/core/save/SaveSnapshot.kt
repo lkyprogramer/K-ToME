@@ -195,6 +195,7 @@ data class InscriptionRunTelemetrySnapshot(
     val inscriptionInstallCount: Int = 0,
     val inscriptionReplaceCount: Int = 0,
     val fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: Int = 0,
+    val fullSlotInscriptionPurchaseReplacementPromptCount: Int = 0,
     val inscriptionPurchaseCancelledAfterReplacementPrompt: Int = 0,
     val shopPurchaseDeniedInsufficientGoldCount: Int = 0,
     val shopInscriptionOfferSeenCount: Int = 0,
@@ -207,6 +208,9 @@ data class InscriptionRunTelemetrySnapshot(
         require(inscriptionReplaceCount >= 0) { "inscriptionReplaceCount must not be negative." }
         require(fullSlotInscriptionPurchaseBlockedWithoutReplacementCount >= 0) {
             "fullSlotInscriptionPurchaseBlockedWithoutReplacementCount must not be negative."
+        }
+        require(fullSlotInscriptionPurchaseReplacementPromptCount >= 0) {
+            "fullSlotInscriptionPurchaseReplacementPromptCount must not be negative."
         }
         require(inscriptionPurchaseCancelledAfterReplacementPrompt >= 0) {
             "inscriptionPurchaseCancelledAfterReplacementPrompt must not be negative."

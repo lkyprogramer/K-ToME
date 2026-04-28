@@ -205,6 +205,7 @@ data class ScenarioReport(
     val inscriptionInstallCount: Int = 0,
     val inscriptionReplaceCount: Int = 0,
     val fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: Int = 0,
+    val fullSlotInscriptionPurchaseReplacementPromptCount: Int = 0,
     val inscriptionPurchaseCancelledAfterReplacementPrompt: Int = 0,
     val shopPurchaseDeniedInsufficientGoldCount: Int = 0,
     val shopInscriptionOfferSeenCount: Int = 0,
@@ -467,7 +468,7 @@ data class ObservedInteractable(
 
 data class ObservedShopOffer(
     val index: Int,
-    val offerFingerprint: String = "",
+    val offerFingerprint: String,
     val price: Int,
     val tags: Set<String> = emptySet(),
     val purchasable: Boolean = true,

@@ -1826,7 +1826,15 @@ class InputHandlerTest {
         ShopPanelSnapshot(
             shopId = "test_shop",
             shopNameKey = "ui.sidebar.shop",
-            offers = listOf(ShopOfferSnapshot(index = 0, labelKey = "item.long_sword.name", price = 10)),
+            offers =
+                listOf(
+                    ShopOfferSnapshot(
+                        index = 0,
+                        labelKey = "item.long_sword.name",
+                        price = 10,
+                        offerFingerprint = "offer-0",
+                    ),
+                ),
             sellEntries = listOf(ShopSellEntrySnapshot(inventoryIndex = 0, price = 4)),
             inscriptionReplacementPrompt = inscriptionReplacementPrompt,
         )

@@ -508,7 +508,7 @@ data class ShopOfferSnapshot(
     val index: Int,
     val labelKey: String,
     val price: Int,
-    val offerFingerprint: String = "",
+    val offerFingerprint: String,
     val tags: List<String> = emptyList(),
     val tagLabelKeys: List<String> = emptyList(),
 )

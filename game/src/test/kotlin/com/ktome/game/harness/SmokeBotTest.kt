@@ -596,12 +596,22 @@ class SmokeBotTest {
                 activeShopId = "greenwood_supply_post",
                 activeShopOffers =
                     listOf(
-                        ObservedShopOffer(index = 0, price = 18, tags = setOf("RECOVERY")),
-                        ObservedShopOffer(index = 1, price = 42, tags = setOf("MOVEMENT")),
+                        ObservedShopOffer(
+                            index = 0,
+                            offerFingerprint = "offer-0",
+                            price = 18,
+                            tags = setOf("RECOVERY"),
+                        ),
+                        ObservedShopOffer(
+                            index = 1,
+                            offerFingerprint = "offer-1",
+                            price = 42,
+                            tags = setOf("MOVEMENT"),
+                        ),
                     ),
             )
 
-        assertEquals(PlayerCommand.BuyShopOffer(1, ""), bot.decide(observation))
+        assertEquals(PlayerCommand.BuyShopOffer(1, "offer-1"), bot.decide(observation))
     }
 
     @Test
@@ -614,12 +624,24 @@ class SmokeBotTest {
                 activeShopId = "greenwood_supply_post",
                 activeShopOffers =
                     listOf(
-                        ObservedShopOffer(index = 0, price = 18, tags = setOf("RECOVERY"), purchasable = true),
-                        ObservedShopOffer(index = 1, price = 42, tags = setOf("MOVEMENT"), purchasable = false),
+                        ObservedShopOffer(
+                            index = 0,
+                            offerFingerprint = "offer-0",
+                            price = 18,
+                            tags = setOf("RECOVERY"),
+                            purchasable = true,
+                        ),
+                        ObservedShopOffer(
+                            index = 1,
+                            offerFingerprint = "offer-1",
+                            price = 42,
+                            tags = setOf("MOVEMENT"),
+                            purchasable = false,
+                        ),
                     ),
             )
 
-        assertEquals(PlayerCommand.BuyShopOffer(0, ""), bot.decide(observation))
+        assertEquals(PlayerCommand.BuyShopOffer(0, "offer-0"), bot.decide(observation))
     }
 
     @Test

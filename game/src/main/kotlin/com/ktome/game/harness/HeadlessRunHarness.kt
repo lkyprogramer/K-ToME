@@ -340,6 +340,7 @@ class HeadlessRunHarness(
                 inscriptionInstallCount = inscriptionSummary.installCount,
                 inscriptionReplaceCount = inscriptionSummary.replaceCount,
                 fullSlotInscriptionPurchaseBlockedWithoutReplacementCount = inscriptionSummary.fullSlotPurchaseBlockedWithoutReplacementCount,
+                fullSlotInscriptionPurchaseReplacementPromptCount = inscriptionSummary.fullSlotPurchaseReplacementPromptCount,
                 inscriptionPurchaseCancelledAfterReplacementPrompt = inscriptionSummary.purchaseCancelledAfterReplacementPrompt,
                 shopPurchaseDeniedInsufficientGoldCount = inscriptionSummary.deniedInsufficientGoldCount,
                 shopInscriptionOfferSeenCount = inscriptionSummary.shopInscriptionOfferSeenCount,

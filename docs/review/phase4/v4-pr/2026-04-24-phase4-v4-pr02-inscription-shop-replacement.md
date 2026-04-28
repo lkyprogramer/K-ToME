@@ -201,12 +201,16 @@ fun canReplace(
 ): InscriptionEquipCheck
 
 fun replace(
+    request: InscriptionReplaceRequest,
+): InscriptionReplaceOutcome
+
+data class InscriptionReplaceRequest(
     loadout: InscriptionLoadout,
-    cooldownState: InscriptionCooldownState,
+    cooldowns: InscriptionCooldownState,
     equippedDefinitions: List<InscriptionDef>,
     candidate: InscriptionDef,
     targetHotkey: Int,
-): InscriptionReplaceOutcome
+)
 ```
 
 替换规则：

@@ -28,7 +28,7 @@
 - `build/whitebox/phase4-v4-pr02/evidence/phase4-v4-pr02-replace-keep-hotkey.png`
   - sha256: `ec7efd11db2f85df65c2d43b2564d1981bc866ea53d64b242c727ca5110feb3c`
   - metadata: `target_pid=37235`, `window_pid=37235`, `window_owner=K-ToME`, `capture_mode=macos-window-id`
-- `build/whitebox/phase4-v4-pr02/evidence/phase4-v4-pr02-reject-no-gold-loss.png`
+- `build/whitebox/phase4-v4-pr02/evidence/phase4-v4-pr02-reject-no-shard-loss.png`
   - sha256: `e2cab85123ca33acdf14f3a01eb190e9d640d9c90c742c075b0d0f3eb12c2411`
   - metadata: `target_pid=39273`, `window_pid=39273`, `window_owner=K-ToME`, `capture_mode=macos-window-id`
 - `build/whitebox/phase4-v4-pr02/evidence/phase4-v4-pr02-app.log`
@@ -42,5 +42,5 @@
 - `F9, Right, Enter, Down, Down, Enter` executed `prepare-secondary-scene` and opened the replacement modal for a full-slot inscription purchase. The modal shows the candidate, current `5-8` slots, category delta, price, and replacement controls.
 - Selecting hotkey `5` and confirming replaced the existing slot while keeping hotkey `5`; shards decreased once and the UI log recorded the replacement.
 - The reject path was captured from a fresh packaged app launch of the same scenario. Selecting an inscription already present in the target slot displayed the rejection reason in the replacement modal, with shards still at `200`.
-- The generated runbook names the final screenshot `phase4-v4-pr02-reject-no-gold-loss.png`; this is the same no-shard-loss check required by the PR document.
+- The generated runbook names the final screenshot `phase4-v4-pr02-reject-no-shard-loss.png`, matching the no-shard-loss check required by the PR document.
 - Fast whitebox evidence does not replace owner gates.

@@ -239,6 +239,7 @@ internal fun ScenarioReport.toJson() =
         put("inscriptionInstallCount", inscriptionInstallCount)
         put("inscriptionReplaceCount", inscriptionReplaceCount)
         put("fullSlotInscriptionPurchaseBlockedWithoutReplacementCount", fullSlotInscriptionPurchaseBlockedWithoutReplacementCount)
+        put("fullSlotInscriptionPurchaseReplacementPromptCount", fullSlotInscriptionPurchaseReplacementPromptCount)
         put("inscriptionPurchaseCancelledAfterReplacementPrompt", inscriptionPurchaseCancelledAfterReplacementPrompt)
         put("shopPurchaseDeniedInsufficientGoldCount", shopPurchaseDeniedInsufficientGoldCount)
         put("shopInscriptionOfferSeenCount", shopInscriptionOfferSeenCount)

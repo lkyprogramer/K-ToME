@@ -149,6 +149,7 @@
     },
     "starterInscriptionMaxCount": 2,
     "fullSlotInscriptionPurchaseBlockedWithoutReplacementCount": 0,
+    "fullSlotInscriptionPurchaseReplacementPromptCount": 1,
     "inscriptionInstallOrReplaceRate": 0.5,
     "inscriptionReplacementProbeSuccessCount": 1,
     "inscriptionReplacementProbe": {

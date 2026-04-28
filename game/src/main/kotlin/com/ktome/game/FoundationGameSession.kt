@@ -501,6 +501,7 @@ class FoundationGameSession internal constructor(
         val installCount: Int,
         val replaceCount: Int,
         val fullSlotPurchaseBlockedWithoutReplacementCount: Int,
+        val fullSlotPurchaseReplacementPromptCount: Int,
         val purchaseCancelledAfterReplacementPrompt: Int,
         val deniedInsufficientGoldCount: Int,
         val shopInscriptionOfferSeenCount: Int,
@@ -728,6 +729,8 @@ class FoundationGameSession internal constructor(
     private var inscriptionReplaceCount: Int = restoredInscriptionTelemetry.inscriptionReplaceCount
     private var fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: Int =
         restoredInscriptionTelemetry.fullSlotInscriptionPurchaseBlockedWithoutReplacementCount
+    private var fullSlotInscriptionPurchaseReplacementPromptCount: Int =
+        restoredInscriptionTelemetry.fullSlotInscriptionPurchaseReplacementPromptCount
     private var inscriptionPurchaseCancelledAfterReplacementPrompt: Int =
         restoredInscriptionTelemetry.inscriptionPurchaseCancelledAfterReplacementPrompt
     private var shopPurchaseDeniedInsufficientGoldCount: Int = restoredInscriptionTelemetry.shopPurchaseDeniedInsufficientGoldCount
@@ -1070,6 +1073,7 @@ class FoundationGameSession internal constructor(
             installCount = inscriptionInstallCount,
             replaceCount = inscriptionReplaceCount,
             fullSlotPurchaseBlockedWithoutReplacementCount = fullSlotInscriptionPurchaseBlockedWithoutReplacementCount,
+            fullSlotPurchaseReplacementPromptCount = fullSlotInscriptionPurchaseReplacementPromptCount,
             purchaseCancelledAfterReplacementPrompt = inscriptionPurchaseCancelledAfterReplacementPrompt,
             deniedInsufficientGoldCount = shopPurchaseDeniedInsufficientGoldCount,
             shopInscriptionOfferSeenCount = shopInscriptionOfferSeenCount,
@@ -7882,6 +7886,7 @@ class FoundationGameSession internal constructor(
                         (equipCheck as? InscriptionEquipCheck.Rejected)?.reason
                             ?: InscriptionEquipFailure.FULL_REQUIRES_REPLACEMENT
                     if (reason == InscriptionEquipFailure.FULL_REQUIRES_REPLACEMENT) {
+                        fullSlotInscriptionPurchaseReplacementPromptCount += 1
                         pendingInscriptionReplacementPurchase =
                             PendingInscriptionReplacementPurchase(
                                 shopId = shop.id,
@@ -7902,11 +7907,8 @@ class FoundationGameSession internal constructor(
                     return CommandResolution.rejected()
                 }
                 if (loadout.slots.size < MAX_INSCRIPTION_SLOTS) {
-                    val reason =
-                        (equipCheck as? InscriptionEquipCheck.Rejected)?.reason
-                            ?: InscriptionEquipFailure.TARGET_SLOT_MISSING
                     addMessage(
-                        shopPurchaseFailureMessageKey(ShopPurchaseFailure.InscriptionEquipRejected(reason)),
+                        shopPurchaseFailureMessageKey(ShopPurchaseFailure.InscriptionEquipRejected(InscriptionEquipFailure.TARGET_SLOT_MISSING)),
                         keyArg("inscription", definition.nameKey),
                     )
                     return CommandResolution.rejected()
@@ -9970,6 +9972,7 @@ class FoundationGameSession internal constructor(
             inscriptionInstallCount = inscriptionInstallCount,
             inscriptionReplaceCount = inscriptionReplaceCount,
             fullSlotInscriptionPurchaseBlockedWithoutReplacementCount = fullSlotInscriptionPurchaseBlockedWithoutReplacementCount,
+            fullSlotInscriptionPurchaseReplacementPromptCount = fullSlotInscriptionPurchaseReplacementPromptCount,
             inscriptionPurchaseCancelledAfterReplacementPrompt = inscriptionPurchaseCancelledAfterReplacementPrompt,
             shopPurchaseDeniedInsufficientGoldCount = shopPurchaseDeniedInsufficientGoldCount,
             shopInscriptionOfferSeenCount = shopInscriptionOfferSeenCount,

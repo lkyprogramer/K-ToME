@@ -207,6 +207,7 @@ class LongRunLabFullTest {
                     put("autoLearnedNonStarterTalentCount", professionTreeChoiceMetrics.autoLearnedNonStarterTalentCount)
                     put("starterInscriptionMaxCount", inscriptionShopMetrics.starterInscriptionMaxCount)
                     put("fullSlotInscriptionPurchaseBlockedWithoutReplacementCount", inscriptionShopMetrics.fullSlotInscriptionPurchaseBlockedWithoutReplacementCount)
+                    put("fullSlotInscriptionPurchaseReplacementPromptCount", inscriptionShopMetrics.fullSlotInscriptionPurchaseReplacementPromptCount)
                     put("inscriptionInstallOrReplaceRate", inscriptionShopMetrics.inscriptionInstallOrReplaceRate)
                     put("inscriptionReplacementProbeSuccessCount", inscriptionShopMetrics.replacementProbeSuccessCount)
                     putJsonObject("inscriptionReplacementProbe") {
@@ -424,6 +425,7 @@ class LongRunLabFullTest {
                     appendLine("- autoLearnedNonStarterTalentCount: ${professionTreeChoiceMetrics.autoLearnedNonStarterTalentCount}")
                     appendLine("- starterInscriptionMaxCount: ${inscriptionShopMetrics.starterInscriptionMaxCount}")
                     appendLine("- fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: ${inscriptionShopMetrics.fullSlotInscriptionPurchaseBlockedWithoutReplacementCount}")
+                    appendLine("- fullSlotInscriptionPurchaseReplacementPromptCount: ${inscriptionShopMetrics.fullSlotInscriptionPurchaseReplacementPromptCount}")
                     appendLine("- inscriptionInstallOrReplaceRate: ${inscriptionShopMetrics.inscriptionInstallOrReplaceRate}")
                     appendLine("- inscriptionReplacementProbeSuccessCount: ${inscriptionShopMetrics.replacementProbeSuccessCount}")
                     appendLine("- inscriptionReplacementProbe: hotkey=${inscriptionReplacementProbe.selectedHotkey}, candidate=${inscriptionReplacementProbe.candidateInscriptionId}, replace=${inscriptionReplacementProbe.replaceCount}, install=${inscriptionReplacementProbe.installCount}, terminal=${inscriptionReplacementProbe.terminalLoadout}")
@@ -619,6 +621,7 @@ class LongRunLabFullTest {
         )
         assertTrue(longRunPayload.containsKey("starterInscriptionMaxCount"))
         assertTrue(longRunPayload.containsKey("fullSlotInscriptionPurchaseBlockedWithoutReplacementCount"))
+        assertTrue(longRunPayload.containsKey("fullSlotInscriptionPurchaseReplacementPromptCount"))
         assertTrue(longRunPayload.containsKey("inscriptionInstallOrReplaceRate"))
         assertTrue(longRunPayload.containsKey("inscriptionReplacementProbeSuccessCount"))
         assertTrue(longRunPayload.containsKey("inscriptionReplacementProbe"))
@@ -1150,6 +1153,8 @@ class LongRunLabFullTest {
             starterInscriptionMaxCount = terminalReports.maxOfOrNull(ScenarioReport::startingInscriptionCount) ?: 0,
             fullSlotInscriptionPurchaseBlockedWithoutReplacementCount =
                 terminalReports.sumOf(ScenarioReport::fullSlotInscriptionPurchaseBlockedWithoutReplacementCount),
+            fullSlotInscriptionPurchaseReplacementPromptCount =
+                terminalReports.sumOf(ScenarioReport::fullSlotInscriptionPurchaseReplacementPromptCount),
             inscriptionInstallOrReplaceRate = ratio(installOrReplaceCount, terminalReports.size),
             terminalInscriptionLoadoutDiversity =
                 terminalReports
@@ -1397,6 +1402,7 @@ class LongRunLabFullTest {
     private data class InscriptionShopMetrics(
         val starterInscriptionMaxCount: Int,
         val fullSlotInscriptionPurchaseBlockedWithoutReplacementCount: Int,
+        val fullSlotInscriptionPurchaseReplacementPromptCount: Int,
         val inscriptionInstallOrReplaceRate: Double,
         val replacementProbeSuccessCount: Int,
         val terminalInscriptionLoadoutDiversity: Int,
