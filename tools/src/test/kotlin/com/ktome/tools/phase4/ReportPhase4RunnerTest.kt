@@ -48,7 +48,7 @@ class ReportPhase4RunnerTest {
             assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-            assertEquals("47", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+            assertEquals("55", payload.getValue("ownerMetricCount").jsonPrimitive.content)
             assertEquals(
                 ownerMetrics.count { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "UNEXPECTED_REGRESSION" }.toString(),
                 payload.getValue("unexpectedRegressionCount").jsonPrimitive.content,
@@ -65,7 +65,7 @@ class ReportPhase4RunnerTest {
             assertTrue(payload.containsKey("artifactReuseRate"))
             assertTrue(payload.containsKey("topInvalidationReasons"))
             assertEquals(14, inputs.size)
-            assertEquals(47, ownerMetrics.size)
+            assertEquals(55, ownerMetrics.size)
 
             val terrainInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
@@ -130,12 +130,22 @@ class ReportPhase4RunnerTest {
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageCueExpiryParity" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageSecretCueVisibilityRate" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "secretZoneRewardAuthorityViolations" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "topFiveAffixExposureShare" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSeenRate" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionRate" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffRate" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSourceCoverage.reportOnly" })
-            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor.reportOnly" })
-            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffFloor.reportOnly" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffFloor" })
+            assertFalse(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor.reportOnly" })
+            assertFalse(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffFloor.reportOnly" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardAdoptionDelta" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardSlotBalance.maxSlotShare" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardSlotBalance.WEAPON" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardSlotBalance.OFF_HAND" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardSlotBalance.ARMOR" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardSlotBalance.ACCESSORY" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardSlotBalance.CONSUMABLE_OR_UTILITY" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "starterInscriptionMaxCount" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "fullSlotInscriptionPurchaseBlockedWithoutReplacementCount" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "inscriptionInstallOrReplaceRate" })
@@ -186,7 +196,7 @@ class ReportPhase4RunnerTest {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("47", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals("55", comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }

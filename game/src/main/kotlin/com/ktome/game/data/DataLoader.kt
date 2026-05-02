@@ -131,7 +131,7 @@ import com.ktome.game.data.schema.MonsterSchemaV2
 import com.ktome.game.data.schema.NamedSchemaRef
 import com.ktome.game.data.schema.ObjectiveSetSchemaV2
 import com.ktome.game.data.schema.ObjectiveInteractablePlacementSchemaV2
-import com.ktome.game.data.schema.ProfessionBuildIdentityReportOnlyFloorsSchemaV1
+import com.ktome.game.data.schema.ProfessionBuildIdentityFloorsSchemaV1
 import com.ktome.game.data.schema.ProfessionBuildIdentitySchemaV1
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.QuestProgressSchemaV2
@@ -1906,9 +1906,9 @@ class DataLoader(
                         EquipSlot.valueOf(slot)
                     },
                 terminalIdentityTags = identity.optionalStringList("terminalIdentityTags"),
-                reportOnlyFloors =
-                    identity.requiredMap("reportOnlyFloors").let { floors ->
-                        ProfessionBuildIdentityReportOnlyFloorsSchemaV1(
+                buildIdentityFloors =
+                    identity.requiredMap("buildIdentityFloors").let { floors ->
+                        ProfessionBuildIdentityFloorsSchemaV1(
                             seenMinCount = floors.requiredInt("seenMinCount"),
                             adoptionMinCount = floors.requiredInt("adoptionMinCount"),
                             nonWeaponMinCount = floors.requiredInt("nonWeaponMinCount"),

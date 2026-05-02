@@ -72,12 +72,26 @@ class Phase4RegistryConsistencyTest {
             )
         }
 
+        val terminalBuildIdentityBaseline =
+            VerificationBaseline.read(
+                VerificationCacheSupport.repoRoot().resolve(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()),
+            )
+        val milestoneSlotBalanceBaseline =
+            VerificationBaseline.read(
+                VerificationCacheSupport.repoRoot().resolve(Phase4OwnerBaselineRegistry.milestoneSlotBalanceBaselinePath()),
+            )
         val inscriptionBaseline =
             VerificationBaseline.read(
                 VerificationCacheSupport.repoRoot().resolve(Phase4OwnerBaselineRegistry.inscriptionShopReplacementBaselinePath()),
             )
+        val expectedLongRunManifestMetricIds =
+            (
+                terminalBuildIdentityBaseline.expectedMetricRanges +
+                    milestoneSlotBalanceBaseline.expectedMetricRanges +
+                    inscriptionBaseline.expectedMetricRanges
+            ).mapTo(linkedSetOf()) { range -> range.metricId }
         assertEquals(
-            inscriptionBaseline.expectedMetricRanges.mapTo(linkedSetOf()) { range -> range.metricId },
+            expectedLongRunManifestMetricIds,
             Phase4AggregationManifestRuntime.manifest()
                 .tasks
                 .single { task -> task.taskId == "longRunLab" }

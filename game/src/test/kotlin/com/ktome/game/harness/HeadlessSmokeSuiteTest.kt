@@ -269,7 +269,40 @@ internal fun ScenarioReport.toJson() =
                         }
                         reward.equippedBaseItemIdBeforeReward?.let { put("equippedBaseItemIdBeforeReward", it) }
                         reward.equippedBaseItemIdAtRunEnd?.let { put("equippedBaseItemIdAtRunEnd", it) }
+                        put("adoptedDuringRun", reward.adoptedDuringRun)
                         put("adoptedInFinalBuild", reward.adoptedInFinalBuild)
+                    },
+                )
+            }
+        }
+        putJsonArray("milestoneRewardScoreSamples") {
+            milestoneRewardScoreSamples.forEach { sample ->
+                add(
+                    buildJsonObject {
+                        put("scenarioName", sample.scenarioName.ifBlank { name })
+                        put("rewardSource", sample.rewardSource.name)
+                        put("sourceId", sample.sourceId)
+                        put("professionId", sample.professionId)
+                        put("zoneId", sample.zoneId)
+                        put("baseItemId", sample.baseItemId)
+                        put("selected", sample.selected)
+                        put("legal", sample.legal)
+                        sample.rejectionReason?.let { put("rejectionReason", it) }
+                        sample.slotFamily?.let { put("slotFamily", it.name) }
+                        putJsonObject("scoreBreakdown") {
+                            put("baseScore", sample.scoreBreakdown.baseScore)
+                            put("professionCapstoneBonus", sample.scoreBreakdown.professionCapstoneBonus)
+                            put("nonWeaponPayoffBonus", sample.scoreBreakdown.nonWeaponPayoffBonus)
+                            put("wrongProfessionCapstonePenalty", sample.scoreBreakdown.wrongProfessionCapstonePenalty)
+                            put("slotRotationBonus", sample.scoreBreakdown.slotRotationBonus)
+                            put("duplicateSlotPenalty", sample.scoreBreakdown.duplicateSlotPenalty)
+                            put("terminalIdentityBonus", sample.scoreBreakdown.terminalIdentityBonus)
+                            put("lateCommonPenalty", sample.scoreBreakdown.lateCommonPenalty)
+                            put("positiveBonusBeforeCap", sample.scoreBreakdown.positiveBonusBeforeCap)
+                            put("positiveBonusCap", sample.scoreBreakdown.positiveBonusCap)
+                            put("positiveBonusAfterCap", sample.scoreBreakdown.positiveBonusAfterCap)
+                            put("totalScore", sample.scoreBreakdown.totalScore)
+                        }
                     },
                 )
             }

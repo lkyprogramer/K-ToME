@@ -35,6 +35,7 @@ data class MilestoneRewardSummary(
     val affixIds: List<String> = emptyList(),
     val equippedBaseItemIdBeforeReward: String? = null,
     val equippedBaseItemIdAtRunEnd: String? = null,
+    val adoptedDuringRun: Boolean = false,
     val adoptedInFinalBuild: Boolean = false,
 ) {
     init {

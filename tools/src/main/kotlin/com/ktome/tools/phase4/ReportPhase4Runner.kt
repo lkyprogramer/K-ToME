@@ -521,8 +521,10 @@ private const val BUILD_IDENTITY_DEBUG_FILE: String = "build-identity-debug.json
             val traceDivergenceMetric = requireOwnerMetric(report.ownerMetrics, "variantTraceDivergenceRatio")
             val minActionTraceMetric = requireOwnerMetric(report.ownerMetrics, "minVariantActionTraceDivergenceScore")
             val bossBasePhaseCountMetric = requireOwnerMetric(report.ownerMetrics, "bossVariantBasePhaseCountMin")
-            val capstoneAdoptionFloorMetric = requireOwnerMetric(report.ownerMetrics, "professionCapstoneAdoptionFloor.reportOnly")
-            val nonWeaponFloorMetric = requireOwnerMetric(report.ownerMetrics, "nonWeaponBuildPayoffFloor.reportOnly")
+            val capstoneAdoptionFloorMetric = requireOwnerMetric(report.ownerMetrics, "professionCapstoneAdoptionFloor")
+            val nonWeaponFloorMetric = requireOwnerMetric(report.ownerMetrics, "nonWeaponBuildPayoffFloor")
+            val milestoneRewardAdoptionDeltaMetric = requireOwnerMetric(report.ownerMetrics, "milestoneRewardAdoptionDelta")
+            val milestoneRewardSlotBalanceMetric = requireOwnerMetric(report.ownerMetrics, "milestoneRewardSlotBalance.maxSlotShare")
             val criticalPathSection = requireSection(report.sections, "criticalPathPacing")
             val criticalPathZoneIds =
                 criticalPathSection.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
@@ -687,10 +689,12 @@ private const val BUILD_IDENTITY_DEBUG_FILE: String = "build-identity-debug.json
             appendLine("- `terrainPreferenceImplementedRate`: `${formatRate(bossInput.kernelResult.metrics.getValue("terrainPreferenceImplementedRate").jsonPrimitive.content.toDouble())}`")
             appendLine()
             appendLine("## Terminal Build Identity")
-            appendLine("- `professionCapstoneAdoptionFloor.reportOnly`: ${capstoneAdoptionFloorMetric.currentValueText} / `${capstoneAdoptionFloorMetric.status}`")
-            appendLine("- `nonWeaponBuildPayoffFloor.reportOnly`: ${nonWeaponFloorMetric.currentValueText} / `${nonWeaponFloorMetric.status}`")
-            capstoneAdoptionFloorMetric.note?.let { note -> appendLine("- `professionCapstoneAdoptionFloor.reportOnly` note: $note") }
-            nonWeaponFloorMetric.note?.let { note -> appendLine("- `nonWeaponBuildPayoffFloor.reportOnly` note: $note") }
+            appendLine("- `professionCapstoneAdoptionFloor`: ${capstoneAdoptionFloorMetric.currentValueText} / `${capstoneAdoptionFloorMetric.status}`")
+            appendLine("- `nonWeaponBuildPayoffFloor`: ${nonWeaponFloorMetric.currentValueText} / `${nonWeaponFloorMetric.status}`")
+            appendLine("- `milestoneRewardAdoptionDelta`: ${milestoneRewardAdoptionDeltaMetric.currentValueText} / `${milestoneRewardAdoptionDeltaMetric.status}`")
+            appendLine("- `milestoneRewardSlotBalance.maxSlotShare`: ${milestoneRewardSlotBalanceMetric.currentValueText} / `${milestoneRewardSlotBalanceMetric.status}`")
+            capstoneAdoptionFloorMetric.note?.let { note -> appendLine("- `professionCapstoneAdoptionFloor` note: $note") }
+            nonWeaponFloorMetric.note?.let { note -> appendLine("- `nonWeaponBuildPayoffFloor` note: $note") }
             appendLine()
             appendLine("## Inputs")
             report.inputs.forEach { input ->

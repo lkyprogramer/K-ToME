@@ -46,7 +46,13 @@ class Phase4AuthorityDocConsistencyTest {
         val terminalBuildBaseline =
             Json.parseToJsonElement(
                 Files.readString(
-                    repoRoot().resolve("docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json"),
+                    repoRoot().resolve("docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-build-identity-profession-baseline.json"),
+                ),
+            ).jsonObject
+        val milestoneSlotBalanceBaseline =
+            Json.parseToJsonElement(
+                Files.readString(
+                    repoRoot().resolve("docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-milestone-slot-balance-baseline.json"),
                 ),
             ).jsonObject
         val lootBaseline =
@@ -63,6 +69,10 @@ class Phase4AuthorityDocConsistencyTest {
             lootBaseline.getValue("expectedMetricRanges").jsonArray.associateBy { range ->
                 range.jsonObject.getValue("metricId").jsonPrimitive.content
             }
+        val milestoneSlotRanges =
+            milestoneSlotBalanceBaseline.getValue("expectedMetricRanges").jsonArray.associateBy { range ->
+                range.jsonObject.getValue("metricId").jsonPrimitive.content
+            }
 
         assertTrue(whiteBoxFramework.contains("tools/build/reports/verification/phase4/report-phase4-summary.{json,md}"))
         assertTrue(whiteBoxFramework.contains("phase4LegacyReport"))
@@ -77,6 +87,12 @@ class Phase4AuthorityDocConsistencyTest {
         assertTrue(phase4Roadmap.contains("profession capstone"))
         assertTrue(phase4Checklist.contains("critical-path pacing"))
         assertTrue(phase4Checklist.contains("professionCapstoneAdoptionRate"))
+        assertTrue(phase4Checklist.contains("professionCapstoneAdoptionFloor"))
+        assertTrue(phase4Checklist.contains("nonWeaponBuildPayoffFloor"))
+        assertFalse(phase4Checklist.contains("professionCapstoneAdoptionFloor.reportOnly"))
+        assertFalse(phase4Checklist.contains("nonWeaponBuildPayoffFloor.reportOnly"))
+        assertTrue(phase4Checklist.contains("milestoneRewardSlotBalance.maxSlotShare"))
+        assertTrue(phase4Checklist.contains("topFiveAffixExposureShare"))
         assertTrue(phase4Checklist.contains("professionCapstoneBreakdown"))
         assertTrue(phase4Checklist.contains("specialTierPassiveFamilyDuplicateCount"))
         assertTrue(phase4Checklist.contains("specialTierPassiveFamilyDuplicateSummary"))
@@ -89,9 +105,12 @@ class Phase4AuthorityDocConsistencyTest {
         assertTrue(buildIdentityHardeningPlan.contains("data/build-identity/index.yaml"))
         assertTrue(buildIdentityHardeningPlan.contains("reportOnlyFloors"))
         assertEquals(setOf("arcanist", "rogue", "templar", "vanguard"), foundationBuildIdentityByProfessionId.keys)
-        assertTrue(foundationBuildIdentityByProfessionId.values.all { identity -> identity.reportOnlyFloors.adoptionMinCount > 0 })
-        assertTrue(foundationBuildIdentityByProfessionId.values.all { identity -> identity.reportOnlyFloors.nonWeaponMinCount > 0 })
+        assertTrue(foundationBuildIdentityByProfessionId.values.all { identity -> identity.buildIdentityFloors.adoptionMinCount > 0 })
+        assertTrue(foundationBuildIdentityByProfessionId.values.all { identity -> identity.buildIdentityFloors.nonWeaponMinCount > 0 })
         assertTrue(terminalRanges.containsKey("professionCapstoneAdoptionRate"))
+        assertTrue(terminalRanges.containsKey("professionCapstoneAdoptionFloor"))
+        assertTrue(terminalRanges.containsKey("nonWeaponBuildPayoffFloor"))
+        assertFalse(terminalRanges.containsKey("milestoneRewardAdoptionDelta"))
         assertTrue(
             terminalRanges.getValue("professionCapstoneSeenRate").jsonObject
                 .getValue("metadata")
@@ -104,6 +123,10 @@ class Phase4AuthorityDocConsistencyTest {
             terminalRanges.getValue("nonWeaponBuildPayoffRate").jsonObject["minValue"]?.jsonPrimitive?.content?.toDouble() ?: 0.0 > 0.0,
         )
         assertTrue(lootRanges.containsKey("specialTierPassiveFamilyDuplicateCount"))
+        assertTrue(lootRanges.containsKey("topFiveAffixExposureShare"))
+        assertTrue(milestoneSlotRanges.containsKey("milestoneRewardAdoptionDelta"))
+        assertTrue(milestoneSlotRanges.containsKey("milestoneRewardSlotBalance.maxSlotShare"))
+        assertTrue(milestoneSlotRanges.containsKey("milestoneRewardSlotBalance.OFF_HAND"))
     }
 
     private fun repoRoot(): Path =

@@ -182,7 +182,7 @@ class LongRunLabTest {
         val milestoneAffixCountDistribution = milestoneRewards.groupingBy { it.affixIds.size.toString() }.eachCount().toSortedMap()
         val milestoneRewardAdoptionDistribution =
             milestoneRewards
-                .groupingBy { reward -> if (reward.adoptedInFinalBuild) "adopted" else "notAdopted" }
+                .groupingBy { reward -> if (reward.adoptedDuringRun) "adopted" else "notAdopted" }
                 .eachCount()
                 .toSortedMap()
         val milestoneRewardSlotDistribution = milestoneRewards.groupingBy { it.equipSlot.name }.eachCount().toSortedMap()
@@ -367,7 +367,7 @@ class LongRunLabTest {
                     reports.forEach { report ->
                         val milestoneSummary =
                             report.milestoneRewards.joinToString { reward ->
-                                "${reward.rewardSource}:${reward.baseItemId}:${reward.equipSlot.name}:before=${reward.equippedBaseItemIdBeforeReward ?: "empty"}:final=${reward.equippedBaseItemIdAtRunEnd ?: "empty"}:adopted=${reward.adoptedInFinalBuild}:${reward.qualityTier.name}:${if (reward.affixIds.isEmpty()) "none" else reward.affixIds.joinToString("+")}"
+                                "${reward.rewardSource}:${reward.baseItemId}:${reward.equipSlot.name}:before=${reward.equippedBaseItemIdBeforeReward ?: "empty"}:final=${reward.equippedBaseItemIdAtRunEnd ?: "empty"}:adoptedDuring=${reward.adoptedDuringRun}:adoptedFinal=${reward.adoptedInFinalBuild}:${reward.qualityTier.name}:${if (reward.affixIds.isEmpty()) "none" else reward.affixIds.joinToString("+")}"
                             }
                         val breakpointSummary =
                             report.breakpointPayoffs.joinToString { payoff ->

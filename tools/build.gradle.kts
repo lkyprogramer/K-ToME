@@ -455,6 +455,35 @@ tasks.register<Test>("maintainabilityLint") {
     outputs.dir(maintainabilityLintOutputDir)
 }
 
+tasks.register<Test>("acceptanceContractLint") {
+    group = "verification"
+    description = "Validates Phase4 v4 PR acceptance matrices and governance links."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("acceptanceContractLint")
+    }
+    systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
+    inputs.files(
+        rootProject.files(
+            "docs/review/phase4/v4-pr/README.md",
+            "docs/review/phase4/v4-pr/development-governance.md",
+            "UI/pr/README.md",
+            "UI/pr/development-governance.md",
+            "docs/verification/README.md",
+            "docs/rule/ai-change-governance.md",
+            "tools/build.gradle.kts",
+            "build.gradle.kts",
+        ),
+        rootProject.fileTree("docs/review/phase4/v4-pr") {
+            include("2026-04-24-phase4-v4-pr0*.md")
+        },
+        rootProject.fileTree("UI/pr") {
+            include("dark-uiux-pr*.md")
+        },
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 tasks.register<VerificationTask>("verifyContractLintPreflight") {
     description = "Runs the contractLint STATIC_GRAPH demo through the unified verification task foundation."
     domainId.set("contractLint")
@@ -761,7 +790,8 @@ val phase4OwnerBaselineInputs =
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-scripted-hidden-owner-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-organic-hidden-owner-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-loot-local-reward-identity-baseline.json",
-        "docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-build-identity-profession-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-milestone-slot-balance-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-24-phase4-profession-tree-run-choice-owner-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-24-phase4-inscription-shop-replacement-owner-baseline.json",

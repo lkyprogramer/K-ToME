@@ -52,6 +52,7 @@ data class ValidationScenarioEvidenceSummary(
     val appExecutableSha256: String?,
     val requiredLogEventKeys: List<String> = emptyList(),
     val producerFreshnessLabelKey: String = "validation.phase4.v4.evidence.producer_freshness.not_applicable",
+    val scenarioNoteLabelKey: String? = null,
 ) {
     init {
         require(whiteboxRoot.isNotBlank()) { "Validation scenario evidence summary must declare whiteboxRoot." }
@@ -64,6 +65,9 @@ data class ValidationScenarioEvidenceSummary(
             "Validation scenario evidence summary requiredLogEventKeys must not contain blank entries."
         }
         require(producerFreshnessLabelKey.isNotBlank()) { "Validation scenario evidence summary must declare producerFreshnessLabelKey." }
+        require(scenarioNoteLabelKey == null || scenarioNoteLabelKey.isNotBlank()) {
+            "Validation scenario evidence summary scenarioNoteLabelKey must not be blank."
+        }
     }
 }
 
@@ -157,6 +161,7 @@ data class ValidationScenarioEvidenceSpec(
     val cuaSteps: List<ValidationScenarioEvidenceStep>,
     val manualRecordPath: String,
     val requiredLogEventKeys: List<String> = emptyList(),
+    val scenarioNoteLabelKey: String? = null,
 ) {
     init {
         require(requiredEvidenceFiles.count { evidenceFile -> evidenceFile.endsWith(".png") } >= 4) {
@@ -172,6 +177,9 @@ data class ValidationScenarioEvidenceSpec(
         require(manualRecordPath.isNotBlank()) { "Validation scenario evidence must declare manualRecordPath." }
         require(requiredLogEventKeys.all(String::isNotBlank)) {
             "Validation scenario evidence requiredLogEventKeys must not contain blank entries."
+        }
+        require(scenarioNoteLabelKey == null || scenarioNoteLabelKey.isNotBlank()) {
+            "Validation scenario evidence scenarioNoteLabelKey must not be blank."
         }
     }
 }

@@ -18,6 +18,34 @@
 **前置条件**: PR-00、PR-01、PR-02 完成；long-run 能记录职业树与铭文选择事件
 **资源生成结论**: 不生成图片资源；不生成音频资源
 
+## 0. 开发治理与验收矩阵
+
+本 PR 是 [development-governance.md](./development-governance.md) 的 canary。执行前必须先通过 `acceptanceContractLint`，再进入 fast lane、owner producer、report gate 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../../verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../../rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PR03-M01` | §5.6 / §9 `.reportOnly` cutover | `tools` | `acceptanceContractLint`, `Phase4AuthorityDocConsistencyTest` | `verifyOwner`, `reportPhase4Only`, `reportPhase4` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `N/A` |
+| `PR03-M02` | §5.1 capstone x profession matrix | `game` | `SchemaV2LoaderTest`, `MilestoneRewardSelectorTest` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-build-identity-profession-baseline.json` | `N/A` |
+| `PR03-M03` | §5.2 adoption scoring formula | `game` | `MilestoneRewardSelectorTest` | `whiteBoxLoot`, `lootBalanceLab` | `tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json` | `N/A` |
+| `PR03-M04` | §5.3 reward slot family balance | `game` / `tools` | `BuildIdentityAdoptionPolicyTest`, `MilestoneRewardSelectorTest` | `longRunLab`, `reportPhase4Only` | `docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-milestone-slot-balance-baseline.json` | `N/A` |
+| `PR03-M05` | §5.5 late quality floor / `basic_shield` ban | `game` | `MilestoneRewardSelectorTest` | `whiteBoxLoot`, `lootBalanceLab` | `tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json` | `N/A` |
+| `PR03-M06` | §7 report fields and debug samples | `tools` | `ReportPhase4MaterializationTest`, `Phase4ReportRunnerTest` | `reportPhase4Only`, `reportPhase4` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `N/A` |
+| `PR03-M07` | canary governance execution | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `skipped` |
+
+### Gate Budget
+
+预计重型任务：`whiteBoxLoot`、`lootBalanceLab`、`longRunLab`、`verifyOwner`、`reportPhase4Only`、`reportPhase4`、`verifyChanged`。触发原因是 PR-03 同时改 reward legality、build identity data、owner metric cutover 和 Phase4 report aggregation。耗时来源固定读取 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。
+
+### Canonical Artifact
+
+canonical owner evidence 固定为 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` 与本节列出的 repo-relative baseline / whitebox summary。raw long-run、loot debug 或 cache 诊断不得作为 fixture 合同；timestamp、kernel cache status、reused shard count、本机绝对路径不得进入 canonical artifact。
+
+### Failure Rule
+
+同一重型 gate 失败超过 2 次，或单轮验证超过 90 分钟，必须先补一条 fast check 或 PR-03 implementation review 复盘，再重跑 owner gate。当前实现任务按用户要求不进行人工白盒测试，因此 `whitebox=skipped`，替代证据为自动化 owner gate、canonical report 和 doc-vs-implementation self-audit；剩余风险是 packaged app 可见性未由人工白盒确认。
+
 ## 1. 玩家体验目标
 
 本 PR 让奖励系统兑现构筑选择。玩家看到 capstone、非武器 payoff 和 milestone reward 时，必须经常产生“这件东西让我打法变了”的判断，而不是大多数奖励被忽略。

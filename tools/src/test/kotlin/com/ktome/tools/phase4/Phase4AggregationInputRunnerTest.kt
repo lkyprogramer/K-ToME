@@ -81,10 +81,12 @@ class Phase4AggregationInputRunnerTest {
         val originalBaselineOverride = System.getProperty("ktome.phase4.ownerBaselineOverride.longRunLab")
         val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-baseline-test")
         val terminalBuildBaselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
+        val milestoneSlotBalanceBaselineCopy = tempReportDir.resolve("phase4-terminal-milestone-slot-balance-baseline.json")
         val criticalPathPacingBaselineCopy = tempReportDir.resolve("phase4-critical-path-pacing-baseline.json")
         val professionTreeRunChoiceBaselineCopy = tempReportDir.resolve("phase4-profession-tree-run-choice-baseline.json")
         val inscriptionShopReplacementBaselineCopy = tempReportDir.resolve("phase4-inscription-shop-replacement-baseline.json")
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.MILESTONE_SLOT_BALANCE_BASELINE_RELATIVE_PATH), milestoneSlotBalanceBaselineCopy)
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.PROFESSION_TREE_RUN_CHOICE_BASELINE_RELATIVE_PATH), professionTreeRunChoiceBaselineCopy)
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.INSCRIPTION_SHOP_REPLACEMENT_BASELINE_RELATIVE_PATH), inscriptionShopReplacementBaselineCopy)
@@ -94,6 +96,7 @@ class Phase4AggregationInputRunnerTest {
                 "ktome.phase4.ownerBaselineOverride.longRunLab",
                 listOf(
                     terminalBuildBaselineCopy,
+                    milestoneSlotBalanceBaselineCopy,
                     criticalPathPacingBaselineCopy,
                     professionTreeRunChoiceBaselineCopy,
                     inscriptionShopReplacementBaselineCopy,
@@ -153,10 +156,12 @@ class Phase4AggregationInputRunnerTest {
         val originalBaselineOverride = System.getProperty("ktome.phase4.ownerBaselineOverride.longRunLab")
         val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-critical-path-baseline-test")
         val terminalBuildBaselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
+        val milestoneSlotBalanceBaselineCopy = tempReportDir.resolve("phase4-terminal-milestone-slot-balance-baseline.json")
         val criticalPathPacingBaselineCopy = tempReportDir.resolve("phase4-critical-path-pacing-baseline.json")
         val professionTreeRunChoiceBaselineCopy = tempReportDir.resolve("phase4-profession-tree-run-choice-baseline.json")
         val inscriptionShopReplacementBaselineCopy = tempReportDir.resolve("phase4-inscription-shop-replacement-baseline.json")
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.MILESTONE_SLOT_BALANCE_BASELINE_RELATIVE_PATH), milestoneSlotBalanceBaselineCopy)
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.PROFESSION_TREE_RUN_CHOICE_BASELINE_RELATIVE_PATH), professionTreeRunChoiceBaselineCopy)
         Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.INSCRIPTION_SHOP_REPLACEMENT_BASELINE_RELATIVE_PATH), inscriptionShopReplacementBaselineCopy)
@@ -166,6 +171,7 @@ class Phase4AggregationInputRunnerTest {
                 "ktome.phase4.ownerBaselineOverride.longRunLab",
                 listOf(
                     terminalBuildBaselineCopy,
+                    milestoneSlotBalanceBaselineCopy,
                     criticalPathPacingBaselineCopy,
                     professionTreeRunChoiceBaselineCopy,
                     inscriptionShopReplacementBaselineCopy,
@@ -567,6 +573,20 @@ class Phase4AggregationInputRunnerTest {
                 longRunPayload.getValue("evaluationResults").jsonArray
                     .first { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "longrun.terminalBuildIdentity" }
                     .jsonObject
+            val milestoneSlotBalanceEvaluation =
+                longRunPayload.getValue("evaluationResults").jsonArray
+                    .first { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "longrun.milestoneRewardSlotBalance" }
+                    .jsonObject
+            assertFalse(
+                terminalBuildEvaluation.getValue("entries").jsonArray.any { entry ->
+                    entry.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardAdoptionDelta"
+                },
+            )
+            assertTrue(
+                milestoneSlotBalanceEvaluation.getValue("entries").jsonArray.any { entry ->
+                    entry.jsonObject.getValue("metricId").jsonPrimitive.content == "milestoneRewardAdoptionDelta"
+                },
+            )
             val seenEntry =
                 terminalBuildEvaluation.getValue("entries").jsonArray
                     .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSeenRate" }
@@ -577,7 +597,7 @@ class Phase4AggregationInputRunnerTest {
                     .jsonObject
             val adoptionFloorEntry =
                 terminalBuildEvaluation.getValue("entries").jsonArray
-                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor.reportOnly" }
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor" }
                     .jsonObject
             val nonWeaponEntry =
                 terminalBuildEvaluation.getValue("entries").jsonArray
@@ -585,15 +605,15 @@ class Phase4AggregationInputRunnerTest {
                     .jsonObject
             val nonWeaponFloorEntry =
                 terminalBuildEvaluation.getValue("entries").jsonArray
-                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffFloor.reportOnly" }
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffFloor" }
                     .jsonObject
 
             assertEquals("FAIL", terminalBuildEvaluation.getValue("verdict").jsonPrimitive.content)
             assertEquals("UNEXPECTED_REGRESSION", seenEntry.getValue("status").jsonPrimitive.content)
             assertEquals("UNEXPECTED_REGRESSION", adoptionEntry.getValue("status").jsonPrimitive.content)
             assertEquals("UNEXPECTED_REGRESSION", nonWeaponEntry.getValue("status").jsonPrimitive.content)
-            assertEquals("APPROVED_DEBT", adoptionFloorEntry.getValue("status").jsonPrimitive.content)
-            assertEquals("APPROVED_DEBT", nonWeaponFloorEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", adoptionFloorEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", nonWeaponFloorEntry.getValue("status").jsonPrimitive.content)
             assertTrue(seenEntry.getValue("note").jsonPrimitive.content.contains("arcanist"))
             assertTrue(adoptionFloorEntry.getValue("note").jsonPrimitive.content.contains("arcanist"))
             assertTrue(nonWeaponFloorEntry.getValue("note").jsonPrimitive.content.contains("arcanist"))
@@ -652,7 +672,7 @@ class Phase4AggregationInputRunnerTest {
                     .jsonObject
             val objectiveDetails = objectiveEntry.getValue("details").jsonObject
 
-            assertEquals("phase4-aggregation-input-v8", summary.getValue("contractVersion").jsonPrimitive.content)
+            assertEquals("phase4-aggregation-input-v9", summary.getValue("contractVersion").jsonPrimitive.content)
             assertEquals("criticalPathPacing", objectiveDetails.getValue("sectionRef").jsonPrimitive.content)
             assertEquals("minimum", objectiveDetails.getValue("metricKind").jsonPrimitive.content)
             assertFalse(objectiveDetails.containsKey("fullRouteZoneTraversalDiagnostics"))

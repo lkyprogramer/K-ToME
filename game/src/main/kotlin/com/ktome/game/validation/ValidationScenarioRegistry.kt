@@ -188,7 +188,67 @@ object ValidationScenarioRegistry {
                             listOf(
                                 "shop.purchase.requires_replacement_target",
                                 "log.shop.inscription.replaced",
+                        ),
+                    ),
+            ),
+            ValidationScenarioDef(
+                id = ValidationScenarioId("phase4-v4-pr03"),
+                prId = "PR-03",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.LOOT_LAB,
+                        seed = 2026042433L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "arcanist",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/phase4-v4-pr03-arcanist-reward-card.png",
+                                "evidence/phase4-v4-pr03-arcanist-adopted-nonweapon.png",
+                                "evidence/phase4-v4-pr03-rogue-offhand-payoff.png",
+                                "evidence/phase4-v4-pr03-report-no-approved-debt.png",
+                                "evidence/phase4-v4-pr03-app.log",
                             ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "Arcanist reward card uses existing capstone or non-weapon payoff item and explains slot, profession identity, and score reason.",
+                                    evidenceFile = "evidence/phase4-v4-pr03-arcanist-reward-card.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "I",
+                                    expectedVisibleResult = "Equipment or inventory surface shows the adopted arcanist non-weapon payoff instead of default vanguard armor.",
+                                    evidenceFile = "evidence/phase4-v4-pr03-arcanist-adopted-nonweapon.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "Secondary scene materializes a rogue OFF_HAND payoff such as artifact_briar_heart through the game validation action.",
+                                    evidenceFile = "evidence/phase4-v4-pr03-rogue-offhand-payoff.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Right, Enter",
+                                    expectedVisibleResult = "Evidence summary confirms professionCapstoneAdoptionFloor.reportOnly and nonWeaponBuildPayoffFloor.reportOnly are no longer approved debt.",
+                                    evidenceFile = "evidence/phase4-v4-pr03-report-no-approved-debt.png",
+                                ),
+                            ),
+                        manualRecordPath = "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr03-build-identity-reward-adoption.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.validation.item.pr03_showcase",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr03.evidence.summary_note",
                     ),
             ),
         )

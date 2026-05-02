@@ -27,6 +27,16 @@
 8. 修改 Gradle、bootstrap、processResources、lint task 接线或依赖的 PR 必须补跑 `./scripts/verify-bootstrap.sh`。
 9. PR-00 关闭前必须让 `verifyChanged` impact routing 命中 dark-v1 相关变更时触发 dark gate；PR-02 以后不得只依赖人工记忆执行资源 gate。
 10. `ownerPr` 字符串固定使用 `PR-00`、`PR-02` 这种格式；禁止混用 `pr02`、`PR02`。
+11. 所有 PR 必须遵守 [development-governance.md](./development-governance.md)，并包含 `## 0. 开发治理与验收矩阵`。
+12. `acceptanceContractLint` 是 dark UI/UX PR 的文档合同快路径；它只检查 PR 文档是否可执行，不替代 resource gate、golden、白盒或 `verifyChanged`。
+13. Gate ladder 固定为 `acceptanceContractLint -> fast lane -> resource gate -> client evidence -> maintainabilityLint -> verifyChanged`；PR-07 追加 packaged app 白盒。
+14. 同一重型 gate 失败超过 2 次或单轮验证超过 90 分钟时，必须先写复盘并补 focused test / resource lint，再继续重跑。
+
+## 开发治理入口
+
+dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./development-governance.md)。
+
+本 README 只维护 PR 索引、sheet ownership 和资源/验证入口摘要；Acceptance Matrix、Gate Budget、Canonical Artifact、Failure Rule 与 doc-vs-implementation self-audit 的长期条款只在 [development-governance.md](./development-governance.md) 维护。
 
 ## SheetId Ownership
 

@@ -7,6 +7,7 @@ import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.SpecialItemTemplate
+import com.ktome.core.item.StatModifier
 import com.ktome.core.loot.SourceTier
 import com.ktome.core.loot.SpecialTier
 import com.ktome.core.resource.ResourceType
@@ -126,10 +127,9 @@ class MilestoneRewardSelectorTest {
                                 zoneId = "test_zone",
                                 sourceTier = SourceTier.CHEST,
                                 effectiveFloorBand = 4,
-                            ),
+                        ),
                         selectionContext = LootBaseSelectionContext(buildTags = setOf("mana", "spell"), preferredProfessionTag = "arcanist"),
                         poolWeightByBaseId = mapOf("generic_spell_blade" to 18, "artifact_river_focus" to 10),
-                        rewardPreferenceOrder = listOf("artifact_river_focus", "generic_spell_blade"),
                     ),
                 professionSuitability = { true },
                 canSatisfyAffixes = { true },
@@ -253,10 +253,13 @@ class MilestoneRewardSelectorTest {
                 rewardSource = MilestoneRewardSource.SUPPORT,
                 occupiedSlots = setOf(EquipSlot.OFF_HAND),
                 currentOwnedBaseIds = setOf("emerald_charm"),
-            )
+        )
         assertEquals(EquipSlot.OFF_HAND, riverResult.replacementSlot)
         assertEquals("unique_deepcurrent_lens", riverResult.selectedBaseId)
-        assertTrue(candidate(riverResult, "unique_deepcurrent_lens").score > candidate(riverResult, "artifact_river_echo").score)
+        assertEquals(
+            MilestoneRewardRejectionReason.REPLACEMENT_SLOT_MISMATCH,
+            candidate(riverResult, "artifact_river_echo").rejectionReason,
+        )
 
         val templeResult =
             selectProfile(
@@ -280,10 +283,13 @@ class MilestoneRewardSelectorTest {
                 professionId = "rogue",
                 zoneId = "abyssal_heart",
                 rewardSource = MilestoneRewardSource.BOSS,
+                playerLevel = 5,
             )
         assertEquals("artifact_briar_heart", heartResult.selectedBaseId)
         assertTrue(candidate(heartResult, "artifact_briar_heart").legal)
         assertTrue(candidate(heartResult, "artifact_briar_heart").nonWeaponCapstone)
+        assertTrue(!candidate(heartResult, "basic_shield").legal)
+        assertTrue(candidate(heartResult, "basic_shield").scoreBreakdown.lateCommonPenalty > 0)
         assertTrue(
             heartResult.rankedCandidates
                 .filter(MilestoneRewardCandidate::legal)
@@ -341,7 +347,290 @@ class MilestoneRewardSelectorTest {
     }
 
     @Test
-    fun `preferred reward sources can tip exact profession capstones over generic aligned weapons`() {
+    fun `cinderveil is arcanist non weapon payoff but not exact profession capstone`() {
+        val bundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        baseItem(
+                            id = "unique_cinderveil_plate",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.ARMOR,
+                            tags = setOf("item", "armor", "unique", "arcanist", "survival", "capstone", "non_weapon_capstone"),
+                            dropWeight = 4,
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+            )
+
+        val result =
+            MilestoneRewardSelector(bundle).select(
+                request =
+                    MilestoneRewardSelectionRequest(
+                        candidateBaseIds = listOf("unique_cinderveil_plate"),
+                        selectorContext =
+                            MilestoneRewardSelectorContext(
+                                rewardSource = MilestoneRewardSource.SUPPORT,
+                                zoneId = "test_zone",
+                                sourceTier = SourceTier.CHEST,
+                                effectiveFloorBand = 5,
+                                professionId = "arcanist",
+                            ),
+                        selectionContext = LootBaseSelectionContext(buildTags = setOf("arcanist", "survival"), preferredProfessionTag = "arcanist"),
+                    ),
+                professionSuitability = { true },
+                canSatisfyAffixes = { true },
+            )
+
+        val cinderveil = candidate(result, "unique_cinderveil_plate")
+        assertEquals("unique_cinderveil_plate", result.selectedBaseId)
+        assertTrue(cinderveil.nonWeaponCapstone)
+        assertTrue(!cinderveil.exactProfessionCapstone)
+        assertEquals(0, cinderveil.scoreBreakdown.professionCapstoneBonus)
+        assertTrue(cinderveil.scoreBreakdown.nonWeaponPayoffBonus > 0)
+        assertTrue(cinderveil.scoreBreakdown.terminalIdentityBonus > 0)
+    }
+
+    @Test
+    fun `off hand non weapon capstones keep off hand slot family despite accessory tags`() {
+        val base =
+            baseItem(
+                id = "offhand_identity_relic",
+                type = ItemType.ARMOR,
+                slot = EquipSlot.OFF_HAND,
+                tags = setOf("item", "armor", "accessory", "rogue", "capstone", "non_weapon_capstone"),
+            )
+
+        assertEquals(MilestoneRewardSlotFamily.OFF_HAND, milestoneRewardSlotFamily(base))
+    }
+
+    @Test
+    fun `ordinary off hand seals stay utility while talismans stay accessory`() {
+        val seal =
+            baseItem(
+                id = "ordinary_seal",
+                type = ItemType.ARMOR,
+                slot = EquipSlot.OFF_HAND,
+                tags = setOf("item", "armor", "accessory", "seal", "spell", "protection"),
+            )
+        val talisman =
+            baseItem(
+                id = "ordinary_talisman",
+                type = ItemType.ARMOR,
+                slot = EquipSlot.OFF_HAND,
+                tags = setOf("item", "armor", "accessory", "fire", "protection"),
+            )
+
+        assertEquals(MilestoneRewardSlotFamily.CONSUMABLE_OR_UTILITY, milestoneRewardSlotFamily(seal))
+        assertEquals(MilestoneRewardSlotFamily.ACCESSORY, milestoneRewardSlotFamily(talisman))
+    }
+
+    @Test
+    fun `slot rotation bonus only applies inside non weapon payoff cap`() {
+        val bundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        baseItem(
+                            id = "generic_guard_blade",
+                            tags = setOf("item", "weapon", "templar", "holy", "guard"),
+                            dropWeight = 4,
+                        ),
+                        baseItem(
+                            id = "templar_relic",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.OFF_HAND,
+                            tags = setOf("item", "armor", "accessory", "templar", "holy", "capstone", "non_weapon_capstone"),
+                            dropWeight = 4,
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+            )
+
+        val result =
+            MilestoneRewardSelector(bundle).select(
+                request =
+                    MilestoneRewardSelectionRequest(
+                        candidateBaseIds = listOf("generic_guard_blade", "templar_relic"),
+                        selectorContext =
+                            MilestoneRewardSelectorContext(
+                                rewardSource = MilestoneRewardSource.CACHE,
+                                zoneId = "test_zone",
+                                sourceTier = SourceTier.CHEST,
+                                effectiveFloorBand = 5,
+                                professionId = "templar",
+                            ),
+                        selectionContext = LootBaseSelectionContext(buildTags = setOf("templar", "holy", "guard"), preferredProfessionTag = "templar"),
+                    ),
+                professionSuitability = { true },
+                canSatisfyAffixes = { true },
+            )
+
+        assertEquals(0, candidate(result, "generic_guard_blade").scoreBreakdown.slotRotationBonus)
+        val relicBreakdown = candidate(result, "templar_relic").scoreBreakdown
+        assertTrue(relicBreakdown.slotRotationBonus > 0)
+        assertTrue(relicBreakdown.slotRotationBonus <= relicBreakdown.nonWeaponPayoffBonus / 2)
+    }
+
+    @Test
+    fun `equal score tie break uses item id after frozen capstone rarity and slot order`() {
+        val bundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        baseItem(
+                            id = "zeta_blade",
+                            tags = setOf("item", "weapon", "generic"),
+                            dropWeight = 4,
+                        ),
+                        baseItem(
+                            id = "alpha_blade",
+                            tags = setOf("item", "weapon", "generic"),
+                            dropWeight = 4,
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+            )
+
+        val result =
+            MilestoneRewardSelector(bundle).select(
+                request =
+                    MilestoneRewardSelectionRequest(
+                        candidateBaseIds = listOf("zeta_blade", "alpha_blade"),
+                        selectorContext =
+                            MilestoneRewardSelectorContext(
+                                rewardSource = MilestoneRewardSource.CACHE,
+                                zoneId = "test_zone",
+                                sourceTier = SourceTier.CHEST,
+                                effectiveFloorBand = 5,
+                            ),
+                        selectionContext = LootBaseSelectionContext(buildTags = setOf("generic")),
+                    ),
+                professionSuitability = { true },
+                canSatisfyAffixes = { true },
+            )
+
+        assertEquals("alpha_blade", result.selectedBaseId)
+    }
+
+    @Test
+    fun `owned support identity candidates still rank by score before item id`() {
+        val bundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        baseItem(
+                            id = "owned_high_score_capstone",
+                            tags = setOf("item", "weapon", "templar", "capstone"),
+                            baseStats = StatModifier(attack = 6),
+                            dropWeight = 10,
+                        ),
+                        baseItem(
+                            id = "unowned_low_score_capstone",
+                            tags = setOf("item", "weapon", "templar", "capstone"),
+                            dropWeight = 1,
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+            )
+
+        val result =
+            MilestoneRewardSelector(bundle).select(
+                request =
+                    MilestoneRewardSelectionRequest(
+                        candidateBaseIds = listOf("unowned_low_score_capstone", "owned_high_score_capstone"),
+                        selectorContext =
+                            MilestoneRewardSelectorContext(
+                                rewardSource = MilestoneRewardSource.SUPPORT,
+                                zoneId = "test_zone",
+                                sourceTier = SourceTier.CHEST,
+                                effectiveFloorBand = 5,
+                                professionId = "templar",
+                            ),
+                        selectionContext = LootBaseSelectionContext(buildTags = setOf("templar"), preferredProfessionTag = "templar"),
+                        currentOwnedBaseIds = setOf("owned_high_score_capstone"),
+                    ),
+                professionSuitability = { true },
+                canSatisfyAffixes = { true },
+            )
+
+        assertEquals("owned_high_score_capstone", result.selectedBaseId)
+        assertTrue(candidate(result, "owned_high_score_capstone").score > candidate(result, "unowned_low_score_capstone").score)
+    }
+
+    @Test
+    fun `support rewards reject starter shield duplicates while allowing non starter and identity fallback`() {
+        val bundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        baseItem(
+                            id = "basic_shield",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.OFF_HAND,
+                            tags = setOf("item", "armor", "shield", "guard"),
+                            dropWeight = 4,
+                        ),
+                        baseItem(
+                            id = "sanctified_seal",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.OFF_HAND,
+                            tags = setOf("item", "armor", "accessory", "templar", "holy", "protection"),
+                            dropWeight = 4,
+                        ),
+                        baseItem(
+                            id = "unique_voidlit_seal",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.OFF_HAND,
+                            tags = setOf("item", "armor", "accessory", "templar", "holy", "protection", "capstone", "non_weapon_capstone"),
+                            dropWeight = 4,
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+            )
+
+        val starterSupportResult =
+            duplicateOwnedBaseSelection(
+                bundle = bundle,
+                baseItemId = "basic_shield",
+                rewardSource = MilestoneRewardSource.SUPPORT,
+            )
+        val nonStarterSupportResult =
+            duplicateOwnedBaseSelection(
+                bundle = bundle,
+                baseItemId = "sanctified_seal",
+                rewardSource = MilestoneRewardSource.SUPPORT,
+            )
+        val capstoneSupportResult =
+            duplicateOwnedBaseSelection(
+                bundle = bundle,
+                baseItemId = "unique_voidlit_seal",
+                rewardSource = MilestoneRewardSource.SUPPORT,
+            )
+        val capstoneRouteResult =
+            duplicateOwnedBaseSelection(
+                bundle = bundle,
+                baseItemId = "unique_voidlit_seal",
+                rewardSource = MilestoneRewardSource.ROUTE,
+            )
+
+        assertNull(starterSupportResult.selectedBaseId)
+        assertEquals(MilestoneRewardRejectionReason.OWNED_BASE_DUPLICATE, candidate(starterSupportResult, "basic_shield").rejectionReason)
+        assertEquals("sanctified_seal", nonStarterSupportResult.selectedBaseId)
+        assertTrue(candidate(nonStarterSupportResult, "sanctified_seal").legal)
+        assertEquals("unique_voidlit_seal", capstoneSupportResult.selectedBaseId)
+        assertTrue(candidate(capstoneSupportResult, "unique_voidlit_seal").legal)
+        assertNull(capstoneRouteResult.selectedBaseId)
+        assertEquals(MilestoneRewardRejectionReason.OWNED_BASE_DUPLICATE, candidate(capstoneRouteResult, "unique_voidlit_seal").rejectionReason)
+    }
+
+    @Test
+    fun `profession capstone bonus can tip exact profession capstones over generic aligned weapons`() {
         val bundle =
             ItemDataBundle(
                 baseItems =
@@ -361,7 +650,7 @@ class MilestoneRewardSelectorTest {
                 affixes = emptyList(),
             )
 
-        val preferredResult =
+        val result =
             MilestoneRewardSelector(bundle).select(
                 request =
                     MilestoneRewardSelectionRequest(
@@ -374,36 +663,21 @@ class MilestoneRewardSelectorTest {
                                 effectiveFloorBand = 5,
                             ),
                         selectionContext = LootBaseSelectionContext(buildTags = setOf("rogue", "precision"), preferredProfessionTag = "rogue"),
-                        poolWeightByBaseId = mapOf("rogue_generic_blade" to 18, "rogue_capstone_blade" to 8),
-                        preferredRewardSources = setOf(MilestoneRewardSource.CACHE),
-                    ),
-                professionSuitability = { true },
-                canSatisfyAffixes = { true },
-            )
-        val nonPreferredResult =
-            MilestoneRewardSelector(bundle).select(
-                request =
-                    MilestoneRewardSelectionRequest(
-                        candidateBaseIds = listOf("rogue_generic_blade", "rogue_capstone_blade"),
-                        selectorContext =
-                            MilestoneRewardSelectorContext(
-                                rewardSource = MilestoneRewardSource.SUPPORT,
-                                zoneId = "test_zone",
-                                sourceTier = SourceTier.CHEST,
-                                effectiveFloorBand = 5,
-                            ),
-                        selectionContext = LootBaseSelectionContext(buildTags = setOf("rogue", "precision"), preferredProfessionTag = "rogue"),
-                        poolWeightByBaseId = mapOf("rogue_generic_blade" to 18, "rogue_capstone_blade" to 8),
-                        preferredRewardSources = setOf(MilestoneRewardSource.CACHE),
                     ),
                 professionSuitability = { true },
                 canSatisfyAffixes = { true },
             )
 
-        assertEquals("rogue_capstone_blade", preferredResult.selectedBaseId)
-        assertEquals("rogue_generic_blade", nonPreferredResult.selectedBaseId)
-        assertEquals(50, candidate(preferredResult, "rogue_capstone_blade").scoreBreakdown.preferredRewardSourceScore)
-        assertEquals(0, candidate(nonPreferredResult, "rogue_capstone_blade").scoreBreakdown.preferredRewardSourceScore)
+        assertEquals("rogue_capstone_blade", result.selectedBaseId)
+        assertEquals(
+            candidate(result, "rogue_generic_blade").scoreBreakdown.baseScore,
+            candidate(result, "rogue_capstone_blade").scoreBreakdown.baseScore,
+        )
+        assertTrue(candidate(result, "rogue_capstone_blade").scoreBreakdown.professionCapstoneBonus > 0)
+        assertEquals(
+            0,
+            candidate(result, "rogue_generic_blade").scoreBreakdown.professionCapstoneBonus,
+        )
     }
 
     private fun selectProfile(
@@ -413,6 +687,8 @@ class MilestoneRewardSelectorTest {
         rewardSource: MilestoneRewardSource,
         occupiedSlots: Set<EquipSlot> = emptySet(),
         currentOwnedBaseIds: Set<String> = emptySet(),
+        effectiveFloorBand: Int = 5,
+        playerLevel: Int = 1,
     ): MilestoneRewardSelectionResult {
         val profile = requireNotNull(lootProfilesById[profileId]) { "Missing loot profile '$profileId'." }
         val pools = listOf(resolver.resolve(profile))
@@ -426,14 +702,14 @@ class MilestoneRewardSelectorTest {
                             rewardSource = rewardSource,
                             zoneId = zoneId,
                             sourceTier = rewardSourceTier(rewardSource),
-                            effectiveFloorBand = 5,
+                            effectiveFloorBand = effectiveFloorBand,
+                            professionId = professionId,
+                            playerLevel = playerLevel,
                             occupiedSlots = occupiedSlots,
                         ),
                     poolWeightByBaseId = weightByBaseId(pools, selectionContext),
                     selectionContext = selectionContext,
                     currentOwnedBaseIds = currentOwnedBaseIds,
-                    preferredRewardSources = preferredRewardSources(professionId),
-                    rewardPreferenceOrder = rewardPreferenceOrder(professionId),
                     replacementSlotPriority = replacementSlotPriority(professionId),
                     forbiddenBaseIds = setOf("healing_potion", "scroll_teleport", "mana_potion", "stamina_draught", "energy_tonic", "consecrated_oil"),
                 ),
@@ -478,15 +754,6 @@ class MilestoneRewardSelectorTest {
         return weightsByBaseId
     }
 
-    private fun rewardPreferenceOrder(professionId: String): List<String> =
-        when (professionId) {
-            "vanguard" -> listOf("abyssal_heartstone", "forgebreaker_pick", "long_sword", "basic_shield", "chain_mail", "war_maul", "healing_potion", "scroll_teleport")
-            "arcanist" -> listOf("abyssal_heartstone", "arcane_staff", "emerald_charm", "seal_reliquary", "mana_potion", "apprentice_robe", "scroll_teleport", "healing_potion")
-            "rogue" -> listOf("abyssal_heartstone", "short_sword", "hunter_bow", "bandit_trophy", "leather_armor", "energy_tonic", "scroll_teleport", "healing_potion")
-            "templar" -> listOf("abyssal_heartstone", "long_sword", "basic_shield", "sanctified_seal", "chain_mail", "consecrated_oil", "healing_potion")
-            else -> listOf("healing_potion", "scroll_teleport")
-        }
-
     private fun replacementSlotPriority(professionId: String): List<EquipSlot> =
         foundationBuildIdentityByProfessionId[professionId]
             ?.preferredReplacementSlots
@@ -496,8 +763,29 @@ class MilestoneRewardSelectorTest {
             }
             ?: listOf(EquipSlot.OFF_HAND, EquipSlot.ARMOR, EquipSlot.WEAPON)
 
-    private fun preferredRewardSources(professionId: String): Set<MilestoneRewardSource> =
-        foundationBuildIdentityByProfessionId[professionId]?.preferredRewardSources.orEmpty()
+    private fun duplicateOwnedBaseSelection(
+        bundle: ItemDataBundle,
+        baseItemId: String,
+        rewardSource: MilestoneRewardSource,
+    ): MilestoneRewardSelectionResult =
+        MilestoneRewardSelector(bundle).select(
+            request =
+                MilestoneRewardSelectionRequest(
+                    candidateBaseIds = listOf(baseItemId),
+                    selectorContext =
+                        MilestoneRewardSelectorContext(
+                            rewardSource = rewardSource,
+                            zoneId = "test_zone",
+                            sourceTier = SourceTier.CHEST,
+                            effectiveFloorBand = 5,
+                            professionId = "templar",
+                        ),
+                    selectionContext = LootBaseSelectionContext(buildTags = setOf("templar", "holy"), preferredProfessionTag = "templar"),
+                    currentOwnedBaseIds = setOf(baseItemId),
+                ),
+            professionSuitability = { true },
+            canSatisfyAffixes = { true },
+        )
 
     private fun rewardSourceTier(source: MilestoneRewardSource): SourceTier =
         when (source) {
@@ -521,6 +809,7 @@ class MilestoneRewardSelectorTest {
         type: ItemType = ItemType.WEAPON,
         slot: EquipSlot? = if (type == ItemType.WEAPON) EquipSlot.WEAPON else null,
         tags: Set<String>,
+        baseStats: StatModifier = StatModifier(),
         dropWeight: Int = 1,
         dropFloors: List<Int> = listOf(1, 2, 3, 4, 5),
     ): ItemBaseDef =
@@ -532,6 +821,7 @@ class MilestoneRewardSelectorTest {
             tags = tags,
             glyph = if (type == ItemType.CONSUMABLE) '!' else ')',
             colorHex = "#FFFFFF",
+            baseStats = baseStats,
             dropWeight = dropWeight,
             dropFloors = dropFloors,
             effect = if (type == ItemType.CONSUMABLE) ConsumableEffect.HEAL else null,

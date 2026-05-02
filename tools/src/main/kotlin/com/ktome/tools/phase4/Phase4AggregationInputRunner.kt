@@ -46,6 +46,7 @@ import kotlinx.serialization.json.putJsonObject
 private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v9"
 private const val AGGREGATION_INPUT_DIRECTORY_NAME: String = "inputs"
 private const val AGGREGATION_INPUT_SUMMARY_FILE: String = "aggregation-input-summary.json"
+private const val MILESTONE_REWARD_ADOPTION_DELTA_METRIC_ID: String = "milestoneRewardAdoptionDelta"
 private val INSCRIPTION_SHOP_REPLACEMENT_EVIDENCE_METRIC_IDS: List<String> =
     listOf(
         "terminalInscriptionLoadoutDiversity",
@@ -275,6 +276,7 @@ internal object Phase4AggregationInputRunner {
                         ?: localRewardIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.lootBaselinePath()))
             "longRunLab" -> {
                 evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
+                evaluations += milestoneSlotBalanceEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.milestoneSlotBalanceBaselinePath()))
                 evaluations += criticalPathPacingEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
                 evaluations += professionTreeRunChoiceEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.professionTreeRunChoiceBaselinePath()))
                 evaluations += inscriptionShopReplacementEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.inscriptionShopReplacementBaselinePath()))
@@ -389,6 +391,12 @@ internal object Phase4AggregationInputRunner {
             } else {
                 EvaluationEntryStatus.UNEXPECTED_REGRESSION
             }
+        val expectedTopFiveAffixExposureStatus =
+            if (expectedTopFiveAffixExposurePasses(task)) {
+                EvaluationEntryStatus.PASS
+            } else {
+                EvaluationEntryStatus.UNEXPECTED_REGRESSION
+            }
         val expectedSourceCoverageStatus =
             if (
                 requireRewardRoutingCoverageSummary(task.metrics)
@@ -406,6 +414,7 @@ internal object Phase4AggregationInputRunner {
                 expectedRewardStatus,
                 expectedDynamicPoolStatus,
                 expectedSpecialTierDuplicateStatus,
+                expectedTopFiveAffixExposureStatus,
                 expectedSourceCoverageStatus,
             ).count { status -> status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         val expectedVerdict =
@@ -418,9 +427,19 @@ internal object Phase4AggregationInputRunner {
             entriesByMetricId["sameZoneSecretVsRewardMaxOverlap"]?.status == expectedRewardStatus &&
             entriesByMetricId["dynamicPoolCoverage"]?.status == expectedDynamicPoolStatus &&
             entriesByMetricId["specialTierPassiveFamilyDuplicateCount"]?.status == expectedSpecialTierDuplicateStatus &&
+            entriesByMetricId["topFiveAffixExposureShare"]?.status == expectedTopFiveAffixExposureStatus &&
             entriesByMetricId["professionCapstoneSourceCoverage.reportOnly"]?.status == expectedSourceCoverageStatus &&
             evaluation.unexpectedRegressionCount == expectedUnexpectedRegressionCount &&
             evaluation.verdict == expectedVerdict
+    }
+
+    private fun expectedTopFiveAffixExposurePasses(task: Phase4TaskAggregate): Boolean {
+        val topFiveAffixExposureShare = task.metrics.doubleValue("topFiveAffixExposureShare")
+        val maxSingleAffixExposureShare = task.metrics.doubleValue("maxSingleAffixExposureShare")
+        val focusedHighFrequencyAffixCombinedShare = task.metrics.doubleValue("focusedHighFrequencyAffixCombinedShare")
+        return topFiveAffixExposureShare <= 0.4 &&
+            maxSingleAffixExposureShare <= PHASE4_MAX_SINGLE_AFFIX_EXPOSURE_SHARE &&
+            focusedHighFrequencyAffixCombinedShare <= PHASE4_MAX_FOCUSED_HIGH_FREQUENCY_AFFIX_COMBINED_SHARE
     }
 
     private fun taskStatusEvaluation(task: Phase4TaskAggregate): EvaluationResult =
@@ -671,6 +690,7 @@ internal object Phase4AggregationInputRunner {
         val specialTierDuplicateMetricId = "specialTierPassiveFamilyDuplicateCount"
         val secretZoneRewardAuthorityMetricId = "secretZoneRewardAuthorityViolations"
         val sourceCoverageMetricId = "professionCapstoneSourceCoverage.reportOnly"
+        val topFiveAffixExposureMetricId = "topFiveAffixExposureShare"
         val cadenceOverlap = task.metrics.doubleValue(cadenceMetricId)
         val rewardOverlap = task.metrics.doubleValue(rewardMetricId)
         val dynamicPoolCoverage = task.metrics.doubleValue(dynamicPoolMetricId)
@@ -680,6 +700,9 @@ internal object Phase4AggregationInputRunner {
             specialTierPassiveFamilyDuplicateSummary.jsonObject.getValue("duplicateFamilyCount").jsonPrimitive.content.toInt()
         val rewardRoutingCoverageSummary = requireRewardRoutingCoverageSummary(task.metrics)
         val uniqueArtifactMeaningfulSwapRate = task.metrics.doubleValue("uniqueArtifactMeaningfulSwapRate")
+        val topFiveAffixExposureShare = task.metrics.doubleValue(topFiveAffixExposureMetricId)
+        val maxSingleAffixExposureShare = task.metrics.doubleValue("maxSingleAffixExposureShare")
+        val focusedHighFrequencyAffixCombinedShare = task.metrics.doubleValue("focusedHighFrequencyAffixCombinedShare")
         val dynamicTargetCount =
             dynamicPoolTargetProfiles.jsonArray.count { profile ->
                 profile.jsonObject.getValue("dynamic").jsonPrimitive.content.toBooleanStrict()
@@ -729,6 +752,11 @@ internal object Phase4AggregationInputRunner {
         val dynamicPoolRange = baseline.requiredMetric(dynamicPoolMetricId)
         val specialTierDuplicateRange = baseline.requiredMetric(specialTierDuplicateMetricId)
         val secretZoneRewardAuthorityRange = baseline.requiredMetric(secretZoneRewardAuthorityMetricId)
+        val topFiveAffixExposureRange = baseline.requiredMetric(topFiveAffixExposureMetricId)
+        val maxSingleAffixExposurePasses =
+            maxSingleAffixExposureShare <= PHASE4_MAX_SINGLE_AFFIX_EXPOSURE_SHARE
+        val focusedHighFrequencyAffixExposurePasses =
+            focusedHighFrequencyAffixCombinedShare <= PHASE4_MAX_FOCUSED_HIGH_FREQUENCY_AFFIX_COMBINED_SHARE
         val dynamicPoolEntry =
             EvaluationEntry(
                 metricId = dynamicPoolMetricId,
@@ -803,6 +831,38 @@ internal object Phase4AggregationInputRunner {
                     },
                 details = task.metrics,
             )
+        val topFiveAffixExposureEntry =
+            EvaluationEntry(
+                metricId = topFiveAffixExposureMetricId,
+                status =
+                    if (
+                        Phase4OwnerMetricTargets.passes(topFiveAffixExposureRange, topFiveAffixExposureShare) &&
+                        maxSingleAffixExposurePasses &&
+                        focusedHighFrequencyAffixExposurePasses
+                    ) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("share", task.metrics.getValue(topFiveAffixExposureMetricId))
+                        put("maxSingleAffixExposureShare", task.metrics.getValue("maxSingleAffixExposureShare"))
+                        put("focusedHighFrequencyAffixCombinedShare", task.metrics.getValue("focusedHighFrequencyAffixCombinedShare"))
+                        put("affixExposureShares", task.metrics.getValue("affixExposureShares"))
+                        put("affixExposureCounts", task.metrics.getValue("affixExposureCounts"))
+                        put("affixDistributionDiff", task.metrics.getValue("affixDistributionDiff"))
+                    },
+                currentValueText = formatPercent(topFiveAffixExposureShare),
+                targetText =
+                    "${Phase4OwnerMetricTargets.targetText(topFiveAffixExposureMetricId, topFiveAffixExposureRange)}; " +
+                        "maxSingle<=${formatPercent(PHASE4_MAX_SINGLE_AFFIX_EXPOSURE_SHARE)}; " +
+                        "focusedHighFrequency<=${formatPercent(PHASE4_MAX_FOCUSED_HIGH_FREQUENCY_AFFIX_COMBINED_SHARE)}",
+                note =
+                    "maxSingle=${formatPercent(maxSingleAffixExposureShare)}; " +
+                        "focusedHighFrequencyCombined=${formatPercent(focusedHighFrequencyAffixCombinedShare)}",
+                details = task.metrics,
+            )
         val sourceCoveragePairs = rewardRoutingCoverageSummary.jsonObject.getValue("professionSourceCoverage").jsonArray
         val missingSourceCoverage =
             sourceCoveragePairs.filter { coverage ->
@@ -830,7 +890,13 @@ internal object Phase4AggregationInputRunner {
                     },
                 details = task.metrics,
             )
-        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry + secretZoneRewardAuthorityEntry + sourceCoverageEntry
+        val entries =
+            localRewardEvaluation.entries +
+                dynamicPoolEntry +
+                specialTierDuplicateEntry +
+                secretZoneRewardAuthorityEntry +
+                topFiveAffixExposureEntry +
+                sourceCoverageEntry
         val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         return localRewardEvaluation.copy(
             verdict = if (unexpectedRegressionCount > 0) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
@@ -853,6 +919,8 @@ internal object Phase4AggregationInputRunner {
         val capstoneSeenMetricId = "professionCapstoneSeenRate"
         val capstoneAdoptionMetricId = "professionCapstoneAdoptionRate"
         val nonWeaponMetricId = "nonWeaponBuildPayoffRate"
+        val capstoneAdoptionFloorMetricId = "professionCapstoneAdoptionFloor"
+        val nonWeaponFloorMetricId = "nonWeaponBuildPayoffFloor"
         val diversity = task.metrics.intValue(diversityMetricId)
         val dominance = task.metrics.doubleValue(dominanceMetricId)
         val adoption = task.metrics.doubleValue(adoptionMetricId)
@@ -893,6 +961,8 @@ internal object Phase4AggregationInputRunner {
         val capstoneSeenRange = baseline.requiredMetric(capstoneSeenMetricId)
         val capstoneAdoptionRange = baseline.requiredMetric(capstoneAdoptionMetricId)
         val nonWeaponRange = baseline.requiredMetric(nonWeaponMetricId)
+        val capstoneAdoptionFloorRange = baseline.requiredMetric(capstoneAdoptionFloorMetricId)
+        val nonWeaponFloorRange = baseline.requiredMetric(nonWeaponFloorMetricId)
         val professionCapstoneSeenViolations =
             professionCapstoneSeenFloorViolations(
                 professionCapstoneBreakdown = professionCapstoneBreakdown.jsonObject,
@@ -902,6 +972,8 @@ internal object Phase4AggregationInputRunner {
             professionCapstoneAdoptionFloorViolations(professionCapstoneBreakdown.jsonObject)
         val professionNonWeaponViolations =
             professionNonWeaponFloorViolations(professionCapstoneBreakdown.jsonObject)
+        val capstoneAdoptionFloorPassingCount = phase4FoundationProfessionIds.size - professionCapstoneAdoptionViolations.size
+        val nonWeaponFloorPassingCount = phase4FoundationProfessionIds.size - professionNonWeaponViolations.size
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "longrun",
@@ -916,6 +988,8 @@ internal object Phase4AggregationInputRunner {
                                 capstoneSeenRange,
                                 capstoneAdoptionRange,
                                 nonWeaponRange,
+                                capstoneAdoptionFloorRange,
+                                nonWeaponFloorRange,
                             ),
                     ),
                 actualMetrics =
@@ -926,6 +1000,8 @@ internal object Phase4AggregationInputRunner {
                         capstoneSeenMetricId to professionCapstoneSeenRate,
                         capstoneAdoptionMetricId to professionCapstoneAdoptionRate,
                         nonWeaponMetricId to nonWeaponBuildPayoffRate,
+                        capstoneAdoptionFloorMetricId to capstoneAdoptionFloorPassingCount.toDouble(),
+                        nonWeaponFloorMetricId to nonWeaponFloorPassingCount.toDouble(),
                     ),
                 currentValueTexts =
                     mapOf(
@@ -937,6 +1013,8 @@ internal object Phase4AggregationInputRunner {
                         capstoneSeenMetricId to "${formatPercent(professionCapstoneSeenRate)} adoption=${formatPercent(professionCapstoneAdoptionRate)}",
                         capstoneAdoptionMetricId to "${formatPercent(professionCapstoneAdoptionRate)} ($professionCapstoneAdoptionCount/$fullRouteCount)",
                         nonWeaponMetricId to "${formatPercent(nonWeaponBuildPayoffRate)} adoption=${formatPercent(professionCapstoneAdoptionRate)}",
+                        capstoneAdoptionFloorMetricId to "$capstoneAdoptionFloorPassingCount/${phase4FoundationProfessionIds.size}",
+                        nonWeaponFloorMetricId to "$nonWeaponFloorPassingCount/${phase4FoundationProfessionIds.size}",
                     ),
                 currentValueElements =
                     mapOf(
@@ -977,6 +1055,20 @@ internal object Phase4AggregationInputRunner {
                                 put("professionCapstoneBreakdown", professionCapstoneBreakdown)
                                 put("fullRouteCount", task.metrics.getValue("fullRouteCount"))
                             },
+                        capstoneAdoptionFloorMetricId to
+                            buildJsonObject {
+                                put("passingProfessionCount", capstoneAdoptionFloorPassingCount)
+                                put("professionCount", phase4FoundationProfessionIds.size)
+                                put("professionCapstoneBreakdown", professionCapstoneBreakdown)
+                                put("professionTerminalIdentityItemIds", task.metrics.getValue("professionTerminalIdentityItemIds"))
+                            },
+                        nonWeaponFloorMetricId to
+                            buildJsonObject {
+                                put("passingProfessionCount", nonWeaponFloorPassingCount)
+                                put("professionCount", phase4FoundationProfessionIds.size)
+                                put("professionCapstoneBreakdown", professionCapstoneBreakdown)
+                                put("capstoneAdoptionBySlot", task.metrics.getValue("capstoneAdoptionBySlot"))
+                            },
                     ),
                 detailsByMetricId =
                     mapOf(
@@ -986,6 +1078,8 @@ internal object Phase4AggregationInputRunner {
                         capstoneSeenMetricId to task.metrics,
                         capstoneAdoptionMetricId to task.metrics,
                         nonWeaponMetricId to task.metrics,
+                        capstoneAdoptionFloorMetricId to task.metrics,
+                        nonWeaponFloorMetricId to task.metrics,
                     ),
             )
         val statusOverrides =
@@ -1031,7 +1125,7 @@ internal object Phase4AggregationInputRunner {
                         note =
                             "nonWeaponPayoff=${formatPercent(nonWeaponBuildPayoffRate)}; " +
                                 "breakdown=${professionCapstoneBreakdown.jsonObject.keys.sorted().joinToString()}; " +
-                                "reportOnlyFloors=${professionBuildIdentityReportOnlyFloorNote()}; " +
+                                "blockingFloors=${professionBuildIdentityFloorNote()}; " +
                                 "preferredSources=${professionBuildIdentityPreferredSourceNote()}",
                     ),
                 nonWeaponMetricId to
@@ -1040,40 +1134,70 @@ internal object Phase4AggregationInputRunner {
                         note =
                             "capstoneAdoption=${formatPercent(professionCapstoneAdoptionRate)}; " +
                                 "breakdown=${professionCapstoneBreakdown.jsonObject.keys.sorted().joinToString()}; " +
-                                "reportOnlyFloors=${professionBuildIdentityReportOnlyFloorNote()}; " +
+                                "blockingFloors=${professionBuildIdentityFloorNote()}; " +
                                 "preferredSources=${professionBuildIdentityPreferredSourceNote()}",
+                    ),
+                capstoneAdoptionFloorMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(capstoneAdoptionFloorMetricId, capstoneAdoptionFloorRange),
+                        note = professionCapstoneAdoptionFloorNote(professionCapstoneAdoptionViolations),
+                    ),
+                nonWeaponFloorMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(nonWeaponFloorMetricId, nonWeaponFloorRange),
+                        note = professionNonWeaponFloorNote(professionNonWeaponViolations),
                     ),
             ),
         )
-        val reportOnlyEntries =
-            listOf(
-                EvaluationEntry(
-                    metricId = "professionCapstoneAdoptionFloor.reportOnly",
-                    status = if (professionCapstoneAdoptionViolations.isEmpty()) EvaluationEntryStatus.PASS else EvaluationEntryStatus.APPROVED_DEBT,
-                    currentValue =
+        return baseResult
+    }
+
+    internal fun milestoneSlotBalanceEvaluation(
+        task: Phase4TaskAggregate,
+        baseline: VerificationBaseline,
+    ): EvaluationResult {
+        val metricIds = baseline.expectedMetricRanges.map(VerificationExpectedMetricRange::metricId)
+        val actualMetrics = metricIds.associateWith { metricId -> task.metrics.doubleValue(metricId) }
+        val result =
+            VerificationBaselineComparator.compareBudgetThreshold(
+                domainId = "longrun",
+                evaluationId = "longrun.milestoneRewardSlotBalance",
+                baseline = baseline,
+                actualMetrics = actualMetrics,
+                currentValueTexts =
+                    metricIds.associateWith { metricId ->
+                        if (metricId == MILESTONE_REWARD_ADOPTION_DELTA_METRIC_ID) {
+                            task.metrics.intValue(metricId).toString()
+                        } else {
+                            formatPercent(task.metrics.doubleValue(metricId))
+                        }
+                    },
+                currentValueElements =
+                    metricIds.associateWith { metricId ->
                         buildJsonObject {
-                            put("professionCapstoneBreakdown", professionCapstoneBreakdown)
-                        },
-                    currentValueText =
-                        "${phase4FoundationProfessionIds.size - professionCapstoneAdoptionViolations.size}/${phase4FoundationProfessionIds.size}",
-                    targetText = "report-only per-profession adoption floor from build-identity schema",
-                    note = professionCapstoneAdoptionFloorNote(professionCapstoneAdoptionViolations),
-                    details = task.metrics,
-                ),
-                EvaluationEntry(
-                    metricId = "nonWeaponBuildPayoffFloor.reportOnly",
-                    status = if (professionNonWeaponViolations.isEmpty()) EvaluationEntryStatus.PASS else EvaluationEntryStatus.APPROVED_DEBT,
-                    currentValue =
-                        buildJsonObject {
-                            put("professionCapstoneBreakdown", professionCapstoneBreakdown)
-                        },
-                    currentValueText = "${phase4FoundationProfessionIds.size - professionNonWeaponViolations.size}/${phase4FoundationProfessionIds.size}",
-                    targetText = "report-only per-profession non-weapon floor from build-identity schema",
-                    note = professionNonWeaponFloorNote(professionNonWeaponViolations),
-                    details = task.metrics,
-                ),
+                            put("value", task.metrics.getValue(metricId))
+                            if (metricId == MILESTONE_REWARD_ADOPTION_DELTA_METRIC_ID) {
+                                put("adoptedMinusNotAdopted", task.metrics.getValue(metricId))
+                            }
+                            put("slotFamilyDistribution", task.metrics.getValue("milestoneRewardSlotFamilyDistribution"))
+                            put("slotFamilyShares", task.metrics.getValue("milestoneRewardSlotFamilyShares"))
+                        }
+                    },
+                detailsByMetricId = metricIds.associateWith { task.metrics },
             )
-        return appendReportOnlyEntries(baseResult, reportOnlyEntries)
+        return result.withEntryPresentations(
+            metricIds.associateWith { metricId ->
+                MetricPresentation(
+                    targetText = Phase4OwnerMetricTargets.targetText(metricId, baseline.requiredMetric(metricId)),
+                    note =
+                        if (metricId == MILESTONE_REWARD_ADOPTION_DELTA_METRIC_ID) {
+                            "adoptedMinusNotAdopted=${task.metrics.intValue(metricId)}"
+                        } else {
+                            "slotFamilies=${task.metrics.getValue("milestoneRewardSlotFamilyDistribution")}"
+                        },
+                )
+            },
+        )
     }
 
     private fun criticalPathPacingEvaluation(
@@ -1684,11 +1808,11 @@ private const val DEFAULT_SHA256_BUFFER_SIZE: Int = 8 * 1024
 
 internal val phase4FoundationProfessionIds: Set<String> = foundationBuildIdentityProfessionIds
 
-internal fun professionBuildIdentityReportOnlyFloorNote(): String =
+internal fun professionBuildIdentityFloorNote(): String =
     foundationBuildIdentityByProfessionId.values
         .sortedBy { identity -> identity.professionId }
         .joinToString(separator = ", ") { identity ->
-            val floors = identity.reportOnlyFloors
+            val floors = identity.buildIdentityFloors
             "${identity.professionId}(seen>=${floors.seenMinCount},adoption>=${floors.adoptionMinCount},nonWeapon>=${floors.nonWeaponMinCount})"
         }
 
@@ -1729,7 +1853,7 @@ internal fun professionCapstoneSeenNote(
     buildList {
         add("capstoneAdoption=${formatPercent(professionCapstoneAdoptionRate)}")
         add("breakdown=${professionCapstoneBreakdown.keys.sorted().joinToString()}")
-        add("reportOnlyFloors=${professionBuildIdentityReportOnlyFloorNote()}")
+        add("blockingFloors=${professionBuildIdentityFloorNote()}")
         add("preferredSources=${professionBuildIdentityPreferredSourceNote()}")
         if (violations.isNotEmpty()) {
             add(
@@ -1748,7 +1872,7 @@ internal fun professionCapstoneAdoptionFloorViolations(
         val breakdown = professionCapstoneBreakdown[professionId]?.jsonObject
         val actualCount = breakdown?.get("adoptedCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
         val sampleCount = breakdown?.get("sampleCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
-        val requiredCount = foundationBuildIdentityByProfessionId.getValue(professionId).reportOnlyFloors.adoptionMinCount
+        val requiredCount = foundationBuildIdentityByProfessionId.getValue(professionId).buildIdentityFloors.adoptionMinCount
         if (actualCount < requiredCount) {
             ProfessionCapstoneCountFloorViolation(
                 professionId = professionId,
@@ -1768,7 +1892,7 @@ internal fun professionNonWeaponFloorViolations(
         val breakdown = professionCapstoneBreakdown[professionId]?.jsonObject
         val actualCount = breakdown?.get("nonWeaponPayoffCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
         val sampleCount = breakdown?.get("sampleCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
-        val requiredCount = foundationBuildIdentityByProfessionId.getValue(professionId).reportOnlyFloors.nonWeaponMinCount
+        val requiredCount = foundationBuildIdentityByProfessionId.getValue(professionId).buildIdentityFloors.nonWeaponMinCount
         if (actualCount < requiredCount) {
             ProfessionCapstoneCountFloorViolation(
                 professionId = professionId,
@@ -1784,19 +1908,19 @@ internal fun professionNonWeaponFloorViolations(
 internal fun professionCapstoneAdoptionFloorNote(
     violations: List<ProfessionCapstoneCountFloorViolation>,
 ): String =
-    reportOnlyFloorNote("adoption", violations)
+    blockingFloorNote("adoption", violations)
 
 internal fun professionNonWeaponFloorNote(
     violations: List<ProfessionCapstoneCountFloorViolation>,
 ): String =
-    reportOnlyFloorNote("nonWeapon", violations)
+    blockingFloorNote("nonWeapon", violations)
 
-private fun reportOnlyFloorNote(
+private fun blockingFloorNote(
     label: String,
     violations: List<ProfessionCapstoneCountFloorViolation>,
 ): String =
     buildList {
-        add("reportOnlyFloors=${professionBuildIdentityReportOnlyFloorNote()}")
+        add("blockingFloors=${professionBuildIdentityFloorNote()}")
         if (violations.isEmpty()) {
             add("$label=all-professions-covered")
         } else {

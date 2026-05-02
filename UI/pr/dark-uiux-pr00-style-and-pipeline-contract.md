@@ -6,6 +6,32 @@
 **前置条件**: [UI/PLAN.md](../PLAN.md)、[UI/ART_STYLE_BIBLE.md](../ART_STYLE_BIBLE.md)、canonical `assets-src/image/manifests/phase2-visual-manifest.json` 与 runtime `client/src/main/resources/manifests/visual-manifest.json` 可读。
 **资源生成结论**: 不生成正式 runtime PNG；本 PR 必须交付暗黑雪碧图管线的 schema、dry-run、root lint gate 和 style epoch 策略。
 
+## 0. 开发治理与验收矩阵
+
+本 PR 是 [development-governance.md](./development-governance.md) 的 dark UI/UX pipeline canary。执行前必须先通过 `acceptanceContractLint`，再进入 pipeline lint、dry-run coverage、client evidence 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UI00-M01` | §3 style / prompt / sheet plan contract | `docs` / `assets` | `acceptanceContractLint` | `styleLint`, `darkSpriteSheetLint` | `UI/sprite-sheets/sheet-plan.yaml` | `N/A` |
+| `UI00-M02` | §3 key registry schema | `tools` | key registry focused tests | `darkKeyRegistryLint` | `UI/sprite-sheets/key-registry.yaml` | `N/A` |
+| `UI00-M03` | §4 manifest authority | `tools` | manifest resolver tests | `manifestLint`, `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=pr00-dry-run` | `assets-src/image/manifests/phase2-visual-manifest.json` | `N/A` |
+| `UI00-M04` | §5 gate 接线 / verifyChanged impact | `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+| `UI00-M05` | §8 / §9 验收与验证命令 | `docs` | `acceptanceContractLint` | `assetLint`, `styleLint`, `manifestLint` | `build/reports/verification/` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：`darkKeyRegistryLint`、`darkSpriteSheetLint`、`spriteSheetMapLint`、`darkManifestCoverageLint`、`assetLint`、`styleLint`、`manifestLint`、`maintainabilityLint`、`verifyChanged`。触发原因是 PR-00 建立后续资源 PR 的 pipeline 和 gate 合同。
+
+### Canonical Artifact
+
+canonical artifact 固定为 `UI/sprite-sheets/sheet-plan.yaml`、`UI/sprite-sheets/key-registry.yaml`、canonical/runtime visual manifest、dark coverage artifact 和 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。Codex app 下载目录、dry-run 临时 PNG 和本机绝对路径不得进入合同。
+
+### Failure Rule
+
+PR-00 的 gate 失败必须先修 schema、registry、sheet plan 或 manifest authority；不得通过跳过 dark coverage 或把 dry-run artifact 当正式资源让 PR 通过。
+
 ## 1. 阶段目标
 
 1. 冻结 `ktome-dark-fantasy-sprite-ui-v1` 风格合同，作为后续 PR 的唯一视觉判断入口。

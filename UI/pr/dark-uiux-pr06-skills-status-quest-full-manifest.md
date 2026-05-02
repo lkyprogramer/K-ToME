@@ -6,6 +6,33 @@
 **前置条件**: PR-03、PR-04、PR-05 完成。
 **资源生成结论**: 生成 Round 8-9 与返修资源，完成玩家可见 manifest 收口。
 
+## 0. 开发治理与验收矩阵
+
+本 PR 继承 [development-governance.md](./development-governance.md)，并承担 dark manifest final-full 前的主体收口。执行前先跑 `acceptanceContractLint`，再跑 resource gate、status / talent focused tests、final coverage 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UI06-M01` | §3 Round 8-9 resource scope | `assets` | `darkSpriteSheetLint`, `spriteSheetMapLint` | `assetLint`, `styleLint` | `assets-src/image/contact-sheets/dark-v1/` | `required` |
+| `UI06-M02` | §4 职业树联动 | `client` | `TalentSidebarPresenterTest`, `InputHandlerTest` | `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI06-M03` | §6 full manifest 验收标准 | `tools` | `darkKeyRegistryLint`, `ManifestResolveTest` | `manifestLint`, `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=final-full` | dark manifest coverage report | `N/A` |
+| `UI06-M04` | status / quest / skill presentation | `client` | `StatusPresentationModelTest`, `StatusIconResolverTest` | `clientSmoke`, `goldenScreenshot` | `build/reports/tests/` | `required` |
+| `UI06-M05` | PR-03/05 rejected cell 返修 | `assets` / `tools` | coverage artifact diff check | `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=final-full` | dark coverage artifact | `N/A` |
+| `UI06-M06` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：resource lint 全套、`darkManifestCoverageLint final-full`、`:client:clientSmoke`、`:client:goldenScreenshot`、`localeLint`、`contractLint`、`maintainabilityLint`、`verifyChanged`。触发原因是 PR-06 完成玩家可见 manifest 全量收口。
+
+### Canonical Artifact
+
+canonical artifact 固定为 Round 8-9 / rejected polish contact sheet、key registry、final-full coverage artifact、runtime manifest、client golden 和 test report。frozen 职业排除必须写入 coverage artifact，不能显示成 missing。
+
+### Failure Rule
+
+玩家可见 rejected cell 不得留给 PR-07 静默修补；若 final-full coverage 仍有 player-visible gap，必须回到 PR-06 或拆单独资源修复 PR。
+
 ## 1. 阶段目标
 
 1. 替换技能、状态、damage type、quest、zone、profession/tree icon。

@@ -33,6 +33,9 @@
 12. 快速白盒验证模式只负责缩短场景抵达、证据建档和启动路径，不得替代 owner gate、reportPhase4、goldenScreenshot、clientSmoke 或当前 PR 声明的 core/game/tools 测试。
 13. 每个 PR 的 metric table 就是该 PR 的 Metric Glossary；开工前必须包含 metric id、阈值、事件来源、聚合公式、分母口径、producer、baseline、failSemantics。
 14. 本轮 PR 不承担旧 run save、旧 replay、旧 report id、旧 schema、旧 command payload 的兼容；长期稳定结构优先于旧数据继续运行。
+15. PR-03 到 PR-07 必须同时遵守 [development-governance.md](./development-governance.md)；每个文档必须包含 `## 0. 开发治理与验收矩阵`。
+16. PR-03 是治理 canary；PR-03 未完成 `acceptanceContractLint`、fast lane、owner producer、report gate、最终 `verifyChanged` 与 doc-vs-implementation self-audit 前，PR-04 到 PR-07 不得声称已经验证新规范有效。
+17. 重型 owner gate 不得作为需求探索或调参循环；同一重型 gate 失败超过 2 次或单轮本地验证超过 90 分钟时，先按 `development-governance.md` 写复盘，再继续修。
 
 ### 2.1 长期稳定优先与破坏性改造纪律
 
@@ -76,6 +79,12 @@ PR-01 合入后，后续 PR 必须继承以下实现边界：
 4. `AsciiRenderModel` 和 `TileRenderModel` 只能把 `TalentSidebarLine.role` 映射为各自 tone；Tile 可以额外 resolve `iconKey`。不得在 renderer 内重新拼装 talent tree 文案、glyph、rank label、preview 展开/折叠、active-slot-choice 文案或 footer。
 5. `DescriptionPresenter.presentTalentTreeNodeLines` 继续负责 talent node 描述文本；renderer 不得绕过 presenter 直接为 talent tree sidebar 组装描述行。
 6. 后续 PR 若触碰 talent sidebar、active-slot-choice modal、`TalentTreeNodeSnapshot` 或相关 RenderSnapshot serialization，必须同步更新 `TalentSidebarPresenterTest`、`InputHandlerTest`、ASCII/Tile render model 测试，以及 snapshot serialization 测试。
+
+### 2.4 Phase4 v4 开发治理入口
+
+长期治理入口固定为 [development-governance.md](./development-governance.md)。
+
+本 README 只维护 PR 索引、phase 继承规则和验证入口摘要；Acceptance Matrix、Gate Budget、Canonical Artifact、Failure Rule、doc-vs-implementation self-audit 与 whitebox skip 记录规则只在 [development-governance.md](./development-governance.md) 维护。
 
 ## 3. 资源管线结论
 
@@ -132,7 +141,7 @@ producer freshness 纪律：
 | PR-00 | `./gradlew :tools:test --tests com.ktome.tools.whitebox.Phase4V4WhiteboxScenarioCliTest :client:test --tests com.ktome.client.screen.ValidationScenarioBootstrapTest` |
 | PR-01 | `./gradlew :core:test --tests com.ktome.core.talent.TalentAllocationPlannerTest :game:test --tests com.ktome.game.TalentProgressionTest :game:test --tests com.ktome.game.FoundationGameSessionTest` |
 | PR-02 | `./gradlew :core:test --tests com.ktome.core.inscription.InscriptionSlotTest :game:test --tests com.ktome.game.FoundationGameSessionTest --tests com.ktome.game.harness.SmokeBotTest :client:test --tests com.ktome.client.input.InputHandlerTest` |
-| PR-03 | `./gradlew :game:test --tests com.ktome.game.loot.MilestoneRewardSelectorTest :tools:test --tests com.ktome.tools.loot.WhiteBoxLootRunnerTest` |
+| PR-03 | `./gradlew :game:test --tests com.ktome.game.loot.MilestoneRewardSelectorTest` |
 | PR-04 | `./gradlew :game:test --tests 'com.ktome.game.hidden.*' :tools:test --tests 'com.ktome.tools.hidden.*'` |
 | PR-05 | `./gradlew :core:test --tests com.ktome.core.ai.BossPhaseManagerTest :game:test --tests com.ktome.game.BossVariantDataLoaderTest` |
 | PR-06 | `./gradlew :game:test --tests 'com.ktome.game.harness.*' :tools:test --tests 'com.ktome.tools.verification.*' scopeCoverageLint` |

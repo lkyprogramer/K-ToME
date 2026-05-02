@@ -4,25 +4,25 @@ lootProfiles:
     tags: [loot, common]
     poolStrategy: FIXED_LIST
     rewardBudget: 6
-    itemIds: [healing_potion, short_sword, leather_armor, bandit_trophy, stamina_draught, hunter_bow]
-    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { WEAPON: 2, OFF_HAND: 2, ARMOR: 1 }
+    itemIds: [healing_potion, short_sword, leather_armor, basic_shield, bandit_trophy, stamina_draught, hunter_bow]
+    typeWeights: { WEAPON: 1, ARMOR: 3, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 1, OFF_HAND: 4, ARMOR: 2 }
   - id: loot.foundation.elite
     schemaVersion: 3
     tags: [loot, elite]
     poolStrategy: FIXED_LIST
     rewardBudget: 8
     itemIds: [basic_shield, mana_potion, chain_mail, apprentice_robe, long_sword, emerald_charm, furnace_talisman, energy_tonic]
-    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { WEAPON: 2, OFF_HAND: 2, ARMOR: 2 }
+    typeWeights: { WEAPON: 2, ARMOR: 4, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 1, OFF_HAND: 4, ARMOR: 2 }
   - id: loot.foundation.boss
     schemaVersion: 3
     tags: [loot, boss]
     poolStrategy: FIXED_LIST
     rewardBudget: 10
-    itemIds: [battle_axe, long_sword, hunter_bow, plate_armor, arcane_staff, scroll_teleport, mana_potion, forgebreaker_pick, sanctified_seal, seal_reliquary, shadow_cloak, consecrated_oil]
+    itemIds: [battle_axe, long_sword, hunter_bow, basic_shield, plate_armor, arcane_staff, scroll_teleport, mana_potion, forgebreaker_pick, sanctified_seal, seal_reliquary, shadow_cloak, consecrated_oil]
     typeWeights: { WEAPON: 4, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { WEAPON: 3, OFF_HAND: 2, ARMOR: 2 }
+    slotBias: { WEAPON: 2, OFF_HAND: 5, ARMOR: 2 }
   - id: loot.shattered_outpost.cadence
     schemaVersion: 3
     tags: [loot, cadence, shattered_outpost]
@@ -214,7 +214,7 @@ lootProfiles:
     canonicalZoneId: abyssal_heart
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 1
-    itemIds: [abyssal_heartstone, artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal, artifact_briar_heart, unique_thornpath_crook]
+    itemIds: [abyssal_heartstone, basic_shield, artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal, artifact_briar_heart, unique_thornpath_crook]
     itemTagFilter: [abyssal_heart]
     excludeIds: *abyssal_capstone_excludes
     typeWeights: { ARMOR: 5, WEAPON: 1 }

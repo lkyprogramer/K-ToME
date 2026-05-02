@@ -1,7 +1,9 @@
 package com.ktome.client.ui.card
 
 import com.ktome.core.snapshot.ItemRenderSnapshot
+import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.core.snapshot.RewardPresentationBuildIdentitySnapshot
 import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
 import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.ShopOfferSnapshot
@@ -119,5 +121,43 @@ class ModalCardModelTest {
         assertEquals("ui.card.reward.header.icon", reward.iconKey)
         assertEquals(ModalCardReturnPolicy.READ_ONLY_POPPABLE, reward.returnPolicy)
         assertEquals(ModalCardAction.CLOSE, reward.actionFor(ModalCardInput.ESCAPE))
+    }
+
+    @Test
+    fun `reward cards expose build identity slot profession and score reason`() {
+        val reward =
+            ModalCardModel.rewardPresentation(
+                index = 0,
+                entry =
+                    RewardPresentationEntrySnapshot(
+                        source = RewardPresentationSourceSnapshot.CACHE,
+                        sourceLabelKey = "ui.reward.source.cache",
+                        itemDisplayName = RenderTextTokenSnapshot("item.unique.deepcurrent_lens.name"),
+                        buildIdentity =
+                            RewardPresentationBuildIdentitySnapshot(
+                                slotId = "OFF_HAND",
+                                slotLabelKey = "ui.reward.slot.off_hand",
+                                professionId = "arcanist",
+                                professionLabelKey = "profession.arcanist.name",
+                                scoreReason =
+                                    RenderTextTokenSnapshot(
+                                        "ui.reward.identity.reason.non_weapon_capstone",
+                                        listOf(
+                                            RenderTextArgumentSnapshot(name = "profession", valueKey = "profession.arcanist.name"),
+                                            RenderTextArgumentSnapshot(name = "slot", valueKey = "ui.reward.slot.off_hand"),
+                                        ),
+                                    ),
+                            ),
+                    ),
+            )
+
+        assertEquals(
+            listOf(
+                "ui.reward.identity.slot",
+                "ui.reward.identity.profession",
+                "ui.reward.identity.reason.non_weapon_capstone",
+            ),
+            reward.detailLines.map(RenderTextTokenSnapshot::key),
+        )
     }
 }

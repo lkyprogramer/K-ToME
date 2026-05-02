@@ -39,6 +39,12 @@
             "maxValue": 0.0,
             "maxInclusive": true,
             "notes": "Secret-zone reward authority must stay pinned to SecretZoneDef.rewardProfileId with exactly one SECRET_ZONE_REWARD on each guaranteed hidden event."
+        },
+        {
+            "metricId": "topFiveAffixExposureShare",
+            "maxValue": 0.40,
+            "maxInclusive": true,
+            "notes": "Top five observed affixes must not exceed 40% of whiteBoxLoot affix exposure."
         }
     ],
     "notes": [

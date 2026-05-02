@@ -18,6 +18,32 @@
 **前置条件**: PR-00、PR-03、PR-04、PR-07 已完成；PR-03 的 reward/build 指标已经进入 long-run，PR-04 的 zone hook 字段已经进入 route summary，PR-07 的 sample pack route 字段已经进入 content pack summary
 **资源生成结论**: 不生成图片资源；不生成音频资源
 
+## 0. 开发治理与验收矩阵
+
+本 PR 排在 PR-03、PR-04、PR-07 之后，用于验证最终 route diversity 与 `verifyChanged` routing 代表性。执行规则见 [development-governance.md](./development-governance.md)，通用验证阶梯见 [docs/verification/README.md](../../../verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../../rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PR06-M01` | §5.1 long-run corpus 扩容 | `game` | `LongRunLabSeedBank`, harness corpus tests | `longRunLab` | `build/reports/harness/long-run-full.json` | `required` |
+| `PR06-M02` | §5.2 route diversity metric | `game` / `tools` | route hash and summary tests | `longRunLab`, `reportPhase4Only` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `required` |
+| `PR06-M03` | §5.3 `verifyChanged` routing | `tools` | `ScopeCoverageLintTest`, `VerificationImpactAnalyzer` tests | `scopeCoverageLint`, `verifyChangedPreflight` | `build/verification/verify-changed/preflight-task-duration-summary.{json,md}` | `required` |
+| `PR06-M04` | §5.4 report 展示 | `tools` | `ReportPhase4RunnerTest`, `ReportPhase4MaterializationTest` | `reportPhase4Only`, `reportPhase4` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `N/A` |
+| `PR06-M05` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：`longRunLab`、`reportPhase4Only`、`reportPhase4`、`scopeCoverageLint`、`maintainabilityLint`、`verifyChanged`。触发原因是 PR-06 验证长局代表性和 changed-file routing，不新增宽样本到 `verifyChanged`。
+
+### Canonical Artifact
+
+route diversity 的 canonical report 是 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`。`build/reports/harness/long-run-full.json` 是 owner producer evidence；cache 诊断、shard reuse 和本机路径不得进入 fixture 合同。
+
+### Failure Rule
+
+如果 route diversity 失败，先修 corpus 分类、route token 或 hash 口径；如果 routing 失败，只扩 `VerifyChangedPlanGate` / `scopeCoverageLint` 覆盖，不新增第二套 impact analyzer。
+
 ## 1. 玩家体验目标
 
 本 PR 修 long-run 的代表性。Phase4 的奖励和构筑调参必须在多路线、多 secret、多 branch 下成立，不能只对一条 full_route 主线跑绿。

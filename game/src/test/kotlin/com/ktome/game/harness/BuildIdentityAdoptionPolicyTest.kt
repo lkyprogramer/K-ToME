@@ -52,11 +52,61 @@ class BuildIdentityAdoptionPolicyTest {
                 item = gearItem(baseItemId = "battle_axe", slot = EquipSlot.WEAPON),
             ),
         )
+        assertEquals(
+            -90,
+            BuildIdentityAdoptionPolicy.preferredWeaponScore(
+                resourceTypeId = "STAMINA",
+                item = gearItem(baseItemId = "hunter_bow", slot = EquipSlot.WEAPON),
+            ),
+        )
+        assertEquals(
+            -260,
+            BuildIdentityAdoptionPolicy.preferredWeaponScore(
+                resourceTypeId = "MANA",
+                item = gearItem(baseItemId = "forgebreaker_pick", slot = EquipSlot.WEAPON),
+            ),
+        )
+        assertEquals(
+            160,
+            BuildIdentityAdoptionPolicy.preferredWeaponScore(
+                resourceTypeId = "MANA",
+                item = gearItem(baseItemId = "arcane_staff", slot = EquipSlot.WEAPON),
+            ),
+        )
+        assertEquals(
+            60,
+            BuildIdentityAdoptionPolicy.preferredWeaponScore(
+                resourceTypeId = "POSITIVE_ENERGY",
+                item = gearItem(baseItemId = "long_sword", slot = EquipSlot.WEAPON),
+            ),
+        )
+        assertEquals(
+            -120,
+            BuildIdentityAdoptionPolicy.preferredWeaponScore(
+                resourceTypeId = "POSITIVE_ENERGY",
+                item = gearItem(baseItemId = "hunter_bow", slot = EquipSlot.WEAPON),
+            ),
+        )
+        assertEquals(
+            95,
+            BuildIdentityAdoptionPolicy.preferredWeaponScore(
+                resourceTypeId = "POSITIVE_ENERGY",
+                item = gearItem(baseItemId = "long_sword", slot = EquipSlot.WEAPON, affixIds = listOf("of_smite")),
+            ),
+        )
+        assertEquals(
+            -85,
+            BuildIdentityAdoptionPolicy.preferredWeaponScore(
+                resourceTypeId = "POSITIVE_ENERGY",
+                item = gearItem(baseItemId = "hunter_bow", slot = EquipSlot.WEAPON, affixIds = listOf("of_smite")),
+            ),
+        )
     }
 
     private fun gearItem(
         baseItemId: String,
         slot: EquipSlot,
+        affixIds: List<String> = emptyList(),
     ): InventoryItemView =
         InventoryItemView(
             index = 0,
@@ -65,6 +115,7 @@ class BuildIdentityAdoptionPolicyTest {
             type = if (slot == EquipSlot.WEAPON) ItemType.WEAPON else ItemType.ARMOR,
             slot = slot,
             quality = RarityTier.NORMAL,
+            affixIds = affixIds,
             effect = ConsumableEffect.HEAL,
         )
 }

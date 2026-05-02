@@ -1,0 +1,4 @@
+package com.ktome.tools.phase4
+
+const val PHASE4_MAX_SINGLE_AFFIX_EXPOSURE_SHARE: Double = 0.15
+const val PHASE4_MAX_FOCUSED_HIGH_FREQUENCY_AFFIX_COMBINED_SHARE: Double = 0.30

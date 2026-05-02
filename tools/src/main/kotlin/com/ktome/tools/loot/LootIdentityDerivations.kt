@@ -393,8 +393,6 @@ internal fun computeRewardRoutingCoverageSummary(schemaCatalog: SchemaCatalog, i
                                             selectionContext = selectionContext,
                                         ),
                                     selectionContext = selectionContext,
-                                    preferredRewardSources = identity.preferredRewardSources.toCollection(linkedSetOf()),
-                                    rewardPreferenceOrder = identity.capstoneBaseIds,
                                     replacementSlotPriority = replacementSlotPriority,
                                     forbiddenBaseIds = FOUNDATION_DETERMINISTIC_RESCUE_UTILITY_BASE_IDS,
                                 ),

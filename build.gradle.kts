@@ -47,6 +47,7 @@ val verificationOnlyTestTags =
         "contractLint",
         "keywordRegistryLint",
         "maintainabilityLint",
+        "acceptanceContractLint",
         "mapgenSmoke",
         "solvabilityHarness",
         "hiddenContentHarness",
@@ -429,6 +430,12 @@ tasks.register("maintainabilityLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the anti-bloat maintainability lint and baseline debt gate."
     dependsOn(":tools:maintainabilityLint")
+}
+
+tasks.register("acceptanceContractLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates Phase4 v4 PR acceptance matrices and governance links."
+    dependsOn(":tools:acceptanceContractLint")
 }
 
 tasks.register("verifyContractLintPreflight") {

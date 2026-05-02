@@ -213,3 +213,25 @@ skill 不得把 repo-specific 规则复制成另一份长文，只能引用本�
 1. Kotlin 代码质量、typed contract、命名、默认参数与布尔参数基本纪律，继续以 [kotlin.md](./kotlin.md) 为基础。
 2. 本文件只补 “AI 变更治理 / anti-bloat taxonomy / reviewer 与 gate 口径”。
 3. 若 `AGENTS.md`、phase 文档或 verification contract 与本文件交叉，按更严格者执行。
+
+---
+
+## 9. Phase4 v4 PR 开发治理
+
+Phase4 v4 PR 的流程规范以 [development-governance.md](../review/phase4/v4-pr/development-governance.md) 为准。本节只固定 AI / agent 容易绕开的治理红线。
+
+作者侧固定规则：
+
+1. 非 trivial v4 PR 必须先写 Acceptance Matrix，再实现。
+2. 不得把重型 owner gate 当作需求探索、调参或快速反馈循环。
+3. 同一重型 gate 失败超过 2 次，或单轮本地验证超过 90 分钟，必须先写复盘并补 fast check，再继续重跑。
+4. 不得引入第二套 verification authority、第二套 impact routing 或第二套 report owner evidence。
+5. fixture / report 只能把 canonical artifact 作为长期合同；raw evidence 的 timestamp、cache status、本机路径不得进入 fixture。
+6. 人工白盒被明确跳过时，必须写 `whitebox=skipped`、原因、替代证据和剩余风险；不得伪造为已通过。
+
+审查侧固定规则：
+
+1. 先检查 Acceptance Matrix 是否覆盖 PR 文档的 MUST / 完成定义。
+2. 再检查 fast check 是否足以在重型 gate 前发现核心需求偏差。
+3. 最后检查 owner producer、report gate 与 `verifyChanged` 是否保持现有权威链路。
+4. 任何“为了让 report 变绿”而复制 runtime selector、reward legality、owner metric 逻辑到 `tools` 的做法，按 `second-authority` 阻塞。

@@ -4,20 +4,20 @@ buildIdentities:
     capstoneBaseIds: [artifact_forge_oath, unique_furnace_plate, unique_quenchbreaker_maul]
     nonWeaponCapstoneBaseIds: [unique_furnace_plate]
     preferredRewardSources: [SUPPORT, BOSS]
-    preferredReplacementSlots: [WEAPON, ARMOR]
+    preferredReplacementSlots: [ARMOR, WEAPON]
     terminalIdentityTags: [frontline, guard, shield, discipline]
-    reportOnlyFloors:
+    buildIdentityFloors:
       seenMinCount: 1
       adoptionMinCount: 1
       nonWeaponMinCount: 1
   - professionId: arcanist
     schemaVersion: 1
     capstoneBaseIds: [artifact_river_echo, unique_deepcurrent_lens]
-    nonWeaponCapstoneBaseIds: [unique_deepcurrent_lens]
+    nonWeaponCapstoneBaseIds: [unique_deepcurrent_lens, unique_cinderveil_plate]
     preferredRewardSources: [CACHE, SUPPORT]
-    preferredReplacementSlots: [WEAPON, OFF_HAND]
+    preferredReplacementSlots: [OFF_HAND, ARMOR, WEAPON]
     terminalIdentityTags: [arcane, spell, ranged, control]
-    reportOnlyFloors:
+    buildIdentityFloors:
       seenMinCount: 1
       adoptionMinCount: 1
       nonWeaponMinCount: 1
@@ -26,9 +26,9 @@ buildIdentities:
     capstoneBaseIds: [artifact_briar_heart, artifact_heartroot_gambit, unique_thornpath_crook, unique_briarbound_bow]
     nonWeaponCapstoneBaseIds: [artifact_briar_heart]
     preferredRewardSources: [CACHE, BOSS]
-    preferredReplacementSlots: [WEAPON, OFF_HAND]
+    preferredReplacementSlots: [OFF_HAND, WEAPON]
     terminalIdentityTags: [precision, mobility, finesse, ranged, marked]
-    reportOnlyFloors:
+    buildIdentityFloors:
       seenMinCount: 1
       adoptionMinCount: 1
       nonWeaponMinCount: 1
@@ -39,7 +39,7 @@ buildIdentities:
     preferredRewardSources: [SUPPORT, BOSS]
     preferredReplacementSlots: [OFF_HAND, ARMOR]
     terminalIdentityTags: [holy, frontline, guard, shield]
-    reportOnlyFloors:
+    buildIdentityFloors:
       seenMinCount: 1
       adoptionMinCount: 1
       nonWeaponMinCount: 1

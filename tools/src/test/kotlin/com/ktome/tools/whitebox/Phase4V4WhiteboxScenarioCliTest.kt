@@ -25,6 +25,7 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(exception.message?.contains("phase4-v4-pr00-selftest") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr01") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr02") == true)
+        assertTrue(exception.message?.contains("phase4-v4-pr03") == true)
     }
 
     @Test
@@ -110,6 +111,36 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `pr03 scenario generates build identity reward evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "phase4-v4-pr03"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/phase4-v4-pr03/evidence/phase4-v4-pr03-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=phase4-v4-pr03"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("phase4-v4-pr03-arcanist-reward-card.png"))
+        assertTrue(runbook.contains("phase4-v4-pr03-arcanist-adopted-nonweapon.png"))
+        assertTrue(runbook.contains("phase4-v4-pr03-rogue-offhand-payoff.png"))
+        assertTrue(runbook.contains("phase4-v4-pr03-report-no-approved-debt.png"))
+        assertTrue(runbook.contains("artifact_briar_heart"))
+        assertTrue(runbook.contains("professionCapstoneAdoptionFloor.reportOnly"))
+        assertTrue(runbook.contains("docs/review/phase4/v4-pr/manual-records/phase4-v4-pr03-build-identity-reward-adoption.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"phase4-v4-pr03\""))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr03-app.log"))
+        assertTrue(expectedEvidence.contains("log.validation.item.pr03_showcase"))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr03-report-no-approved-debt.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `whitebox materialization catalog stays in parity with scenario registry`() {
         val parity = Phase4V4WhiteboxScenarioMaterializationCatalog.validateRegistryParity()
 
@@ -132,6 +163,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr00-selftest
             |  - id: phase4-v4-pr01
             |  - id: phase4-v4-pr02
+            |  - id: phase4-v4-pr03
             |
             """.trimMargin(),
         )
