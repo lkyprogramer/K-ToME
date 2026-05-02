@@ -139,9 +139,11 @@ object ScopeCoverageLintRunner {
                     caseId = "longrun_owner_baseline_scope",
                     changedFiles =
                         listOf(
-                            "docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json",
+                            "docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-build-identity-profession-baseline.json",
+                            "docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-milestone-slot-balance-baseline.json",
                             "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json",
                             "docs/review/phase4/opt/baselines/2026-04-24-phase4-profession-tree-run-choice-owner-baseline.json",
+                            "docs/review/phase4/opt/baselines/2026-04-24-phase4-inscription-shop-replacement-owner-baseline.json",
                         ),
                 ),
                 planCase(
