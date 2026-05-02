@@ -18,6 +18,7 @@ import com.ktome.game.PlayerStatus
 import com.ktome.game.TalentReserveView
 import com.ktome.game.TalentSlotView
 import com.ktome.game.TalentTreeView
+import com.ktome.game.loot.MilestoneRewardScoreSample
 
 enum class ScenarioType(
     val reportValue: String,
@@ -178,6 +179,7 @@ data class ScenarioReport(
     val breakpointPayoffs: List<BreakpointPayoffSummary> = emptyList(),
     val breakpointPayoffObservations: List<BreakpointPayoffObservation> = emptyList(),
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
+    val milestoneRewardScoreSamples: List<MilestoneRewardScoreSample> = emptyList(),
     val cadenceRewardCount: Int = 0,
     val shopRefreshPurchaseCount: Int = 0,
     val lateRunReliquaryPurchaseCount: Int = 0,

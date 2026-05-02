@@ -14,7 +14,9 @@ internal object Phase4OwnerBaselineRegistry {
     const val LOOT_LOCAL_REWARD_BASELINE_RELATIVE_PATH: String =
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-loot-local-reward-identity-baseline.json"
     const val TERMINAL_BUILD_BASELINE_RELATIVE_PATH: String =
-        "docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json"
+        "docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-build-identity-profession-baseline.json"
+    const val MILESTONE_SLOT_BALANCE_BASELINE_RELATIVE_PATH: String =
+        "docs/review/phase4/opt/baselines/2026-04-24-phase4-terminal-milestone-slot-balance-baseline.json"
     const val CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH: String =
         "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json"
     const val PROFESSION_TREE_RUN_CHOICE_BASELINE_RELATIVE_PATH: String =
@@ -36,6 +38,7 @@ internal object Phase4OwnerBaselineRegistry {
             "longRunLab" to
                 listOf(
                     TERMINAL_BUILD_BASELINE_RELATIVE_PATH,
+                    MILESTONE_SLOT_BALANCE_BASELINE_RELATIVE_PATH,
                     CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH,
                     PROFESSION_TREE_RUN_CHOICE_BASELINE_RELATIVE_PATH,
                     INSCRIPTION_SHOP_REPLACEMENT_BASELINE_RELATIVE_PATH,
@@ -57,11 +60,13 @@ internal object Phase4OwnerBaselineRegistry {
 
     fun terminalBuildBaselinePath(): String = ownerBaselinePaths("longRunLab")[0]
 
-    fun criticalPathPacingBaselinePath(): String = ownerBaselinePaths("longRunLab")[1]
+    fun milestoneSlotBalanceBaselinePath(): String = ownerBaselinePaths("longRunLab")[1]
 
-    fun professionTreeRunChoiceBaselinePath(): String = ownerBaselinePaths("longRunLab")[2]
+    fun criticalPathPacingBaselinePath(): String = ownerBaselinePaths("longRunLab")[2]
 
-    fun inscriptionShopReplacementBaselinePath(): String = ownerBaselinePaths("longRunLab")[3]
+    fun professionTreeRunChoiceBaselinePath(): String = ownerBaselinePaths("longRunLab")[3]
+
+    fun inscriptionShopReplacementBaselinePath(): String = ownerBaselinePaths("longRunLab")[4]
 
     fun bossPhaseIdentityBaselinePath(): String = ownerBaselinePaths("bossHarness").single()
 

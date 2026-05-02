@@ -18,6 +18,33 @@
 **前置条件**: PR-00、PR-04 已完成；content pack loader、contentPackHarness、whiteBoxContentPack 已存在；`secretZoneSelector.primarySlot / secondarySlot` 已进入 hidden mapgen pipeline
 **资源生成结论**: 不生成图片资源；不生成音频资源
 
+## 0. 开发治理与验收矩阵
+
+本 PR 串行依赖 PR-04 的 `secretZoneSelector.primarySlot / secondarySlot`。执行规则见 [development-governance.md](./development-governance.md)，通用验证阶梯见 [docs/verification/README.md](../../../verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../../rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PR07-M01` | §5.1 manifest ADD-first | `game` | `ContentPackRuntimeResolverTest`, `DataLoaderContentPackTest` | `manifestLint`, `contentPackHarness` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `required` |
+| `PR07-M02` | §5.2 pack-local hidden branch binding | `game` | content pack binding tests | `whiteBoxContentPack` | `tools/build/reports/phase4/whitebox/content-pack/` | `required` |
+| `PR07-M03` | §5.3 player visibility metric | `tools` | `WhiteBoxContentPackRunnerTest`, report tests | `whiteBoxContentPack`, `reportPhase4Only` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `required` |
+| `PR07-M04` | §5.4 validation overlay / main menu | `client` | `ValidationScenarioBootstrapTest`, presentation tests | `goldenScreenshot`, `clientSmoke` | `client/build/reports/golden/` | `required` |
+| `PR07-M05` | manifest / resource reuse | `game` / `client` | `manifestLint`, `localeLint`, `assetLint`, `audioLint` | `contentPackHarness` | `build/reports/verification/` | `N/A` |
+| `PR07-M06` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：`contentPackHarness`、`whiteBoxContentPack`、`goldenScreenshot`、`clientSmoke`、`reportPhase4Only`、`reportPhase4`、`verifyChanged`。触发原因是 PR-07 同时影响 sample pack manifest、hidden branch binding、player visibility metric 和 client 可见性。
+
+### Canonical Artifact
+
+sample pack visibility 的 canonical 证据必须进入 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`。`contentPackHarness` 与 `whiteBoxContentPack` 必须同批刷新；registry presence 不能替代 runtime touch。
+
+### Failure Rule
+
+如果 sample visibility 不达标，先修 ADD-first manifest、hidden branch binding 或 validation scenario；不得在 production path 引入 force-inject test backdoor，也不得把 `samplePackContentPlayerVisibilityRate.reportOnly` 当作 blocking 通过证据。
+
 ## 1. 玩家体验目标
 
 本 PR 让官方 sample pack 成为正确示范：玩家装上 `sample.flooded_relics` 后能看到 ADD-first 新内容，pack 作者不会从官方样例学到 REPLACE-heavy 的覆盖式写法。

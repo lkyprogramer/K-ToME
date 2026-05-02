@@ -29,6 +29,14 @@ internal fun validationScenarioEvidenceSummaryLines(
                 ),
             )
         }
+        summary.scenarioNoteLabelKey?.let { noteKey ->
+            add(
+                localizer.text(
+                    "ui.validation.phase4.v4.evidence_summary.scenario_note",
+                    "value" to localizer.text(noteKey),
+                ),
+            )
+        }
         add(
             localizer.text(
                 "ui.validation.phase4.v4.evidence_summary.producer_freshness",

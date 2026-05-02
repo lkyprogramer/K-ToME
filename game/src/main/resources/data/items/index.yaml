@@ -219,7 +219,7 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 3
-    cost: 14
+    cost: 10
     affixFamily: weapon_vampiric
     exclusiveGroup: weapon_alignment_prefix
     minFloor: 4
@@ -385,7 +385,7 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 3
-    cost: 14
+    cost: 10
     affixFamily: armor_sentinel
     minFloor: 4
     stats: { defense: 4, maxHp: 10 }
@@ -1587,7 +1587,7 @@ uniqueTemplates:
     iconKey: item.unique.voidlit_seal.icon
     audioProfile: audio.item.unique.voidlit_seal
     schemaVersion: 2
-    tags: [abyssal_temple, templar, holy, capstone, non_weapon_capstone]
+    tags: [abyssal_temple, templar, holy, seal, capstone, non_weapon_capstone]
     allowedSourceTiers: [ELITE, BOSS]
     allowedZones: [abyssal_temple, abyssal_heart]
     fixedAffixIds: [sanctified, of_smite]
@@ -1662,7 +1662,7 @@ uniqueTemplates:
     iconKey: item.unique.cinderveil_plate.icon
     audioProfile: audio.item.unique.cinderveil_plate
     schemaVersion: 2
-    tags: [deep_iron_pit, arcanist, survival]
+    tags: [deep_iron_pit, arcanist, survival, capstone, non_weapon_capstone]
     allowedSourceTiers: [CHEST, BOSS]
     allowedZones: [deep_iron_pit]
     fixedAffixIds: [ashward, clearmind]
@@ -2130,7 +2130,7 @@ items:
     baseDefense: 2
     stats: { con: 1, maxStamina: 8, attack: 1 }
     passive: { kind: DamageTypeBonus, damageType: FIRE, bonusPercent: 0.15 }
-    dropFloors: [3, 4]
+    dropFloors: [2, 3, 4]
     dropWeight: 4
   - id: seal_reliquary
     nameKey: item.seal_reliquary.name
@@ -2139,7 +2139,7 @@ items:
     iconKey: item.base.arcanist.off_hand.icon
     audioProfile: audio.item.scroll_teleport
     schemaVersion: 2
-    tags: [item, armor, accessory, arcanist, shadow, protection, spell]
+    tags: [item, armor, accessory, arcanist, shadow, protection, spell, seal]
     type: ARMOR
     slot: OFF_HAND
     glyph: "]"
@@ -2156,7 +2156,7 @@ items:
     iconKey: item.base.templar.off_hand.icon
     audioProfile: audio.item.basic_shield
     schemaVersion: 2
-    tags: [item, armor, accessory, reward, templar, holy, protection]
+    tags: [item, armor, accessory, reward, templar, holy, protection, seal]
     type: ARMOR
     slot: OFF_HAND
     glyph: "]"
@@ -2393,7 +2393,7 @@ items:
     iconKey: item.unique.voidlit_seal.icon
     audioProfile: audio.item.unique.voidlit_seal
     schemaVersion: 2
-    tags: [item, armor, accessory, unique, abyssal_temple, templar, holy, capstone, non_weapon_capstone]
+    tags: [item, armor, accessory, unique, abyssal_temple, templar, holy, seal, capstone, non_weapon_capstone]
     type: ARMOR
     slot: OFF_HAND
     glyph: "]"
@@ -2572,7 +2572,7 @@ items:
     iconKey: item.unique.cinderveil_plate.icon
     audioProfile: audio.item.unique.cinderveil_plate
     schemaVersion: 2
-    tags: [item, armor, unique, deep_iron_pit, arcanist, survival]
+    tags: [item, armor, unique, deep_iron_pit, arcanist, survival, capstone, non_weapon_capstone]
     type: ARMOR
     slot: ARMOR
     glyph: "["

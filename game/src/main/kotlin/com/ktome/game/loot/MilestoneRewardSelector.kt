@@ -5,11 +5,14 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MilestoneRewardSource
+import com.ktome.core.loot.SourceTier
+import com.ktome.core.loot.SpecialTier
 
 class MilestoneRewardSelector(
     private val itemBundle: ItemDataBundle,
 ) {
     private val baseItemsById: Map<String, ItemBaseDef> = itemBundle.baseItems.associateBy(ItemBaseDef::id)
+    private val supportDuplicateGuardBaseIds: Set<String> = setOf("basic_shield")
 
     fun select(
         request: MilestoneRewardSelectionRequest,
@@ -95,13 +98,14 @@ class MilestoneRewardSelector(
         professionSuitability: (ItemBaseDef) -> Boolean,
         canSatisfyAffixes: (ItemBaseDef) -> Boolean,
     ): List<MilestoneRewardCandidate> {
-        val preferenceIndices = request.rewardPreferenceOrder.withIndex().associate { (index, baseId) -> baseId to index }
+        val evaluationContext = candidateEvaluationContext(request)
         return request.candidateBaseIds
             .distinct()
             .map { baseItemId ->
                 evaluateCandidate(
                     baseItemId = baseItemId,
                     request = request,
+                    evaluationContext = evaluationContext,
                     replacementSlot = replacementSlot,
                     professionSuitability = professionSuitability,
                     canSatisfyAffixes = canSatisfyAffixes,
@@ -109,14 +113,35 @@ class MilestoneRewardSelector(
             }.sortedWith(
                 compareByDescending<MilestoneRewardCandidate> { candidate -> candidate.legal }
                     .thenByDescending { candidate -> if (candidate.legal) candidate.score else Int.MIN_VALUE }
-                    .thenBy { candidate -> preferenceIndices[candidate.baseItemId] ?: Int.MAX_VALUE }
+                    .thenByDescending(MilestoneRewardCandidate::exactProfessionCapstone)
+                    .thenByDescending(MilestoneRewardCandidate::nonWeaponCapstone)
+                    .thenByDescending(MilestoneRewardCandidate::rarityRank)
+                    .thenByDescending { candidate -> candidate.slotFamily !in evaluationContext.recentSlotFamiliesTail }
                     .thenBy(MilestoneRewardCandidate::baseItemId),
             )
+    }
+
+    private fun candidateEvaluationContext(request: MilestoneRewardSelectionRequest): CandidateEvaluationContext {
+        val identity = request.selectorContext.professionId?.let(foundationBuildIdentityByProfessionId::get)
+        val currentProfessionWeaponCapstoneBaseIds = identity?.capstoneBaseIds.orEmpty()
+        val currentProfessionNonWeaponPayoffBaseIds = identity?.nonWeaponCapstoneBaseIds.orEmpty()
+        return CandidateEvaluationContext(
+            currentProfessionIdentityBaseIds = currentProfessionWeaponCapstoneBaseIds + currentProfessionNonWeaponPayoffBaseIds,
+            currentProfessionNonWeaponPayoffBaseIds = currentProfessionNonWeaponPayoffBaseIds,
+            currentProfessionNonWeaponOnlyBaseIds = currentProfessionNonWeaponPayoffBaseIds - currentProfessionWeaponCapstoneBaseIds,
+            knownProfessionIdentityBaseIds =
+                foundationBuildIdentityByProfessionId.values.flatMapTo(linkedSetOf()) { buildIdentity ->
+                    buildIdentity.capstoneBaseIds + buildIdentity.nonWeaponCapstoneBaseIds
+                },
+            recentSlotFamiliesTail = request.selectorContext.recentSlotFamilies.takeLast(3),
+            lastRecentSlotFamily = request.selectorContext.recentSlotFamilies.lastOrNull(),
+        )
     }
 
     private fun evaluateCandidate(
         baseItemId: String,
         request: MilestoneRewardSelectionRequest,
+        evaluationContext: CandidateEvaluationContext,
         replacementSlot: EquipSlot?,
         professionSuitability: (ItemBaseDef) -> Boolean,
         canSatisfyAffixes: (ItemBaseDef) -> Boolean,
@@ -130,37 +155,69 @@ class MilestoneRewardSelector(
         }
         val specialTemplate = itemBundle.specialTemplateForItemId(base.id)
         val evaluation = request.selectionContext.evaluate(base)
-        val exactProfessionCapstone = evaluation.exactProfessionMatch && "capstone" in base.tags
-        val nonWeaponCapstone = exactProfessionCapstone && "non_weapon_capstone" in base.tags && base.slot != EquipSlot.WEAPON
+        val catalogBackedIdentityCandidate = base.id in evaluationContext.currentProfessionIdentityBaseIds
+        val syntheticExactProfessionCapstoneCandidate =
+            base.id !in evaluationContext.knownProfessionIdentityBaseIds &&
+                evaluation.exactProfessionMatch &&
+                "capstone" in base.tags
+        val currentProfessionIdentityCandidate =
+            catalogBackedIdentityCandidate || syntheticExactProfessionCapstoneCandidate
+        val professionCapstoneTags = specialTemplate?.tags ?: base.tags
+        val exactProfessionCapstone =
+            currentProfessionIdentityCandidate &&
+                "capstone" in professionCapstoneTags &&
+                base.id !in evaluationContext.currentProfessionNonWeaponOnlyBaseIds
+        val nonWeaponCapstone =
+            base.slot != EquipSlot.WEAPON &&
+                (
+                    base.id in evaluationContext.currentProfessionNonWeaponPayoffBaseIds ||
+                        (exactProfessionCapstone && "non_weapon_capstone" in base.tags)
+                )
+        val wrongProfessionCapstone =
+            (base.id in evaluationContext.knownProfessionIdentityBaseIds && !currentProfessionIdentityCandidate) ||
+                ("capstone" in base.tags && !currentProfessionIdentityCandidate)
+        val slotFamily = milestoneRewardSlotFamily(base)
+        val rarityRank = rarityRank(base, specialTemplate?.specialTier)
+        val baseScore = baseScore(base = base, request = request, specialTier = specialTemplate?.specialTier)
+        val lateCommonMilestoneCandidate =
+            isLateCommonMilestoneCandidate(base = base, specialTemplatePresent = specialTemplate != null, request = request)
+        val nonWeaponPayoffBonus =
+            if (nonWeaponCapstone) {
+                ceilRatio(baseScore, 45, 100)
+            } else {
+                0
+            }
+        val slotRotationBonus =
+            if (slotFamily != null && slotFamily !in evaluationContext.recentSlotFamiliesTail) {
+                minOf(
+                    ceilRatio(baseScore, 20, 100),
+                    nonWeaponPayoffBonus / 2,
+                )
+            } else {
+                0
+            }
         val scoreBreakdown =
             MilestoneRewardScoreBreakdown(
-                poolWeightScore = (request.poolWeightByBaseId[base.id] ?: base.dropWeight.coerceAtLeast(1)) * 10,
-                freshBonus =
-                    if (base.id !in request.currentOwnedBaseIds && evaluation.matchStrength != LootBaseBuildMatchStrength.NONE) {
-                        40
+                baseScore = baseScore,
+                professionCapstoneBonus = if (exactProfessionCapstone) ceilRatio(baseScore, 60, 100) else 0,
+                nonWeaponPayoffBonus = nonWeaponPayoffBonus,
+                wrongProfessionCapstonePenalty = if (wrongProfessionCapstone) ceilRatio(baseScore, 80, 100) else 0,
+                slotRotationBonus = slotRotationBonus,
+                duplicateSlotPenalty =
+                    if (slotFamily != null && evaluationContext.lastRecentSlotFamily == slotFamily) {
+                        ceilRatio(baseScore, 25, 100)
                     } else {
                         0
                     },
-                buildMatchScore =
-                    when (evaluation.matchStrength) {
-                        LootBaseBuildMatchStrength.NONE -> 0
-                        LootBaseBuildMatchStrength.WEAK -> 30
-                        LootBaseBuildMatchStrength.STRONG -> 70
-                    },
-                exactProfessionScore = if (evaluation.exactProfessionMatch) 35 else 0,
-                professionCapstoneScore = if (exactProfessionCapstone) 55 else 0,
-                nonWeaponAnchorScore = if (nonWeaponCapstone) 40 else 0,
-                preferredRewardSourceScore =
-                    if (exactProfessionCapstone && request.selectorContext.rewardSource in request.preferredRewardSources) {
-                        PREFERRED_REWARD_SOURCE_SCORE
+                terminalIdentityBonus =
+                    if (!request.selectorContext.terminalIdentitySatisfied && (exactProfessionCapstone || nonWeaponCapstone)) {
+                        ceilRatio(baseScore, 35, 100)
                     } else {
                         0
                     },
-                routeBiasScore = rewardBaseTags(base).count(request.selectorContext.routeBiasTags::contains) * 12,
-                rewardBiasScore = rewardBaseTags(base).count(milestoneRewardSourceBiasTags(request.selectorContext.rewardSource)::contains) * 8,
-                antiCollapsePenalty =
-                    if (evaluation.antiCollapseMultiplierBasisPoints < 10_000) {
-                        30
+                lateCommonPenalty =
+                    if (lateCommonMilestoneCandidate) {
+                        ceilRatio(baseScore, 35, 100)
                     } else {
                         0
                     },
@@ -171,6 +228,8 @@ class MilestoneRewardSelector(
                 specialTemplatePresent = specialTemplate != null,
                 request = request,
                 replacementSlot = replacementSlot,
+                currentProfessionIdentityCandidate = currentProfessionIdentityCandidate,
+                lateCommonMilestoneCandidate = lateCommonMilestoneCandidate,
                 professionSuitability = professionSuitability,
                 canSatisfyAffixes = canSatisfyAffixes,
             )
@@ -182,14 +241,82 @@ class MilestoneRewardSelector(
             specialLinkedBase = specialTemplate != null,
             exactProfessionCapstone = exactProfessionCapstone,
             nonWeaponCapstone = nonWeaponCapstone,
+            slotFamily = slotFamily,
+            rarityRank = rarityRank,
         )
     }
+
+    private fun baseScore(
+        base: ItemBaseDef,
+        request: MilestoneRewardSelectionRequest,
+        specialTier: SpecialTier?,
+    ): Int {
+        val sourceTierScore =
+            when (request.selectorContext.sourceTier) {
+                SourceTier.NORMAL -> 0
+                SourceTier.ELITE -> 15
+                SourceTier.CHEST -> 25
+                SourceTier.BOSS -> 40
+                SourceTier.SECRET_ZONE -> 45
+            }
+        val rarityScore =
+            when {
+                specialTier == SpecialTier.ARTIFACT || "artifact" in base.tags -> 160
+                specialTier == SpecialTier.UNIQUE || "unique" in base.tags -> 120
+                "rare" in base.tags -> 80
+                else -> 0
+            }
+        val slotBaseValue =
+            when (milestoneRewardSlotFamily(base)) {
+                MilestoneRewardSlotFamily.WEAPON -> 110
+                MilestoneRewardSlotFamily.OFF_HAND -> 180
+                MilestoneRewardSlotFamily.ARMOR -> 120
+                MilestoneRewardSlotFamily.ACCESSORY -> 90
+                MilestoneRewardSlotFamily.CONSUMABLE_OR_UTILITY -> 100
+                null -> 0
+            }
+        return (
+            statBudgetScore(base) +
+                rarityScore +
+                slotBaseValue +
+                sourceTierScore
+        ).coerceAtLeast(1)
+    }
+
+    private fun statBudgetScore(base: ItemBaseDef): Int =
+        with(base.baseStats) {
+            attack * 2 +
+                defense * 2 +
+                accuracy +
+                evasion +
+                speed +
+                castSpeedRating / 2 +
+                maxHp / 4 +
+                str * 4 +
+                dex * 4 +
+                con * 4 +
+                wil * 4 +
+                (talentPower * 100).toInt()
+        }.coerceAtLeast(0)
+
+    private fun rarityRank(
+        base: ItemBaseDef,
+        specialTier: SpecialTier?,
+    ): Int =
+        when {
+            specialTier == SpecialTier.ARTIFACT || "artifact" in base.tags -> 3
+            specialTier == SpecialTier.UNIQUE || "unique" in base.tags -> 2
+            "rare" in base.tags -> 1
+            else -> 0
+        }
 
     private fun candidateRejectionReason(
         base: ItemBaseDef,
         specialTemplatePresent: Boolean,
         request: MilestoneRewardSelectionRequest,
         replacementSlot: EquipSlot?,
+        currentProfessionIdentityCandidate: Boolean,
+        lateCommonMilestoneCandidate: Boolean,
         professionSuitability: (ItemBaseDef) -> Boolean,
         canSatisfyAffixes: (ItemBaseDef) -> Boolean,
     ): MilestoneRewardRejectionReason? {
@@ -230,11 +357,41 @@ class MilestoneRewardSelector(
         if (slot in request.selectorContext.reservedSlots) {
             return MilestoneRewardRejectionReason.RESERVED_SLOT
         }
+        if (
+            base.id in request.currentOwnedBaseIds &&
+            (
+                request.selectorContext.rewardSource == MilestoneRewardSource.ROUTE ||
+                    request.selectorContext.rewardSource == MilestoneRewardSource.BOSS ||
+                    (!currentProfessionIdentityCandidate && base.id in supportDuplicateGuardBaseIds)
+            )
+        ) {
+            return MilestoneRewardRejectionReason.OWNED_BASE_DUPLICATE
+        }
+        if (replacementSlot != null && slot != replacementSlot) {
+            return MilestoneRewardRejectionReason.REPLACEMENT_SLOT_MISMATCH
+        }
         if (slot in request.selectorContext.occupiedSlots && slot != replacementSlot) {
             return MilestoneRewardRejectionReason.OCCUPIED_SLOT_REQUIRES_REPLACEMENT
         }
+        if (
+            lateCommonMilestoneCandidate &&
+            request.selectorContext.professionId == "rogue" &&
+            slot == EquipSlot.OFF_HAND
+        ) {
+            return MilestoneRewardRejectionReason.LATE_COMMON_ROGUE_OFF_HAND
+        }
         return null
     }
+
+    private fun isLateCommonMilestoneCandidate(
+        base: ItemBaseDef,
+        specialTemplatePresent: Boolean,
+        request: MilestoneRewardSelectionRequest,
+    ): Boolean =
+        request.selectorContext.playerLevel >= 5 &&
+            !specialTemplatePresent &&
+            "unique" !in base.tags &&
+            "artifact" !in base.tags
 
     private fun rejectedCandidate(
         baseItemId: String,
@@ -248,6 +405,8 @@ class MilestoneRewardSelector(
             specialLinkedBase = false,
             exactProfessionCapstone = false,
             nonWeaponCapstone = false,
+            slotFamily = null,
+            rarityRank = 0,
         )
 
     private fun rewardBaseTags(base: ItemBaseDef): Set<String> =
@@ -272,6 +431,13 @@ class MilestoneRewardSelector(
         val exactProfessionCapstone: Boolean,
         val nonWeaponCapstone: Boolean,
     )
-}
 
-private const val PREFERRED_REWARD_SOURCE_SCORE: Int = 50
+    private data class CandidateEvaluationContext(
+        val currentProfessionIdentityBaseIds: Set<String>,
+        val currentProfessionNonWeaponPayoffBaseIds: Set<String>,
+        val currentProfessionNonWeaponOnlyBaseIds: Set<String>,
+        val knownProfessionIdentityBaseIds: Set<String>,
+        val recentSlotFamiliesTail: List<MilestoneRewardSlotFamily>,
+        val lastRecentSlotFamily: MilestoneRewardSlotFamily?,
+    )
+}

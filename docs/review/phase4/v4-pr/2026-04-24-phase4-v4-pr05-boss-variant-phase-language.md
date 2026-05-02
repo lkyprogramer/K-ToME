@@ -17,6 +17,33 @@
 **前置条件**: PR-00、PR-04 已完成；Boss variant trace divergence 已通过，现有 variant visual/audio 资源已进入 manifest
 **资源生成结论**: 不生成图片资源；不生成音频资源
 
+## 0. 开发治理与验收矩阵
+
+本 PR 串行依赖 PR-04 的 zone trigger 产物，不能与 PR-04 并行闭环。执行规则见 [development-governance.md](./development-governance.md)，通用验证阶梯见 [docs/verification/README.md](../../../verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../../rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PR05-M01` | §5.1 `phaseOverrides` schema | `game` | `BossVariantDataLoaderTest`, schema loader tests | `bossHarness` | `tools/build/reports/phase4/boss/` | `required` |
+| `PR05-M02` | §5.2 variant fixed content | `game` | boss variant data tests | `bossHarness`, `reportPhase4Only` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `required` |
+| `PR05-M03` | PR-04 zone trigger dependency | `game` | trigger registry / materialization tests | `bossHarness` | `tools/build/reports/phase4/boss/` | `required` |
+| `PR05-M04` | §5.3 telegraph specs | `client` / `game` | telegraph manifest and snapshot tests | `goldenScreenshot`, `clientSmoke` | `client/build/reports/golden/` | `required` |
+| `PR05-M05` | §5.4 boss harness metrics | `tools` | `BossHarnessTest`, report tests | `bossHarness`, `reportPhase4Only`, `reportPhase4` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `N/A` |
+| `PR05-M06` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：`bossHarness`、`goldenScreenshot`、`clientSmoke`、`reportPhase4Only`、`reportPhase4`、`verifyChanged`。触发原因是 PR-05 同时改 boss variant schema、zone-trigger runtime coverage、telegraph data 和 client 可见性。
+
+### Canonical Artifact
+
+Boss phase language 的 canonical 证据固定进入 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`。`phaseGraphUnchanged=true` 必须与 `phaseGraphUnchangedReason=data_level_override_only`、schema coverage、runtime trigger coverage 同时出现，避免被误读为未实现。
+
+### Failure Rule
+
+如果 `bossVariantPhaseOverrideRuntimeTriggerCoverage` 失败，先核实 PR-04 trigger 产物和 PR-05 trigger expression，不得在 `tools` 中复制一套 trigger 判断来让 report 变绿。
+
 ## 1. 玩家体验目标
 
 本 PR 不重写 Boss 系统，只补最小 data-level 阶段语言。玩家重复遇到 Boss variant 时，必须能从阶段触发、telegraph 和行动组合上记住“这次不是同一个 Boss”。

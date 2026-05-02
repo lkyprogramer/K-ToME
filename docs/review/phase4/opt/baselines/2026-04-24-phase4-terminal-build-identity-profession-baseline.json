@@ -1,0 +1,60 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-terminal-build-identity-profession-v2",
+    "domainId": "longrun",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-owner-metrics-v3",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "terminalWeaponBaseDiversity",
+            "minValue": 4.0,
+            "notes": "Terminal build diversity must cover at least four distinct weapon bases."
+        },
+        {
+            "metricId": "crossProfessionTopWeaponDominance",
+            "maxValue": 0.40,
+            "maxInclusive": true,
+            "notes": "No single terminal weapon base may dominate more than 40% of full-route terminal builds."
+        },
+        {
+            "metricId": "professionAlignedWeaponAdoptionRate",
+            "minValue": 0.75,
+            "notes": "Profession-aligned weapon adoption must remain at or above 75%."
+        },
+        {
+            "metricId": "professionCapstoneSeenRate",
+            "minValue": 0.25,
+            "notes": "Profession capstone visibility remains mandatory and each foundation profession must see at least one capstone.",
+            "metadata": {
+                "perProfessionSeenMinCount": 1
+            }
+        },
+        {
+            "metricId": "professionCapstoneAdoptionRate",
+            "minValue": 0.25,
+            "notes": "Profession capstone adoption must stay materially visible in terminal builds."
+        },
+        {
+            "metricId": "nonWeaponBuildPayoffRate",
+            "minValue": 0.25,
+            "notes": "Non-weapon build payoff must remain materially adopted in full-route runs."
+        },
+        {
+            "metricId": "professionCapstoneAdoptionFloor",
+            "minValue": 4.0,
+            "notes": "All four foundation professions must adopt at least one profession capstone."
+        },
+        {
+            "metricId": "nonWeaponBuildPayoffFloor",
+            "minValue": 4.0,
+            "notes": "All four foundation professions must adopt at least one non-weapon build payoff."
+        }
+    ],
+    "notes": [
+        "PR-03 cutover baseline for build identity reward adoption. Per-profession floors are blocking, not report-only."
+    ],
+    "metadata": {}
+}

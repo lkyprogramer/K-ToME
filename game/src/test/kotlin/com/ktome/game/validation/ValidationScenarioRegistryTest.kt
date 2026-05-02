@@ -101,6 +101,38 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `pr03 build identity reward scenario matches fixed phase4 v4 contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr03"))
+
+        assertEquals("PR-03", scenario.prId)
+        assertEquals(ValidationPreset.LOOT_LAB, scenario.runtime.preset)
+        assertEquals(2026042433L, scenario.runtime.seed)
+        assertEquals("arcanist", scenario.runtime.professionId)
+        assertEquals("human", scenario.runtime.raceId)
+        assertEquals("greenwood_fringe", scenario.runtime.zoneId)
+        assertEquals(1, scenario.runtime.floor)
+        assertEquals(-1, scenario.runtime.routeIndex)
+        assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+        assertEquals(
+            listOf(
+                "evidence/phase4-v4-pr03-arcanist-reward-card.png",
+                "evidence/phase4-v4-pr03-arcanist-adopted-nonweapon.png",
+                "evidence/phase4-v4-pr03-rogue-offhand-payoff.png",
+                "evidence/phase4-v4-pr03-report-no-approved-debt.png",
+                "evidence/phase4-v4-pr03-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals(
+            "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr03-build-identity-reward-adoption.md",
+            scenario.evidence.manualRecordPath,
+        )
+        assertEquals(listOf("log.validation.item.pr03_showcase"), scenario.evidence.requiredLogEventKeys)
+        assertEquals("validation.phase4.v4.phase4-v4-pr03.evidence.summary_note", scenario.evidence.scenarioNoteLabelKey)
+        assertTrue(scenario.evidence.cuaSteps.any { step -> step.expectedVisibleResult.contains("professionCapstoneAdoptionFloor.reportOnly") })
+    }
+
+    @Test
     fun `scenario yaml ids stay in parity with typed registry`() {
         val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
         val parity =
@@ -238,6 +270,52 @@ class ValidationScenarioRegistryTest {
         assertTrue(session.renderSnapshot().uiState.reserveTalents.any { talent -> talent.talentId == "sunder_armor" })
         assertEquals(0, session.playerStatus().talentPoints)
     }
+
+    @Test
+    fun `pr03 scenario actions materialize build identity reward payoff scenes`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr03"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("phase4-v4-pr03-scenario-actions")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertEquals("unique_deepcurrent_lens", session.currentEquippedBaseItemId(com.ktome.core.item.EquipSlot.OFF_HAND))
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.validation.item.pr03_showcase" })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.reward.capstone.non_weapon_anchor" })
+        val primaryReward = requireNotNull(session.renderSnapshot().uiState.recentRewards.lastOrNull())
+        val primaryIdentity = requireNotNull(primaryReward.buildIdentity)
+        assertEquals("OFF_HAND", primaryIdentity.slotId)
+        assertEquals("ui.reward.slot.off_hand", primaryIdentity.slotLabelKey)
+        assertEquals("arcanist", primaryIdentity.professionId)
+        assertEquals("profession.arcanist.name", primaryIdentity.professionLabelKey)
+        assertEquals("ui.reward.identity.reason.non_weapon_capstone", primaryIdentity.scoreReason.key)
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertEquals("artifact_briar_heart", session.currentEquippedBaseItemId(com.ktome.core.item.EquipSlot.OFF_HAND))
+    }
+
 
     @Test
     fun `phase4 v4 scenario actions dispatch through validation command path`() {

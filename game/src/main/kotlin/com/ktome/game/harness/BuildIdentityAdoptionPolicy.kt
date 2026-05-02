@@ -1,10 +1,23 @@
 package com.ktome.game.harness
 
 import com.ktome.core.item.EquipSlot
+import com.ktome.game.FOUNDATION_SYNERGY_AFFIX_IDS
 import com.ktome.game.InventoryItemView
+import com.ktome.game.data.DataLoader
+import com.ktome.game.loot.FoundationProfessionBuildIdentity
+import com.ktome.game.loot.foundationBuildIdentityByProfessionId
 import com.ktome.game.loot.foundationBuildIdentityForResourceType
 
 object BuildIdentityAdoptionPolicy {
+    private val foundationProfessionIds: Set<String>
+        get() = foundationBuildIdentityByProfessionId.keys
+
+    private val itemTagsByBaseItemId: Map<String, Set<String>> by lazy {
+        DataLoader().loadItemBundle().baseItems.associate { item ->
+            item.id to item.tags.mapTo(linkedSetOf()) { tag -> tag.trim().lowercase() }
+        }
+    }
+
     fun emptySlotEquipThreshold(
         resourceTypeId: String,
         slot: EquipSlot?,
@@ -39,6 +52,28 @@ object BuildIdentityAdoptionPolicy {
         }
     }
 
+    fun isProfessionCapstone(
+        resourceTypeId: String,
+        item: InventoryItemView,
+    ): Boolean {
+        val identity = foundationBuildIdentityForResourceType(resourceTypeId) ?: return false
+        return item.baseItemId in identity.capstoneBaseIds ||
+            item.baseItemId in identity.nonWeaponCapstoneBaseIds
+    }
+
+    fun isOtherProfessionCapstone(
+        resourceTypeId: String,
+        item: InventoryItemView,
+    ): Boolean {
+        val identity = foundationBuildIdentityForResourceType(resourceTypeId) ?: return false
+        return foundationBuildIdentityByProfessionId.values
+            .filter { candidate -> candidate.professionId != identity.professionId }
+            .any { candidate ->
+                item.baseItemId in candidate.capstoneBaseIds ||
+                    item.baseItemId in candidate.nonWeaponCapstoneBaseIds
+            }
+    }
+
     fun preferredWeaponScore(
         resourceTypeId: String,
         item: InventoryItemView,
@@ -49,9 +84,10 @@ object BuildIdentityAdoptionPolicy {
         return when (resourceTypeId) {
             "STAMINA" ->
                 when (item.baseItemId) {
-                    "forgebreaker_pick" -> 55
+                    "forgebreaker_pick" -> 150
                     "battle_axe" -> 45
-                    "long_sword" -> 35
+                    "long_sword" -> 130
+                    "hunter_bow" -> -90
                     "war_maul" -> 15
                     else -> 0
                 }
@@ -63,11 +99,11 @@ object BuildIdentityAdoptionPolicy {
                 }
             "MANA" ->
                 when (item.baseItemId) {
-                    "arcane_staff" -> 45
-                    "battle_axe" -> -95
-                    "war_maul" -> -90
-                    "forgebreaker_pick" -> -70
-                    "long_sword" -> -25
+                    "arcane_staff" -> 160
+                    "battle_axe" -> -260
+                    "war_maul" -> -260
+                    "forgebreaker_pick" -> -260
+                    "long_sword" -> -220
                     else -> 0
                 }
             "ENERGY" ->
@@ -80,15 +116,64 @@ object BuildIdentityAdoptionPolicy {
                     "long_sword" -> -20
                     else -> 0
                 }
-            "POSITIVE_ENERGY" ->
-                when (item.baseItemId) {
-                    "long_sword" -> 42
-                    "battle_axe" -> 22
-                    "war_maul" -> 8
-                    "forgebreaker_pick" -> 10
-                    else -> 0
-                }
+            "POSITIVE_ENERGY" -> buildIdentityWeaponScore(resourceTypeId = resourceTypeId, item = item)
             else -> 0
+        }
+    }
+
+    private fun buildIdentityWeaponScore(
+        resourceTypeId: String,
+        item: InventoryItemView,
+    ): Int {
+        val identity = foundationBuildIdentityForResourceType(resourceTypeId) ?: return 0
+        val itemTags = itemTagsByBaseItemId[item.baseItemId].orEmpty()
+        val otherProfessionPenalty =
+            if (itemTags.any { tag -> tag in foundationProfessionIds && tag != identity.professionId }) {
+                -120
+            } else {
+                0
+            }
+        return otherProfessionPenalty +
+            dominantRiskPenalty(identity, itemTags) +
+            professionTagBonus(identity, itemTags) +
+            terminalIdentityTagBonus(identity, itemTags) +
+            synergyAffixBonus(identity, item)
+    }
+
+    private fun dominantRiskPenalty(
+        identity: FoundationProfessionBuildIdentity,
+        itemTags: Set<String>,
+    ): Int =
+        if ("dominant_risk" in itemTags && identity.professionId != "vanguard") {
+            -90
+        } else {
+            0
+        }
+
+    private fun professionTagBonus(
+        identity: FoundationProfessionBuildIdentity,
+        itemTags: Set<String>,
+    ): Int =
+        if (identity.professionId in itemTags) {
+            45
+        } else {
+            0
+        }
+
+    private fun terminalIdentityTagBonus(
+        identity: FoundationProfessionBuildIdentity,
+        itemTags: Set<String>,
+    ): Int = (itemTags.count(identity.terminalIdentityTags::contains) * 30).coerceAtMost(90)
+
+    private fun synergyAffixBonus(
+        identity: FoundationProfessionBuildIdentity,
+        item: InventoryItemView,
+    ): Int {
+        val synergyAffixIds = FOUNDATION_SYNERGY_AFFIX_IDS[identity.professionId].orEmpty()
+        return if (item.affixIds.any(synergyAffixIds::contains)) {
+            35
+        } else {
+            0
         }
     }
 }

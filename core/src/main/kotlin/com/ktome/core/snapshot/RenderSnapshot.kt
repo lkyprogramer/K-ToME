@@ -461,6 +461,16 @@ data class RewardPresentationEntrySnapshot(
     val sourceLabelKey: String,
     val itemDisplayName: RenderTextTokenSnapshot,
     val detailText: RenderTextTokenSnapshot? = null,
+    val buildIdentity: RewardPresentationBuildIdentitySnapshot? = null,
+)
+
+@Serializable
+data class RewardPresentationBuildIdentitySnapshot(
+    val slotId: String,
+    val slotLabelKey: String,
+    val professionId: String,
+    val professionLabelKey: String,
+    val scoreReason: RenderTextTokenSnapshot,
 )
 
 @Serializable

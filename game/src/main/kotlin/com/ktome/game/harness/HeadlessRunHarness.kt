@@ -313,6 +313,10 @@ class HeadlessRunHarness(
                 breakpointPayoffs = session.currentBreakpointPayoffSummaries(),
                 breakpointPayoffObservations = breakpointPayoffObservations.toList(),
                 milestoneRewards = session.milestoneRewardSummaries(),
+                milestoneRewardScoreSamples =
+                    session.milestoneRewardScoreSamples().map { sample ->
+                        sample.copy(scenarioName = spec.name)
+                    },
                 cadenceRewardCount = session.currentCadenceRewardCount(),
                 shopRefreshPurchaseCount = session.currentShopRefreshPurchaseCount(),
                 lateRunReliquaryPurchaseCount = session.currentLateRunReliquaryPurchaseCount(),

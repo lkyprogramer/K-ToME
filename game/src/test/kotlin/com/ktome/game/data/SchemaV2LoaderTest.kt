@@ -16,7 +16,7 @@ import com.ktome.core.ai.AISelectionPolicy
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRole
 import com.ktome.game.data.schema.LootPoolStrategy
-import com.ktome.game.data.schema.ProfessionBuildIdentityReportOnlyFloorsSchemaV1
+import com.ktome.game.data.schema.ProfessionBuildIdentityFloorsSchemaV1
 import com.ktome.game.data.schema.ProfessionBuildIdentitySchemaV1
 import com.ktome.game.data.schema.RewardRoutingGrantMode
 import com.ktome.game.i18n.GameLocale
@@ -380,7 +380,7 @@ class SchemaV2LoaderTest {
             "PR-07 must replace all secret-zone stub ids with formal ids.",
         )
         assertEquals(
-            listOf("healing_potion", "short_sword", "leather_armor", "bandit_trophy", "stamina_draught", "hunter_bow"),
+            listOf("healing_potion", "short_sword", "leather_armor", "basic_shield", "bandit_trophy", "stamina_draught", "hunter_bow"),
             catalog.lootProfiles.first { it.id == "loot.foundation.common" }.itemIds,
         )
         assertEquals(3, catalog.lootProfiles.first { it.id == "loot.foundation.common" }.schemaVersion)
@@ -398,7 +398,7 @@ class SchemaV2LoaderTest {
             catalog.lootProfiles.first { it.id == "loot.foundation.elite" }.itemIds.containsAll(listOf("chain_mail", "long_sword")),
         )
         assertEquals(
-            listOf("battle_axe", "long_sword", "hunter_bow", "plate_armor", "arcane_staff", "scroll_teleport", "mana_potion", "forgebreaker_pick", "sanctified_seal", "seal_reliquary", "shadow_cloak", "consecrated_oil"),
+            listOf("battle_axe", "long_sword", "hunter_bow", "basic_shield", "plate_armor", "arcane_staff", "scroll_teleport", "mana_potion", "forgebreaker_pick", "sanctified_seal", "seal_reliquary", "shadow_cloak", "consecrated_oil"),
             catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds,
         )
         assertEquals(3, catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.schemaVersion)
@@ -408,6 +408,7 @@ class SchemaV2LoaderTest {
         assertEquals(
             listOf(
                 "abyssal_heartstone",
+                "basic_shield",
                 "artifact_eclipsed_relic",
                 "unique_vesper_chainmail",
                 "unique_voidlit_seal",
@@ -483,7 +484,7 @@ class SchemaV2LoaderTest {
                     preferredRewardSources = listOf(com.ktome.core.item.MilestoneRewardSource.CACHE),
                     preferredReplacementSlots = listOf(com.ktome.core.item.EquipSlot.OFF_HAND),
                     terminalIdentityTags = listOf("rogue"),
-                    reportOnlyFloors = ProfessionBuildIdentityReportOnlyFloorsSchemaV1(1, 1, 1),
+                    buildIdentityFloors = ProfessionBuildIdentityFloorsSchemaV1(1, 1, 1),
                 )
             }
 
@@ -1060,6 +1061,9 @@ class SchemaV2LoaderTest {
             (catalog.itemBundle.uniqueTemplates + catalog.itemBundle.artifactTemplates).associateBy { template -> template.itemId }
 
         assertEquals(setOf("arcanist", "rogue", "templar", "vanguard"), catalog.buildIdentities.map { identity -> identity.professionId }.toSet())
+        val arcanistIdentity = catalog.buildIdentities.first { identity -> identity.professionId == "arcanist" }
+        assertTrue("unique_cinderveil_plate" !in arcanistIdentity.capstoneBaseIds)
+        assertTrue("unique_cinderveil_plate" in arcanistIdentity.nonWeaponCapstoneBaseIds)
         catalog.buildIdentities.forEach { identity ->
             assertTrue(identity.capstoneBaseIds.size >= 2, "Profession '${identity.professionId}' must expose at least two capstones.")
             assertTrue(
@@ -1069,14 +1073,14 @@ class SchemaV2LoaderTest {
             assertTrue(identity.preferredRewardSources.isNotEmpty(), "Profession '${identity.professionId}' must expose preferredRewardSources.")
             assertTrue(identity.preferredReplacementSlots.isNotEmpty(), "Profession '${identity.professionId}' must expose preferredReplacementSlots.")
             assertTrue(identity.terminalIdentityTags.isNotEmpty(), "Profession '${identity.professionId}' must expose terminalIdentityTags.")
-            assertTrue(identity.reportOnlyFloors.seenMinCount > 0, "Profession '${identity.professionId}' must expose seen report-only floor.")
+            assertTrue(identity.buildIdentityFloors.seenMinCount > 0, "Profession '${identity.professionId}' must expose seen build-identity floor.")
             assertTrue(
-                identity.reportOnlyFloors.adoptionMinCount > 0,
-                "Profession '${identity.professionId}' must expose adoption report-only floor.",
+                identity.buildIdentityFloors.adoptionMinCount > 0,
+                "Profession '${identity.professionId}' must expose adoption build-identity floor.",
             )
             assertTrue(
-                identity.reportOnlyFloors.nonWeaponMinCount > 0,
-                "Profession '${identity.professionId}' must expose non-weapon report-only floor.",
+                identity.buildIdentityFloors.nonWeaponMinCount > 0,
+                "Profession '${identity.professionId}' must expose non-weapon build-identity floor.",
             )
             assertTrue(
                 identity.capstoneBaseIds.all { itemId ->

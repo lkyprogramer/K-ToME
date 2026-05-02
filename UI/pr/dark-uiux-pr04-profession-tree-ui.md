@@ -6,6 +6,31 @@
 **前置条件**: PR-01、PR-02 完成；`docs/review/phase4/v4-pr/2026-04-24-phase4-v4-pr01-profession-tree-run-choice.md` 的职业树语义已落地，且目标分支能找到 `phase4-v4-pr01` scenario、`TalentSidebarPresenter` 和 `ACTIVE_TALENT_SLOT_CHOICE`。
 **资源生成结论**: 默认复用现有资源，不批量生图；职业树 icon 正式重绘放到 PR-06。
 
+## 0. 开发治理与验收矩阵
+
+本 PR 继承 [development-governance.md](./development-governance.md)。执行前先跑 `acceptanceContractLint`，再跑 talent UI focused tests、client evidence 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UI04-M01` | §2 硬依赖合同 | `client` | `TalentSidebarPresenterTest`, `InputHandlerTest` | `contractLint` | `build/reports/tests/` | `N/A` |
+| `UI04-M02` | §5 职业树 UI 改造范围 | `client` | `AsciiRenderModelTest`, `TileRendererCanvasTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI04-M03` | §7 验证 / phase4-v4-pr01 scenario | `client` / `docs` | validation scenario bootstrap tests | `preparePhase4V4Whitebox` when whitebox is required | `UI/manual-records/` | `required` |
+| `UI04-M04` | §9 回滚边界 | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：`:client:clientSmoke`、`:client:goldenScreenshot`、`localeLint`、`contractLint`、`maintainabilityLint`、`verifyChanged`；人工白盒按 §8 执行。触发原因是 PR-04 改职业树 presentation、modal interaction 和 golden。
+
+### Canonical Artifact
+
+canonical evidence 固定为 talent focused test report、client golden、whitebox manual record 和 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。本 PR 不改变 `core` / `game` 职业树规则，不能把规则层 diff 作为 UI 回滚条件。
+
+### Failure Rule
+
+如果职业树行为失败，先核实 `TalentSidebarPresenter` / input modal / RenderSnapshot consumer；不得修改 `TalentProgression`、starter 数或 Tier 门槛来修 UI。
+
 ## 1. 阶段目标
 
 1. 把正在开发的职业树 UI 接入新的暗黑 UI 框架。

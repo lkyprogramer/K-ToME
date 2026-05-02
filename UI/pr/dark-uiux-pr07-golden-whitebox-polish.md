@@ -6,6 +6,33 @@
 **前置条件**: PR-06 完成。
 **资源生成结论**: 不新增大批量资源，只允许修复 rejected cell 或明显破坏一致性的单点资源。
 
+## 0. 开发治理与验收矩阵
+
+本 PR 继承 [development-governance.md](./development-governance.md)，是 dark UI/UX 的最终 golden / packaged app 白盒收口。执行前先跑 `acceptanceContractLint`，再跑 final coverage、client evidence、packaged app 白盒和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UI07-M01` | §3 golden / manual record scope | `client` / `docs` | golden label owner check | `goldenScreenshot`, `clientSmoke` | `client/build/reports/golden/` | `required` |
+| `UI07-M02` | §4 完成定义 | `tools` | `acceptanceContractLint` | `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=final-full`, `verifyChanged` | dark coverage artifact | `required` |
+| `UI07-M03` | §5 性能与 atlas 决策 | `client` / `tools` | performance / atlas evidence check | `clientSmoke`, `goldenScreenshot` | `build/reports/verification/` | `N/A` |
+| `UI07-M04` | §6 packaged app 白盒 | `client` / `docs` | packaged app launch checklist | `:client:packageMacApp`, packaged app whitebox | `UI/manual-records/` | `required` |
+| `UI07-M05` | §7 验证命令 | `tools` | `assetLint`, `styleLint`, `manifestLint`, `localeLint`, `contractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+| `UI07-M06` | §9 回滚边界 | `docs` | doc-vs-implementation self-audit | PR close review | `UI/manual-records/` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：resource lint 全套、`darkManifestCoverageLint final-full`、`:client:clientSmoke`、`:client:goldenScreenshot`、`:client:packageMacApp`、packaged app 白盒、`maintainabilityLint`、`verifyChanged`。触发原因是 PR-07 是全局 UI、golden、manual evidence 和 packaged app 最终收口。
+
+### Canonical Artifact
+
+canonical artifact 固定为 final-full coverage artifact、client golden、packaged app command / runtime home / evidence dir、manual record 和 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。packaged app 证据路径必须 repo-relative 或明确占位，不得写本机绝对路径。
+
+### Failure Rule
+
+如果 PR-07 发现玩家可见 rejected cell，不能在 PR-07 静默修补；必须回到 PR-06 或拆单独资源修复 PR。packaged app 白盒只有在纯文档或纯 golden metadata 且无 package-facing 改动时才允许跳过，并必须写明豁免原因。
+
 ## 1. 阶段目标
 
 1. 统一刷新 golden、manual record、contact sheet QA report。

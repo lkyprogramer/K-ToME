@@ -30,6 +30,21 @@ tasks:
     artifactRelativePath: build/reports/harness/long-run-full.json
     role: OWNER
     metricIds:
+      - terminalWeaponBaseDiversity
+      - crossProfessionTopWeaponDominance
+      - professionAlignedWeaponAdoptionRate
+      - professionCapstoneSeenRate
+      - professionCapstoneAdoptionRate
+      - nonWeaponBuildPayoffRate
+      - professionCapstoneAdoptionFloor
+      - nonWeaponBuildPayoffFloor
+      - milestoneRewardAdoptionDelta
+      - milestoneRewardSlotBalance.maxSlotShare
+      - milestoneRewardSlotBalance.WEAPON
+      - milestoneRewardSlotBalance.OFF_HAND
+      - milestoneRewardSlotBalance.ARMOR
+      - milestoneRewardSlotBalance.ACCESSORY
+      - milestoneRewardSlotBalance.CONSUMABLE_OR_UTILITY
       - starterInscriptionMaxCount
       - fullSlotInscriptionPurchaseBlockedWithoutReplacementCount
       - inscriptionInstallOrReplaceRate

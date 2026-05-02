@@ -187,8 +187,8 @@ class Phase4ReportRunnerTest {
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
             "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
-        assertEquals(47, experienceMetrics.size)
-        assertEquals(47, metricCatalog.size)
+        assertEquals(55, experienceMetrics.size)
+        assertEquals(55, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
@@ -200,6 +200,7 @@ class Phase4ReportRunnerTest {
                 "secretConversionRate",
                 "dynamicPoolCoverage",
                 "specialTierPassiveFamilyDuplicateCount",
+                "topFiveAffixExposureShare",
                 "sameZoneSecretVsCadenceMaxOverlap",
                 "sameZoneSecretVsRewardMaxOverlap",
                 "secretZoneRewardAuthorityViolations",
@@ -210,8 +211,15 @@ class Phase4ReportRunnerTest {
                 "professionCapstoneSeenRate",
                 "professionCapstoneAdoptionRate",
                 "nonWeaponBuildPayoffRate",
-                "professionCapstoneAdoptionFloor.reportOnly",
-                "nonWeaponBuildPayoffFloor.reportOnly",
+                "professionCapstoneAdoptionFloor",
+                "nonWeaponBuildPayoffFloor",
+                "milestoneRewardAdoptionDelta",
+                "milestoneRewardSlotBalance.maxSlotShare",
+                "milestoneRewardSlotBalance.WEAPON",
+                "milestoneRewardSlotBalance.OFF_HAND",
+                "milestoneRewardSlotBalance.ARMOR",
+                "milestoneRewardSlotBalance.ACCESSORY",
+                "milestoneRewardSlotBalance.CONSUMABLE_OR_UTILITY",
                 "starterProfessionTalentMaxCount",
                 "learnedTalentChoiceEventRate",
                 "multiTreeInvestmentAboveThresholdRate",

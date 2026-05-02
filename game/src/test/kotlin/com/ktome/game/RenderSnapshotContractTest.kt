@@ -25,6 +25,7 @@ import com.ktome.core.snapshot.FrontstageActionCueSnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.OverlayShapeSnapshot
+import com.ktome.core.snapshot.RewardPresentationBuildIdentitySnapshot
 import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
 import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.RenderSnapshotHasher
@@ -94,6 +95,24 @@ class RenderSnapshotContractTest {
                                             "ui.inspect.passive.hp_regen_turn",
                                             listOf(RenderTextArgumentSnapshot(name = "amount", value = "2")),
                                         ),
+                                    buildIdentity =
+                                        RewardPresentationBuildIdentitySnapshot(
+                                            slotId = "OFF_HAND",
+                                            slotLabelKey = "ui.reward.slot.off_hand",
+                                            professionId = "arcanist",
+                                            professionLabelKey = "profession.arcanist.name",
+                                            scoreReason =
+                                                RenderTextTokenSnapshot(
+                                                    "ui.reward.identity.reason.non_weapon_capstone",
+                                                    listOf(
+                                                        RenderTextArgumentSnapshot(
+                                                            name = "profession",
+                                                            valueKey = "profession.arcanist.name",
+                                                        ),
+                                                        RenderTextArgumentSnapshot(name = "slot", valueKey = "ui.reward.slot.off_hand"),
+                                                    ),
+                                                ),
+                                        ),
                                 ),
                             ),
                         frontstageReadability =
@@ -131,6 +150,9 @@ class RenderSnapshotContractTest {
 
         assertEquals("ui.hud.frontstage.mutation_line", decoded.uiState.frontstageReadability.mutationHighlights.single().key)
         assertEquals("ui.inspect.passive.hp_regen_turn", decoded.uiState.recentRewards.single().detailText?.key)
+        assertEquals("OFF_HAND", decoded.uiState.recentRewards.single().buildIdentity?.slotId)
+        assertEquals("profession.arcanist.name", decoded.uiState.recentRewards.single().buildIdentity?.professionLabelKey)
+        assertEquals("ui.reward.identity.reason.non_weapon_capstone", decoded.uiState.recentRewards.single().buildIdentity?.scoreReason?.key)
         val actionCue = decoded.uiState.frontstageReadability.recentActionCues.single()
         assertEquals(FrontstageActionCategorySnapshot.SEARCH, actionCue.category)
         assertEquals(FrontstageActionPrioritySnapshot.MEDIUM, actionCue.priority)

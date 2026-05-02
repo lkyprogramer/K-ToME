@@ -155,6 +155,7 @@ object Phase4ReportRunner {
         val organicHiddenBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.organicHiddenBaselinePath()))
         val lootBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath()))
         val terminalBuildBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
+        val milestoneSlotBalanceBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.milestoneSlotBalanceBaselinePath()))
         val professionTreeRunChoiceBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.professionTreeRunChoiceBaselinePath()))
         val inscriptionShopReplacementBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.inscriptionShopReplacementBaselinePath()))
         val criticalPathPacingBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
@@ -224,6 +225,10 @@ object Phase4ReportRunner {
                 .associateBy(EvaluationEntry::metricId)
         val terminalBuildEntriesByMetricId =
             Phase4AggregationInputRunner.terminalBuildIdentityEvaluation(task = longRun, baseline = terminalBuildBaseline)
+                .entries
+                .associateBy(EvaluationEntry::metricId)
+        val milestoneSlotBalanceEntriesByMetricId =
+            Phase4AggregationInputRunner.milestoneSlotBalanceEvaluation(task = longRun, baseline = milestoneSlotBalanceBaseline)
                 .entries
                 .associateBy(EvaluationEntry::metricId)
         val professionTreeRunChoiceEntriesByMetricId =
@@ -388,6 +393,9 @@ object Phase4ReportRunner {
                 localRewardEntriesByMetricId.getValue("secretZoneRewardAuthorityViolations").toLegacyExperienceMetric(loot.taskId),
             )
             add(
+                localRewardEntriesByMetricId.getValue("topFiveAffixExposureShare").toLegacyExperienceMetric(loot.taskId),
+            )
+            add(
                 localRewardEntriesByMetricId.getValue("professionCapstoneSourceCoverage.reportOnly").toLegacyExperienceMetric(loot.taskId),
             )
             add(
@@ -450,11 +458,18 @@ object Phase4ReportRunner {
                 terminalBuildEntriesByMetricId.getValue("nonWeaponBuildPayoffRate").toLegacyExperienceMetric(longRun.taskId),
             )
             add(
-                terminalBuildEntriesByMetricId.getValue("professionCapstoneAdoptionFloor.reportOnly").toLegacyExperienceMetric(longRun.taskId),
+                terminalBuildEntriesByMetricId.getValue("professionCapstoneAdoptionFloor").toLegacyExperienceMetric(longRun.taskId),
             )
             add(
-                terminalBuildEntriesByMetricId.getValue("nonWeaponBuildPayoffFloor.reportOnly").toLegacyExperienceMetric(longRun.taskId),
+                terminalBuildEntriesByMetricId.getValue("nonWeaponBuildPayoffFloor").toLegacyExperienceMetric(longRun.taskId),
             )
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "longRunLab",
+                outputSection = "milestone-reward-slot-balance",
+            )
+                .forEach { metricId ->
+                    add(milestoneSlotBalanceEntriesByMetricId.getValue(metricId).toLegacyExperienceMetric(longRun.taskId))
+                }
             Phase4MetricCatalog.metricIds(
                 ownerTaskId = "longRunLab",
                 outputSection = "profession-tree-run-choice",
@@ -657,7 +672,7 @@ object Phase4ReportRunner {
             appendLine("- `professionCapstoneSeenRate`: ${metricsById.getValue("professionCapstoneSeenRate").currentValueText} / ${metricsById.getValue("professionCapstoneSeenRate").status}")
             appendLine("- `professionCapstoneAdoptionRate`: ${metricsById.getValue("professionCapstoneAdoptionRate").currentValueText} / ${metricsById.getValue("professionCapstoneAdoptionRate").status}")
             appendLine("- `nonWeaponBuildPayoffRate`: ${metricsById.getValue("nonWeaponBuildPayoffRate").currentValueText} / ${metricsById.getValue("nonWeaponBuildPayoffRate").status}")
-            appendLine("- reportOnlyProfessionFloors: `${professionBuildIdentityReportOnlyFloorNote()}`")
+            appendLine("- blockingProfessionFloors: `${professionBuildIdentityFloorNote()}`")
             appendLine("- preferredRewardSources: `${professionBuildIdentityPreferredSourceNote()}`")
             val professionTopWeaponSemanticTags = longRunTask.metrics.getValue("professionTopWeaponSemanticTags")
             val professionCapstoneBreakdown = longRunTask.metrics.getValue("professionCapstoneBreakdown")

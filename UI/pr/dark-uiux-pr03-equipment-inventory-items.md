@@ -6,6 +6,32 @@
 **前置条件**: PR-02 完成。
 **资源生成结论**: 生成 Round 7 的 item/equipment/material/affix 资源子集。
 
+## 0. 开发治理与验收矩阵
+
+本 PR 继承 [development-governance.md](./development-governance.md)。执行前先跑 `acceptanceContractLint`，再跑 equipment / inventory focused tests、resource gate、client evidence 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UI03-M01` | §3 Round 7 item sheet 内容 | `assets` | `darkSpriteSheetLint`, `spriteSheetMapLint` | `assetLint`, `styleLint` | `assets-src/image/contact-sheets/dark-v1/` | `required` |
+| `UI03-M02` | §4 key registry 要求 | `tools` | `darkKeyRegistryLint`, `ManifestResolveTest` | `manifestLint`, `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-03` | dark manifest coverage report | `N/A` |
+| `UI03-M03` | §6 equipment / inventory 必测行为 | `client` | `EquipmentInventoryPresenterTest`, `TileRendererCanvasTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI03-M04` | §7 验证命令 / locale contract | `client` / `tools` | `localeLint`, `contractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+| `UI03-M05` | §8 人工白盒 | `docs` / `client` | manual evidence checklist | packaged or debug whitebox record | `UI/manual-records/` | `required` |
+
+### Gate Budget
+
+预计重型任务：`assetLint`、`styleLint`、`manifestLint`、dark sprite / registry lints、`:client:clientSmoke`、`:client:goldenScreenshot`、`localeLint`、`contractLint`、`maintainabilityLint`、`verifyChanged`。触发原因是 PR-03 同时改 item resources、inventory UI、tooltip / empty state 和 manifest coverage。
+
+### Canonical Artifact
+
+canonical artifact 固定为 Round 7 sheet/contact sheet、key registry、manifest coverage report、runtime manifest、client golden 和 `UI/manual-records/`。fallback key injection record 必须 repo-relative。
+
+### Failure Rule
+
+inventory golden 或 coverage 失败时先修 presenter、resource key 或 manifest mapping；不得用 fallback key 掩盖缺资源，也不得只靠人工白盒证明 grid / tooltip 行为。
+
 ## 1. 阶段目标
 
 1. 右侧玩家面板正式展示装备格、背包 grid、资源计数。

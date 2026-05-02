@@ -1,0 +1,52 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-terminal-milestone-slot-balance-v1",
+    "domainId": "longrun",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-owner-metrics-v3",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "milestoneRewardAdoptionDelta",
+            "minValue": 1.0,
+            "notes": "Milestone reward adopted count must be greater than non-adopted count."
+        },
+        {
+            "metricId": "milestoneRewardSlotBalance.maxSlotShare",
+            "maxValue": 0.50,
+            "maxInclusive": true,
+            "notes": "No milestone reward slot family may exceed 50% share."
+        },
+        {
+            "metricId": "milestoneRewardSlotBalance.WEAPON",
+            "minValue": 0.20,
+            "notes": "Weapon milestone reward family must stay at or above 20% share."
+        },
+        {
+            "metricId": "milestoneRewardSlotBalance.OFF_HAND",
+            "minValue": 0.20,
+            "notes": "Off-hand milestone reward family must stay at or above 20% share."
+        },
+        {
+            "metricId": "milestoneRewardSlotBalance.ARMOR",
+            "minValue": 0.15,
+            "notes": "Armor milestone reward family must stay at or above 15% share."
+        },
+        {
+            "metricId": "milestoneRewardSlotBalance.ACCESSORY",
+            "minValue": 0.10,
+            "notes": "Accessory milestone reward family must stay at or above 10% share."
+        },
+        {
+            "metricId": "milestoneRewardSlotBalance.CONSUMABLE_OR_UTILITY",
+            "minValue": 0.05,
+            "notes": "Consumable or utility milestone reward family must stay at or above 5% share."
+        }
+    ],
+    "notes": [
+        "PR-03 slot balance baseline split from terminal build identity so owner reporting can show adoption and slot-family gates independently."
+    ],
+    "metadata": {}
+}

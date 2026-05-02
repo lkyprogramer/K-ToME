@@ -6,6 +6,32 @@
 **前置条件**: PR-00、PR-01 完成。
 **资源生成结论**: 生成 Round 1 最小可运行组：`r01-ui-chrome`、`r01-ui-controls`、`r01-ui-hud-icons`。
 
+## 0. 开发治理与验收矩阵
+
+本 PR 继承 [development-governance.md](./development-governance.md)。执行前先跑 `acceptanceContractLint`，再跑 resource gate、client evidence 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UI02-M01` | §3 Round 1 sheet 内容 | `assets` | `darkSpriteSheetLint`, `spriteSheetMapLint` | `assetLint`, `styleLint` | `assets-src/image/contact-sheets/dark-v1/` | `required` |
+| `UI02-M02` | §4 UI key registry 初始清单 | `tools` | `darkKeyRegistryLint` | `manifestLint` | `UI/sprite-sheets/key-registry.yaml` | `N/A` |
+| `UI02-M03` | §6 验收标准 / manifest coverage | `tools` | `ManifestResolveTest` | `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02` | dark manifest coverage report | `N/A` |
+| `UI02-M04` | §7 / §8 golden 与白盒证据 | `client` | client asset focused tests | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI02-M05` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：`assetLint`、`styleLint`、`manifestLint`、`darkKeyRegistryLint`、`darkSpriteSheetLint`、`spriteSheetMapLint`、`darkManifestCoverageLint`、`:client:clientSmoke`、`:client:goldenScreenshot`、`verifyChanged`。触发原因是 PR-02 首次提交正式 dark UI chrome / HUD sheet 到 manifest 与 golden。
+
+### Canonical Artifact
+
+canonical artifact 固定为 sheet plan、key registry、contact sheet QA、canonical/runtime visual manifest、owner-scope coverage report 和 golden output。raw PNG 只有在切分、QA、manifest 和 coverage 同批通过后才可作为可评审输入。
+
+### Failure Rule
+
+资源 gate 失败时先修 key registry、sheet plan、manifest 或切分结果；不得通过手改 runtime manifest、跳过 owner-scope coverage 或只保留 raw PNG 让 PR 通过。
+
 ## 1. 阶段目标
 
 1. 跑通第一组正式 sheet：`r01-ui-chrome`、`r01-ui-controls`、`r01-ui-hud-icons`。

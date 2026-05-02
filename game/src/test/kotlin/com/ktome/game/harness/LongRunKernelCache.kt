@@ -8,6 +8,9 @@ import com.ktome.core.run.RunOutcome
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.BreakpointPayoffObservation
 import com.ktome.game.BreakpointPayoffSummary
+import com.ktome.game.loot.MilestoneRewardScoreBreakdown
+import com.ktome.game.loot.MilestoneRewardScoreSample
+import com.ktome.game.loot.MilestoneRewardSlotFamily
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -227,6 +230,19 @@ internal object LongRunKernelCache {
             breakpointPayoffs = payload.requiredArray("breakpointPayoffs").map { payoff -> parseBreakpointPayoff(payoff.jsonObject) },
             breakpointPayoffObservations = payload.requiredArray("breakpointPayoffObservations").map { observation -> parseBreakpointPayoffObservation(observation.jsonObject) },
             milestoneRewards = payload.requiredArray("milestoneRewards").map { reward -> parseMilestoneReward(reward.jsonObject) },
+            milestoneRewardScoreSamples =
+                payload["milestoneRewardScoreSamples"]
+                    ?.jsonArray
+                    ?.map { sample ->
+                        parseMilestoneRewardScoreSample(sample.jsonObject).let { parsed ->
+                            if (parsed.scenarioName.isBlank()) {
+                                parsed.copy(scenarioName = payload.requiredString("name"))
+                            } else {
+                                parsed
+                            }
+                        }
+                    }
+                    .orEmpty(),
             cadenceRewardCount = payload.requiredString("cadenceRewardCount").toInt(),
             shopRefreshPurchaseCount = payload.requiredString("shopRefreshPurchaseCount").toInt(),
             lateRunReliquaryPurchaseCount = payload.requiredString("lateRunReliquaryPurchaseCount").toInt(),
@@ -311,7 +327,37 @@ internal object LongRunKernelCache {
             affixIds = payload.requiredArray("affixIds").map { affixId -> affixId.jsonPrimitive.content },
             equippedBaseItemIdBeforeReward = payload["equippedBaseItemIdBeforeReward"]?.jsonPrimitive?.contentOrNull,
             equippedBaseItemIdAtRunEnd = payload["equippedBaseItemIdAtRunEnd"]?.jsonPrimitive?.contentOrNull,
+            adoptedDuringRun =
+                payload["adoptedDuringRun"]?.jsonPrimitive?.contentOrNull?.toBooleanStrict()
+                    ?: payload.requiredString("adoptedInFinalBuild").toBooleanStrict(),
             adoptedInFinalBuild = payload.requiredString("adoptedInFinalBuild").toBooleanStrict(),
+        )
+
+    private fun parseMilestoneRewardScoreSample(payload: JsonObject): MilestoneRewardScoreSample =
+        MilestoneRewardScoreSample(
+            rewardSource = MilestoneRewardSource.valueOf(payload.requiredString("rewardSource")),
+            sourceId = payload.requiredString("sourceId"),
+            professionId = payload.requiredString("professionId"),
+            zoneId = payload.requiredString("zoneId"),
+            baseItemId = payload.requiredString("baseItemId"),
+            selected = payload.requiredString("selected").toBooleanStrict(),
+            legal = payload.requiredString("legal").toBooleanStrict(),
+            rejectionReason = payload["rejectionReason"]?.jsonPrimitive?.contentOrNull,
+            slotFamily = payload["slotFamily"]?.jsonPrimitive?.contentOrNull?.let(MilestoneRewardSlotFamily::valueOf),
+            scoreBreakdown = parseMilestoneRewardScoreBreakdown(payload.getValue("scoreBreakdown").jsonObject),
+            scenarioName = payload["scenarioName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+        )
+
+    private fun parseMilestoneRewardScoreBreakdown(payload: JsonObject): MilestoneRewardScoreBreakdown =
+        MilestoneRewardScoreBreakdown(
+            baseScore = payload.requiredString("baseScore").toInt(),
+            professionCapstoneBonus = payload.requiredString("professionCapstoneBonus").toInt(),
+            nonWeaponPayoffBonus = payload.requiredString("nonWeaponPayoffBonus").toInt(),
+            wrongProfessionCapstonePenalty = payload.requiredString("wrongProfessionCapstonePenalty").toInt(),
+            slotRotationBonus = payload.requiredString("slotRotationBonus").toInt(),
+            duplicateSlotPenalty = payload.requiredString("duplicateSlotPenalty").toInt(),
+            terminalIdentityBonus = payload.requiredString("terminalIdentityBonus").toInt(),
+            lateCommonPenalty = payload.requiredString("lateCommonPenalty").toInt(),
         )
 
     private fun parseZoneHeadlessMilestone(payload: JsonObject): ZoneHeadlessMilestone =
@@ -396,4 +442,4 @@ internal object LongRunKernelCache {
     private fun JsonObject.optionalBoolean(key: String): Boolean = this[key]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false
 }
 
-private const val LONGRUN_KERNEL_CACHE_VERSION: String = "phase4-v4-pr01-profession-tree-run-choice-v4"
+private const val LONGRUN_KERNEL_CACHE_VERSION: String = "phase4-v4-pr03-reward-adoption-v5"

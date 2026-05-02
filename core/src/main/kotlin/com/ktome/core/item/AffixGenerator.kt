@@ -50,6 +50,10 @@ data class AffixSelectionResult(
         get() = (budgetTarget - budgetConsumed).coerceAtLeast(0)
 }
 
+val highFrequencyAffixIds: Set<String> = setOf("sentinel", "of_strength", "vampiric", "of_life")
+private val HIGH_VALUE_DIVERSITY_SUPPRESSED_AFFIX_IDS: Set<String> = setOf("sentinel", "of_strength", "of_life")
+private val TARGETED_IDENTITY_AFFIX_IDS: Set<String> = setOf("of_smite", "of_shadow", "of_piercing")
+
 class AffixTagWeighting {
     fun weight(
         affix: AffixDef,
@@ -59,16 +63,43 @@ class AffixTagWeighting {
         val buildMatches = affix.tags.count(context.buildTags::contains)
         val routeMatches = affix.tags.count(context.effectiveAffixBiasTags::contains)
         val sourceMatches = affix.tags.count(rewardSourceBiasTags(context.rewardSource)::contains)
-        val costBias =
-            when (affix.cost) {
-                AffixCostBand.SIGNATURE.cost -> 6
-                AffixCostBand.MAJOR.cost -> 5
-                AffixCostBand.MEDIUM.cost -> 4
-                AffixCostBand.MINOR.cost -> 2
-                else -> 1
+        val highFrequency = affix.id in highFrequencyAffixIds
+        val broadExposurePenalty =
+            if (highFrequency) {
+                24
+            } else {
+                0
             }
-        return (1 + itemMatches + buildMatches * 4 + routeMatches * 2 + sourceMatches + costBias).coerceAtLeast(1)
+        val targetedIdentityBoost =
+            if (affix.isTargetedIdentityMatch(context)) {
+                8
+            } else {
+                0
+            }
+        val costBias =
+            if (highFrequency) {
+                0
+            } else {
+                when (affix.cost) {
+                    AffixCostBand.SIGNATURE.cost -> 6
+                    AffixCostBand.MAJOR.cost -> 5
+                    AffixCostBand.MEDIUM.cost -> 4
+                    AffixCostBand.MINOR.cost -> 2
+                    else -> 1
+                }
+            }
+        return (
+            1 +
+                itemMatches +
+                buildMatches * 4 +
+                routeMatches * 2 +
+                sourceMatches +
+                costBias +
+                targetedIdentityBoost -
+                broadExposurePenalty
+        ).coerceAtLeast(1)
     }
+
 }
 
 class AffixBlacklist {
@@ -384,6 +415,7 @@ class AffixGenerator(
                 trivialCount = trivialCount,
                 totalCost = totalCost,
                 deviation = (budget - totalCost).coerceAtLeast(0),
+                targetedIdentityCount = selected.count { affix -> affix.isTargetedIdentityMatch(context) },
             )
         }
         val remainingBudget = budget - selected.sumOf(AffixDef::cost)
@@ -554,7 +586,7 @@ class AffixGenerator(
             left.totalCost != right.totalCost -> right.totalCost.compareTo(left.totalCost)
             left.trivialCount != right.trivialCount -> left.trivialCount.compareTo(right.trivialCount)
             left.highValueCount != right.highValueCount -> right.highValueCount.compareTo(left.highValueCount)
-            left.totalWeight != right.totalWeight -> right.totalWeight.compareTo(left.totalWeight)
+            left.targetedIdentityCount != right.targetedIdentityCount -> right.targetedIdentityCount.compareTo(left.targetedIdentityCount)
             left.affixes.size != right.affixes.size -> left.affixes.size.compareTo(right.affixes.size)
             else -> 0
         }
@@ -565,9 +597,14 @@ class AffixGenerator(
         val trivialCount: Int,
         val totalCost: Int,
         val deviation: Int,
+        val targetedIdentityCount: Int,
     ) {
         val highValueCount: Int
-            get() = affixes.count { affix -> affix.cost >= AffixCostBand.MEDIUM.cost }
+            get() =
+                affixes.count { affix ->
+                    affix.cost >= AffixCostBand.MEDIUM.cost &&
+                        affix.id !in HIGH_VALUE_DIVERSITY_SUPPRESSED_AFFIX_IDS
+                }
     }
 }
 
@@ -579,3 +616,10 @@ private fun rewardSourceBiasTags(source: MilestoneRewardSource?): Set<String> =
         MilestoneRewardSource.SUPPORT -> setOf("support", "cache", "reward")
         null -> emptySet()
     }
+
+private fun AffixSelectionContext.rewardIdentityTags(): Set<String> =
+    effectiveAffixBiasTags + effectiveSpecialTemplateBiasTags
+
+private fun AffixDef.isTargetedIdentityMatch(context: AffixSelectionContext): Boolean =
+    id in TARGETED_IDENTITY_AFFIX_IDS &&
+        tags.any { tag -> tag in context.itemTags || tag in context.rewardIdentityTags() }

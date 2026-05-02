@@ -16,6 +16,33 @@
 **前置条件**: PR-00 已完成；Phase4 frontstage cue、organic hidden probe、zone mechanic audit 已存在
 **资源生成结论**: 不生成图片资源；不生成音频资源
 
+## 0. 开发治理与验收矩阵
+
+本 PR 继承 PR-03 canary 验证制度。执行规则见 [development-governance.md](./development-governance.md)，通用验证阶梯见 [docs/verification/README.md](../../../verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../../rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PR04-M01` | §5.1 per-zone Search 修正 | `game` | `com.ktome.game.hidden.*` tests | `hiddenContentHarness`, `organicHiddenProbe` | `tools/build/reports/phase4/hidden/` | `required` |
+| `PR04-M02` | §5.1 `secretZoneSelector.primarySlot / secondarySlot` | `game` | mapgen / hidden selector tests | `whiteBoxHiddenContent` | `tools/build/reports/phase4/whitebox/hidden-content/` | `required` |
+| `PR04-M03` | §5.2 runtime hook 固定清单 | `game` | runtime hook materialization tests | `hiddenContentHarness`, `reportPhase4Only` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `required` |
+| `PR04-M04` | §5.3 frontstage cue priority / TTL | `client` / `game` | snapshot / cue presenter tests | `goldenScreenshot`, `clientSmoke` | `client/build/reports/golden/` | `required` |
+| `PR04-M05` | §5.4 organic hidden probe | `tools` | `com.ktome.tools.hidden.*` tests | `organicHiddenProbe`, `reportPhase4Only` | `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` | `N/A` |
+| `PR04-M06` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：`hiddenContentHarness`、`organicHiddenProbe`、`whiteBoxHiddenContent`、`goldenScreenshot`、`clientSmoke`、`reportPhase4Only`、`reportPhase4`、`verifyChanged`。触发原因是 PR-04 同时影响 hidden owner evidence、mapgen selector、RenderSnapshot cue 和 client presentation。
+
+### Canonical Artifact
+
+hidden / cue / zone hook 的 canonical 证据必须进入 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` 或对应 white-box summary。Search cue snapshot 必须保持稳定排序；raw screenshot metadata、runtime-home、本机路径不得成为 owner evidence。
+
+### Failure Rule
+
+PR-04 的重型 gate 失败必须先回到 per-zone Search、selector 或 cue fast check；不得通过放宽 `topZoneLeadShare`、cue priority 或 report-only floor 让 report 变绿。
+
 ## 1. 玩家体验目标
 
 本 PR 让 hidden content 从“系统偶尔把入口推到玩家面前”升级为“玩家看到异常、主动 Search、得到反馈”。同时把 mandatory zone 的机制名词绑定到最小 runtime hook，防止文档词汇变成第二真源。

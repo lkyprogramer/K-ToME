@@ -136,12 +136,34 @@ internal data class ModalCardModel(
                 stableKey = "reward:${entry.source.name.lowercase()}:$index:${entry.itemDisplayName.key}",
                 title = entry.itemDisplayName,
                 iconKey = UiCompanionVisualKeys.CARD_REWARD_HEADER,
-                summary = RenderTextTokenSnapshot(entry.sourceLabelKey),
-                detailLines = listOfNotNull(entry.detailText),
+                summary = rewardPresentationSummary(entry),
+                detailLines = rewardPresentationDetailLines(entry),
                 primaryAction = ModalCardAction.CLOSE,
                 secondaryAction = ModalCardAction.CLOSE,
                 returnPolicy = ModalCardReturnPolicy.READ_ONLY_POPPABLE,
             )
+
+        fun rewardPresentationSummary(entry: RewardPresentationEntrySnapshot): RenderTextTokenSnapshot =
+            RenderTextTokenSnapshot(entry.sourceLabelKey)
+
+        fun rewardPresentationDetailLines(entry: RewardPresentationEntrySnapshot): List<RenderTextTokenSnapshot> {
+            val lines = mutableListOf<RenderTextTokenSnapshot>()
+            entry.detailText?.let(lines::add)
+            entry.buildIdentity?.let { buildIdentity ->
+                lines +=
+                    RenderTextTokenSnapshot(
+                        key = "ui.reward.identity.slot",
+                        arguments = listOf(RenderTextArgumentSnapshot(name = "slot", valueKey = buildIdentity.slotLabelKey)),
+                    )
+                lines +=
+                    RenderTextTokenSnapshot(
+                        key = "ui.reward.identity.profession",
+                        arguments = listOf(RenderTextArgumentSnapshot(name = "profession", valueKey = buildIdentity.professionLabelKey)),
+                    )
+                lines += buildIdentity.scoreReason
+            }
+            return lines
+        }
 
         private fun shardCostToken(amount: Int): RenderTextTokenSnapshot =
             RenderTextTokenSnapshot(

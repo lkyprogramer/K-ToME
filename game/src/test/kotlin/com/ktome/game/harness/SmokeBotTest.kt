@@ -583,7 +583,7 @@ class SmokeBotTest {
                 playerPosition = Point(1, 0),
             )
 
-        assertEquals(PlayerCommand.DropInventoryItem(3), bot.decide(observation))
+        assertEquals(PlayerCommand.DropInventoryItem(4), bot.decide(observation))
     }
 
     @Test

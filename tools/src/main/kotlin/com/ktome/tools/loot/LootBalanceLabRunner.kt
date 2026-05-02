@@ -233,6 +233,7 @@ internal data class LootMatrixResult(
     val artifactRelativeError: Double,
     val failedExpectationCount: Int,
     val affixCostHistogram: Map<String, Int>,
+    val affixIdCounts: Map<String, Int>,
     val topAffixIds: Map<String, Int>,
     val pityTimeline: List<LootPityEvent>,
     val castSpeedSamples: List<LootCastSpeedSample>,
@@ -286,6 +287,9 @@ internal data class LootMatrixResult(
             put("failedExpectationCount", failedExpectationCount)
             putJsonObject("affixCostHistogram") {
                 affixCostHistogram.forEach { (band, count) -> put(band, count) }
+            }
+            putJsonObject("affixIdCounts") {
+                affixIdCounts.forEach { (affixId, count) -> put(affixId, count) }
             }
             putJsonObject("topAffixIds") {
                 topAffixIds.forEach { (affixId, count) -> put(affixId, count) }
@@ -665,7 +669,7 @@ private const val SPECIAL_RELATIVE_ERROR_TOLERANCE: Double = 0.25
 private const val AFFIX_BUDGET_AVERAGE_TOLERANCE: Double = 0.05
 private const val AFFIX_BUDGET_P95_TOLERANCE: Double = 0.12
 private const val CLAMP_DISTRIBUTION_TOLERANCE: Double = 0.02
-private const val LOOT_KERNEL_CACHE_VERSION: String = "uvr-pr05-loot-kernel-v6"
+private const val LOOT_KERNEL_CACHE_VERSION: String = "uvr-pr05-loot-kernel-v7"
 internal val LOOT_REPORT_LOCALE: GameLocale = GameLocale.EN_US
 private const val EQUIPMENT_PASSIVE_KIND_COUNT: Int = 9
 
@@ -1099,6 +1103,7 @@ internal object LootLabKernel {
             artifactRelativeError = artifactRelativeError,
             failedExpectationCount = failedExpectationCount,
             affixCostHistogram = affixCostHistogram,
+            affixIdCounts = affixIdCounts.toSortedMap(),
             topAffixIds = affixIdCounts.entries.sortedByDescending(Map.Entry<String, Int>::value).take(8).associate { it.key to it.value },
             pityTimeline = pityTimeline.take(20),
             castSpeedSamples = castSpeedSamples.take(10),
@@ -1970,6 +1975,11 @@ private fun JsonObject.toLootMatrixResult(): LootMatrixResult {
         artifactRelativeError = getValue("distributionError").jsonObject.doubleValue("artifactRelativeError"),
         failedExpectationCount = intValue("failedExpectationCount"),
         affixCostHistogram = getValue("affixCostHistogram").jsonObject.toIntMap(),
+        affixIdCounts =
+            this["affixIdCounts"]
+                ?.jsonObject
+                ?.toIntMap()
+                ?: getValue("topAffixIds").jsonObject.toIntMap(),
         topAffixIds = getValue("topAffixIds").jsonObject.toIntMap(),
         pityTimeline = getValue("pityTimeline").jsonArray.map { event -> event.jsonObject.toLootPityEvent() },
         castSpeedSamples = getValue("castSpeedSamples").jsonArray.map { sample -> sample.jsonObject.toLootCastSpeedSample() },

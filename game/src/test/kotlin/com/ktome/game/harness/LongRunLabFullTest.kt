@@ -11,8 +11,11 @@ import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.data.DataLoader
+import com.ktome.game.loot.MilestoneRewardScoreSample
+import com.ktome.game.loot.MilestoneRewardSlotFamily
 import com.ktome.game.loot.foundationBuildIdentityByProfessionId
 import com.ktome.game.loot.foundationProfessionCapstoneBaseIdsByProfessionId
+import com.ktome.game.loot.milestoneRewardSlotFamily
 import com.ktome.game.validation.ValidationAction
 import com.ktome.game.validation.ValidationScenarioActionId
 import com.ktome.game.validation.ValidationScenarioId
@@ -93,10 +96,16 @@ class LongRunLabFullTest {
         val milestoneAffixCountDistribution = milestoneRewards.groupingBy { it.affixIds.size.toString() }.eachCount().toSortedMap()
         val milestoneRewardAdoptionDistribution =
             milestoneRewards
-                .groupingBy { reward -> if (reward.adoptedInFinalBuild) "adopted" else "notAdopted" }
+                .groupingBy { reward -> if (reward.adoptedDuringRun) "adopted" else "notAdopted" }
                 .eachCount()
                 .toSortedMap()
+        val milestoneRewardAdoptionDelta =
+            milestoneRewardAdoptionDistribution.getOrDefault("adopted", 0) -
+                milestoneRewardAdoptionDistribution.getOrDefault("notAdopted", 0)
         val milestoneRewardSlotDistribution = milestoneRewards.groupingBy { it.equipSlot.name }.eachCount().toSortedMap()
+        val milestoneRewardSlotBalance = milestoneRewardSlotBalance(milestoneRewards)
+        val rewardScoreBreakdownSamples = rewardScoreBreakdownSamples(fullRouteReports)
+        assertRewardScoreBreakdownSamplesCoverPr03(rewardScoreBreakdownSamples)
         val routeRewardAffixUsageSummary =
             milestoneRewards
                 .filter { reward -> reward.rewardSource == MilestoneRewardSource.ROUTE }
@@ -105,6 +114,9 @@ class LongRunLabFullTest {
                 .eachCount()
                 .toSortedMap()
         val professionCapstoneSummary = professionCapstoneSummary(fullRouteReports)
+        val capstoneAdoptionBySlot = capstoneAdoptionBySlot(fullRouteReports)
+        val professionTerminalIdentityItemIds = professionTerminalIdentityItemIds(fullRouteReports)
+        val wrongProfessionCapstoneAdoptionCount = wrongProfessionCapstoneAdoptionCount(fullRouteReports)
         val professionTreeChoiceMetrics = professionTreeChoiceMetrics(fullRouteReports)
         val inscriptionReplacementProbe = inscriptionReplacementProbe()
         val inscriptionShopMetrics = inscriptionShopMetrics(fullRouteReports, inscriptionReplacementProbe)
@@ -193,6 +205,13 @@ class LongRunLabFullTest {
                     put("professionCapstoneSeenRate", professionCapstoneSummary.professionCapstoneSeenRate)
                     put("professionCapstoneAdoptionRate", professionCapstoneSummary.professionCapstoneAdoptionRate)
                     put("nonWeaponBuildPayoffRate", professionCapstoneSummary.nonWeaponBuildPayoffRate)
+                    put("milestoneRewardAdoptionDelta", milestoneRewardAdoptionDelta)
+                    put("milestoneRewardSlotBalance.maxSlotShare", milestoneRewardSlotBalance.maxSlotShare)
+                    put("milestoneRewardSlotBalance.WEAPON", milestoneRewardSlotBalance.share(MilestoneRewardSlotFamily.WEAPON))
+                    put("milestoneRewardSlotBalance.OFF_HAND", milestoneRewardSlotBalance.share(MilestoneRewardSlotFamily.OFF_HAND))
+                    put("milestoneRewardSlotBalance.ARMOR", milestoneRewardSlotBalance.share(MilestoneRewardSlotFamily.ARMOR))
+                    put("milestoneRewardSlotBalance.ACCESSORY", milestoneRewardSlotBalance.share(MilestoneRewardSlotFamily.ACCESSORY))
+                    put("milestoneRewardSlotBalance.CONSUMABLE_OR_UTILITY", milestoneRewardSlotBalance.share(MilestoneRewardSlotFamily.CONSUMABLE_OR_UTILITY))
                     put("starterProfessionTalentMaxCount", professionTreeChoiceMetrics.starterProfessionTalentMaxCount)
                     put("learnedTalentChoiceEventRate", professionTreeChoiceMetrics.learnedTalentChoiceEventRate)
                     put("multiTreeInvestmentAboveThresholdRate", professionTreeChoiceMetrics.multiTreeInvestmentAboveThresholdRate)
@@ -279,6 +298,17 @@ class LongRunLabFullTest {
                             }
                         }
                     }
+                    putJsonObject("capstoneAdoptionBySlot") {
+                        capstoneAdoptionBySlot.forEach { (slotId, count) -> put(slotId, count) }
+                    }
+                    putJsonObject("professionTerminalIdentityItemIds") {
+                        professionTerminalIdentityItemIds.forEach { (professionId, itemIds) ->
+                            putJsonArray(professionId) {
+                                itemIds.forEach { itemId -> add(JsonPrimitive(itemId)) }
+                            }
+                        }
+                    }
+                    put("wrongProfessionCapstoneAdoptionCount", wrongProfessionCapstoneAdoptionCount)
                     putJsonObject("fullRouteZoneTraversalDiagnostics") {
                         fullRouteZoneTraversalDiagnostics.forEach { (zoneId, diagnostic) ->
                             putJsonObject(zoneId) {
@@ -352,8 +382,19 @@ class LongRunLabFullTest {
                     putJsonObject("milestoneRewardSlotDistribution") {
                         milestoneRewardSlotDistribution.forEach { (slotId, count) -> put(slotId, count) }
                     }
+                    putJsonObject("milestoneRewardSlotFamilyDistribution") {
+                        milestoneRewardSlotBalance.counts.forEach { (slotFamily, count) -> put(slotFamily.name, count) }
+                    }
+                    putJsonObject("milestoneRewardSlotFamilyShares") {
+                        MilestoneRewardSlotFamily.entries.forEach { slotFamily -> put(slotFamily.name, milestoneRewardSlotBalance.share(slotFamily)) }
+                    }
                     putJsonObject("routeRewardAffixUsageSummary") {
                         routeRewardAffixUsageSummary.forEach { (affixId, count) -> put(affixId, count) }
+                    }
+                    putJsonArray("rewardScoreBreakdownSamples") {
+                        rewardScoreBreakdownSamples.forEach { sample ->
+                            add(sample.toJson())
+                        }
                     }
                     putJsonArray("reports") {
                         reports.forEach { add(it.toJson()) }
@@ -415,6 +456,10 @@ class LongRunLabFullTest {
                     appendLine("- professionCapstoneSeenRate: ${professionCapstoneSummary.professionCapstoneSeenRate}")
                     appendLine("- professionCapstoneAdoptionRate: ${professionCapstoneSummary.professionCapstoneAdoptionRate}")
                     appendLine("- nonWeaponBuildPayoffRate: ${professionCapstoneSummary.nonWeaponBuildPayoffRate}")
+                    appendLine("- milestoneRewardAdoptionDelta: $milestoneRewardAdoptionDelta")
+                    appendLine("- milestoneRewardSlotFamilyDistribution: ${milestoneRewardSlotBalance.counts}")
+                    appendLine("- milestoneRewardSlotFamilyShares: ${MilestoneRewardSlotFamily.entries.associate { slotFamily -> slotFamily.name to milestoneRewardSlotBalance.share(slotFamily) }}")
+                    appendLine("- wrongProfessionCapstoneAdoptionCount: $wrongProfessionCapstoneAdoptionCount")
                     appendLine("- starterProfessionTalentMaxCount: ${professionTreeChoiceMetrics.starterProfessionTalentMaxCount}")
                     appendLine("- learnedTalentChoiceEventRate: ${professionTreeChoiceMetrics.learnedTalentChoiceEventRate}")
                     appendLine("- multiTreeInvestmentAboveThresholdRate: ${professionTreeChoiceMetrics.multiTreeInvestmentAboveThresholdRate}")
@@ -442,6 +487,8 @@ class LongRunLabFullTest {
                     appendLine("- professionTopWeaponBaseIds: ${if (terminalWeaponIdentity.professionTopWeaponBaseIds.isEmpty()) "none" else terminalWeaponIdentity.professionTopWeaponBaseIds}")
                     appendLine("- professionTopWeaponSemanticTags: ${if (terminalWeaponIdentity.professionTopWeaponSemanticTags.isEmpty()) "none" else terminalWeaponIdentity.professionTopWeaponSemanticTags}")
                     appendLine("- professionCapstoneBreakdown: ${if (professionCapstoneSummary.professionBreakdown.isEmpty()) "none" else professionCapstoneSummary.professionBreakdown}")
+                    appendLine("- capstoneAdoptionBySlot: ${if (capstoneAdoptionBySlot.isEmpty()) "none" else capstoneAdoptionBySlot}")
+                    appendLine("- professionTerminalIdentityItemIds: ${if (professionTerminalIdentityItemIds.isEmpty()) "none" else professionTerminalIdentityItemIds}")
                     appendLine("- fullRouteZoneTraversalDiagnostics: ${if (fullRouteZoneTraversalDiagnostics.isEmpty()) "none" else fullRouteZoneTraversalDiagnostics}")
                     appendLine("- criticalPathZoneIds: ${criticalPathZoneIds.joinToString()}")
                     appendLine("- criticalPathZoneDesignAudit: ${if (criticalPathZoneDesignAudit.isEmpty()) "none" else criticalPathZoneDesignAudit}")
@@ -453,6 +500,7 @@ class LongRunLabFullTest {
                     appendLine("- milestoneRewardAdoptionDistribution: ${if (milestoneRewardAdoptionDistribution.isEmpty()) "none" else milestoneRewardAdoptionDistribution}")
                     appendLine("- milestoneRewardSlotDistribution: ${if (milestoneRewardSlotDistribution.isEmpty()) "none" else milestoneRewardSlotDistribution}")
                     appendLine("- routeRewardAffixUsageSummary: ${if (routeRewardAffixUsageSummary.isEmpty()) "none" else routeRewardAffixUsageSummary}")
+                    appendLine("- rewardScoreBreakdownSamples: ${rewardScoreBreakdownSamples.size}")
                     reports.forEach { report ->
                         val objectiveSummary =
                             report.zoneObjectiveSummaries.joinToString { summary ->
@@ -460,7 +508,7 @@ class LongRunLabFullTest {
                             }
                         val milestoneSummary =
                             report.milestoneRewards.joinToString { reward ->
-                                "${reward.rewardSource}:${reward.baseItemId}:${reward.equipSlot.name}:before=${reward.equippedBaseItemIdBeforeReward ?: "empty"}:final=${reward.equippedBaseItemIdAtRunEnd ?: "empty"}:adopted=${reward.adoptedInFinalBuild}:${reward.qualityTier.name}:${if (reward.affixIds.isEmpty()) "none" else reward.affixIds.joinToString("+")}"
+                                "${reward.rewardSource}:${reward.baseItemId}:${reward.equipSlot.name}:before=${reward.equippedBaseItemIdBeforeReward ?: "empty"}:final=${reward.equippedBaseItemIdAtRunEnd ?: "empty"}:adoptedDuring=${reward.adoptedDuringRun}:adoptedFinal=${reward.adoptedInFinalBuild}:${reward.qualityTier.name}:${if (reward.affixIds.isEmpty()) "none" else reward.affixIds.joinToString("+")}"
                             }
                         val breakpointSummary =
                             report.breakpointPayoffs.joinToString { payoff ->
@@ -1101,6 +1149,161 @@ class LongRunLabFullTest {
         )
     }
 
+    private fun milestoneRewardSlotBalance(rewards: List<MilestoneRewardSummary>): MilestoneRewardSlotBalanceSummary {
+        val counts =
+            rewards
+                .map(::milestoneRewardSlotFamily)
+                .groupingBy { slotFamily -> slotFamily }
+                .eachCount()
+                .toSortedMap()
+        return MilestoneRewardSlotBalanceSummary(totalCount = rewards.size, counts = counts)
+    }
+
+    private fun milestoneRewardSlotFamily(reward: MilestoneRewardSummary): MilestoneRewardSlotFamily {
+        val base = itemBaseById[reward.baseItemId]
+            ?: return MilestoneRewardSlotFamily.CONSUMABLE_OR_UTILITY
+        return milestoneRewardSlotFamily(base) ?: MilestoneRewardSlotFamily.CONSUMABLE_OR_UTILITY
+    }
+
+    private fun rewardScoreBreakdownSamples(reports: List<ScenarioReport>): List<MilestoneRewardScoreSample> =
+        reports
+            .sortedWith(compareBy(ScenarioReport::professionId).thenBy(ScenarioReport::name))
+            .flatMap { report ->
+                require(report.milestoneRewardScoreSamples.size >= MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN) {
+                    "Terminal run '${report.name}' must expose at least $MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN reward score samples, " +
+                        "actual=${report.milestoneRewardScoreSamples.size}."
+                }
+                val samples =
+                    report.milestoneRewardScoreSamples.map { sample ->
+                        if (sample.scenarioName.isBlank()) {
+                            sample.copy(scenarioName = report.name)
+                        } else {
+                            sample
+                        }
+                    }
+                val sortedSamples =
+                    samples.sortedWith(
+                        compareByDescending<MilestoneRewardScoreSample>(MilestoneRewardScoreSample::selected)
+                            .thenBy(MilestoneRewardScoreSample::sourceId)
+                            .thenBy(MilestoneRewardScoreSample::baseItemId),
+                    )
+                val requiredEvidenceSamples =
+                    listOfNotNull(
+                        sortedSamples.firstOrNull(MilestoneRewardScoreSample::selected),
+                        sortedSamples.firstOrNull { sample -> !sample.legal },
+                        sortedSamples.firstOrNull { sample ->
+                            !sample.legal &&
+                                (
+                                    sample.scoreBreakdown.professionCapstoneBonus > 0 ||
+                                        sample.scoreBreakdown.nonWeaponPayoffBonus > 0
+                                )
+                        },
+                        sortedSamples.firstOrNull { sample -> sample.scoreBreakdown.wrongProfessionCapstonePenalty > 0 },
+                        sortedSamples.firstOrNull { sample -> sample.scoreBreakdown.nonWeaponPayoffBonus > 0 },
+                        sortedSamples.firstOrNull {
+                            sample -> sample.slotFamily != MilestoneRewardSlotFamily.OFF_HAND && sample.scoreBreakdown.lateCommonPenalty > 0
+                        },
+                        sortedSamples.firstOrNull { sample ->
+                            sample.baseItemId == "basic_shield" &&
+                                (
+                                    sample.scoreBreakdown.lateCommonPenalty > 0 ||
+                                        sample.rejectionReason == "LATE_COMMON_ROGUE_OFF_HAND"
+                                )
+                        },
+                    )
+                (requiredEvidenceSamples + sortedSamples)
+                    .distinctBy { sample -> rewardScoreSampleKey(sample) }
+                    .take(MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN)
+            }
+
+    private fun assertRewardScoreBreakdownSamplesCoverPr03(samples: List<MilestoneRewardScoreSample>) {
+        assertTrue(
+            samples.any { sample -> sample.selected },
+            "rewardScoreBreakdownSamples must include selected milestone candidates.",
+        )
+        assertTrue(
+            samples.any { sample -> !sample.legal },
+            "rewardScoreBreakdownSamples must include rejected milestone candidates.",
+        )
+        assertTrue(
+            samples.any { sample ->
+                !sample.legal &&
+                    (
+                        sample.scoreBreakdown.professionCapstoneBonus > 0 ||
+                            sample.scoreBreakdown.nonWeaponPayoffBonus > 0
+                    )
+            },
+            "rewardScoreBreakdownSamples must include a rejected capstone candidate.",
+        )
+        assertTrue(
+            samples.any { sample -> sample.scoreBreakdown.wrongProfessionCapstonePenalty > 0 },
+            "rewardScoreBreakdownSamples must include a wrong-profession capstone penalty sample.",
+        )
+        assertTrue(
+            samples.any { sample -> sample.scoreBreakdown.nonWeaponPayoffBonus > 0 },
+            "rewardScoreBreakdownSamples must include a non-weapon payoff bonus sample.",
+        )
+        assertTrue(
+            samples.any { sample -> sample.slotFamily != MilestoneRewardSlotFamily.OFF_HAND && sample.scoreBreakdown.lateCommonPenalty > 0 },
+            "rewardScoreBreakdownSamples must include a non-off-hand late COMMON penalty sample.",
+        )
+        assertTrue(
+            samples.any { sample ->
+                sample.baseItemId == "basic_shield" &&
+                    (
+                        sample.scoreBreakdown.lateCommonPenalty > 0 ||
+                            sample.rejectionReason == "LATE_COMMON_ROGUE_OFF_HAND"
+                    )
+            },
+            "rewardScoreBreakdownSamples must explain the basic_shield milestone quality floor.",
+        )
+    }
+
+    private fun rewardScoreSampleKey(sample: MilestoneRewardScoreSample): String =
+        listOf(
+            sample.scenarioName,
+            sample.professionId,
+            sample.sourceId,
+            sample.baseItemId,
+            sample.selected.toString(),
+            sample.legal.toString(),
+            sample.rejectionReason.orEmpty(),
+            sample.scoreBreakdown.totalScore.toString(),
+        ).joinToString("|")
+
+    private fun capstoneAdoptionBySlot(reports: List<ScenarioReport>): Map<String, Int> =
+        reports
+            .flatMap { report ->
+                val capstoneIds = PROFESSION_CAPSTONE_ITEM_IDS[report.professionId].orEmpty()
+                report.milestoneRewards.filter { reward -> reward.adoptedInFinalBuild && reward.baseItemId in capstoneIds }
+            }.groupingBy { reward -> reward.equipSlot.name }
+            .eachCount()
+            .toSortedMap()
+
+    private fun professionTerminalIdentityItemIds(reports: List<ScenarioReport>): Map<String, List<String>> =
+        reports
+            .groupBy(ScenarioReport::professionId)
+            .toSortedMap()
+            .mapValues { (professionId, professionReports) ->
+                val capstoneIds = PROFESSION_CAPSTONE_ITEM_IDS[professionId].orEmpty()
+                professionReports
+                    .flatMap(ScenarioReport::milestoneRewards)
+                    .filter { reward -> reward.adoptedInFinalBuild && reward.baseItemId in capstoneIds }
+                    .map(MilestoneRewardSummary::baseItemId)
+                    .distinct()
+                    .sorted()
+            }
+
+    private fun wrongProfessionCapstoneAdoptionCount(reports: List<ScenarioReport>): Int =
+        reports.sumOf { report ->
+            val capstoneIds = PROFESSION_CAPSTONE_ITEM_IDS[report.professionId].orEmpty()
+            report.milestoneRewards.count { reward ->
+                reward.adoptedInFinalBuild &&
+                    "capstone" in itemSemanticTagsById[reward.baseItemId].orEmpty() &&
+                    reward.baseItemId !in capstoneIds
+            }
+        }
+
     private fun professionTreeChoiceMetrics(reports: List<ScenarioReport>): ProfessionTreeChoiceMetrics {
         val includedTerminalReports =
             reports
@@ -1388,6 +1591,50 @@ class LongRunLabFullTest {
         val nonWeaponPayoffItems: Map<String, Int>,
     )
 
+    private data class MilestoneRewardSlotBalanceSummary(
+        val totalCount: Int,
+        val counts: Map<MilestoneRewardSlotFamily, Int>,
+    ) {
+        val maxSlotShare: Double = counts.values.maxOfOrNull { count -> share(count) } ?: 0.0
+
+        fun share(slotFamily: MilestoneRewardSlotFamily): Double = share(counts.getOrDefault(slotFamily, 0))
+
+        private fun share(count: Int): Double =
+            if (totalCount == 0) {
+                0.0
+            } else {
+                count.toDouble() / totalCount.toDouble()
+            }
+    }
+
+    private fun MilestoneRewardScoreSample.toJson() =
+        buildJsonObject {
+            put("scenarioName", scenarioName)
+            put("rewardSource", rewardSource.name)
+            put("sourceId", sourceId)
+            put("professionId", professionId)
+            put("zoneId", zoneId)
+            put("baseItemId", baseItemId)
+            put("selected", selected)
+            put("legal", legal)
+            rejectionReason?.let { put("rejectionReason", it) }
+            slotFamily?.let { put("slotFamily", it.name) }
+            putJsonObject("scoreBreakdown") {
+                put("baseScore", scoreBreakdown.baseScore)
+                put("professionCapstoneBonus", scoreBreakdown.professionCapstoneBonus)
+                put("nonWeaponPayoffBonus", scoreBreakdown.nonWeaponPayoffBonus)
+                put("wrongProfessionCapstonePenalty", scoreBreakdown.wrongProfessionCapstonePenalty)
+                put("slotRotationBonus", scoreBreakdown.slotRotationBonus)
+                put("duplicateSlotPenalty", scoreBreakdown.duplicateSlotPenalty)
+                put("terminalIdentityBonus", scoreBreakdown.terminalIdentityBonus)
+                put("lateCommonPenalty", scoreBreakdown.lateCommonPenalty)
+                put("positiveBonusBeforeCap", scoreBreakdown.positiveBonusBeforeCap)
+                put("positiveBonusCap", scoreBreakdown.positiveBonusCap)
+                put("positiveBonusAfterCap", scoreBreakdown.positiveBonusAfterCap)
+                put("totalScore", scoreBreakdown.totalScore)
+            }
+        }
+
     private data class ProfessionTreeChoiceMetrics(
         val starterProfessionTalentMaxCount: Int,
         val learnedTalentChoiceEventRate: Double,
@@ -1465,6 +1712,7 @@ class LongRunLabFullTest {
 
     private companion object {
         private const val PROFESSION_TREE_CHOICE_PROBE_TALENT_POINTS = 6
+        private const val MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN = 20
 
         private val schemaCatalog = DataLoader().loadSchemaCatalog()
         private val DEDICATED_RUNTIME_MECHANICS: Set<String> =
@@ -1512,6 +1760,7 @@ class LongRunLabFullTest {
             schemaCatalog.itemBundle.items.associate { item -> item.id to item.tags.toSet() }
         private val itemSemanticTagsById: Map<String, Set<String>> =
             DataLoader().loadItemBundle().baseItems.associate { item -> item.id to item.tags.toSet() }
+        private val itemBaseById = DataLoader().loadItemBundle().baseItems.associateBy { item -> item.id }
     }
 
     private fun sampleScenarioReport(

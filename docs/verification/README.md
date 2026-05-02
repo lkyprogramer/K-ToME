@@ -18,8 +18,26 @@
    - 包含 `maintainabilityLint` 的 report-only 夜跑
    - 包含 `verifyOwner + mapgenSmoke + solvabilityHarness + reportPhase4`，用于 freshness / aggregate smoke
 
+Phase4 v4 开发验证阶梯：
+
+1. 文档合同快路径：`./gradlew acceptanceContractLint`
+   - 只检查 v4 PR 文档是否具备 Acceptance Matrix、Gate Budget、canonical artifact 和失败规则。
+   - 不替代 owner gate、report gate 或 `verifyChanged`。
+2. fast lane
+   - 运行 PR 文档声明的 focused unit / lint。
+   - fast lane 失败时先补确定性测试或修实现，不直接进入重型 owner gate 试错。
+3. owner producer
+   - 按 PR owner surface 运行 producer，例如 `whiteBoxLoot`、`lootBalanceLab`、`longRunLab`、`bossHarness`、`contentPackHarness`。
+   - producer freshness 必须与数据、schema、harness、report 字段同批刷新。
+4. report gate
+   - `reportPhase4Only` 与 `reportPhase4` 读取同批 canonical owner evidence。
+5. final closure
+   - 最后运行 `./gradlew verifyChanged`。
+   - `verifyChanged` 仍是最终 PR CI 权威；不得为 v4 PR 再造第二套 impact routing。
+
 边界说明：
 
 1. 这里描述的是 Gradle task perf monitor，不是 runtime perf / soak system
 2. `Phase 5 perfSmoke / soakRun` 仍由 `docs/phase5/*` 和对应 domain contract 单独定义
 3. 未来若要把 task perf summary 接入 `reportPhase5`，只能做 additive summary ingestion，不能反向污染 unified verification registry 或 `reportPhase5` canonical aggregate contract
+4. `testperf`、`full-task-duration-summary` 和 Gate Budget 只用于耗时诊断；不得反向决定 `reportPhase4`、`verifyChanged` 或 owner gate 的 canonical 结论

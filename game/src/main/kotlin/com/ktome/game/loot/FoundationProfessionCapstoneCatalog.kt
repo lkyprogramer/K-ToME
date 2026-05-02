@@ -6,7 +6,7 @@ import com.ktome.core.profession.ProfessionTier
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
 
-data class FoundationBuildIdentityReportOnlyFloors(
+data class FoundationBuildIdentityFloors(
     val seenMinCount: Int,
     val adoptionMinCount: Int,
     val nonWeaponMinCount: Int,
@@ -20,7 +20,7 @@ data class FoundationProfessionBuildIdentity(
     val preferredRewardSources: Set<MilestoneRewardSource>,
     val preferredReplacementSlots: Set<EquipSlot>,
     val terminalIdentityTags: Set<String>,
-    val reportOnlyFloors: FoundationBuildIdentityReportOnlyFloors,
+    val buildIdentityFloors: FoundationBuildIdentityFloors,
 )
 
 private data class FoundationBuildIdentityCatalog(
@@ -54,7 +54,7 @@ fun foundationProfessionCapstonePreferenceScore(
     slot: EquipSlot?,
 ): Int {
     val identity = foundationBuildIdentityForResourceType(resourceTypeId) ?: return 0
-    if (baseItemId !in identity.capstoneBaseIds) {
+    if (baseItemId !in identity.capstoneBaseIds && baseItemId !in identity.nonWeaponCapstoneBaseIds) {
         return 0
     }
     val nonWeaponCapstone = baseItemId in identity.nonWeaponCapstoneBaseIds
@@ -90,11 +90,11 @@ private fun buildFoundationBuildIdentityCatalog(schemaCatalog: SchemaCatalog): F
                     preferredRewardSources = identity.preferredRewardSources.toCollection(linkedSetOf()),
                     preferredReplacementSlots = identity.preferredReplacementSlots.toCollection(linkedSetOf()),
                     terminalIdentityTags = identity.terminalIdentityTags.mapTo(linkedSetOf(), ::normalizeLootBaseSelectionTag),
-                    reportOnlyFloors =
-                        FoundationBuildIdentityReportOnlyFloors(
-                            seenMinCount = identity.reportOnlyFloors.seenMinCount,
-                            adoptionMinCount = identity.reportOnlyFloors.adoptionMinCount,
-                            nonWeaponMinCount = identity.reportOnlyFloors.nonWeaponMinCount,
+                    buildIdentityFloors =
+                        FoundationBuildIdentityFloors(
+                            seenMinCount = identity.buildIdentityFloors.seenMinCount,
+                            adoptionMinCount = identity.buildIdentityFloors.adoptionMinCount,
+                            nonWeaponMinCount = identity.buildIdentityFloors.nonWeaponMinCount,
                         ),
                 )
         }

@@ -620,12 +620,12 @@ internal object AsciiRenderModelBuilder {
                 lines +=
                     AsciiTextLine(
                         recentRewardText(
-                            sourceLabel = localizer.text(entry.sourceLabelKey),
+                            sourceLabel = renderTextToken(localizer, ModalCardModel.rewardPresentationSummary(entry)),
                             itemDisplayName = renderTextToken(localizer, entry.itemDisplayName),
                         ),
                         rewardPresentationTone(entry.source),
                     )
-                entry.detailText?.let { detailText ->
+                ModalCardModel.rewardPresentationDetailLines(entry).forEach { detailText ->
                     lines += AsciiTextLine(recentRewardDetailText(renderTextToken(localizer, detailText)), AsciiTextTone.LIGHT_GRAY)
                 }
             }

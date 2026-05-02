@@ -1051,17 +1051,16 @@ internal object TileRenderModelBuilder {
 
         if (overlayState.mode in recentRewardPresentationModes && snapshot.uiState.recentRewards.isNotEmpty()) {
             rows += TileTextRow(localizer.text("ui.sidebar.recent_rewards"), TileTextTone.GOLD)
-            snapshot.uiState.recentRewards.asReversed().forEachIndexed { index, entry ->
-                val card = ModalCardModel.rewardPresentation(index = index, entry = entry)
+            snapshot.uiState.recentRewards.asReversed().forEach { entry ->
                 rows +=
                     TileTextRow(
                         recentRewardText(
-                            sourceLabel = card.summary?.let { summary -> renderTextToken(localizer, summary) }.orEmpty(),
-                            itemDisplayName = renderTextToken(localizer, card.title),
+                            sourceLabel = renderTextToken(localizer, ModalCardModel.rewardPresentationSummary(entry)),
+                            itemDisplayName = renderTextToken(localizer, entry.itemDisplayName),
                         ),
                         rewardPresentationTone(entry.source),
                     )
-                card.detailLines.forEach { detailText ->
+                ModalCardModel.rewardPresentationDetailLines(entry).forEach { detailText ->
                     rows += TileTextRow(recentRewardDetailText(renderTextToken(localizer, detailText)), TileTextTone.LIGHT_GRAY)
                 }
             }

@@ -3244,7 +3244,7 @@ class FoundationGameSessionTest {
 
         assertTrue(
             groundItems.any { itemId ->
-                itemId in setOf("bandit_trophy", "emerald_charm", "hunter_bow", "stamina_draught") ||
+                itemId in setOf("basic_shield", "bandit_trophy", "emerald_charm", "hunter_bow", "stamina_draught") ||
                     itemId.startsWith("unique_") ||
                     itemId.startsWith("artifact_")
             },
@@ -3591,9 +3591,6 @@ class FoundationGameSessionTest {
         assertEquals(EquipSlot.OFF_HAND, rewardSummary.equipSlot)
         assertEquals("emerald_charm", rewardSummary.equippedBaseItemIdBeforeReward)
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.reward.capstone.non_weapon_anchor" })
-
-        val rewardInventoryIndex = inventoryIndexOfBaseId(session, rewardSummary.baseItemId)
-        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(rewardInventoryIndex)))
         val adoptedSummary =
             requireNotNull(
                 session.milestoneRewardSummaries().firstOrNull { reward ->
@@ -4634,7 +4631,11 @@ class FoundationGameSessionTest {
         movePlayerTo(session, attackOrigin)
 
         assertTrue(session.perform(PlayerCommand.Move(deathPoint - attackOrigin)))
-        assertTrue(groundItemBaseIdsAt(session, deathPoint).any { baseId -> baseId in setOf("healing_potion", "short_sword", "leather_armor") })
+        assertTrue(
+            groundItemBaseIdsAt(session, deathPoint).any { baseId ->
+                baseId in setOf("healing_potion", "short_sword", "leather_armor", "basic_shield")
+            },
+        )
         assertTrue(session.messageLog().any { message -> message.contains("drops") || message.contains("掉落") })
     }
 
@@ -6063,9 +6064,12 @@ class FoundationGameSessionTest {
                         reward.affixIds.isNotEmpty()
                 },
             )
-        assertEquals(EquipSlot.WEAPON, rewardSummary.equipSlot)
-        assertEquals(EquipSlot.WEAPON, requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot)
-        assertEquals("long_sword", rewardSummary.equippedBaseItemIdBeforeReward)
+        val rewardBase = requireNotNull(itemBasesById[rewardSummary.baseItemId])
+        assertEquals(rewardBase.slot, rewardSummary.equipSlot)
+        assertNotEquals("basic_shield", rewardSummary.baseItemId)
+        if (rewardSummary.equipSlot == EquipSlot.WEAPON) {
+            assertEquals("long_sword", rewardSummary.equippedBaseItemIdBeforeReward)
+        }
         assertTrue("route.shattered_outpost.greenwood_fringe" in session.worldProgress().claimedRouteRewards)
         assertTrue(saveManager.hasSave())
         val routeRewardLog = requireNotNull(logEventByKey(session, "log.reward.route.claimed"))

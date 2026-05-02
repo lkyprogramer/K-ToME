@@ -6,8 +6,11 @@ import com.ktome.core.harness.whitebox.WhiteBoxAssertionResult
 import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
 import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
 import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
+import com.ktome.core.item.highFrequencyAffixIds
 import com.ktome.game.data.DataLoader
 import com.ktome.game.hidden.SecretRewardAuthorityViolation
+import com.ktome.tools.phase4.PHASE4_MAX_FOCUSED_HIGH_FREQUENCY_AFFIX_COMBINED_SHARE
+import com.ktome.tools.phase4.PHASE4_MAX_SINGLE_AFFIX_EXPOSURE_SHARE
 import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
 import com.ktome.tools.phase4.Phase4OwnerMetricTargets
 import com.ktome.tools.phase4.requiredMetric
@@ -59,11 +62,24 @@ private data class LootPreflightArtifacts(
             .toSortedMap()
 }
 
+private data class AffixExposureSummary(
+    val counts: Map<String, Int>,
+    val shares: Map<String, Double>,
+    val topFiveShare: Double,
+    val maxSingleShare: Double,
+    val focusedCombinedShare: Double,
+)
+
+private data class AffixExposureBaseline(
+    val shares: Map<String, Double>,
+    val counts: Map<String, Int>,
+)
+
 object WhiteBoxLootRunner {
     const val HARNESS_ID: String = "whiteBoxLoot"
     private const val DOMAIN_ID: String = "loot"
     private const val CORPUS_ID: String = "P4_PR05_LOOT_WHITEBOX"
-    private const val WHITEBOX_EVALUATION_CACHE_VERSION: String = "uvr-pr05-whitebox-loot-eval-v3"
+    private const val WHITEBOX_EVALUATION_CACHE_VERSION: String = "uvr-pr05-whitebox-loot-eval-v4"
     private val json: Json = Json { prettyPrint = true; explicitNulls = false }
 
     fun run(): WhiteBoxLootRun {
@@ -418,6 +434,7 @@ object WhiteBoxLootRunner {
         specialTierPassiveFamilyDuplicateSummary: SpecialTierPassiveFamilyDuplicateSummary,
     ): JsonObject =
         buildJsonObject {
+            val affixExposureSummary = affixExposureSummary(kernelRun)
             put("matrixCount", kernelRun.matrices.size)
             put("totalRolls", kernelRun.totalRolls)
             put("failedExpectationCount", kernelRun.failedExpectationCount)
@@ -472,6 +489,33 @@ object WhiteBoxLootRunner {
                 preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
             }
             put("affixPassiveCoverage", kernelRun.passiveCoverageSummary.coverageRatio)
+            put("topFiveAffixExposureShare", affixExposureSummary.topFiveShare)
+            put("maxSingleAffixExposureShare", affixExposureSummary.maxSingleShare)
+            put("focusedHighFrequencyAffixCombinedShare", affixExposureSummary.focusedCombinedShare)
+            putJsonObject("affixExposureShares") {
+                affixExposureSummary.shares.forEach { (affixId, share) -> put(affixId, share) }
+            }
+            putJsonObject("affixExposureCounts") {
+                affixExposureSummary.counts.forEach { (affixId, count) -> put(affixId, count) }
+            }
+            putJsonArray("affixDistributionDiff") {
+                val baseline = prePr03AffixExposureBaseline()
+                val affixIds = (baseline.shares.keys + affixExposureSummary.shares.keys).sorted()
+                affixIds.forEach { affixId ->
+                    val beforeShare = baseline.shares.getOrDefault(affixId, 0.0)
+                    val adjustedShare = affixExposureSummary.shares.getOrDefault(affixId, 0.0)
+                    add(
+                        buildJsonObject {
+                            put("affixId", affixId)
+                            put("beforeShare", beforeShare)
+                            put("adjustedShare", adjustedShare)
+                            put("delta", adjustedShare - beforeShare)
+                            put("beforeSampleCount", baseline.counts.getOrDefault(affixId, 0))
+                            put("sampleCount", affixExposureSummary.counts.getOrDefault(affixId, 0))
+                        },
+                    )
+                }
+            }
             putJsonArray("affixPassiveKinds") {
                 kernelRun.passiveCoverageSummary.passiveKinds.sorted().forEach { passiveKind -> add(kotlinx.serialization.json.JsonPrimitive(passiveKind)) }
             }
@@ -487,6 +531,46 @@ object WhiteBoxLootRunner {
             put("professionCapstoneSourceCoverageRate", preflightArtifacts.rewardRoutingCoverageSummary.professionCapstoneSourceCoverageRate)
             put("rewardRoutingCoverageSummary", preflightArtifacts.rewardRoutingCoverageSummary.toJson())
         }
+
+    private fun affixExposureSummary(kernelRun: LootKernelRun): AffixExposureSummary {
+        val counts =
+            kernelRun.matrices
+                .flatMap { matrix -> matrix.affixIdCounts.entries }
+                .groupBy(Map.Entry<String, Int>::key)
+                .mapValues { (_, entries) -> entries.sumOf(Map.Entry<String, Int>::value) }
+                .toSortedMap()
+        val totalCount = counts.values.sum().coerceAtLeast(1)
+        val shares = counts.mapValues { (_, count) -> count.toDouble() / totalCount.toDouble() }.toSortedMap()
+        val topFiveShare =
+            counts.entries
+                .sortedByDescending(Map.Entry<String, Int>::value)
+                .take(5)
+                .sumOf(Map.Entry<String, Int>::value)
+                .toDouble() / totalCount.toDouble()
+        val focusedCombinedShare =
+            highFrequencyAffixIds
+                .sumOf { affixId -> counts.getOrDefault(affixId, 0) }
+                .toDouble() / totalCount.toDouble()
+        return AffixExposureSummary(
+            counts = counts,
+            shares = shares,
+            topFiveShare = topFiveShare,
+            maxSingleShare = shares.values.maxOrNull() ?: 0.0,
+            focusedCombinedShare = focusedCombinedShare,
+        )
+    }
+
+    private fun prePr03AffixExposureBaseline(): AffixExposureBaseline {
+        val stream =
+            WhiteBoxLootRunner::class.java.classLoader
+                .getResourceAsStream("phase4/loot/pre-pr03-affix-exposure-baseline.json")
+                ?: return AffixExposureBaseline(shares = emptyMap(), counts = emptyMap())
+        val root = json.parseToJsonElement(stream.use { it.readBytes().decodeToString() }).jsonObject
+        return AffixExposureBaseline(
+            shares = root.getValue("shares").jsonObject.mapValues { (_, value) -> value.jsonPrimitive.content.toDouble() }.toSortedMap(),
+            counts = root.getValue("counts").jsonObject.mapValues { (_, value) -> value.jsonPrimitive.content.toInt() }.toSortedMap(),
+        )
+    }
 
     private fun writeArtifacts(
         outputDir: Path,
@@ -618,6 +702,7 @@ object WhiteBoxLootRunner {
         val dynamicPoolMetricId = "dynamicPoolCoverage"
         val specialTierDuplicateMetricId = "specialTierPassiveFamilyDuplicateCount"
         val secretZoneRewardAuthorityMetricId = "secretZoneRewardAuthorityViolations"
+        val topFiveAffixExposureMetricId = "topFiveAffixExposureShare"
         val sourceCoverageMetricId = "professionCapstoneSourceCoverage.reportOnly"
         val overlapSummaryJson = profileOverlapSummary.toJson()
         val strictViolationBreakdown =
@@ -695,6 +780,10 @@ object WhiteBoxLootRunner {
             corpusAggregateMetrics.getValue("secretZoneRewardAuthorityViolationCount").jsonPrimitive.content.toInt()
         val rewardRoutingCoverageSummary = corpusAggregateMetrics.getValue("rewardRoutingCoverageSummary")
         val uniqueArtifactMeaningfulSwapRate = corpusAggregateMetrics.getValue("uniqueArtifactMeaningfulSwapRate").jsonPrimitive.content.toDouble()
+        val topFiveAffixExposureShare = corpusAggregateMetrics.getValue("topFiveAffixExposureShare").jsonPrimitive.content.toDouble()
+        val maxSingleAffixExposureShare = corpusAggregateMetrics.getValue("maxSingleAffixExposureShare").jsonPrimitive.content.toDouble()
+        val focusedHighFrequencyAffixCombinedShare =
+            corpusAggregateMetrics.getValue("focusedHighFrequencyAffixCombinedShare").jsonPrimitive.content.toDouble()
         val dynamicPoolEntry =
             EvaluationEntry(
                 metricId = dynamicPoolMetricId,
@@ -788,7 +877,50 @@ object WhiteBoxLootRunner {
                     },
                 details = corpusAggregateMetrics,
             )
-        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry + secretZoneRewardAuthorityEntry + sourceCoverageEntry
+        val topFiveAffixExposureRange = baseline.requiredMetric(topFiveAffixExposureMetricId)
+        val maxSingleAffixExposurePasses =
+            maxSingleAffixExposureShare <= PHASE4_MAX_SINGLE_AFFIX_EXPOSURE_SHARE
+        val focusedHighFrequencyAffixExposurePasses =
+            focusedHighFrequencyAffixCombinedShare <= PHASE4_MAX_FOCUSED_HIGH_FREQUENCY_AFFIX_COMBINED_SHARE
+        val topFiveAffixExposurePasses =
+            Phase4OwnerMetricTargets.passes(topFiveAffixExposureRange, topFiveAffixExposureShare) &&
+                maxSingleAffixExposurePasses &&
+                focusedHighFrequencyAffixExposurePasses
+        val topFiveAffixExposureEntry =
+            EvaluationEntry(
+                metricId = topFiveAffixExposureMetricId,
+                status =
+                    if (topFiveAffixExposurePasses) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("share", topFiveAffixExposureShare)
+                        put("maxSingleAffixExposureShare", corpusAggregateMetrics.getValue("maxSingleAffixExposureShare"))
+                        put("focusedHighFrequencyAffixCombinedShare", corpusAggregateMetrics.getValue("focusedHighFrequencyAffixCombinedShare"))
+                        put("affixExposureShares", corpusAggregateMetrics.getValue("affixExposureShares"))
+                        put("affixExposureCounts", corpusAggregateMetrics.getValue("affixExposureCounts"))
+                        put("affixDistributionDiff", corpusAggregateMetrics.getValue("affixDistributionDiff"))
+                    },
+                currentValueText = formatPercent(topFiveAffixExposureShare),
+                targetText =
+                    "${Phase4OwnerMetricTargets.targetText(topFiveAffixExposureMetricId, topFiveAffixExposureRange)}; " +
+                        "maxSingle<=${formatPercent(PHASE4_MAX_SINGLE_AFFIX_EXPOSURE_SHARE)}; " +
+                        "focusedHighFrequency<=${formatPercent(PHASE4_MAX_FOCUSED_HIGH_FREQUENCY_AFFIX_COMBINED_SHARE)}",
+                note =
+                    "maxSingle=${formatPercent(maxSingleAffixExposureShare)}; " +
+                        "focusedHighFrequencyCombined=${formatPercent(focusedHighFrequencyAffixCombinedShare)}",
+                details = corpusAggregateMetrics,
+            )
+        val entries =
+            localRewardEvaluation.entries +
+                dynamicPoolEntry +
+                specialTierDuplicateEntry +
+                secretZoneRewardAuthorityEntry +
+                topFiveAffixExposureEntry +
+                sourceCoverageEntry
         val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         return localRewardEvaluation.copy(
             verdict = if (unexpectedRegressionCount > 0) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,

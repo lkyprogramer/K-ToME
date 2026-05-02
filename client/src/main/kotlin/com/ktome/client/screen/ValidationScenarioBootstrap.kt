@@ -138,6 +138,7 @@ internal object ValidationScenarioBootstrap {
             appExecutableSha256Path = paths.appExecutableSha256Path,
             appExecutableSha256 = startupProperties[APP_HASH_PROPERTY]?.takeIf(String::isNotBlank),
             requiredLogEventKeys = scenario.evidence.requiredLogEventKeys,
+            scenarioNoteLabelKey = scenario.evidence.scenarioNoteLabelKey,
         )
     }
 

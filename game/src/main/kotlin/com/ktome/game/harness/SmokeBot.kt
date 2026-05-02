@@ -255,6 +255,20 @@ class SmokeBot : RunBot {
             return PlayerCommand.ActivateInventoryItem(resourceRestoreIndex)
         }
 
+        var cachedEquippedItemsBySlot: Map<EquipSlot, InventoryItemView>? = null
+        fun equippedItemsBySlot(): Map<EquipSlot, InventoryItemView> =
+            cachedEquippedItemsBySlot
+                ?: observation.inventoryItems
+                    .mapNotNull { item -> item.equippedSlot?.let { slot -> slot to item } }
+                    .toMap()
+                    .also { cachedEquippedItemsBySlot = it }
+
+        if (canEquipBuildIdentityCapstoneUnderPressure(observation)) {
+            buildIdentityCapstoneGearCandidate(observation, equippedItemsBySlot())?.let { candidate ->
+                return PlayerCommand.ActivateInventoryItem(candidate.index)
+            }
+        }
+
         if (!canManageInventorySafely(observation)) {
             return null
         }
@@ -264,10 +278,6 @@ class SmokeBot : RunBot {
             return PlayerCommand.DropInventoryItem(index)
         }
 
-        val equippedItemsBySlot =
-            observation.inventoryItems
-                .mapNotNull { item -> item.equippedSlot?.let { slot -> slot to item } }
-                .toMap()
         val gearCandidate =
             observation.inventoryItems
                 .asSequence()
@@ -278,7 +288,7 @@ class SmokeBot : RunBot {
                         shouldEquipGearItem(
                             observation = observation,
                             candidate = item,
-                            equipped = equippedItemsBySlot[targetSlot],
+                            equipped = equippedItemsBySlot()[targetSlot],
                         )
                 }.maxWithOrNull(
                     compareBy<InventoryItemView> { item -> gearEquipPriority(observation, item) }
@@ -298,7 +308,14 @@ class SmokeBot : RunBot {
         if (candidate.slot == null) {
             return false
         }
+        if (BuildIdentityAdoptionPolicy.isOtherProfessionCapstone(observation.playerResource.typeId, candidate)) {
+            return false
+        }
+        val isProfessionCapstone = BuildIdentityAdoptionPolicy.isProfessionCapstone(observation.playerResource.typeId, candidate)
         if (equipped == null) {
+            if (isProfessionCapstone) {
+                return true
+            }
             return gearEquipPriority(observation, candidate) >=
                 BuildIdentityAdoptionPolicy.emptySlotEquipThreshold(
                     resourceTypeId = observation.playerResource.typeId,
@@ -306,13 +323,48 @@ class SmokeBot : RunBot {
                 )
         }
         val replacementThreshold =
-            when (candidate.slot) {
-                EquipSlot.WEAPON -> 50
-                EquipSlot.OFF_HAND,
-                EquipSlot.ARMOR,
-                -> 40
+            if (isProfessionCapstone) {
+                5
+            } else {
+                when (candidate.slot) {
+                    EquipSlot.WEAPON -> 50
+                    EquipSlot.OFF_HAND,
+                    EquipSlot.ARMOR,
+                    -> 40
+                }
             }
         return gearEquipPriority(observation, candidate) >= gearEquipPriority(observation, equipped) + replacementThreshold
+    }
+
+    private fun buildIdentityCapstoneGearCandidate(
+        observation: RunObservation,
+        equippedItemsBySlot: Map<EquipSlot, InventoryItemView>,
+    ): InventoryItemView? =
+        observation.inventoryItems
+            .asSequence()
+            .filter { item ->
+                val targetSlot = item.slot
+                targetSlot != null &&
+                    item.equippedSlot == null &&
+                    BuildIdentityAdoptionPolicy.isProfessionCapstone(observation.playerResource.typeId, item) &&
+                    shouldEquipGearItem(
+                        observation = observation,
+                        candidate = item,
+                        equipped = equippedItemsBySlot[targetSlot],
+                    )
+            }.maxWithOrNull(
+                compareBy<InventoryItemView> { item -> gearEquipPriority(observation, item) }
+                    .thenBy(InventoryItemView::index),
+            )
+
+    private fun canEquipBuildIdentityCapstoneUnderPressure(observation: RunObservation): Boolean {
+        if (observation.playerStatus.level < 5) {
+            return false
+        }
+        if (hostilesWithin(observation, 1) > 0) {
+            return false
+        }
+        return observation.playerStatus.currentHp * 100 > observation.playerStatus.maxHp * 50
     }
 
     private fun gearEquipPriority(

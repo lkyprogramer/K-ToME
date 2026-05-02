@@ -148,8 +148,9 @@ data class SchemaCatalog(
             require(unknownCapstoneIds.isEmpty()) {
                 "Build identity entry '${identity.professionId}' references unknown capstone item ids ${unknownCapstoneIds.joinToString()}."
             }
-            require(identity.nonWeaponCapstoneBaseIds.all(identity.capstoneBaseIds::contains)) {
-                "Build identity entry '${identity.professionId}' nonWeaponCapstoneBaseIds must be a subset of capstoneBaseIds."
+            val unknownNonWeaponPayoffIds = identity.nonWeaponCapstoneBaseIds.filterNot(itemIds::contains)
+            require(unknownNonWeaponPayoffIds.isEmpty()) {
+                "Build identity entry '${identity.professionId}' references unknown non-weapon payoff item ids ${unknownNonWeaponPayoffIds.joinToString()}."
             }
             identity.capstoneBaseIds.forEach { itemId ->
                 val item = requireNotNull(itemSchemasById[itemId])
@@ -606,15 +607,15 @@ data class RewardRoutingEntrySchemaV1(
     }
 }
 
-data class ProfessionBuildIdentityReportOnlyFloorsSchemaV1(
+data class ProfessionBuildIdentityFloorsSchemaV1(
     val seenMinCount: Int,
     val adoptionMinCount: Int,
     val nonWeaponMinCount: Int,
 ) {
     init {
-        require(seenMinCount >= 0) { "ProfessionBuildIdentityReportOnlyFloorsSchemaV1.seenMinCount must not be negative." }
-        require(adoptionMinCount >= 0) { "ProfessionBuildIdentityReportOnlyFloorsSchemaV1.adoptionMinCount must not be negative." }
-        require(nonWeaponMinCount >= 0) { "ProfessionBuildIdentityReportOnlyFloorsSchemaV1.nonWeaponMinCount must not be negative." }
+        require(seenMinCount >= 0) { "ProfessionBuildIdentityFloorsSchemaV1.seenMinCount must not be negative." }
+        require(adoptionMinCount >= 0) { "ProfessionBuildIdentityFloorsSchemaV1.adoptionMinCount must not be negative." }
+        require(nonWeaponMinCount >= 0) { "ProfessionBuildIdentityFloorsSchemaV1.nonWeaponMinCount must not be negative." }
     }
 }
 
@@ -626,7 +627,7 @@ data class ProfessionBuildIdentitySchemaV1(
     val preferredRewardSources: List<MilestoneRewardSource>,
     val preferredReplacementSlots: List<EquipSlot>,
     val terminalIdentityTags: List<String>,
-    val reportOnlyFloors: ProfessionBuildIdentityReportOnlyFloorsSchemaV1,
+    val buildIdentityFloors: ProfessionBuildIdentityFloorsSchemaV1,
 ) {
     init {
         require(professionId.isNotBlank()) { "ProfessionBuildIdentitySchemaV1.professionId must not be blank." }

@@ -6,6 +6,31 @@
 **前置条件**: PR-00 完成。
 **资源生成结论**: 不生成正式资源，全部使用 primitive 绘制或现有 manifest key。
 
+## 0. 开发治理与验收矩阵
+
+本 PR 继承 [development-governance.md](./development-governance.md)。执行前先跑 `acceptanceContractLint`，再跑 client focused tests、client evidence 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UI01-M01` | §3 shell layout / renderer 拆分 | `client` | `GameShellLayoutTest`, `TileRendererCanvasTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI01-M02` | §3 dark UI token / fixed dimensions | `client` | `AsciiRenderModelTest`, layout focused tests | `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI01-M03` | §5 必测行为 | `client` | PR focused client tests | `clientSmoke` | `build/reports/tests/` | `N/A` |
+| `UI01-M04` | §6 验证命令 / governance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：`:client:clientSmoke`、`:client:goldenScreenshot`、`maintainabilityLint`、`verifyChanged`。触发原因是 PR-01 改 client shell layout、renderer 拆分和 presentation token。
+
+### Canonical Artifact
+
+canonical evidence 固定为 client golden output、client smoke report、focused test report 和 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。debug-only screenshot metadata 或本机窗口坐标不得成为合同。
+
+### Failure Rule
+
+layout / golden 失败时先补 focused layout test 或修 renderer 尺寸约束；不得用人工观察替代 `clientSmoke`、`goldenScreenshot`。
+
 ## 1. 阶段目标
 
 1. 建立新 UI 的结构骨架：左侧导航栏、中央地图、右侧玩家面板、底部 HUD。

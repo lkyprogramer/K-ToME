@@ -718,7 +718,15 @@ class LongRunWorldStructureSessionTest {
                         reward.affixIds.isNotEmpty()
                 },
             )
-        assertEquals(EquipSlot.OFF_HAND, requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot)
+        assertEquals(
+            EquipSlot.OFF_HAND,
+            requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot,
+            "route milestone reward should keep open off-hand preference, baseItemId=${rewardSummary.baseItemId}, samples=${
+                session.milestoneRewardScoreSamples()
+                    .filter { sample -> sample.sourceId == rewardSummary.sourceId }
+                    .joinToString { sample -> "${sample.baseItemId}:${sample.legal}:${sample.rejectionReason}:${sample.scoreBreakdown.totalScore}" }
+            }",
+        )
     }
 
     @Test

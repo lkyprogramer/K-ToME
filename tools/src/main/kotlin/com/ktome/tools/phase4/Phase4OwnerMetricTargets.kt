@@ -27,6 +27,13 @@ internal object Phase4OwnerMetricTargets {
             "frontstageHighPriorityCueRetainedRate",
             "frontstageCueExpiryParity",
             "frontstageSecretCueVisibilityRate",
+            "topFiveAffixExposureShare",
+            "milestoneRewardSlotBalance.maxSlotShare",
+            "milestoneRewardSlotBalance.WEAPON",
+            "milestoneRewardSlotBalance.OFF_HAND",
+            "milestoneRewardSlotBalance.ARMOR",
+            "milestoneRewardSlotBalance.ACCESSORY",
+            "milestoneRewardSlotBalance.CONSUMABLE_OR_UTILITY",
             ->
                 renderBoundTarget(
                     range = range,
@@ -34,6 +41,12 @@ internal object Phase4OwnerMetricTargets {
                 )
 
             "professionCapstoneSeenRate" -> renderProfessionCapstoneSeenTarget(range)
+
+            "professionCapstoneAdoptionFloor",
+            "nonWeaponBuildPayoffFloor",
+            -> renderProfessionFloorTarget(range)
+
+            "milestoneRewardAdoptionDelta" -> renderMilestoneRewardAdoptionDeltaTarget(range)
 
             "sameZoneSecretVsCadenceMaxOverlap",
             "sameZoneSecretVsRewardMaxOverlap",
@@ -51,10 +64,7 @@ internal object Phase4OwnerMetricTargets {
                 )
 
             "terminalWeaponBaseDiversity" ->
-                renderBoundTarget(
-                    range = range,
-                    formatter = ::formatNumber,
-                )
+                "${renderBoundTarget(range = range, formatter = ::formatNumber)} weapon bases"
 
             "bossVariantBasePhaseCountMin" ->
                 renderBoundTarget(
@@ -113,6 +123,22 @@ internal object Phase4OwnerMetricTargets {
         } else {
             "$aggregateTarget + every profession seenCount >= $perProfessionSeenMinCount"
         }
+    }
+
+    private fun renderProfessionFloorTarget(range: VerificationExpectedMetricRange): String {
+        val minimumAcceptedValue =
+            checkNotNull(range.minimumAcceptedValue()) {
+                "${range.metricId} must declare a minimum foundation profession floor."
+            }
+        return "${formatNumber(minimumAcceptedValue)}/4 foundation professions"
+    }
+
+    private fun renderMilestoneRewardAdoptionDeltaTarget(range: VerificationExpectedMetricRange): String {
+        val minimumAcceptedValue =
+            checkNotNull(range.minimumAcceptedValue()) {
+                "milestoneRewardAdoptionDelta must declare a minimum adopted-minus-not-adopted delta."
+            }
+        return "adopted > notAdopted (delta >= ${formatNumber(minimumAcceptedValue)})"
     }
 
     private fun renderBoundTarget(

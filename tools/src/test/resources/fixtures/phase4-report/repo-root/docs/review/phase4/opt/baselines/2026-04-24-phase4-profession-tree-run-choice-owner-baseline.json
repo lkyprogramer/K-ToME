@@ -1,0 +1,52 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-profession-tree-run-choice-v1",
+    "domainId": "longrun",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-v4-pr01-profession-tree-run-choice-v1",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "starterProfessionTalentMaxCount",
+            "maxValue": 3.0,
+            "notes": "Release-facing professions must start with at most three learned profession talents."
+        },
+        {
+            "metricId": "learnedTalentChoiceEventRate",
+            "minValue": 0.9,
+            "notes": "At least 90% of terminal release-facing runs must confirm a non-starter rank 0 -> 1 learned talent event."
+        },
+        {
+            "metricId": "multiTreeInvestmentAboveThresholdRate",
+            "minValue": 0.75,
+            "notes": "At least 75% of terminal release-facing runs must invest at least three points into two profession trees."
+        },
+        {
+            "metricId": "breakpointChoiceEventRate",
+            "minValue": 0.75,
+            "notes": "At least 75% of terminal release-facing runs with a breakpoint preview must confirm a breakpoint choice event."
+        }
+    ],
+    "notes": [
+        "Phase4 v4 PR-01 owner baseline for profession tree run choice metrics.",
+        "The blocking denominator is limited to vanguard, arcanist, rogue, and templar."
+    ],
+    "metadata": {
+        "includedProfessions": [
+            "vanguard",
+            "arcanist",
+            "rogue",
+            "templar"
+        ],
+        "advancedReportOnlyProfessions": [
+            "berserker",
+            "spellblade"
+        ],
+        "excludedFrozenProfessions": [
+            "shadowblade",
+            "warden"
+        ]
+    }
+}

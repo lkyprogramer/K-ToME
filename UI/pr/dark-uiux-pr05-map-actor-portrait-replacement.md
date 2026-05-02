@@ -6,6 +6,32 @@
 **前置条件**: PR-01、PR-02、PR-03、PR-04 完成。
 **资源生成结论**: 生成 Round 2-6 资源，替换地图、actor、portrait 主视觉。
 
+## 0. 开发治理与验收矩阵
+
+本 PR 继承 [development-governance.md](./development-governance.md)。执行前先跑 `acceptanceContractLint`，再跑 tile / actor resource gate、client layer tests、client evidence 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
+
+### Acceptance Matrix
+
+| requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UI05-M01` | §3 Round 2-6 resource scope | `assets` | `darkSpriteSheetLint`, `spriteSheetMapLint` | `assetLint`, `styleLint` | `assets-src/image/contact-sheets/dark-v1/` | `required` |
+| `UI05-M02` | §4 tile / actor / VFX implementation | `client` | `TileLayerComposerTest`, `TileRendererCanvasTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI05-M03` | manifest / owner-scope coverage | `tools` | `ManifestResolveTest`, `darkKeyRegistryLint` | `manifestLint`, `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-05` | dark manifest coverage report | `N/A` |
+| `UI05-M04` | §6 必测行为 | `client` | map layer and render focused tests | `clientSmoke`, `goldenScreenshot` | `build/reports/tests/` | `required` |
+| `UI05-M05` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+
+### Gate Budget
+
+预计重型任务：resource lint 全套、owner-scope `darkManifestCoverageLint`、`:client:clientSmoke`、`:client:goldenScreenshot`、`maintainabilityLint`、`verifyChanged`。触发原因是 PR-05 替换地图、actor、portrait 和 VFX 主视觉，是资源面最大的 dark UI PR。
+
+### Canonical Artifact
+
+canonical artifact 固定为 Round 2-6 raw sheet、contact sheet QA、key registry、manifest coverage report、runtime manifest、golden output 和 manual record。contact sheet 未确认前不得把 runtime PNG 视为稳定合同。
+
+### Failure Rule
+
+地图层级或资源 coverage 失败时先修 sheet mapping、manifest key 或 layer composer；不得通过降低 golden 覆盖、保留旧风格 residue 或跳过 owner-scope coverage 来通过。
+
 ## 1. 阶段目标
 
 1. 替换地图核心视觉：ground、wall、decal、prop、VFX。
