@@ -10,6 +10,7 @@ import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
 import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Comparator
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -48,6 +49,7 @@ data class SharedWhiteBoxWriteResult(
 )
 
 object SharedWhiteBoxWriteCore {
+    private val uploadUnsafePathCharacters: Set<Char> = setOf('"', ':', '<', '>', '|', '*', '?', '\r', '\n')
     private val prettyJson: Json = Json { prettyPrint = true }
     private val lineJson: Json = Json { prettyPrint = false }
 
@@ -96,7 +98,9 @@ object SharedWhiteBoxWriteCore {
         content: String,
         tags: List<String> = emptyList(),
     ): WhiteBoxArtifact {
-        val artifactDir = outputDir.resolve("artifacts").resolve(caseDirName(joinKey))
+        val artifactsRoot = outputDir.resolve("artifacts")
+        deleteUploadUnsafeArtifactDirectories(artifactsRoot)
+        val artifactDir = artifactsRoot.resolve(caseDirName(joinKey))
         Files.createDirectories(artifactDir)
         val artifactPath = artifactDir.resolve(fileName)
         Files.writeString(artifactPath, content)
@@ -193,8 +197,25 @@ object SharedWhiteBoxWriteCore {
         value.map { ch ->
             when {
                 ch.isLetterOrDigit() -> ch
-                ch == '.' || ch == '-' || ch == '_' || ch == ':' -> ch
+                ch == '.' || ch == '-' || ch == '_' -> ch
                 else -> '_'
             }
         }.joinToString(separator = "")
+
+    private fun deleteUploadUnsafeArtifactDirectories(artifactsRoot: Path) {
+        if (!Files.isDirectory(artifactsRoot)) return
+        Files.list(artifactsRoot).use { paths ->
+            paths
+                .filter { path -> path.fileName.toString().any(uploadUnsafePathCharacters::contains) }
+                .forEach(::deleteRecursively)
+        }
+    }
+
+    private fun deleteRecursively(path: Path) {
+        Files.walk(path).use { paths ->
+            paths
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
+    }
 }

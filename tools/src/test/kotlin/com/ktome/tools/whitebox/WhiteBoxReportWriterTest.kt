@@ -164,9 +164,12 @@ class WhiteBoxReportWriterTest {
     }
 
     @Test
-    fun `artifact paths preserve scenario separators used by boss white box cases`() {
+    fun `artifact paths replace upload unsafe scenario separators used by boss white box cases`() {
         val outputDir = tempDir.resolve("boss-whitebox")
         val joinKey = WhiteBoxJoinKey(scenarioId = "pair:molten_giant:boss.variant.molten_glass")
+        val staleUnsafeDir = outputDir.resolve("artifacts/scenario-pair:molten_giant:boss.variant.molten_glass")
+        Files.createDirectories(staleUnsafeDir)
+        Files.writeString(staleUnsafeDir.resolve("old-artifact.md"), "stale")
 
         val artifact =
             WhiteBoxReportWriter.writeTextArtifact(
@@ -178,7 +181,9 @@ class WhiteBoxReportWriterTest {
                 content = "trace",
             )
 
-        assertTrue(artifact.relativePath.contains("scenario-pair:molten_giant:boss.variant.molten_glass"))
+        assertTrue(artifact.relativePath.contains("scenario-pair_molten_giant_boss.variant.molten_glass"))
+        assertFalse(artifact.relativePath.any { character -> character in "\":<>|*?\r\n" })
         assertTrue(Files.exists(outputDir.resolve(artifact.relativePath)))
+        assertFalse(Files.exists(staleUnsafeDir))
     }
 }

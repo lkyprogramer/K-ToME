@@ -690,6 +690,7 @@ tasks.register("nightlyGovernanceGate") {
     dependsOn("verifyOwner")
     dependsOn("mapgenSmoke")
     dependsOn("solvabilityHarness")
+    dependsOn("whiteBoxHiddenContent")
     dependsOn("reportPhase4")
 }
 

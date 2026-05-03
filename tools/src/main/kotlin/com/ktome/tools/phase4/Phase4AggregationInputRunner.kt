@@ -624,7 +624,7 @@ internal object Phase4AggregationInputRunner {
         )
     }
 
-    private fun organicHiddenEvaluation(
+    internal fun organicHiddenEvaluation(
         task: Phase4TaskAggregate,
         baseline: VerificationBaseline,
     ): EvaluationResult {
