@@ -655,7 +655,8 @@ class FoundationGameSessionTest {
 
         movePlayerTo(session, hiddenEntranceSearchPoint(session, entrance.bindingId))
         assertFalse(session.perform(PlayerCommand.Search))
-        assertEquals(emptyList<String>(), session.renderSnapshot().uiState.frontstageReadability.recentActionCues.map { cue -> cue.message.key })
+        val visibleCueKeys = session.renderSnapshot().uiState.frontstageReadability.recentActionCues.map { cue -> cue.message.key }
+        assertFalse("log.search.already_resolved" in visibleCueKeys)
         assertNotNull(logEventByKey(session, "log.search.already_resolved"))
     }
 
@@ -700,10 +701,13 @@ class FoundationGameSessionTest {
         )
 
         val visibleKeys = session.renderSnapshot().uiState.frontstageReadability.recentActionCues.map { cue -> cue.stableKey }
-        assertEquals(listOf("probe:critical", "probe:high"), visibleKeys)
+        assertEquals(listOf("probe:critical", "probe:high", "probe:medium", "probe:low"), visibleKeys)
         assertEquals(1, visibleKeys.count { stableKey -> stableKey == "probe:high" })
 
         listOf(
+            FrontstageActionPrioritySnapshot.CRITICAL_COMBAT to 3,
+            FrontstageActionPrioritySnapshot.HIGH_COMBAT to 3,
+            FrontstageActionPrioritySnapshot.HIGH_HIDDEN to 3,
             FrontstageActionPrioritySnapshot.CRITICAL to 3,
             FrontstageActionPrioritySnapshot.HIGH to 3,
             FrontstageActionPrioritySnapshot.MEDIUM to 2,
@@ -719,6 +723,9 @@ class FoundationGameSessionTest {
             ttlSession.automationRecordFrontstageActionCueForVerification(
                 category =
                     when (priority) {
+                        FrontstageActionPrioritySnapshot.CRITICAL_COMBAT -> FrontstageActionCategorySnapshot.SECRET
+                        FrontstageActionPrioritySnapshot.HIGH_COMBAT -> FrontstageActionCategorySnapshot.SEARCH
+                        FrontstageActionPrioritySnapshot.HIGH_HIDDEN -> FrontstageActionCategorySnapshot.SEARCH
                         FrontstageActionPrioritySnapshot.CRITICAL -> FrontstageActionCategorySnapshot.SECRET
                         FrontstageActionPrioritySnapshot.HIGH -> FrontstageActionCategorySnapshot.SEARCH
                         FrontstageActionPrioritySnapshot.MEDIUM -> FrontstageActionCategorySnapshot.SEARCH
@@ -893,10 +900,10 @@ class FoundationGameSessionTest {
     }
 
     @Test
-    fun `killing elite reveals slag cache and grants discovery tag`() {
+    fun `killing elite primes slag cache before explicit search`() {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "arcanist"),
                 saveManager = SaveManager(tempDir.resolve("deep-iron-slag-cache-primer-save")),
             )
         clearMonsters(session)
@@ -908,15 +915,43 @@ class FoundationGameSessionTest {
             primerMessage.contains("worth searching") || primerMessage.contains("值得继续搜"),
             "Expected primer feedback to advertise follow-up value, actual=$primerMessage",
         )
-        assertEquals(
-            SearchActionResult.REVEALED,
-            requireNotNull(
-                activeFloorState(session).searchState.firstOrNull { entry ->
-                    entry.bindingId.value == "search.deep_iron.slag_cache"
-                },
-            ).result,
+        val slagCacheBindingId = SearchBindingId("search.deep_iron.slag_cache")
+        assertNull(activeFloorState(session).searchStateFor(slagCacheBindingId))
+        movePlayerTo(session, requireNotNull(session.automationSearchPointForBinding(slagCacheBindingId)))
+        assertNotNull(session.renderSnapshot().uiState.searchPromptLabelKey)
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(SearchActionResult.REVEALED, requireNotNull(activeFloorState(session).searchStateFor(slagCacheBindingId)).result)
+        assertTrue(logEventByKey(session, "log.search.revealed") != null || logEventByKey(session, "log.search.revealed_tag") != null)
+        assertNotNull(logEventByKey(session, "log.zone.hook.slag_alert"))
+        assertNotNull(logEventByKey(session, "zone.trigger.oil_or_fire_seen"))
+        assertTrue(
+            session.renderSnapshot().overlays.any { overlay ->
+                overlay.sourceAbilityId == "zone.trigger.oil_or_fire_seen" &&
+                    overlay.audioProfile == "audio.boss.warning"
+            },
         )
-        assertNotNull(logEventByKey(session, "log.hidden.secret_zone.revealed"))
+    }
+
+    @Test
+    fun `grey gate ritual pressure emits runtime warning overlay from interact cue`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "grey_gate_depths", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("grey-gate-ritual-pressure-warning-save")),
+            )
+        clearMonsters(session)
+
+        movePlayerTo(session, requireNotNull(session.automationInteractablePoint("shadow_brazier")))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        assertNotNull(logEventByKey(session, "log.zone.hook.ritual_pressure"))
+        assertNotNull(logEventByKey(session, "zone.trigger.ritual_pressure_active"))
+        assertTrue(
+            session.renderSnapshot().overlays.any { overlay ->
+                overlay.sourceAbilityId == "zone.trigger.ritual_pressure_active" &&
+                    overlay.audioProfile == "audio.boss.warning"
+            },
+        )
     }
 
     @Test
@@ -932,10 +967,11 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Interact))
         assertTrue(session.automationDiscoveryTags().contains("hidden.primer.underground_river.crystal_rift"))
         val crystalRiftBindingId = SearchBindingId("search.underground_river.crystal_rift")
-        assertEquals(
-            SearchActionResult.REVEALED,
-            requireNotNull(activeFloorState(session).searchStateFor(crystalRiftBindingId)).result,
-        )
+        assertNull(activeFloorState(session).searchStateFor(crystalRiftBindingId))
+        movePlayerTo(session, requireNotNull(session.automationSearchPointForBinding(crystalRiftBindingId)))
+        assertNotNull(session.renderSnapshot().uiState.searchPromptLabelKey)
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(SearchActionResult.REVEALED, requireNotNull(activeFloorState(session).searchStateFor(crystalRiftBindingId)).result)
     }
 
     @Test
@@ -954,17 +990,18 @@ class FoundationGameSessionTest {
         }
         assertTrue(session.automationDiscoveryTags().contains("hidden.primer.abyssal_temple.warded_archive"))
         val wardedArchiveBindingId = SearchBindingId("search.abyssal_temple.warded_archive")
-        assertEquals(
-            SearchActionResult.REVEALED,
-            requireNotNull(activeFloorState(session).searchStateFor(wardedArchiveBindingId)).result,
-        )
+        assertNull(activeFloorState(session).searchStateFor(wardedArchiveBindingId))
+        movePlayerTo(session, requireNotNull(session.automationSearchPointForBinding(wardedArchiveBindingId)))
+        assertNotNull(session.renderSnapshot().uiState.searchPromptLabelKey)
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(SearchActionResult.REVEALED, requireNotNull(activeFloorState(session).searchStateFor(wardedArchiveBindingId)).result)
     }
 
     @Test
-    fun `entering hidden branch vault reveals smuggler stash without explicit search`() {
+    fun `entering hidden branch vault grants smuggler stash primer before explicit search`() {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "arcanist"),
                 saveManager = SaveManager(tempDir.resolve("deep-iron-smuggler-stash-enter-room-save")),
             )
         clearMonsters(session)
@@ -973,15 +1010,13 @@ class FoundationGameSessionTest {
         movePlayerTo(session, hiddenBranchRoom.center)
 
         assertTrue(session.automationDiscoveryTags().contains("hidden.primer.deep_iron.smuggler_stash"))
-        assertEquals(
-            SearchActionResult.REVEALED,
-            requireNotNull(
-                activeFloorState(session).searchState.firstOrNull { entry ->
-                    entry.bindingId.value == "search.deep_iron.smuggler_stash"
-                },
-            ).result,
-        )
-        assertNotNull(logEventByKey(session, "log.hidden.secret_zone.revealed"))
+        val smugglerBindingId = SearchBindingId("search.deep_iron.smuggler_stash")
+        assertNull(activeFloorState(session).searchStateFor(smugglerBindingId))
+        movePlayerTo(session, requireNotNull(session.automationSearchPointForBinding(smugglerBindingId)))
+        assertNotNull(session.renderSnapshot().uiState.searchPromptLabelKey)
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(SearchActionResult.REVEALED, requireNotNull(activeFloorState(session).searchStateFor(smugglerBindingId)).result)
+        assertTrue(logEventByKey(session, "log.search.revealed") != null || logEventByKey(session, "log.search.revealed_tag") != null)
     }
 
     @Test
@@ -1187,13 +1222,18 @@ class FoundationGameSessionTest {
     fun `smuggler stash reward grants haste and spawns contraband guard`() {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "arcanist"),
                 saveManager = SaveManager(tempDir.resolve("smuggler-stash-reward-structure")),
             )
         clearMonsters(session)
 
         val hiddenBranchRoom = requireNotNull(activeFloorState(session).generatedFloor.roomByAnchor(NodeAnchorId("hidden.branch")))
         movePlayerTo(session, hiddenBranchRoom.center)
+
+        val smugglerBindingId = SearchBindingId("search.deep_iron.smuggler_stash")
+        movePlayerTo(session, requireNotNull(session.automationSearchPointForBinding(smugglerBindingId)))
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(SearchActionResult.REVEALED, requireNotNull(activeFloorState(session).searchStateFor(smugglerBindingId)).result)
 
         val entranceProp = requireNotNull(propByType(session, "hidden_entrance"))
         movePlayerTo(session, Point(entranceProp.x, entranceProp.y))

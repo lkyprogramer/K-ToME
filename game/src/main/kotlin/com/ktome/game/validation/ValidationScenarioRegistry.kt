@@ -251,6 +251,76 @@ object ValidationScenarioRegistry {
                         scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr03.evidence.summary_note",
                     ),
             ),
+            ValidationScenarioDef(
+                id = ValidationScenarioId("phase4-v4-pr04"),
+                prId = "PR-04",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.HIDDEN_CONTENT,
+                        seed = 2026042434L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "arcanist",
+                        raceId = "human",
+                        zoneId = "deep_iron_pit",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/phase4-v4-pr04-deep-iron-search-cue.png",
+                                "evidence/phase4-v4-pr04-search-result-feedback.png",
+                                "evidence/phase4-v4-pr04-abyssal-void-pressure.png",
+                                "evidence/phase4-v4-pr04-zone-hook-triggered.png",
+                                "evidence/phase4-v4-pr04-priority-no-overlap.png",
+                                "evidence/phase4-v4-pr04-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "Player is positioned at the deep_iron_pit slag Search cue; search_available frontstage cue is visible.",
+                                    evidenceFile = "evidence/phase4-v4-pr04-deep-iron-search-cue.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "S",
+                                    expectedVisibleResult = "Formal Search action produces clue/cache/stash feedback and keeps the hidden entry on the typed snapshot path.",
+                                    evidenceFile = "evidence/phase4-v4-pr04-search-result-feedback.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "Secondary scene switches to abyssal_temple near the ward objective and emits void_pressure runtime warning.",
+                                    evidenceFile = "evidence/phase4-v4-pr04-abyssal-void-pressure.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "zone_hook_triggered cue is visible from a real runtime hook, not an overlay-only label.",
+                                    evidenceFile = "evidence/phase4-v4-pr04-zone-hook-triggered.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Right, Enter",
+                                    expectedVisibleResult = "Evidence summary lists hidden Search cue, Search result, zone hook, and priority no-overlap evidence.",
+                                    evidenceFile = "evidence/phase4-v4-pr04-priority-no-overlap.png",
+                                ),
+                            ),
+                        manualRecordPath = "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr04-hidden-search-zone-hooks.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.search.available",
+                                "log.search.revealed_tag",
+                                "log.zone.hook.void_pressure",
+                                "zone.trigger.void_pressure_active",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr04.evidence.summary_note",
+                    ),
+            ),
         )
 
     fun all(): List<ValidationScenarioDef> = scenarios

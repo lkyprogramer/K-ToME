@@ -56,7 +56,7 @@ internal object LogPresentationModelBuilder {
             key.startsWith("log.talent.") || key.startsWith("log.boss.") -> LogPresentationCategory.COMBAT
             key.startsWith("log.reward.") || key.startsWith("log.level_up") -> LogPresentationCategory.REWARD
             key.startsWith("log.status.") || key.startsWith("log.passive.") -> LogPresentationCategory.STATUS
-            key.startsWith("log.zone.") || key.startsWith("log.route.") -> LogPresentationCategory.EXPLORATION
+            key.startsWith("log.zone.") || key.startsWith("log.route.") || key.startsWith("zone.trigger.") -> LogPresentationCategory.EXPLORATION
             else -> LogPresentationCategory.SYSTEM
         }
 

@@ -23,6 +23,7 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.loot.foundationBuildIdentityByProfessionId
 import com.ktome.game.data.schema.TalentSchemaV2
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -347,6 +348,10 @@ class SchemaV2LoaderTest {
             setOf("hidden.branch", "hidden.critical.adjacent", "hidden.goal.adjacent"),
             catalog.secretZones.map { secretZone -> secretZone.entranceBindingId.value }.toSet(),
         )
+        val crystalRiftSelector =
+            requireNotNull(catalog.secretZones.single { secretZone -> secretZone.id.id == "underground_river_crystal_rift" }.secretZoneSelector)
+        assertTrue(crystalRiftSelector.primarySlot)
+        assertFalse(crystalRiftSelector.secondarySlot)
         assertTrue(
             catalog.hiddenEvents
                 .flatMap { hiddenEvent -> hiddenEvent.rewards.map { reward -> reward.key.name } }

@@ -689,19 +689,48 @@
         "frontstageCueDedupAppliedCount": 1,
         "frontstageCueExpiryParity": 1.0,
         "frontstageSecretCueVisibilityRate": 1.0,
+        "frontstageSearchCueVisibilityRate": 1.0,
+        "zoneSearchPromptVisibility": 1.0,
+        "zoneHookCoverage": 1.0,
         "frontstageHighPriorityCueRetainedCount": 625,
         "frontstageHighPriorityExpectedCount": 625,
         "frontstageSecretCueVisibleCount": 625,
         "frontstageSecretCueExpectedCount": 625,
-        "frontstageDuplicateNoTargetLogCount": 2,
+        "frontstageSearchCueVisibleCount": 626,
+        "frontstageSearchCueExpectedCount": 626,
+        "zoneSearchPromptVisibleZoneCount": 4,
+        "zoneSearchPromptExpectedZoneCount": 4,
+        "zoneHookTriggeredCount": 5,
+        "zoneHookExpectedCount": 5,
+        "frontstageDuplicateNoTargetLogCount": 1,
         "frontstageRemainingNoTargetCueCount": 0,
-        "frontstageCueExpiryProbePassedCount": 4,
-        "frontstageCueExpiryProbeTotalCount": 4,
+        "frontstageCueExpiryProbePassedCount": 7,
+        "frontstageCueExpiryProbeTotalCount": 7,
         "frontstageCueExpiryProbePriorities": [
+            "CRITICAL_COMBAT",
+            "HIGH_COMBAT",
+            "HIGH_HIDDEN",
             "CRITICAL",
             "HIGH",
             "MEDIUM",
             "LOW"
+        ],
+        "zoneHookTriggeredIds": [
+            "ferry_crossing",
+            "ritual_pressure",
+            "slag_alert",
+            "trail_pressure",
+            "void_pressure"
+        ],
+        "zoneHookMissingIds": [
+        ],
+        "zoneSearchPromptVisibleZoneIds": [
+            "abyssal_temple",
+            "deep_iron_pit",
+            "greenwood_fringe",
+            "underground_river"
+        ],
+        "zoneSearchPromptMissingZoneIds": [
         ]
     },
     "aggregateFailures": [],

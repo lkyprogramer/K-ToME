@@ -70,11 +70,19 @@ internal object OrganicHiddenProbeArtifactWriter {
                 put("runsWithSearchActionCount", summary.runsWithSearchActionCount)
                 put("searchActionUseCount", summary.searchActionUseCount)
                 put("searchActionUseRate", summary.searchActionUseRate)
+                put("runsWithSearchPromptCount", summary.runsWithSearchPromptCount)
+                put("searchPromptVisibleCount", summary.searchPromptVisibleCount)
+                put("searchPromptVisibilityRate", summary.searchPromptVisibilityRate)
+                put("zoneSearchPromptVisibility", summary.zoneSearchPromptVisibility)
                 put("discoveryWithoutPrimerCount", summary.discoveryWithoutPrimerCount)
                 put("leadDiscoveryCount", summary.discoveryWithoutPrimerCount)
                 put("leadDiscoveryRate", summary.leadDiscoveryRate)
+                put("topZoneLeadShare", summary.topZoneLeadShare)
+                put("topZoneLeadShareZoneId", summary.topZoneLeadShareZoneId)
+                put("topZoneLeadShareDenominator", summary.topZoneLeadShareDenominator)
                 put("secretConversionCount", summary.secretZoneEntryCount)
                 put("secretConversionRate", summary.secretConversionRate)
+                put("secretZoneSearchConversionRate", summary.secretZoneSearchConversionRate)
                 put("secretZoneEntryCount", summary.secretZoneEntryCount)
                 put("secretZoneEntryRate", summary.secretZoneEntryRate)
                 put("averageFirstHiddenDiscoveryTurn", summary.averageFirstHiddenDiscoveryTurn)
@@ -108,11 +116,19 @@ internal object OrganicHiddenProbeArtifactWriter {
                         put("runsWithSearchActionCount", metrics.runsWithSearchActionCount)
                         put("searchActionUseCount", metrics.searchActionUseCount)
                         put("searchActionUseRate", metrics.searchActionUseRate)
+                        put("runsWithSearchPromptCount", metrics.runsWithSearchPromptCount)
+                        put("searchPromptVisibleCount", metrics.searchPromptVisibleCount)
+                        put("searchPromptVisibilityRate", metrics.searchPromptVisibilityRate)
+                        put("searchRevealCount", metrics.searchRevealCount)
+                        put("slagCueEligibleRoomCount", metrics.slagCueEligibleRoomCount)
+                        put("slagCueCandidateCount", metrics.slagCueCandidateCount)
+                        put("slagCueDensityPerEligibleRoom", metrics.slagCueDensityPerEligibleRoom)
                         put("discoveryWithoutPrimerCount", metrics.discoveryWithoutPrimerCount)
                         put("leadDiscoveryRate", metrics.leadDiscoveryRate)
                         put("secretZoneEntryCount", metrics.secretZoneEntryCount)
                         put("secretZoneEntryRate", metrics.secretZoneEntryRate)
                         put("secretConversionRate", metrics.secretConversionRate)
+                        put("secretZoneSearchConversionRate", metrics.secretZoneSearchConversionRate)
                         put("averageFirstHiddenDiscoveryTurn", metrics.averageFirstHiddenDiscoveryTurn)
                         put("averageFirstSecretZoneEntryTurn", metrics.averageFirstSecretZoneEntryTurn)
                         put("firstHiddenDiscoveryTurnP50", metrics.firstHiddenDiscoveryTurnP50)
@@ -132,11 +148,19 @@ internal object OrganicHiddenProbeArtifactWriter {
                             put("runsWithSearchActionCount", combination.runsWithSearchActionCount)
                             put("searchActionUseCount", combination.searchActionUseCount)
                             put("searchActionUseRate", combination.searchActionUseRate)
+                            put("runsWithSearchPromptCount", combination.runsWithSearchPromptCount)
+                            put("searchPromptVisibleCount", combination.searchPromptVisibleCount)
+                            put("searchPromptVisibilityRate", combination.searchPromptVisibilityRate)
+                            put("searchRevealCount", combination.searchRevealCount)
+                            put("slagCueEligibleRoomCount", combination.slagCueEligibleRoomCount)
+                            put("slagCueCandidateCount", combination.slagCueCandidateCount)
+                            put("slagCueDensityPerEligibleRoom", combination.slagCueDensityPerEligibleRoom)
                             put("discoveryWithoutPrimerCount", combination.discoveryWithoutPrimerCount)
                             put("leadDiscoveryRate", combination.leadDiscoveryRate)
                             put("secretZoneEntryCount", combination.secretZoneEntryCount)
                             put("secretZoneEntryRate", combination.secretZoneEntryRate)
                             put("secretConversionRate", combination.secretConversionRate)
+                            put("secretZoneSearchConversionRate", combination.secretZoneSearchConversionRate)
                             put("averageFirstHiddenDiscoveryTurn", combination.averageFirstHiddenDiscoveryTurn)
                             put("averageFirstSecretZoneEntryTurn", combination.averageFirstSecretZoneEntryTurn)
                             put("firstHiddenDiscoveryTurnP50", combination.firstHiddenDiscoveryTurnP50)
@@ -152,6 +176,18 @@ internal object OrganicHiddenProbeArtifactWriter {
             }
             putJsonObject("secretZoneDiscoveryDistribution") {
                 summary.secretZoneDiscoveryDistribution.forEach { (secretZoneId, rate) -> put(secretZoneId, rate) }
+            }
+            putJsonObject("perZoneSecretConversionFloor.reportOnly") {
+                summary.perZoneSecretConversionFloorReportOnly.forEach { (zoneId, rate) -> put(zoneId, rate) }
+            }
+            putJsonObject("secretZoneSearchConversionFloor.reportOnly") {
+                summary.secretZoneSearchConversionFloorReportOnly.forEach { (zoneId, rate) -> put(zoneId, rate) }
+            }
+            putJsonObject("perZoneSearchUseFloor.reportOnly") {
+                summary.perZoneSearchUseFloorReportOnly.forEach { (zoneId, rate) -> put(zoneId, rate) }
+            }
+            putJsonObject("slagCueDensityPerEligibleRoom.reportOnly") {
+                summary.slagCueDensityPerEligibleRoomReportOnly.forEach { (zoneId, density) -> put(zoneId, density) }
             }
             putJsonArray("notes") {
                 add(JsonPrimitive("organicHiddenProbe samples the released 4 profession x 3 race matrix only."))
@@ -179,8 +215,11 @@ internal object OrganicHiddenProbeArtifactWriter {
             appendLine("- primerActionUsedCount: `0`")
             appendLine("- runtimeFailureCount: `${summary.runtimeFailureCount}`")
             appendLine("- searchActionUseRate: `${formatPercent(summary.searchActionUseRate)}`")
+            appendLine("- zoneSearchPromptVisibility: `${formatPercent(summary.zoneSearchPromptVisibility)}`")
             appendLine("- leadDiscoveryRate: `${formatPercent(summary.leadDiscoveryRate)}`")
+            appendLine("- topZoneLeadShare: `${formatPercent(summary.topZoneLeadShare)}` `${summary.topZoneLeadShareZoneId ?: "n/a"}` denominator `${summary.topZoneLeadShareDenominator}`")
             appendLine("- secretConversionRate: `${formatPercent(summary.secretConversionRate)}`")
+            appendLine("- secretZoneSearchConversionRate: `${formatPercent(summary.secretZoneSearchConversionRate)}`")
             appendLine("- secretZoneEntryRate: `${formatPercent(summary.secretZoneEntryRate)}`")
             appendLine("- perZoneSecretEntryMinRate: `${formatPercent(summary.perZoneSecretEntryMinRate)}`")
             appendLine("- failingSecretEntryZoneIds: `${summary.failingSecretEntryZoneIds.joinToString().ifBlank { "none" }}`")
@@ -193,14 +232,31 @@ internal object OrganicHiddenProbeArtifactWriter {
             appendLine("- searchPromptRequired: `true`")
             appendLine("- reactiveSearchOnly: `true`")
             appendLine()
+            appendLine("## PR04 Report-Only Floors")
+            appendLine("| metric | zoneId | value |")
+            appendLine("| --- | --- | --- |")
+            summary.perZoneSecretConversionFloorReportOnly.forEach { (zoneId, rate) ->
+                appendLine("| `perZoneSecretConversionFloor.reportOnly` | `$zoneId` | ${formatPercent(rate)} |")
+            }
+            summary.secretZoneSearchConversionFloorReportOnly.forEach { (zoneId, rate) ->
+                appendLine("| `secretZoneSearchConversionFloor.reportOnly` | `$zoneId` | ${formatPercent(rate)} |")
+            }
+            summary.perZoneSearchUseFloorReportOnly.forEach { (zoneId, rate) ->
+                appendLine("| `perZoneSearchUseFloor.reportOnly` | `$zoneId` | ${formatPercent(rate)} |")
+            }
+            summary.slagCueDensityPerEligibleRoomReportOnly.forEach { (zoneId, density) ->
+                appendLine("| `slagCueDensityPerEligibleRoom.reportOnly` | `$zoneId` | ${String.format(Locale.US, "%.2f", density)} |")
+            }
+            appendLine()
             appendLine("## Zone Discovery Distribution")
-            appendLine("| zoneId | discoveryShare | leadDiscoveryRate | searchUseRate | secretEntryRate | secretConversionRate | firstHidden P50/P90 |")
-            appendLine("| --- | --- | --- | --- | --- | --- | --- |")
+            appendLine("| zoneId | discoveryShare | leadDiscoveryRate | searchPromptVisibility | searchUseRate | secretEntryRate | secretConversionRate | searchConversionRate | firstHidden P50/P90 |")
+            appendLine("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
             summary.zoneBreakdown.forEach { (zoneId, metrics) ->
                 appendLine(
                     "| `$zoneId` | ${formatPercent(summary.zoneDiscoveryDistribution.getValue(zoneId))} | " +
-                        "${formatPercent(metrics.leadDiscoveryRate)} | ${formatPercent(metrics.searchActionUseRate)} | " +
-                        "${formatPercent(metrics.secretZoneEntryRate)} | ${formatPercent(metrics.secretConversionRate)} | " +
+                        "${formatPercent(metrics.leadDiscoveryRate)} | ${formatPercent(metrics.searchPromptVisibilityRate)} | " +
+                        "${formatPercent(metrics.searchActionUseRate)} | ${formatPercent(metrics.secretZoneEntryRate)} | " +
+                        "${formatPercent(metrics.secretConversionRate)} | ${formatPercent(metrics.secretZoneSearchConversionRate)} | " +
                         "${formatNullableTurn(metrics.firstHiddenDiscoveryTurnP50)} / ${formatNullableTurn(metrics.firstHiddenDiscoveryTurnP90)} |",
                 )
             }
@@ -213,12 +269,13 @@ internal object OrganicHiddenProbeArtifactWriter {
             }
             appendLine()
             appendLine("## Combination Breakdown")
-            appendLine("| profession | race | cases | leadDiscoveryRate | searchUseRate | secretEntryRate | secretConversionRate | firstHidden P50/P90 | firstSecret P50/P90 |")
-            appendLine("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+            appendLine("| profession | race | cases | leadDiscoveryRate | searchPromptVisibility | searchUseRate | secretEntryRate | secretConversionRate | firstHidden P50/P90 | firstSecret P50/P90 |")
+            appendLine("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
             summary.combinations.forEach { combination ->
                 appendLine(
                     "| `${combination.professionId}` | `${combination.raceId}` | `${combination.caseCount}` | " +
-                        "${formatPercent(combination.leadDiscoveryRate)} | ${formatPercent(combination.searchActionUseRate)} | " +
+                        "${formatPercent(combination.leadDiscoveryRate)} | ${formatPercent(combination.searchPromptVisibilityRate)} | " +
+                        "${formatPercent(combination.searchActionUseRate)} | " +
                         "${formatPercent(combination.secretZoneEntryRate)} | ${formatPercent(combination.secretConversionRate)} | " +
                         "${formatNullableTurn(combination.firstHiddenDiscoveryTurnP50)} / ${formatNullableTurn(combination.firstHiddenDiscoveryTurnP90)} | " +
                         "${formatNullableTurn(combination.firstSecretZoneEntryTurnP50)} / ${formatNullableTurn(combination.firstSecretZoneEntryTurnP90)} |",

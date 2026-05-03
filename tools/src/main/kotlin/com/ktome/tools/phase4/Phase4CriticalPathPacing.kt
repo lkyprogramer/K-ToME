@@ -30,6 +30,10 @@ internal data class CriticalPathZoneDesignAuditSnapshot(
     val objectiveSetId: String,
     val objectiveCompletionRule: String,
     val specialMechanics: List<String>,
+    val allMechanicTerms: List<String>,
+    val runtimeHookIds: List<String>,
+    val flavorOnlyMechanics: List<String>,
+    val mechanicTermsPartitioned: Boolean,
     val mechanicsWithoutDedicatedRuntimeHook: List<String>,
     val objectivePlacements: List<String>,
     val terrainTagWeights: Map<String, Double>,
@@ -48,6 +52,16 @@ internal data class CriticalPathZoneDesignAuditSnapshot(
             putJsonArray("specialMechanics") {
                 specialMechanics.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
             }
+            putJsonArray("allMechanicTerms") {
+                allMechanicTerms.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
+            }
+            putJsonArray("runtimeHookIds") {
+                runtimeHookIds.forEach { hookId -> add(JsonPrimitive(hookId)) }
+            }
+            putJsonArray("flavorOnlyMechanics") {
+                flavorOnlyMechanics.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
+            }
+            put("mechanicTermsPartitioned", mechanicTermsPartitioned)
             putJsonArray("mechanicsWithoutDedicatedRuntimeHook") {
                 mechanicsWithoutDedicatedRuntimeHook.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
             }
@@ -210,7 +224,18 @@ private fun JsonObject.toCriticalPathZoneDesignAuditSnapshot(zoneId: String): Cr
         objectiveSetId = getValue("objectiveSetId").jsonPrimitive.content,
         objectiveCompletionRule = getValue("objectiveCompletionRule").jsonPrimitive.content,
         specialMechanics = stringList("specialMechanics"),
-        mechanicsWithoutDedicatedRuntimeHook = stringList("mechanicsWithoutDedicatedRuntimeHook"),
+        allMechanicTerms = optionalStringList("allMechanicTerms") ?: stringList("specialMechanics"),
+        runtimeHookIds = optionalStringList("runtimeHookIds").orEmpty(),
+        flavorOnlyMechanics =
+            optionalStringList("flavorOnlyMechanics")
+                ?: stringList("mechanicsWithoutDedicatedRuntimeHook"),
+        mechanicTermsPartitioned =
+            this["mechanicTermsPartitioned"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
+                ?: true,
+        mechanicsWithoutDedicatedRuntimeHook =
+            optionalStringList("mechanicsWithoutDedicatedRuntimeHook")
+                ?: optionalStringList("flavorOnlyMechanics")
+                ?: emptyList(),
         objectivePlacements = stringList("objectivePlacements"),
         terrainTagWeights =
             getValue("terrainTagWeights").jsonObject.entries
@@ -222,6 +247,9 @@ private fun JsonObject.toCriticalPathZoneDesignAuditSnapshot(zoneId: String): Cr
 
 private fun JsonObject.stringList(key: String): List<String> =
     getValue(key).jsonArray.map { element -> element.jsonPrimitive.content }
+
+private fun JsonObject.optionalStringList(key: String): List<String>? =
+    this[key]?.jsonArray?.map { element -> element.jsonPrimitive.content }
 
 private fun missingCriticalPathZonePacingSnapshot(zoneId: String): CriticalPathZonePacingSnapshot =
     CriticalPathZonePacingSnapshot(

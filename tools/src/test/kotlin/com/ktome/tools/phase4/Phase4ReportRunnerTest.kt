@@ -124,8 +124,8 @@ class Phase4ReportRunnerTest {
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("perZoneEncounterFailures"))
         assertTrue(tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxMapgen" }.jsonObject.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
         assertEquals("40", whiteBoxSolvabilityTask.getValue("metrics").jsonObject.getValue("revealSuccessCaseCount").jsonPrimitive.content)
-        assertEquals("6", whiteBoxSolvabilityTask.getValue("metrics").jsonObject.getValue("revealFailCaseCount").jsonPrimitive.content)
-        assertEquals("6", whiteBoxSolvabilityTask.getValue("metrics").jsonObject.getValue("revealFailCasesWithFail").jsonPrimitive.content)
+        assertEquals("4", whiteBoxSolvabilityTask.getValue("metrics").jsonObject.getValue("revealFailCaseCount").jsonPrimitive.content)
+        assertEquals("4", whiteBoxSolvabilityTask.getValue("metrics").jsonObject.getValue("revealFailCasesWithFail").jsonPrimitive.content)
         assertTrue(whiteBoxSolvabilityTask.getValue("metrics").jsonObject.containsKey("revealFailTaxonomy"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("lootProfileBaseItemOverlapMatrix"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsCadenceMaxOverlap"))
@@ -187,8 +187,8 @@ class Phase4ReportRunnerTest {
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
             "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
-        assertEquals(55, experienceMetrics.size)
-        assertEquals(55, metricCatalog.size)
+        assertEquals(63, experienceMetrics.size)
+        assertEquals(63, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
@@ -196,8 +196,16 @@ class Phase4ReportRunnerTest {
                 "frontstageCueDedupAppliedCount",
                 "frontstageCueExpiryParity",
                 "frontstageSecretCueVisibilityRate",
+                "frontstageSearchCueVisibilityRate",
+                "zoneHookCoverage",
                 "leadDiscoveryRate",
                 "secretConversionRate",
+                "topZoneLeadShare",
+                "zoneSearchPromptVisibility",
+                "perZoneSecretConversionFloor.reportOnly",
+                "secretZoneSearchConversionFloor.reportOnly",
+                "perZoneSearchUseFloor.reportOnly",
+                "slagCueDensityPerEligibleRoom.reportOnly",
                 "dynamicPoolCoverage",
                 "specialTierPassiveFamilyDuplicateCount",
                 "topFiveAffixExposureShare",

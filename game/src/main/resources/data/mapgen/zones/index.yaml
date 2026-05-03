@@ -81,10 +81,12 @@ zoneMapgenProfiles:
           registry: secret_zone
           id: deep_iron_slag_cache
         discoveryRule:
-          combinator: AND
+          combinator: OR
           predicates:
             - type: REQUIRED_TAG
               requiredTag: hidden.primer.deep_iron.slag_cache
+            - type: PERCEPTION_CHECK
+              difficulty: 8
       - bindingId: search.deep_iron.smuggler_stash
         sourceAnchorId: hidden.branch
         entranceAnchorId: hidden.branch
@@ -93,10 +95,12 @@ zoneMapgenProfiles:
           registry: secret_zone
           id: deep_iron_smuggler_stash
         discoveryRule:
-          combinator: AND
+          combinator: OR
           predicates:
             - type: REQUIRED_TAG
               requiredTag: hidden.primer.deep_iron.smuggler_stash
+            - type: PERCEPTION_CHECK
+              difficulty: 8
   - id: zone_mapgen.underground_river.phase4
     zoneId: underground_river
     allowedBiomeFamilies: [flooded_cavern, crystal_bank]

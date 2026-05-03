@@ -3,6 +3,9 @@ package com.ktome.tools.hidden
 import kotlin.math.ceil
 
 internal object OrganicHiddenProbeSummaryAggregator {
+    private const val TOP_LEAD_SHARE_EXCLUDED_ZONE_ID: String = "greenwood_fringe"
+    private const val SLAG_CUE_ZONE_ID: String = "deep_iron_pit"
+
     fun summarize(request: OrganicHiddenProbeSummaryRequest): OrganicHiddenProbeSummary {
         val results = request.results
         val zoneBreakdown =
@@ -21,6 +24,11 @@ internal object OrganicHiddenProbeSummaryAggregator {
                         caseCount = metrics.caseCount,
                         runsWithSearchActionCount = metrics.runsWithSearchActionCount,
                         searchActionUseCount = metrics.searchActionUseCount,
+                        runsWithSearchPromptCount = metrics.runsWithSearchPromptCount,
+                        searchPromptVisibleCount = metrics.searchPromptVisibleCount,
+                        searchRevealCount = metrics.searchRevealCount,
+                        slagCueEligibleRoomCount = metrics.slagCueEligibleRoomCount,
+                        slagCueCandidateCount = metrics.slagCueCandidateCount,
                         discoveryWithoutPrimerCount = metrics.discoveryWithoutPrimerCount,
                         secretZoneEntryCount = metrics.secretZoneEntryCount,
                         averageFirstHiddenDiscoveryTurn = metrics.averageFirstHiddenDiscoveryTurn,
@@ -33,6 +41,15 @@ internal object OrganicHiddenProbeSummaryAggregator {
                 }
         val totalDiscoveryCount = results.count(OrganicHiddenProbeCaseResult::leadDiscovered)
         val totalSecretZoneEntryCount = results.count(OrganicHiddenProbeCaseResult::secretZoneEntered)
+        val topLeadShareDenominator =
+            zoneBreakdown
+                .filterKeys { zoneId -> zoneId != TOP_LEAD_SHARE_EXCLUDED_ZONE_ID }
+                .values
+                .sumOf(OrganicHiddenProbeZoneMetrics::discoveryWithoutPrimerCount)
+        val topLeadShareEntry =
+            zoneBreakdown
+                .filterKeys { zoneId -> zoneId != TOP_LEAD_SHARE_EXCLUDED_ZONE_ID }
+                .maxByOrNull { (_, metrics) -> metrics.discoveryWithoutPrimerCount }
         val failingSecretEntryZoneIds =
             zoneBreakdown
                 .filterValues { metrics -> metrics.secretZoneEntryRate < request.perZoneSecretEntryMinRate }
@@ -59,6 +76,9 @@ internal object OrganicHiddenProbeSummaryAggregator {
             searchAttemptCount = results.sumOf(OrganicHiddenProbeCaseResult::searchAttemptCount),
             runsWithSearchActionCount = results.count { result -> result.searchActionUseCount > 0 },
             searchActionUseCount = results.sumOf(OrganicHiddenProbeCaseResult::searchActionUseCount),
+            runsWithSearchPromptCount = results.count { result -> result.searchPromptVisibleCount > 0 },
+            searchPromptVisibleCount = results.sumOf(OrganicHiddenProbeCaseResult::searchPromptVisibleCount),
+            searchRevealCount = results.sumOf(OrganicHiddenProbeCaseResult::searchRevealCount),
             discoveryWithoutPrimerCount = totalDiscoveryCount,
             secretZoneEntryCount = totalSecretZoneEntryCount,
             averageFirstHiddenDiscoveryTurn = averageOfNullable(results.map(OrganicHiddenProbeCaseResult::firstHiddenDiscoveryTurn)),
@@ -81,6 +101,30 @@ internal object OrganicHiddenProbeSummaryAggregator {
                     }
                 },
             secretZoneDiscoveryDistribution = secretZoneDiscoveryDistribution,
+            topZoneLeadShare =
+                if (topLeadShareDenominator == 0) {
+                    0.0
+                } else {
+                    topLeadShareEntry?.value?.discoveryWithoutPrimerCount?.toDouble()?.div(topLeadShareDenominator.toDouble()) ?: 0.0
+                },
+            topZoneLeadShareZoneId = topLeadShareEntry?.key,
+            topZoneLeadShareDenominator = topLeadShareDenominator,
+            zoneSearchPromptVisibility =
+                if (results.isEmpty()) {
+                    0.0
+                } else {
+                    results.count { result -> result.searchPromptVisibleCount > 0 }.toDouble() / results.size.toDouble()
+                },
+            perZoneSecretConversionFloorReportOnly =
+                zoneBreakdown.mapValues { (_, metrics) -> metrics.secretConversionRate },
+            secretZoneSearchConversionFloorReportOnly =
+                zoneBreakdown.mapValues { (_, metrics) -> metrics.secretZoneSearchConversionRate },
+            perZoneSearchUseFloorReportOnly =
+                zoneBreakdown.mapValues { (_, metrics) -> metrics.searchActionUseRate },
+            slagCueDensityPerEligibleRoomReportOnly =
+                zoneBreakdown[SLAG_CUE_ZONE_ID]
+                    ?.let { metrics -> mapOf(SLAG_CUE_ZONE_ID to metrics.slagCueDensityPerEligibleRoom) }
+                    .orEmpty(),
             perZoneSecretEntryMinRate = request.perZoneSecretEntryMinRate,
             failingSecretEntryZoneIds = failingSecretEntryZoneIds,
         )
@@ -91,6 +135,11 @@ internal object OrganicHiddenProbeSummaryAggregator {
             caseCount = results.size,
             runsWithSearchActionCount = results.count { result -> result.searchActionUseCount > 0 },
             searchActionUseCount = results.sumOf(OrganicHiddenProbeCaseResult::searchActionUseCount),
+            runsWithSearchPromptCount = results.count { result -> result.searchPromptVisibleCount > 0 },
+            searchPromptVisibleCount = results.sumOf(OrganicHiddenProbeCaseResult::searchPromptVisibleCount),
+            searchRevealCount = results.sumOf(OrganicHiddenProbeCaseResult::searchRevealCount),
+            slagCueEligibleRoomCount = results.sumOf(OrganicHiddenProbeCaseResult::slagCueEligibleRoomCount),
+            slagCueCandidateCount = results.sumOf(OrganicHiddenProbeCaseResult::slagCueCandidateCount),
             discoveryWithoutPrimerCount = results.count(OrganicHiddenProbeCaseResult::discoveredWithoutPrimer),
             secretZoneEntryCount = results.count(OrganicHiddenProbeCaseResult::secretZoneEntered),
             averageFirstHiddenDiscoveryTurn = averageOfNullable(results.map(OrganicHiddenProbeCaseResult::firstHiddenDiscoveryTurn)),

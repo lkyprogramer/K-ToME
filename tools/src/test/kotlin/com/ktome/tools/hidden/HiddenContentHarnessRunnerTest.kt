@@ -39,6 +39,7 @@ class HiddenContentHarnessRunnerTest {
         assertEquals("0", summary.getValue("failureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("caseFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("aggregateFailureCount").jsonPrimitive.content)
+        assertEquals("true", summary.getValue("greenwoodFringeSearchDrivenPathPresent").jsonPrimitive.content)
         assertEquals("14", summary.getValue("hiddenEventRegistryCount").jsonPrimitive.content)
         assertEquals("6", summary.getValue("secretZoneRegistryCount").jsonPrimitive.content)
         assertTrue(summary.getValue("hiddenEventTriggerCount").jsonPrimitive.content.toInt() > 0)
@@ -53,12 +54,19 @@ class HiddenContentHarnessRunnerTest {
             summary.getValue("frontstageSecretCueExpectedCount").jsonPrimitive.content,
         )
         assertEquals("1.0", summary.getValue("frontstageCueExpiryParity").jsonPrimitive.content)
-        assertEquals("4", summary.getValue("frontstageCueExpiryProbePassedCount").jsonPrimitive.content)
-        assertEquals("4", summary.getValue("frontstageCueExpiryProbeTotalCount").jsonPrimitive.content)
+        assertEquals("7", summary.getValue("frontstageCueExpiryProbePassedCount").jsonPrimitive.content)
+        assertEquals("7", summary.getValue("frontstageCueExpiryProbeTotalCount").jsonPrimitive.content)
         assertEquals(
-            setOf("CRITICAL", "HIGH", "MEDIUM", "LOW"),
+            setOf("CRITICAL_COMBAT", "HIGH_COMBAT", "HIGH_HIDDEN", "CRITICAL", "HIGH", "MEDIUM", "LOW"),
             summary.getValue("frontstageCueExpiryProbePriorities").jsonArray.map { priority -> priority.jsonPrimitive.content }.toSet(),
         )
+        assertTrue(summary.getValue("frontstageSearchCueVisibilityRate").jsonPrimitive.content.toDouble() >= 0.9)
+        assertEquals("1.0", summary.getValue("zoneSearchPromptVisibility").jsonPrimitive.content)
+        assertEquals("4", summary.getValue("zoneSearchPromptVisibleZoneCount").jsonPrimitive.content)
+        assertEquals("4", summary.getValue("zoneSearchPromptExpectedZoneCount").jsonPrimitive.content)
+        assertTrue(summary.getValue("zoneSearchPromptMissingZoneIds").jsonArray.isEmpty())
+        assertEquals("1.0", summary.getValue("zoneHookCoverage").jsonPrimitive.content)
+        assertEquals("5", summary.getValue("zoneHookTriggeredCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("zeroHiddenEventZoneCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("zeroSecretZoneZoneCount").jsonPrimitive.content)
         assertEquals(setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple"), zones.keys)
@@ -69,8 +77,10 @@ class HiddenContentHarnessRunnerTest {
         assertTrue(firstEvent.containsKey("resolvedReturnBridgeNodeId"))
         assertTrue(firstEvent.containsKey("triggerType"))
         assertTrue(firstEvent.containsKey("explicitSearchReveal"))
+        assertTrue(firstEvent.containsKey("searchPromptVisibleBeforeSearch"))
         assertTrue(firstEvent.containsKey("rewardBudgetSources"))
         assertTrue(firstEvent.containsKey("caseFailureReasons"))
+        assertTrue(firstEvent.containsKey("frontstageActionCueTypes"))
         assertNotNull(payload["aggregateFailures"]?.jsonArray)
         assertNotNull(restoredKernelRun)
         assertEquals(625, restoredKernelRun?.results?.size)
@@ -88,6 +98,7 @@ class HiddenContentHarnessRunnerTest {
                         "frontstageActionCuePriorities" -> put(key, buildJsonArray { add(JsonPrimitive("MEDIUM")) })
                         "frontstageActionCueStableKeys" -> put(key, buildJsonArray { add(JsonPrimitive("search:no_target")) })
                         "frontstageActionCueMessageKeys" -> put(key, buildJsonArray { })
+                        "frontstageActionCueTypes" -> put(key, buildJsonArray { add(JsonPrimitive("GENERIC")) })
                         else -> put(key, value)
                     }
                 }
@@ -155,6 +166,7 @@ class HiddenContentHarnessRunnerTest {
             resolvedReturnBridgeNodeId = "main.0",
             searchActionResult = "REVEALED",
             explicitSearchReveal = true,
+            searchPromptVisibleBeforeSearch = false,
             triggerType = "SEARCH_ACTION",
             hiddenEventIds = emptyList(),
             triggerTypes = emptyList(),

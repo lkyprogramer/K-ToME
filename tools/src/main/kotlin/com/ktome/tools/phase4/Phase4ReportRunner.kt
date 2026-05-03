@@ -619,8 +619,16 @@ object Phase4ReportRunner {
             appendLine("- `scriptedHiddenVerificationRate`: ${metricsById.getValue("scriptedHiddenVerificationRate").currentValueText} / ${metricsById.getValue("scriptedHiddenVerificationRate").status}")
             appendLine("- `leadDiscoveryRate`: ${metricsById.getValue("leadDiscoveryRate").currentValueText} / ${metricsById.getValue("leadDiscoveryRate").status}")
             appendLine("- `secretConversionRate`: ${metricsById.getValue("secretConversionRate").currentValueText} / ${metricsById.getValue("secretConversionRate").status}")
+            appendLine("- `topZoneLeadShare`: ${metricsById.getValue("topZoneLeadShare").currentValueText} / ${metricsById.getValue("topZoneLeadShare").status}")
+            appendLine("- `zoneSearchPromptVisibility`: ${metricsById.getValue("zoneSearchPromptVisibility").currentValueText} / ${metricsById.getValue("zoneSearchPromptVisibility").status}")
+            appendLine("- `frontstageSearchCueVisibilityRate`: ${metricsById.getValue("frontstageSearchCueVisibilityRate").currentValueText} / ${metricsById.getValue("frontstageSearchCueVisibilityRate").status}")
+            appendLine("- `zoneHookCoverage`: ${metricsById.getValue("zoneHookCoverage").currentValueText} / ${metricsById.getValue("zoneHookCoverage").status}")
             appendLine("- `zoneDiscoveryDistribution`: ${organicHiddenTask.metrics.getValue("zoneDiscoveryDistribution").jsonObject.entries.joinToString { (zoneId, rate) -> "$zoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
             appendLine("- `secretZoneDiscoveryDistribution`: ${organicHiddenTask.metrics.getValue("secretZoneDiscoveryDistribution").jsonObject.entries.joinToString { (secretZoneId, rate) -> "$secretZoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
+            appendLine("- `perZoneSecretConversionFloor.reportOnly`: ${organicHiddenTask.metrics.getValue("perZoneSecretConversionFloor.reportOnly").jsonObject.entries.joinToString { (zoneId, rate) -> "$zoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
+            appendLine("- `secretZoneSearchConversionFloor.reportOnly`: ${organicHiddenTask.metrics.getValue("secretZoneSearchConversionFloor.reportOnly").jsonObject.entries.joinToString { (zoneId, rate) -> "$zoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
+            appendLine("- `perZoneSearchUseFloor.reportOnly`: ${organicHiddenTask.metrics.getValue("perZoneSearchUseFloor.reportOnly").jsonObject.entries.joinToString { (zoneId, rate) -> "$zoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
+            appendLine("- `slagCueDensityPerEligibleRoom.reportOnly`: ${organicHiddenTask.metrics.getValue("slagCueDensityPerEligibleRoom.reportOnly").jsonObject.entries.joinToString { (zoneId, density) -> "$zoneId=${density.jsonPrimitive.content}" }.ifBlank { "none" }}")
             appendLine("- `failingSecretEntryZoneIds`: `${organicHiddenTask.metrics.stringList("failingSecretEntryZoneIds").joinToString().ifBlank { "none" }}`")
             appendLine("- `searchPromptRequired`: `${organicHiddenTask.metrics.booleanValue("searchPromptRequired")}`")
             appendLine()
@@ -703,11 +711,13 @@ object Phase4ReportRunner {
             }
             appendLine()
             appendLine("### Critical Path Design Audit")
-            appendLine("| zoneId | floorCount | mapSize | worldRole | objectiveSetId | objectiveCompletionRule | mechanicsWithoutDedicatedRuntimeHook |")
-            appendLine("| --- | --- | --- | --- | --- | --- | --- |")
+            appendLine("| zoneId | floorCount | mapSize | worldRole | objectiveSetId | objectiveCompletionRule | runtimeHookIds | flavorOnlyMechanics | mechanicTermsPartitioned | mechanicsWithoutDedicatedRuntimeHook |")
+            appendLine("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
             criticalPathDesignAudit.forEach { audit ->
                 appendLine(
-                    "| `${audit.zoneId}` | `${audit.floorCount}` | `${audit.mapSize}` | `${audit.worldRole}` | `${audit.objectiveSetId}` | `${audit.objectiveCompletionRule}` | `${audit.mechanicsWithoutDedicatedRuntimeHook.joinToString().ifBlank { "none" }}` |",
+                    "| `${audit.zoneId}` | `${audit.floorCount}` | `${audit.mapSize}` | `${audit.worldRole}` | `${audit.objectiveSetId}` | `${audit.objectiveCompletionRule}` | " +
+                        "`${audit.runtimeHookIds.joinToString().ifBlank { "none" }}` | `${audit.flavorOnlyMechanics.joinToString().ifBlank { "none" }}` | " +
+                        "`${audit.mechanicTermsPartitioned}` | `${audit.mechanicsWithoutDedicatedRuntimeHook.joinToString().ifBlank { "none" }}` |",
                 )
             }
             appendLine()

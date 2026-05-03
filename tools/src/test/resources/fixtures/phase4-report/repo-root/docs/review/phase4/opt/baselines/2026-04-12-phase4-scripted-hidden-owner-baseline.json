@@ -14,6 +14,11 @@
             "notes": "Scripted hidden verification is a correctness owner metric and must remain fully passing."
         },
         {
+            "metricId": "zoneSearchPromptVisibility",
+            "minValue": 1.0,
+            "notes": "Every secret-bearing zone must have at least one scripted non-flavor Search prompt case."
+        },
+        {
             "metricId": "frontstageHighPriorityCueRetainedRate",
             "minValue": 1.0,
             "notes": "Every hidden-content case that should surface a high-priority search or secret cue must retain a CRITICAL/HIGH typed frontstage action cue."
@@ -32,11 +37,23 @@
             "metricId": "frontstageSecretCueVisibilityRate",
             "minValue": 1.0,
             "notes": "Every entered secret-zone case must retain a SECRET typed frontstage action cue in the player-facing snapshot."
+        },
+        {
+            "metricId": "frontstageSearchCueVisibilityRate",
+            "minValue": 0.9,
+            "notes": "PR04 Search prompt cases must retain SEARCH_AVAILABLE typed frontstage action cues before hidden-zone entry."
+        },
+        {
+            "metricId": "zoneHookCoverage",
+            "minValue": 1.0,
+            "notes": "All five PR04 mandatory zone runtime hooks must be triggerable through runtime session paths."
         }
     ],
     "notes": [
         "Externalized from ReportPhase4Runner so Phase 4 owner evaluation no longer hard-codes hidden thresholds inside the phase aggregator.",
-        "V2 adds V3-PR-05 frontstage typed action cue contract evidence to the hidden owner baseline."
+        "V2 adds V3-PR-05 frontstage typed action cue contract evidence to the hidden owner baseline.",
+        "V3 adds PR04 Search cue visibility and mandatory zone hook coverage owner gates.",
+        "V4 moves zoneSearchPromptVisibility to hiddenContentHarness as scripted per-zone prompt coverage."
     ],
     "metadata": {}
 }

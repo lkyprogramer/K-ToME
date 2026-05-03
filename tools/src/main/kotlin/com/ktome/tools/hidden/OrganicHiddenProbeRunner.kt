@@ -2,6 +2,8 @@ package com.ktome.tools.hidden
 
 import com.ktome.core.harness.HarnessReportHeader
 import com.ktome.core.harness.toJson
+import com.ktome.core.mapgen.GeneratedFloor
+import com.ktome.core.mapgen.PathClass
 import com.ktome.core.profile.ClassPlayabilityState
 import com.ktome.core.save.SaveManager
 import com.ktome.core.world.solvability.SearchActionResult
@@ -31,13 +33,13 @@ object OrganicHiddenProbeRunner {
     const val HARNESS_ID: String = "organicHiddenProbe"
 
     private const val PROBE_BOT_ID: String = "organic-hidden-probe-bot-v5"
-    private const val ORGANIC_HIDDEN_KERNEL_CACHE_VERSION: String = "uvr-pr05-organic-hidden-kernel-v3"
+    private const val ORGANIC_HIDDEN_KERNEL_CACHE_VERSION: String = "uvr-pr05-organic-hidden-kernel-v4"
     private const val FLOOR_INDEX: Int = 1
     private const val SEED_BASE: Long = 20260411010000L
     private const val ZONE_SEED_BLOCK: Long = 10_000L
     private const val COMBO_SEED_BLOCK: Long = 100L
     private const val SEEDS_PER_ZONE_COMBO: Int = 11
-    private const val TURN_BUDGET: Int = 48
+    private const val TURN_BUDGET: Int = 52
     private const val MAX_FLOOR: Int = 1
     private const val PER_ZONE_SECRET_ENTRY_MIN_RATE: Double = 0.05
     private val json: Json = Json { prettyPrint = true }
@@ -182,7 +184,9 @@ object OrganicHiddenProbeRunner {
             var firstSecretZoneEntryTurn: Int? = null
             var issuedSearchAttemptCount = 0
             var acceptedSearchActionCount = 0
+            var searchPromptVisibleCount = if (observation.searchPromptAvailable) 1 else 0
             var latestProbeState = OrganicProbeState(revealedBindingIds = emptySet(), secretZoneIds = emptySet())
+            val slagCueMetrics = slagCueMetricsFor(caseSpec = caseSpec, generatedFloor = session.automationGeneratedFloor())
 
             while (turnCount < TURN_BUDGET && !observation.runOutcome.isTerminal && session.currentFloor() <= MAX_FLOOR) {
                 val command = bot.decide(observation) ?: PlayerCommand.Wait
@@ -204,7 +208,10 @@ object OrganicHiddenProbeRunner {
                         turnCount = turnCount,
                         searchAttemptCount = issuedSearchAttemptCount,
                         searchActionUseCount = acceptedSearchActionCount,
+                        searchPromptVisibleCount = searchPromptVisibleCount,
                         searchRevealCount = latestProbeState.revealedBindingIds.size,
+                        slagCueEligibleRoomCount = slagCueMetrics.eligibleRoomCount,
+                        slagCueCandidateCount = slagCueMetrics.cueCandidateCount,
                         hiddenEventIds = currentConsumedHiddenEventIds(session).toList().sorted(),
                         secretZoneIds = latestProbeState.secretZoneIds.toList().sorted(),
                         firstHiddenDiscoveryTurn = firstHiddenDiscoveryTurn,
@@ -227,6 +234,9 @@ object OrganicHiddenProbeRunner {
                     commandTail.removeFirst()
                 }
                 observation = RunObservationCapture.capture(session, turnCount)
+                if (observation.searchPromptAvailable) {
+                    searchPromptVisibleCount += 1
+                }
                 latestProbeState = currentProbeState(session)
                 val leadDiscovered = latestProbeState.revealedBindingIds.isNotEmpty() || latestProbeState.secretZoneIds.isNotEmpty()
                 if (firstHiddenDiscoveryTurn == null && leadDiscovered) {
@@ -252,7 +262,10 @@ object OrganicHiddenProbeRunner {
                 turnCount = turnCount,
                 searchAttemptCount = issuedSearchAttemptCount,
                 searchActionUseCount = acceptedSearchActionCount,
+                searchPromptVisibleCount = searchPromptVisibleCount,
                 searchRevealCount = latestProbeState.revealedBindingIds.size,
+                slagCueEligibleRoomCount = slagCueMetrics.eligibleRoomCount,
+                slagCueCandidateCount = slagCueMetrics.cueCandidateCount,
                 hiddenEventIds = currentConsumedHiddenEventIds(session).toList().sorted(),
                 secretZoneIds = latestProbeState.secretZoneIds.toList().sorted(),
                 firstHiddenDiscoveryTurn = firstHiddenDiscoveryTurn,
@@ -271,7 +284,10 @@ object OrganicHiddenProbeRunner {
                 turnCount = 0,
                 searchAttemptCount = 0,
                 searchActionUseCount = 0,
+                searchPromptVisibleCount = 0,
                 searchRevealCount = 0,
+                slagCueEligibleRoomCount = 0,
+                slagCueCandidateCount = 0,
                 hiddenEventIds = emptyList(),
                 secretZoneIds = emptyList(),
                 firstHiddenDiscoveryTurn = null,
@@ -379,6 +395,47 @@ private fun currentProbeState(session: com.ktome.game.FoundationGameSession): Or
 
 private fun currentConsumedHiddenEventIds(session: com.ktome.game.FoundationGameSession): Set<String> =
     session.automationConsumedHiddenEventIds().toCollection(linkedSetOf())
+
+private data class OrganicSlagCueMetrics(
+    val eligibleRoomCount: Int,
+    val cueCandidateCount: Int,
+)
+
+private fun slagCueMetricsFor(
+    caseSpec: OrganicHiddenProbeCaseSpec,
+    generatedFloor: GeneratedFloor,
+): OrganicSlagCueMetrics {
+    if (caseSpec.zoneId != "deep_iron_pit") {
+        return OrganicSlagCueMetrics(eligibleRoomCount = 0, cueCandidateCount = 0)
+    }
+    val eligibleRooms = generatedFloor.rooms.filter { room -> room.pathClass != PathClass.SECRET }
+    val cueCandidateNodeIds =
+        generatedFloor.vaultPlacements
+            .asSequence()
+            .filter { placement -> placement.vaultId.hasSlagCueKeyword() || placement.roomDefId.hasSlagCueKeyword() }
+            .map { placement -> placement.nodeId }
+            .toSet()
+    val cueCandidateCount =
+        eligibleRooms.count { room ->
+            room.nodeId in cueCandidateNodeIds ||
+                room.roomDefId.hasSlagCueKeyword() ||
+                room.patternId?.hasSlagCueKeyword() == true ||
+                room.biomeFamilyId?.hasSlagCueKeyword() == true ||
+                room.tags.any(String::hasSlagCueKeyword)
+        }
+    return OrganicSlagCueMetrics(
+        eligibleRoomCount = eligibleRooms.size,
+        cueCandidateCount = cueCandidateCount,
+    )
+}
+
+private fun String.hasSlagCueKeyword(): Boolean {
+    val normalized = lowercase()
+    return normalized.contains("slag") ||
+        normalized.contains("ore") ||
+        normalized.contains("mine") ||
+        normalized.contains("forge")
+}
 
 private class ProbeStallDetector(
     private val maxRepeats: Int,

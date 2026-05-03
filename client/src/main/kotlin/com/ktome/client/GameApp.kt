@@ -464,6 +464,7 @@ class GameApp(
             ?: argument.value.orEmpty()
 
     internal fun warmSessionAssets(snapshot: com.ktome.core.snapshot.RenderSnapshot) {
+        assetContracts.ensureSessionPrepared(snapshot)
         assetContracts.warmCache(snapshot)
     }
 
@@ -888,6 +889,13 @@ internal class AssetContractCoordinator(
         requireNotNull(loadStrategy) {
             "Bootstrap asset load must complete before preparing a gameplay session."
         }.sessionLoad(snapshot)
+    }
+
+    fun ensureSessionPrepared(snapshot: com.ktome.core.snapshot.RenderSnapshot) {
+        val state = loadStateOrNull()
+        if (state == null || !state.bootstrapLoaded || state.sessionZoneId != snapshot.metadata.zoneId) {
+            prepareSession(snapshot)
+        }
     }
 
     fun warmCache(snapshot: com.ktome.core.snapshot.RenderSnapshot) {

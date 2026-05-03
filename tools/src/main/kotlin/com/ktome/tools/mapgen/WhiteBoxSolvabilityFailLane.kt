@@ -6,8 +6,6 @@ internal object WhiteBoxSolvabilityFailLane {
         linkedSetOf(
             SolvabilityHarnessRunner.SolvabilityZoneFloorKey(zoneId = "abyssal_temple", floorIndex = 1),
             SolvabilityHarnessRunner.SolvabilityZoneFloorKey(zoneId = "abyssal_temple", floorIndex = 2),
-            SolvabilityHarnessRunner.SolvabilityZoneFloorKey(zoneId = "deep_iron_pit", floorIndex = 1),
-            SolvabilityHarnessRunner.SolvabilityZoneFloorKey(zoneId = "deep_iron_pit", floorIndex = 2),
             SolvabilityHarnessRunner.SolvabilityZoneFloorKey(zoneId = "underground_river", floorIndex = 1),
             SolvabilityHarnessRunner.SolvabilityZoneFloorKey(zoneId = "underground_river", floorIndex = 2),
         )

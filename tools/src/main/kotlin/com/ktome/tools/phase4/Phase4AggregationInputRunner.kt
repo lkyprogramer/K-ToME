@@ -463,18 +463,21 @@ internal object Phase4AggregationInputRunner {
         val failureCount = task.metrics.intValue("failureCount")
         val verificationRate = if (totalCases == 0) 0.0 else (totalCases - failureCount).toDouble() / totalCases.toDouble()
         val metricId = "scriptedHiddenVerificationRate"
+        val zoneSearchPromptVisibilityMetricId = "zoneSearchPromptVisibility"
         val frontstageMetricIds =
             Phase4MetricCatalog.metricIds(
                 ownerTaskId = "hiddenContentHarness",
                 outputSection = "frontstage-action-cue",
             )
-        require(frontstageMetricIds.size == 4) {
-            "Expected four hidden frontstage owner metrics, found ${frontstageMetricIds.size}: $frontstageMetricIds."
+        val frontstageHighPriorityMetricId = "frontstageHighPriorityCueRetainedRate"
+        val frontstageDedupMetricId = "frontstageCueDedupAppliedCount"
+        val frontstageExpiryMetricId = "frontstageCueExpiryParity"
+        val frontstageSecretMetricId = "frontstageSecretCueVisibilityRate"
+        val frontstageSearchMetricId = "frontstageSearchCueVisibilityRate"
+        val zoneHookCoverageMetricId = "zoneHookCoverage"
+        require(frontstageMetricIds.containsAll(listOf(frontstageHighPriorityMetricId, frontstageDedupMetricId, frontstageExpiryMetricId, frontstageSecretMetricId, frontstageSearchMetricId, zoneHookCoverageMetricId))) {
+            "Hidden frontstage owner metrics missing PR04 ids: $frontstageMetricIds."
         }
-        val frontstageHighPriorityMetricId = frontstageMetricIds[0]
-        val frontstageDedupMetricId = frontstageMetricIds[1]
-        val frontstageExpiryMetricId = frontstageMetricIds[2]
-        val frontstageSecretMetricId = frontstageMetricIds[3]
         val metricIds =
             Phase4MetricCatalog.metricIds(
                 ownerTaskId = "hiddenContentHarness",
@@ -485,10 +488,19 @@ internal object Phase4AggregationInputRunner {
         val frontstageDedupCount = task.metrics.intValue(frontstageDedupMetricId)
         val frontstageExpiryParity = task.metrics.doubleValue(frontstageExpiryMetricId)
         val frontstageSecretVisibilityRate = task.metrics.doubleValue(frontstageSecretMetricId)
+        val frontstageSearchVisibilityRate = task.metrics.doubleValue(frontstageSearchMetricId)
+        val zoneSearchPromptVisibility = task.metrics.doubleValue(zoneSearchPromptVisibilityMetricId)
+        val zoneHookCoverage = task.metrics.doubleValue(zoneHookCoverageMetricId)
         val frontstageHighPriorityExpectedCount = task.metrics.intValue("frontstageHighPriorityExpectedCount")
         val frontstageHighPriorityRetainedCount = task.metrics.intValue("frontstageHighPriorityCueRetainedCount")
         val frontstageSecretExpectedCount = task.metrics.intValue("frontstageSecretCueExpectedCount")
         val frontstageSecretVisibleCount = task.metrics.intValue("frontstageSecretCueVisibleCount")
+        val frontstageSearchExpectedCount = task.metrics.intValue("frontstageSearchCueExpectedCount")
+        val frontstageSearchVisibleCount = task.metrics.intValue("frontstageSearchCueVisibleCount")
+        val zoneSearchPromptExpectedZoneCount = task.metrics.intValue("zoneSearchPromptExpectedZoneCount")
+        val zoneSearchPromptVisibleZoneCount = task.metrics.intValue("zoneSearchPromptVisibleZoneCount")
+        val zoneHookExpectedCount = task.metrics.intValue("zoneHookExpectedCount")
+        val zoneHookTriggeredCount = task.metrics.intValue("zoneHookTriggeredCount")
         val frontstageExpiryProbePassedCount = task.metrics.intValue("frontstageCueExpiryProbePassedCount")
         val frontstageExpiryProbeTotalCount = task.metrics.intValue("frontstageCueExpiryProbeTotalCount")
         val result =
@@ -503,6 +515,9 @@ internal object Phase4AggregationInputRunner {
                         frontstageDedupMetricId to frontstageDedupCount.toDouble(),
                         frontstageExpiryMetricId to frontstageExpiryParity,
                         frontstageSecretMetricId to frontstageSecretVisibilityRate,
+                        frontstageSearchMetricId to frontstageSearchVisibilityRate,
+                        zoneSearchPromptVisibilityMetricId to zoneSearchPromptVisibility,
+                        zoneHookCoverageMetricId to zoneHookCoverage,
                     ),
                 currentValueTexts =
                     mapOf(
@@ -512,6 +527,10 @@ internal object Phase4AggregationInputRunner {
                         frontstageDedupMetricId to frontstageDedupCount.toString(),
                         frontstageExpiryMetricId to formatPercent(frontstageExpiryParity),
                         frontstageSecretMetricId to "${formatPercent(frontstageSecretVisibilityRate)} ($frontstageSecretVisibleCount/$frontstageSecretExpectedCount)",
+                        frontstageSearchMetricId to "${formatPercent(frontstageSearchVisibilityRate)} ($frontstageSearchVisibleCount/$frontstageSearchExpectedCount)",
+                        zoneSearchPromptVisibilityMetricId to
+                            "${formatPercent(zoneSearchPromptVisibility)} ($zoneSearchPromptVisibleZoneCount/$zoneSearchPromptExpectedZoneCount)",
+                        zoneHookCoverageMetricId to "${formatPercent(zoneHookCoverage)} ($zoneHookTriggeredCount/$zoneHookExpectedCount)",
                     ),
                 currentValueElements =
                     mapOf(
@@ -550,6 +569,28 @@ internal object Phase4AggregationInputRunner {
                                 put("visibleCount", task.metrics.getValue("frontstageSecretCueVisibleCount"))
                                 put("expectedCount", task.metrics.getValue("frontstageSecretCueExpectedCount"))
                             },
+                        frontstageSearchMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(frontstageSearchMetricId))
+                                put("visibleCount", task.metrics.getValue("frontstageSearchCueVisibleCount"))
+                                put("expectedCount", task.metrics.getValue("frontstageSearchCueExpectedCount"))
+                            },
+                        zoneSearchPromptVisibilityMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(zoneSearchPromptVisibilityMetricId))
+                                put("visibleZoneCount", task.metrics.getValue("zoneSearchPromptVisibleZoneCount"))
+                                put("expectedZoneCount", task.metrics.getValue("zoneSearchPromptExpectedZoneCount"))
+                                put("visibleZoneIds", task.metrics.getValue("zoneSearchPromptVisibleZoneIds"))
+                                put("missingZoneIds", task.metrics.getValue("zoneSearchPromptMissingZoneIds"))
+                            },
+                        zoneHookCoverageMetricId to
+                            buildJsonObject {
+                                put("coverage", task.metrics.getValue(zoneHookCoverageMetricId))
+                                put("triggeredCount", task.metrics.getValue("zoneHookTriggeredCount"))
+                                put("expectedCount", task.metrics.getValue("zoneHookExpectedCount"))
+                                put("triggeredHookIds", task.metrics.getValue("zoneHookTriggeredIds"))
+                                put("missingHookIds", task.metrics.getValue("zoneHookMissingIds"))
+                            },
                     ),
                 detailsByMetricId = metricIds.associateWith { task.metrics },
             )
@@ -570,6 +611,12 @@ internal object Phase4AggregationInputRunner {
                                 "ttlProbes=$frontstageExpiryProbePassedCount/$frontstageExpiryProbeTotalCount across priorities"
                             frontstageSecretMetricId ->
                                 "secretVisible=$frontstageSecretVisibleCount/$frontstageSecretExpectedCount via typed category"
+                            frontstageSearchMetricId ->
+                                "searchVisible=$frontstageSearchVisibleCount/$frontstageSearchExpectedCount via SEARCH_AVAILABLE cueType"
+                            zoneSearchPromptVisibilityMetricId ->
+                                "promptZones=$zoneSearchPromptVisibleZoneCount/$zoneSearchPromptExpectedZoneCount; missing=${task.metrics.stringList("zoneSearchPromptMissingZoneIds").joinToString().ifBlank { "none" }}"
+                            zoneHookCoverageMetricId ->
+                                "triggeredHooks=$zoneHookTriggeredCount/$zoneHookExpectedCount; missing=${task.metrics.stringList("zoneHookMissingIds").joinToString().ifBlank { "none" }}"
                             else -> null
                         },
                 )
@@ -587,11 +634,15 @@ internal object Phase4AggregationInputRunner {
         val secretConversionCount = task.metrics.intValue("secretConversionCount")
         val secretConversionRate = task.metrics.doubleValue("secretConversionRate")
         val searchActionUseRate = task.metrics.doubleValue("searchActionUseRate")
+        val searchPromptVisibilityRate = task.metrics.doubleValue("searchPromptVisibilityRate")
         val secretZoneEntryRate = task.metrics.doubleValue("secretZoneEntryRate")
+        val topZoneLeadShare = task.metrics.doubleValue("topZoneLeadShare")
         val leadMetricId = "leadDiscoveryRate"
         val secretConversionMetricId = "secretConversionRate"
+        val topZoneLeadShareMetricId = "topZoneLeadShare"
         val leadRange = baseline.requiredMetric(leadMetricId)
         val secretConversionRange = baseline.requiredMetric(secretConversionMetricId)
+        val topZoneLeadShareRange = baseline.requiredMetric(topZoneLeadShareMetricId)
         val perZoneSecretEntryMinRate = task.metrics.doubleValue("perZoneSecretEntryMinRate")
         val failingSecretEntryZoneIds = task.metrics.stringList("failingSecretEntryZoneIds")
         val leadEntry =
@@ -609,6 +660,9 @@ internal object Phase4AggregationInputRunner {
                         put("totalCases", task.metrics.getValue("totalCases"))
                         put("leadDiscoveryCount", task.metrics.getValue("leadDiscoveryCount"))
                         put("searchActionUseRate", task.metrics.getValue("searchActionUseRate"))
+                        put("searchPromptVisibilityRate", task.metrics.getValue("searchPromptVisibilityRate"))
+                        put("topZoneLeadShare", task.metrics.getValue("topZoneLeadShare"))
+                        put("topZoneLeadShareZoneId", task.metrics.getValue("topZoneLeadShareZoneId"))
                         put("secretZoneEntryRate", task.metrics.getValue("secretZoneEntryRate"))
                         put("secretConversionRate", task.metrics.getValue("secretConversionRate"))
                         put("firstHiddenDiscoveryTurnP50", task.metrics.getValue("firstHiddenDiscoveryTurnP50"))
@@ -623,9 +677,11 @@ internal object Phase4AggregationInputRunner {
                         put("combinations", task.metrics.getValue("combinations"))
                         put("zoneDiscoveryDistribution", task.metrics.getValue("zoneDiscoveryDistribution"))
                         put("secretZoneDiscoveryDistribution", task.metrics.getValue("secretZoneDiscoveryDistribution"))
+                        put("perZoneSearchUseFloor.reportOnly", task.metrics.getValue("perZoneSearchUseFloor.reportOnly"))
                     },
                 currentValueText =
                     "${formatPercent(leadDiscoveryRate)} ($leadDiscoveryCount/$totalCases), " +
+                        "searchPrompt=${formatPercent(searchPromptVisibilityRate)}, " +
                         "searchUse=${formatPercent(searchActionUseRate)}, secretEntry=${formatPercent(secretZoneEntryRate)}",
                 targetText = Phase4OwnerMetricTargets.targetText(leadMetricId, leadRange),
                 note =
@@ -649,8 +705,11 @@ internal object Phase4AggregationInputRunner {
                         put("leadDiscoveryCount", task.metrics.getValue("leadDiscoveryCount"))
                         put("secretConversionCount", task.metrics.getValue("secretConversionCount"))
                         put("secretZoneEntryRate", task.metrics.getValue("secretZoneEntryRate"))
+                        put("secretZoneSearchConversionRate", task.metrics.getValue("secretZoneSearchConversionRate"))
                         put("perZoneSecretEntryMinRate", task.metrics.getValue("perZoneSecretEntryMinRate"))
                         put("failingSecretEntryZoneIds", task.metrics.getValue("failingSecretEntryZoneIds"))
+                        put("perZoneSecretConversionFloor.reportOnly", task.metrics.getValue("perZoneSecretConversionFloor.reportOnly"))
+                        put("secretZoneSearchConversionFloor.reportOnly", task.metrics.getValue("secretZoneSearchConversionFloor.reportOnly"))
                         put("zones", task.metrics.getValue("zones"))
                     },
                 currentValueText =
@@ -658,11 +717,53 @@ internal object Phase4AggregationInputRunner {
                         "secretEntry=${formatPercent(secretZoneEntryRate)}",
                 targetText = Phase4OwnerMetricTargets.targetText(secretConversionMetricId, secretConversionRange),
                 note =
-                    "perZoneSecretEntryMinRate=${formatPercent(perZoneSecretEntryMinRate)}, " +
+                        "perZoneSecretEntryMinRate=${formatPercent(perZoneSecretEntryMinRate)}, " +
                         "failingZones=${failingSecretEntryZoneIds.joinToString().ifBlank { "none" }}",
                 details = task.metrics,
             )
-        val entries = listOf(leadEntry, secretConversionEntry)
+        val topZoneLeadShareEntry =
+            EvaluationEntry(
+                metricId = topZoneLeadShareMetricId,
+                status =
+                    if (Phase4OwnerMetricTargets.passes(topZoneLeadShareRange, topZoneLeadShare)) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("rate", task.metrics.getValue("topZoneLeadShare"))
+                        put("zoneId", task.metrics.getValue("topZoneLeadShareZoneId"))
+                        put("denominator", task.metrics.getValue("topZoneLeadShareDenominator"))
+                        put("zoneDiscoveryDistribution", task.metrics.getValue("zoneDiscoveryDistribution"))
+                    },
+                currentValueText =
+                    "${formatPercent(topZoneLeadShare)} (${task.metrics.getValue("topZoneLeadShareZoneId").jsonPrimitive.content}/" +
+                        "${task.metrics.intValue("topZoneLeadShareDenominator")})",
+                targetText = Phase4OwnerMetricTargets.targetText(topZoneLeadShareMetricId, topZoneLeadShareRange),
+                note = "greenwood_fringe excluded from top-share denominator; still reported in zoneDiscoveryDistribution",
+                details = task.metrics,
+            )
+        val reportOnlyEntries =
+            listOf(
+                reportOnlyOrganicEntry(
+                    metricId = "perZoneSecretConversionFloor.reportOnly",
+                    value = task.metrics.getValue("perZoneSecretConversionFloor.reportOnly"),
+                ),
+                reportOnlyOrganicEntry(
+                    metricId = "secretZoneSearchConversionFloor.reportOnly",
+                    value = task.metrics.getValue("secretZoneSearchConversionFloor.reportOnly"),
+                ),
+                reportOnlyOrganicEntry(
+                    metricId = "perZoneSearchUseFloor.reportOnly",
+                    value = task.metrics.getValue("perZoneSearchUseFloor.reportOnly"),
+                ),
+                reportOnlyOrganicEntry(
+                    metricId = "slagCueDensityPerEligibleRoom.reportOnly",
+                    value = task.metrics.getValue("slagCueDensityPerEligibleRoom.reportOnly"),
+                ),
+            )
+        val entries = listOf(leadEntry, secretConversionEntry, topZoneLeadShareEntry) + reportOnlyEntries
         val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         return EvaluationResult(
             evaluationId = "organic-hidden.owner",
@@ -679,6 +780,20 @@ internal object Phase4AggregationInputRunner {
             entries = entries,
         )
     }
+
+    private fun reportOnlyOrganicEntry(
+        metricId: String,
+        value: JsonElement,
+    ): EvaluationEntry =
+        EvaluationEntry(
+            metricId = metricId,
+            status = EvaluationEntryStatus.PASS,
+            currentValue = value,
+            currentValueText = "report-only",
+            targetText = "report-only",
+            note = "PR04 supporting metric; not a blocking owner gate.",
+            details = buildJsonObject { put(metricId, value) },
+        )
 
     internal fun localRewardIdentityEvaluation(
         task: Phase4TaskAggregate,

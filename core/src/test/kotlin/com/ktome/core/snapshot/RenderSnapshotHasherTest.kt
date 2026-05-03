@@ -67,6 +67,49 @@ class RenderSnapshotHasherTest {
     }
 
     @Test
+    fun `frontstage action cue order does not change canonical hash`() {
+        val firstCue =
+            FrontstageActionCueSnapshot(
+                category = FrontstageActionCategorySnapshot.SEARCH,
+                priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
+                stableKey = "search_available:deep_iron_pit:12,4:search.deep_iron.slag_cache",
+                message = RenderTextTokenSnapshot("log.search.available"),
+                cueType = FrontstageActionCueTypeSnapshot.SEARCH_AVAILABLE,
+            )
+        val secondCue =
+            FrontstageActionCueSnapshot(
+                category = FrontstageActionCategorySnapshot.SECRET,
+                priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
+                stableKey = "secret_entry_nearby:deep_iron_pit:deep_iron_slag_cache",
+                message = RenderTextTokenSnapshot("log.hidden.secret_entry_nearby"),
+                cueType = FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY,
+            )
+        val base = sampleSnapshot(revision = 3L)
+        val left =
+            base.copy(
+                uiState =
+                    base.uiState.copy(
+                        frontstageReadability =
+                            FrontstageReadabilitySnapshot(
+                                recentActionCues = listOf(firstCue, secondCue),
+                            ),
+                    ),
+            )
+        val right =
+            left.copy(
+                uiState =
+                    left.uiState.copy(
+                        frontstageReadability =
+                            left.uiState.frontstageReadability.copy(
+                                recentActionCues = listOf(secondCue, firstCue),
+                            ),
+                    ),
+            )
+
+        assertEquals(RenderSnapshotHasher.sha256(left), RenderSnapshotHasher.sha256(right))
+    }
+
+    @Test
     fun `item special tier participates in canonical hash`() {
         val before = sampleSnapshot(revision = 3L)
         val after =
