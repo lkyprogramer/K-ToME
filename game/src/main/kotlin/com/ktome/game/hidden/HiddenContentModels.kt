@@ -130,10 +130,37 @@ data class HiddenEventDef(
     }
 }
 
+data class ZoneMechanicClassification(
+    val allMechanicTerms: List<String>,
+    val runtimeHookIds: List<String>,
+    val flavorOnlyMechanics: List<String>,
+) {
+    val mechanicsWithoutDedicatedRuntimeHook: List<String>
+        get() = flavorOnlyMechanics
+
+    val termsPartitioned: Boolean
+        get() = allMechanicTerms.toSet() == (runtimeHookIds.toSet() + flavorOnlyMechanics.toSet()) &&
+            runtimeHookIds.toSet().intersect(flavorOnlyMechanics.toSet()).isEmpty()
+}
+
 enum class ReturnBridgePolicy {
     NEAREST_OPTIONAL_ANCHOR,
     LAST_MAINLINE_BRANCH,
     EXPLICIT_ANCHOR,
+}
+
+data class SecretZoneSelector(
+    val primarySlot: Boolean = false,
+    val secondarySlot: Boolean = false,
+) {
+    init {
+        require(primarySlot || secondarySlot) {
+            "SecretZoneSelector must reserve at least one selector slot when declared."
+        }
+        require(!(primarySlot && secondarySlot)) {
+            "SecretZoneSelector must not reserve both primarySlot and secondarySlot."
+        }
+    }
 }
 
 data class SecretZoneDef(
@@ -152,6 +179,7 @@ data class SecretZoneDef(
     val entranceBindingId: NodeAnchorId,
     val returnBridgePolicy: ReturnBridgePolicy,
     val returnBridgeAnchorTag: String? = null,
+    val secretZoneSelector: SecretZoneSelector? = null,
 ) {
     init {
         require(id.registry.value == SECRET_ZONE_REGISTRY_ID) {

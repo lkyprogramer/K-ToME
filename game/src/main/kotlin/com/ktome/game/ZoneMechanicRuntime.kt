@@ -11,6 +11,7 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.game.data.schema.ZoneSchemaV2
+import com.ktome.game.hidden.ZoneMechanicClassification
 import com.ktome.game.model.MonsterTemplate
 import kotlin.math.abs
 
@@ -175,7 +176,87 @@ private data class VoidEruptionSpec(
     val stabilizedTurnsOnFocus: Int,
 )
 
-internal object ZoneMechanicRuntime {
+sealed interface ZoneRuntimeHookEffect {
+    val evidenceTags: Set<String>
+}
+
+data class HiddenLeadWeightRuntimeEffect(
+    val hiddenLeadWeightMultiplier: Double,
+    val durationFloors: Int,
+    val routeDeviationCount: Int,
+) : ZoneRuntimeHookEffect {
+    override val evidenceTags: Set<String> =
+        setOf(
+            "zone.runtime_hook.effect.trail_pressure.hiddenLeadWeightMultiplier=$hiddenLeadWeightMultiplier",
+            "zone.runtime_hook.effect.trail_pressure.durationFloors=$durationFloors",
+            "zone.runtime_hook.effect.trail_pressure.routeDeviationCount=$routeDeviationCount",
+        )
+}
+
+data class SlagAlertRuntimeEffect(
+    val searchPromptVisible: Boolean,
+    val warningEventId: String,
+) : ZoneRuntimeHookEffect {
+    override val evidenceTags: Set<String> =
+        setOf(
+            "zone.runtime_hook.effect.slag_alert.searchPromptVisible=$searchPromptVisible",
+            "zone.runtime_hook.effect.slag_alert.warningEventId=$warningEventId",
+        )
+}
+
+data class EncounterPressureRuntimeEffect(
+    val nextEncounterPressureBonus: Int,
+    val warningEventId: String? = null,
+) : ZoneRuntimeHookEffect {
+    override val evidenceTags: Set<String> =
+        buildSet {
+            add("zone.runtime_hook.effect.ritual_pressure.nextEncounterPressureBonus=$nextEncounterPressureBonus")
+            warningEventId?.let { eventId -> add("zone.runtime_hook.effect.ritual_pressure.warningEventId=$eventId") }
+        }
+}
+
+data class FerryCrossingChoiceRuntimeEffect(
+    val choiceId: String,
+    val fatigueDelta: Int = 0,
+    val hiddenClueDelta: Int = 0,
+    val turnDelta: Int = 0,
+)
+
+data class FerryCrossingRuntimeEffect(
+    val choices: List<FerryCrossingChoiceRuntimeEffect>,
+) : ZoneRuntimeHookEffect {
+    override val evidenceTags: Set<String> =
+        choices.flatMapTo(linkedSetOf()) { choice ->
+            listOf(
+                "zone.runtime_hook.effect.ferry_crossing.choice.${choice.choiceId}.fatigueDelta=${choice.fatigueDelta}",
+                "zone.runtime_hook.effect.ferry_crossing.choice.${choice.choiceId}.hiddenClueDelta=${choice.hiddenClueDelta}",
+                "zone.runtime_hook.effect.ferry_crossing.choice.${choice.choiceId}.turnDelta=${choice.turnDelta}",
+            )
+        }
+}
+
+data class ResourcePressureRuntimeEffect(
+    val resourcePressureWarning: Boolean,
+    val objectivePenaltyMultiplier: Double,
+) : ZoneRuntimeHookEffect {
+    override val evidenceTags: Set<String> =
+        setOf(
+            "zone.runtime_hook.effect.void_pressure.resourcePressureWarning=$resourcePressureWarning",
+            "zone.runtime_hook.effect.void_pressure.objectivePenaltyMultiplier=$objectivePenaltyMultiplier",
+        )
+}
+
+data class ZoneRuntimeHookContract(
+    val zoneId: String,
+    val hookId: String,
+    val messageKey: String,
+    val effect: ZoneRuntimeHookEffect,
+    val triggerFactId: String? = null,
+    val triggerInteractableIds: Set<String> = emptySet(),
+    val grantedDiscoveryTags: Set<String> = emptySet(),
+)
+
+object ZoneMechanicRuntime {
     private const val DEFAULT_PATROL_MAX_HOSTILES: Int = 4
     private const val DEFAULT_PATROL_WAVE_LIMIT: Int = 3
     private const val DEFAULT_PATROL_INTERVAL_TURNS: Int = 20
@@ -195,6 +276,88 @@ internal object ZoneMechanicRuntime {
             "slag_valve",
             "molten_pressure_valve",
         )
+    private val EXISTING_DEDICATED_RUNTIME_MECHANICS: Set<String> =
+        setOf(
+            "patrol_pressure",
+            "ambush_lane",
+            "furnace_pressure",
+            "currents",
+            "crystal_shards",
+            "abyssal_ward",
+            "finale",
+            "void_eruption",
+        )
+    private val MANDATORY_ZONE_RUNTIME_HOOKS: List<ZoneRuntimeHookContract> =
+        listOf(
+            ZoneRuntimeHookContract(
+                zoneId = "greenwood_fringe",
+                hookId = "trail_pressure",
+                messageKey = "log.zone.hook.trail_pressure",
+                effect =
+                    HiddenLeadWeightRuntimeEffect(
+                        hiddenLeadWeightMultiplier = 1.25,
+                        durationFloors = 3,
+                        routeDeviationCount = 1,
+                    ),
+                triggerInteractableIds = setOf("trail_cache", "warden_beacon", "hunter_snare"),
+            ),
+            ZoneRuntimeHookContract(
+                zoneId = "deep_iron_pit",
+                hookId = "slag_alert",
+                messageKey = "log.zone.hook.slag_alert",
+                effect =
+                    SlagAlertRuntimeEffect(
+                        searchPromptVisible = true,
+                        warningEventId = "zone.trigger.oil_or_fire_seen",
+                    ),
+                triggerFactId = "zone.trigger.oil_or_fire_seen",
+                triggerInteractableIds = setOf("ore_stash", "mine_furnace", "slag_valve"),
+            ),
+            ZoneRuntimeHookContract(
+                zoneId = "grey_gate_depths",
+                hookId = "ritual_pressure",
+                messageKey = "log.zone.hook.ritual_pressure",
+                effect =
+                    EncounterPressureRuntimeEffect(
+                        nextEncounterPressureBonus = 1,
+                        warningEventId = "zone.trigger.ritual_pressure_active",
+                    ),
+                triggerFactId = "zone.trigger.ritual_pressure_active",
+                triggerInteractableIds = setOf("seal_cache", "ritual_altar", "shadow_brazier"),
+            ),
+            ZoneRuntimeHookContract(
+                zoneId = "underground_river",
+                hookId = "ferry_crossing",
+                messageKey = "log.zone.hook.ferry_crossing",
+                effect =
+                    FerryCrossingRuntimeEffect(
+                        choices =
+                            listOf(
+                                FerryCrossingChoiceRuntimeEffect(choiceId = "quick_crossing", fatigueDelta = 1),
+                                FerryCrossingChoiceRuntimeEffect(choiceId = "inspect_ferry", hiddenClueDelta = 1, turnDelta = -2),
+                            ),
+                    ),
+                triggerInteractableIds = setOf("river_ferry_anchor", "crystal_cache_chest"),
+                grantedDiscoveryTags = setOf("hidden.primer.underground_river.crystal_rift"),
+            ),
+            ZoneRuntimeHookContract(
+                zoneId = "abyssal_temple",
+                hookId = "void_pressure",
+                messageKey = "log.zone.hook.void_pressure",
+                effect =
+                    ResourcePressureRuntimeEffect(
+                        resourcePressureWarning = true,
+                        objectivePenaltyMultiplier = 1.2,
+                    ),
+                triggerFactId = "zone.trigger.void_pressure_active",
+                triggerInteractableIds = setOf("temple_ward_reliquary"),
+                grantedDiscoveryTags = setOf("hidden.primer.abyssal_temple.warded_archive"),
+            ),
+        )
+    private val MANDATORY_ZONE_RUNTIME_HOOKS_BY_ZONE: Map<String, ZoneRuntimeHookContract> =
+        MANDATORY_ZONE_RUNTIME_HOOKS.associateBy(ZoneRuntimeHookContract::zoneId)
+    private val RUNTIME_HOOK_MECHANICS: Set<String> =
+        EXISTING_DEDICATED_RUNTIME_MECHANICS + MANDATORY_ZONE_RUNTIME_HOOKS.mapTo(linkedSetOf(), ZoneRuntimeHookContract::hookId)
 
     fun introHintKey(zone: ZoneSchemaV2): String? =
         when {
@@ -214,6 +377,22 @@ internal object ZoneMechanicRuntime {
             zone.environmentTheme == "sealed_depths" -> "zone.mechanic_hint.sealed_depths"
             else -> null
         }
+
+    fun mandatoryZoneRuntimeHookContracts(): List<ZoneRuntimeHookContract> = MANDATORY_ZONE_RUNTIME_HOOKS
+
+    fun runtimeHookForZone(zone: ZoneSchemaV2): ZoneRuntimeHookContract? =
+        MANDATORY_ZONE_RUNTIME_HOOKS_BY_ZONE[zone.id]
+            ?.takeIf { hook -> hook.hookId in zone.specialMechanics }
+
+    fun classifyMechanics(zone: ZoneSchemaV2): ZoneMechanicClassification {
+        val runtimeHookIds = zone.specialMechanics.filter { mechanic -> mechanic in RUNTIME_HOOK_MECHANICS }
+        val flavorOnlyMechanics = zone.specialMechanics.filterNot(runtimeHookIds.toSet()::contains)
+        return ZoneMechanicClassification(
+            allMechanicTerms = zone.specialMechanics,
+            runtimeHookIds = runtimeHookIds,
+            flavorOnlyMechanics = flavorOnlyMechanics,
+        )
+    }
 
     fun installFloorRuntime(
         config: FoundationGameConfig,

@@ -16,7 +16,8 @@
 2. nightly harness 默认跑 `./gradlew nightlyGovernanceGate`
    - 包含 `scopeCoverageLint`
    - 包含 `maintainabilityLint` 的 report-only 夜跑
-   - 包含 `verifyOwner + mapgenSmoke + solvabilityHarness + reportPhase4`，用于 freshness / aggregate smoke
+   - 包含 `verifyOwner + mapgenSmoke + solvabilityHarness + whiteBoxHiddenContent + reportPhase4`，用于 freshness / aggregate smoke
+   - `whiteBoxHiddenContent` 是 `reportPhase4` 的 aggregation-only producer，必须由 nightly 显式生成，不能塞进 `verifyOwner`
 
 Phase4 v4 开发验证阶梯：
 

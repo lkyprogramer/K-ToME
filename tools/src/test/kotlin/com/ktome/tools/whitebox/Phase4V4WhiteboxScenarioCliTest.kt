@@ -26,6 +26,7 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(exception.message?.contains("phase4-v4-pr01") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr02") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr03") == true)
+        assertTrue(exception.message?.contains("phase4-v4-pr04") == true)
     }
 
     @Test
@@ -141,6 +142,37 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `pr04 scenario generates hidden search hook evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "phase4-v4-pr04"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/phase4-v4-pr04/evidence/phase4-v4-pr04-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=phase4-v4-pr04"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("phase4-v4-pr04-deep-iron-search-cue.png"))
+        assertTrue(runbook.contains("phase4-v4-pr04-search-result-feedback.png"))
+        assertTrue(runbook.contains("phase4-v4-pr04-abyssal-void-pressure.png"))
+        assertTrue(runbook.contains("phase4-v4-pr04-zone-hook-triggered.png"))
+        assertTrue(runbook.contains("phase4-v4-pr04-priority-no-overlap.png"))
+        assertTrue(runbook.contains("search_available"))
+        assertTrue(runbook.contains("void_pressure"))
+        assertTrue(runbook.contains("docs/review/phase4/v4-pr/manual-records/phase4-v4-pr04-hidden-search-zone-hooks.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"phase4-v4-pr04\""))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr04-app.log"))
+        assertTrue(expectedEvidence.contains("log.zone.hook.void_pressure"))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr04-priority-no-overlap.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `whitebox materialization catalog stays in parity with scenario registry`() {
         val parity = Phase4V4WhiteboxScenarioMaterializationCatalog.validateRegistryParity()
 
@@ -164,6 +196,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr01
             |  - id: phase4-v4-pr02
             |  - id: phase4-v4-pr03
+            |  - id: phase4-v4-pr04
             |
             """.trimMargin(),
         )

@@ -7,6 +7,7 @@ import com.ktome.core.mapgen.PathClass
 import com.ktome.core.mapgen.center
 import com.ktome.core.phase.PackId
 import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
+import com.ktome.core.snapshot.FrontstageActionCueTypeSnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.world.solvability.NodeAnchorId
 import com.ktome.core.world.solvability.SearchActionResult
@@ -15,6 +16,8 @@ import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.ZoneMechanicRuntime
+import com.ktome.game.ZoneRuntimeHookContract
 import com.ktome.game.data.DataLoader
 import com.ktome.game.hidden.HiddenConditionKey
 import com.ktome.game.hidden.HiddenEventDef
@@ -63,6 +66,7 @@ data class HiddenFrontstageActionCueEvidence(
     val priority: String,
     val stableKey: String,
     val messageKey: String,
+    val cueType: String = FrontstageActionCueTypeSnapshot.GENERIC.name,
 )
 
 data class HiddenContentCaseResult(
@@ -76,6 +80,7 @@ data class HiddenContentCaseResult(
     val resolvedReturnBridgeNodeId: String,
     val searchActionResult: String,
     val explicitSearchReveal: Boolean,
+    val searchPromptVisibleBeforeSearch: Boolean,
     val triggerType: String,
     val hiddenEventIds: List<String>,
     val triggerTypes: List<String>,
@@ -114,6 +119,9 @@ data class HiddenContentCaseResult(
 
     val frontstageActionCueMessageKeys: List<String>
         get() = frontstageActionCues.map(HiddenFrontstageActionCueEvidence::messageKey)
+
+    val frontstageActionCueTypes: List<String>
+        get() = frontstageActionCues.map(HiddenFrontstageActionCueEvidence::cueType)
 
     val optionalOnlyTriggerPathClassesWithinOptionalOrSecret: Boolean
         get() =
@@ -182,6 +190,7 @@ data class HiddenContentCaseResult(
             put("resolvedReturnBridgeNodeId", resolvedReturnBridgeNodeId)
             put("searchActionResult", searchActionResult)
             put("explicitSearchReveal", explicitSearchReveal)
+            put("searchPromptVisibleBeforeSearch", searchPromptVisibleBeforeSearch)
             put("triggerType", triggerType)
             put("secretZoneId", secretZoneId)
             put("secretZoneEntered", secretZoneEntered)
@@ -242,6 +251,9 @@ data class HiddenContentCaseResult(
             putJsonArray("frontstageActionCueMessageKeys") {
                 frontstageActionCueMessageKeys.forEach { messageKey -> add(JsonPrimitive(messageKey)) }
             }
+            putJsonArray("frontstageActionCueTypes") {
+                frontstageActionCueTypes.forEach { cueType -> add(JsonPrimitive(cueType)) }
+            }
             putJsonArray("caseFailureReasons") {
                 gateFailureReasons().forEach { reason -> add(JsonPrimitive(reason)) }
             }
@@ -295,6 +307,7 @@ internal data class HiddenContentSummaryMetrics(
     val hiddenTriggerTypeSet: Set<String>,
     val secretEntranceBindingCoverage: Int,
     val secretEntranceBindingSet: Set<String>,
+    val greenwoodFringeSearchDrivenPathPresent: Boolean,
 ) {
     val failureCount: Int
         get() = caseFailureCount + aggregateFailureCount
@@ -437,6 +450,9 @@ internal object HiddenContentHarnessKernel {
             }
             val searchStateBefore = session.automationSearchState().firstOrNull { entry -> entry.bindingId == bindingId }?.result
             session.automationMovePlayerTo(searchPoint)
+            val searchPromptSnapshot = session.renderSnapshot()
+            val searchPromptVisibleBeforeSearch = searchPromptSnapshot.uiState.searchPromptLabelKey != null
+            val preSearchFrontstageActionCues = searchPromptSnapshot.uiState.frontstageReadability.recentActionCues
             val searchAccepted = session.perform(PlayerCommand.Search)
             val searchResult =
                 session.automationSearchState()
@@ -510,7 +526,9 @@ internal object HiddenContentHarnessKernel {
             val proof = session.automationSolvabilityProof()
             val proofSearchActionResult = proof.searchStates.firstOrNull { entry -> entry.bindingId == entrance.bindingId }?.result?.name
             val finalSnapshot = session.renderSnapshot()
-            val frontstageActionCues = finalSnapshot.uiState.frontstageReadability.recentActionCues
+            val frontstageActionCues =
+                (preSearchFrontstageActionCues + finalSnapshot.uiState.frontstageReadability.recentActionCues)
+                    .distinctBy { cue -> cue.stableKey to cue.message.key }
             val actualPlayerPoint = session.playerPosition()
             val finalRoom = generatedFloor.roomAt(actualPlayerPoint)
             val secretZoneEntered = secretZoneId != null
@@ -533,7 +551,7 @@ internal object HiddenContentHarnessKernel {
             val criticalPathReachable = proof.criticalPathReachable
             val searchFailureKeepsMainlineReachable =
                 searchResult != SearchActionResult.FAILED_CHECK ||
-                    (criticalPathReachable && !secretZoneEntered && returnedRoomNodeId == entranceRoom.nodeId.value)
+                    (criticalPathReachable && !secretZoneEntered)
             HiddenContentCaseResult(
                 zoneId = caseSpec.zoneId,
                 floorIndex = caseSpec.floorIndex,
@@ -548,6 +566,7 @@ internal object HiddenContentHarnessKernel {
                     searchAccepted &&
                         searchStateBefore == null &&
                         searchResult == SearchActionResult.REVEALED,
+                searchPromptVisibleBeforeSearch = searchPromptVisibleBeforeSearch,
                 triggerType = triggerType,
                 hiddenEventIds = hiddenEventIds,
                 triggerTypes = triggerTypes,
@@ -580,6 +599,7 @@ internal object HiddenContentHarnessKernel {
                             priority = cue.priority.name,
                             stableKey = cue.stableKey,
                             messageKey = cue.message.key,
+                            cueType = cue.cueType.name,
                         )
                     },
             )
@@ -595,6 +615,7 @@ internal object HiddenContentHarnessKernel {
                 resolvedReturnBridgeNodeId = "",
                 searchActionResult = SearchActionResult.NO_TARGET.name,
                 explicitSearchReveal = false,
+                searchPromptVisibleBeforeSearch = false,
                 triggerType = "NONE",
                 hiddenEventIds = emptyList(),
                 triggerTypes = emptyList(),
@@ -872,6 +893,12 @@ internal object HiddenContentHarnessAnalysis {
                 hiddenTriggerTypeSet = registryMetrics.hiddenTriggerTypeSet,
                 secretEntranceBindingCoverage = registryMetrics.secretEntranceBindingCoverage,
                 secretEntranceBindingSet = registryMetrics.secretEntranceBindingSet,
+                greenwoodFringeSearchDrivenPathPresent =
+                    results.any { result ->
+                        result.zoneId == "greenwood_fringe" &&
+                            result.explicitSearchReveal &&
+                            result.searchBindingId.startsWith("search.greenwood.")
+                    },
             )
         return HiddenContentAnalysis(summary = summary, zoneBreakdown = zoneBreakdown, aggregateFailures = aggregateFailures)
     }
@@ -969,6 +996,7 @@ object HiddenContentHarnessRunner {
                 put("hiddenEventRegistryCount", summary.hiddenEventRegistryCount)
                 put("secretZoneRegistryCount", summary.secretZoneRegistryCount)
                 put("hiddenTriggerTypeCoverage", summary.hiddenTriggerTypeCoverage)
+                put("greenwoodFringeSearchDrivenPathPresent", summary.greenwoodFringeSearchDrivenPathPresent)
                 putJsonArray("hiddenTriggerTypeSet") {
                     summary.hiddenTriggerTypeSet.sorted().forEach { triggerType -> add(JsonPrimitive(triggerType)) }
                 }
@@ -980,16 +1008,37 @@ object HiddenContentHarnessRunner {
                 put("frontstageCueDedupAppliedCount", frontstageMetrics.dedupAppliedCount)
                 put("frontstageCueExpiryParity", frontstageMetrics.expiryParity)
                 put("frontstageSecretCueVisibilityRate", frontstageMetrics.secretCueVisibilityRate)
+                put("frontstageSearchCueVisibilityRate", frontstageMetrics.searchCueVisibilityRate)
+                put("zoneSearchPromptVisibility", frontstageMetrics.zoneSearchPromptVisibility)
+                put("zoneHookCoverage", frontstageMetrics.zoneHookCoverage)
                 put("frontstageHighPriorityCueRetainedCount", frontstageMetrics.highPriorityCueRetainedCount)
                 put("frontstageHighPriorityExpectedCount", frontstageMetrics.highPriorityExpectedCount)
                 put("frontstageSecretCueVisibleCount", frontstageMetrics.secretCueVisibleCount)
                 put("frontstageSecretCueExpectedCount", frontstageMetrics.secretCueExpectedCount)
+                put("frontstageSearchCueVisibleCount", frontstageMetrics.searchCueVisibleCount)
+                put("frontstageSearchCueExpectedCount", frontstageMetrics.searchCueExpectedCount)
+                put("zoneSearchPromptVisibleZoneCount", frontstageMetrics.zoneSearchPromptVisibleZoneCount)
+                put("zoneSearchPromptExpectedZoneCount", frontstageMetrics.zoneSearchPromptExpectedZoneCount)
+                put("zoneHookTriggeredCount", frontstageMetrics.zoneHookTriggeredCount)
+                put("zoneHookExpectedCount", frontstageMetrics.zoneHookExpectedCount)
                 put("frontstageDuplicateNoTargetLogCount", frontstageMetrics.duplicateNoTargetLogCount)
                 put("frontstageRemainingNoTargetCueCount", frontstageMetrics.remainingNoTargetCueCount)
                 put("frontstageCueExpiryProbePassedCount", frontstageMetrics.expiryProbePassedCount)
                 put("frontstageCueExpiryProbeTotalCount", frontstageMetrics.expiryProbeTotalCount)
                 putJsonArray("frontstageCueExpiryProbePriorities") {
                     frontstageMetrics.expiryProbePriorities.forEach { priority -> add(JsonPrimitive(priority)) }
+                }
+                putJsonArray("zoneHookTriggeredIds") {
+                    frontstageMetrics.zoneHookTriggeredIds.forEach { hookId -> add(JsonPrimitive(hookId)) }
+                }
+                putJsonArray("zoneHookMissingIds") {
+                    frontstageMetrics.zoneHookMissingIds.forEach { hookId -> add(JsonPrimitive(hookId)) }
+                }
+                putJsonArray("zoneSearchPromptVisibleZoneIds") {
+                    frontstageMetrics.zoneSearchPromptVisibleZoneIds.forEach { zoneId -> add(JsonPrimitive(zoneId)) }
+                }
+                putJsonArray("zoneSearchPromptMissingZoneIds") {
+                    frontstageMetrics.zoneSearchPromptMissingZoneIds.forEach { zoneId -> add(JsonPrimitive(zoneId)) }
                 }
             }
             putJsonArray("aggregateFailures") {
@@ -1024,15 +1073,28 @@ internal data class HiddenFrontstageCueContractMetrics(
     val dedupAppliedCount: Int,
     val expiryParity: Double,
     val secretCueVisibilityRate: Double,
+    val searchCueVisibilityRate: Double,
+    val zoneSearchPromptVisibility: Double,
+    val zoneHookCoverage: Double,
     val highPriorityCueRetainedCount: Int,
     val highPriorityExpectedCount: Int,
     val secretCueVisibleCount: Int,
     val secretCueExpectedCount: Int,
+    val searchCueVisibleCount: Int,
+    val searchCueExpectedCount: Int,
+    val zoneSearchPromptVisibleZoneCount: Int,
+    val zoneSearchPromptExpectedZoneCount: Int,
+    val zoneHookTriggeredCount: Int,
+    val zoneHookExpectedCount: Int,
     val duplicateNoTargetLogCount: Int,
     val remainingNoTargetCueCount: Int,
     val expiryProbePassedCount: Int,
     val expiryProbeTotalCount: Int,
     val expiryProbePriorities: List<String>,
+    val zoneHookTriggeredIds: List<String>,
+    val zoneHookMissingIds: List<String>,
+    val zoneSearchPromptVisibleZoneIds: List<String>,
+    val zoneSearchPromptMissingZoneIds: List<String>,
 )
 
 internal fun frontstageCueContractMetrics(
@@ -1043,10 +1105,13 @@ internal fun frontstageCueContractMetrics(
     var highPriorityRetainedCount = 0
     var secretCueExpectedCount = 0
     var secretCueVisibleCount = 0
+    var searchCueExpectedCount = 0
+    var searchCueVisibleCount = 0
     results.forEach { result ->
         val actualCues = result.observedFrontstageCues()
         val secretExpectations = expectedSecretFrontstageCues(result)
         val highPriorityExpectations = expectedHighPriorityFrontstageCues(result, secretExpectations)
+        val searchExpectations = expectedSearchAvailableFrontstageCues(result)
         if (highPriorityExpectations.isNotEmpty()) {
             highPriorityExpectedCount += 1
             if (highPriorityExpectations.any { expectation -> actualCues.any(expectation::matches) }) {
@@ -1059,23 +1124,119 @@ internal fun frontstageCueContractMetrics(
                 secretCueVisibleCount += 1
             }
         }
+        if (searchExpectations.isNotEmpty()) {
+            searchCueExpectedCount += 1
+            if (searchExpectations.any { expectation -> actualCues.any(expectation::matches) }) {
+                searchCueVisibleCount += 1
+            }
+        }
     }
     val probe = runFrontstageCueContractProbe(outputDir)
+    searchCueExpectedCount += probe.searchCueCombatDowngradeExpectedCount
+    searchCueVisibleCount += probe.searchCueCombatDowngradeVisibleCount
+    val expectedZoneIds = results.map(HiddenContentCaseResult::zoneId).distinct().sorted()
+    val visibleZoneIds =
+        results
+            .filter(HiddenContentCaseResult::searchPromptVisibleBeforeSearch)
+            .map(HiddenContentCaseResult::zoneId)
+            .distinct()
+            .sorted()
+    val missingZoneIds = expectedZoneIds - visibleZoneIds.toSet()
+    val zoneHookCoverage = runZoneHookCoverageProbe(outputDir)
     return HiddenFrontstageCueContractMetrics(
         highPriorityCueRetainedRate = hiddenRatio(highPriorityRetainedCount, highPriorityExpectedCount),
         dedupAppliedCount = probe.dedupAppliedCount,
         expiryParity = probe.expiryParity,
         secretCueVisibilityRate = hiddenRatio(secretCueVisibleCount, secretCueExpectedCount),
+        searchCueVisibilityRate = hiddenRatio(searchCueVisibleCount, searchCueExpectedCount),
+        zoneSearchPromptVisibility = hiddenRatio(visibleZoneIds.size, expectedZoneIds.size),
+        zoneHookCoverage = zoneHookCoverage.coverageRate,
         highPriorityCueRetainedCount = highPriorityRetainedCount,
         highPriorityExpectedCount = highPriorityExpectedCount,
         secretCueVisibleCount = secretCueVisibleCount,
         secretCueExpectedCount = secretCueExpectedCount,
+        searchCueVisibleCount = searchCueVisibleCount,
+        searchCueExpectedCount = searchCueExpectedCount,
+        zoneSearchPromptVisibleZoneCount = visibleZoneIds.size,
+        zoneSearchPromptExpectedZoneCount = expectedZoneIds.size,
+        zoneHookTriggeredCount = zoneHookCoverage.triggeredCount,
+        zoneHookExpectedCount = zoneHookCoverage.expectedCount,
         duplicateNoTargetLogCount = probe.duplicateNoTargetLogCount,
         remainingNoTargetCueCount = probe.remainingNoTargetCueCount,
         expiryProbePassedCount = probe.expiryProbePassedCount,
         expiryProbeTotalCount = probe.expiryProbeTotalCount,
         expiryProbePriorities = probe.expiryProbePriorities,
+        zoneHookTriggeredIds = zoneHookCoverage.triggeredHookIds,
+        zoneHookMissingIds = zoneHookCoverage.missingHookIds,
+        zoneSearchPromptVisibleZoneIds = visibleZoneIds,
+        zoneSearchPromptMissingZoneIds = missingZoneIds,
     )
+}
+
+private data class ZoneHookCoverageMetrics(
+    val expectedCount: Int,
+    val triggeredHookIds: List<String>,
+    val missingHookIds: List<String>,
+) {
+    val triggeredCount: Int
+        get() = triggeredHookIds.size
+
+    val coverageRate: Double
+        get() = hiddenRatio(triggeredHookIds.size, expectedCount)
+}
+
+private fun runZoneHookCoverageProbe(outputDir: Path): ZoneHookCoverageMetrics {
+    val hookResults =
+        ZoneMechanicRuntime.mandatoryZoneRuntimeHookContracts().map { contract ->
+            contract.hookId to runZoneHookContractProbe(outputDir = outputDir, contract = contract)
+        }
+    val triggeredHookIds = hookResults.filter { (_, triggered) -> triggered }.map { (hookId, _) -> hookId }.sorted()
+    val missingHookIds = hookResults.filterNot { (_, triggered) -> triggered }.map { (hookId, _) -> hookId }.sorted()
+    return ZoneHookCoverageMetrics(
+        expectedCount = hookResults.size,
+        triggeredHookIds = triggeredHookIds,
+        missingHookIds = missingHookIds,
+    )
+}
+
+private fun runZoneHookContractProbe(
+    outputDir: Path,
+    contract: ZoneRuntimeHookContract,
+): Boolean {
+    (1..3).forEach { floorIndex ->
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 202604240400L + floorIndex,
+                        zoneId = contract.zoneId,
+                        floor = floorIndex,
+                        playerProfessionId = "arcanist",
+                    ),
+                saveManager =
+                    com.ktome.core.save.SaveManager(
+                        outputDir.resolve("tmp").resolve("zone-hook-${contract.zoneId}-$floorIndex"),
+                    ),
+                locale = GameLocale.EN_US,
+            )
+        clearFrontstageProbeHostiles(session)
+        val interactablePoint =
+            contract.triggerInteractableIds
+                .asSequence()
+                .mapNotNull { interactableId -> session.automationInteractablePoint(interactableId) }
+                .firstOrNull()
+                ?: return@forEach
+        session.automationMovePlayerTo(interactablePoint)
+        session.perform(PlayerCommand.Interact)
+        session.renderSnapshot()
+        if (
+            contract.hookId in session.automationTriggeredZoneHookIds() &&
+            contract.effect.evidenceTags.all { tag -> tag in session.automationZoneRuntimeHookEffectTags() }
+        ) {
+            return true
+        }
+    }
+    return false
 }
 
 private data class FrontstageCueContractProbeResult(
@@ -1086,6 +1247,8 @@ private data class FrontstageCueContractProbeResult(
     val expiryProbePassedCount: Int,
     val expiryProbeTotalCount: Int,
     val expiryProbePriorities: List<String>,
+    val searchCueCombatDowngradeVisibleCount: Int,
+    val searchCueCombatDowngradeExpectedCount: Int,
 )
 
 private fun runFrontstageCueContractProbe(outputDir: Path): FrontstageCueContractProbeResult {
@@ -1118,15 +1281,41 @@ private fun runFrontstageCueContractProbe(outputDir: Path): FrontstageCueContrac
         FrontstageActionPrioritySnapshot.entries.map { priority ->
             runFrontstageTtlProbe(outputDir = outputDir, priority = priority)
         }
+    val searchDowngradeProbe = runFrontstageSearchCombatDowngradeProbe(outputDir)
     val expiryProbePassedCount = ttlProbeResults.count(FrontstageTtlProbeResult::passed)
     return FrontstageCueContractProbeResult(
-        dedupAppliedCount = if (duplicateNoTargetLogCount >= 2 && dedupedCueCount == 1) 1 else 0,
+        dedupAppliedCount = if (duplicateNoTargetLogCount == 1 && dedupedCueCount == 1) 1 else 0,
         expiryParity = hiddenRatio(expiryProbePassedCount, ttlProbeResults.size),
         duplicateNoTargetLogCount = duplicateNoTargetLogCount,
         remainingNoTargetCueCount = remainingNoTargetCueCount,
         expiryProbePassedCount = expiryProbePassedCount,
         expiryProbeTotalCount = ttlProbeResults.size,
         expiryProbePriorities = ttlProbeResults.map(FrontstageTtlProbeResult::priority),
+        searchCueCombatDowngradeVisibleCount = if (searchDowngradeProbe.passed) 1 else 0,
+        searchCueCombatDowngradeExpectedCount = 1,
+    )
+}
+
+private data class FrontstageSearchCombatDowngradeProbeResult(
+    val passed: Boolean,
+)
+
+private fun runFrontstageSearchCombatDowngradeProbe(outputDir: Path): FrontstageSearchCombatDowngradeProbeResult {
+    val session =
+        newIsolatedFrontstageProbeSession(
+            outputDir = outputDir,
+            probeId = "frontstage-search-combat-downgrade",
+        )
+    val stableKey = "search_available:combat_downgrade_probe:0,0:hidden.probe"
+    session.automationRecordSearchAvailableCueForVerification(stableKey)
+    val nonCombatPriority = session.frontstageCuePriority(stableKey)
+    val spawnedHostile = session.perform(PlayerCommand.Validation(ValidationAction.SpawnEliteNearPlayer))
+    val combatPriority = session.frontstageCuePriority(stableKey)
+    return FrontstageSearchCombatDowngradeProbeResult(
+        passed =
+            nonCombatPriority == FrontstageActionPrioritySnapshot.HIGH_HIDDEN.name &&
+                spawnedHostile &&
+                combatPriority == FrontstageActionPrioritySnapshot.MEDIUM.name,
     )
 }
 
@@ -1201,8 +1390,14 @@ private fun clearFrontstageProbeHostiles(session: FoundationGameSession) {
 private fun FoundationGameSession.hasFrontstageCue(stableKey: String): Boolean =
     renderSnapshot().uiState.frontstageReadability.recentActionCues.any { cue -> cue.stableKey == stableKey }
 
+private fun FoundationGameSession.frontstageCuePriority(stableKey: String): String? =
+    renderSnapshot().uiState.frontstageReadability.recentActionCues.firstOrNull { cue -> cue.stableKey == stableKey }?.priority?.name
+
 private fun frontstageProbeCategory(priority: FrontstageActionPrioritySnapshot): FrontstageActionCategorySnapshot =
     when (priority) {
+        FrontstageActionPrioritySnapshot.CRITICAL_COMBAT -> FrontstageActionCategorySnapshot.SECRET
+        FrontstageActionPrioritySnapshot.HIGH_COMBAT -> FrontstageActionCategorySnapshot.SEARCH
+        FrontstageActionPrioritySnapshot.HIGH_HIDDEN -> FrontstageActionCategorySnapshot.SEARCH
         FrontstageActionPrioritySnapshot.CRITICAL -> FrontstageActionCategorySnapshot.SECRET
         FrontstageActionPrioritySnapshot.HIGH -> FrontstageActionCategorySnapshot.SEARCH
         FrontstageActionPrioritySnapshot.MEDIUM -> FrontstageActionCategorySnapshot.SEARCH
@@ -1211,6 +1406,9 @@ private fun frontstageProbeCategory(priority: FrontstageActionPrioritySnapshot):
 
 private fun frontstageProbeMessageKey(priority: FrontstageActionPrioritySnapshot): String =
     when (priority) {
+        FrontstageActionPrioritySnapshot.CRITICAL_COMBAT -> "log.hidden.secret_zone.enter"
+        FrontstageActionPrioritySnapshot.HIGH_COMBAT -> "log.search.failed_tag"
+        FrontstageActionPrioritySnapshot.HIGH_HIDDEN -> "log.search.available"
         FrontstageActionPrioritySnapshot.CRITICAL -> "log.hidden.secret_zone.enter"
         FrontstageActionPrioritySnapshot.HIGH -> "log.search.failed_tag"
         FrontstageActionPrioritySnapshot.MEDIUM -> "log.search.no_target"
@@ -1219,6 +1417,9 @@ private fun frontstageProbeMessageKey(priority: FrontstageActionPrioritySnapshot
 
 private fun frontstageProbeTtlTurns(priority: FrontstageActionPrioritySnapshot): Int =
     when (priority) {
+        FrontstageActionPrioritySnapshot.CRITICAL_COMBAT,
+        FrontstageActionPrioritySnapshot.HIGH_COMBAT,
+        FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
         FrontstageActionPrioritySnapshot.CRITICAL,
         FrontstageActionPrioritySnapshot.HIGH,
         -> 3
@@ -1232,13 +1433,15 @@ private data class ObservedFrontstageCue(
     val priority: String,
     val stableKey: String,
     val messageKey: String,
+    val cueType: String,
 )
 
 private data class ExpectedFrontstageCue(
     val category: String,
-    val priority: String,
+    val priority: String?,
     val stableKey: String? = null,
     val stableKeyPrefix: String? = null,
+    val cueType: String? = null,
     val messageKeys: Set<String>,
 ) {
     fun matches(actual: ObservedFrontstageCue): Boolean {
@@ -1249,7 +1452,8 @@ private data class ExpectedFrontstageCue(
                 else -> true
             }
         return actual.category == category &&
-            actual.priority == priority &&
+            (priority == null || actual.priority == priority) &&
+            (cueType == null || actual.cueType == cueType) &&
             actual.messageKey in messageKeys &&
             stableKeyMatches
     }
@@ -1262,7 +1466,30 @@ private fun HiddenContentCaseResult.observedFrontstageCues(): List<ObservedFront
             priority = cue.priority,
             stableKey = cue.stableKey,
             messageKey = cue.messageKey,
+            cueType = cue.cueType,
         )
+    }
+
+private fun expectedSearchAvailableFrontstageCues(result: HiddenContentCaseResult): List<ExpectedFrontstageCue> =
+    if (result.searchPromptVisibleBeforeSearch) {
+        listOf(
+            ExpectedFrontstageCue(
+                category = FrontstageActionCategorySnapshot.SEARCH.name,
+                priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN.name,
+                stableKeyPrefix = "search_available:${result.zoneId}:",
+                cueType = FrontstageActionCueTypeSnapshot.SEARCH_AVAILABLE.name,
+                messageKeys = setOf("log.search.available"),
+            ),
+            ExpectedFrontstageCue(
+                category = FrontstageActionCategorySnapshot.SEARCH.name,
+                priority = FrontstageActionPrioritySnapshot.MEDIUM.name,
+                stableKeyPrefix = "search_available:${result.zoneId}:",
+                cueType = FrontstageActionCueTypeSnapshot.SEARCH_AVAILABLE.name,
+                messageKeys = setOf("log.search.available"),
+            ),
+        )
+    } else {
+        emptyList()
     }
 
 private fun expectedHighPriorityFrontstageCues(
@@ -1274,8 +1501,9 @@ private fun expectedHighPriorityFrontstageCues(
             add(
                 ExpectedFrontstageCue(
                     category = FrontstageActionCategorySnapshot.SEARCH.name,
-                    priority = FrontstageActionPrioritySnapshot.CRITICAL.name,
+                    priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN.name,
                     stableKey = "search:${result.searchBindingId}:revealed",
+                    cueType = FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY.name,
                     messageKeys = setOf("log.search.revealed", "log.search.revealed_tag"),
                 ),
             )
@@ -1284,8 +1512,9 @@ private fun expectedHighPriorityFrontstageCues(
             add(
                 ExpectedFrontstageCue(
                     category = FrontstageActionCategorySnapshot.SEARCH.name,
-                    priority = FrontstageActionPrioritySnapshot.HIGH.name,
+                    priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN.name,
                     stableKey = "search:${result.searchBindingId}:failed_check",
+                    cueType = FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY.name,
                     messageKeys = setOf("log.search.failed_check", "log.search.failed_tag"),
                 ),
             )
@@ -1300,8 +1529,9 @@ private fun expectedSecretFrontstageCues(result: HiddenContentCaseResult): List<
             add(
                 ExpectedFrontstageCue(
                     category = FrontstageActionCategorySnapshot.SECRET.name,
-                    priority = FrontstageActionPrioritySnapshot.CRITICAL.name,
-                    stableKey = "secret:reveal:$secretZoneId",
+                    priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN.name,
+                    stableKey = "secret_entry_nearby:${result.zoneId}:$secretZoneId",
+                    cueType = FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY.name,
                     messageKeys = setOf("log.hidden.secret_zone.revealed"),
                 ),
             )
@@ -1350,8 +1580,9 @@ private fun expectedSecretFrontstageCues(result: HiddenContentCaseResult): List<
             add(
                 ExpectedFrontstageCue(
                     category = FrontstageActionCategorySnapshot.SECRET.name,
-                    priority = FrontstageActionPrioritySnapshot.HIGH.name,
-                    stableKeyPrefix = "secret:primer:",
+                    priority = FrontstageActionPrioritySnapshot.MEDIUM.name,
+                    stableKeyPrefix = "lead_discovered:${result.zoneId}:",
+                    cueType = FrontstageActionCueTypeSnapshot.LEAD_DISCOVERED.name,
                     messageKeys = setOf("log.hidden.primer.acquired"),
                 ),
             )
@@ -1403,6 +1634,7 @@ private fun JsonObject.toHiddenContentCaseResult(): HiddenContentCaseResult =
         resolvedReturnBridgeNodeId = stringValue("resolvedReturnBridgeNodeId"),
         searchActionResult = stringValue("searchActionResult"),
         explicitSearchReveal = booleanValue("explicitSearchReveal"),
+        searchPromptVisibleBeforeSearch = optionalBooleanValue("searchPromptVisibleBeforeSearch"),
         triggerType = stringValue("triggerType"),
         hiddenEventIds = stringList("hiddenEventIds"),
         triggerTypes = stringList("triggerTypes"),
@@ -1438,13 +1670,20 @@ private fun JsonObject.frontstageActionCueEvidence(): List<HiddenFrontstageActio
     val priorities = stringList("frontstageActionCuePriorities")
     val stableKeys = stringList("frontstageActionCueStableKeys")
     val messageKeys = stringList("frontstageActionCueMessageKeys")
+    val cueTypes =
+        this["frontstageActionCueTypes"]
+            ?.jsonArray
+            ?.map { element -> element.jsonPrimitive.content }
+            ?: List(categories.size) { FrontstageActionCueTypeSnapshot.GENERIC.name }
     require(
         categories.size == priorities.size &&
             categories.size == stableKeys.size &&
-            categories.size == messageKeys.size,
+            categories.size == messageKeys.size &&
+            categories.size == cueTypes.size,
     ) {
         "Frontstage action cue evidence columns must be present and aligned: " +
-            "categories=${categories.size}, priorities=${priorities.size}, stableKeys=${stableKeys.size}, messageKeys=${messageKeys.size}."
+            "categories=${categories.size}, priorities=${priorities.size}, stableKeys=${stableKeys.size}, " +
+            "messageKeys=${messageKeys.size}, cueTypes=${cueTypes.size}."
     }
     return categories.indices.map { index ->
         HiddenFrontstageActionCueEvidence(
@@ -1452,6 +1691,7 @@ private fun JsonObject.frontstageActionCueEvidence(): List<HiddenFrontstageActio
             priority = priorities[index],
             stableKey = stableKeys[index],
             messageKey = messageKeys[index],
+            cueType = cueTypes[index],
         )
     }
 }
@@ -1463,5 +1703,7 @@ private fun JsonObject.longValue(key: String): Long = getValue(key).jsonPrimitiv
 private fun JsonObject.stringValue(key: String): String = getValue(key).jsonPrimitive.content
 
 private fun JsonObject.booleanValue(key: String): Boolean = getValue(key).jsonPrimitive.content.toBooleanStrict()
+
+private fun JsonObject.optionalBooleanValue(key: String): Boolean = this[key]?.jsonPrimitive?.content?.toBooleanStrict() ?: false
 
 private fun JsonObject.nullableString(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull

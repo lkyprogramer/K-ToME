@@ -24,6 +24,7 @@ class OrganicHiddenProbeSummaryAggregatorTest {
 
         assertEquals(1, summary.discoveryWithoutPrimerCount)
         assertEquals(0.5, summary.leadDiscoveryRate)
+        assertEquals(0.5, summary.zoneSearchPromptVisibility)
         assertEquals(7.0, summary.averageFirstHiddenDiscoveryTurn)
         assertEquals(7, summary.firstHiddenDiscoveryTurnP50)
         assertNull(summary.zoneBreakdown.getValue("greenwood_fringe").averageFirstSecretZoneEntryTurn)
@@ -54,6 +55,31 @@ class OrganicHiddenProbeSummaryAggregatorTest {
         assertEquals(1.0, summary.secretZoneDiscoveryDistribution.getValue("secret.greenwood"))
         assertEquals(0.5, summary.zoneBreakdown.getValue("greenwood_fringe").secretConversionRate)
         assertEquals(0.0, summary.zoneBreakdown.getValue("abyssal_temple").secretZoneEntryRate)
+        assertEquals(1.0, summary.topZoneLeadShare)
+        assertEquals("abyssal_temple", summary.topZoneLeadShareZoneId)
+        assertEquals(0.5, summary.secretZoneSearchConversionFloorReportOnly.getValue("greenwood_fringe"))
+        assertEquals(1.0, summary.perZoneSearchUseFloorReportOnly.getValue("abyssal_temple"))
+    }
+
+    @Test
+    fun `slag cue density uses measured cue candidates per eligible room`() {
+        val summary =
+            OrganicHiddenProbeSummaryAggregator.summarize(
+                OrganicHiddenProbeSummaryRequest(
+                    results =
+                        listOf(
+                            caseResult(zoneId = "deep_iron_pit", seed = 1L, slagCueEligibleRoomCount = 4, slagCueCandidateCount = 1),
+                            caseResult(zoneId = "deep_iron_pit", seed = 2L, slagCueEligibleRoomCount = 2, slagCueCandidateCount = 2),
+                            caseResult(zoneId = "greenwood_fringe", seed = 3L, slagCueEligibleRoomCount = 10, slagCueCandidateCount = 10),
+                        ),
+                    professionIds = listOf("vanguard"),
+                    raceIds = listOf("human"),
+                    seedsPerZoneCombo = 2,
+                    perZoneSecretEntryMinRate = 0.05,
+                ),
+            )
+
+        assertEquals(0.5, summary.slagCueDensityPerEligibleRoomReportOnly.getValue("deep_iron_pit"))
     }
 
     private fun caseResult(
@@ -64,6 +90,8 @@ class OrganicHiddenProbeSummaryAggregatorTest {
         secretZoneIds: List<String> = emptyList(),
         firstHiddenDiscoveryTurn: Int? = null,
         firstSecretZoneEntryTurn: Int? = null,
+        slagCueEligibleRoomCount: Int = 0,
+        slagCueCandidateCount: Int = 0,
     ): OrganicHiddenProbeCaseResult =
         OrganicHiddenProbeCaseResult(
             zoneId = zoneId,
@@ -74,7 +102,10 @@ class OrganicHiddenProbeSummaryAggregatorTest {
             turnCount = 12,
             searchAttemptCount = if (searchRevealCount > 0) 1 else 0,
             searchActionUseCount = if (searchRevealCount > 0) 1 else 0,
+            searchPromptVisibleCount = if (searchRevealCount > 0) 1 else 0,
             searchRevealCount = searchRevealCount,
+            slagCueEligibleRoomCount = slagCueEligibleRoomCount,
+            slagCueCandidateCount = slagCueCandidateCount,
             hiddenEventIds = hiddenEventIds,
             secretZoneIds = secretZoneIds,
             firstHiddenDiscoveryTurn = firstHiddenDiscoveryTurn,

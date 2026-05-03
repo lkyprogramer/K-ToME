@@ -64,10 +64,7 @@ events:
       - key: ZONE_ID
         expectedValue: deep_iron_pit
     grantedDiscoveryTags: [hidden.primer.deep_iron.slag_cache]
-    rewards:
-      - key: REVEAL_SECRET_ZONE
-        payload:
-          bindingId: search.deep_iron.slag_cache
+    rewards: []
   - id: hidden.event.deep_iron.slag_cache.reward
     triggerType: INTERACT_TILE
     optionalOnly: true
@@ -93,10 +90,7 @@ events:
       - key: INTERACTABLE_ID
         expectedValue: crystal_cache_chest
     grantedDiscoveryTags: [hidden.primer.underground_river.crystal_rift]
-    rewards:
-      - key: REVEAL_SECRET_ZONE
-        payload:
-          bindingId: search.underground_river.crystal_rift
+    rewards: []
   - id: hidden.event.underground_river.crystal_rift.reveal
     triggerType: PERCEPTION_REVEAL
     optionalOnly: true
@@ -131,10 +125,7 @@ events:
       - key: INTERACTABLE_ID
         expectedValue: temple_ward_reliquary
     grantedDiscoveryTags: [hidden.primer.abyssal_temple.warded_archive]
-    rewards:
-      - key: REVEAL_SECRET_ZONE
-        payload:
-          bindingId: search.abyssal_temple.warded_archive
+    rewards: []
   - id: hidden.event.abyssal_temple.warded_archive.reveal
     triggerType: PERCEPTION_REVEAL
     optionalOnly: true
@@ -172,10 +163,7 @@ events:
       - key: ROOM_TAG
         expectedValue: vault
     grantedDiscoveryTags: [hidden.primer.deep_iron.smuggler_stash]
-    rewards:
-      - key: REVEAL_SECRET_ZONE
-        payload:
-          bindingId: search.deep_iron.smuggler_stash
+    rewards: []
   - id: hidden.event.deep_iron.smuggler_stash.reward
     triggerType: INTERACT_TILE
     optionalOnly: true

@@ -182,6 +182,7 @@ internal object Phase4DomainArtifactRegistry {
                     put("hiddenEventRegistryCount", summary.intValue("hiddenEventRegistryCount"))
                     put("secretZoneRegistryCount", summary.intValue("secretZoneRegistryCount"))
                     put("hiddenTriggerTypeCoverage", summary.getValue("hiddenTriggerTypeCoverage"))
+                    put("greenwoodFringeSearchDrivenPathPresent", summary.getValue("greenwoodFringeSearchDrivenPathPresent"))
                     put("hiddenTriggerTypeSet", summary.getValue("hiddenTriggerTypeSet"))
                     put("secretEntranceBindingCoverage", summary.getValue("secretEntranceBindingCoverage"))
                     put("secretEntranceBindingSet", summary.getValue("secretEntranceBindingSet"))
@@ -189,10 +190,23 @@ internal object Phase4DomainArtifactRegistry {
                     put("frontstageCueDedupAppliedCount", summary.getValue("frontstageCueDedupAppliedCount"))
                     put("frontstageCueExpiryParity", summary.getValue("frontstageCueExpiryParity"))
                     put("frontstageSecretCueVisibilityRate", summary.getValue("frontstageSecretCueVisibilityRate"))
+                    put("frontstageSearchCueVisibilityRate", summary.requireArtifactMetric("hiddenContentHarness", "frontstageSearchCueVisibilityRate"))
+                    put("zoneSearchPromptVisibility", summary.requireArtifactMetric("hiddenContentHarness", "zoneSearchPromptVisibility"))
+                    put("zoneHookCoverage", summary.requireArtifactMetric("hiddenContentHarness", "zoneHookCoverage"))
                     put("frontstageHighPriorityCueRetainedCount", summary.getValue("frontstageHighPriorityCueRetainedCount"))
                     put("frontstageHighPriorityExpectedCount", summary.getValue("frontstageHighPriorityExpectedCount"))
                     put("frontstageSecretCueVisibleCount", summary.getValue("frontstageSecretCueVisibleCount"))
                     put("frontstageSecretCueExpectedCount", summary.getValue("frontstageSecretCueExpectedCount"))
+                    put("frontstageSearchCueVisibleCount", summary.getValue("frontstageSearchCueVisibleCount"))
+                    put("frontstageSearchCueExpectedCount", summary.getValue("frontstageSearchCueExpectedCount"))
+                    put("zoneSearchPromptVisibleZoneCount", summary.requireArtifactMetric("hiddenContentHarness", "zoneSearchPromptVisibleZoneCount"))
+                    put("zoneSearchPromptExpectedZoneCount", summary.requireArtifactMetric("hiddenContentHarness", "zoneSearchPromptExpectedZoneCount"))
+                    put("zoneSearchPromptVisibleZoneIds", summary.requireArtifactMetric("hiddenContentHarness", "zoneSearchPromptVisibleZoneIds"))
+                    put("zoneSearchPromptMissingZoneIds", summary.requireArtifactMetric("hiddenContentHarness", "zoneSearchPromptMissingZoneIds"))
+                    put("zoneHookTriggeredCount", summary.getValue("zoneHookTriggeredCount"))
+                    put("zoneHookExpectedCount", summary.getValue("zoneHookExpectedCount"))
+                    put("zoneHookTriggeredIds", summary.getValue("zoneHookTriggeredIds"))
+                    put("zoneHookMissingIds", summary.getValue("zoneHookMissingIds"))
                     put("frontstageDuplicateNoTargetLogCount", summary.getValue("frontstageDuplicateNoTargetLogCount"))
                     put("frontstageRemainingNoTargetCueCount", summary.getValue("frontstageRemainingNoTargetCueCount"))
                     put("frontstageCueExpiryProbePassedCount", summary.getValue("frontstageCueExpiryProbePassedCount"))
@@ -227,11 +241,19 @@ internal object Phase4DomainArtifactRegistry {
                     put("runsWithSearchActionCount", summary.intValue("runsWithSearchActionCount"))
                     put("searchActionUseCount", summary.intValue("searchActionUseCount"))
                     put("searchActionUseRate", summary.doubleValue("searchActionUseRate"))
+                    put("runsWithSearchPromptCount", summary.getValue("runsWithSearchPromptCount"))
+                    put("searchPromptVisibleCount", summary.getValue("searchPromptVisibleCount"))
+                    put("searchPromptVisibilityRate", summary.getValue("searchPromptVisibilityRate"))
+                    put("zoneSearchPromptVisibility", summary.getValue("zoneSearchPromptVisibility"))
                     put("discoveryWithoutPrimerCount", summary.intValue("discoveryWithoutPrimerCount"))
                     put("leadDiscoveryCount", summary.intValue("leadDiscoveryCount"))
                     put("leadDiscoveryRate", summary.doubleValue("leadDiscoveryRate"))
+                    put("topZoneLeadShare", summary.requireArtifactMetric("organicHiddenProbe", "topZoneLeadShare"))
+                    put("topZoneLeadShareZoneId", summary.requireArtifactMetric("organicHiddenProbe", "topZoneLeadShareZoneId"))
+                    put("topZoneLeadShareDenominator", summary.requireArtifactMetric("organicHiddenProbe", "topZoneLeadShareDenominator"))
                     put("secretConversionCount", summary.intValue("secretConversionCount"))
                     put("secretConversionRate", summary.doubleValue("secretConversionRate"))
+                    put("secretZoneSearchConversionRate", summary.getValue("secretZoneSearchConversionRate"))
                     put("secretZoneEntryCount", summary.intValue("secretZoneEntryCount"))
                     put("secretZoneEntryRate", summary.doubleValue("secretZoneEntryRate"))
                     put("averageFirstHiddenDiscoveryTurn", summary.getValue("averageFirstHiddenDiscoveryTurn"))
@@ -255,6 +277,22 @@ internal object Phase4DomainArtifactRegistry {
                     put("combinations", payload.getValue("combinations"))
                     put("zoneDiscoveryDistribution", payload.getValue("zoneDiscoveryDistribution"))
                     put("secretZoneDiscoveryDistribution", payload.getValue("secretZoneDiscoveryDistribution"))
+                    put(
+                        "perZoneSecretConversionFloor.reportOnly",
+                        payload.getValue("perZoneSecretConversionFloor.reportOnly"),
+                    )
+                    put(
+                        "secretZoneSearchConversionFloor.reportOnly",
+                        payload.getValue("secretZoneSearchConversionFloor.reportOnly"),
+                    )
+                    put(
+                        "perZoneSearchUseFloor.reportOnly",
+                        payload.getValue("perZoneSearchUseFloor.reportOnly"),
+                    )
+                    put(
+                        "slagCueDensityPerEligibleRoom.reportOnly",
+                        payload.getValue("slagCueDensityPerEligibleRoom.reportOnly"),
+                    )
                     put("notes", payload.getValue("notes"))
                 },
         )

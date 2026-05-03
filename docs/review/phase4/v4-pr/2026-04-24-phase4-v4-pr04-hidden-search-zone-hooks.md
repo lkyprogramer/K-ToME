@@ -251,9 +251,10 @@ cue TTL / dedup 固定为：
 metric 落地顺序固定为：
 
 1. runtime hook group：`zoneHookCoverage`、`frontstageSearchCueVisibilityRate`。
-2. lead distribution group：`topZoneLeadShare`、`zoneSearchPromptVisibility`。
-3. report-only observation group：`perZoneSecretConversionFloor.reportOnly`、`secretZoneSearchConversionFloor.reportOnly`、`perZoneSearchUseFloor.reportOnly`、`slagCueDensityPerEligibleRoom.reportOnly`。
-4. PR description 必须按上述三组列出 baseline delta 与 producer freshness，不得把 8 个指标混成一段总说明。
+2. scripted prompt coverage group：`zoneSearchPromptVisibility`，只读取 `hiddenContentHarness` per-zone Search prompt coverage。
+3. lead distribution group：`topZoneLeadShare`，只读取 `organicHiddenProbe` organic discovery distribution。
+4. report-only observation group：`perZoneSecretConversionFloor.reportOnly`、`secretZoneSearchConversionFloor.reportOnly`、`perZoneSearchUseFloor.reportOnly`、`slagCueDensityPerEligibleRoom.reportOnly`。
+5. PR description 必须按上述四组列出 baseline delta 与 producer freshness，不得把 8 个指标混成一段总说明。
 
 ## 6. 测试与自证
 

@@ -186,6 +186,7 @@ import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.EquipmentSlotSnapshot
 import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
+import com.ktome.core.snapshot.FrontstageActionCueTypeSnapshot
 import com.ktome.core.snapshot.FrontstageActionCueSnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
@@ -256,7 +257,10 @@ import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
 import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.DiscoveryPredicateType
+import com.ktome.core.world.solvability.DiscoveryRule
 import com.ktome.core.world.solvability.PerceptionScore
+import com.ktome.core.world.solvability.RuleCombinator
 import com.ktome.core.world.solvability.SearchAction
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.WorldProgressDef
@@ -340,7 +344,7 @@ private const val SUMMARY_EVENT_LIMIT: Int = 5
 private const val RECENT_REWARD_LIMIT: Int = 5
 private const val FRONTSTAGE_MUTATION_LIMIT: Int = 2
 private const val FRONTSTAGE_TERRAIN_LIMIT: Int = 2
-private const val FRONTSTAGE_RECENT_ACTION_LIMIT: Int = 2
+private const val FRONTSTAGE_RECENT_ACTION_LIMIT: Int = 5
 private const val FRONTSTAGE_RECENT_ACTION_CUE_CAP: Int = 12
 private const val AI_TRACE_LIMIT: Int = 64
 private const val TERRAIN_COMBAT_OBSERVATION_LIMIT: Int = 512
@@ -349,10 +353,24 @@ private const val ABYSSAL_WARD_PROTECTION_MAGNITUDE: Double = 0.12
 private const val VOID_ERUPTION_WEAKEN_MAGNITUDE: Double = 0.12
 private const val ABYSSAL_OVERLAY_VISUAL_KEY: String = "vfx.zone.effect.void_pressure_01"
 private const val ABYSSAL_WARNING_AUDIO_PROFILE: String = "audio.boss.warning"
+private const val ZONE_HOOK_WARNING_VISUAL_KEY: String = "vfx.telegraph.warning.sigil_01"
+private const val ZONE_HOOK_WARNING_AUDIO_PROFILE: String = "audio.boss.warning"
 private const val TALENT_MULTI_TREE_INVESTMENT_THRESHOLD: Int = 3
 private const val HIDDEN_ENTRANCE_PROP_TYPE_ID: String = "hidden_entrance"
 private const val SECRET_REWARD_PROP_TYPE_ID: String = "secret_reward"
 private const val SECRET_RETURN_PROP_TYPE_ID: String = "secret_return"
+private const val ZONE_HOOK_TRIGGERED_TAG_PREFIX: String = "zoneHookTriggered."
+private const val ZONE_RUNTIME_HOOK_EFFECT_TAG_PREFIX: String = "zone.runtime_hook.effect."
+private const val TRAIL_PRESSURE_LEAD_MULTIPLIER_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.trail_pressure.hiddenLeadWeightMultiplier="
+private const val RITUAL_PRESSURE_BONUS_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.ritual_pressure.nextEncounterPressureBonus="
+private const val RITUAL_PRESSURE_CONSUMED_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.ritual_pressure.nextEncounterPressureConsumed="
+private const val VOID_PRESSURE_MULTIPLIER_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.void_pressure.objectivePenaltyMultiplier="
+private const val VOID_PRESSURE_CONSUMED_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.void_pressure.objectivePenaltyTurns="
 private val CACHE_REWARD_INTERACTABLE_IDS: Set<String> =
     setOf(
         "supply_crate",
@@ -638,6 +656,7 @@ class FoundationGameSession internal constructor(
     private data class RecentFrontstageActionCue(
         val category: FrontstageActionCategorySnapshot,
         val priority: FrontstageActionPrioritySnapshot,
+        val cueType: FrontstageActionCueTypeSnapshot,
         val stableKey: String,
         val message: RenderTextTokenSnapshot,
         val expiresAfterTurn: Int,
@@ -654,6 +673,13 @@ class FoundationGameSession internal constructor(
         val entry: Point,
         val reward: Point,
         val returnBridge: Point,
+    )
+
+    private data class ZoneHookWarningOverlayState(
+        val hookId: String,
+        val warningEventId: String,
+        val point: Point,
+        val expiresAfterTurn: Int,
     )
 
     private data class PendingCombatFeedback(
@@ -693,6 +719,7 @@ class FoundationGameSession internal constructor(
     private val recentRewardEntries = ArrayDeque<RecentRewardPresentationEntry>()
     private val recentFrontstageActionCues = ArrayDeque<RecentFrontstageActionCue>()
     private var frontstageActionCueSequence: Long = 0L
+    private val zoneHookWarningOverlays = ArrayDeque<ZoneHookWarningOverlayState>()
     private val pendingCombatFeedbackEvents = ArrayDeque<PendingCombatFeedback>()
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
@@ -713,6 +740,8 @@ class FoundationGameSession internal constructor(
     private var cachedBreakpointPayoffSummaries: List<BreakpointPayoffSummary>? = null
     private var cachedAffixSynergyActivationDistribution: Map<String, Int>? = null
     private var lastPlayerCombatTurn: Int = -1
+    private var pendingEncounterPressureBonus: Int = 0
+    private var pendingObjectivePenaltyMultiplier: Double = 1.0
     private val objectiveProgressTokens = linkedSetOf<String>()
     private var checkpointRequested: Boolean = false
     private var terminalKillerNameKey: String? = null
@@ -778,7 +807,7 @@ class FoundationGameSession internal constructor(
                     damageType = damageType,
                     interactionDepth = interactionDepth,
                 )
-            }
+        }
         initialMessageLog.forEach(::addMessage)
         restorePendingTurnState()
         syncPlayerStarterTalents()
@@ -786,6 +815,7 @@ class FoundationGameSession internal constructor(
         ensurePlayerResourcePools()
         ensurePlayerInscriptions()
         restorePendingZoneAdvanceIfNeeded()
+        restorePendingZoneRuntimeHookEffects()
         refreshFov()
         announceZoneMechanicFloorEntryIfNeeded()
     }
@@ -1296,6 +1326,23 @@ class FoundationGameSession internal constructor(
 
     fun automationDiscoveryTags(): Set<String> = activeFloorState.discoveryTags.toSet()
 
+    fun automationTriggeredZoneHookIds(): Set<String> =
+        activeFloorState.discoveryTags
+            .asSequence()
+            .filter { tag -> tag.startsWith(ZONE_HOOK_TRIGGERED_TAG_PREFIX) }
+            .map { tag -> tag.removePrefix(ZONE_HOOK_TRIGGERED_TAG_PREFIX) }
+            .toSet()
+
+    fun automationZoneRuntimeHookEffectTags(): Set<String> =
+        activeFloorState.discoveryTags
+            .asSequence()
+            .filter { tag -> tag.startsWith(ZONE_RUNTIME_HOOK_EFFECT_TAG_PREFIX) }
+            .toSet()
+
+    fun automationPendingEncounterPressureBonus(): Int = pendingEncounterPressureBonus
+
+    fun automationPendingObjectivePenaltyMultiplier(): Double = pendingObjectivePenaltyMultiplier
+
     fun automationConsumedHiddenEventIds(): Set<String> = activeFloorState.consumedHiddenEventIds.toSet()
 
     fun automationHasExistingEliteMonster(): Boolean = nearestLivingEliteMonsterId() != null
@@ -1472,8 +1519,19 @@ class FoundationGameSession internal constructor(
         recordFrontstageActionCue(
             category = category,
             priority = priority,
+            cueType = FrontstageActionCueTypeSnapshot.GENERIC,
             stableKey = stableKey,
             message = RenderTextTokenSnapshot(messageKey),
+        )
+    }
+
+    fun automationRecordSearchAvailableCueForVerification(stableKey: String) {
+        recordFrontstageActionCue(
+            category = FrontstageActionCategorySnapshot.SEARCH,
+            priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
+            cueType = FrontstageActionCueTypeSnapshot.SEARCH_AVAILABLE,
+            stableKey = stableKey,
+            message = RenderTextTokenSnapshot("log.search.available"),
         )
     }
 
@@ -1755,6 +1813,10 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr03PrimaryScene()
                 "build_identity_reward_showcase_ready"
             }
+            "phase4-v4-pr04" -> {
+                preparePhase4V4Pr04PrimaryScene()
+                "deep_iron_search_cue_ready"
+            }
             else -> "ok"
         }
 
@@ -1771,6 +1833,10 @@ class FoundationGameSession internal constructor(
             "phase4-v4-pr03" -> {
                 preparePhase4V4Pr03SecondaryScene()
                 "rogue_offhand_payoff_ready"
+            }
+            "phase4-v4-pr04" -> {
+                preparePhase4V4Pr04SecondaryScene()
+                "abyssal_void_pressure_hook_ready"
             }
             else -> "ok"
         }
@@ -1831,6 +1897,70 @@ class FoundationGameSession internal constructor(
 
     private fun preparePhase4V4Pr03SecondaryScene() {
         materializePhase4V4Pr03Reward(baseItemId = "artifact_briar_heart")
+        invalidateRenderSnapshot()
+    }
+
+    private fun preparePhase4V4Pr04PrimaryScene() {
+        switchValidationScenarioZone(zoneId = "deep_iron_pit", floor = 1)
+        automationForceKillFirstEliteMonster()
+        val searchPoint =
+            automationSearchPointForBinding(com.ktome.core.world.solvability.SearchBindingId("search.deep_iron.slag_cache"))
+                ?: automationSearchPointForBinding(com.ktome.core.world.solvability.SearchBindingId("search.deep_iron.smuggler_stash"))
+                ?: return
+        automationMovePlayerTo(searchPoint)
+        renderSnapshot()
+    }
+
+    private fun preparePhase4V4Pr04SecondaryScene() {
+        switchValidationScenarioZone(zoneId = "abyssal_temple", floor = 1)
+        automationInteractablePoint("temple_ward_reliquary")?.let { point ->
+            automationMovePlayerTo(point)
+            perform(PlayerCommand.Interact)
+            perform(PlayerCommand.CloseShop)
+        }
+        renderSnapshot()
+    }
+
+    private fun switchValidationScenarioZone(
+        zoneId: String,
+        floor: Int,
+    ) {
+        if (config.zoneId == zoneId && currentFloor() == floor) {
+            return
+        }
+        syncActiveFloorState()
+        val route = if (zoneId in FOUNDATION_ZONE_ROUTE) FOUNDATION_ZONE_ROUTE else listOf(zoneId)
+        val nextConfig =
+            config.copy(
+                floor = floor,
+                maxFloor = maxOf(config.maxFloor, floor),
+                zoneId = zoneId,
+                zoneRoute = route,
+                routeIndex = route.indexOf(zoneId).coerceAtLeast(0),
+            )
+        val nextRuntime = zoneRuntimeFactory(nextConfig)
+        config = nextRuntime.config
+        dungeonManager = nextRuntime.dungeonManager
+        activeFloorState = dungeonManager.currentState().payload
+        exploredTiles = activeFloorState.exploredTiles
+        objectiveProgressTokens.clear()
+        playerSnapshot =
+            playerSnapshot.copy(
+                entity =
+                    playerSnapshot.entity.copy(
+                        position = PointSnapshot.from(activeFloorState.map.playerStart),
+                    ),
+            )
+        world = SessionSnapshotMapper.restoreWorld(content, playerSnapshot, activeFloorState)
+        restorePendingZoneRuntimeHookEffects()
+        syncPlayerResistanceProfile()
+        pendingActions.clear()
+        activeTurnActor = null
+        activeShopId = null
+        nextRuntime.initialMessages.forEach(::addMessage)
+        checkpointRequested = true
+        refreshFov()
+        announceZoneMechanicFloorEntryIfNeeded()
         invalidateRenderSnapshot()
     }
 
@@ -2624,6 +2754,7 @@ class FoundationGameSession internal constructor(
 
     private fun buildRenderSnapshot(): RenderSnapshot {
         ensurePlayerResourcePools()
+        prepareSnapshotFrontstageCues()
         val zone = currentZoneSchema()
         val zonePresentation = currentZonePresentation()
         val overlays = buildOverlaySnapshots()
@@ -3006,9 +3137,32 @@ class FoundationGameSession internal constructor(
                 furnacePressureOverlaySnapshots() +
                 riverCurrentOverlaySnapshots() +
                 crystalShardOverlaySnapshots() +
+                zoneHookWarningOverlaySnapshots() +
                 abyssalTemplePressureOverlaySnapshots() +
                 voidEruptionOverlaySnapshots()
         ).sortedBy(OverlayRenderSnapshot::id)
+    }
+
+    private fun zoneHookWarningOverlaySnapshots(): List<OverlayRenderSnapshot> {
+        if (zoneHookWarningOverlays.isEmpty()) {
+            return emptyList()
+        }
+        zoneHookWarningOverlays.removeAll { overlay -> overlay.expiresAfterTurn < turnCount }
+        return zoneHookWarningOverlays
+            .filter { overlay -> overlay.point in visibleTiles }
+            .map { overlay ->
+                OverlayRenderSnapshot(
+                    id = "zone-hook-warning:${overlay.hookId}:${overlay.warningEventId}",
+                    visualKey = ZONE_HOOK_WARNING_VISUAL_KEY,
+                    audioProfile = ZONE_HOOK_WARNING_AUDIO_PROFILE,
+                    previewTurns = (overlay.expiresAfterTurn - turnCount + 1).coerceAtLeast(1),
+                    dangerLevel = DangerLevel.MODERATE.overlaySeverity,
+                    shape = OverlayShapeSnapshot.SINGLE_TILE,
+                    sourceAbilityId = overlay.warningEventId,
+                    cells = listOf(GridPointSnapshot(overlay.point.x, overlay.point.y)),
+                    warningMessage = null,
+                )
+            }
     }
 
     private fun overlayForPendingTelegraph(
@@ -4365,6 +4519,11 @@ class FoundationGameSession internal constructor(
             activeRouteSelection = buildRouteSelectionSnapshot(),
         )
 
+    private fun prepareSnapshotFrontstageCues() {
+        unresolvedSearchableEntranceAtPlayerPosition()?.let(::recordSearchAvailableCue)
+        revealedHiddenEntranceAt(playerPosition())?.let(::recordSecretEntryNearbyCue)
+    }
+
     private fun buildFrontstageReadabilitySnapshot(): FrontstageReadabilitySnapshot =
         FrontstageReadabilitySnapshot(
             mutationHighlights = buildMutationHighlights(),
@@ -4469,16 +4628,17 @@ class FoundationGameSession internal constructor(
         pruneExpiredFrontstageActionCues()
         return recentFrontstageActionCues
             .sortedWith(
-                compareByDescending<RecentFrontstageActionCue> { cue -> frontstageActionPriorityRank(cue.priority) }
+                compareByDescending<RecentFrontstageActionCue> { cue -> frontstageActionPriorityRank(snapshotPriorityForFrontstageCue(cue)) }
                     .thenByDescending { cue -> cue.sequence },
             )
             .take(FRONTSTAGE_RECENT_ACTION_LIMIT)
             .map { cue ->
                 FrontstageActionCueSnapshot(
                     category = cue.category,
-                    priority = cue.priority,
+                    priority = snapshotPriorityForFrontstageCue(cue),
                     stableKey = cue.stableKey,
                     message = cue.message,
+                    cueType = cue.cueType,
                 )
             }
     }
@@ -7393,6 +7553,7 @@ class FoundationGameSession internal constructor(
             keyArg("objective", objective.nameKey),
             keyArg("step", stepKey),
         )
+        applyPendingObjectivePressurePenalty()
         executeHiddenEvents(
             triggerType = HiddenTriggerType.QUEST_STEP,
             objectiveStepKey = stepKey,
@@ -11490,13 +11651,16 @@ class FoundationGameSession internal constructor(
             addMessage("log.search.already_resolved")
             return CommandResolution.rejected()
         }
+        recordSearchAvailableCue(searchTarget)
+        maybeRecordZoneHookForSearchTarget(searchTarget)
 
         val perceptionScore = perceptionScoreForSearch()
+        val searchContextTags = searchContextTags(searchTarget)
         val result =
             if (
                 entrance.discoveryRule.evaluate(
                     perceptionScore = perceptionScore,
-                    providedTags = searchContextTags(searchTarget),
+                    providedTags = searchContextTags,
                 )
             ) {
                 SearchActionResult.REVEALED
@@ -11515,19 +11679,21 @@ class FoundationGameSession internal constructor(
         )
         when (result) {
             SearchActionResult.REVEALED -> {
-                if (searchDifficulty != null) {
+                if (searchDifficulty != null && !entrance.discoveryRule.isSatisfiedByTagOnly(searchContextTags)) {
                     recordFrontstageSearchCue(
                         "log.search.revealed",
-                        priority = FrontstageActionPrioritySnapshot.CRITICAL,
+                        priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
                         stableKey = searchFrontstageStableKey(searchAction.bindingId.value, result),
                         literalArg("perception", perceptionScore.total),
                         literalArg("difficulty", searchDifficulty),
+                        cueType = FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY,
                     )
                 } else {
                     recordFrontstageSearchCue(
                         "log.search.revealed_tag",
-                        priority = FrontstageActionPrioritySnapshot.CRITICAL,
+                        priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
                         stableKey = searchFrontstageStableKey(searchAction.bindingId.value, result),
+                        cueType = FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY,
                     )
                 }
                 executeHiddenEvents(
@@ -11541,7 +11707,7 @@ class FoundationGameSession internal constructor(
                 if (searchDifficulty != null) {
                     recordFrontstageSearchCue(
                         "log.search.failed_check",
-                        priority = FrontstageActionPrioritySnapshot.HIGH,
+                        priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
                         stableKey = searchFrontstageStableKey(searchAction.bindingId.value, result),
                         literalArg("perception", perceptionScore.total),
                         literalArg("difficulty", searchDifficulty),
@@ -11549,7 +11715,7 @@ class FoundationGameSession internal constructor(
                 } else {
                     recordFrontstageSearchCue(
                         "log.search.failed_tag",
-                        priority = FrontstageActionPrioritySnapshot.HIGH,
+                        priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
                         stableKey = searchFrontstageStableKey(searchAction.bindingId.value, result),
                     )
                 }
@@ -11603,12 +11769,15 @@ class FoundationGameSession internal constructor(
             activeFloorState.markHiddenEventConsumed(hiddenEvent.id)
             activeFloorState.grantDiscoveryTags(hiddenEvent.grantedDiscoveryTags)
             if (newlyGrantedDiscoveryTags.isNotEmpty()) {
-                recordFrontstageSecretCue(
-                    "log.hidden.primer.acquired",
-                    priority = FrontstageActionPrioritySnapshot.HIGH,
-                    stableKey = "secret:primer:${zoneNameKey ?: "unknown"}",
-                    keyArg("zone", zoneNameKey),
-                )
+                newlyGrantedDiscoveryTags.forEach { discoveryTag ->
+                    recordFrontstageSecretCue(
+                        "log.hidden.primer.acquired",
+                        priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                        stableKey = "lead_discovered:${currentZoneSchema().id}:$discoveryTag",
+                        keyArg("zone", zoneNameKey),
+                        cueType = FrontstageActionCueTypeSnapshot.LEAD_DISCOVERED,
+                    )
+                }
             }
             addMessage(
                 "log.hidden.event.triggered",
@@ -11626,9 +11795,10 @@ class FoundationGameSession internal constructor(
                             }
                         recordFrontstageSecretCue(
                             "log.hidden.secret_zone.revealed",
-                            priority = FrontstageActionPrioritySnapshot.CRITICAL,
-                            stableKey = "secret:reveal:${revealedSecretZoneId.id}",
+                            priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
+                            stableKey = "secret_entry_nearby:${currentZoneSchema().id}:${revealedSecretZoneId.id}",
                             keyArg("zone", secretZoneNameKey(revealedSecretZoneId)),
+                            cueType = FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY,
                         )
                     }
 
@@ -11845,6 +12015,7 @@ class FoundationGameSession internal constructor(
         val template = requireNotNull(content.monsterTemplatesById[monsterTemplateId]) {
             "$errorContext references unknown encounter monster '$monsterTemplateId'."
         }
+        val effectiveThreatCost = threatCost + consumePendingEncounterPressureBonus()
         val spawnPoint =
             currentSecretZoneContext()
                 ?.let { context -> secretZoneAnchorPoints(context.room).reward }
@@ -11856,7 +12027,7 @@ class FoundationGameSession internal constructor(
             SecretEncounterRuntime(
                 encounterId = monsterTemplateId,
                 secretZoneId = secretZoneId?.id ?: "secret.unknown",
-                threatCost = threatCost,
+                threatCost = effectiveThreatCost,
             ),
         )
         refreshActorDerivedStats(monsterId)
@@ -11893,6 +12064,7 @@ class FoundationGameSession internal constructor(
             "Unknown interactable '${interactable.id}'."
         }
         val position = requireNotNull(world.get<Position>(entityId)).toPoint()
+        maybeRecordZoneHookForInteractable(interactable.id)
         val interactableShop = interactableShopNode(schema)
         if (interactable.id == AbyssalRuntimeKeys.Temple.INTERACTABLE_ID && isAbyssalTempleWardClaimed() && interactableShop != null) {
             if (!canOpenReliquaryShopSafely()) {
@@ -12124,15 +12296,35 @@ class FoundationGameSession internal constructor(
     }
 
     private fun searchableEntranceAtPlayerPosition(): SearchTarget? {
-        val room = currentRoomInstanceAt(playerPosition()) ?: return null
-        val roomEntrances =
-            activeFloorState.generatedFloor.entrances
-                .filter { entrance -> entrance.entranceAnchorId == room.anchorId }
-                .sortedBy { entrance -> entrance.bindingId.value }
-        val entrance =
-            roomEntrances.firstOrNull { candidate -> activeFloorState.searchStateFor(candidate.bindingId) == null }
-                ?: roomEntrances.firstOrNull()
-        return entrance?.let { candidate -> SearchTarget(entrance = candidate, room = room) }
+        val point = playerPosition()
+        val candidateRooms =
+            activeFloorState.generatedFloor.rooms
+                .mapNotNull { room ->
+                    when {
+                        room.contains(point) -> room to 0
+                        roomWalkablePoints(room).any { candidate -> candidate.chebyshevDistanceTo(point) <= 1 } -> room to 1
+                        else -> null
+                    }
+                }.sortedWith(
+                    compareBy<Pair<RoomInstance, Int>> { (_, rank) -> rank }
+                        .thenBy { (room, _) -> room.center.chebyshevDistanceTo(point) }
+                        .thenBy { (room, _) -> room.center.y }
+                        .thenBy { (room, _) -> room.center.x },
+                )
+        if (candidateRooms.isEmpty()) {
+            return null
+        }
+        val searchTargets =
+            candidateRooms.flatMap { (room, _) ->
+                activeFloorState.generatedFloor.entrances
+                    .asSequence()
+                    .filter { entrance -> entrance.entranceAnchorId == room.anchorId }
+                    .sortedBy { entrance -> entrance.bindingId.value }
+                    .map { entrance -> SearchTarget(entrance = entrance, room = room) }
+                    .toList()
+            }
+        return searchTargets.firstOrNull { target -> activeFloorState.searchStateFor(target.entrance.bindingId) == null }
+            ?: searchTargets.firstOrNull()
     }
 
     private fun unresolvedSearchableEntranceAtPlayerPosition(): SearchTarget? =
@@ -12325,6 +12517,190 @@ class FoundationGameSession internal constructor(
     private fun secretZoneNameKey(secretZoneId: ContentRef?): String =
         secretZoneId?.let(content::secretZone)?.nameKey ?: currentZoneSchema().nameKey
 
+    private fun recordSearchAvailableCue(searchTarget: SearchTarget) {
+        val zone = currentZoneSchema()
+        val targetPoint = hiddenEntrancePropPoint(searchTarget.entrance)
+        recordFrontstageSearchCue(
+            "log.search.available",
+            priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
+            stableKey = "search_available:${zone.id}:${targetPoint.x},${targetPoint.y}:${searchTarget.entrance.bindingId.value}",
+            keyArg("zone", zone.nameKey),
+            cueType = FrontstageActionCueTypeSnapshot.SEARCH_AVAILABLE,
+        )
+    }
+
+    private fun recordSecretEntryNearbyCue(entrance: GeneratedEntrance) {
+        val secretZoneId = entrance.targetSecretZoneId
+        recordFrontstageSecretCue(
+            "log.hidden.secret_entry_nearby",
+            priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
+            stableKey = "secret_entry_nearby:${currentZoneSchema().id}:${secretZoneId.id}",
+            keyArg("zone", secretZoneNameKey(secretZoneId)),
+            cueType = FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY,
+        )
+    }
+
+    private fun maybeRecordZoneHookForSearchTarget(searchTarget: SearchTarget) {
+        val contract = ZoneMechanicRuntime.runtimeHookForZone(currentZoneSchema()) ?: return
+        if (activeFloorState.generatedFloor.roomForEntrance(searchTarget.entrance) != searchTarget.room) {
+            return
+        }
+        recordZoneHookTriggered(contract)
+    }
+
+    private fun maybeRecordZoneHookForInteractable(interactableId: String) {
+        val contract = ZoneMechanicRuntime.runtimeHookForZone(currentZoneSchema()) ?: return
+        if (interactableId !in contract.triggerInteractableIds) {
+            return
+        }
+        recordZoneHookTriggered(contract)
+    }
+
+    private fun recordZoneHookTriggered(contract: ZoneRuntimeHookContract) {
+        val triggerTag = "$ZONE_HOOK_TRIGGERED_TAG_PREFIX${contract.hookId}"
+        if (triggerTag in activeFloorState.discoveryTags) {
+            return
+        }
+        activeFloorState.grantDiscoveryTags(
+            buildSet {
+                add(triggerTag)
+                add("zone.runtime_hook.${contract.hookId}")
+                addAll(contract.effect.evidenceTags)
+                contract.triggerFactId?.let(::add)
+                addAll(contract.grantedDiscoveryTags)
+            },
+        )
+        applyZoneRuntimeHookEffect(contract)
+        contract.triggerFactId?.let(::addMessage)
+        recordFrontstagePassiveCue(
+            contract.messageKey,
+            priority = FrontstageActionPrioritySnapshot.MEDIUM,
+            stableKey = "zone_hook_triggered:${contract.zoneId}:${contract.hookId}",
+            keyArg("zone", currentZoneSchema().nameKey),
+            cueType = FrontstageActionCueTypeSnapshot.ZONE_HOOK_TRIGGERED,
+        )
+    }
+
+    private fun applyZoneRuntimeHookEffect(contract: ZoneRuntimeHookContract) {
+        when (val effect = contract.effect) {
+            is HiddenLeadWeightRuntimeEffect -> Unit
+
+            is SlagAlertRuntimeEffect ->
+                if (effect.searchPromptVisible) {
+                    recordFrontstageSearchCue(
+                        "log.search.available",
+                        priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
+                        stableKey = "search_available:${contract.zoneId}:zone_hook:${contract.hookId}",
+                        keyArg("zone", currentZoneSchema().nameKey),
+                        cueType = FrontstageActionCueTypeSnapshot.SEARCH_AVAILABLE,
+                    )
+                    queueZoneHookWarningOverlay(
+                        hookId = contract.hookId,
+                        warningEventId = effect.warningEventId,
+                    )
+                }
+
+            is EncounterPressureRuntimeEffect -> {
+                pendingEncounterPressureBonus += effect.nextEncounterPressureBonus
+                effect.warningEventId?.let { warningEventId ->
+                    queueZoneHookWarningOverlay(hookId = contract.hookId, warningEventId = warningEventId)
+                }
+            }
+
+            is FerryCrossingRuntimeEffect ->
+                applyFerryCrossingChoiceEffect(effect)
+
+            is ResourcePressureRuntimeEffect ->
+                if (effect.resourcePressureWarning) {
+                    pendingObjectivePenaltyMultiplier =
+                        maxOf(pendingObjectivePenaltyMultiplier, effect.objectivePenaltyMultiplier)
+                }
+        }
+    }
+
+    private fun restorePendingZoneRuntimeHookEffects() {
+        pendingEncounterPressureBonus =
+            if (activeFloorState.discoveryTags.any { tag -> tag.startsWith(RITUAL_PRESSURE_CONSUMED_TAG_PREFIX) }) {
+                0
+            } else {
+                activeFloorState.discoveryTags.sumTagIntValues(RITUAL_PRESSURE_BONUS_TAG_PREFIX)
+            }
+        pendingObjectivePenaltyMultiplier =
+            if (activeFloorState.discoveryTags.any { tag -> tag.startsWith(VOID_PRESSURE_CONSUMED_TAG_PREFIX) }) {
+                1.0
+            } else {
+                activeFloorState.discoveryTags.maxTagDoubleValue(VOID_PRESSURE_MULTIPLIER_TAG_PREFIX) ?: 1.0
+            }
+    }
+
+    private fun queueZoneHookWarningOverlay(
+        hookId: String,
+        warningEventId: String,
+    ) {
+        zoneHookWarningOverlays.removeAll { overlay -> overlay.hookId == hookId && overlay.warningEventId == warningEventId }
+        zoneHookWarningOverlays +=
+            ZoneHookWarningOverlayState(
+                hookId = hookId,
+                warningEventId = warningEventId,
+                point = playerPosition(),
+                expiresAfterTurn = turnCount + 1,
+            )
+        invalidateRenderSnapshot()
+    }
+
+    private fun applyFerryCrossingChoiceEffect(effect: FerryCrossingRuntimeEffect) {
+        val selectedChoice =
+            effect.choices.firstOrNull { choice -> choice.choiceId == "inspect_ferry" }
+                ?: effect.choices.firstOrNull()
+                ?: return
+        applyFerryChoiceFatigue(selectedChoice)
+        headlessTurnEquivalent = maxOf(0, headlessTurnEquivalent + selectedChoice.turnDelta)
+        activeFloorState.grantDiscoveryTags(
+            setOf(
+                "zone.runtime_hook.effect.ferry_crossing.selectedChoice=${selectedChoice.choiceId}",
+            ),
+        )
+    }
+
+    private fun applyFerryChoiceFatigue(choice: FerryCrossingChoiceRuntimeEffect) {
+        if (choice.fatigueDelta <= 0) {
+            return
+        }
+        val staminaPool = world.get<com.ktome.core.resource.ResourcePools>(playerId)?.pool(ResourceType.STAMINA) ?: return
+        val before = staminaPool.current
+        staminaPool.spend(choice.fatigueDelta)
+        activeFloorState.grantDiscoveryTags(
+            setOf(
+                "zone.runtime_hook.effect.ferry_crossing.choice.${choice.choiceId}.fatigueApplied=${before - staminaPool.current}",
+            ),
+        )
+    }
+
+    private fun consumePendingEncounterPressureBonus(): Int {
+        val bonus = pendingEncounterPressureBonus
+        if (bonus <= 0) {
+            return 0
+        }
+        pendingEncounterPressureBonus = 0
+        activeFloorState.grantDiscoveryTags(
+            setOf("zone.runtime_hook.effect.ritual_pressure.nextEncounterPressureConsumed=$bonus"),
+        )
+        return bonus
+    }
+
+    private fun applyPendingObjectivePressurePenalty() {
+        val multiplier = pendingObjectivePenaltyMultiplier
+        if (multiplier <= 1.0) {
+            return
+        }
+        pendingObjectivePenaltyMultiplier = 1.0
+        val extraTurns = maxOf(1, (5 * (multiplier - 1.0)).roundToInt())
+        headlessTurnEquivalent += extraTurns
+        activeFloorState.grantDiscoveryTags(
+            setOf("zone.runtime_hook.effect.void_pressure.objectivePenaltyTurns=$extraTurns"),
+        )
+    }
+
     private data class ZonePresentation(
         val nameKey: String,
         val descKey: String,
@@ -12334,10 +12710,42 @@ class FoundationGameSession internal constructor(
 
     private fun searchContextTags(searchTarget: SearchTarget): Set<String> = searchTarget.room.tags + activeFloorState.discoveryTags
 
-    private fun perceptionScoreForSearch(): PerceptionScore =
-        PerceptionScore(
-            baseMentalPower = requireNotNull(world.get<DerivedStats>(playerId)).powerSave.mentalPower,
+    private fun DiscoveryRule.isSatisfiedByTagOnly(providedTags: Set<String>): Boolean =
+        combinator == RuleCombinator.OR &&
+            predicates.any { predicate ->
+                predicate.type == DiscoveryPredicateType.REQUIRED_TAG &&
+                    requireNotNull(predicate.requiredTag) in providedTags
+            }
+
+    private fun Set<String>.sumTagIntValues(prefix: String): Int =
+        asSequence()
+            .mapNotNull { tag -> tag.takeIf { it.startsWith(prefix) }?.removePrefix(prefix)?.toIntOrNull() }
+            .sum()
+
+    private fun Set<String>.maxTagDoubleValue(prefix: String): Double? =
+        asSequence()
+            .mapNotNull { tag -> tag.takeIf { it.startsWith(prefix) }?.removePrefix(prefix)?.toDoubleOrNull() }
+            .maxOrNull()
+
+    private fun perceptionScoreForSearch(): PerceptionScore {
+        val baseMentalPower = requireNotNull(world.get<DerivedStats>(playerId)).powerSave.mentalPower
+        return PerceptionScore(
+            baseMentalPower = baseMentalPower,
+            passiveBonus = hiddenLeadWeightSearchBonus(baseMentalPower),
         )
+    }
+
+    private fun hiddenLeadWeightSearchBonus(baseMentalPower: Int): Int {
+        val multiplier =
+            activeRuntimeHookEffectValue(TRAIL_PRESSURE_LEAD_MULTIPLIER_TAG_PREFIX)?.toDoubleOrNull()
+                ?: return 0
+        return ((baseMentalPower * multiplier).roundToInt() - baseMentalPower).coerceAtLeast(0)
+    }
+
+    private fun activeRuntimeHookEffectValue(tagPrefix: String): String? =
+        activeFloorState.discoveryTags
+            .firstOrNull { tag -> tag.startsWith(tagPrefix) }
+            ?.removePrefix(tagPrefix)
 
     private data class SearchTarget(
         val entrance: com.ktome.core.mapgen.GeneratedEntrance,
@@ -12682,10 +13090,12 @@ class FoundationGameSession internal constructor(
         priority: FrontstageActionPrioritySnapshot,
         stableKey: String,
         vararg arguments: RenderTextArgumentSnapshot,
+        cueType: FrontstageActionCueTypeSnapshot = FrontstageActionCueTypeSnapshot.GENERIC,
     ) {
         recordFrontstageActionCue(
             category = FrontstageActionCategorySnapshot.SEARCH,
             priority = priority,
+            cueType = cueType,
             stableKey = stableKey,
             message = RenderTextTokenSnapshot(key, arguments.toList()),
         )
@@ -12696,10 +13106,12 @@ class FoundationGameSession internal constructor(
         priority: FrontstageActionPrioritySnapshot,
         stableKey: String,
         vararg arguments: RenderTextArgumentSnapshot,
+        cueType: FrontstageActionCueTypeSnapshot = FrontstageActionCueTypeSnapshot.GENERIC,
     ) {
         recordFrontstageActionCue(
             category = FrontstageActionCategorySnapshot.SECRET,
             priority = priority,
+            cueType = cueType,
             stableKey = stableKey,
             message = RenderTextTokenSnapshot(key, arguments.toList()),
         )
@@ -12710,10 +13122,12 @@ class FoundationGameSession internal constructor(
         priority: FrontstageActionPrioritySnapshot,
         stableKey: String,
         vararg arguments: RenderTextArgumentSnapshot,
+        cueType: FrontstageActionCueTypeSnapshot = FrontstageActionCueTypeSnapshot.GENERIC,
     ) {
         recordFrontstageActionCue(
             category = FrontstageActionCategorySnapshot.PASSIVE,
             priority = priority,
+            cueType = cueType,
             stableKey = stableKey,
             message = RenderTextTokenSnapshot(key, arguments.toList()),
         )
@@ -12722,20 +13136,25 @@ class FoundationGameSession internal constructor(
     private fun recordFrontstageActionCue(
         category: FrontstageActionCategorySnapshot,
         priority: FrontstageActionPrioritySnapshot,
+        cueType: FrontstageActionCueTypeSnapshot,
         stableKey: String,
         message: RenderTextTokenSnapshot,
     ) {
         pruneExpiredFrontstageActionCues()
+        val duplicateStableKey = recentFrontstageActionCues.any { cue -> cue.stableKey == stableKey }
         recentFrontstageActionCues.removeAll { cue -> cue.stableKey == stableKey }
         frontstageActionCueSequence += 1L
-        recordMessage(RenderLogEventSnapshot(message))
+        if (!duplicateStableKey) {
+            recordMessage(RenderLogEventSnapshot(message))
+        }
         recentFrontstageActionCues +=
             RecentFrontstageActionCue(
                 category = category,
                 priority = priority,
+                cueType = cueType,
                 stableKey = stableKey,
                 message = message,
-                expiresAfterTurn = turnCount + frontstageActionTtlTurns(priority),
+                expiresAfterTurn = turnCount + frontstageActionTtlTurns(cueType = cueType, priority = priority),
                 sequence = frontstageActionCueSequence,
             )
         while (recentFrontstageActionCues.size > FRONTSTAGE_RECENT_ACTION_CUE_CAP) {
@@ -12764,8 +13183,27 @@ class FoundationGameSession internal constructor(
         recentFrontstageActionCues.removeAt(indexToRemove)
     }
 
-    private fun frontstageActionTtlTurns(priority: FrontstageActionPrioritySnapshot): Int =
+    private fun frontstageActionTtlTurns(
+        cueType: FrontstageActionCueTypeSnapshot,
+        priority: FrontstageActionPrioritySnapshot,
+    ): Int =
+        when (cueType) {
+            FrontstageActionCueTypeSnapshot.LEAD_DISCOVERED,
+            FrontstageActionCueTypeSnapshot.ZONE_HOOK_TRIGGERED,
+            -> 6
+
+            FrontstageActionCueTypeSnapshot.SEARCH_AVAILABLE,
+            FrontstageActionCueTypeSnapshot.SECRET_ENTRY_NEARBY,
+            -> 8
+
+            FrontstageActionCueTypeSnapshot.GENERIC -> frontstageGenericActionTtlTurns(priority)
+        }
+
+    private fun frontstageGenericActionTtlTurns(priority: FrontstageActionPrioritySnapshot): Int =
         when (priority) {
+            FrontstageActionPrioritySnapshot.CRITICAL_COMBAT,
+            FrontstageActionPrioritySnapshot.HIGH_COMBAT,
+            FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
             FrontstageActionPrioritySnapshot.CRITICAL,
             FrontstageActionPrioritySnapshot.HIGH,
             -> 3
@@ -12774,10 +13212,24 @@ class FoundationGameSession internal constructor(
             FrontstageActionPrioritySnapshot.LOW -> 1
         }
 
+    private fun snapshotPriorityForFrontstageCue(cue: RecentFrontstageActionCue): FrontstageActionPrioritySnapshot =
+        if (cue.priority == FrontstageActionPrioritySnapshot.HIGH_HIDDEN && targetableHostilePositions().isNotEmpty()) {
+            FrontstageActionPrioritySnapshot.MEDIUM
+        } else {
+            cue.priority
+        }
+
     private fun frontstageActionPriorityRank(priority: FrontstageActionPrioritySnapshot): Int =
         when (priority) {
-            FrontstageActionPrioritySnapshot.CRITICAL -> 4
-            FrontstageActionPrioritySnapshot.HIGH -> 3
+            FrontstageActionPrioritySnapshot.CRITICAL_COMBAT,
+            FrontstageActionPrioritySnapshot.CRITICAL,
+            -> 5
+
+            FrontstageActionPrioritySnapshot.HIGH_COMBAT,
+            FrontstageActionPrioritySnapshot.HIGH,
+            -> 4
+
+            FrontstageActionPrioritySnapshot.HIGH_HIDDEN -> 3
             FrontstageActionPrioritySnapshot.MEDIUM -> 2
             FrontstageActionPrioritySnapshot.LOW -> 1
         }

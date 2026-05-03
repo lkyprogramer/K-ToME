@@ -670,12 +670,17 @@ private const val BUILD_IDENTITY_DEBUG_FILE: String = "build-identity-debug.json
             }
             appendLine()
             appendLine("### Critical Path Design Audit")
-            appendLine("| zoneId | floorCount | mapSize | worldRole | objectiveSetId | objectiveCompletionRule | mechanicsWithoutDedicatedRuntimeHook |")
-            appendLine("| --- | --- | --- | --- | --- | --- | --- |")
+            appendLine("| zoneId | floorCount | mapSize | worldRole | objectiveSetId | objectiveCompletionRule | runtimeHookIds | flavorOnlyMechanics | mechanicTermsPartitioned | mechanicsWithoutDedicatedRuntimeHook |")
+            appendLine("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
             criticalPathDesignAudit.forEach { element ->
                 val audit = element.jsonObject
                 appendLine(
-                    "| `${audit.getValue("zoneId").jsonPrimitive.content}` | `${audit.getValue("floorCount").jsonPrimitive.content}` | `${audit.getValue("mapSize").jsonPrimitive.content}` | `${audit.getValue("worldRole").jsonPrimitive.content}` | `${audit.getValue("objectiveSetId").jsonPrimitive.content}` | `${audit.getValue("objectiveCompletionRule").jsonPrimitive.content}` | `${audit.getValue("mechanicsWithoutDedicatedRuntimeHook").jsonArray.joinToString { mechanic -> mechanic.jsonPrimitive.content }.ifBlank { "none" }}` |",
+                    "| `${audit.getValue("zoneId").jsonPrimitive.content}` | `${audit.getValue("floorCount").jsonPrimitive.content}` | `${audit.getValue("mapSize").jsonPrimitive.content}` | " +
+                        "`${audit.getValue("worldRole").jsonPrimitive.content}` | `${audit.getValue("objectiveSetId").jsonPrimitive.content}` | `${audit.getValue("objectiveCompletionRule").jsonPrimitive.content}` | " +
+                        "`${audit["runtimeHookIds"]?.jsonArray?.joinToString { hook -> hook.jsonPrimitive.content }.orEmpty().ifBlank { "none" }}` | " +
+                        "`${audit["flavorOnlyMechanics"]?.jsonArray?.joinToString { mechanic -> mechanic.jsonPrimitive.content }.orEmpty().ifBlank { "none" }}` | " +
+                        "`${audit["mechanicTermsPartitioned"]?.jsonPrimitive?.content ?: "n/a"}` | " +
+                        "`${audit.getValue("mechanicsWithoutDedicatedRuntimeHook").jsonArray.joinToString { mechanic -> mechanic.jsonPrimitive.content }.ifBlank { "none" }}` |",
                 )
             }
             appendLine()

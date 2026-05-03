@@ -48,7 +48,7 @@ class ReportPhase4RunnerTest {
             assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-            assertEquals("55", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+            assertEquals("63", payload.getValue("ownerMetricCount").jsonPrimitive.content)
             assertEquals(
                 ownerMetrics.count { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "UNEXPECTED_REGRESSION" }.toString(),
                 payload.getValue("unexpectedRegressionCount").jsonPrimitive.content,
@@ -65,7 +65,7 @@ class ReportPhase4RunnerTest {
             assertTrue(payload.containsKey("artifactReuseRate"))
             assertTrue(payload.containsKey("topInvalidationReasons"))
             assertEquals(14, inputs.size)
-            assertEquals(55, ownerMetrics.size)
+            assertEquals(63, ownerMetrics.size)
 
             val terrainInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
@@ -129,6 +129,10 @@ class ReportPhase4RunnerTest {
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageCueDedupAppliedCount" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageCueExpiryParity" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageSecretCueVisibilityRate" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageSearchCueVisibilityRate" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "zoneHookCoverage" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "topZoneLeadShare" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "zoneSearchPromptVisibility" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "secretZoneRewardAuthorityViolations" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "topFiveAffixExposureShare" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSeenRate" })
@@ -196,7 +200,7 @@ class ReportPhase4RunnerTest {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("55", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals("63", comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }
@@ -309,6 +313,48 @@ class ReportPhase4RunnerTest {
                     ReportPhase4Runner.run(compareLegacy = false)
                 }
             assertTrue(error.message.orEmpty().contains("whiteBoxLoot.rewardRoutingCoverageSummary"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    fun `reportPhase4 fails fast when organic top-zone evidence is missing from artifact`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        val summaryPath = fixtureRepoRoot.resolve("tools/build/reports/phase4/hidden/organic-hidden-probe-summary.json")
+        val payload = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+        val updatedPayload =
+            buildJsonObject {
+                payload.forEach { (key, value) ->
+                    if (key == "summary") {
+                        put(
+                            key,
+                            buildJsonObject {
+                                value.jsonObject.forEach { (summaryKey, summaryValue) ->
+                                    if (summaryKey != "topZoneLeadShare") {
+                                        put(summaryKey, summaryValue)
+                                    }
+                                }
+                            },
+                        )
+                    } else {
+                        put(key, value)
+                    }
+                }
+            }
+        Files.writeString(
+            summaryPath,
+            Phase4ReportFixtureTestSupport.json.encodeToString(
+                kotlinx.serialization.json.JsonElement.serializer(),
+                updatedPayload,
+            ),
+        )
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-missing-organic-top-share")) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    ReportPhase4Runner.run(compareLegacy = false)
+                }
+            assertTrue(error.message.orEmpty().contains("organicHiddenProbe.topZoneLeadShare"))
         }
     }
 

@@ -68,6 +68,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -236,6 +237,32 @@ class GameAppLifecycleTest {
         assertTrue("vfx.boss.warning.sigil_01" in requireNotNull(warmState.warmCacheDescriptor).highValueVfxKeys)
         assertTrue("vfx.boss.warning.sigil_01" in warmState.warmVisualKeys)
         assertTrue("audio.boss.warning" in warmState.warmAudioKeys)
+    }
+
+    @Test
+    fun `asset contract coordinator refreshes session assets when snapshot zone changes`() {
+        val coordinator =
+            AssetContractCoordinator(
+                assetVersionProvider = { AssetVersionContract.CURRENT },
+                visualManifestProvider = { phase2VisualManifest() },
+                audioManifestProvider = { phase2AudioManifest() },
+            )
+        val originalSnapshot = sampleRenderSnapshot()
+        val switchedSnapshot =
+            originalSnapshot.copy(
+                metadata = originalSnapshot.metadata.copy(zoneId = "abyssal_temple"),
+            )
+
+        assertNull(coordinator.noticeOrNull())
+        coordinator.prepareSession(originalSnapshot)
+        assertNotNull(coordinator.loadingStateFor(switchedSnapshot))
+
+        coordinator.ensureSessionPrepared(switchedSnapshot)
+        coordinator.warmCache(switchedSnapshot)
+
+        val refreshedState = requireNotNull(coordinator.loadStateOrNull())
+        assertEquals("abyssal_temple", refreshedState.sessionZoneId)
+        assertNull(coordinator.loadingStateFor(switchedSnapshot))
     }
 
     @Test

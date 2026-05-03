@@ -1708,8 +1708,15 @@ class DataLoader(
                 entranceBindingId = NodeAnchorId(zone.requiredString("entranceBindingId")),
                 returnBridgePolicy = ReturnBridgePolicy.valueOf(zone.requiredString("returnBridgePolicy").uppercase()),
                 returnBridgeAnchorTag = zone.optionalString("returnBridgeAnchorTag"),
+                secretZoneSelector = zone.optionalMap("secretZoneSelector")?.toSecretZoneSelector(),
             )
         }
+
+    private fun Map<*, *>.toSecretZoneSelector(): com.ktome.game.hidden.SecretZoneSelector =
+        com.ktome.game.hidden.SecretZoneSelector(
+            primarySlot = optionalBoolean("primarySlot"),
+            secondarySlot = optionalBoolean("secondarySlot"),
+        )
 
     private fun Map<*, *>.toDiscoveryRule(): DiscoveryRule =
         DiscoveryRule(

@@ -17,11 +17,17 @@
             "metricId": "secretConversionRate",
             "minValue": 0.2,
             "notes": "Organic hidden must convert revealed leads into real secret-zone entry often enough to avoid fake-green discovery."
+        },
+        {
+            "metricId": "topZoneLeadShare",
+            "maxValue": 0.4,
+            "notes": "No non-greenwood mandatory zone may dominate more than 40% of organic lead discovery."
         }
     ],
     "notes": [
         "Externalized from ReportPhase4Runner so organic hidden owner evaluation can be rerun independently from phase aggregation.",
-        "perZoneSecretEntryMinRate is enforced in evaluation details to fail zones that stay at zero conversion behind aggregate success."
+        "perZoneSecretEntryMinRate is enforced in evaluation details to fail zones that stay at zero conversion behind aggregate success.",
+        "PR04 keeps topZoneLeadShare as the organic blocking distribution gate; organic Search prompt visibility, per-zone conversion, Search-use, and slag-cue floors remain report-only."
     ],
     "metadata": {}
 }

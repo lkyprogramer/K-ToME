@@ -63,7 +63,10 @@ internal data class OrganicHiddenProbeCaseResult(
     val turnCount: Int,
     val searchAttemptCount: Int,
     val searchActionUseCount: Int,
+    val searchPromptVisibleCount: Int,
     val searchRevealCount: Int,
+    val slagCueEligibleRoomCount: Int = 0,
+    val slagCueCandidateCount: Int = 0,
     val hiddenEventIds: List<String>,
     val secretZoneIds: List<String>,
     val firstHiddenDiscoveryTurn: Int?,
@@ -101,7 +104,10 @@ internal data class OrganicHiddenProbeCaseResult(
             put("turnCount", turnCount)
             put("searchAttemptCount", searchAttemptCount)
             put("searchActionUseCount", searchActionUseCount)
+            put("searchPromptVisibleCount", searchPromptVisibleCount)
             put("searchRevealCount", searchRevealCount)
+            put("slagCueEligibleRoomCount", slagCueEligibleRoomCount)
+            put("slagCueCandidateCount", slagCueCandidateCount)
             put("discoveredWithoutPrimer", discoveredWithoutPrimer)
             put("secretZoneEntered", secretZoneEntered)
             put("firstHiddenDiscoveryTurn", firstHiddenDiscoveryTurn)
@@ -136,6 +142,11 @@ internal data class OrganicHiddenProbeZoneMetrics(
     val caseCount: Int,
     val runsWithSearchActionCount: Int,
     val searchActionUseCount: Int,
+    val runsWithSearchPromptCount: Int,
+    val searchPromptVisibleCount: Int,
+    val searchRevealCount: Int,
+    val slagCueEligibleRoomCount: Int,
+    val slagCueCandidateCount: Int,
     val discoveryWithoutPrimerCount: Int,
     val secretZoneEntryCount: Int,
     val averageFirstHiddenDiscoveryTurn: Double?,
@@ -148,6 +159,9 @@ internal data class OrganicHiddenProbeZoneMetrics(
     val searchActionUseRate: Double
         get() = if (caseCount == 0) 0.0 else runsWithSearchActionCount.toDouble() / caseCount.toDouble()
 
+    val searchPromptVisibilityRate: Double
+        get() = if (caseCount == 0) 0.0 else runsWithSearchPromptCount.toDouble() / caseCount.toDouble()
+
     val leadDiscoveryRate: Double
         get() = if (caseCount == 0) 0.0 else discoveryWithoutPrimerCount.toDouble() / caseCount.toDouble()
 
@@ -156,6 +170,12 @@ internal data class OrganicHiddenProbeZoneMetrics(
 
     val secretConversionRate: Double
         get() = if (discoveryWithoutPrimerCount == 0) 0.0 else secretZoneEntryCount.toDouble() / discoveryWithoutPrimerCount.toDouble()
+
+    val secretZoneSearchConversionRate: Double
+        get() = boundedRatio(secretZoneEntryCount, searchRevealCount)
+
+    val slagCueDensityPerEligibleRoom: Double
+        get() = boundedRatio(slagCueCandidateCount, slagCueEligibleRoomCount)
 }
 
 internal data class OrganicHiddenProbeCombinationMetrics(
@@ -164,6 +184,11 @@ internal data class OrganicHiddenProbeCombinationMetrics(
     val caseCount: Int,
     val runsWithSearchActionCount: Int,
     val searchActionUseCount: Int,
+    val runsWithSearchPromptCount: Int,
+    val searchPromptVisibleCount: Int,
+    val searchRevealCount: Int,
+    val slagCueEligibleRoomCount: Int,
+    val slagCueCandidateCount: Int,
     val discoveryWithoutPrimerCount: Int,
     val secretZoneEntryCount: Int,
     val averageFirstHiddenDiscoveryTurn: Double?,
@@ -176,6 +201,9 @@ internal data class OrganicHiddenProbeCombinationMetrics(
     val searchActionUseRate: Double
         get() = if (caseCount == 0) 0.0 else runsWithSearchActionCount.toDouble() / caseCount.toDouble()
 
+    val searchPromptVisibilityRate: Double
+        get() = if (caseCount == 0) 0.0 else runsWithSearchPromptCount.toDouble() / caseCount.toDouble()
+
     val leadDiscoveryRate: Double
         get() = if (caseCount == 0) 0.0 else discoveryWithoutPrimerCount.toDouble() / caseCount.toDouble()
 
@@ -184,6 +212,12 @@ internal data class OrganicHiddenProbeCombinationMetrics(
 
     val secretConversionRate: Double
         get() = if (discoveryWithoutPrimerCount == 0) 0.0 else secretZoneEntryCount.toDouble() / discoveryWithoutPrimerCount.toDouble()
+
+    val secretZoneSearchConversionRate: Double
+        get() = boundedRatio(secretZoneEntryCount, searchRevealCount)
+
+    val slagCueDensityPerEligibleRoom: Double
+        get() = boundedRatio(slagCueCandidateCount, slagCueEligibleRoomCount)
 }
 
 internal data class OrganicHiddenProbeSummary(
@@ -193,6 +227,9 @@ internal data class OrganicHiddenProbeSummary(
     val searchAttemptCount: Int,
     val runsWithSearchActionCount: Int,
     val searchActionUseCount: Int,
+    val runsWithSearchPromptCount: Int,
+    val searchPromptVisibleCount: Int,
+    val searchRevealCount: Int,
     val discoveryWithoutPrimerCount: Int,
     val secretZoneEntryCount: Int,
     val averageFirstHiddenDiscoveryTurn: Double?,
@@ -208,11 +245,22 @@ internal data class OrganicHiddenProbeSummary(
     val combinations: List<OrganicHiddenProbeCombinationMetrics>,
     val zoneDiscoveryDistribution: Map<String, Double>,
     val secretZoneDiscoveryDistribution: Map<String, Double>,
+    val topZoneLeadShare: Double,
+    val topZoneLeadShareZoneId: String?,
+    val topZoneLeadShareDenominator: Int,
+    val zoneSearchPromptVisibility: Double,
+    val perZoneSecretConversionFloorReportOnly: Map<String, Double>,
+    val secretZoneSearchConversionFloorReportOnly: Map<String, Double>,
+    val perZoneSearchUseFloorReportOnly: Map<String, Double>,
+    val slagCueDensityPerEligibleRoomReportOnly: Map<String, Double>,
     val perZoneSecretEntryMinRate: Double,
     val failingSecretEntryZoneIds: List<String>,
 ) {
     val searchActionUseRate: Double
         get() = if (totalCases == 0) 0.0 else runsWithSearchActionCount.toDouble() / totalCases.toDouble()
+
+    val searchPromptVisibilityRate: Double
+        get() = if (totalCases == 0) 0.0 else runsWithSearchPromptCount.toDouble() / totalCases.toDouble()
 
     val leadDiscoveryRate: Double
         get() = if (totalCases == 0) 0.0 else discoveryWithoutPrimerCount.toDouble() / totalCases.toDouble()
@@ -222,6 +270,19 @@ internal data class OrganicHiddenProbeSummary(
 
     val secretConversionRate: Double
         get() = if (discoveryWithoutPrimerCount == 0) 0.0 else secretZoneEntryCount.toDouble() / discoveryWithoutPrimerCount.toDouble()
+
+    val secretZoneSearchConversionRate: Double
+        get() = boundedRatio(secretZoneEntryCount, searchRevealCount)
+}
+
+private fun boundedRatio(
+    numerator: Int,
+    denominator: Int,
+): Double {
+    if (numerator <= 0 || denominator <= 0) {
+        return 0.0
+    }
+    return numerator.toDouble() / maxOf(numerator, denominator).toDouble()
 }
 
 internal fun JsonObject.toOrganicHiddenProbeCaseResult(): OrganicHiddenProbeCaseResult =
@@ -234,7 +295,10 @@ internal fun JsonObject.toOrganicHiddenProbeCaseResult(): OrganicHiddenProbeCase
         turnCount = getValue("turnCount").jsonPrimitive.content.toInt(),
         searchAttemptCount = getValue("searchAttemptCount").jsonPrimitive.content.toInt(),
         searchActionUseCount = getValue("searchActionUseCount").jsonPrimitive.content.toInt(),
+        searchPromptVisibleCount = this["searchPromptVisibleCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
         searchRevealCount = getValue("searchRevealCount").jsonPrimitive.content.toInt(),
+        slagCueEligibleRoomCount = this["slagCueEligibleRoomCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
+        slagCueCandidateCount = this["slagCueCandidateCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
         hiddenEventIds = getValue("hiddenEventIds").jsonArray.map { hiddenEventId -> hiddenEventId.jsonPrimitive.content },
         secretZoneIds = getValue("secretZoneIds").jsonArray.map { secretZoneId -> secretZoneId.jsonPrimitive.content },
         firstHiddenDiscoveryTurn = this["firstHiddenDiscoveryTurn"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),

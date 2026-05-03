@@ -8,6 +8,7 @@ import com.ktome.game.PlayerCommand
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -130,6 +131,46 @@ class ValidationScenarioRegistryTest {
         assertEquals(listOf("log.validation.item.pr03_showcase"), scenario.evidence.requiredLogEventKeys)
         assertEquals("validation.phase4.v4.phase4-v4-pr03.evidence.summary_note", scenario.evidence.scenarioNoteLabelKey)
         assertTrue(scenario.evidence.cuaSteps.any { step -> step.expectedVisibleResult.contains("professionCapstoneAdoptionFloor.reportOnly") })
+    }
+
+    @Test
+    fun `pr04 hidden search zone hook scenario matches fixed phase4 v4 contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr04"))
+
+        assertEquals("PR-04", scenario.prId)
+        assertEquals(ValidationPreset.HIDDEN_CONTENT, scenario.runtime.preset)
+        assertEquals(2026042434L, scenario.runtime.seed)
+        assertEquals("arcanist", scenario.runtime.professionId)
+        assertEquals("human", scenario.runtime.raceId)
+        assertEquals("deep_iron_pit", scenario.runtime.zoneId)
+        assertEquals(1, scenario.runtime.floor)
+        assertEquals(-1, scenario.runtime.routeIndex)
+        assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+        assertEquals(
+            listOf(
+                "evidence/phase4-v4-pr04-deep-iron-search-cue.png",
+                "evidence/phase4-v4-pr04-search-result-feedback.png",
+                "evidence/phase4-v4-pr04-abyssal-void-pressure.png",
+                "evidence/phase4-v4-pr04-zone-hook-triggered.png",
+                "evidence/phase4-v4-pr04-priority-no-overlap.png",
+                "evidence/phase4-v4-pr04-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals(
+            "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr04-hidden-search-zone-hooks.md",
+            scenario.evidence.manualRecordPath,
+        )
+        assertEquals(
+            listOf(
+                "log.search.available",
+                "log.search.revealed_tag",
+                "log.zone.hook.void_pressure",
+                "zone.trigger.void_pressure_active",
+            ),
+            scenario.evidence.requiredLogEventKeys,
+        )
+        assertEquals("validation.phase4.v4.phase4-v4-pr04.evidence.summary_note", scenario.evidence.scenarioNoteLabelKey)
     }
 
     @Test
@@ -314,6 +355,62 @@ class ValidationScenarioRegistryTest {
             ),
         )
         assertEquals("artifact_briar_heart", session.currentEquippedBaseItemId(com.ktome.core.item.EquipSlot.OFF_HAND))
+    }
+
+    @Test
+    fun `pr04 scenario actions stage deep iron search and abyssal hook surfaces`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr04"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("phase4-v4-pr04-scenario-actions")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertEquals("deep_iron_pit", session.config.zoneId)
+        assertNotNull(session.renderSnapshot().uiState.searchPromptLabelKey)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.search.available" })
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.search.revealed_tag" })
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertEquals("abyssal_temple", session.config.zoneId)
+        val secondarySnapshot = session.renderSnapshot()
+        val secondaryCueKeys =
+            secondarySnapshot.uiState.frontstageReadability.recentActionCues
+                .map { cue -> cue.message.key to cue.cueType.name }
+        assertTrue(
+            "void_pressure" in session.automationTriggeredZoneHookIds(),
+            "Expected void pressure runtime hook tag. cues=$secondaryCueKeys tags=${session.automationDiscoveryTags()}",
+        )
+        assertTrue(
+            "zone.trigger.void_pressure_active" in session.automationDiscoveryTags(),
+            "Expected void pressure trigger fact tag. cues=$secondaryCueKeys tags=${session.automationDiscoveryTags()}",
+        )
+        assertTrue(
+            ("log.zone.hook.void_pressure" to "ZONE_HOOK_TRIGGERED") in secondaryCueKeys,
+            "Expected visible zone hook frontstage cue. cues=$secondaryCueKeys",
+        )
     }
 
 

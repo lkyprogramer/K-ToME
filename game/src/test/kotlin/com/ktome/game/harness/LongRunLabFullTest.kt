@@ -10,6 +10,7 @@ import com.ktome.game.FOUNDATION_SYNERGY_AFFIX_IDS
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.ZoneMechanicRuntime
 import com.ktome.game.data.DataLoader
 import com.ktome.game.loot.MilestoneRewardScoreSample
 import com.ktome.game.loot.MilestoneRewardSlotFamily
@@ -346,6 +347,16 @@ class LongRunLabFullTest {
                                 putJsonArray("specialMechanics") {
                                     audit.specialMechanics.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
                                 }
+                                putJsonArray("allMechanicTerms") {
+                                    audit.allMechanicTerms.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
+                                }
+                                putJsonArray("runtimeHookIds") {
+                                    audit.runtimeHookIds.forEach { hookId -> add(JsonPrimitive(hookId)) }
+                                }
+                                putJsonArray("flavorOnlyMechanics") {
+                                    audit.flavorOnlyMechanics.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
+                                }
+                                put("mechanicTermsPartitioned", audit.mechanicTermsPartitioned)
                                 putJsonArray("mechanicsWithoutDedicatedRuntimeHook") {
                                     audit.mechanicsWithoutDedicatedRuntimeHook.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
                                 }
@@ -854,12 +865,16 @@ class LongRunLabFullTest {
 
         assertEquals(setOf("greenwood_fringe", "deep_iron_pit", "grey_gate_depths", "underground_river", "abyssal_temple"), audit.keys)
         assertTrue(audit.getValue("greenwood_fringe").objectivePlacements.any { placement -> "trail_cache@floor1:stairs_down+1,0" in placement })
-        assertTrue(audit.getValue("greenwood_fringe").mechanicsWithoutDedicatedRuntimeHook.contains("trail_pressure"))
+        assertTrue(audit.getValue("greenwood_fringe").runtimeHookIds.contains("trail_pressure"))
+        assertTrue(!audit.getValue("greenwood_fringe").mechanicsWithoutDedicatedRuntimeHook.contains("trail_pressure"))
         assertTrue(audit.getValue("deep_iron_pit").objectivePlacements.any { placement -> "mine_furnace@floor2:boss_entry+0,0" in placement })
-        assertTrue(audit.getValue("deep_iron_pit").mechanicsWithoutDedicatedRuntimeHook.contains("slag_alert"))
+        assertTrue(audit.getValue("deep_iron_pit").runtimeHookIds.contains("slag_alert"))
+        assertTrue(!audit.getValue("deep_iron_pit").mechanicsWithoutDedicatedRuntimeHook.contains("slag_alert"))
         assertTrue(audit.getValue("grey_gate_depths").objectivePlacements.any { placement -> "seal_cache@floor1:stairs_down+1,0" in placement })
         assertTrue(audit.getValue("underground_river").objectivePlacements.any { placement -> "crystal_cache_chest@floor1:stairs_down+1,0" in placement })
         assertTrue(audit.getValue("abyssal_temple").specialMechanics.contains("void_pressure"))
+        assertTrue(audit.getValue("abyssal_temple").runtimeHookIds.contains("void_pressure"))
+        assertTrue(audit.values.all(CriticalPathZoneDesignAuditEntry::mechanicTermsPartitioned))
     }
 
     private fun fullRouteMatrixSpecs(): List<ScenarioSpec> {
@@ -1497,6 +1512,7 @@ class LongRunLabFullTest {
                     "Missing critical-path zone '$zoneId' in schema catalog."
                 }
                 val objective = zone.objectiveSetId?.let(objectivesById::get)
+                val mechanicClassification = ZoneMechanicRuntime.classifyMechanics(zone)
                 zoneId to
                     CriticalPathZoneDesignAuditEntry(
                         zoneId = zoneId,
@@ -1504,10 +1520,11 @@ class LongRunLabFullTest {
                         mapSize = "${zone.mapSize.width}x${zone.mapSize.height}",
                         worldRole = zone.worldRole,
                         specialMechanics = zone.specialMechanics,
-                        mechanicsWithoutDedicatedRuntimeHook =
-                            zone.specialMechanics.filterNot { mechanic ->
-                                mechanic in DEDICATED_RUNTIME_MECHANICS || mechanic in STATIC_FRONTSTAGE_MECHANICS
-                            },
+                        allMechanicTerms = mechanicClassification.allMechanicTerms,
+                        runtimeHookIds = mechanicClassification.runtimeHookIds,
+                        flavorOnlyMechanics = mechanicClassification.flavorOnlyMechanics,
+                        mechanicTermsPartitioned = mechanicClassification.termsPartitioned,
+                        mechanicsWithoutDedicatedRuntimeHook = mechanicClassification.mechanicsWithoutDedicatedRuntimeHook,
                         monsterPoolCount = zone.monsterPools.size,
                         elitePoolCount = zone.elitePools.size,
                         bossEncounterId = zone.bossEncounterId,
@@ -1690,6 +1707,10 @@ class LongRunLabFullTest {
         val mapSize: String,
         val worldRole: String,
         val specialMechanics: List<String>,
+        val allMechanicTerms: List<String>,
+        val runtimeHookIds: List<String>,
+        val flavorOnlyMechanics: List<String>,
+        val mechanicTermsPartitioned: Boolean,
         val mechanicsWithoutDedicatedRuntimeHook: List<String>,
         val monsterPoolCount: Int,
         val elitePoolCount: Int,
@@ -1715,20 +1736,6 @@ class LongRunLabFullTest {
         private const val MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN = 20
 
         private val schemaCatalog = DataLoader().loadSchemaCatalog()
-        private val DEDICATED_RUNTIME_MECHANICS: Set<String> =
-            setOf(
-                "patrol_pressure",
-                "ambush_lane",
-                "furnace_pressure",
-                "currents",
-                "crystal_shards",
-                "abyssal_ward",
-                "finale",
-            )
-        private val STATIC_FRONTSTAGE_MECHANICS: Set<String> =
-            setOf(
-                "line_of_sight",
-            )
         private val PROFESSION_ALIGNED_TERMINAL_WEAPON_RULES: Map<String, ProfessionAlignedTerminalWeaponRule> =
             mapOf(
                 "vanguard" to

@@ -17,7 +17,7 @@ class WhiteBoxSolvabilityHarnessTest {
     fun `white-box solvability pilot writes standard reports for the OPT PR-05 corpus`() {
         val run = WhiteBoxSolvabilityRunner.run()
 
-        assertEquals(46, run.totalCases)
+        assertEquals(44, run.totalCases)
         assertEquals(0, run.failedAssertions, "whiteBoxSolvability recorded failures; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.casesPath), "Expected case report at ${run.casesPath}")
@@ -37,7 +37,7 @@ class WhiteBoxSolvabilityHarnessTest {
         assertEquals("solvability", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
         assertEquals("P4_OPT_PR05_SOLVABILITY_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
-        assertEquals("46", summary.getValue("caseCount").jsonPrimitive.content)
+        assertEquals("44", summary.getValue("caseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
         val successAggregate =
             aggregates.first { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "${WhiteBoxSolvabilitySuccessLane.LANE_ID}:corpus" }.jsonObject
@@ -66,10 +66,10 @@ class WhiteBoxSolvabilityHarnessTest {
         assertTrue(successMetrics.containsKey("requiredHiddenAnchorFamilies"))
         assertTrue(successMetrics.containsKey("observedHiddenAnchorFamilies"))
         assertEquals("40", successAggregate.getValue("sampleCount").jsonPrimitive.content)
-        assertEquals("6", failAggregate.getValue("sampleCount").jsonPrimitive.content)
+        assertEquals("4", failAggregate.getValue("sampleCount").jsonPrimitive.content)
         assertTrue(failMetrics.containsKey("casesWithFail"))
         assertTrue(failMetrics.containsKey("failStateTaxonomy"))
-        assertEquals("6", failMetrics.getValue("casesWithFail").jsonPrimitive.content)
+        assertEquals("4", failMetrics.getValue("casesWithFail").jsonPrimitive.content)
         assertEquals("0", failMetrics.getValue("casesWithReveal").jsonPrimitive.content)
         val revealFailZoneFloors =
             Files.readAllLines(run.casesPath)
@@ -100,6 +100,6 @@ class WhiteBoxSolvabilityHarnessTest {
                 assertion.jsonObject.getValue("ruleId").jsonPrimitive.content == "solvability.case.backtrack_satisfied"
             },
         )
-        assertEquals(46, Files.readAllLines(run.casesPath).count { line -> line.isNotBlank() })
+        assertEquals(44, Files.readAllLines(run.casesPath).count { line -> line.isNotBlank() })
     }
 }

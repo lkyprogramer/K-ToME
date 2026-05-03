@@ -58,10 +58,12 @@ secretZones:
     schemaVersion: 1
     tags: [secret_zone, deep_iron, optional, forge, armor_break]
     entryRule:
-      combinator: AND
+      combinator: OR
       predicates:
         - type: REQUIRED_TAG
           requiredTag: hidden.primer.deep_iron.slag_cache
+        - type: PERCEPTION_CHECK
+          difficulty: 8
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile
@@ -98,6 +100,8 @@ secretZones:
     entranceBindingId: hidden.branch
     returnBridgePolicy: EXPLICIT_ANCHOR
     returnBridgeAnchorTag: hub
+    secretZoneSelector:
+      primarySlot: true
   - id:
       registry: secret_zone
       id: abyssal_temple_warded_archive
@@ -135,10 +139,12 @@ secretZones:
     schemaVersion: 1
     tags: [secret_zone, deep_iron, optional, contraband, precision, burst]
     entryRule:
-      combinator: AND
+      combinator: OR
       predicates:
         - type: REQUIRED_TAG
           requiredTag: hidden.primer.deep_iron.smuggler_stash
+        - type: PERCEPTION_CHECK
+          difficulty: 8
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile

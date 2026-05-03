@@ -482,10 +482,22 @@ enum class FrontstageActionCategorySnapshot {
 
 @Serializable
 enum class FrontstageActionPrioritySnapshot {
+    CRITICAL_COMBAT,
+    HIGH_COMBAT,
+    HIGH_HIDDEN,
     CRITICAL,
     HIGH,
     MEDIUM,
     LOW,
+}
+
+@Serializable
+enum class FrontstageActionCueTypeSnapshot {
+    GENERIC,
+    LEAD_DISCOVERED,
+    SEARCH_AVAILABLE,
+    SECRET_ENTRY_NEARBY,
+    ZONE_HOOK_TRIGGERED,
 }
 
 @Serializable
@@ -494,6 +506,7 @@ data class FrontstageActionCueSnapshot(
     val priority: FrontstageActionPrioritySnapshot,
     val stableKey: String,
     val message: RenderTextTokenSnapshot,
+    val cueType: FrontstageActionCueTypeSnapshot = FrontstageActionCueTypeSnapshot.GENERIC,
 )
 
 @Serializable
