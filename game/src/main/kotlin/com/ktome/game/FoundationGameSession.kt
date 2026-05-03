@@ -257,7 +257,10 @@ import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
 import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.DiscoveryPredicateType
+import com.ktome.core.world.solvability.DiscoveryRule
 import com.ktome.core.world.solvability.PerceptionScore
+import com.ktome.core.world.solvability.RuleCombinator
 import com.ktome.core.world.solvability.SearchAction
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.WorldProgressDef
@@ -360,6 +363,14 @@ private const val ZONE_HOOK_TRIGGERED_TAG_PREFIX: String = "zoneHookTriggered."
 private const val ZONE_RUNTIME_HOOK_EFFECT_TAG_PREFIX: String = "zone.runtime_hook.effect."
 private const val TRAIL_PRESSURE_LEAD_MULTIPLIER_TAG_PREFIX: String =
     "zone.runtime_hook.effect.trail_pressure.hiddenLeadWeightMultiplier="
+private const val RITUAL_PRESSURE_BONUS_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.ritual_pressure.nextEncounterPressureBonus="
+private const val RITUAL_PRESSURE_CONSUMED_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.ritual_pressure.nextEncounterPressureConsumed="
+private const val VOID_PRESSURE_MULTIPLIER_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.void_pressure.objectivePenaltyMultiplier="
+private const val VOID_PRESSURE_CONSUMED_TAG_PREFIX: String =
+    "zone.runtime_hook.effect.void_pressure.objectivePenaltyTurns="
 private val CACHE_REWARD_INTERACTABLE_IDS: Set<String> =
     setOf(
         "supply_crate",
@@ -796,7 +807,7 @@ class FoundationGameSession internal constructor(
                     damageType = damageType,
                     interactionDepth = interactionDepth,
                 )
-            }
+        }
         initialMessageLog.forEach(::addMessage)
         restorePendingTurnState()
         syncPlayerStarterTalents()
@@ -804,6 +815,7 @@ class FoundationGameSession internal constructor(
         ensurePlayerResourcePools()
         ensurePlayerInscriptions()
         restorePendingZoneAdvanceIfNeeded()
+        restorePendingZoneRuntimeHookEffects()
         refreshFov()
         announceZoneMechanicFloorEntryIfNeeded()
     }
@@ -1940,6 +1952,7 @@ class FoundationGameSession internal constructor(
                     ),
             )
         world = SessionSnapshotMapper.restoreWorld(content, playerSnapshot, activeFloorState)
+        restorePendingZoneRuntimeHookEffects()
         syncPlayerResistanceProfile()
         pendingActions.clear()
         activeTurnActor = null
@@ -11642,11 +11655,12 @@ class FoundationGameSession internal constructor(
         maybeRecordZoneHookForSearchTarget(searchTarget)
 
         val perceptionScore = perceptionScoreForSearch()
+        val searchContextTags = searchContextTags(searchTarget)
         val result =
             if (
                 entrance.discoveryRule.evaluate(
                     perceptionScore = perceptionScore,
-                    providedTags = searchContextTags(searchTarget),
+                    providedTags = searchContextTags,
                 )
             ) {
                 SearchActionResult.REVEALED
@@ -11665,7 +11679,7 @@ class FoundationGameSession internal constructor(
         )
         when (result) {
             SearchActionResult.REVEALED -> {
-                if (searchDifficulty != null) {
+                if (searchDifficulty != null && !entrance.discoveryRule.isSatisfiedByTagOnly(searchContextTags)) {
                     recordFrontstageSearchCue(
                         "log.search.revealed",
                         priority = FrontstageActionPrioritySnapshot.HIGH_HIDDEN,
@@ -12604,6 +12618,21 @@ class FoundationGameSession internal constructor(
         }
     }
 
+    private fun restorePendingZoneRuntimeHookEffects() {
+        pendingEncounterPressureBonus =
+            if (activeFloorState.discoveryTags.any { tag -> tag.startsWith(RITUAL_PRESSURE_CONSUMED_TAG_PREFIX) }) {
+                0
+            } else {
+                activeFloorState.discoveryTags.sumTagIntValues(RITUAL_PRESSURE_BONUS_TAG_PREFIX)
+            }
+        pendingObjectivePenaltyMultiplier =
+            if (activeFloorState.discoveryTags.any { tag -> tag.startsWith(VOID_PRESSURE_CONSUMED_TAG_PREFIX) }) {
+                1.0
+            } else {
+                activeFloorState.discoveryTags.maxTagDoubleValue(VOID_PRESSURE_MULTIPLIER_TAG_PREFIX) ?: 1.0
+            }
+    }
+
     private fun queueZoneHookWarningOverlay(
         hookId: String,
         warningEventId: String,
@@ -12680,6 +12709,23 @@ class FoundationGameSession internal constructor(
     )
 
     private fun searchContextTags(searchTarget: SearchTarget): Set<String> = searchTarget.room.tags + activeFloorState.discoveryTags
+
+    private fun DiscoveryRule.isSatisfiedByTagOnly(providedTags: Set<String>): Boolean =
+        combinator == RuleCombinator.OR &&
+            predicates.any { predicate ->
+                predicate.type == DiscoveryPredicateType.REQUIRED_TAG &&
+                    requireNotNull(predicate.requiredTag) in providedTags
+            }
+
+    private fun Set<String>.sumTagIntValues(prefix: String): Int =
+        asSequence()
+            .mapNotNull { tag -> tag.takeIf { it.startsWith(prefix) }?.removePrefix(prefix)?.toIntOrNull() }
+            .sum()
+
+    private fun Set<String>.maxTagDoubleValue(prefix: String): Double? =
+        asSequence()
+            .mapNotNull { tag -> tag.takeIf { it.startsWith(prefix) }?.removePrefix(prefix)?.toDoubleOrNull() }
+            .maxOrNull()
 
     private fun perceptionScoreForSearch(): PerceptionScore {
         val baseMentalPower = requireNotNull(world.get<DerivedStats>(playerId)).powerSave.mentalPower

@@ -116,6 +116,8 @@ class ContentPackRewardPresentationTest {
         assertTrue(session.perform(PlayerCommand.DropInventoryItem(session.inventoryItems().first().index)))
         session.automationMovePlayerTo(requireNotNull(session.automationInteractablePoint("crystal_cache_chest")))
         assertTrue(session.perform(PlayerCommand.Interact))
+        session.automationMovePlayerTo(requireNotNull(session.automationSearchPointForBinding(sampleSecretBindingId)))
+        assertTrue(session.perform(PlayerCommand.Search))
         assertEquals(com.ktome.core.world.solvability.SearchActionResult.REVEALED, session.automationSearchState().single().result)
 
         session.automationMovePlayerTo(requireNotNull(session.automationHiddenEntrancePointForBinding(sampleSecretBindingId)))

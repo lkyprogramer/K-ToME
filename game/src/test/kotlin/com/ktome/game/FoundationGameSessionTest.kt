@@ -105,6 +105,7 @@ import com.ktome.game.hidden.HiddenEventReward
 import com.ktome.game.hidden.HiddenEventRewardKey
 import com.ktome.game.hidden.HiddenEventRewardPayload
 import com.ktome.game.hidden.LOOT_PROFILE_REGISTRY_ID
+import com.ktome.game.i18n.GameLocale
 import com.ktome.game.elites.EncounterDecoration
 import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
@@ -952,6 +953,31 @@ class FoundationGameSessionTest {
                     overlay.audioProfile == "audio.boss.warning"
             },
         )
+    }
+
+    @Test
+    fun `grey gate ritual pressure pending encounter bonus survives reload`() {
+        val saveManager = SaveManager(tempDir.resolve("grey-gate-ritual-pressure-reload-save"))
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "grey_gate_depths", playerProfessionId = "templar"),
+                saveManager = saveManager,
+            )
+        clearMonsters(session)
+
+        movePlayerTo(session, requireNotNull(session.automationInteractablePoint("shadow_brazier")))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(1, session.automationPendingEncounterPressureBonus())
+
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+        val loaded =
+            requireNotNull(
+                GameModule.loadFoundationSession(
+                    saveManager = saveManager,
+                    locale = GameLocale.EN_US,
+                ),
+            )
+        assertEquals(1, loaded.automationPendingEncounterPressureBonus())
     }
 
     @Test
