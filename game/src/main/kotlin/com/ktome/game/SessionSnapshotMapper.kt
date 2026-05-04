@@ -2,6 +2,7 @@ package com.ktome.game
 
 import com.ktome.core.ai.AIPerceptionState
 import com.ktome.core.ai.BossEncounterState
+import com.ktome.core.ai.BossPhaseOverride
 import com.ktome.core.ai.DangerLevel
 import com.ktome.core.ai.PendingTelegraphState
 import com.ktome.core.combat.DamageType
@@ -1021,11 +1022,7 @@ internal object SessionSnapshotMapper {
                 entityId,
                 BossEncounterState(
                     encounterId = bossState.encounterId,
-                    phaseOverrides =
-                        snapshot.bossVariant
-                            ?.variantId
-                            ?.let { variantId -> content.bossVariantRegistry.resolve(variantId)?.phaseOverrides }
-                            .orEmpty(),
+                    phaseOverrides = restoreBossPhaseOverrides(snapshot = snapshot, bossState = bossState, content = content),
                     currentPhaseId = bossState.currentPhaseId,
                     encounterTurnCount = bossState.encounterTurnCount,
                     phaseTurnCount = bossState.phaseTurnCount,
@@ -1558,6 +1555,26 @@ internal object SessionSnapshotMapper {
             worldPriority = effect.worldPriority,
             effects = effect.effects.map(::toActiveEffectSnapshot).sortedBy(ActiveEffectSnapshot::id),
         )
+
+    private fun restoreBossPhaseOverrides(
+        snapshot: EntitySnapshot,
+        bossState: BossEncounterStateSnapshot,
+        content: GameContent,
+    ): List<BossPhaseOverride> {
+        val variantId = snapshot.bossVariant?.variantId
+        if (variantId == null) {
+            if (bossState.phaseOverrideTriggeredPhaseIds.isNotEmpty()) {
+                throw InvalidSaveException(
+                    "Save entity ${snapshot.id} has boss phase override state without boss variant runtime.",
+                )
+            }
+            return emptyList()
+        }
+        return content.bossVariantRegistry.resolve(variantId)?.phaseOverrides
+            ?: throw InvalidSaveException(
+                "Save entity ${snapshot.id} references unknown boss variant id '$variantId' while restoring boss phase overrides.",
+            )
+    }
 
     private fun restoreActiveEffect(
         snapshot: ActiveEffectSnapshot,
