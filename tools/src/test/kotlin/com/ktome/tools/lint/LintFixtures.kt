@@ -76,7 +76,8 @@ internal object LintFixtures {
                 extractFieldValues(loadYaml(resource), "descriptionAddendumKey") +
                 extractFieldValues(loadYaml(resource), "resourceHintKey") +
                 extractFieldValues(loadYaml(resource), "postMessageKey") +
-                extractFieldValues(loadYaml(resource), "messageKey")
+                extractFieldValues(loadYaml(resource), "messageKey") +
+                extractFieldValues(loadYaml(resource), "onEnterEventKey")
         }
 
     fun codeReferencedLocaleKeys(): Set<String> {

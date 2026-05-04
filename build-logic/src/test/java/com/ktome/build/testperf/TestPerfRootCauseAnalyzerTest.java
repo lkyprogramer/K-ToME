@@ -112,6 +112,43 @@ class TestPerfRootCauseAnalyzerTest {
         assertTrue(hints.contains("no common pattern"));
     }
 
+    @Test
+    void reportsSlowTestMethodHintsForTestTasks() {
+        TaskRecord current =
+                new TaskRecord(
+                        ":tools:whiteBoxLoot",
+                        "TEST",
+                        "SUCCESS",
+                        505_240L,
+                        true,
+                        false,
+                        false,
+                        false,
+                        "/tmp/out",
+                        "/tmp/tests",
+                        null,
+                        new TaskRecord.TestDetails(
+                                3,
+                                0,
+                                new WorkloadRecord("UNIT_TEST", 3, null, null, false, null, null, null),
+                                "HEAVY_EVALUATION",
+                                List.of(
+                                        new TaskRecord.TestDetails.SlowTestMethod(
+                                                "com.ktome.tools.loot.WhiteBoxLootRunnerTest",
+                                                "slow owner assertion",
+                                                239_219L),
+                                        new TaskRecord.TestDetails.SlowTestMethod(
+                                                "com.ktome.tools.loot.WhiteBoxLootRunnerTest",
+                                                "slow strict baseline",
+                                                264_547L))),
+                        null);
+
+        List<String> hints = analyzer.analyze(current, null, true, 0.2d, 8);
+
+        assertTrue(hints.stream().anyMatch(hint -> hint.contains("slow tests:")));
+        assertTrue(hints.stream().anyMatch(hint -> hint.contains("slow strict baseline=264547ms")));
+    }
+
     private static VerificationRecord verification(String cacheStatus, String snapshotHash, String artifactReuseSource, Integer workloadCount) {
         return new VerificationRecord(
                 "hidden",

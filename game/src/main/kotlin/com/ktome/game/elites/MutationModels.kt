@@ -1,8 +1,11 @@
 package com.ktome.game.elites
 
+import com.ktome.core.ai.BossPhaseOverride
+import com.ktome.core.ai.referenceIds
 import com.ktome.core.combat.DamageType
 import com.ktome.core.item.StatModifier
 import com.ktome.core.mapgen.TerrainTag
+import com.ktome.game.ZoneTriggerFactIds
 
 enum class MutationKind {
     STAT_PACKAGE,
@@ -105,6 +108,65 @@ data class EliteMutationConfig(
     }
 }
 
+object BossVariantPhaseOverrideContracts {
+    const val HP_BELOW_50_TRIGGER_ID: String = "boss.trigger.hp_below_50"
+    const val HP_BELOW_45_TRIGGER_ID: String = "boss.trigger.hp_below_45"
+    const val HP_BELOW_40_TRIGGER_ID: String = "boss.trigger.hp_below_40"
+    const val WAR_CALLER_ACTIVE_TRIGGER_ID: String = "boss.trigger.war_caller_active"
+    val triggerFactIds: Set<String> =
+        setOf(
+            HP_BELOW_50_TRIGGER_ID,
+            HP_BELOW_45_TRIGGER_ID,
+            HP_BELOW_40_TRIGGER_ID,
+            WAR_CALLER_ACTIVE_TRIGGER_ID,
+            ZoneTriggerFactIds.OIL_OR_FIRE_SEEN,
+            ZoneTriggerFactIds.VOID_PRESSURE_ACTIVE,
+        )
+
+    private val eventKeyPattern = Regex("""boss\.variant\.([a-z][a-z0-9_]*)\.phase_override\.entered""")
+    private val variantIdPattern = Regex("""boss\.variant\.([a-z][a-z0-9_]*)""")
+
+    fun variantSlug(variantId: String): String? =
+        variantIdPattern.matchEntire(variantId)?.groupValues?.get(1)
+
+    fun matchesOnEnterEventKey(
+        variantSlug: String,
+        eventKey: String,
+    ): Boolean =
+        eventKeyPattern.matchEntire(eventKey)?.groupValues?.get(1) == variantSlug
+
+    fun validateReferences(
+        variant: BossVariantDef,
+        phaseIds: Set<String>,
+        telegraphIds: Set<String>,
+        allowedActionIds: Set<String>,
+    ) {
+        val variantSlug =
+            requireNotNull(variantSlug(variant.id)) {
+                "Boss variant '${variant.id}' must use 'boss.variant.<slug>' with slug matching [a-z][a-z0-9_]*."
+            }
+        variant.phaseOverrides.forEach { override ->
+            require(override.phaseId in phaseIds) {
+                "Boss variant '${variant.id}' phase override references unknown phase '${override.phaseId}'."
+            }
+            require(override.telegraphSpecId in telegraphIds) {
+                "Boss variant '${variant.id}' phase override references unknown telegraph '${override.telegraphSpecId}'."
+            }
+            val unknownActionIds = override.actionEmphasisIds - allowedActionIds
+            require(unknownActionIds.isEmpty()) {
+                "Boss variant '${variant.id}' phase override action emphasis references unknown base-encounter actions ${unknownActionIds.sorted()}."
+            }
+            val unknownTriggerIds = override.trigger.referenceIds() - triggerFactIds
+            require(unknownTriggerIds.isEmpty()) {
+                "Boss variant '${variant.id}' phase override references unknown trigger facts ${unknownTriggerIds.sorted()}."
+            }
+            require(matchesOnEnterEventKey(variantSlug, override.onEnterEventKey)) {
+                "Boss variant '${variant.id}' phase override onEnterEventKey '${override.onEnterEventKey}' must be boss.variant.$variantSlug.phase_override.entered."
+            }
+        }
+    }
+}
+
 data class BossVariantDef(
     val id: String,
     val baseEncounterId: String,
@@ -113,6 +175,7 @@ data class BossVariantDef(
     val lootProfileOverride: String?,
     val visualTintKey: String?,
     val actionWeightProfileId: String? = null,
+    val phaseOverrides: List<BossPhaseOverride>,
 ) {
     init {
         require(id.isNotBlank()) { "BossVariantDef.id must not be blank." }
@@ -126,6 +189,10 @@ data class BossVariantDef(
         }
         require(actionWeightProfileId == null || actionWeightProfileId.isNotBlank()) {
             "BossVariantDef.actionWeightProfileId must not be blank when present."
+        }
+        require(phaseOverrides.isNotEmpty()) { "BossVariantDef.phaseOverrides must not be empty." }
+        require(phaseOverrides.map(BossPhaseOverride::phaseId).distinct().size == phaseOverrides.size) {
+            "BossVariantDef.phaseOverrides must not contain duplicate phase ids."
         }
     }
 }

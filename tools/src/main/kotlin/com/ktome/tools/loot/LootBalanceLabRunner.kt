@@ -1805,7 +1805,7 @@ object LootBalanceLabRunner {
     private val json: Json = Json { prettyPrint = true }
 
     fun run(): LootBalanceLabRun {
-        val outputDir = reportDir()
+        val outputDir = lootReportDir()
         Files.createDirectories(outputDir)
         val rollsPath = outputDir.resolve(ROLLS_FILE)
         val repoRoot = VerificationCacheSupport.repoRoot()
@@ -1868,7 +1868,10 @@ object LootBalanceLabRunner {
             }
         }
 
-    internal fun readKernelRun(reportDir: Path = reportDir()): LootKernelRun? {
+    internal fun readKernelRun(
+        reportDir: Path = lootReportDir(),
+        repoRoot: Path = VerificationCacheSupport.repoRoot(),
+    ): LootKernelRun? {
         val summaryPath = reportDir.resolve(SUMMARY_FILE)
         if (Files.isRegularFile(summaryPath)) {
             val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
@@ -1876,7 +1879,6 @@ object LootBalanceLabRunner {
                 return payload.toLootKernelRun()
             }
         }
-        val repoRoot = VerificationCacheSupport.repoRoot()
         val cacheDirs = VerificationCacheSupport.cacheDirs("loot", repoRoot)
         val mergedKernelPath = cacheDirs.kernelDir.resolve("merged").resolve("loot-kernel-merged.json")
         if (!Files.isRegularFile(mergedKernelPath)) {
@@ -1884,6 +1886,41 @@ object LootBalanceLabRunner {
         }
         val payload = json.parseToJsonElement(Files.readString(mergedKernelPath)).jsonObject
         return if (payload.hasCurrentKernelContractVersion()) payload.toLootKernelRun() else null
+    }
+
+    internal fun readKernelCacheStatus(
+        reportDir: Path = lootReportDir(),
+        repoRoot: Path = VerificationCacheSupport.repoRoot(),
+    ): String? {
+        val summaryPath = reportDir.resolve(SUMMARY_FILE)
+        if (Files.isRegularFile(summaryPath)) {
+            val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+            if (payload.hasCurrentKernelContractVersion()) {
+                return payload["kernelCache"]
+                    ?.jsonObject
+                    ?.get("cacheStatus")
+                    ?.jsonPrimitive
+                    ?.contentOrNull
+            }
+        }
+        val mergedKernelPath =
+            VerificationCacheSupport.cacheDirs("loot", repoRoot)
+                .kernelDir
+                .resolve("merged")
+                .resolve("loot-kernel-merged.json")
+        if (!Files.isRegularFile(mergedKernelPath)) {
+            return null
+        }
+        val payload = json.parseToJsonElement(Files.readString(mergedKernelPath)).jsonObject
+        return if (payload.hasCurrentKernelContractVersion()) {
+            payload["kernelCache"]
+                ?.jsonObject
+                ?.get("cacheStatus")
+                ?.jsonPrimitive
+                ?.contentOrNull
+        } else {
+            null
+        }
     }
 
     internal fun lootPreflightReportDir(repoRoot: Path = VerificationCacheSupport.repoRoot()): Path {
@@ -1923,7 +1960,7 @@ object LootBalanceLabRunner {
             ?.jsonPrimitive
             ?.contentOrNull == LOOT_KERNEL_CACHE_VERSION
 
-    private fun reportDir(): Path {
+    internal fun lootReportDir(): Path {
         val configured = System.getProperty("ktome.phase4.loot.reportDir")
         return if (configured.isNullOrBlank()) {
             Path.of("tools", "build", "reports", "phase4", "loot")

@@ -11,6 +11,7 @@ import com.ktome.core.ai.BossEncounter
 import com.ktome.core.ai.BossPhaseDef
 import com.ktome.core.ai.BossPhaseEvent
 import com.ktome.core.ai.BossPhaseEventType
+import com.ktome.core.ai.BossPhaseOverride
 import com.ktome.core.ai.BossPhaseTransitionTiming
 import com.ktome.core.ai.CounterplayTag
 import com.ktome.core.ai.DangerLevel
@@ -19,6 +20,7 @@ import com.ktome.core.ai.TelegraphShape
 import com.ktome.core.ai.TelegraphSpec
 import com.ktome.core.ai.TelegraphStage
 import com.ktome.core.ai.ThreatProfileDef
+import com.ktome.core.ai.TriggerExpression
 import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
@@ -176,6 +178,7 @@ import com.ktome.game.contentpack.ResolvedContentPack
 import com.ktome.game.contentpack.ResolvedContentPackSelection
 import com.ktome.game.elites.ActionWeightProfileDef
 import com.ktome.game.elites.BossVariantDef
+import com.ktome.game.elites.BossVariantPhaseOverrideContracts
 import com.ktome.game.elites.EliteMutationConfig
 import com.ktome.game.elites.EliteMutationDef
 import com.ktome.game.elites.MutationKind
@@ -289,10 +292,41 @@ class DataLoader(
     fun loadSchemaCatalog(): SchemaCatalog {
         val baseCatalog = loadBaseSchemaCatalog()
         val resolvedSelection = resolvedContentPackSelection
-        if (resolvedSelection.isEmpty()) {
-            return baseCatalog
+        val catalog =
+            if (resolvedSelection.isEmpty()) {
+                baseCatalog
+            } else {
+                applyContentPackOverlays(baseCatalog, resolvedSelection)
+            }
+        validateBossVariantPhaseOverrideContracts(catalog)
+        return catalog
+    }
+
+    private fun validateBossVariantPhaseOverrideContracts(catalog: SchemaCatalog) {
+        val bossEncountersById = catalog.bossEncounters.associateBy { encounter -> encounter.id }
+        val aiProfilesById = catalog.aiProfiles.associateBy(AIProfile::id)
+        val telegraphIds = catalog.telegraphSpecs.mapTo(linkedSetOf(), TelegraphSpec::id)
+        catalog.bossVariants.forEach { variant ->
+            val encounter =
+                requireNotNull(bossEncountersById[variant.baseEncounterId]) {
+                    "Boss variant '${variant.id}' references unknown base encounter '${variant.baseEncounterId}'."
+                }
+            val phaseIds = encounter.phases.mapTo(linkedSetOf(), BossPhaseDef::id)
+            val baseActionIds =
+                encounter.phases
+                    .map { phase ->
+                        requireNotNull(aiProfilesById[phase.aiProfileId]) {
+                            "Boss phase '${phase.id}' in encounter '${encounter.id}' references unknown AI profile '${phase.aiProfileId}'."
+                        }
+                    }
+                    .flatMapTo(linkedSetOf()) { profile -> profile.actions.map(AIAction::id) }
+            BossVariantPhaseOverrideContracts.validateReferences(
+                variant = variant,
+                phaseIds = phaseIds,
+                telegraphIds = telegraphIds,
+                allowedActionIds = baseActionIds,
+            )
         }
-        return applyContentPackOverlays(baseCatalog, resolvedSelection)
     }
 
     private fun loadBaseSchemaCatalog(): SchemaCatalog {
@@ -2021,6 +2055,8 @@ class DataLoader(
                 previewTurns = spec.requiredInt("previewTurns"),
                 dangerLevel = DangerLevel.valueOf(spec.requiredString("dangerLevel")),
                 threatProfileId = spec.requiredString("threatProfileId"),
+                visualKey = spec.optionalString("visualKey"),
+                audioProfile = spec.optionalString("audioProfile"),
                 radius = spec.optionalNullableInt("radius"),
                 length = spec.optionalNullableInt("length"),
                 angle = spec.optionalNullableInt("angle"),
@@ -3035,8 +3071,44 @@ class DataLoader(
                 lootProfileOverride = variant.optionalString("lootProfileOverride"),
                 visualTintKey = variant.optionalString("visualTintKey"),
                 actionWeightProfileId = variant.optionalString("actionWeightProfileId"),
+                phaseOverrides = parseBossVariantPhaseOverrides(variant),
             )
         }
+
+    private fun parseBossVariantPhaseOverrides(variant: Map<*, *>): List<BossPhaseOverride> =
+        variant.requiredList("phaseOverrides").map { rawOverride ->
+            val override = rawOverride.requiredMap()
+            BossPhaseOverride(
+                phaseId = override.requiredString("phaseId"),
+                trigger = parseTriggerExpression(override["trigger"]),
+                telegraphSpecId = override.requiredString("telegraphSpecId"),
+                actionEmphasisIds = override.explicitStringList("actionEmphasisIds"),
+                onEnterEventKey = override.requiredString("onEnterEventKey"),
+            )
+        }
+
+    private fun parseTriggerExpression(raw: Any?): TriggerExpression {
+        val expression = raw.requiredMap()
+        val declaredKeys = listOf("ref", "allOf", "anyOf", "not").filter(expression::containsKey)
+        require(declaredKeys.size == 1) {
+            "Boss variant trigger expression must declare exactly one of ref, allOf, anyOf, or not."
+        }
+        return when {
+            "ref" in expression ->
+                TriggerExpression.Ref(expression.requiredString("ref"))
+
+            "allOf" in expression ->
+                TriggerExpression.AllOf(expression.requiredList("allOf").map(::parseTriggerExpression))
+
+            "anyOf" in expression ->
+                TriggerExpression.AnyOf(expression.requiredList("anyOf").map(::parseTriggerExpression))
+
+            "not" in expression ->
+                TriggerExpression.Not(parseTriggerExpression(expression["not"]))
+
+            else -> error("Boss variant trigger expression must declare exactly one of ref, allOf, anyOf, or not.")
+        }
+    }
 }
 
 private fun Any?.requiredMap(): Map<*, *> =

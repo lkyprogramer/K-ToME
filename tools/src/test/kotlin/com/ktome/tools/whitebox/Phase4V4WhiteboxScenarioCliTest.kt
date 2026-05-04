@@ -173,6 +173,36 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `pr05 scenario generates boss variant phase override evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "phase4-v4-pr05"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/phase4-v4-pr05/evidence/phase4-v4-pr05-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=phase4-v4-pr05"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("phase4-v4-pr05-molten-glass-warning.png"))
+        assertTrue(runbook.contains("phase4-v4-pr05-grey-crown-warning.png"))
+        assertTrue(runbook.contains("phase4-v4-pr05-abyssal-eclipse-warning.png"))
+        assertTrue(runbook.contains("phase4-v4-pr05-report-coverage.png"))
+        assertTrue(runbook.contains("boss.variant.molten_glass.phase_override.entered"))
+        assertTrue(runbook.contains("phaseGraphUnchangedReason=data_level_override_only"))
+        assertTrue(runbook.contains("docs/review/phase4/v4-pr/manual-records/phase4-v4-pr05-boss-variant-phase-language.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"phase4-v4-pr05\""))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr05-app.log"))
+        assertTrue(expectedEvidence.contains("log.boss.phase_override_entered"))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr05-report-coverage.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `whitebox materialization catalog stays in parity with scenario registry`() {
         val parity = Phase4V4WhiteboxScenarioMaterializationCatalog.validateRegistryParity()
 
@@ -197,6 +227,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr02
             |  - id: phase4-v4-pr03
             |  - id: phase4-v4-pr04
+            |  - id: phase4-v4-pr05
             |
             """.trimMargin(),
         )

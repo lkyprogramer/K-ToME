@@ -26,6 +26,9 @@ internal object Phase4OwnerMetricTargets {
             "inscriptionInstallOrReplaceRate",
             "phaseTransitionObservedRatio",
             "variantTraceDivergenceRatio",
+            "bossVariantPhaseOverrideSchemaCoverage",
+            "bossVariantPhaseOverrideRuntimeTriggerCoverage",
+            "bossVariantPhaseOverrideTelegraphCoverage",
             "frontstageHighPriorityCueRetainedRate",
             "frontstageCueExpiryParity",
             "frontstageSecretCueVisibilityRate",
@@ -75,6 +78,9 @@ internal object Phase4OwnerMetricTargets {
                     range = range,
                     formatter = ::formatNumber,
                 )
+
+            "bossVariantPhaseOverrideActionDistinctCount.reportOnly" ->
+                "min per-variant action count ${renderBoundTarget(range = range, formatter = ::formatNumber)}"
 
             "avgObjectiveAcquireTurn" ->
                 "min critical-path zone avg >= ${formatNumber(checkNotNull(range.minimumAcceptedValue()))}"

@@ -2,6 +2,8 @@ package com.ktome.game
 
 import com.ktome.core.ai.AIActionType
 import com.ktome.core.ai.AICondition
+import com.ktome.core.ai.TriggerExpression
+import com.ktome.core.ai.referenceIds
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.world.solvability.DiscoveryPredicate
 import com.ktome.core.world.solvability.DiscoveryPredicateType
@@ -9,6 +11,7 @@ import com.ktome.core.world.solvability.DiscoveryRule
 import com.ktome.core.world.solvability.NodeAnchorId
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.elites.BossVariantDef
 import com.ktome.game.hidden.HiddenEventRewardPayload
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -188,6 +191,78 @@ class GameContentTest {
     }
 
     @Test
+    fun `boss variants declare strict phase override language`() {
+        val overridesByVariant =
+            baseSchemaCatalog.bossVariants.associate { variant ->
+                variant.id to variant.phaseOverrides
+            }
+
+        assertEquals(
+            setOf("boss.variant.molten_glass", "boss.variant.grey_crown", "boss.variant.abyssal_eclipse"),
+            overridesByVariant.keys,
+        )
+        assertEquals("phase_enraged", overridesByVariant.getValue("boss.variant.molten_glass").single().phaseId)
+        assertEquals("molten_glass_phase_override_warning", overridesByVariant.getValue("boss.variant.molten_glass").single().telegraphSpecId)
+        assertEquals(listOf("linebreaker", "earthshaker"), overridesByVariant.getValue("boss.variant.molten_glass").single().actionEmphasisIds)
+        assertEquals("phase_desperate", overridesByVariant.getValue("boss.variant.grey_crown").single().phaseId)
+        assertEquals("grey_crown_phase_override_warning", overridesByVariant.getValue("boss.variant.grey_crown").single().telegraphSpecId)
+        assertEquals(listOf("battlefield_command", "ritual_break"), overridesByVariant.getValue("boss.variant.grey_crown").single().actionEmphasisIds)
+        assertEquals("phase_abyssal", overridesByVariant.getValue("boss.variant.abyssal_eclipse").single().phaseId)
+        assertEquals("abyssal_eclipse_phase_override_warning", overridesByVariant.getValue("boss.variant.abyssal_eclipse").single().telegraphSpecId)
+        assertEquals(listOf("void_breach", "abyssal_consecration"), overridesByVariant.getValue("boss.variant.abyssal_eclipse").single().actionEmphasisIds)
+        assertTriggerRefs(
+            overridesByVariant.getValue("boss.variant.molten_glass").single().trigger,
+            setOf("boss.trigger.hp_below_50", "zone.trigger.oil_or_fire_seen"),
+        )
+        assertTriggerRefs(
+            overridesByVariant.getValue("boss.variant.grey_crown").single().trigger,
+            setOf("boss.trigger.hp_below_45", "boss.trigger.war_caller_active"),
+        )
+        assertTriggerRefs(
+            overridesByVariant.getValue("boss.variant.abyssal_eclipse").single().trigger,
+            setOf("boss.trigger.hp_below_40", "zone.trigger.void_pressure_active"),
+        )
+    }
+
+    @Test
+    fun `boss variant phase override references fail fast during content load`() {
+        val targetVariant = baseSchemaCatalog.bossVariants.first { variant -> variant.id == "boss.variant.molten_glass" }
+        val targetOverride = targetVariant.phaseOverrides.single()
+        val invalidCases =
+            listOf(
+                "unknown phase" to targetOverride.copy(phaseId = "phase_missing"),
+                "unknown trigger facts" to targetOverride.copy(trigger = TriggerExpression.Ref("zone.trigger.missing")),
+                "unknown telegraph" to targetOverride.copy(telegraphSpecId = "missing_phase_override_warning"),
+                "unknown base-encounter actions" to targetOverride.copy(actionEmphasisIds = listOf("linebreaker", "missing_action")),
+                "must be boss.variant.molten_glass.phase_override.entered" to
+                    targetOverride.copy(onEnterEventKey = "boss.variant.grey_crown.phase_override.entered"),
+            )
+
+        invalidCases.forEach { (expectedMessage, invalidOverride) ->
+            val ex =
+                assertThrows<IllegalArgumentException> {
+                    newContent(
+                        baseSchemaCatalog.copy(
+                            bossVariants =
+                                baseSchemaCatalog.bossVariants.map { variant ->
+                                    if (variant.id == targetVariant.id) {
+                                        variant.withPhaseOverride(invalidOverride)
+                                    } else {
+                                        variant
+                                    }
+                                },
+                        ),
+                    )
+                }
+
+            assertTrue(
+                ex.message.orEmpty().contains(expectedMessage),
+                "Expected '$expectedMessage' in '${ex.message}'.",
+            )
+        }
+    }
+
+    @Test
     fun `secret zone entry rule must stay identical to hidden entrance discovery rule`() {
         val targetSecretZone = baseSchemaCatalog.secretZones.first()
         val ex =
@@ -294,4 +369,14 @@ class GameContentTest {
             schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
         ).also(GameContent::validateEliteMutationContracts)
+
+    private fun assertTriggerRefs(
+        trigger: TriggerExpression,
+        expectedRefs: Set<String>,
+    ) {
+        assertEquals(expectedRefs, trigger.referenceIds())
+    }
+
+    private fun BossVariantDef.withPhaseOverride(override: com.ktome.core.ai.BossPhaseOverride): BossVariantDef =
+        copy(phaseOverrides = listOf(override))
 }

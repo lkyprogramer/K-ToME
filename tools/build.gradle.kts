@@ -675,13 +675,28 @@ tasks.register<Test>("whiteBoxLoot") {
     useJUnitPlatform {
         includeTags("whiteBoxLoot")
     }
-    dependsOn("verifyLootPreflight")
+    dependsOn("lootBalanceLab", "verifyLootPreflight")
     systemProperty("ktome.phase4.loot.reportDir", layout.buildDirectory.dir("reports/phase4/loot").get().asFile.absolutePath)
     systemProperty("ktome.phase4.loot.preflight.reportDir", lootPreflightOutputDir.get().asFile.absolutePath)
     systemProperty("ktome.phase4.reuseHarnessOutputs", "true")
+    systemProperty("ktome.phase4.whitebox.loot.allowKernelFallback", "false")
     val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/loot")
     systemProperty("ktome.phase4.whitebox.loot.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)
+    TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.HEAVY_EVALUATION)
+}
+
+tasks.register<Test>("lootVerificationCacheContract") {
+    group = "verification"
+    description = "Verifies Phase 4 loot kernel and white-box evaluation cache contracts outside the default owner gate."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("lootVerificationCacheContract")
+    }
+    systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemProperty("ktome.phase4.reuseHarnessOutputs", "true")
+    systemProperty("ktome.phase4.whitebox.loot.allowKernelFallback", "true")
     TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.HEAVY_EVALUATION)
 }
 

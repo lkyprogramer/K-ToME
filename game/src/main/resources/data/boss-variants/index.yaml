@@ -28,6 +28,15 @@ bossVariants:
     lootProfileOverride: loot.deep_iron_pit.reward
     visualTintKey: vfx.boss.variant.molten_glass
     actionWeightProfileId: boss.variant.weight.molten_glass
+    phaseOverrides:
+      - phaseId: phase_enraged
+        trigger:
+          allOf:
+            - ref: boss.trigger.hp_below_50
+            - ref: zone.trigger.oil_or_fire_seen
+        telegraphSpecId: molten_glass_phase_override_warning
+        actionEmphasisIds: [linebreaker, earthshaker]
+        onEnterEventKey: boss.variant.molten_glass.phase_override.entered
 
   - id: boss.variant.grey_crown
     baseEncounterId: dungeon_lord_encounter
@@ -36,6 +45,15 @@ bossVariants:
     lootProfileOverride: loot.grey_gate_depths.reward
     visualTintKey: vfx.boss.variant.grey_crown
     actionWeightProfileId: boss.variant.weight.grey_crown
+    phaseOverrides:
+      - phaseId: phase_desperate
+        trigger:
+          allOf:
+            - ref: boss.trigger.hp_below_45
+            - ref: boss.trigger.war_caller_active
+        telegraphSpecId: grey_crown_phase_override_warning
+        actionEmphasisIds: [battlefield_command, ritual_break]
+        onEnterEventKey: boss.variant.grey_crown.phase_override.entered
 
   - id: boss.variant.abyssal_eclipse
     baseEncounterId: abyssal_guardian_encounter
@@ -44,3 +62,12 @@ bossVariants:
     lootProfileOverride: loot.abyssal_heart.reward
     visualTintKey: vfx.boss.variant.abyssal_eclipse
     actionWeightProfileId: boss.variant.weight.abyssal_eclipse
+    phaseOverrides:
+      - phaseId: phase_abyssal
+        trigger:
+          allOf:
+            - ref: boss.trigger.hp_below_40
+            - ref: zone.trigger.void_pressure_active
+        telegraphSpecId: abyssal_eclipse_phase_override_warning
+        actionEmphasisIds: [void_breach, abyssal_consecration]
+        onEnterEventKey: boss.variant.abyssal_eclipse.phase_override.entered

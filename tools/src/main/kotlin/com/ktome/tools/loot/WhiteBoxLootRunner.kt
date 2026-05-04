@@ -47,6 +47,27 @@ data class WhiteBoxLootRun(
     val reportPath: Path,
 )
 
+internal data class WhiteBoxLootRunConfig(
+    val repoRoot: Path,
+    val lootReportDir: Path,
+    val outputDir: Path,
+    val preflightSummaryPath: Path,
+    val baselinePath: Path,
+    val allowKernelFallback: Boolean,
+)
+
+private enum class WhiteBoxLootKernelSource {
+    PRODUCER_ARTIFACT,
+    EXECUTED_FALLBACK,
+}
+
+private data class WhiteBoxLootKernelResolution(
+    val kernelRun: LootKernelRun,
+    val source: WhiteBoxLootKernelSource,
+    val cacheStatus: String,
+    val readMillis: Long,
+)
+
 private data class LootPreflightArtifacts(
     val summary: LootPreflightSummary,
 ) {
@@ -79,16 +100,19 @@ object WhiteBoxLootRunner {
     const val HARNESS_ID: String = "whiteBoxLoot"
     private const val DOMAIN_ID: String = "loot"
     private const val CORPUS_ID: String = "P4_PR05_LOOT_WHITEBOX"
-    private const val WHITEBOX_EVALUATION_CACHE_VERSION: String = "uvr-pr05-whitebox-loot-eval-v4"
+    private const val WHITEBOX_EVALUATION_CACHE_VERSION: String = "uvr-pr05-whitebox-loot-eval-v5"
     private val json: Json = Json { prettyPrint = true; explicitNulls = false }
 
-    fun run(): WhiteBoxLootRun {
-        val repoRoot = VerificationCacheSupport.repoRoot()
-        val outputDir = reportDir()
+    fun run(): WhiteBoxLootRun = run(defaultConfig())
+
+    internal fun run(config: WhiteBoxLootRunConfig): WhiteBoxLootRun {
+        val repoRoot = config.repoRoot
+        val outputDir = config.outputDir
         Files.createDirectories(outputDir)
         val cacheDirs = VerificationCacheSupport.cacheDirs(domainId = DOMAIN_ID, repoRoot = repoRoot)
-        val preflightSummaryPath = LootBalanceLabRunner.lootPreflightSummaryPath(repoRoot)
-        val baselinePath = repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath())
+        val preflightSummaryPath = config.preflightSummaryPath
+        val baselinePath = config.baselinePath
+        val kernelResolution = resolveKernelRun(config)
         val baseline = VerificationBaseline.read(baselinePath)
         val loader = DataLoader(LOOT_REPORT_LOCALE)
         val schemaCatalog = loader.loadSchemaCatalog()
@@ -96,12 +120,7 @@ object WhiteBoxLootRunner {
         val dynamicPoolCoverageSummary = computeDynamicPoolCoverage(schemaCatalog.lootProfiles)
         val specialTierPassiveFamilyDuplicateSummary = computeSpecialTierPassiveFamilyDuplicateSummary(itemBundle)
 
-        val kernelRun =
-            if (reuseHarnessOutputs()) {
-                LootBalanceLabRunner.readKernelRun() ?: LootLabKernel.execute().kernelRun
-            } else {
-                LootLabKernel.execute().kernelRun
-            }
+        val kernelRun = kernelResolution.kernelRun
         val strictAwareProfileOverlapSummary =
             kernelRun.profileOverlapSummary.withStrictPairCeilings(strictSecretProfileMaxOverlapTargets(baseline))
         val overlapSummaryJson = strictAwareProfileOverlapSummary.toJson()
@@ -129,8 +148,15 @@ object WhiteBoxLootRunner {
         if (Files.isRegularFile(cachedSummaryPath) && Files.isRegularFile(cachedCasesPath) && Files.isRegularFile(cachedReportPath)) {
             VerificationCacheSupport.clearDirectory(outputDir)
             VerificationCacheSupport.copyDirectoryContents(evaluationCacheDir, outputDir)
-            return cachedRun(outputDir.resolve("whitebox-loot-summary.json"), outputDir.resolve("whitebox-loot-cases.jsonl"), outputDir.resolve("whitebox-loot-report.md"))
+            return cachedRun(
+                summaryPath = outputDir.resolve("whitebox-loot-summary.json"),
+                casesPath = outputDir.resolve("whitebox-loot-cases.jsonl"),
+                reportPath = outputDir.resolve("whitebox-loot-report.md"),
+                kernelResolution = kernelResolution,
+                allowKernelFallback = config.allowKernelFallback,
+            )
         }
+        val renderStartNanos = System.nanoTime()
         val header =
             phase4HarnessHeader(harnessId = HARNESS_ID, seedList = kernelRun.matrixSeeds, locale = LOOT_REPORT_LOCALE.id)
                 .toVerificationReportHeader(corpusId = CORPUS_ID)
@@ -201,6 +227,7 @@ object WhiteBoxLootRunner {
                     retentionPolicy = ArtifactRetentionPolicy.ALL,
                 ),
             )
+        val renderMillis = elapsedMillis(renderStartNanos)
         val ownerEvaluation =
             buildOwnerEvaluation(
                 profileOverlapSummary = strictAwareProfileOverlapSummary,
@@ -217,6 +244,9 @@ object WhiteBoxLootRunner {
             evaluationFingerprint = evaluationFingerprint,
             ownerEvaluation = ownerEvaluation,
             preflightArtifacts = preflightArtifacts,
+            kernelResolution = kernelResolution,
+            allowKernelFallback = config.allowKernelFallback,
+            renderMillis = renderMillis,
         )
         VerificationCacheSupport.clearDirectory(evaluationCacheDir)
         VerificationCacheSupport.copyDirectoryContents(outputDir, evaluationCacheDir)
@@ -230,6 +260,57 @@ object WhiteBoxLootRunner {
     }
 
     private fun reuseHarnessOutputs(): Boolean = System.getProperty("ktome.phase4.reuseHarnessOutputs") == "true"
+
+    private fun defaultConfig(): WhiteBoxLootRunConfig {
+        val repoRoot = VerificationCacheSupport.repoRoot()
+        return WhiteBoxLootRunConfig(
+            repoRoot = repoRoot,
+            lootReportDir = LootBalanceLabRunner.lootReportDir(),
+            outputDir = reportDir(),
+            preflightSummaryPath = LootBalanceLabRunner.lootPreflightSummaryPath(repoRoot),
+            baselinePath = repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath()),
+            allowKernelFallback = System.getProperty("ktome.phase4.whitebox.loot.allowKernelFallback") == "true",
+        )
+    }
+
+    private fun resolveKernelRun(config: WhiteBoxLootRunConfig): WhiteBoxLootKernelResolution {
+        val readStartNanos = System.nanoTime()
+        val producerKernel =
+            if (reuseHarnessOutputs()) {
+                LootBalanceLabRunner.readKernelRun(reportDir = config.lootReportDir, repoRoot = config.repoRoot)
+            } else {
+                null
+            }
+        val readMillis = elapsedMillis(readStartNanos)
+        if (producerKernel != null) {
+            return WhiteBoxLootKernelResolution(
+                kernelRun = producerKernel,
+                source = WhiteBoxLootKernelSource.PRODUCER_ARTIFACT,
+                cacheStatus =
+                    LootBalanceLabRunner.readKernelCacheStatus(
+                        reportDir = config.lootReportDir,
+                        repoRoot = config.repoRoot,
+                    ) ?: "READ_PRODUCER_ARTIFACT",
+                readMillis = readMillis,
+            )
+        }
+        if (!config.allowKernelFallback) {
+            error(
+                "Missing loot kernel for whiteBoxLoot. Run :tools:lootBalanceLab before :tools:whiteBoxLoot, " +
+                    "or set -Dktome.phase4.whitebox.loot.allowKernelFallback=true for explicit diagnostics.",
+            )
+        }
+        val executionStartNanos = System.nanoTime()
+        val execution = LootLabKernel.execute()
+        return WhiteBoxLootKernelResolution(
+            kernelRun = execution.kernelRun,
+            source = WhiteBoxLootKernelSource.EXECUTED_FALLBACK,
+            cacheStatus = execution.cacheStatus,
+            readMillis = readMillis + elapsedMillis(executionStartNanos),
+        )
+    }
+
+    private fun elapsedMillis(startNanos: Long): Long = (System.nanoTime() - startNanos) / 1_000_000L
 
     private fun caseAssertions(matrix: LootMatrixResult): List<WhiteBoxAssertionResult> =
         listOf(
@@ -634,6 +715,8 @@ object WhiteBoxLootRunner {
         summaryPath: Path,
         casesPath: Path,
         reportPath: Path,
+        kernelResolution: WhiteBoxLootKernelResolution,
+        allowKernelFallback: Boolean,
     ): WhiteBoxLootRun {
         val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
         val rewritten =
@@ -649,6 +732,11 @@ object WhiteBoxLootRunner {
                         put(key, value)
                     }
                 }
+                put("kernelSource", kernelResolution.source.name)
+                put("kernelCacheStatus", kernelResolution.cacheStatus)
+                put("kernelFallbackAllowed", allowKernelFallback)
+                put("kernelReadMillis", kernelResolution.readMillis)
+                put("renderMillis", 0L)
             }
         Files.writeString(summaryPath, json.encodeToString(JsonElement.serializer(), rewritten))
         val summary = rewritten.getValue("summary").jsonObject
@@ -669,11 +757,19 @@ object WhiteBoxLootRunner {
         evaluationFingerprint: String,
         ownerEvaluation: EvaluationResult,
         preflightArtifacts: LootPreflightArtifacts,
+        kernelResolution: WhiteBoxLootKernelResolution,
+        allowKernelFallback: Boolean,
+        renderMillis: Long,
     ) {
         val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
         val decorated =
             buildJsonObject {
                 payload.forEach { (key, value) -> put(key, value) }
+                put("kernelSource", kernelResolution.source.name)
+                put("kernelCacheStatus", kernelResolution.cacheStatus)
+                put("kernelFallbackAllowed", allowKernelFallback)
+                put("kernelReadMillis", kernelResolution.readMillis)
+                put("renderMillis", renderMillis)
                 put(
                     "ownerEvaluation",
                     json.parseToJsonElement(json.encodeToString(EvaluationResult.serializer(), ownerEvaluation)),

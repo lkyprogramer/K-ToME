@@ -17,7 +17,9 @@ data class PendingTelegraphState(
 
 data class BossEncounterState(
     val encounterId: String,
+    val phaseOverrides: List<BossPhaseOverride> = emptyList(),
     var currentPhaseId: String? = null,
     var encounterTurnCount: Int = 0,
     var phaseTurnCount: Int = 0,
+    val phaseOverrideTriggeredPhaseIds: MutableSet<String> = linkedSetOf(),
 )

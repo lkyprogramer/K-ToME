@@ -762,6 +762,7 @@ internal object SessionSnapshotMapper {
                         currentPhaseId = bossState.currentPhaseId,
                         encounterTurnCount = bossState.encounterTurnCount,
                         phaseTurnCount = bossState.phaseTurnCount,
+                        phaseOverrideTriggeredPhaseIds = bossState.phaseOverrideTriggeredPhaseIds.sorted(),
                     )
                 },
             secretEncounter =
@@ -1020,9 +1021,15 @@ internal object SessionSnapshotMapper {
                 entityId,
                 BossEncounterState(
                     encounterId = bossState.encounterId,
+                    phaseOverrides =
+                        snapshot.bossVariant
+                            ?.variantId
+                            ?.let { variantId -> content.bossVariantRegistry.resolve(variantId)?.phaseOverrides }
+                            .orEmpty(),
                     currentPhaseId = bossState.currentPhaseId,
                     encounterTurnCount = bossState.encounterTurnCount,
                     phaseTurnCount = bossState.phaseTurnCount,
+                    phaseOverrideTriggeredPhaseIds = bossState.phaseOverrideTriggeredPhaseIds.toCollection(linkedSetOf()),
                 ),
             )
         }

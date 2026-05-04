@@ -4,11 +4,15 @@ data class BossPhaseEvaluationContext(
     val healthRatio: Double,
     val encounterTurnCount: Int,
     val activeStatusIds: Set<String> = emptySet(),
+    val activeTriggerIds: Set<String> = emptySet(),
+    val triggeredPhaseOverridePhaseIds: Set<String> = emptySet(),
 )
 
 data class BossPhaseResolution(
     val phase: BossPhaseDef,
     val matchedTriggers: Set<String>,
+    val phaseOverride: BossPhaseOverride? = null,
+    val phaseOverrideSkippedReason: String? = null,
 )
 
 object BossPhaseManager {
@@ -44,6 +48,7 @@ object BossPhaseManager {
                     matches(phase, context)
             }
             ?: return null
+        val overrideMatch = resolvePhaseOverride(encounter, nextPhase, context)
         return BossPhaseResolution(
             phase = nextPhase,
             matchedTriggers =
@@ -51,7 +56,9 @@ object BossPhaseManager {
                     phase = nextPhase,
                     context = context,
                     isInitialSelection = currentPhaseId == null && encounter.phases.firstOrNull()?.id == nextPhase.id,
-                ),
+                ) + listOfNotNull(overrideMatch.override?.let { "phase_override" }),
+            phaseOverride = overrideMatch.override,
+            phaseOverrideSkippedReason = overrideMatch.skippedReason,
         )
     }
 
@@ -107,6 +114,30 @@ object BossPhaseManager {
         }
     }
 
+    private fun resolvePhaseOverride(
+        encounter: BossEncounter,
+        phase: BossPhaseDef,
+        context: BossPhaseEvaluationContext,
+    ): PhaseOverrideMatch {
+        val override = encounter.phaseOverrides.firstOrNull { candidate -> candidate.phaseId == phase.id } ?: return PhaseOverrideMatch()
+        if (phase.id in context.triggeredPhaseOverridePhaseIds) {
+            return PhaseOverrideMatch(skippedReason = "already_triggered")
+        }
+        return if (override.trigger.matches(context.activeTriggerIds)) {
+            PhaseOverrideMatch(override = override)
+        } else {
+            PhaseOverrideMatch(skippedReason = "trigger_unmatched")
+        }
+    }
+
+    private fun TriggerExpression.matches(activeTriggerIds: Set<String>): Boolean =
+        when (this) {
+            is TriggerExpression.Ref -> triggerId in activeTriggerIds
+            is TriggerExpression.AllOf -> children.all { child -> child.matches(activeTriggerIds) }
+            is TriggerExpression.AnyOf -> children.any { child -> child.matches(activeTriggerIds) }
+            is TriggerExpression.Not -> !child.matches(activeTriggerIds)
+        }
+
     private fun matchesHp(
         phase: BossPhaseDef,
         context: BossPhaseEvaluationContext,
@@ -122,4 +153,9 @@ object BossPhaseManager {
             phase.hpThreshold != null -> context.healthRatio <= phase.hpThreshold
             else -> context.healthRatio > (phase.hpEnd ?: 0.0)
         }
+
+    private data class PhaseOverrideMatch(
+        val override: BossPhaseOverride? = null,
+        val skippedReason: String? = null,
+    )
 }

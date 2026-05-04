@@ -100,6 +100,7 @@ import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.LootPoolStrategy
 import com.ktome.game.data.schema.RewardRoutingGrantMode
+import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.loot.FoundationProfessionBuildIdentity
 import com.ktome.game.hidden.HiddenEventReward
 import com.ktome.game.hidden.HiddenEventRewardKey
@@ -5360,7 +5361,13 @@ class FoundationGameSessionTest {
         val saveManager = SaveManager(tempDir.resolve("boss-trigger-save"))
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = 20260322L, zoneId = "grey_gate_depths", playerProfessionId = "vanguard"),
+                config =
+                    FoundationGameConfig(
+                        seed = 20260322L,
+                        zoneId = "grey_gate_depths",
+                        playerProfessionId = "vanguard",
+                        bossVariantSelectionMode = BossVariantSelectionMode.DISABLED,
+                    ),
                 saveManager = saveManager,
             )
         movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
@@ -5508,7 +5515,13 @@ class FoundationGameSessionTest {
     fun `boss hp threshold transition posts message and records trace`() {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = 20260322L, zoneId = "grey_gate_depths", playerProfessionId = "vanguard"),
+                config =
+                    FoundationGameConfig(
+                        seed = 20260322L,
+                        zoneId = "grey_gate_depths",
+                        playerProfessionId = "vanguard",
+                        bossVariantSelectionMode = BossVariantSelectionMode.DISABLED,
+                    ),
                 saveManager = SaveManager(tempDir.resolve("boss-hp-trigger-save")),
             )
         movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
@@ -5599,7 +5612,13 @@ class FoundationGameSessionTest {
     fun `start of turn phase change clears stale queued telegraph before it resolves`() {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = 20260322L, zoneId = "grey_gate_depths", playerProfessionId = "vanguard"),
+                config =
+                    FoundationGameConfig(
+                        seed = 20260322L,
+                        zoneId = "grey_gate_depths",
+                        playerProfessionId = "vanguard",
+                        bossVariantSelectionMode = BossVariantSelectionMode.DISABLED,
+                    ),
                 saveManager = SaveManager(tempDir.resolve("boss-phase-clears-stale-telegraph")),
             )
         movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
@@ -6457,6 +6476,57 @@ class FoundationGameSessionTest {
             requireNotNull(world.get<EffectTracker>(bossId)).effects.any { effect -> effect.schemaId == "war_cry_empower" }
         }
         assertTrue(requireNotNull(world.get<EffectTracker>(bossId)).effects.any { effect -> effect.schemaId == "war_cry_empower" })
+
+        val bossHealth = requireNotNull(world.get<Health>(bossId))
+        bossHealth.current = bossHealth.max * 2 / 5
+        advanceTurnsUntil(session, maxTurns = 4) {
+            world.get<BossEncounterState>(bossId)?.phaseOverrideTriggeredPhaseIds?.contains("phase_desperate") == true
+        }
+        assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
+        assertEquals(
+            "grey_crown_phase_override_warning",
+            requireNotNull(world.get<PendingTelegraphState>(bossId)).telegraphSpecId,
+        )
+    }
+
+    @Test
+    fun `grey crown phase override waits for active war call aura`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(
+                    seed = 20260409L,
+                    zoneId = "grey_gate_depths",
+                    playerProfessionId = "vanguard",
+                    preferredBossVariantId = "boss.variant.grey_crown",
+                ),
+                SaveManager(tempDir.resolve("grey-crown-phase-override-requires-war-call")),
+            )
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        val world = runtimeWorld(session)
+        val bossId = requireNotNull(entityByTemplateId(session, "cultist.dungeon_lord"))
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+        requireNotNull(world.get<Health>(bossId)).let { health ->
+            health.current = health.max * 2 / 5
+        }
+        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId["elite_war_call"] = 99
+
+        advanceTurnsUntil(session, maxTurns = 2) {
+            world.get<BossEncounterState>(bossId)?.currentPhaseId == "phase_desperate"
+        }
+
+        val bossState = requireNotNull(world.get<BossEncounterState>(bossId))
+        assertEquals("phase_desperate", bossState.currentPhaseId)
+        assertFalse("phase_desperate" in bossState.phaseOverrideTriggeredPhaseIds)
+        assertEquals("dungeon_lord_phase_warning", requireNotNull(world.get<PendingTelegraphState>(bossId)).telegraphSpecId)
+        assertTrue(
+            session.recentBossTraces().any { trace ->
+                trace.actorId == bossId.value &&
+                    trace.toPhase == "phase_desperate" &&
+                    "PHASE_OVERRIDE_SKIPPED:trigger_unmatched" in trace.sideEffects
+            },
+        )
     }
 
     @Test

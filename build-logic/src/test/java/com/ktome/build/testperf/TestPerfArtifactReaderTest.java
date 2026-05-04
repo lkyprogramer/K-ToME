@@ -133,13 +133,20 @@ class TestPerfArtifactReaderTest {
                 resultsDir.resolve("TEST-demo.xml"),
                 """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <testsuite name="demo" tests="3" failures="1" errors="0"/>
+                <testsuite name="demo" tests="3" failures="1" errors="0">
+                  <testcase classname="com.ktome.tools.loot.WhiteBoxLootRunnerTest" name="slow owner assertion" time="239.219"/>
+                  <testcase classname="com.ktome.tools.loot.WhiteBoxLootRunnerTest" name="fast report assertion" time="0.525"/>
+                  <testcase classname="com.ktome.tools.loot.WhiteBoxLootRunnerTest" name="medium assertion" time="12.001"/>
+                </testsuite>
                 """);
         Files.writeString(
                 resultsDir.resolve("TEST-extra.xml"),
                 """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <testsuite name="extra" tests="2" failures="0" errors="1"/>
+                <testsuite name="extra" tests="2" failures="0" errors="1">
+                  <testcase classname="com.ktome.tools.loot.WhiteBoxLootRunnerTest" name="slow strict baseline" time="264.547"/>
+                  <testcase classname="com.ktome.tools.loot.WhiteBoxLootRunnerTest" name="tiny assertion" time="0.001"/>
+                </testsuite>
                 """);
 
         TaskRecord.TestDetails tests =
@@ -161,5 +168,10 @@ class TestPerfArtifactReaderTest {
         assertEquals("UNIT_TEST", tests.workload().workloadClass());
         assertEquals(5, tests.workload().workloadCount());
         assertEquals("HEAVY_EVALUATION", tests.bandHint());
+        assertEquals(3, tests.slowTestMethods().size());
+        assertEquals("slow strict baseline", tests.slowTestMethods().get(0).name());
+        assertEquals(264_547L, tests.slowTestMethods().get(0).durationMillis());
+        assertEquals("slow owner assertion", tests.slowTestMethods().get(1).name());
+        assertEquals(239_219L, tests.slowTestMethods().get(1).durationMillis());
     }
 }

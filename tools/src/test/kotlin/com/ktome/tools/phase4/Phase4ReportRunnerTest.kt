@@ -187,8 +187,8 @@ class Phase4ReportRunnerTest {
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
             "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
-        assertEquals(63, experienceMetrics.size)
-        assertEquals(63, metricCatalog.size)
+        assertEquals(67, experienceMetrics.size)
+        assertEquals(67, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
@@ -252,6 +252,10 @@ class Phase4ReportRunnerTest {
                 "variantTraceDivergenceRatio",
                 "minVariantActionTraceDivergenceScore",
                 "bossVariantBasePhaseCountMin",
+                "bossVariantPhaseOverrideSchemaCoverage",
+                "bossVariantPhaseOverrideRuntimeTriggerCoverage",
+                "bossVariantPhaseOverrideTelegraphCoverage",
+                "bossVariantPhaseOverrideActionDistinctCount.reportOnly",
                 "terrainInteractionEncounterRate.aggregate",
                 "terrainInteractionEncounterRate.per_zone_lower_bound",
             ),
@@ -308,6 +312,8 @@ class Phase4ReportRunnerTest {
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "minVariantActionTraceDivergenceScore" }.jsonObject
         val bossBasePhaseMetric =
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "bossVariantBasePhaseCountMin" }.jsonObject
+        val bossPhaseOverrideActionMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "bossVariantPhaseOverrideActionDistinctCount.reportOnly" }.jsonObject
         val criticalPathZoneIds =
             combatFloorMetric.getValue("currentValue").jsonObject.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
                 zoneId.jsonPrimitive.content
@@ -341,6 +347,9 @@ class Phase4ReportRunnerTest {
         assertTrue(traceDivergenceMetric.getValue("currentValue").jsonObject.containsKey("phaseGraphStructuralDiffCount"))
         assertTrue(minActionTraceMetric.getValue("currentValue").jsonObject.containsKey("pairCount"))
         assertTrue(bossBasePhaseMetric.getValue("currentValue").jsonObject.containsKey("bossVariantBasePhaseCounts"))
+        assertTrue(bossPhaseOverrideActionMetric.getValue("currentValueText").jsonPrimitive.content.contains("min "))
+        assertTrue(bossPhaseOverrideActionMetric.getValue("currentValue").jsonObject.containsKey("countsByVariant"))
+        assertTrue(bossPhaseOverrideActionMetric.getValue("currentValue").jsonObject.containsKey("minCount"))
         assertTrue(leadDiscoveryMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
         assertTrue(leadDiscoveryMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
         assertEquals("PASS", leadDiscoveryMetric.getValue("status").jsonPrimitive.content)

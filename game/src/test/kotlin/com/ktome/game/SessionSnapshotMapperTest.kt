@@ -31,6 +31,7 @@ import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.AreaEffectEmitterSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
+import com.ktome.core.save.BossEncounterStateSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
 import com.ktome.core.save.FloorSnapshot
@@ -783,6 +784,52 @@ class SessionSnapshotMapperTest {
         val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot)
         assertEquals(enteredRoomNodeIds, restored.floors.single().payload.enteredRoomNodeIds.toSet())
         assertEquals(discoveryTags, restored.floors.single().payload.discoveryTags.toSet())
+    }
+
+    @Test
+    fun `save snapshot round trip preserves boss phase override triggered phase ids`() {
+        val generatedFloor = phase4HiddenEntranceFloor(bindingId = SearchBindingId("search.greenwood.secret_entrance"))
+        val bossSnapshot =
+            EntitySnapshot(
+                id = 8,
+                position = PointSnapshot(3, 1),
+                monsterTemplateId = "orc.molten_giant",
+                bossEncounterState =
+                    BossEncounterStateSnapshot(
+                        encounterId = "molten_giant_encounter",
+                        currentPhaseId = "phase_enraged",
+                        encounterTurnCount = 6,
+                        phaseTurnCount = 1,
+                        phaseOverrideTriggeredPhaseIds = listOf("phase_enraged"),
+                    ),
+            )
+        val baseSnapshot = phase4Snapshot(generatedFloor)
+        val snapshot =
+            baseSnapshot.copy(
+                floors =
+                    listOf(
+                        baseSnapshot.floors.single().copy(
+                            entities = listOf(bossSnapshot),
+                        ),
+                    ),
+            )
+
+        val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot)
+        val restoredBoss = restored.floors.single().payload.entities.single()
+        val world = SessionSnapshotMapper.restoreWorld(content(), restored.player, restored.floors.single().payload)
+        val capturedFloor =
+            SessionSnapshotMapper.captureFloor(
+                generatedFloor = generatedFloor,
+                stairsUp = null,
+                stairsDown = null,
+                exploredTiles = setOf(generatedFloor.map.playerStart),
+                world = world,
+                excludedEntities = setOf(com.ktome.core.ecs.EntityId(1)),
+            )
+        val capturedBoss = capturedFloor.entities.single { entity -> entity.id == bossSnapshot.id }
+
+        assertEquals(listOf("phase_enraged"), restoredBoss.bossEncounterState?.phaseOverrideTriggeredPhaseIds)
+        assertEquals(listOf("phase_enraged"), capturedBoss.bossEncounterState?.phaseOverrideTriggeredPhaseIds)
     }
 
     private fun content(): GameContent {
