@@ -76,7 +76,6 @@ Boss phase language 的 canonical 证据固定进入 `tools/build/reports/verifi
 - `game/src/main/kotlin/com/ktome/game/elites/MutationModels.kt`
 - `game/src/main/kotlin/com/ktome/game/data/DataLoader.kt`
 - `game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt`
-- `tools/src/main/kotlin/com/ktome/tools/boss/**`
 - `tools/src/main/kotlin/com/ktome/tools/phase4/**`
 
 数据：
@@ -92,12 +91,13 @@ Boss phase language 的 canonical 证据固定进入 `tools/build/reports/verifi
 测试：
 
 - `core/src/test/kotlin/com/ktome/core/ai/BossPhaseManagerTest.kt`
-- `game/src/test/kotlin/com/ktome/game/elites/MutationModelsTest.kt`
-- `game/src/test/kotlin/com/ktome/game/BossVariantDataLoaderTest.kt`
+- `game/src/test/kotlin/com/ktome/game/elites/MutationModelsContractsTest.kt`
+- `game/src/test/kotlin/com/ktome/game/data/BossVariantDataLoaderTest.kt`
 - `game/src/test/kotlin/com/ktome/game/BossFactoryTest.kt`
 - `game/src/test/kotlin/com/ktome/game/hidden/HiddenContentMapgenPipelineTest.kt`
-- `client/src/test/kotlin/com/ktome/client/render/**/*SnapshotTest.kt`
-- `tools/src/test/kotlin/com/ktome/tools/boss/BossHarnessRunnerTest.kt`
+- `client/src/test/kotlin/com/ktome/client/golden/GoldenScreenshotHarnessTest.kt`
+- `client/src/test/kotlin/com/ktome/client/ClientSmokeHarnessTest.kt`
+- `game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt`
 - `tools/src/test/kotlin/com/ktome/tools/phase4/Phase4ReportRunnerTest.kt`
 
 测试职责固定为三层：
@@ -158,6 +158,7 @@ sealed interface TriggerExpression {
     data class Ref(val triggerId: String) : TriggerExpression
     data class AllOf(val children: List<TriggerExpression>) : TriggerExpression
     data class AnyOf(val children: List<TriggerExpression>) : TriggerExpression
+    data class Not(val child: TriggerExpression) : TriggerExpression
 }
 ```
 
@@ -169,8 +170,8 @@ sealed interface TriggerExpression {
 4. 每个 variant 至少 1 个 override。
 5. override 不改变 hp threshold。
 6. `phaseOverrides` 属于 boss variant schema；core boss phase manager 只消费解析后的 semantic override，不知道 YAML 路径、content pack 或 registry source。
-7. `DataLoader.parseBossVariants` 必须 fail fast 校验 phase、trigger reference、telegraph、action emphasis 和 on-enter event key。
-8. `TriggerExpression.AllOf` 与 `TriggerExpression.AnyOf` 必须至少包含 2 个 child；空 trigger expression fail fast。
+7. `DataLoader.parseBossVariants` / `loadSchemaCatalog()` 必须 fail fast 校验 phase、trigger reference、telegraph、action emphasis 和 on-enter event key；跨表引用校验允许落在 catalog 完成后的专用 validator，但必须发生在 runtime 任何 boss spawn 之前。
+8. `TriggerExpression.AllOf` 与 `TriggerExpression.AnyOf` 必须至少包含 2 个 child；`TriggerExpression.Not` 必须包含恰好 1 个 child；空 trigger expression fail fast。
 9. `onEnterEventKey` 是 `CoreEventBus` 事件 key，命名模式固定为 `boss.variant.<variantSlug>.phase_override.entered`；`variantSlug` 是去掉 `boss.variant.` 前缀后的稳定 slug，且必须匹配 `[a-z][a-z0-9_]*`；同批新增 `log.boss.phase_override_entered` 与中英文 i18n。
 
 runtime 接线固定为：
@@ -238,7 +239,7 @@ Boss harness 必须输出：
 
 1. `boss-variants/index.yaml` 中 3 个 variant 均声明 `phaseOverrides`。
 2. `BossVariantDef.phaseOverrides` 的唯一 schema owner 是 `game/src/main/kotlin/com/ktome/game/elites/MutationModels.kt`。
-3. `DataLoader.parseBossVariants` 对 phase、trigger expression、trigger references、telegraph、action emphasis、on-enter event key fail fast。
+3. `DataLoader.parseBossVariants` 与 catalog validator 对 phase、trigger expression、trigger references、telegraph、action emphasis、on-enter event key fail fast。
 4. 3 个 override telegraph 都能在 boss harness 中触发。
 5. `bossVariantPhaseOverrideSchemaCoverage=3/3`，`bossVariantPhaseOverrideRuntimeTriggerCoverage=3/3`，`bossVariantPhaseOverrideTelegraphCoverage=3/3`。
 6. `phaseGraphUnchanged` 继续作为说明，不能把本 PR 扩成完整 graph mutation。
@@ -257,7 +258,7 @@ sdk env
 
 必须保留以下自证产物：
 
-1. `build/reports/tests/` 中 `BossPhaseManagerTest`、`MutationModelsTest`、`BossVariantDataLoaderTest`、`BossHarnessRunnerTest` 的结果。
+1. `build/reports/tests/` 中 `BossPhaseManagerTest`、`MutationModelsContractsTest`、`BossVariantDataLoaderTest`、`BossHarnessTest` 的结果。
 2. `tools/build/reports/` 中 `bossHarness` producer 产物。
 3. `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}` canonical report 产物，且 `reportPhase4Only` 与 `reportPhase4` 对 boss variant phase metrics 读取同一 producer artifact。
 4. `client/build/reports/tests/goldenScreenshot/index.html` 中 `goldenScreenshot` 报告，必须包含 3 个 variant warning / telegraph presentation 的可见案例。
@@ -374,7 +375,7 @@ sdk env
 3. `bossVariantPhaseOverrideSchemaCoverage=3/3`、`bossVariantPhaseOverrideRuntimeTriggerCoverage=3/3` 且 `bossVariantPhaseOverrideTelegraphCoverage=3/3`。
 4. report 同时保留 action trace divergence 和 structural phase divergence。
 5. `MutationModels.kt` 是 `BossVariantDef.phaseOverrides` 的唯一 schema owner。
-6. `DataLoader.parseBossVariants` 对 phase / trigger expression / telegraph / action emphasis 引用 fail fast。
+6. `DataLoader.parseBossVariants` 与 catalog validator 对 phase / trigger expression / telegraph / action emphasis 引用 fail fast。
 7. `goldenScreenshot` 与 client render snapshot 覆盖 3 个 variant warning / telegraph presentation 的可见案例。
 8. `verifyChanged` 覆盖 boss variant schema、data、harness、client presentation 和 report 影响面。
 9. 没有新增图片计划文件。

@@ -63,6 +63,10 @@ import com.ktome.game.PlayerCommand
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.validation.ValidationAction
+import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioId
+import com.ktome.game.validation.ValidationScenarioRegistry
 import java.nio.file.Path
 import java.security.MessageDigest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -243,6 +247,25 @@ class GoldenScreenshotHarnessTest {
                 "phase4-uiux-pr05-combat-target" to "e7f74536e4677cb8712062a045972d6042f23153529edf95c775dcc857f1d36d",
                 "phase4-uiux-pr05-combat-disabled-resource" to "c967d35688bde456d86d485e4b1c9fb32f07468c42babc3fbd220f97181f15a3",
                 "phase4-uiux-pr05-combat-illegal-target" to "e39d965b07d822bec08a06dc66ab540f0618a8b654b5e04ea6dc96b394b30648",
+            ),
+            hashes,
+        )
+    }
+
+    @Test
+    fun `phase4 v4 pr05 boss variant phase warning hashes remain stable`() {
+        val hashes =
+            listOf(
+                "phase4-v4-pr05-molten-glass-phase-override-warning",
+                "phase4-v4-pr05-grey-crown-phase-override-warning",
+                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning",
+            ).zip(capturePhase4V4Pr05BossVariantWarningSet()).toMap()
+
+        assertEquals(
+            mapOf(
+                "phase4-v4-pr05-molten-glass-phase-override-warning" to "b72fb70452f7571d67ab30567f3bd62493c2881a00b6ec34a701695b4d5ce9df",
+                "phase4-v4-pr05-grey-crown-phase-override-warning" to "d0880b07bce4fe0bee4c81356f744c4c91f462ca43c9e1d232f9942db8b9ee8f",
+                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "22fa699ed97f1853184a36419840d84a94e4a0cc3b6fbe8fd6c564da4455a6bd",
             ),
             hashes,
         )
@@ -749,6 +772,92 @@ class GoldenScreenshotHarnessTest {
                 app.dispose()
             }
         }
+
+    private fun capturePhase4V4Pr05BossVariantWarningSet(): List<String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr05"))
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("phase4-v4-pr05-boss-variant-warning/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("phase4-v4-pr05-boss-variant-warning/validation-save")),
+                    profileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("phase4-v4-pr05-boss-variant-warning/profile")),
+                    validationProfileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("phase4-v4-pr05-boss-variant-warning/validation-profile")),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = scenario.runtime.locale,
+                )
+
+            try {
+                app.create()
+                app.startValidationSession(scenario.toSessionOptions())
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active PR-05 validation session for boss variant warning capture." }
+                listOf(
+                    capturePhase4V4Pr05BossVariantWarningHash(
+                        app = app,
+                        session = session,
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                        expectedOverlaySourceAbilityId = "molten_glass_phase_override_warning",
+                        expectedLogKey = "boss.variant.molten_glass.phase_override.entered",
+                    ),
+                    capturePhase4V4Pr05BossVariantWarningHash(
+                        app = app,
+                        session = session,
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                        expectedOverlaySourceAbilityId = "grey_crown_phase_override_warning",
+                        expectedLogKey = "boss.variant.grey_crown.phase_override.entered",
+                    ),
+                    capturePhase4V4Pr05BossVariantWarningHash(
+                        app = app,
+                        session = session,
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                        expectedOverlaySourceAbilityId = "abyssal_eclipse_phase_override_warning",
+                        expectedLogKey = "boss.variant.abyssal_eclipse.phase_override.entered",
+                    ),
+                )
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun capturePhase4V4Pr05BossVariantWarningHash(
+        app: GameApp,
+        session: FoundationGameSession,
+        scenarioId: ValidationScenarioId,
+        actionId: ValidationScenarioActionId,
+        expectedOverlaySourceAbilityId: String,
+        expectedLogKey: String,
+    ): String {
+        check(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenarioId,
+                        actionId = actionId,
+                    ),
+                ),
+            ),
+        ) {
+            "Failed to prepare PR-05 boss variant validation scene '$expectedOverlaySourceAbilityId'."
+        }
+        val snapshot = session.renderSnapshot()
+        check(snapshot.overlays.any { overlay -> overlay.sourceAbilityId == expectedOverlaySourceAbilityId }) {
+            "Expected overlay '$expectedOverlaySourceAbilityId'; overlays=${snapshot.overlays.map { overlay -> overlay.sourceAbilityId }}."
+        }
+        check(snapshot.logEvents.any { event -> event.message.key == expectedLogKey }) {
+            "Expected log '$expectedLogKey'; logs=${snapshot.logEvents.map { event -> event.message.key }}."
+        }
+        return captureHash {
+            repeat(2) {
+                app.render()
+            }
+        }
+    }
 
     private fun combatDecisionOverlay(
         state: CombatDecisionFrameState,

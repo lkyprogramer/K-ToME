@@ -1584,13 +1584,23 @@ internal object Phase4AggregationInputRunner {
         val traceDivergenceMetricId = "variantTraceDivergenceRatio"
         val minActionTraceMetricId = "minVariantActionTraceDivergenceScore"
         val basePhaseCountMetricId = "bossVariantBasePhaseCountMin"
+        val phaseOverrideSchemaMetricId = "bossVariantPhaseOverrideSchemaCoverage"
+        val phaseOverrideRuntimeMetricId = "bossVariantPhaseOverrideRuntimeTriggerCoverage"
+        val phaseOverrideTelegraphMetricId = "bossVariantPhaseOverrideTelegraphCoverage"
+        val phaseOverrideActionDistinctMetricId = "bossVariantPhaseOverrideActionDistinctCount.reportOnly"
         val phaseTransitionRatio = task.metrics.doubleValue(phaseTransitionMetricId)
         val traceDivergenceRatio = task.metrics.doubleValue(traceDivergenceMetricId)
         val minActionTraceDivergenceScore = task.metrics.doubleValue(minActionTraceMetricId)
         val bossVariantBasePhaseCountMin = task.metrics.doubleValue(basePhaseCountMetricId)
+        val phaseOverrideSchemaCoverage = task.metrics.doubleValue(phaseOverrideSchemaMetricId)
+        val phaseOverrideRuntimeCoverage = task.metrics.doubleValue(phaseOverrideRuntimeMetricId)
+        val phaseOverrideTelegraphCoverage = task.metrics.doubleValue(phaseOverrideTelegraphMetricId)
+        val phaseOverrideActionDistinctCount = task.metrics.doubleValue(phaseOverrideActionDistinctMetricId)
+        val phaseOverrideActionDistinctCountsByVariant = task.metrics.getValue("phaseOverrideActionDistinctCountsByVariant")
         val reportCount = task.metrics.intValue("reportCount")
         val pairCount = task.metrics.intValue("pairCount")
         val variantCount = task.metrics.intValue("variantCount")
+        val phaseOverrideDenominator = task.metrics.intValue("phaseOverrideVariantDenominator")
         val metricIds = Phase4MetricCatalog.bossPhaseIdentityMetricIds()
         val ranges = metricIds.associateWith { metricId -> baseline.requiredMetric(metricId) }
         val result =
@@ -1604,6 +1614,10 @@ internal object Phase4AggregationInputRunner {
                         traceDivergenceMetricId to traceDivergenceRatio,
                         minActionTraceMetricId to minActionTraceDivergenceScore,
                         basePhaseCountMetricId to bossVariantBasePhaseCountMin,
+                        phaseOverrideSchemaMetricId to phaseOverrideSchemaCoverage,
+                        phaseOverrideRuntimeMetricId to phaseOverrideRuntimeCoverage,
+                        phaseOverrideTelegraphMetricId to phaseOverrideTelegraphCoverage,
+                        phaseOverrideActionDistinctMetricId to phaseOverrideActionDistinctCount,
                     ),
                 currentValueTexts =
                     mapOf(
@@ -1611,6 +1625,12 @@ internal object Phase4AggregationInputRunner {
                         traceDivergenceMetricId to "${formatPercent(traceDivergenceRatio)} (${formatCompactNumber(traceDivergenceRatio * pairCount.toDouble())}/$pairCount)",
                         minActionTraceMetricId to formatRatio(minActionTraceDivergenceScore),
                         basePhaseCountMetricId to formatCompactNumber(bossVariantBasePhaseCountMin),
+                        phaseOverrideSchemaMetricId to "${formatPercent(phaseOverrideSchemaCoverage)} (${task.metrics.getValue("phaseOverrideSchemaCount")}/$phaseOverrideDenominator)",
+                        phaseOverrideRuntimeMetricId to "${formatPercent(phaseOverrideRuntimeCoverage)} (${task.metrics.getValue("phaseOverrideRuntimeTriggerCount")}/$phaseOverrideDenominator)",
+                        phaseOverrideTelegraphMetricId to "${formatPercent(phaseOverrideTelegraphCoverage)} (${task.metrics.getValue("phaseOverrideTelegraphCount")}/$phaseOverrideDenominator)",
+                        phaseOverrideActionDistinctMetricId to
+                            "min ${formatCompactNumber(phaseOverrideActionDistinctCount)}; " +
+                            formatJsonObjectEntries(phaseOverrideActionDistinctCountsByVariant),
                     ),
                 currentValueElements =
                     mapOf(
@@ -1640,6 +1660,35 @@ internal object Phase4AggregationInputRunner {
                                 put("bossVariantBasePhaseCounts", task.metrics.getValue("bossVariantBasePhaseCounts"))
                                 put("bossVariantCount", task.metrics.getValue("bossVariantCount"))
                                 put("variantCount", task.metrics.getValue("variantCount"))
+                            },
+                        phaseOverrideSchemaMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(phaseOverrideSchemaMetricId))
+                                put("coveredCount", task.metrics.getValue("phaseOverrideSchemaCount"))
+                                put("denominator", task.metrics.getValue("phaseOverrideVariantDenominator"))
+                                put("corpusAggregateMetrics", task.metrics.getValue("corpusAggregateMetrics"))
+                            },
+                        phaseOverrideRuntimeMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(phaseOverrideRuntimeMetricId))
+                                put("coveredCount", task.metrics.getValue("phaseOverrideRuntimeTriggerCount"))
+                                put("denominator", task.metrics.getValue("phaseOverrideVariantDenominator"))
+                                put("corpusAggregateMetrics", task.metrics.getValue("corpusAggregateMetrics"))
+                            },
+                        phaseOverrideTelegraphMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(phaseOverrideTelegraphMetricId))
+                                put("coveredCount", task.metrics.getValue("phaseOverrideTelegraphCount"))
+                                put("denominator", task.metrics.getValue("phaseOverrideVariantDenominator"))
+                                put("corpusAggregateMetrics", task.metrics.getValue("corpusAggregateMetrics"))
+                            },
+                        phaseOverrideActionDistinctMetricId to
+                            buildJsonObject {
+                                put("minCount", task.metrics.getValue(phaseOverrideActionDistinctMetricId))
+                                put("countsByVariant", phaseOverrideActionDistinctCountsByVariant)
+                                put("phaseGraphUnchanged", task.metrics.getValue("phaseGraphUnchanged"))
+                                put("phaseGraphUnchangedReason", task.metrics.getValue("phaseGraphUnchangedReason"))
+                                put("bossVariantStructuralDivergenceNote", task.metrics.getValue("bossVariantStructuralDivergenceNote"))
                             },
                     ),
                 detailsByMetricId = metricIds.associateWith { task.metrics },
@@ -2112,6 +2161,11 @@ private fun formatCompactNumber(value: Double): String =
     } else {
         String.format(Locale.US, "%.3f", value)
     }
+
+private fun formatJsonObjectEntries(element: JsonElement): String =
+    element.jsonObject.entries
+        .sortedBy { (key, _) -> key }
+        .joinToString(separator = ", ") { (key, value) -> "$key=${value.jsonPrimitive.content}" }
 
 private fun formatPercentPrecise(value: Double): String = String.format(Locale.US, "%.2f%%", value * 100.0)
 

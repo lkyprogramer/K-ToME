@@ -27,11 +27,32 @@
       "metricId": "bossVariantBasePhaseCountMin",
       "minValue": 2.0,
       "notes": "Every formal boss variant must bind to a base encounter with at least two phases."
+    },
+    {
+      "metricId": "bossVariantPhaseOverrideSchemaCoverage",
+      "minValue": 1.0,
+      "notes": "Every formal boss variant must declare at least one phase override."
+    },
+    {
+      "metricId": "bossVariantPhaseOverrideRuntimeTriggerCoverage",
+      "minValue": 1.0,
+      "notes": "Every formal boss variant phase override must be observed through runtime trigger facts."
+    },
+    {
+      "metricId": "bossVariantPhaseOverrideTelegraphCoverage",
+      "minValue": 1.0,
+      "notes": "Every formal boss variant phase override telegraph spec must be observed in bossHarness runtime traces."
+    },
+    {
+      "metricId": "bossVariantPhaseOverrideActionDistinctCount.reportOnly",
+      "minValue": 1.0,
+      "notes": "Report-only warning floor for the minimum per-variant distinct action ids strengthened by PR-05 phase override language."
     }
   ],
   "sourceArtifactPath": "tools/build/reports/phase4/whitebox/boss/whitebox-boss-summary.json",
   "notes": [
     "Externalizes V3 PR-04 boss phase identity owner thresholds for reportPhase4.",
+    "PR-05 extends the same owner surface with boss variant phase override schema, runtime trigger, telegraph, and report-only action emphasis evidence.",
     "These thresholds mirror bossHarness white-box assertions and keep the canonical aggregate owner table explicit."
   ],
   "metadata": {}

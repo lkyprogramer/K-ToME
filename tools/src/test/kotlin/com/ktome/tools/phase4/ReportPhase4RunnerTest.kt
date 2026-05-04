@@ -48,7 +48,7 @@ class ReportPhase4RunnerTest {
             assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-            assertEquals("63", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+            assertEquals("67", payload.getValue("ownerMetricCount").jsonPrimitive.content)
             assertEquals(
                 ownerMetrics.count { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "UNEXPECTED_REGRESSION" }.toString(),
                 payload.getValue("unexpectedRegressionCount").jsonPrimitive.content,
@@ -65,7 +65,7 @@ class ReportPhase4RunnerTest {
             assertTrue(payload.containsKey("artifactReuseRate"))
             assertTrue(payload.containsKey("topInvalidationReasons"))
             assertEquals(14, inputs.size)
-            assertEquals(63, ownerMetrics.size)
+            assertEquals(67, ownerMetrics.size)
 
             val terrainInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
@@ -73,6 +73,10 @@ class ReportPhase4RunnerTest {
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate.aggregate" }.jsonObject
             val bossMetric =
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "phaseTransitionObservedRatio" }.jsonObject
+            val bossPhaseOverrideMetric =
+                ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "bossVariantPhaseOverrideRuntimeTriggerCoverage" }.jsonObject
+            val bossPhaseOverrideActionMetric =
+                ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "bossVariantPhaseOverrideActionDistinctCount.reportOnly" }.jsonObject
             val lootMetric =
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }.jsonObject
             val objectiveMetric =
@@ -92,6 +96,10 @@ class ReportPhase4RunnerTest {
             assertEquals("BUDGET_THRESHOLD", bossMetric.getValue("baselineMode").jsonPrimitive.content)
             assertEquals("bossHarness", bossMetric.getValue("sourceTaskId").jsonPrimitive.content)
             assertEquals("PASS", bossMetric.getValue("status").jsonPrimitive.content)
+            assertEquals("bossHarness", bossPhaseOverrideMetric.getValue("sourceTaskId").jsonPrimitive.content)
+            assertEquals("PASS", bossPhaseOverrideMetric.getValue("status").jsonPrimitive.content)
+            assertTrue(bossPhaseOverrideActionMetric.getValue("currentValueText").jsonPrimitive.content.contains("min "))
+            assertTrue(bossPhaseOverrideActionMetric.getValue("currentValue").jsonObject.containsKey("countsByVariant"))
             assertEquals("BUDGET_THRESHOLD", lootMetric.getValue("baselineMode").jsonPrimitive.content)
             assertEquals("PASS", lootMetric.getValue("status").jsonPrimitive.content)
             assertEquals("<= 0.500", lootMetric.getValue("target").jsonPrimitive.content)
@@ -200,7 +208,7 @@ class ReportPhase4RunnerTest {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("63", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals("67", comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }

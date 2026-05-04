@@ -578,7 +578,13 @@ object GameModule {
                         terrainTagsByPoint = generatedFloor.terrainTags,
                         preferredTerrainTags = decoration.preferredTerrainTags,
                     )
-                val bossId = bossFactory.createBoss(world, bossDefinition, resolvedBossPosition)
+                val bossId =
+                    bossFactory.createBoss(
+                        world = world,
+                        definition = bossDefinition,
+                        position = resolvedBossPosition,
+                        bossVariant = decoration.bossVariant,
+                    )
                 encounterDecorationService.applyDecoration(world = world, entityId = bossId, decoration = decoration)
                 StatsCalculator.recalculateAndStore(world, bossId)
                 occupiedPoints += resolvedBossPosition
@@ -1675,6 +1681,16 @@ object GameModule {
             }
             require(spec.counterplayTags.isNotEmpty()) {
                 "Telegraph spec '${spec.id}' must declare at least one counterplay tag."
+            }
+            spec.visualKey?.let { visualKey ->
+                require(visualKey in content.schemaCatalog.visualKeys) {
+                    "Telegraph spec '${spec.id}' references unknown visual key '$visualKey'."
+                }
+            }
+            spec.audioProfile?.let { audioProfile ->
+                require(audioProfile in content.schemaCatalog.audioProfiles) {
+                    "Telegraph spec '${spec.id}' references unknown audio profile '$audioProfile'."
+                }
             }
         }
         validateThreatProfileBands(content)

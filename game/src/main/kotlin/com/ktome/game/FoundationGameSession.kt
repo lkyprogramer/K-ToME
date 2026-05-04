@@ -14,6 +14,7 @@ import com.ktome.core.ai.AIPerceptionState
 import com.ktome.core.ai.AIProfileDecisionContext
 import com.ktome.core.ai.AIProfileResolver
 import com.ktome.core.ai.BossEncounterState
+import com.ktome.core.ai.BossPhaseOverride
 import com.ktome.core.ai.BossPhaseEventType
 import com.ktome.core.ai.BossPhaseEvaluationContext
 import com.ktome.core.ai.BossPhaseManager
@@ -279,6 +280,8 @@ import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
 import com.ktome.game.data.schema.TalentTreeSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
+import com.ktome.game.elites.BossVariantPhaseOverrideContracts
+import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
@@ -355,6 +358,7 @@ private const val ABYSSAL_OVERLAY_VISUAL_KEY: String = "vfx.zone.effect.void_pre
 private const val ABYSSAL_WARNING_AUDIO_PROFILE: String = "audio.boss.warning"
 private const val ZONE_HOOK_WARNING_VISUAL_KEY: String = "vfx.telegraph.warning.sigil_01"
 private const val ZONE_HOOK_WARNING_AUDIO_PROFILE: String = "audio.boss.warning"
+private const val BOSS_PHASE_OVERRIDE_ACTION_MULTIPLIER: Double = 1.5
 private const val TALENT_MULTI_TREE_INVESTMENT_THRESHOLD: Int = 3
 private const val HIDDEN_ENTRANCE_PROP_TYPE_ID: String = "hidden_entrance"
 private const val SECRET_REWARD_PROP_TYPE_ID: String = "secret_reward"
@@ -734,6 +738,7 @@ class FoundationGameSession internal constructor(
     private var cachedRenderSnapshot: RenderSnapshot? = null
     private var lastValidationResult: RenderTextTokenSnapshot? = null
     private var validationScenarioEvidenceSummaryOpen: Boolean = false
+    private var phase4V4Pr05SecondaryActionCount: Int = 0
     private var pendingValidationRestartOptions: ValidationSessionOptions? = null
     private var cachedCurrentBuildHash: String? = null
     private var cachedCommittedBuildHash: String? = null
@@ -1326,6 +1331,11 @@ class FoundationGameSession internal constructor(
 
     fun automationDiscoveryTags(): Set<String> = activeFloorState.discoveryTags.toSet()
 
+    fun automationGrantDiscoveryTags(tags: Set<String>) {
+        activeFloorState.grantDiscoveryTags(tags)
+        invalidateRenderSnapshot()
+    }
+
     fun automationTriggeredZoneHookIds(): Set<String> =
         activeFloorState.discoveryTags
             .asSequence()
@@ -1817,6 +1827,10 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr04PrimaryScene()
                 "deep_iron_search_cue_ready"
             }
+            "phase4-v4-pr05" -> {
+                preparePhase4V4Pr05PrimaryScene()
+                "boss_variant_molten_glass_phase_override_ready"
+            }
             else -> "ok"
         }
 
@@ -1838,6 +1852,7 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr04SecondaryScene()
                 "abyssal_void_pressure_hook_ready"
             }
+            "phase4-v4-pr05" -> preparePhase4V4Pr05SecondaryScene()
             else -> "ok"
         }
 
@@ -1921,11 +1936,121 @@ class FoundationGameSession internal constructor(
         renderSnapshot()
     }
 
+    private fun preparePhase4V4Pr05PrimaryScene() {
+        preparePhase4V4Pr05BossVariantScene(
+            zoneId = "deep_iron_pit",
+            floor = 2,
+            variantId = "boss.variant.molten_glass",
+            templateId = "orc.molten_giant",
+            triggerFacts = setOf(ZoneTriggerFactIds.OIL_OR_FIRE_SEEN),
+            targetHealthRatioPercent = 49,
+        )
+    }
+
+    private fun preparePhase4V4Pr05SecondaryScene(): String {
+        val showAbyssal = phase4V4Pr05SecondaryActionCount > 0
+        phase4V4Pr05SecondaryActionCount += 1
+        return if (showAbyssal) {
+            preparePhase4V4Pr05BossVariantScene(
+                zoneId = "abyssal_heart",
+                floor = 1,
+                variantId = "boss.variant.abyssal_eclipse",
+                templateId = "abyssal.guardian",
+                triggerFacts = setOf(ZoneTriggerFactIds.VOID_PRESSURE_ACTIVE),
+                targetHealthRatioPercent = 35,
+            )
+            "boss_variant_abyssal_eclipse_phase_override_ready"
+        } else {
+            preparePhase4V4Pr05BossVariantScene(
+                zoneId = "grey_gate_depths",
+                floor = 2,
+                variantId = "boss.variant.grey_crown",
+                templateId = "cultist.dungeon_lord",
+                triggerFacts = emptySet(),
+                targetHealthRatioPercent = 40,
+            )
+            "boss_variant_grey_crown_phase_override_ready"
+        }
+    }
+
+    private fun preparePhase4V4Pr05BossVariantScene(
+        zoneId: String,
+        floor: Int,
+        variantId: String,
+        templateId: String,
+        triggerFacts: Set<String>,
+        targetHealthRatioPercent: Int,
+    ) {
+        switchValidationScenarioZone(
+            zoneId = zoneId,
+            floor = floor,
+            bossVariantSelectionMode = BossVariantSelectionMode.FORCE_AVAILABLE,
+            preferredBossVariantId = variantId,
+        )
+        automationGrantDiscoveryTags(triggerFacts)
+        if (templateId == "abyssal.guardian" && automationEntityByTemplateId(templateId) == null) {
+            automationInteractablePoint(AbyssalRuntimeKeys.Finale.INTERACTABLE_ID)?.let { point ->
+                automationMovePlayerTo(point)
+                perform(PlayerCommand.Interact)
+            }
+        }
+        val bossId = automationEntityByTemplateId(templateId) ?: return
+        world.get<Position>(bossId)?.toPoint()?.let { point ->
+            automationMovePlayerTo(nearestOpenPointForValidation(point))
+        }
+        if (variantId == "boss.variant.grey_crown") {
+            prepareGreyCrownWarCallerAuraForValidation(bossId)
+        }
+        perform(PlayerCommand.Wait)
+        val health = world.get<Health>(bossId) ?: return
+        health.current = (health.max * targetHealthRatioPercent / 100).coerceAtLeast(1)
+        perform(PlayerCommand.Wait)
+        renderSnapshot()
+    }
+
+    private fun prepareGreyCrownWarCallerAuraForValidation(bossId: EntityId) {
+        val health = world.get<Health>(bossId) ?: return
+        health.current = (health.max * 3 / 5).coerceAtLeast(1)
+        world.get<com.ktome.core.talent.CooldownState>(bossId)?.remainingByTalentId?.apply {
+            this["battlefield_command"] = 99
+            this["shadow_bind"] = 99
+            this["ritual_break"] = 99
+            this["elite_war_call"] = 0
+        }
+        repeat(4) {
+            if (BOSS_VARIANT_WAR_CALLER_AURA_STATUS_ID in activeStatusIds(bossId)) {
+                return
+            }
+            perform(PlayerCommand.Wait)
+        }
+    }
+
+    private fun nearestOpenPointForValidation(center: Point): Point {
+        val occupied =
+            world.entitiesWith(Position::class)
+                .mapTo(linkedSetOf()) { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+        return Point.ALL_DIRECTIONS
+            .asSequence()
+            .map { delta -> center + delta }
+            .firstOrNull { point ->
+                map.isInBounds(point.x, point.y) &&
+                    !map[point].blocksMovement &&
+                    point !in occupied
+            } ?: center
+    }
+
     private fun switchValidationScenarioZone(
         zoneId: String,
         floor: Int,
+        bossVariantSelectionMode: BossVariantSelectionMode = config.bossVariantSelectionMode,
+        preferredBossVariantId: String? = config.preferredBossVariantId,
     ) {
-        if (config.zoneId == zoneId && currentFloor() == floor) {
+        if (
+            config.zoneId == zoneId &&
+            currentFloor() == floor &&
+            config.bossVariantSelectionMode == bossVariantSelectionMode &&
+            config.preferredBossVariantId == preferredBossVariantId
+        ) {
             return
         }
         syncActiveFloorState()
@@ -1937,6 +2062,8 @@ class FoundationGameSession internal constructor(
                 zoneId = zoneId,
                 zoneRoute = route,
                 routeIndex = route.indexOf(zoneId).coerceAtLeast(0),
+                bossVariantSelectionMode = bossVariantSelectionMode,
+                preferredBossVariantId = preferredBossVariantId,
             )
         val nextRuntime = zoneRuntimeFactory(nextConfig)
         config = nextRuntime.config
@@ -3181,8 +3308,8 @@ class FoundationGameSession internal constructor(
         }
         return OverlayRenderSnapshot(
             id = "telegraph:${entityId.value}:${pending.telegraphSpecId}:${pending.sourceAbilityId}",
-            visualKey = "vfx.telegraph.warning.sigil_01",
-            audioProfile = talentSchema?.audioProfile ?: "audio.boss.warning",
+            visualKey = telegraphSpec.visualKey ?: "vfx.telegraph.warning.sigil_01",
+            audioProfile = telegraphSpec.audioProfile ?: talentSchema?.audioProfile ?: "audio.boss.warning",
             previewTurns = pending.remainingTurns,
             dangerLevel = pending.resolvedDangerLevel.overlaySeverity,
             shape = telegraphShape(telegraphSpec.shape),
@@ -3964,9 +4091,13 @@ class FoundationGameSession internal constructor(
                 bossState.currentPhaseId?.let { phaseId ->
                     encounter.phases.firstOrNull { phase -> phase.id == phaseId }
                 } ?: encounter.phases.firstOrNull()
-            return applyActionWeightProfile(
-                profile = content.aiProfile(activePhase?.aiProfileId),
-                actionWeightProfileId = bossVariant?.actionWeightProfileId,
+            return applyBossPhaseActionEmphasis(
+                monsterId = monsterId,
+                profile =
+                    applyActionWeightProfile(
+                        profile = content.aiProfile(activePhase?.aiProfileId),
+                        actionWeightProfileId = bossVariant?.actionWeightProfileId,
+                    ),
             )
         }
         val overlayProfile = combinedAiOverlayProfileFor(monsterId)
@@ -4037,7 +4168,18 @@ class FoundationGameSession internal constructor(
 
     private fun bossEncounterFor(monsterId: EntityId): com.ktome.core.ai.BossEncounter? {
         val templateId = world.get<MonsterTemplateId>(monsterId)?.value ?: return null
-        return bossDefinitionByTemplateId(templateId)?.encounter
+        val baseEncounter = bossDefinitionByTemplateId(templateId)?.encounter ?: return null
+        val phaseOverrides = world.get<BossEncounterState>(monsterId)?.phaseOverrides.orEmpty()
+        return baseEncounter.copy(phaseOverrides = phaseOverrides)
+    }
+
+    private fun bossPhaseOverrideFor(
+        monsterId: EntityId,
+        phaseId: String,
+    ): BossPhaseOverride? {
+        return world.get<BossEncounterState>(monsterId)
+            ?.phaseOverrides
+            ?.firstOrNull { override -> override.phaseId == phaseId }
     }
 
     private fun monsterAiProfileId(monsterId: EntityId): String? {
@@ -4060,6 +4202,32 @@ class FoundationGameSession internal constructor(
                     weightProfile.actionWeights[action.id]?.let { overriddenWeight ->
                         action.copy(weight = overriddenWeight)
                     } ?: action
+                },
+        )
+    }
+
+    private fun applyBossPhaseActionEmphasis(
+        monsterId: EntityId,
+        profile: com.ktome.core.ai.AIProfile?,
+    ): com.ktome.core.ai.AIProfile? {
+        val resolvedProfile = profile ?: return null
+        val bossState = world.get<BossEncounterState>(monsterId) ?: return resolvedProfile
+        val currentPhaseId = bossState.currentPhaseId ?: return resolvedProfile
+        if (currentPhaseId !in bossState.phaseOverrideTriggeredPhaseIds) {
+            return resolvedProfile
+        }
+        val emphasisIds = bossPhaseOverrideFor(monsterId, currentPhaseId)?.actionEmphasisIds.orEmpty()
+        if (emphasisIds.isEmpty()) {
+            return resolvedProfile
+        }
+        return resolvedProfile.copy(
+            actions =
+                resolvedProfile.actions.map { action ->
+                    if (action.id in emphasisIds) {
+                        action.copy(weight = (action.weight ?: 1.0) * BOSS_PHASE_OVERRIDE_ACTION_MULTIPLIER)
+                    } else {
+                        action
+                    }
                 },
         )
     }
@@ -9022,34 +9190,26 @@ class FoundationGameSession internal constructor(
         if (advanceTurnCounter) {
             bossState.encounterTurnCount += 1
         }
+        val healthRatio = healthRatio(monsterId)
+        val context = bossPhaseEvaluationContext(monsterId, bossState, healthRatio)
         val resolution =
             if (transitionTiming == BossPhaseTransitionTiming.ALLOW_FATAL_TRANSITION) {
                 BossPhaseManager.resolvePhaseResolutionOrNull(
                     encounter = encounter,
-                    context =
-                        BossPhaseEvaluationContext(
-                            healthRatio = healthRatio(monsterId),
-                            encounterTurnCount = bossState.encounterTurnCount,
-                            activeStatusIds = activeStatusIds(monsterId),
-                        ),
+                    context = context,
                     currentPhaseId = bossState.currentPhaseId,
                     transitionTiming = transitionTiming,
                 ) ?: return BossPhaseTurnUpdate(profile = activeAiProfileFor(monsterId), phaseChanged = false)
             } else {
                 BossPhaseManager.resolvePhaseResolution(
                     encounter = encounter,
-                    context =
-                        BossPhaseEvaluationContext(
-                            healthRatio = healthRatio(monsterId),
-                            encounterTurnCount = bossState.encounterTurnCount,
-                            activeStatusIds = activeStatusIds(monsterId),
-                        ),
+                    context = context,
                     currentPhaseId = bossState.currentPhaseId,
                     transitionTiming = transitionTiming,
                 )
             }
         val nextPhase = resolution.phase
-        if (bossState.currentPhaseId != nextPhase.id) {
+        if (bossState.currentPhaseId != nextPhase.id || resolution.phaseOverride != null) {
             applyBossPhaseEnter(monsterId, bossState, encounter, resolution)
             return BossPhaseTurnUpdate(
                 profile = bossPhaseAiProfile(monsterId = monsterId, aiProfileId = nextPhase.aiProfileId),
@@ -9064,13 +9224,60 @@ class FoundationGameSession internal constructor(
         )
     }
 
+    private fun bossPhaseEvaluationContext(
+        monsterId: EntityId,
+        bossState: BossEncounterState,
+        healthRatio: Double,
+    ): BossPhaseEvaluationContext =
+        BossPhaseEvaluationContext(
+            healthRatio = healthRatio,
+            encounterTurnCount = bossState.encounterTurnCount,
+            activeStatusIds = activeStatusIds(monsterId),
+            activeTriggerIds = bossVariantActiveTriggerIds(monsterId, healthRatio),
+            triggeredPhaseOverridePhaseIds = bossState.phaseOverrideTriggeredPhaseIds,
+        )
+
+    private fun bossVariantActiveTriggerIds(
+        monsterId: EntityId,
+        healthRatio: Double,
+    ): Set<String> =
+        linkedSetOf<String>().apply {
+            if (healthRatio <= 0.50) {
+                add(BossVariantPhaseOverrideContracts.HP_BELOW_50_TRIGGER_ID)
+            }
+            if (healthRatio <= 0.45) {
+                add(BossVariantPhaseOverrideContracts.HP_BELOW_45_TRIGGER_ID)
+            }
+            if (healthRatio <= 0.40) {
+                add(BossVariantPhaseOverrideContracts.HP_BELOW_40_TRIGGER_ID)
+            }
+            if (hasActiveWarCallerAura(monsterId)) {
+                add(BossVariantPhaseOverrideContracts.WAR_CALLER_ACTIVE_TRIGGER_ID)
+            }
+            activeFloorState.discoveryTags.forEach { tag ->
+                if (tag in BossVariantPhaseOverrideContracts.triggerFactIds) {
+                    add(tag)
+                }
+            }
+        }
+
+    private fun hasActiveWarCallerAura(monsterId: EntityId): Boolean {
+        val mutationIds = world.get<EliteMutationLoadout>(monsterId)?.mutationIds.orEmpty()
+        return BOSS_VARIANT_WAR_CALLER_MUTATION_ID in mutationIds &&
+            BOSS_VARIANT_WAR_CALLER_AURA_STATUS_ID in activeStatusIds(monsterId)
+    }
+
     private fun bossPhaseAiProfile(
         monsterId: EntityId,
         aiProfileId: String?,
     ): com.ktome.core.ai.AIProfile? =
-        applyActionWeightProfile(
-            profile = content.aiProfile(aiProfileId),
-            actionWeightProfileId = world.get<BossVariantRuntime>(monsterId)?.actionWeightProfileId,
+        applyBossPhaseActionEmphasis(
+            monsterId = monsterId,
+            profile =
+                applyActionWeightProfile(
+                    profile = content.aiProfile(aiProfileId),
+                    actionWeightProfileId = world.get<BossVariantRuntime>(monsterId)?.actionWeightProfileId,
+                ),
         )
 
     private fun applyBossPhaseEnter(
@@ -9081,58 +9288,85 @@ class FoundationGameSession internal constructor(
     ) {
         val nextPhase = resolution.phase
         val previousPhaseId = bossState.currentPhaseId
-        bossState.currentPhaseId = nextPhase.id
-        bossState.phaseTurnCount = 0
+        val phaseChanged = previousPhaseId != nextPhase.id
+        if (phaseChanged) {
+            bossState.currentPhaseId = nextPhase.id
+            bossState.phaseTurnCount = 0
+        }
         val sideEffects = mutableListOf<String>()
-        if (world.get<PendingTelegraphState>(monsterId) != null) {
+        if (phaseChanged && world.get<PendingTelegraphState>(monsterId) != null) {
             world.remove<PendingTelegraphState>(monsterId)
             sideEffects += "CLEAR_PENDING_TELEGRAPH"
         }
-        if (nextPhase.resetAiPhaseState) {
+        if (phaseChanged && nextPhase.resetAiPhaseState) {
             clearBossRuntimeState(monsterId)
             sideEffects += "RESET_AI_PHASE_STATE"
         }
-        nextPhase.onEnter.forEach { event ->
-            when (event.type) {
-                BossPhaseEventType.TELEGRAPH -> {
-                    val telegraphSpecId = requireNotNull(event.telegraphSpecId) {
-                        "Boss phase '${nextPhase.id}' TELEGRAPH event must declare telegraphSpecId."
-                    }
-                    val spec = content.telegraphRegistry.require(telegraphSpecId)
-                    world.remove<PendingTelegraphState>(monsterId)
-                    world.add(
-                        monsterId,
-                        PendingTelegraphState(
+        if (phaseChanged) {
+            nextPhase.onEnter.forEach { event ->
+                when (event.type) {
+                    BossPhaseEventType.TELEGRAPH -> {
+                        val telegraphSpecId = requireNotNull(event.telegraphSpecId) {
+                            "Boss phase '${nextPhase.id}' TELEGRAPH event must declare telegraphSpecId."
+                        }
+                        val spec = content.telegraphRegistry.require(telegraphSpecId)
+                        queuePendingTelegraph(
+                            monsterId = monsterId,
                             telegraphSpecId = telegraphSpecId,
                             sourceAbilityId = telegraphSpecId,
                             remainingTurns = spec.previewTurns,
                             targetPoint = bossPhaseTelegraphTargetPoint(monsterId),
                             queuedAbilityId = null,
-                            resolvedDangerLevel = spec.dangerLevel,
-                        ),
-                    )
-                    sideEffects += "TELEGRAPH:$telegraphSpecId"
-                }
-
-                BossPhaseEventType.CLEAR_STATUSES -> {
-                    world.get<EffectTracker>(monsterId)?.effects?.clear()
-                    sideEffects += "CLEAR_STATUSES"
-                }
-
-                BossPhaseEventType.INVULNERABLE -> {
-                    event.invulnerableTurns?.let { turns ->
-                        grantBossInvulnerable(monsterId, turns)
-                        sideEffects += "INVULNERABLE:$turns"
+                            dangerLevel = spec.dangerLevel,
+                        )
+                        sideEffects += "TELEGRAPH:$telegraphSpecId"
                     }
-                }
 
-                BossPhaseEventType.EMIT_EVENT -> {
-                    event.messageKey?.let { messageKey ->
-                        addMessage(messageKey, entityArg("source", monsterId))
-                        sideEffects += "EMIT_EVENT:$messageKey"
+                    BossPhaseEventType.CLEAR_STATUSES -> {
+                        world.get<EffectTracker>(monsterId)?.effects?.clear()
+                        sideEffects += "CLEAR_STATUSES"
+                    }
+
+                    BossPhaseEventType.INVULNERABLE -> {
+                        event.invulnerableTurns?.let { turns ->
+                            grantBossInvulnerable(monsterId, turns)
+                            sideEffects += "INVULNERABLE:$turns"
+                        }
+                    }
+
+                    BossPhaseEventType.EMIT_EVENT -> {
+                        event.messageKey?.let { messageKey ->
+                            addMessage(messageKey, entityArg("source", monsterId))
+                            sideEffects += "EMIT_EVENT:$messageKey"
+                        }
                     }
                 }
             }
+        }
+        resolution.phaseOverride?.let { override ->
+            bossState.phaseOverrideTriggeredPhaseIds += override.phaseId
+            addMessage(override.onEnterEventKey, entityArg("source", monsterId))
+            addMessage(
+                "log.boss.phase_override_entered",
+                entityArg("source", monsterId),
+                literalArg("phase", override.phaseId),
+            )
+            val spec = content.telegraphRegistry.require(override.telegraphSpecId)
+            queuePendingTelegraph(
+                monsterId = monsterId,
+                telegraphSpecId = override.telegraphSpecId,
+                sourceAbilityId = override.telegraphSpecId,
+                remainingTurns = spec.previewTurns,
+                targetPoint = bossPhaseTelegraphTargetPoint(monsterId),
+                queuedAbilityId = null,
+                dangerLevel = spec.dangerLevel,
+            )
+            sideEffects += "PHASE_OVERRIDE:${override.phaseId}"
+            sideEffects += "PHASE_OVERRIDE_EVENT:${override.onEnterEventKey}"
+            sideEffects += "PHASE_OVERRIDE_TELEGRAPH:${override.telegraphSpecId}"
+            sideEffects += "PHASE_OVERRIDE_ACTION_EMPHASIS:${override.actionEmphasisIds.joinToString(separator = ",")}"
+        } ?: resolution.phaseOverrideSkippedReason?.let { reason ->
+            sideEffects += "PHASE_OVERRIDE_SKIPPED:$reason"
         }
         recordBossTrace(
             BossTrace(
@@ -9157,6 +9391,29 @@ class FoundationGameSession internal constructor(
             targetVisible -> world.get<Position>(effectiveTargetId)?.toPoint()
             else -> world.get<AIPerceptionState>(monsterId)?.lastKnownTargetPosition
         } ?: origin
+    }
+
+    private fun queuePendingTelegraph(
+        monsterId: EntityId,
+        telegraphSpecId: String,
+        sourceAbilityId: String,
+        remainingTurns: Int,
+        targetPoint: Point,
+        queuedAbilityId: String?,
+        dangerLevel: DangerLevel,
+    ) {
+        world.remove<PendingTelegraphState>(monsterId)
+        world.add(
+            monsterId,
+            PendingTelegraphState(
+                telegraphSpecId = telegraphSpecId,
+                sourceAbilityId = sourceAbilityId,
+                remainingTurns = remainingTurns,
+                targetPoint = targetPoint,
+                queuedAbilityId = queuedAbilityId,
+                resolvedDangerLevel = dangerLevel,
+            ),
+        )
     }
 
     private fun clearBossRuntimeState(monsterId: EntityId) {
@@ -9592,17 +9849,14 @@ class FoundationGameSession internal constructor(
                 damageMultiplier = levelEffect.damageMultiplier,
                 damageType = talentSchema.damageType?.let(DamageType::valueOf),
             )
-        world.remove<PendingTelegraphState>(monsterId)
-        world.add(
-            monsterId,
-            PendingTelegraphState(
-                telegraphSpecId = telegraphSpec.id,
-                sourceAbilityId = abilityId,
-                remainingTurns = assessment.previewTurns,
-                targetPoint = targetPoint,
-                queuedAbilityId = abilityId,
-                resolvedDangerLevel = assessment.dangerLevel,
-            ),
+        queuePendingTelegraph(
+            monsterId = monsterId,
+            telegraphSpecId = telegraphSpec.id,
+            sourceAbilityId = abilityId,
+            remainingTurns = assessment.previewTurns,
+            targetPoint = targetPoint,
+            queuedAbilityId = abilityId,
+            dangerLevel = assessment.dangerLevel,
         )
     }
 
@@ -14372,6 +14626,8 @@ class FoundationGameSession internal constructor(
     companion object {
         private const val COMBAT_RANDOM_SALT: Long = 0xC0FFEE
         private const val SESSION_RANDOM_SALT: Long = 0x51A17A
+        private const val BOSS_VARIANT_WAR_CALLER_MUTATION_ID: String = "elite.war_caller"
+        private const val BOSS_VARIANT_WAR_CALLER_AURA_STATUS_ID: String = "war_cry_empower"
 
         private fun compatibilityContent(
             config: FoundationGameConfig,

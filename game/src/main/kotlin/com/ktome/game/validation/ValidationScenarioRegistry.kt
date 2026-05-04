@@ -321,6 +321,69 @@ object ValidationScenarioRegistry {
                         scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr04.evidence.summary_note",
                     ),
             ),
+            ValidationScenarioDef(
+                id = ValidationScenarioId("phase4-v4-pr05"),
+                prId = "PR-05",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.BOSS_VARIANT,
+                        seed = 2026042435L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "vanguard",
+                        raceId = "human",
+                        zoneId = "deep_iron_pit",
+                        floor = 2,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/phase4-v4-pr05-molten-glass-warning.png",
+                                "evidence/phase4-v4-pr05-grey-crown-warning.png",
+                                "evidence/phase4-v4-pr05-abyssal-eclipse-warning.png",
+                                "evidence/phase4-v4-pr05-report-coverage.png",
+                                "evidence/phase4-v4-pr05-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "Primary scene materializes molten_glass, triggers molten_glass_phase_override_warning, and logs phase override entry.",
+                                    evidenceFile = "evidence/phase4-v4-pr05-molten-glass-warning.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "Secondary scene first materializes grey_crown and shows grey_crown_phase_override_warning with battlefield_command or ritual_break emphasis.",
+                                    evidenceFile = "evidence/phase4-v4-pr05-grey-crown-warning.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "Secondary scene next materializes abyssal_eclipse and shows abyssal_eclipse_phase_override_warning with void_breach or abyssal_consecration emphasis.",
+                                    evidenceFile = "evidence/phase4-v4-pr05-abyssal-eclipse-warning.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Right, Enter",
+                                    expectedVisibleResult = "Evidence summary lists bossVariantPhaseOverride coverage metrics and phaseGraphUnchangedReason=data_level_override_only.",
+                                    evidenceFile = "evidence/phase4-v4-pr05-report-coverage.png",
+                                ),
+                            ),
+                        manualRecordPath = "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr05-boss-variant-phase-language.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.boss.phase_override_entered",
+                                "boss.variant.molten_glass.phase_override.entered",
+                                "boss.variant.grey_crown.phase_override.entered",
+                                "boss.variant.abyssal_eclipse.phase_override.entered",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr05.evidence.summary_note",
+                    ),
+            ),
         )
 
     fun all(): List<ValidationScenarioDef> = scenarios

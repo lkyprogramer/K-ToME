@@ -147,6 +147,11 @@ class TestPerfComparatorTest {
     }
 
     private static TaskRecord.TestDetails testDetails(int total, int failed) {
-        return new TaskRecord.TestDetails(total, failed, new WorkloadRecord("UNIT_TEST", total, null, null, false, null, null, null), "HEAVY_EVALUATION");
+        return new TaskRecord.TestDetails(
+                total,
+                failed,
+                new WorkloadRecord("UNIT_TEST", total, null, null, false, null, null, null),
+                "HEAVY_EVALUATION",
+                List.of());
     }
 }

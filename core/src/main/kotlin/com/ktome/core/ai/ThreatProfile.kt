@@ -40,6 +40,8 @@ data class TelegraphSpec(
     val previewTurns: Int,
     val dangerLevel: DangerLevel,
     val threatProfileId: String,
+    val visualKey: String? = null,
+    val audioProfile: String? = null,
     val radius: Int? = null,
     val length: Int? = null,
     val angle: Int? = null,

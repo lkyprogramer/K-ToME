@@ -12,12 +12,16 @@ import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
 public final class TestPerfArtifactReader {
     private static final Gson GSON = new Gson();
+    private static final long SLOW_TEST_METHOD_THRESHOLD_MILLIS = 10_000L;
+    private static final int SLOW_TEST_METHOD_LIMIT = 5;
 
     public VerificationRecord readVerification(TestPerfTaskMetadataRegistry.TaskMetadata metadata) {
         JsonObject summary = readJsonObject(metadata.outputDir(), "summary.json");
@@ -61,6 +65,7 @@ public final class TestPerfArtifactReader {
 
         int total = 0;
         int failed = 0;
+        List<TaskRecord.TestDetails.SlowTestMethod> slowTestMethods = new ArrayList<>();
         try {
             try (var paths = Files.list(testResultsDir)) {
                 for (Path path : paths.filter(current -> current.getFileName().toString().endsWith(".xml")).toList()) {
@@ -76,11 +81,28 @@ public final class TestPerfArtifactReader {
                     if (!errors.isBlank()) {
                         failed += Integer.parseInt(errors);
                     }
+                    var testcases = suite.getElementsByTagName("testcase");
+                    for (int index = 0; index < testcases.getLength(); index++) {
+                        Element testcase = (Element) testcases.item(index);
+                        long durationMillis = parseTestcaseDurationMillis(testcase.getAttribute("time"));
+                        if (durationMillis >= SLOW_TEST_METHOD_THRESHOLD_MILLIS) {
+                            slowTestMethods.add(
+                                    new TaskRecord.TestDetails.SlowTestMethod(
+                                            testcase.getAttribute("classname"),
+                                            testcase.getAttribute("name"),
+                                            durationMillis));
+                        }
+                    }
                 }
             }
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to read junit xml results from " + testResultsDir, exception);
         }
+        List<TaskRecord.TestDetails.SlowTestMethod> topSlowTestMethods =
+                slowTestMethods.stream()
+                        .sorted(Comparator.comparingLong(TaskRecord.TestDetails.SlowTestMethod::durationMillis).reversed())
+                        .limit(SLOW_TEST_METHOD_LIMIT)
+                        .toList();
 
         return new TaskRecord.TestDetails(
                 total,
@@ -94,7 +116,15 @@ public final class TestPerfArtifactReader {
                         null,
                         null,
                         null),
-                metadata.bandHint());
+                metadata.bandHint(),
+                topSlowTestMethods);
+    }
+
+    private static long parseTestcaseDurationMillis(String timeSeconds) {
+        if (timeSeconds == null || timeSeconds.isBlank()) {
+            return 0L;
+        }
+        return Math.round(Double.parseDouble(timeSeconds) * 1_000d);
     }
 
     private static JsonObject readJsonObject(String outputDir, String fileName) {

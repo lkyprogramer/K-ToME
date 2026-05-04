@@ -29,4 +29,22 @@ class BossFactoryTest {
         assertEquals(definition.encounter.id, requireNotNull(world.get<BossEncounterState>(bossId)).encounterId)
         assertEquals(definition.template.talentLevels.size, requireNotNull(world.get<TalentLoadout>(bossId)).slotToTalentId.size)
     }
+
+    @Test
+    fun `createBoss binds variant phase overrides into boss encounter state`() {
+        val world = World()
+        val loader = DataLoader()
+        val definition = requireNotNull(loader.loadBossDefinitions()["dungeon_lord_encounter"])
+        val variant = loader.loadSchemaCatalog().bossVariants.first { bossVariant -> bossVariant.id == "boss.variant.grey_crown" }
+
+        val bossId =
+            BossFactory().createBoss(
+                world = world,
+                definition = definition,
+                position = Point(7, 8),
+                bossVariant = variant,
+            )
+
+        assertEquals(variant.phaseOverrides, requireNotNull(world.get<BossEncounterState>(bossId)).phaseOverrides)
+    }
 }

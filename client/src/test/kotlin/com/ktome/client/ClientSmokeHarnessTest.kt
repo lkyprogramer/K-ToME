@@ -67,7 +67,12 @@ import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.harness.HarnessReportWriter
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.Localizer
+import com.ktome.game.validation.ValidationAction
 import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioId
+import com.ktome.game.validation.ValidationScenarioRegistry
+import com.ktome.game.validation.ValidationSessionRequest
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -462,6 +467,41 @@ class ClientSmokeHarnessTest {
                 app.dispose()
             }
         }
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `validation scenario smoke renders pr05 boss variant phase warnings`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr05"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-pr05-boss-variant-warning-smoke/save")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertPr05BossVariantWarningVisible(
+            session = session,
+            scenarioId = scenario.id,
+            actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+            expectedOverlaySourceAbilityId = "molten_glass_phase_override_warning",
+            expectedLogKey = "boss.variant.molten_glass.phase_override.entered",
+        )
+        assertPr05BossVariantWarningVisible(
+            session = session,
+            scenarioId = scenario.id,
+            actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+            expectedOverlaySourceAbilityId = "grey_crown_phase_override_warning",
+            expectedLogKey = "boss.variant.grey_crown.phase_override.entered",
+        )
+        assertPr05BossVariantWarningVisible(
+            session = session,
+            scenarioId = scenario.id,
+            actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+            expectedOverlaySourceAbilityId = "abyssal_eclipse_phase_override_warning",
+            expectedLogKey = "boss.variant.abyssal_eclipse.phase_override.entered",
+        )
     }
 
     @Test
@@ -1487,6 +1527,47 @@ class ClientSmokeHarnessTest {
         } finally {
             app.dispose()
         }
+    }
+
+    private fun assertPr05BossVariantWarningVisible(
+        session: FoundationGameSession,
+        scenarioId: ValidationScenarioId,
+        actionId: ValidationScenarioActionId,
+        expectedOverlaySourceAbilityId: String,
+        expectedLogKey: String,
+    ) {
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenarioId,
+                        actionId = actionId,
+                    ),
+                ),
+            ),
+        )
+        val snapshot = session.renderSnapshot()
+        val localizer = session.localizer()
+        val overlayState = OverlayState(mode = UiMode.MAP)
+        val model = TileRenderer.buildRenderModel(localizer, clientAssets.visualResolver, snapshot, overlayState)
+
+        assertTrue(
+            snapshot.overlays.any { overlay -> overlay.sourceAbilityId == expectedOverlaySourceAbilityId },
+            "Expected overlay '$expectedOverlaySourceAbilityId'; overlays=${snapshot.overlays.map { overlay -> overlay.sourceAbilityId }}.",
+        )
+        assertTrue(
+            snapshot.logEvents.any { event -> event.message.key == expectedLogKey },
+            "Expected log '$expectedLogKey'; logs=${snapshot.logEvents.map { event -> event.message.key }}.",
+        )
+        assertTrue(
+            model.overlayTiles.isNotEmpty(),
+            "Expected PR-05 warning overlay to materialize into tile render model.",
+        )
+        assertTrue(
+            model.sidebar.rows.any { row -> row.text == localizer.text("ui.sidebar.warnings") },
+            "Expected warning sidebar section for '$expectedOverlaySourceAbilityId'. rows=${model.sidebar.rows.map { row -> row.text }}",
+        )
+        TileRenderer.renderHeadless(localizer, clientAssets.visualResolver, snapshot, overlayState)
     }
 
     private fun samplePackSelection(): ContentPackSelection {

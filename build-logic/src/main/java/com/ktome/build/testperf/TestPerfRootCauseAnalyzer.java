@@ -5,6 +5,7 @@ import com.ktome.build.testperf.records.WorkloadRecord;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public final class TestPerfRootCauseAnalyzer {
     public List<String> analyze(TaskRecord current, TaskRecord previous, boolean daemonReused, Double systemLoadAverage, int availableProcessors) {
@@ -30,6 +31,10 @@ public final class TestPerfRootCauseAnalyzer {
                 hints.add("workload changed");
             }
         }
+        String slowTestHint = slowTestHint(current);
+        if (slowTestHint != null) {
+            hints.add(slowTestHint);
+        }
         if (!daemonReused) {
             hints.add("cold daemon");
         }
@@ -40,6 +45,18 @@ public final class TestPerfRootCauseAnalyzer {
             hints.add("no common pattern");
         }
         return List.copyOf(hints);
+    }
+
+    private static String slowTestHint(TaskRecord current) {
+        if (current == null || current.tests() == null || current.tests().slowTestMethods() == null || current.tests().slowTestMethods().isEmpty()) {
+            return null;
+        }
+        String methods =
+                current.tests().slowTestMethods().stream()
+                        .limit(3)
+                        .map(method -> method.className() + "." + method.name() + "=" + method.durationMillis() + "ms")
+                        .collect(Collectors.joining(", "));
+        return "slow tests: " + methods;
     }
 
     private static Integer workloadCount(TaskRecord task) {

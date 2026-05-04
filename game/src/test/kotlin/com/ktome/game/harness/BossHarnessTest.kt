@@ -28,9 +28,10 @@ import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
-import com.ktome.game.terrainPreferenceImplemented
+import com.ktome.game.ZoneTriggerFactIds
 import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.interactablePoint
+import com.ktome.game.terrainPreferenceImplemented
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlin.math.max
@@ -225,6 +226,9 @@ class BossHarnessTest {
         val world = session.automationWorld()
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
         session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
+        if (preferredVariantId != null) {
+            session.automationGrantDiscoveryTags(setOf(ZoneTriggerFactIds.OIL_OR_FIRE_SEEN))
+        }
 
         assertTrue(session.perform(PlayerCommand.Wait))
         requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).current =
@@ -248,11 +252,11 @@ class BossHarnessTest {
             templateId = "orc.molten_giant",
             telegraph = phaseTelegraph,
             phaseState = world.get<BossEncounterState>(bossId),
-            expectedTelegraphKey = "molten_giant_phase_warning",
+            expectedTelegraphKey = if (preferredVariantId == null) "molten_giant_phase_warning" else "molten_glass_phase_override_warning",
             expectedPhaseId = "phase_enraged",
             expectedSelectedActionIds = if (preferredVariantId == null) setOf("earthshaker") else setOf("linebreaker"),
             expectedBossTracePhaseId = "phase_enraged",
-            expectedBossTraceSideEffect = "TELEGRAPH:molten_giant_phase_warning",
+            expectedBossTraceSideEffect = if (preferredVariantId == null) "TELEGRAPH:molten_giant_phase_warning" else "PHASE_OVERRIDE_TELEGRAPH:molten_glass_phase_override_warning",
             expectedVariantId = preferredVariantId,
         )
     }
@@ -284,9 +288,35 @@ class BossHarnessTest {
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
         session.automationMovePlayerTo(findOpenPointAtDistance(session, bossPoint, minDistance = 5, maxDistance = 8))
 
-        assertTrue(session.perform(PlayerCommand.Wait))
-        requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).current =
-            requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).max * 40 / 100
+        val bossHealth = requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId))
+        if (preferredVariantId == "boss.variant.grey_crown") {
+            val cooldowns = requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId
+            bossHealth.current = bossHealth.max * 3 / 5
+            cooldowns.apply {
+                this["battlefield_command"] = 99
+                this["shadow_bind"] = 99
+                this["ritual_break"] = 99
+                this["arcane_shield"] = 99
+                this["elite_war_call"] = 0
+            }
+            repeat(4) {
+                if (world.get<com.ktome.core.talent.EffectTracker>(bossId)?.effects?.any { effect -> effect.schemaId == "war_cry_empower" } == true) {
+                    return@repeat
+                }
+                assertTrue(session.perform(PlayerCommand.Wait))
+            }
+            session.automationMovePlayerTo(findOpenPointAtDistance(session, bossPoint, minDistance = 2, maxDistance = 4))
+            cooldowns.apply {
+                this["battlefield_command"] = 99
+                this["shadow_bind"] = 99
+                this["ritual_break"] = 0
+                this["arcane_shield"] = 99
+                this["elite_war_call"] = 99
+            }
+        } else {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+        bossHealth.current = bossHealth.max * 40 / 100
         assertTrue(session.perform(PlayerCommand.Wait))
         val phaseTelegraph = world.get<PendingTelegraphState>(bossId)
         waitForPhaseActionTrace(
@@ -306,11 +336,11 @@ class BossHarnessTest {
             templateId = "cultist.dungeon_lord",
             telegraph = phaseTelegraph,
             phaseState = world.get<BossEncounterState>(bossId),
-            expectedTelegraphKey = "dungeon_lord_phase_warning",
+            expectedTelegraphKey = if (preferredVariantId == null) "dungeon_lord_phase_warning" else "grey_crown_phase_override_warning",
             expectedPhaseId = "phase_desperate",
-            expectedSelectedActionIds = if (preferredVariantId == null) setOf("arcane_shield") else setOf("war_call", "battlefield_command", "arcane_shield"),
+            expectedSelectedActionIds = if (preferredVariantId == null) setOf("arcane_shield") else setOf("war_call", "battlefield_command", "ritual_break", "arcane_shield"),
             expectedBossTracePhaseId = "phase_desperate",
-            expectedBossTraceSideEffect = "TELEGRAPH:dungeon_lord_phase_warning",
+            expectedBossTraceSideEffect = if (preferredVariantId == null) "TELEGRAPH:dungeon_lord_phase_warning" else "PHASE_OVERRIDE_TELEGRAPH:grey_crown_phase_override_warning",
             expectedVariantId = preferredVariantId,
         )
     }
@@ -342,6 +372,9 @@ class BossHarnessTest {
         val world = session.automationWorld()
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
         session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
+        if (preferredVariantId != null) {
+            session.automationGrantDiscoveryTags(setOf(ZoneTriggerFactIds.VOID_PRESSURE_ACTIVE))
+        }
 
         assertTrue(session.perform(PlayerCommand.Wait))
         requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).current =
@@ -352,7 +385,7 @@ class BossHarnessTest {
             session = session,
             bossActorId = bossId.value,
             expectedPhaseId = "phase_abyssal",
-            expectedActionIds = if (preferredVariantId == null) setOf("abyssal_consecration", "press_abyss") else setOf("linebreaker"),
+            expectedActionIds = if (preferredVariantId == null) setOf("abyssal_consecration", "press_abyss") else setOf("void_breach", "abyssal_consecration", "linebreaker"),
         )
 
         return buildReport(
@@ -365,11 +398,11 @@ class BossHarnessTest {
             templateId = "abyssal.guardian",
             telegraph = phaseTelegraph,
             phaseState = world.get<BossEncounterState>(bossId),
-            expectedTelegraphKey = "abyssal_guardian_phase_warning",
+            expectedTelegraphKey = if (preferredVariantId == null) "abyssal_guardian_phase_warning" else "abyssal_eclipse_phase_override_warning",
             expectedPhaseId = "phase_abyssal",
-            expectedSelectedActionIds = if (preferredVariantId == null) setOf("abyssal_consecration", "press_abyss") else setOf("linebreaker"),
+            expectedSelectedActionIds = if (preferredVariantId == null) setOf("abyssal_consecration", "press_abyss") else setOf("void_breach", "abyssal_consecration", "linebreaker"),
             expectedBossTracePhaseId = "phase_abyssal",
-            expectedBossTraceSideEffect = "TELEGRAPH:abyssal_guardian_phase_warning",
+            expectedBossTraceSideEffect = if (preferredVariantId == null) "TELEGRAPH:abyssal_guardian_phase_warning" else "PHASE_OVERRIDE_TELEGRAPH:abyssal_eclipse_phase_override_warning",
             expectedVariantId = preferredVariantId,
         )
     }
@@ -464,6 +497,42 @@ class BossHarnessTest {
         val phaseSequence = phaseSequence(decodedBoss, phaseState)
         val phaseTransitionTriggers = decodedBoss.map { trace -> "${trace.fromPhase ?: "START"}->${trace.toPhase}:${trace.trigger}" }.distinct()
         val phaseTransitionObserved = decodedBoss.any { trace -> trace.toPhase == expectedPhaseId }
+        val phaseOverrideExpectation = expectedVariantId?.let(bossRegistryMetrics.phaseOverrideExpectationsByVariant::getValue)
+        val phaseOverridePhaseIds = phaseState?.phaseOverrideTriggeredPhaseIds?.sorted().orEmpty()
+        val phaseOverrideRuntimeTriggered =
+            phaseOverrideExpectation?.let { expectation -> expectation.phaseId in phaseOverridePhaseIds } ?: false
+        val phaseOverrideTelegraphTriggered =
+            phaseOverrideExpectation?.let { expectation ->
+                decodedBoss.any { trace ->
+                    "PHASE_OVERRIDE_TELEGRAPH:${expectation.telegraphSpecId}" in trace.sideEffects
+                }
+            } ?: false
+        val phaseOverrideActionEmphasisIds =
+            decodedBoss
+                .asSequence()
+                .flatMap { trace -> trace.sideEffects.asSequence() }
+                .filter { sideEffect -> sideEffect.startsWith("PHASE_OVERRIDE_ACTION_EMPHASIS:") }
+                .flatMap { sideEffect -> sideEffect.removePrefix("PHASE_OVERRIDE_ACTION_EMPHASIS:").splitToSequence(",") }
+                .filter(String::isNotBlank)
+                .distinct()
+                .sorted()
+                .toList()
+        val phaseOverrideActionEmphasisApplied =
+            phaseOverrideExpectation?.let { expectation ->
+                expectation.actionEmphasisIds.all { actionId -> actionId in phaseOverrideActionEmphasisIds }
+            } ?: false
+        val phaseOverrideRuntimeRequirementSatisfied =
+            phaseOverrideExpectation == null || phaseOverrideRuntimeTriggered
+        val phaseOverrideTelegraphRequirementSatisfied =
+            phaseOverrideExpectation == null || phaseOverrideTelegraphTriggered
+        val phaseOverrideActionEmphasisRequirementSatisfied =
+            phaseOverrideExpectation == null || phaseOverrideActionEmphasisApplied
+        val phaseOverrideSkippedReason =
+            decodedBoss
+                .asSequence()
+                .flatMap { trace -> trace.sideEffects.asSequence() }
+                .lastOrNull { sideEffect -> sideEffect.startsWith("PHASE_OVERRIDE_SKIPPED:") }
+                ?.removePrefix("PHASE_OVERRIDE_SKIPPED:")
         val encounterThreatBudget = session.automationEncounterThreatBudget(bossId)
         val floorRewardBudget = session.automationFloorRewardBudget()
         val variantMatches =
@@ -481,6 +550,9 @@ class BossHarnessTest {
                 expectedBossPhaseTracePresent &&
                 expectedBossSideEffectPresent &&
                 variantMatches &&
+                phaseOverrideRuntimeRequirementSatisfied &&
+                phaseOverrideTelegraphRequirementSatisfied &&
+                phaseOverrideActionEmphasisRequirementSatisfied &&
                 phaseTransitionObserved &&
                 (!terrainPreferenceAvailable || terrainPreferenceImplemented) &&
                 inspectReadable &&
@@ -497,6 +569,9 @@ class BossHarnessTest {
                 !expectedBossPhaseTracePresent -> "Missing boss phase trace '$expectedBossTracePhaseId'."
                 !expectedBossSideEffectPresent -> "Missing boss trace side effect '$expectedBossTraceSideEffect'."
                 !variantMatches -> "Expected variant ${expectedVariantId ?: "base"} but got ${variantRuntime?.variantId ?: "base"}."
+                !phaseOverrideRuntimeRequirementSatisfied -> "Missing phase override trigger for ${phaseOverrideExpectation?.phaseId}."
+                !phaseOverrideTelegraphRequirementSatisfied -> "Missing phase override telegraph for ${phaseOverrideExpectation?.telegraphSpecId}."
+                !phaseOverrideActionEmphasisRequirementSatisfied -> "Missing phase override action emphasis for ${phaseOverrideExpectation?.actionEmphasisIds}."
                 !phaseTransitionObserved -> "Boss phase transition was not observed in the trace payload."
                 terrainPreferenceAvailable && !terrainPreferenceImplemented ->
                     "Boss spawn did not land on preferred terrain or an adjacent tactical tile."
@@ -529,6 +604,12 @@ class BossHarnessTest {
             phaseSequence = phaseSequence,
             phaseTransitionTriggers = phaseTransitionTriggers,
             phaseTransitionObserved = phaseTransitionObserved,
+            phaseOverridePhaseIds = phaseOverridePhaseIds,
+            phaseOverrideTelegraphKey = phaseOverrideExpectation?.telegraphSpecId?.takeIf { phaseOverrideTelegraphTriggered },
+            phaseOverrideRuntimeTriggered = phaseOverrideRuntimeTriggered,
+            phaseOverrideTelegraphTriggered = phaseOverrideTelegraphTriggered,
+            phaseOverrideActionEmphasisIds = phaseOverrideActionEmphasisIds,
+            phaseOverrideSkippedReason = phaseOverrideSkippedReason,
             expectedSelectedActions = expectedSelectedActionIds.sorted(),
             selectedActionIds = selectedActionIds,
             selectedActionSequence = selectedActionSequence,
@@ -553,12 +634,11 @@ class BossHarnessTest {
         variantReport: BossHarnessReport,
     ): BossHarnessPairReport {
         val expectedVariantId = requireNotNull(variantReport.variantId) { "Variant harness report must carry a variant id." }
+        val basePhaseIds = bossRegistryMetrics.bossVariantBasePhaseIds.getValue(expectedVariantId)
         val phaseGraphUnchanged =
-            baseReport.phaseSequence == variantReport.phaseSequence &&
-                baseReport.phaseTransitionTriggers == variantReport.phaseTransitionTriggers
-        val phaseGraphStructuralDiffCount =
-            setOf(baseReport.phaseSequence, variantReport.phaseSequence).size - 1 +
-                setOf(baseReport.phaseTransitionTriggers, variantReport.phaseTransitionTriggers).size - 1
+            baseReport.encounterId == variantReport.encounterId &&
+                variantReport.phaseOverridePhaseIds.all { phaseId -> phaseId in basePhaseIds }
+        val phaseGraphStructuralDiffCount = if (phaseGraphUnchanged) 0 else 1
         val threatLedgerMatched =
             variantReport.encounterThreatBudget.jsonObject.getValue("threatDeltas").toString().contains("bossVariant:$expectedVariantId") &&
                 variantReport.encounterThreatBudget.jsonObject.getValue("totalBudget").jsonPrimitive.content.toInt() >=
@@ -596,13 +676,15 @@ class BossHarnessTest {
                 grantedMutationsRegistered &&
                 threatLedgerMatched &&
                 rewardLedgerMatched &&
+                variantReport.phaseOverrideRuntimeTriggered &&
+                variantReport.phaseOverrideTelegraphTriggered &&
                 variantReport.inspectReadable &&
                 variantReport.logReadable
         val failureReason =
             when {
                 !baseReport.success -> "Base report failed: ${baseReport.failureReason}"
                 !variantReport.success -> "Variant report failed: ${variantReport.failureReason}"
-                !phaseGraphUnchanged -> "Boss variant changed the phase graph structure."
+                !phaseGraphUnchanged -> "Boss variant phase override targets a phase outside the base encounter graph."
                 !baseReport.phaseTransitionObserved || !variantReport.phaseTransitionObserved -> "Base and variant reports must both observe a boss phase transition."
                 !traceDiverged -> "Variant AI trace did not diverge from the base trace."
                 !selectedActionSequenceDiverged -> "Variant selected action sequence did not diverge from the base sequence."
@@ -611,6 +693,8 @@ class BossHarnessTest {
                 !grantedMutationsRegistered -> "Variant references a non-registry mutation id."
                 !threatLedgerMatched -> "Variant threatCost is missing from the encounter ledger."
                 !rewardLedgerMatched -> "Variant lootProfileOverride is missing from the reward ledger or uses the wrong rewardBudget amount."
+                !variantReport.phaseOverrideRuntimeTriggered -> "Variant phase override runtime trigger was not observed."
+                !variantReport.phaseOverrideTelegraphTriggered -> "Variant phase override telegraph was not observed."
                 !variantReport.inspectReadable -> "Variant metadata is not inspect-readable."
                 !variantReport.logReadable -> "Variant metadata is not log-readable."
                 else -> null
@@ -626,6 +710,9 @@ class BossHarnessTest {
             actionTraceDivergenceScore = actionTraceDivergenceScore,
             threatLedgerMatched = threatLedgerMatched,
             rewardLedgerMatched = rewardLedgerMatched,
+            phaseOverrideRuntimeTriggered = variantReport.phaseOverrideRuntimeTriggered,
+            phaseOverrideTelegraphTriggered = variantReport.phaseOverrideTelegraphTriggered,
+            phaseOverrideActionEmphasisIds = variantReport.phaseOverrideActionEmphasisIds,
             inspectReadable = variantReport.inspectReadable,
             logReadable = variantReport.logReadable,
             success = success,
@@ -637,6 +724,18 @@ class BossHarnessTest {
         val phaseTransitionObservedRatio = phaseTransitionObservedRatio(pairReports)
         val variantTraceDivergenceRatio = variantTraceDivergenceRatio(pairReports)
         val minVariantActionTraceDivergenceScore = pairReports.minOf(BossHarnessPairReport::actionTraceDivergenceScore)
+        val phaseOverrideSchemaCoverage = bossRegistryMetrics.phaseOverrideSchemaCoverage
+        val phaseOverrideRuntimeTriggerCoverage = phaseOverrideRuntimeTriggerCoverage(pairReports)
+        val phaseOverrideTelegraphCoverage = phaseOverrideTelegraphCoverage(pairReports)
+        val phaseOverrideActionDistinctCountsByVariant = phaseOverrideActionDistinctCountsByVariant(pairReports)
+        val phaseOverrideActionDistinctMin = phaseOverrideActionDistinctCountsByVariant.values.minOrNull() ?: 0
+        val phaseGraphUnchanged = pairReports.all(BossHarnessPairReport::phaseGraphUnchanged)
+        val phaseGraphUnchangedReason =
+            if (phaseGraphUnchanged) {
+                "data_level_override_only"
+            } else {
+                "phase_graph_structural_diff"
+            }
         return listOf(
             WhiteBoxAggregateReport(
                 groupId = "per-encounter",
@@ -648,6 +747,19 @@ class BossHarnessTest {
                         put("phaseTransitionObservedRatio", phaseTransitionObservedRatio)
                         put("variantTraceDivergenceRatio", variantTraceDivergenceRatio)
                         put("minVariantActionTraceDivergenceScore", minVariantActionTraceDivergenceScore)
+                        put("phaseOverrideSchemaCoverage", phaseOverrideSchemaCoverage)
+                        put("phaseOverrideRuntimeTriggerCoverage", phaseOverrideRuntimeTriggerCoverage)
+                        put("phaseOverrideTelegraphCoverage", phaseOverrideTelegraphCoverage)
+                        put("phaseOverrideActionDistinctCount", phaseOverrideActionDistinctMin)
+                        put("phaseOverrideActionDistinctMin", phaseOverrideActionDistinctMin)
+                        putJsonObject("phaseOverrideActionDistinctCountsByVariant") {
+                            phaseOverrideActionDistinctCountsByVariant.forEach { (variantId, actionCount) ->
+                                put(variantId, actionCount)
+                            }
+                        }
+                        put("phaseGraphUnchanged", phaseGraphUnchanged)
+                        put("phaseGraphUnchangedReason", phaseGraphUnchangedReason)
+                        put("bossVariantStructuralDivergenceNote", "phaseGraphUnchanged=$phaseGraphUnchanged; phaseOverrides target declared base encounter phase ids.")
                         put("variantCount", pairReports.count { pair -> pair.variantReport.variantId != null })
                         put("terrainPreferenceVariantCount", pairReports.count { pair -> pair.variantReport.preferredTerrainTags.isNotEmpty() })
                         put("terrainPreferenceAvailableVariantCount", pairReports.count { pair -> pair.variantReport.terrainPreferenceAvailable })
@@ -668,7 +780,7 @@ class BossHarnessTest {
                         WhiteBoxAssertionResult(
                             ruleId = "boss.aggregate.phase_graph_diff_zero",
                             passed = pairReports.sumOf(BossHarnessPairReport::phaseGraphStructuralDiffCount) == 0,
-                            message = "All boss variants preserve the original phase graph structure.",
+                            message = "All boss variant phase overrides target declared base encounter phase ids.",
                         ),
                         WhiteBoxAssertionResult(
                             ruleId = "boss.aggregate.phase_transition_observed_ratio",
@@ -688,6 +800,21 @@ class BossHarnessTest {
                                 },
                             message = "Every boss variant with explicit terrain affinity lands on preferred terrain or an adjacent tactical tile.",
                         ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_override_schema_coverage",
+                            passed = phaseOverrideSchemaCoverage >= 1.0,
+                            message = "All formal boss variants declare at least one phase override.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_override_runtime_trigger_coverage",
+                            passed = phaseOverrideRuntimeTriggerCoverage >= 1.0,
+                            message = "All formal boss variant phase overrides are triggered by bossHarness runtime samples.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_override_telegraph_coverage",
+                            passed = phaseOverrideTelegraphCoverage >= 1.0,
+                            message = "All formal boss variant phase override telegraph specs are observed in runtime trace.",
+                        ),
                     ),
             ),
             WhiteBoxAggregateReport(
@@ -703,11 +830,29 @@ class BossHarnessTest {
                         put("eliteMutationDistinctCount", bossRegistryMetrics.eliteMutationDistinctCount)
                         put("eliteMutationValidPairCount", bossRegistryMetrics.eliteMutationValidPairCount)
                         put("bossVariantCount", bossRegistryMetrics.bossVariantCount)
+                        put("phaseOverrideVariantCount", bossRegistryMetrics.phaseOverrideVariantCount)
                         put("bossVariantMutationPairwiseDistinct", bossRegistryMetrics.bossVariantMutationPairwiseDistinct)
                         put("bossVariantBasePhaseCountMin", bossRegistryMetrics.bossVariantBasePhaseCounts.values.minOrNull() ?: 0)
                         put("phaseTransitionObservedRatio", phaseTransitionObservedRatio)
                         put("variantTraceDivergenceRatio", variantTraceDivergenceRatio)
                         put("minVariantActionTraceDivergenceScore", minVariantActionTraceDivergenceScore)
+                        put("phaseOverrideVariantDenominator", bossRegistryMetrics.phaseOverrideVariantDenominator)
+                        put("phaseOverrideSchemaCount", bossRegistryMetrics.phaseOverrideVariantCount)
+                        put("phaseOverrideSchemaCoverage", phaseOverrideSchemaCoverage)
+                        put("phaseOverrideRuntimeTriggerCount", pairReports.count(BossHarnessPairReport::phaseOverrideRuntimeTriggered))
+                        put("phaseOverrideRuntimeTriggerCoverage", phaseOverrideRuntimeTriggerCoverage)
+                        put("phaseOverrideTelegraphCount", pairReports.count(BossHarnessPairReport::phaseOverrideTelegraphTriggered))
+                        put("phaseOverrideTelegraphCoverage", phaseOverrideTelegraphCoverage)
+                        put("phaseOverrideActionDistinctCount", phaseOverrideActionDistinctMin)
+                        put("phaseOverrideActionDistinctMin", phaseOverrideActionDistinctMin)
+                        putJsonObject("phaseOverrideActionDistinctCountsByVariant") {
+                            phaseOverrideActionDistinctCountsByVariant.forEach { (variantId, actionCount) ->
+                                put(variantId, actionCount)
+                            }
+                        }
+                        put("phaseGraphUnchanged", phaseGraphUnchanged)
+                        put("phaseGraphUnchangedReason", phaseGraphUnchangedReason)
+                        put("bossVariantStructuralDivergenceNote", "phaseGraphUnchanged=$phaseGraphUnchanged; phaseOverrides target declared base encounter phase ids.")
                         put("terrainPreferenceVariantCount", pairReports.count { pair -> pair.variantReport.preferredTerrainTags.isNotEmpty() })
                         put("terrainPreferenceAvailableVariantCount", pairReports.count { pair -> pair.variantReport.terrainPreferenceAvailable })
                         put(
@@ -817,6 +962,21 @@ class BossHarnessTest {
                                 },
                             message = "Boss variants with explicit terrain affinity are realized on preferred terrain or an adjacent tactical tile.",
                         ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_override_schema_coverage",
+                            passed = phaseOverrideSchemaCoverage >= 1.0,
+                            message = "phaseOverrideSchemaCoverage reaches the PR-05 owner threshold.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_override_runtime_trigger_coverage",
+                            passed = phaseOverrideRuntimeTriggerCoverage >= 1.0,
+                            message = "phaseOverrideRuntimeTriggerCoverage reaches the PR-05 owner threshold.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_override_telegraph_coverage",
+                            passed = phaseOverrideTelegraphCoverage >= 1.0,
+                            message = "phaseOverrideTelegraphCoverage reaches the PR-05 owner threshold.",
+                        ),
                     ),
             ),
         )
@@ -838,6 +998,31 @@ class BossHarnessTest {
             .count(BossHarnessPairReport::variantTraceDivergencePassed)
             .toDouble() / pairReports.size.toDouble()
     }
+
+    private fun phaseOverrideRuntimeTriggerCoverage(pairReports: List<BossHarnessPairReport>): Double =
+        if (bossRegistryMetrics.phaseOverrideVariantDenominator == 0) {
+            0.0
+        } else {
+            pairReports.count(BossHarnessPairReport::phaseOverrideRuntimeTriggered).toDouble() /
+                bossRegistryMetrics.phaseOverrideVariantDenominator.toDouble()
+        }
+
+    private fun phaseOverrideTelegraphCoverage(pairReports: List<BossHarnessPairReport>): Double =
+        if (bossRegistryMetrics.phaseOverrideVariantDenominator == 0) {
+            0.0
+        } else {
+            pairReports.count(BossHarnessPairReport::phaseOverrideTelegraphTriggered).toDouble() /
+                bossRegistryMetrics.phaseOverrideVariantDenominator.toDouble()
+        }
+
+    private fun phaseOverrideActionDistinctCountsByVariant(pairReports: List<BossHarnessPairReport>): Map<String, Int> =
+        bossRegistryMetrics.phaseOverrideExpectationsByVariant.keys.associateWith { variantId ->
+            pairReports
+                .filter { pair -> pair.variantReport.variantId == variantId }
+                .flatMap(BossHarnessPairReport::phaseOverrideActionEmphasisIds)
+                .distinct()
+                .size
+        }.toSortedMap()
 
     private fun descendToBossFloor(session: FoundationGameSession) {
         val stairsDown = requireNotNull(session.automationStairPoint(com.ktome.core.dungeon.StairDirection.DOWN))
@@ -1013,6 +1198,12 @@ private data class BossHarnessReport(
     val phaseSequence: List<String>,
     val phaseTransitionTriggers: List<String>,
     val phaseTransitionObserved: Boolean,
+    val phaseOverridePhaseIds: List<String>,
+    val phaseOverrideTelegraphKey: String?,
+    val phaseOverrideRuntimeTriggered: Boolean,
+    val phaseOverrideTelegraphTriggered: Boolean,
+    val phaseOverrideActionEmphasisIds: List<String>,
+    val phaseOverrideSkippedReason: String?,
     val expectedSelectedActions: List<String>,
     val selectedActionIds: List<String>,
     val selectedActionSequence: List<String>,
@@ -1045,6 +1236,12 @@ private data class BossHarnessReport(
             putJsonArray("phaseSequence") { phaseSequence.forEach { phase -> add(JsonPrimitive(phase)) } }
             putJsonArray("phaseTransitionTriggers") { phaseTransitionTriggers.forEach { trigger -> add(JsonPrimitive(trigger)) } }
             put("phaseTransitionObserved", phaseTransitionObserved)
+            putJsonArray("phaseOverridePhaseIds") { phaseOverridePhaseIds.forEach { phaseId -> add(JsonPrimitive(phaseId)) } }
+            phaseOverrideTelegraphKey?.let { put("phaseOverrideTelegraphKey", it) }
+            put("phaseOverrideRuntimeTriggered", phaseOverrideRuntimeTriggered)
+            put("phaseOverrideTelegraphTriggered", phaseOverrideTelegraphTriggered)
+            putJsonArray("phaseOverrideActionEmphasisIds") { phaseOverrideActionEmphasisIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
+            phaseOverrideSkippedReason?.let { put("phaseOverrideSkippedReason", it) }
             putJsonArray("expectedSelectedActions") { expectedSelectedActions.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             putJsonArray("selectedActionIds") { selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             putJsonArray("selectedActionSequence") { selectedActionSequence.forEach { actionId -> add(JsonPrimitive(actionId)) } }
@@ -1075,6 +1272,9 @@ private data class BossHarnessReport(
             putJsonArray("checks") {
                 add(JsonPrimitive("telegraph"))
                 add(JsonPrimitive("phaseTransition"))
+                add(JsonPrimitive("phaseOverrideRuntime"))
+                add(JsonPrimitive("phaseOverrideTelegraph"))
+                add(JsonPrimitive("phaseOverrideActionEmphasis"))
                 add(JsonPrimitive("bossTracePayload"))
                 add(JsonPrimitive("aiDecisionTracePayload"))
                 add(JsonPrimitive("phaseSpecificActionTrace"))
@@ -1097,6 +1297,9 @@ private data class BossHarnessPairReport(
     val actionTraceDivergenceScore: Double,
     val threatLedgerMatched: Boolean,
     val rewardLedgerMatched: Boolean,
+    val phaseOverrideRuntimeTriggered: Boolean,
+    val phaseOverrideTelegraphTriggered: Boolean,
+    val phaseOverrideActionEmphasisIds: List<String>,
     val inspectReadable: Boolean,
     val logReadable: Boolean,
     val success: Boolean,
@@ -1119,6 +1322,9 @@ private data class BossHarnessPairReport(
             put("actionTraceDivergenceScore", actionTraceDivergenceScore)
             put("threatLedgerMatched", threatLedgerMatched)
             put("rewardLedgerMatched", rewardLedgerMatched)
+            put("phaseOverrideRuntimeTriggered", phaseOverrideRuntimeTriggered)
+            put("phaseOverrideTelegraphTriggered", phaseOverrideTelegraphTriggered)
+            putJsonArray("phaseOverrideActionEmphasisIds") { phaseOverrideActionEmphasisIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             put("inspectReadable", inspectReadable)
             put("logReadable", logReadable)
             put("success", success)
@@ -1175,6 +1381,16 @@ private data class BossHarnessPairReport(
                     message = "Variant remains traceable via telegraph, inspect, and log metadata.",
                 ),
                 WhiteBoxAssertionResult(
+                    ruleId = "boss.case.phase_override_runtime_triggered",
+                    passed = phaseOverrideRuntimeTriggered,
+                    message = "Variant phase override trigger is observed through boss runtime state.",
+                ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.phase_override_telegraph_triggered",
+                    passed = phaseOverrideTelegraphTriggered,
+                    message = "Variant phase override telegraph is represented in boss trace side effects.",
+                ),
+                WhiteBoxAssertionResult(
                     ruleId = "boss.case.preferred_terrain_applied",
                     passed = !variantReport.terrainPreferenceAvailable || variantReport.terrainPreferenceImplemented,
                     message = "Variant preferred terrain tags are realized by the final boss landing tile or its adjacent tactical tiles.",
@@ -1194,6 +1410,11 @@ private data class BossHarnessPairReport(
                     putJsonArray("phaseSequence") { variantReport.phaseSequence.forEach { phase -> add(JsonPrimitive(phase)) } }
                     putJsonArray("phaseTransitionTriggers") { variantReport.phaseTransitionTriggers.forEach { trigger -> add(JsonPrimitive(trigger)) } }
                     put("phaseTransitionObserved", variantReport.phaseTransitionObserved)
+                    putJsonArray("phaseOverridePhaseIds") { variantReport.phaseOverridePhaseIds.forEach { phaseId -> add(JsonPrimitive(phaseId)) } }
+                    variantReport.phaseOverrideTelegraphKey?.let { put("phaseOverrideTelegraphKey", it) }
+                    put("phaseOverrideRuntimeTriggered", phaseOverrideRuntimeTriggered)
+                    put("phaseOverrideTelegraphTriggered", phaseOverrideTelegraphTriggered)
+                    putJsonArray("phaseOverrideActionEmphasisIds") { phaseOverrideActionEmphasisIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
                     putJsonArray("selectedActions") { variantReport.selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
                     putJsonArray("selectedActionSequence") { variantReport.selectedActionSequence.forEach { actionId -> add(JsonPrimitive(actionId)) } }
                     put("traceDiverged", traceDiverged)
@@ -1328,17 +1549,47 @@ private data class BossHarnessPairReport(
                     },
                 tags = listOf("visual", "tint"),
             ),
+            WhiteBoxHarnessWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "phase-override",
+                kind = "phase_override",
+                fileName = "phase-override.md",
+                summary = "PR-05 variant phase override runtime trigger, telegraph, and action emphasis.",
+                content =
+                    buildString {
+                        appendLine("| variantId | phaseOverridePhaseIds | telegraph | runtimeTriggered | telegraphTriggered | actionEmphasisIds |")
+                        appendLine("| --- | --- | --- | --- | --- | --- |")
+                        appendLine(
+                            "| ${variantReport.variantId} | ${variantReport.phaseOverridePhaseIds.joinToString().ifBlank { "-" }} | " +
+                                "${variantReport.phaseOverrideTelegraphKey ?: "-"} | $phaseOverrideRuntimeTriggered | " +
+                                "$phaseOverrideTelegraphTriggered | ${phaseOverrideActionEmphasisIds.joinToString().ifBlank { "-" }} |",
+                        )
+                    },
+                tags = listOf("phase", "override"),
+            ),
         )
 }
+
+private data class PhaseOverrideHarnessExpectation(
+    val phaseId: String,
+    val telegraphSpecId: String,
+    val actionEmphasisIds: List<String>,
+)
 
 private data class BossRegistryMetrics(
     val eliteMutationDistinctCount: Int,
     val eliteMutationValidPairCount: Int,
     val mutationTierDistribution: Map<String, Int>,
     val bossVariantCount: Int,
+    val phaseOverrideVariantDenominator: Int,
+    val phaseOverrideVariantCount: Int,
+    val phaseOverrideSchemaCoverage: Double,
+    val phaseOverrideExpectationsByVariant: Map<String, PhaseOverrideHarnessExpectation>,
     val bossVariantMutationPairwiseDistinct: Boolean,
     val bossVariantMutationSets: Map<String, List<String>>,
     val bossVariantPreferredTerrainTags: Map<String, List<String>>,
+    val bossVariantBasePhaseIds: Map<String, List<String>>,
     val bossVariantBasePhaseCounts: Map<String, Int>,
 ) {
     companion object {
@@ -1347,6 +1598,19 @@ private data class BossRegistryMetrics(
             val allZoneIds = schemaCatalog.zones.mapTo(linkedSetOf()) { zone -> zone.id }
             val mutations = schemaCatalog.eliteMutations
             val mutationsById = mutations.associateBy { mutation -> mutation.id }
+            val bossVariantCount = schemaCatalog.bossVariants.map { variant -> variant.id }.distinct().size
+            val phaseOverrideExpectationsByVariant =
+                schemaCatalog.bossVariants
+                    .mapNotNull { variant ->
+                        val override = variant.phaseOverrides.singleOrNull() ?: return@mapNotNull null
+                        variant.id to
+                            PhaseOverrideHarnessExpectation(
+                                phaseId = override.phaseId,
+                                telegraphSpecId = override.telegraphSpecId,
+                                actionEmphasisIds = override.actionEmphasisIds,
+                            )
+                    }.toMap()
+                    .toSortedMap()
             val bossVariantMutationSets =
                 schemaCatalog.bossVariants
                     .associate { variant ->
@@ -1375,6 +1639,16 @@ private data class BossRegistryMetrics(
                                 .orEmpty()
                                 .size
                     }.toSortedMap()
+            val bossVariantBasePhaseIds =
+                schemaCatalog.bossVariants
+                    .associate { variant ->
+                        variant.id to
+                            schemaCatalog.bossEncounters
+                                .firstOrNull { encounter -> encounter.id == variant.baseEncounterId }
+                                ?.phases
+                                .orEmpty()
+                                .map { phase -> phase.id }
+                    }.toSortedMap()
             val validPairCount =
                 mutations.indices.sumOf { leftIndex ->
                     val left = mutations[leftIndex]
@@ -1390,11 +1664,21 @@ private data class BossRegistryMetrics(
                         .groupingBy { mutation -> mutation.tier.name }
                         .eachCount()
                         .toSortedMap(),
-                bossVariantCount = schemaCatalog.bossVariants.map { variant -> variant.id }.distinct().size,
+                bossVariantCount = bossVariantCount,
+                phaseOverrideVariantDenominator = bossVariantCount,
+                phaseOverrideVariantCount = schemaCatalog.bossVariants.count { variant -> variant.phaseOverrides.isNotEmpty() },
+                phaseOverrideSchemaCoverage =
+                    if (bossVariantCount == 0) {
+                        0.0
+                    } else {
+                        schemaCatalog.bossVariants.count { variant -> variant.phaseOverrides.isNotEmpty() }.toDouble() / bossVariantCount.toDouble()
+                    },
+                phaseOverrideExpectationsByVariant = phaseOverrideExpectationsByVariant,
                 bossVariantMutationPairwiseDistinct =
                     bossVariantMutationSets.values.distinct().size == bossVariantMutationSets.size,
                 bossVariantMutationSets = bossVariantMutationSets,
                 bossVariantPreferredTerrainTags = bossVariantPreferredTerrainTags,
+                bossVariantBasePhaseIds = bossVariantBasePhaseIds,
                 bossVariantBasePhaseCounts = bossVariantBasePhaseCounts,
             )
         }

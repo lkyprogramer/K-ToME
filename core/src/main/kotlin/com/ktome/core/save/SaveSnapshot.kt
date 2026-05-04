@@ -170,7 +170,7 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 15
+        const val CURRENT_SCHEMA_VERSION: Int = 16
         const val CURRENT_TALENT_SCHEMA_VERSION: Int = 2
         const val CURRENT_INSCRIPTION_SCHEMA_VERSION: Int = 2
         const val DEFAULT_BUILD_METADATA: String = "phase4-opt-pr05-dev"
@@ -577,11 +577,18 @@ data class BossEncounterStateSnapshot(
     val currentPhaseId: String? = null,
     val encounterTurnCount: Int = 0,
     val phaseTurnCount: Int = 0,
+    val phaseOverrideTriggeredPhaseIds: List<String> = emptyList(),
 ) {
     fun validateOrThrow() {
         require(encounterId.isNotBlank()) { "Boss encounter id must not be blank." }
         require(encounterTurnCount >= 0) { "Boss encounter turn count must not be negative." }
         require(phaseTurnCount >= 0) { "Boss phase turn count must not be negative." }
+        require(phaseOverrideTriggeredPhaseIds.all(String::isNotBlank)) {
+            "Boss phase override triggered phase ids must not contain blanks."
+        }
+        require(phaseOverrideTriggeredPhaseIds.distinct().size == phaseOverrideTriggeredPhaseIds.size) {
+            "Boss phase override triggered phase ids must not contain duplicates."
+        }
     }
 }
 

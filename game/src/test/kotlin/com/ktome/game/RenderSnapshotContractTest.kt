@@ -33,6 +33,7 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.game.data.DataLoader
+import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import java.nio.file.Path
@@ -693,7 +694,13 @@ class RenderSnapshotContractTest {
     fun `phase enter telegraph keeps line geometry instead of collapsing to the boss tile`() {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = 20260318L, zoneId = "grey_gate_depths", playerProfessionId = "templar"),
+                config =
+                    FoundationGameConfig(
+                        seed = 20260318L,
+                        zoneId = "grey_gate_depths",
+                        playerProfessionId = "templar",
+                        bossVariantSelectionMode = BossVariantSelectionMode.DISABLED,
+                    ),
                 saveManager = SaveManager(tempDir.resolve("boss-phase-warning-geometry")),
             )
         val stairsDown = requireNotNull(session.automationStairPoint(StairDirection.DOWN))

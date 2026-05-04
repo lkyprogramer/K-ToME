@@ -174,6 +174,45 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `pr05 boss variant phase language scenario matches fixed phase4 v4 contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr05"))
+
+        assertEquals("PR-05", scenario.prId)
+        assertEquals(ValidationPreset.BOSS_VARIANT, scenario.runtime.preset)
+        assertEquals(2026042435L, scenario.runtime.seed)
+        assertEquals("vanguard", scenario.runtime.professionId)
+        assertEquals("human", scenario.runtime.raceId)
+        assertEquals("deep_iron_pit", scenario.runtime.zoneId)
+        assertEquals(2, scenario.runtime.floor)
+        assertEquals(-1, scenario.runtime.routeIndex)
+        assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+        assertEquals(
+            listOf(
+                "evidence/phase4-v4-pr05-molten-glass-warning.png",
+                "evidence/phase4-v4-pr05-grey-crown-warning.png",
+                "evidence/phase4-v4-pr05-abyssal-eclipse-warning.png",
+                "evidence/phase4-v4-pr05-report-coverage.png",
+                "evidence/phase4-v4-pr05-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals(
+            "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr05-boss-variant-phase-language.md",
+            scenario.evidence.manualRecordPath,
+        )
+        assertEquals(
+            listOf(
+                "log.boss.phase_override_entered",
+                "boss.variant.molten_glass.phase_override.entered",
+                "boss.variant.grey_crown.phase_override.entered",
+                "boss.variant.abyssal_eclipse.phase_override.entered",
+            ),
+            scenario.evidence.requiredLogEventKeys,
+        )
+        assertEquals("validation.phase4.v4.phase4-v4-pr05.evidence.summary_note", scenario.evidence.scenarioNoteLabelKey)
+    }
+
+    @Test
     fun `scenario yaml ids stay in parity with typed registry`() {
         val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
         val parity =
@@ -411,6 +450,68 @@ class ValidationScenarioRegistryTest {
             ("log.zone.hook.void_pressure" to "ZONE_HOOK_TRIGGERED") in secondaryCueKeys,
             "Expected visible zone hook frontstage cue. cues=$secondaryCueKeys",
         )
+    }
+
+    @Test
+    fun `pr05 scenario actions rotate boss variant phase override surfaces`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr05"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("phase4-v4-pr05-scenario-actions")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertTrue(
+            session.renderSnapshot().overlays.any { overlay -> overlay.sourceAbilityId == "molten_glass_phase_override_warning" },
+            "overlays=${session.renderSnapshot().overlays.map { overlay -> overlay.sourceAbilityId }} logs=${session.renderSnapshot().logEvents.map { event -> event.message.key }}",
+        )
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "boss.variant.molten_glass.phase_override.entered" })
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertEquals("grey_gate_depths", session.config.zoneId)
+        assertTrue(
+            session.renderSnapshot().overlays.any { overlay -> overlay.sourceAbilityId == "grey_crown_phase_override_warning" },
+            "overlays=${session.renderSnapshot().overlays.map { overlay -> overlay.sourceAbilityId }} logs=${session.renderSnapshot().logEvents.map { event -> event.message.key }}",
+        )
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "boss.variant.grey_crown.phase_override.entered" })
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertEquals("abyssal_heart", session.config.zoneId)
+        assertTrue(
+            session.renderSnapshot().overlays.any { overlay -> overlay.sourceAbilityId == "abyssal_eclipse_phase_override_warning" },
+            "overlays=${session.renderSnapshot().overlays.map { overlay -> overlay.sourceAbilityId }} logs=${session.renderSnapshot().logEvents.map { event -> event.message.key }}",
+        )
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "boss.variant.abyssal_eclipse.phase_override.entered" })
     }
 
 

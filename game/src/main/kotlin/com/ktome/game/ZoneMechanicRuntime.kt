@@ -15,6 +15,11 @@ import com.ktome.game.hidden.ZoneMechanicClassification
 import com.ktome.game.model.MonsterTemplate
 import kotlin.math.abs
 
+internal object ZoneTriggerFactIds {
+    const val OIL_OR_FIRE_SEEN: String = "zone.trigger.oil_or_fire_seen"
+    const val VOID_PRESSURE_ACTIVE: String = "zone.trigger.void_pressure_active"
+}
+
 internal data class PatrolPressureRuntimeState(
     val spawnTemplateIds: List<String>,
     val maxHostiles: Int,
@@ -308,9 +313,9 @@ object ZoneMechanicRuntime {
                 effect =
                     SlagAlertRuntimeEffect(
                         searchPromptVisible = true,
-                        warningEventId = "zone.trigger.oil_or_fire_seen",
+                        warningEventId = ZoneTriggerFactIds.OIL_OR_FIRE_SEEN,
                     ),
-                triggerFactId = "zone.trigger.oil_or_fire_seen",
+                triggerFactId = ZoneTriggerFactIds.OIL_OR_FIRE_SEEN,
                 triggerInteractableIds = setOf("ore_stash", "mine_furnace", "slag_valve"),
             ),
             ZoneRuntimeHookContract(
@@ -349,7 +354,7 @@ object ZoneMechanicRuntime {
                         resourcePressureWarning = true,
                         objectivePenaltyMultiplier = 1.2,
                     ),
-                triggerFactId = "zone.trigger.void_pressure_active",
+                triggerFactId = ZoneTriggerFactIds.VOID_PRESSURE_ACTIVE,
                 triggerInteractableIds = setOf("temple_ward_reliquary"),
                 grantedDiscoveryTags = setOf("hidden.primer.abyssal_temple.warded_archive"),
             ),

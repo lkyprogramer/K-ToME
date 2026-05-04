@@ -22,6 +22,7 @@ import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.i18n.Localizer
+import com.ktome.game.elites.BossVariantPhaseOverrideContracts
 import com.ktome.game.elites.BossVariantRegistry
 import com.ktome.game.elites.EliteMutationRegistry
 import com.ktome.game.hidden.HiddenContentMapgenPipeline
@@ -169,6 +170,15 @@ internal data class GameContent(
                     "Boss variant '${variant.id}' action-weight profile '$actionWeightProfileId' references unknown base-encounter actions ${unknownActionIds.sorted()}."
                 }
             }
+            val encounter = requireNotNull(schemaCatalog.bossEncounters.firstOrNull { encounter -> encounter.id == variant.baseEncounterId })
+            val phaseIds = encounter.phases.mapTo(linkedSetOf()) { phase -> phase.id }
+            val allowedActionIds = baseEncounterActionIds(variant.baseEncounterId)
+            BossVariantPhaseOverrideContracts.validateReferences(
+                variant = variant,
+                phaseIds = phaseIds,
+                telegraphIds = telegraphRegistry.all().mapTo(linkedSetOf()) { telegraph -> telegraph.id },
+                allowedActionIds = allowedActionIds,
+            )
         }
         Phase4StaticContentValidator.validateHiddenContentContracts(
             schemaCatalog = schemaCatalog,

@@ -1,5 +1,7 @@
 package com.ktome.build.testperf.records;
 
+import java.util.List;
+
 public record TaskRecord(
         String taskPath,
         String kind,
@@ -18,5 +20,11 @@ public record TaskRecord(
             Integer total,
             Integer failed,
             WorkloadRecord workload,
-            String bandHint) {}
+            String bandHint,
+            List<SlowTestMethod> slowTestMethods) {
+        public record SlowTestMethod(
+                String className,
+                String name,
+                long durationMillis) {}
+    }
 }
