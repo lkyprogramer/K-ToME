@@ -319,6 +319,7 @@ import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.model.isEliteEncounterTemplate
 import com.ktome.game.validation.ValidationAction
 import com.ktome.game.validation.ValidationActionFamily
+import com.ktome.game.validation.Phase4V4Pr06RouteDiversityArtifactSummary
 import com.ktome.game.validation.ProfileRunPersistenceMode
 import com.ktome.game.validation.persistValidationSessionMetadata
 import com.ktome.game.validation.ValidationScenarioActionId
@@ -1831,6 +1832,7 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr05PrimaryScene()
                 "boss_variant_molten_glass_phase_override_ready"
             }
+            "phase4-v4-pr06" -> Phase4V4Pr06RouteDiversityArtifactSummary.primaryResultText()
             else -> "ok"
         }
 
@@ -1853,6 +1855,7 @@ class FoundationGameSession internal constructor(
                 "abyssal_void_pressure_hook_ready"
             }
             "phase4-v4-pr05" -> preparePhase4V4Pr05SecondaryScene()
+            "phase4-v4-pr06" -> Phase4V4Pr06RouteDiversityArtifactSummary.evidenceResultText() + "; uiSurface=>clientSmoke+goldenScreenshot"
             else -> "ok"
         }
 

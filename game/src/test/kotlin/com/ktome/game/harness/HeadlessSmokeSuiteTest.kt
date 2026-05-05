@@ -148,6 +148,7 @@ internal fun ScenarioReport.toJson() =
     buildJsonObject {
         put("name", name)
         put("seed", seed)
+        put("seedString", seedString)
         put("zoneId", zoneId)
         put("professionId", professionId)
         put("raceId", raceId)
@@ -156,6 +157,13 @@ internal fun ScenarioReport.toJson() =
         put("isFullRoute", isFullRoute)
         put("finalZoneId", finalZoneId)
         put("zoneRouteHash", zoneRouteHash)
+        put("routeToken", routeToken)
+        putJsonArray("routeIntent") { routeIntent.forEach { add(JsonPrimitive(it)) } }
+        primarySecretZoneId?.let { put("primarySecretZoneId", it) }
+        putJsonArray("visitedSecretZoneIds") {
+            visitedSecretZoneIds.sorted().forEach { secretZoneId -> add(JsonPrimitive(secretZoneId)) }
+        }
+        probeRouteHash?.let { put("probeRouteHash", it) }
         put("buildId", buildId)
         put("phaseId", phaseId)
         put("rulesetVersion", rulesetVersion)

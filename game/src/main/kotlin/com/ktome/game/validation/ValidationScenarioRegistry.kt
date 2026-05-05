@@ -384,6 +384,66 @@ object ValidationScenarioRegistry {
                         scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr05.evidence.summary_note",
                     ),
             ),
+            ValidationScenarioDef(
+                id = ValidationScenarioId("phase4-v4-pr06"),
+                prId = "PR-06",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.MAPGEN_DIFF,
+                        seed = 2026042436L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "rogue",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 1,
+                        routeIndex = 0,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/phase4-v4-pr06-scenario-distribution.png",
+                                "evidence/phase4-v4-pr06-route-hash-diversity.png",
+                                "evidence/phase4-v4-pr06-branch-inclusive-routes.png",
+                                "evidence/phase4-v4-pr06-verifychanged-routing.png",
+                                "evidence/phase4-v4-pr06-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "Route diversity summary shows scenarioTypeDistribution with full_route=12, branch_inclusive=4, route_probe=2, and late_route_probe=2.",
+                                    evidenceFile = "evidence/phase4-v4-pr06-scenario-distribution.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "Route diversity summary shows zoneRouteHashDistribution and zoneRouteHashDiversity.topHashShare <= 40%.",
+                                    evidenceFile = "evidence/phase4-v4-pr06-route-hash-diversity.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "Route diversity summary shows grouped full-route and branch-inclusive routeToken samples with distinct mandatory and secret combinations.",
+                                    evidenceFile = "evidence/phase4-v4-pr06-branch-inclusive-routes.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "VerifyChanged routing summary shows route-hash, loot, and item owner surfaces include :game:longRunLab while TalentSidebarPresenter stays presentation-only.",
+                                    evidenceFile = "evidence/phase4-v4-pr06-verifychanged-routing.png",
+                                ),
+                            ),
+                        manualRecordPath = "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr06-long-run-route-diversity.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.validation.phase4_v4.action",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr06.evidence.summary_note",
+                    ),
+            ),
         )
 
     fun all(): List<ValidationScenarioDef> = scenarios

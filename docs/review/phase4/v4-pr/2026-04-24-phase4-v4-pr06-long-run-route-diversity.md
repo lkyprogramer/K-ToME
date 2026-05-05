@@ -202,7 +202,7 @@ zoneRouteHash = sha256(routeToken).take(16)
 | `zoneRouteHashDiversity.topHashShare` | `<= 40%` | `blockingOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json` | `fail owner gate` |
 | `branchInclusiveCount` | `>= 4` | `blockingOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json` | `fail owner gate` |
 | `fullRouteCount` | `>= 12` | `blockingOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json` | `fail owner gate` |
-| `topologyCategoryDiversityPerSmokeRun.reportOnly` | `>= baseline.topologyCategoryDiversityPerSmokeRun.warningFloor` | `reportOnlyOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json` | `warn only` |
+| `topologyCategoryDiversityPerSmokeRun.reportOnly` | `>= baseline.expectedMetricRanges[metricId=topologyCategoryDiversityPerSmokeRun.reportOnly].minValue` | `reportOnlyOwner` | `longRunLab` | `docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json` | `warn only` |
 | `fullRouteIntentDistinctCount` | `12` | `supporting` | `longRunLab` | `N/A` | `display only` |
 
 ### 5.3 verifyChanged routing
@@ -240,11 +240,14 @@ zoneRouteHash = sha256(routeToken).take(16)
 3. `zoneRouteHashDiversity.topHashShare <= 40%`。
 4. `branchInclusiveCount >= 4`。
 5. 每条 branch 样本覆盖不同 mandatory/secret 组合。
-6. 修改 long-run corpus / route hash / harness runner 时，`verifyChanged` 包含 `:game:longRunLab`。
-7. 修改 presentation-only client UI 文件时，`verifyChanged` 不包含 `:game:longRunLab`。
-8. 修改 `TalentSidebarPresenter` 的 presentation-only 行为时，`verifyChanged` 不包含 `:game:longRunLab`，但仍需走 client render / golden 相关验证。
-9. `reportPhase4` 与 `reportPhase4Only` 输出 route diversity 字段。
-10. `fullRouteIntentDistinctCount == 12`。
+6. branch-inclusive cache hit 必须保留 `visitedSecretZoneIds`、`routeToken` 与 `seedString`，不得让 cache 命中降级运行证据。
+7. route token 中的 `secret:<secretZoneId>` 必须来自运行时进入 secret zone 的有序事件流，不得按计划 route 重建 marker 位置。
+8. 修改 long-run corpus / route hash / harness runner 时，`verifyChanged` 包含 `:game:longRunLab`。
+9. 修改 presentation-only client UI 文件时，`verifyChanged` 不包含 `:game:longRunLab`。
+10. 修改 `TalentSidebarPresenter` 的 presentation-only 行为时，`verifyChanged` 不包含 `:game:longRunLab`，但仍需走 client render / golden 相关验证。
+11. `reportPhase4` 与 `reportPhase4Only` 输出 route diversity 字段。
+12. `fullRouteIntentDistinctCount == 12`。
+13. reward/build/affix owner evidence 必须在 PR-06 corpus 下保留：至少覆盖 synergy affix reward/adoption、route reward affix usage、slot family、quality 与 reward scoring breakdown。
 
 ### 6.2 自动化命令
 
@@ -272,10 +275,10 @@ sdk env
 已有游戏 Validation Mode 改造要求：
 
 1. 本 PR 必须接入 PR-00 的 `PHASE4_V4_FAST` section，scenario id 固定为 `phase4-v4-pr06`。
-2. `prepare-primary-scene` 必须在现有游戏内 validation session 中打开 route diversity summary 面，展示 `scenarioTypeDistribution`、`zoneRouteHashDistribution`、branch-inclusive route samples。
-3. `prepare-secondary-scene` 必须打开 verifyChanged routing summary 面，展示 long-run owner surface 与 presentation-only client surface 的路由差异。
+2. `prepare-primary-scene` 必须在现有游戏内 validation session 中打开 artifact-backed route diversity summary 面，展示 `artifactStatus`、`producerArtifactStatus`、`scenarioTypeDistribution`、`zoneRouteHashDistribution`、branch-inclusive route samples。
+3. `prepare-secondary-scene` 必须打开 artifact-backed verifyChanged routing summary 面，展示 `verifyChangedArtifactStatus` 与当前 plan task list，不能写死 planned routing 文案。
 4. `show-evidence-summary` 必须列出 `full_route=12`、`branch_inclusive=4`、`topHashShare <= 40%`、`verifyChanged` routing 四组证据。
-5. route diversity summary 必须读取 `longRunLab` / `reportPhase4` 产物或同源 runtime summary，不得由 client 写死数字。
+5. route diversity summary 必须读取 `longRunLab` / `reportPhase4` 产物或同源 runtime summary，不得由 client 写死数字；artifact 缺失或 report 早于 producer 时必须显式展示 `unavailable` / `stale`。
 
 固定环境：
 
@@ -328,7 +331,7 @@ sdk env
 1. 开发者打开 validation route diversity summary 时，必须直接看到 `full_route=12`、`branch_inclusive=4`、`route_probe=2`、`late_route_probe=2`。
 2. summary 必须展示至少 3 条 branch-inclusive route token，且 mandatory/secret 组合不同。
 3. summary 必须展示 `routeTokenSample` 与 `zoneRouteHash`，能人工判断同 hash 是否来自同一路径。
-4. verifyChanged routing summary 必须同时展示 long-run owner surface 命中和 presentation-only client surface 未命中。
+4. verifyChanged routing summary 必须展示当前 `verify-changed-plan.json` 中 long-run owner subset 的实际 task list；presentation-only client surface 的正反路由由 `scopeCoverageLint` / `VerificationImpactAnalyzerTest` 自动化断言。
 5. 修改 reward/build/affix/hidden route 相关文件时，开发者必须看到 long-run owner subset 被纳入 plan。
 
 ## 7. 验证命令
@@ -353,5 +356,8 @@ sdk env
 10. `scopeCoverageLint` 和 `VerifyChangedPlanGate` 测试覆盖上述正反路由。
 11. `reportPhase4` 输出 `routeTokenSample` 与 `zoneRouteHash`。
 12. `fullRouteIntentDistinctCount == 12`。
-13. 没有新增图片计划文件。
-14. 没有新增音频计划文件。
+13. branch-inclusive cache round-trip 保留 runtime secret visit evidence。
+14. validation summary 对 missing/stale artifact fail-visible。
+15. PR-06 long-run owner evidence 保留 reward/build/affix 覆盖，不以 route-only 断言替代 PR-03 owner 面。
+16. 没有新增图片计划文件。
+17. 没有新增音频计划文件。

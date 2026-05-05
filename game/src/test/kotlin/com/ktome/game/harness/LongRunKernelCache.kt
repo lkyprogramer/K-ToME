@@ -110,6 +110,18 @@ internal object LongRunKernelCache {
                     append('|')
                     append(spec.maxTurns)
                     append('|')
+                    append(spec.initialTalentPointGrant)
+                    append('|')
+                    append(spec.corpusId)
+                    append('|')
+                    append(spec.routeIntent.joinToString(separator = "->"))
+                    append('|')
+                    append(spec.routeTokenParts.joinToString(separator = "->"))
+                    append('|')
+                    append(spec.primarySecretZoneId ?: "none")
+                    append('|')
+                    append(spec.probeRoute.joinToString(separator = "->"))
+                    append('|')
                     append(goalKey(spec.goal))
                     append('|')
                     append(checkpointKey(spec.saveLoadCheckpoint))
@@ -145,6 +157,7 @@ internal object LongRunKernelCache {
             ScenarioAssertion.Victory -> "victory"
             is ScenarioAssertion.FinalZoneAtLeast -> "final-zone-at-least:${assertion.zoneId}"
             is ScenarioAssertion.VisitedZone -> "visited-zone:${assertion.zoneId}"
+            ScenarioAssertion.VisitedPrimarySecretZone -> "visited-primary-secret-zone"
         }
 
     private fun sha256(value: String): String {
@@ -212,6 +225,14 @@ internal object LongRunKernelCache {
             finalZoneId = payload.requiredString("finalZoneId"),
             zoneRouteHash = payload.requiredString("zoneRouteHash"),
             zonePath = payload.requiredArray("zonePath").map { zoneId -> zoneId.jsonPrimitive.content },
+            routeToken =
+                payload["routeToken"]?.jsonPrimitive?.content
+                    ?: error("Cached scenario '${payload.requiredString("name")}' missing routeToken; cache version too old, please rebuild."),
+            routeIntent = payload["routeIntent"]?.jsonArray?.map { zoneId -> zoneId.jsonPrimitive.content } ?: payload.requiredArray("zonePath").map { zoneId -> zoneId.jsonPrimitive.content },
+            primarySecretZoneId = payload["primarySecretZoneId"]?.jsonPrimitive?.contentOrNull,
+            visitedSecretZoneIds = payload["visitedSecretZoneIds"]?.jsonArray?.mapTo(linkedSetOf()) { secretZoneId -> secretZoneId.jsonPrimitive.content } ?: emptySet(),
+            probeRouteHash = payload["probeRouteHash"]?.jsonPrimitive?.contentOrNull,
+            seedString = payload["seedString"]?.jsonPrimitive?.content ?: payload.requiredString("seed"),
             scenarioType = ScenarioType.entries.first { scenarioType -> scenarioType.reportValue == payload.requiredString("scenarioType") },
             success = payload.requiredString("success").toBooleanStrict(),
             outcome = parseRunOutcome(payload.requiredString("outcome")),
@@ -442,4 +463,4 @@ internal object LongRunKernelCache {
     private fun JsonObject.optionalBoolean(key: String): Boolean = this[key]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false
 }
 
-private const val LONGRUN_KERNEL_CACHE_VERSION: String = "phase4-v4-pr03-reward-adoption-v5"
+private const val LONGRUN_KERNEL_CACHE_VERSION: String = "phase4-v4-pr06-route-diversity-v3"

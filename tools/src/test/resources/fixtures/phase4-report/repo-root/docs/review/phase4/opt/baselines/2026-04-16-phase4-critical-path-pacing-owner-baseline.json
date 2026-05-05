@@ -27,11 +27,32 @@
             "metricId": "criticalPathCombatFloorSatisfied",
             "minValue": 1.0,
             "notes": "All critical-path zones must satisfy the objective/combat pacing floors."
+        },
+        {
+            "metricId": "zoneRouteHashDiversity.topHashShare",
+            "maxValue": 0.4,
+            "notes": "The most common terminal route hash must not exceed 40% of the PR06 route diversity corpus."
+        },
+        {
+            "metricId": "branchInclusiveCount",
+            "minValue": 4.0,
+            "notes": "PR06 requires four branch-inclusive samples with distinct primary secret route markers."
+        },
+        {
+            "metricId": "fullRouteCount",
+            "minValue": 12.0,
+            "notes": "PR06 requires twelve full-route samples with fixed route intents and 4/4/4 start-zone distribution."
+        },
+        {
+            "metricId": "topologyCategoryDiversityPerSmokeRun.reportOnly",
+            "minValue": 0.25,
+            "notes": "Report-only warning floor for distinct terminal route hashes per route diversity run."
         }
     ],
     "notes": [
         "Critical-path pacing is evaluated from longRunLab fullRoute zone traversal diagnostics and kept separate from terminal build identity so late-game reward tuning does not silently redefine pacing floors.",
-        "Thresholds are the minimum formalization of the PR requirement: no 2-turn objective acquisition and no 0-combat critical-path zone."
+        "Thresholds are the minimum formalization of the PR requirement: no 2-turn objective acquisition and no 0-combat critical-path zone.",
+        "PR06 route diversity reuses this longRunLab owner baseline for route hash share, fixed corpus counts, and report-only topology diversity visibility."
     ],
     "metadata": {}
 }

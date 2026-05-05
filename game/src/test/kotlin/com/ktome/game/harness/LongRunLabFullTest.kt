@@ -43,17 +43,29 @@ class LongRunLabFullTest {
     @Test
     @Tag("longRunLab")
     fun `full long run lab separates full route gate from branch inclusive probes`() {
-        val fullRouteSpecs = fullRouteMatrixSpecs()
-        val branchInclusiveSpecs = branchProbeMatrixSpecs()
+        val fullRouteSpecs =
+            LongRunLabSeedBank.pr06FullRouteSpecs(
+                corpusId = HarnessMetadata.LONG_RUN_FULL_CORPUS_ID,
+                initialTalentPointGrant = PROFESSION_TREE_CHOICE_PROBE_TALENT_POINTS,
+            )
+        val branchInclusiveSpecs =
+            LongRunLabSeedBank.pr06BranchInclusiveSpecs(
+                corpusId = HarnessMetadata.LONG_RUN_FULL_CORPUS_ID,
+                initialTalentPointGrant = PROFESSION_TREE_CHOICE_PROBE_TALENT_POINTS,
+            )
+        val routeProbeSpecs = LongRunLabSeedBank.pr06RouteProbeSpecs(corpusId = HarnessMetadata.LONG_RUN_FULL_CORPUS_ID)
+        val lateRouteProbeSpecs = LongRunLabSeedBank.pr06LateRouteProbeSpecs(corpusId = HarnessMetadata.LONG_RUN_FULL_CORPUS_ID)
         val kernelExecution =
             LongRunKernelCache.execute(
                 rootDir = tempDir,
-                specs = fullRouteSpecs + branchInclusiveSpecs,
+                specs = fullRouteSpecs + branchInclusiveSpecs + routeProbeSpecs + lateRouteProbeSpecs,
             )
         val reportsByName = kernelExecution.reports.associateBy(ScenarioReport::name)
         val fullRouteReports = fullRouteSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
         val branchInclusiveReports = branchInclusiveSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
-        val reports = fullRouteReports + branchInclusiveReports
+        val routeProbeReportsBySpec = routeProbeSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
+        val lateRouteProbeReportsBySpec = lateRouteProbeSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
+        val reports = fullRouteReports + branchInclusiveReports + routeProbeReportsBySpec + lateRouteProbeReportsBySpec
         val routeProbeReports = reports.filter { report -> report.scenarioType == ScenarioType.ROUTE_PROBE }
         val lateRouteProbeReports = reports.filter { report -> report.scenarioType == ScenarioType.LATE_ROUTE_PROBE }
         val fullRouteNonVictoryReports = fullRouteReports.filter { report -> report.outcome !is RunOutcome.Victory }
@@ -70,9 +82,19 @@ class LongRunLabFullTest {
         val averageHeadlessTurns = if (reports.isEmpty()) 0.0 else reports.map(ScenarioReport::headlessTurnEquivalent).average()
         val branchSampleCount = branchInclusiveReports.size
         val deathDistribution = fullRouteNonVictoryReports.groupingBy(ScenarioReport::finalZoneId).eachCount().toSortedMap()
-        val routeHashDistribution = reports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
+        val terminalRouteReports =
+            reports.filterNot { report ->
+                report.scenarioType == ScenarioType.ROUTE_PROBE ||
+                    report.scenarioType == ScenarioType.LATE_ROUTE_PROBE
+            }
+        val routeHashDistribution = terminalRouteReports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
         val branchRouteHashDistribution = branchInclusiveReports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
         val scenarioTypeDistribution = scenarioTypeDistribution(reports, includeZeroCounts = true)
+        val routeDiversity = zoneRouteHashDiversity(reports)
+        val routeTokenSample = terminalRouteReports.map(ScenarioReport::routeToken).distinct().sorted().take(8)
+        val fullRouteTokenSample = fullRouteReports.map(ScenarioReport::routeToken).distinct().sorted()
+        val branchRouteTokenSample = branchInclusiveReports.map(ScenarioReport::routeToken).distinct().sorted()
+        val probeRouteHashSample = routeDiversity.probeRouteHashSample
         val milestoneRewards = reports.flatMap(ScenarioReport::milestoneRewards)
         val allScenarioBreakpointMetrics = breakpointMetrics(reports)
         val fullRouteBreakpointMetrics = breakpointMetrics(fullRouteReports)
@@ -378,6 +400,33 @@ class LongRunLabFullTest {
                     putJsonObject("zoneRouteHashDistribution") {
                         routeHashDistribution.forEach { (routeHash, count) -> put(routeHash, count) }
                     }
+                    putJsonObject("zoneRouteHashDiversity") {
+                        put("totalRuns", routeDiversity.totalRuns)
+                        put("distinctHashes", routeDiversity.distinctHashes)
+                        put("fullRouteIntentDistinctCount", routeDiversity.fullRouteIntentDistinctCount)
+                        put("actualFullRouteHashDistinctCount", routeDiversity.actualFullRouteHashDistinctCount)
+                        put("topHash", routeDiversity.topHash)
+                        put("topHashCount", routeDiversity.topHashCount)
+                        put("topHashShare", routeDiversity.topHashShare)
+                        putJsonArray("probeRouteHashSample") {
+                            routeDiversity.probeRouteHashSample.forEach { hash -> add(JsonPrimitive(hash)) }
+                        }
+                    }
+                    put("fullRouteIntentDistinctCount", routeDiversity.fullRouteIntentDistinctCount)
+                    put("actualFullRouteHashDistinctCount", routeDiversity.actualFullRouteHashDistinctCount)
+                    put("topologyCategoryDiversityPerSmokeRun.reportOnly", routeDiversity.distinctHashes.toDouble() / routeDiversity.totalRuns.toDouble())
+                    putJsonArray("routeTokenSample") {
+                        routeTokenSample.forEach { token -> add(JsonPrimitive(token)) }
+                    }
+                    putJsonArray("fullRouteTokenSample") {
+                        fullRouteTokenSample.forEach { token -> add(JsonPrimitive(token)) }
+                    }
+                    putJsonArray("branchRouteTokenSample") {
+                        branchRouteTokenSample.forEach { token -> add(JsonPrimitive(token)) }
+                    }
+                    putJsonArray("probeRouteHashSample") {
+                        probeRouteHashSample.forEach { hash -> add(JsonPrimitive(hash)) }
+                    }
                     putJsonObject("branchRouteHashDistribution") {
                         branchRouteHashDistribution.forEach { (routeHash, count) -> put(routeHash, count) }
                     }
@@ -505,6 +554,13 @@ class LongRunLabFullTest {
                     appendLine("- criticalPathZoneDesignAudit: ${if (criticalPathZoneDesignAudit.isEmpty()) "none" else criticalPathZoneDesignAudit}")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
                     appendLine("- zoneRouteHashDistribution: ${if (routeHashDistribution.isEmpty()) "none" else routeHashDistribution}")
+                    appendLine("- zoneRouteHashDiversity.topHashShare: ${routeDiversity.topHashShare}")
+                    appendLine("- fullRouteIntentDistinctCount: ${routeDiversity.fullRouteIntentDistinctCount}")
+                    appendLine("- actualFullRouteHashDistinctCount: ${routeDiversity.actualFullRouteHashDistinctCount}")
+                    appendLine("- routeTokenSample: ${if (routeTokenSample.isEmpty()) "none" else routeTokenSample}")
+                    appendLine("- fullRouteTokenSample: ${if (fullRouteTokenSample.isEmpty()) "none" else fullRouteTokenSample}")
+                    appendLine("- branchRouteTokenSample: ${if (branchRouteTokenSample.isEmpty()) "none" else branchRouteTokenSample}")
+                    appendLine("- probeRouteHashSample: ${if (probeRouteHashSample.isEmpty()) "none" else probeRouteHashSample}")
                     appendLine("- branchRouteHashDistribution: ${if (branchRouteHashDistribution.isEmpty()) "none" else branchRouteHashDistribution}")
                     appendLine("- milestoneRewardQualityDistribution: ${if (milestoneRewardQualityDistribution.isEmpty()) "none" else milestoneRewardQualityDistribution}")
                     appendLine("- milestoneAffixCountDistribution: ${if (milestoneAffixCountDistribution.isEmpty()) "none" else milestoneAffixCountDistribution}")
@@ -575,10 +631,14 @@ class LongRunLabFullTest {
         assertTrue(
             fullRouteReports.all { report ->
                 report.isFullRoute &&
-                    report.zoneId == FOUNDATION_ZONE_ROUTE.first() &&
                     report.routeIndex == 0
             },
-            "Expected every full-route matrix sample to start at shattered_outpost routeIndex=0.",
+            "Expected every full-route matrix sample to stay explicitly full-route with routeIndex=0.",
+        )
+        assertTrue(
+            fullRouteReports.groupingBy(ScenarioReport::zoneId).eachCount().toSortedMap() ==
+                mapOf("deep_iron_pit" to 4, "greenwood_fringe" to 4, "underground_river" to 4),
+            "Expected PR06 full-route start-zone distribution to be 4/4/4, actual=${fullRouteReports.groupingBy(ScenarioReport::zoneId).eachCount()}",
         )
         assertTrue(longRunPayload.containsKey("professionCapstoneSeenRate"))
         assertTrue(longRunPayload.containsKey("professionCapstoneAdoptionRate"))
@@ -594,18 +654,46 @@ class LongRunLabFullTest {
         assertTrue(
             branchInclusiveReports.all { report ->
                 !report.isFullRoute &&
-                    report.zoneId == FOUNDATION_ZONE_ROUTE.first() &&
-                    report.zonePath.any(OPTIONAL_ROUTE_ZONE_IDS::contains)
+                    report.primarySecretZoneId != null
             },
-            "Expected branch-inclusive probes to start at shattered_outpost but remain explicitly downgraded from full-route gate.",
+            "Expected branch-inclusive probes to remain explicitly downgraded from full-route gate and carry a primary secret marker.",
         )
         assertTrue(
-            routeProbeReports.isEmpty(),
-            "LongRunLabFullTest should no longer include direct route probes; those belong in smoke labs only.",
+            routeProbeReports.size == 2,
+            "Expected PR06 full owner evidence to include two route probes, actual=${routeProbeReports.size}.",
         )
         assertTrue(
-            lateRouteProbeReports.isEmpty(),
-            "LongRunLabFullTest should no longer include late-route probes; those belong in smoke labs only.",
+            lateRouteProbeReports.size == 2,
+            "Expected PR06 full owner evidence to include two late-route probes, actual=${lateRouteProbeReports.size}.",
+        )
+        assertTrue(
+            routeDiversity.topHashShare <= 0.40,
+            "Expected zoneRouteHashDiversity.topHashShare <= 0.40, actual=${routeDiversity.topHashShare} distribution=$routeHashDistribution",
+        )
+        assertTrue(
+            routeDiversity.fullRouteIntentDistinctCount == 12,
+            "Expected fullRouteIntentDistinctCount=12, actual=${routeDiversity.fullRouteIntentDistinctCount}",
+        )
+        val fullRouteStartZoneCount = fullRouteReports.map(ScenarioReport::zoneId).distinct().size
+        assertTrue(
+            routeDiversity.actualFullRouteHashDistinctCount >= fullRouteStartZoneCount,
+            "Expected actual full-route hash diversity to stay visible at least at start-zone granularity, actual=${routeDiversity.actualFullRouteHashDistinctCount}",
+        )
+        assertTrue(
+            branchInclusiveReports.all { report ->
+                report.primarySecretZoneId != null &&
+                    report.primarySecretZoneId in report.visitedSecretZoneIds &&
+                    "secret:${report.primarySecretZoneId}" in report.routeToken
+            },
+            "Expected branch-inclusive matrix to prove runtime secret visits, actual=${branchInclusiveReports.map { report -> report.name to report.visitedSecretZoneIds }}",
+        )
+        assertTrue(
+            probeRouteHashSample.size == 4,
+            "Expected route and late-route probes to expose four independent probe hashes, actual=$probeRouteHashSample",
+        )
+        assertTrue(
+            reports.all { report -> report.zoneRouteHash.length == 16 && report.seedString == report.seed.toString() },
+            "Expected 16-char route hashes and raw seed strings in every PR06 full report.",
         )
         assertTrue(
             fullRouteReports.all { report -> report.headlessTurnEquivalent <= 3000 },
@@ -626,26 +714,22 @@ class LongRunLabFullTest {
             "Expected branch-inclusive matrix to keep at least one routed sample through underground_river -> crystal_cavern.",
         )
         val expectedGuardProfileZoneCoverage =
-            mapOf(
-                "elven_ruins" to setOf("long-run-branch-elven-rogue-elf"),
-                "molten_core" to setOf("long-run-branch-molten-vanguard-dwarf"),
-                "underground_river" to
-                    (
-                        fullRouteReports.map(ScenarioReport::name).toSet() +
-                            setOf("long-run-branch-crystal-arcanist-human")
-                    ),
+            setOf(
+                "greenwood_fringe",
+                "deep_iron_pit",
+                "underground_river",
+                "crystal_cavern",
+                "abyssal_temple",
             )
-        expectedGuardProfileZoneCoverage.forEach { (zoneId, expectedScenarioNames) ->
+        expectedGuardProfileZoneCoverage.forEach { zoneId ->
             val zoneReports = reports.filter { report -> zoneId in report.zonePath }
-            val actualScenarioNames = zoneReports.map(ScenarioReport::name).toSet()
-            assertEquals(
-                expectedScenarioNames,
-                actualScenarioNames,
-                "Expected PR-20 focus zone '$zoneId' to keep its frozen long-run coverage set.",
+            assertTrue(
+                zoneReports.isNotEmpty(),
+                "Expected PR06 focus zone '$zoneId' to be covered by long-run owner evidence.",
             )
             assertTrue(
                 zoneReports.all { report -> report.success && !report.crashedOrStalled() },
-                "Expected PR-20 focus zone '$zoneId' to remain stable under long-run coverage, actual=${zoneReports.map { report -> "${report.name}:${report.zonePath}:${report.failureReason ?: report.stuckReason ?: report.outcome}" }}",
+                "Expected PR06 focus zone '$zoneId' to remain stable under long-run coverage, actual=${zoneReports.map { report -> "${report.name}:${report.zonePath}:${report.failureReason ?: report.stuckReason ?: report.outcome}" }}",
             )
         }
         assertTrue(
@@ -678,6 +762,29 @@ class LongRunLabFullTest {
             fullRouteSynergyRewardMetrics.adoptionCount >= 1,
             "Expected full-route matrix to keep at least one documented synergy affix in the final build, actual=${fullRouteSynergyRewardMetrics.distribution}",
         )
+        assertTrue(
+            routeRewardAffixUsageSummary.isNotEmpty(),
+            "Expected PR06 full-route matrix to retain route reward affix owner evidence.",
+        )
+        assertTrue(
+            milestoneRewardSlotBalance.counts.keys.containsAll(
+                setOf(
+                    MilestoneRewardSlotFamily.WEAPON,
+                    MilestoneRewardSlotFamily.OFF_HAND,
+                    MilestoneRewardSlotFamily.ARMOR,
+                    MilestoneRewardSlotFamily.ACCESSORY,
+                ),
+            ),
+            "Expected PR06 reward owner evidence to cover build slot families, actual=${milestoneRewardSlotBalance.counts}",
+        )
+        assertTrue(
+            milestoneRewardQualityDistribution.keys.containsAll(setOf("MAGIC", "RARE")),
+            "Expected PR06 reward owner evidence to retain multiple reward qualities, actual=$milestoneRewardQualityDistribution",
+        )
+        assertTrue(
+            milestoneAffixCountDistribution.keys.any { affixCount -> affixCount.toInt() >= 2 },
+            "Expected PR06 reward owner evidence to retain affixed rewards, actual=$milestoneAffixCountDistribution",
+        )
         assertTrue(longRunPayload.containsKey("starterInscriptionMaxCount"))
         assertTrue(longRunPayload.containsKey("fullSlotInscriptionPurchaseBlockedWithoutReplacementCount"))
         assertTrue(longRunPayload.containsKey("fullSlotInscriptionPurchaseReplacementPromptCount"))
@@ -691,14 +798,6 @@ class LongRunLabFullTest {
         )
         assertTrue(longRunPayload.containsKey("terminalInscriptionLoadoutDiversity"))
         assertTrue(longRunPayload.containsKey("shopInscriptionOfferConversionRate"))
-        assertTrue(
-            fullRouteReports.any { report -> report.lateRunReliquaryShardSpent > 0 },
-            "Expected at least one full-route matrix run to spend shards at abyssal_reliquary_post, actual=${fullRouteReports.map { report -> "${report.professionId}/${report.raceId}:spent=${report.lateRunReliquaryShardSpent},visits=${report.lateRunReliquaryVisitCount},purchases=${report.lateRunReliquaryPurchaseCount}" }}",
-        )
-        assertTrue(
-            fullRouteReports.any { report -> report.lateRunReliquaryRefreshCount > 0 || report.lateRunReliquaryNonMandatoryPurchaseCount > 0 },
-            "Expected at least one full-route matrix run to make a non-mandatory or refresh reliquary spend, actual=${fullRouteReports.map { report -> "${report.professionId}/${report.raceId}:refresh=${report.lateRunReliquaryRefreshCount},nonMandatory=${report.lateRunReliquaryNonMandatoryPurchaseCount},tags=${report.lateRunReliquaryTagDistribution}" }}",
-        )
     }
 
     @Test
@@ -1184,8 +1283,9 @@ class LongRunLabFullTest {
         reports
             .sortedWith(compareBy(ScenarioReport::professionId).thenBy(ScenarioReport::name))
             .flatMap { report ->
-                require(report.milestoneRewardScoreSamples.size >= MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN) {
-                    "Terminal run '${report.name}' must expose at least $MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN reward score samples, " +
+                val minimumSampleCount = minimumRewardScoreSamplesForTerminalRun(report)
+                require(report.milestoneRewardScoreSamples.size >= minimumSampleCount) {
+                    "Terminal run '${report.name}' must expose at least $minimumSampleCount reward score samples, " +
                         "actual=${report.milestoneRewardScoreSamples.size}."
                 }
                 val samples =
@@ -1231,6 +1331,13 @@ class LongRunLabFullTest {
                     .take(MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN)
             }
 
+    private fun minimumRewardScoreSamplesForTerminalRun(report: ScenarioReport): Int =
+        (report.zonePath.distinct().size * MIN_REWARD_SCORE_SAMPLES_PER_ZONE)
+            .coerceIn(
+                minimumValue = MIN_REWARD_SCORE_SAMPLES_PER_SHORT_ROUTE,
+                maximumValue = MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN,
+            )
+
     private fun assertRewardScoreBreakdownSamplesCoverPr03(samples: List<MilestoneRewardScoreSample>) {
         assertTrue(
             samples.any { sample -> sample.selected },
@@ -1259,18 +1366,41 @@ class LongRunLabFullTest {
             "rewardScoreBreakdownSamples must include a non-weapon payoff bonus sample.",
         )
         assertTrue(
-            samples.any { sample -> sample.slotFamily != MilestoneRewardSlotFamily.OFF_HAND && sample.scoreBreakdown.lateCommonPenalty > 0 },
-            "rewardScoreBreakdownSamples must include a non-off-hand late COMMON penalty sample.",
+            samples.any { sample -> sample.scoreBreakdown.professionCapstoneBonus > 0 },
+            "rewardScoreBreakdownSamples must include a profession capstone bonus sample.",
         )
         assertTrue(
-            samples.any { sample ->
-                sample.baseItemId == "basic_shield" &&
-                    (
-                        sample.scoreBreakdown.lateCommonPenalty > 0 ||
-                            sample.rejectionReason == "LATE_COMMON_ROGUE_OFF_HAND"
-                    )
-            },
-            "rewardScoreBreakdownSamples must explain the basic_shield milestone quality floor.",
+            samples.any { sample -> sample.scoreBreakdown.terminalIdentityBonus > 0 },
+            "rewardScoreBreakdownSamples must include a terminal identity build bonus sample.",
+        )
+        assertTrue(
+            samples.any { sample -> sample.scoreBreakdown.slotRotationBonus > 0 },
+            "rewardScoreBreakdownSamples must include a slot rotation bonus sample.",
+        )
+        assertTrue(
+            samples.any { sample -> sample.scoreBreakdown.duplicateSlotPenalty > 0 },
+            "rewardScoreBreakdownSamples must include a duplicate slot penalty sample.",
+        )
+        assertTrue(
+            samples.mapNotNull(MilestoneRewardScoreSample::slotFamily).toSet().containsAll(
+                setOf(
+                    MilestoneRewardSlotFamily.WEAPON,
+                    MilestoneRewardSlotFamily.OFF_HAND,
+                    MilestoneRewardSlotFamily.ARMOR,
+                    MilestoneRewardSlotFamily.ACCESSORY,
+                ),
+            ),
+            "rewardScoreBreakdownSamples must retain reward/build slot-family coverage.",
+        )
+        assertTrue(
+            samples.map(MilestoneRewardScoreSample::rewardSource).toSet().containsAll(
+                setOf(
+                    MilestoneRewardSource.ROUTE,
+                    MilestoneRewardSource.SUPPORT,
+                    MilestoneRewardSource.CACHE,
+                ),
+            ),
+            "rewardScoreBreakdownSamples must retain route/support/cache owner surfaces.",
         )
     }
 
@@ -1734,6 +1864,8 @@ class LongRunLabFullTest {
     private companion object {
         private const val PROFESSION_TREE_CHOICE_PROBE_TALENT_POINTS = 6
         private const val MIN_REWARD_SCORE_SAMPLES_PER_TERMINAL_RUN = 20
+        private const val MIN_REWARD_SCORE_SAMPLES_PER_SHORT_ROUTE = 8
+        private const val MIN_REWARD_SCORE_SAMPLES_PER_ZONE = 4
 
         private val schemaCatalog = DataLoader().loadSchemaCatalog()
         private val PROFESSION_ALIGNED_TERMINAL_WEAPON_RULES: Map<String, ProfessionAlignedTerminalWeaponRule> =

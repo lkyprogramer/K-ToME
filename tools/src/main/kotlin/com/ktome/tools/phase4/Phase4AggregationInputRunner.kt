@@ -278,6 +278,7 @@ internal object Phase4AggregationInputRunner {
                 evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
                 evaluations += milestoneSlotBalanceEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.milestoneSlotBalanceBaselinePath()))
                 evaluations += criticalPathPacingEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
+                evaluations += routeDiversityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
                 evaluations += professionTreeRunChoiceEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.professionTreeRunChoiceBaselinePath()))
                 evaluations += inscriptionShopReplacementEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.inscriptionShopReplacementBaselinePath()))
             }
@@ -1367,6 +1368,101 @@ internal object Phase4AggregationInputRunner {
         )
     }
 
+    internal fun routeDiversityEvaluation(
+        task: Phase4TaskAggregate,
+        baseline: VerificationBaseline,
+    ): EvaluationResult {
+        val metricIds =
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "longRunLab",
+                outputSection = "route-diversity",
+            )
+        val topHashShareMetricId = metricIds.single { metricId -> metricId == "zoneRouteHashDiversity.topHashShare" }
+        val topologyDiversityMetricId = metricIds.single { metricId -> metricId.endsWith(".reportOnly") }
+        val fullRouteIntentMetricId =
+            metricIds.single { metricId ->
+                baseline.expectedMetricRange(metricId) == null && !metricId.endsWith(".reportOnly")
+            }
+        val routeDiversity = task.metrics.getValue("zoneRouteHashDiversity").jsonObject
+        val routeNote = routeDiversityNote(task.metrics)
+        val blockingDetails =
+            routeDiversityDetails(task.metrics, metricKind = "blockingOwner", failSemantics = "fail owner gate")
+        val reportOnlyDetails =
+            routeDiversityDetails(task.metrics, metricKind = "reportOnlyOwner", failSemantics = "warn only")
+        val supportingDetails =
+            routeDiversityDetails(task.metrics, metricKind = "supporting", failSemantics = "display only")
+        val blockingMetricIds =
+            metricIds.filter { metricId ->
+                metricId != topologyDiversityMetricId && metricId != fullRouteIntentMetricId
+            }
+        val blockingEntries =
+            blockingMetricIds.map { metricId ->
+                val range = baseline.requiredMetric(metricId)
+                val actualValue = task.metrics.doubleValue(metricId)
+                val passes = Phase4OwnerMetricTargets.passes(range, actualValue)
+                EvaluationEntry(
+                    metricId = metricId,
+                    status = if (passes) EvaluationEntryStatus.PASS else EvaluationEntryStatus.UNEXPECTED_REGRESSION,
+                    currentValue =
+                        when (metricId) {
+                            topHashShareMetricId -> routeDiversity
+                            else -> task.metrics.getValue(metricId)
+                        },
+                    currentValueText =
+                        when (metricId) {
+                            topHashShareMetricId ->
+                                "${formatPercent(actualValue)} (${routeDiversity.getValue("topHashCount").jsonPrimitive.content}/${routeDiversity.getValue("totalRuns").jsonPrimitive.content})"
+                            else -> formatCompactNumber(actualValue)
+                    },
+                    targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
+                    note = routeNote,
+                    details = blockingDetails,
+                )
+            }
+        val topologyRange = baseline.requiredMetric(topologyDiversityMetricId)
+        val topologyDiversity = task.metrics.doubleValue(topologyDiversityMetricId)
+        val reportOnlyEntry =
+            EvaluationEntry(
+                metricId = topologyDiversityMetricId,
+                status = EvaluationEntryStatus.PASS,
+                currentValue = task.metrics.getValue(topologyDiversityMetricId),
+                currentValueText = formatPercent(topologyDiversity),
+                targetText = Phase4OwnerMetricTargets.targetText(topologyDiversityMetricId, topologyRange),
+                note =
+                    if (Phase4OwnerMetricTargets.passes(topologyRange, topologyDiversity)) {
+                        routeNote
+                    } else {
+                        "report-only warning: $routeNote"
+                    },
+                details = reportOnlyDetails,
+            )
+        val intentEntry =
+            EvaluationEntry(
+                metricId = fullRouteIntentMetricId,
+                status = EvaluationEntryStatus.PASS,
+                currentValue = task.metrics.getValue(fullRouteIntentMetricId),
+                currentValueText = task.metrics.getValue(fullRouteIntentMetricId).jsonPrimitive.content,
+                targetText = "display only; expected 12 by PR06 corpus contract",
+                note = routeNote,
+                details = supportingDetails,
+            )
+        val entries = blockingEntries + reportOnlyEntry + intentEntry
+        return EvaluationResult(
+            evaluationId = "longrun.routeDiversity",
+            domainId = "longrun",
+            mode = baseline.mode,
+            verdict = if (blockingEntries.any { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
+            baselineId = baseline.baselineId,
+            metricDefinitionVersion = baseline.metricDefinitionVersion,
+            passCount = entries.count { entry -> entry.status == EvaluationEntryStatus.PASS },
+            approvedDebtCount = 0,
+            expectedFailureCount = 0,
+            unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION },
+            improvedDebtCount = 0,
+            entries = entries,
+        )
+    }
+
     internal fun professionTreeRunChoiceEvaluation(
         task: Phase4TaskAggregate,
         baseline: VerificationBaseline,
@@ -1448,6 +1544,34 @@ internal object Phase4AggregationInputRunner {
             improvedDebtCount = 0,
             entries = entries,
         )
+    }
+
+    private fun routeDiversityDetails(
+        metrics: JsonObject,
+        metricKind: String,
+        failSemantics: String,
+    ): JsonObject =
+        buildJsonObject {
+            put("metricKind", metricKind)
+            put("producer", "longRunLab")
+            put("ownerBaseline", Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH)
+            put("failSemantics", failSemantics)
+            put("scenarioTypeDistribution", metrics.getValue("scenarioTypeDistribution"))
+            put("zoneRouteHashDistribution", metrics.getValue("zoneRouteHashDistribution"))
+            put("zoneRouteHashDiversity", metrics.getValue("zoneRouteHashDiversity"))
+            put("routeTokenSample", metrics.getValue("routeTokenSample"))
+            metrics["fullRouteTokenSample"]?.let { put("fullRouteTokenSample", it) }
+            metrics["branchRouteTokenSample"]?.let { put("branchRouteTokenSample", it) }
+            put("probeRouteHashSample", metrics.getValue("probeRouteHashSample"))
+            put("branchRouteHashDistribution", metrics.getValue("branchRouteHashDistribution"))
+        }
+
+    private fun routeDiversityNote(metrics: JsonObject): String {
+        val diversity = metrics.getValue("zoneRouteHashDiversity").jsonObject
+        return "scenarioTypes=${metrics.getValue("scenarioTypeDistribution")}; " +
+            "topHash=${diversity.getValue("topHash").jsonPrimitive.content} " +
+            "${diversity.getValue("topHashCount").jsonPrimitive.content}/${diversity.getValue("totalRuns").jsonPrimitive.content}; " +
+            "probeHashes=${metrics.getValue("probeRouteHashSample").jsonArray.size}"
     }
 
     private fun professionTreeRunChoiceDetails(

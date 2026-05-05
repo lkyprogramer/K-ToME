@@ -120,6 +120,50 @@ object ScopeCoverageLintRunner {
                     changedFiles = listOf("game/src/test/kotlin/com/ktome/game/harness/LongRunLabSeedBank.kt"),
                 ),
                 planCase(
+                    caseId = "route_hash_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/kotlin/com/ktome/game/RouteHash.kt"),
+                ),
+                planCase(
+                    caseId = "affix_build_tags_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/kotlin/com/ktome/game/AffixBuildTags.kt"),
+                ),
+                planCase(
+                    caseId = "build_identity_adoption_policy_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/kotlin/com/ktome/game/harness/BuildIdentityAdoptionPolicy.kt"),
+                ),
+                planCase(
+                    caseId = "milestone_reward_selector_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/kotlin/com/ktome/game/loot/MilestoneRewardSelector.kt"),
+                ),
+                planCase(
+                    caseId = "loot_data_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/resources/data/loot/index.yaml"),
+                ),
+                planCase(
+                    caseId = "items_data_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/resources/data/items/index.yaml"),
+                ),
+                planCase(
+                    caseId = "build_identity_data_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/resources/data/build-identity/index.yaml"),
+                ),
+                planCase(
+                    caseId = "secret_zones_data_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/resources/data/secret-zones/index.yaml"),
+                ),
+                planCase(
+                    caseId = "hidden_events_data_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/resources/data/events/index.yaml"),
+                ),
+                planCase(
+                    caseId = "mapgen_zones_data_longrun_owner_scope",
+                    changedFiles = listOf("game/src/main/resources/data/mapgen/zones/index.yaml"),
+                ),
+                planCase(
+                    caseId = "talent_sidebar_presentation_only_scope",
+                    changedFiles = listOf("client/src/main/kotlin/com/ktome/client/ui/talent/TalentSidebarPresenter.kt"),
+                ),
+                planCase(
                     caseId = "scripted_hidden_owner_baseline_scope",
                     changedFiles = listOf("docs/review/phase4/opt/baselines/2026-04-12-phase4-scripted-hidden-owner-baseline.json"),
                 ),

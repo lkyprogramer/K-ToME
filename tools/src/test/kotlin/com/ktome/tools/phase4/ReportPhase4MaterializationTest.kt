@@ -44,6 +44,7 @@ class ReportPhase4MaterializationTest {
         val debugArtifact = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(debugArtifactPath)).jsonObject
         val ownerMetrics = payload.getValue("ownerMetrics").jsonArray
         val sections = payload.getValue("sections").jsonObject
+        val expectedOwnerMetricCount = Phase4MetricCatalog.specs.size
         val sourceCoverageMetric =
             ownerMetrics.first { metric ->
                 metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSourceCoverage.reportOnly"
@@ -52,13 +53,18 @@ class ReportPhase4MaterializationTest {
         assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-        assertEquals("67", payload.getValue("ownerMetricCount").jsonPrimitive.content)
-        assertEquals(67, ownerMetrics.size)
+        assertEquals(expectedOwnerMetricCount.toString(), payload.getValue("ownerMetricCount").jsonPrimitive.content)
+        assertEquals(expectedOwnerMetricCount, ownerMetrics.size)
         assertTrue(sections.containsKey("criticalPathPacing"))
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgVisibleHostileTurnCount" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgEnemyTurns" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied" })
+        assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "zoneRouteHashDiversity.topHashShare" })
+        assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "branchInclusiveCount" })
+        assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "fullRouteCount" })
+        assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "topologyCategoryDiversityPerSmokeRun.reportOnly" })
+        assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "fullRouteIntentDistinctCount" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageHighPriorityCueRetainedRate" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageCueDedupAppliedCount" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "frontstageCueExpiryParity" })
@@ -135,7 +141,7 @@ class ReportPhase4MaterializationTest {
             assertTrue(Files.exists(comparisonPath), "Expected canonical parity report at $comparisonPath")
             val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(comparisonPath)).jsonObject
             assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-            assertEquals("67", comparison.getValue("metricCount").jsonPrimitive.content)
+            assertEquals("72", comparison.getValue("metricCount").jsonPrimitive.content)
         } else {
             assertNull(run.comparisonPath)
             assertFalse(Files.exists(staleComparisonPath), "Canonical report-only run should remove stale legacy comparison artifacts.")

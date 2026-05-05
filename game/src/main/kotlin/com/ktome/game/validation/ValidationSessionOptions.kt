@@ -6,6 +6,7 @@ import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.elites.BossVariantSelectionMode
+import com.ktome.game.harness.FORBIDDEN_ROUTE_DIVERSITY_START_ZONE_IDS
 import com.ktome.game.i18n.GameLocale
 
 enum class ProfileRunPersistenceMode {
@@ -61,7 +62,11 @@ data class ValidationSessionOptions(
     val scenarioId: ValidationScenarioId? = null,
     val scenarioRouteIndex: Int? = null,
     val scenarioEvidenceSummary: ValidationScenarioEvidenceSummary? = null,
-)
+) {
+    init {
+        validatePresetStartZone(preset = preset, zoneId = foundationConfig.zoneId)
+    }
+}
 
 data class ValidationSessionRequest(
     val saveManager: SaveManager = SaveManager(ValidationPaths.saveDir()),
@@ -96,6 +101,18 @@ fun ValidationSessionOptions.nextSeedInCorpus(): Long {
 
 fun ValidationSessionOptions.hasMeaningfulNextSeedRestart(): Boolean =
     seedCorpus.size > 1 && foundationConfig.seed in seedCorpus
+
+internal fun validatePresetStartZone(
+    preset: ValidationPreset,
+    zoneId: String,
+) {
+    require(
+        preset != ValidationPreset.MAPGEN_DIFF ||
+            zoneId !in FORBIDDEN_ROUTE_DIVERSITY_START_ZONE_IDS,
+    ) {
+        "Validation preset ${preset.name} uses forbidden route diversity start zone '$zoneId'."
+    }
+}
 
 internal fun validationFoundationConfig(preset: ValidationPreset): FoundationGameConfig =
     when (preset) {

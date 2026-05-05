@@ -8,13 +8,27 @@ import org.junit.jupiter.api.Test
 
 class VerificationImpactAnalyzerTest {
     @Test
-    fun `loot data change routes to loot preflight without forcing owner lab`() {
-        val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/resources/data/loot/index.yaml"))
+    fun `pr06 reward build affix and hidden data owner surfaces route to longrun owner lab`() {
+        val changedFiles =
+            listOf(
+                "game/src/main/resources/data/loot/index.yaml",
+                "game/src/main/resources/data/items/index.yaml",
+                "game/src/main/resources/data/build-identity/index.yaml",
+                "game/src/main/resources/data/secret-zones/index.yaml",
+                "game/src/main/resources/data/events/index.yaml",
+                "game/src/main/resources/data/mapgen/zones/index.yaml",
+            )
 
-        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:verifyLootPreflight"), plan.requestedTaskPaths)
-        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:verifyLootPreflight"), plan.requestedPreflightTaskPaths)
-        val lootImpact = plan.impactedDomains.single { impact -> impact.domainId == "loot" }
-        assertTrue(lootImpact.reasons.all { reason -> !reason.ownerRequired })
+        changedFiles.forEach { changedFile ->
+            val plan = VerificationImpactAnalyzer.analyze(listOf(changedFile))
+            val longrunImpact = plan.impactedDomains.single { impact -> impact.domainId == "longrun" }
+
+            assertTrue(plan.requestedTaskPaths.contains(":game:longRunLab"), "changedFile=$changedFile plan=$plan")
+            assertTrue(longrunImpact.reasons.any { reason -> reason.ownerRequired }, "changedFile=$changedFile impact=$longrunImpact")
+        }
+
+        val lootPlan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/resources/data/loot/index.yaml"))
+        assertTrue(lootPlan.requestedPreflightTaskPaths.contains(":tools:verifyLootPreflight"))
     }
 
     @Test
@@ -84,6 +98,23 @@ class VerificationImpactAnalyzerTest {
         assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:terrainInteractionBatch"))
         assertEquals(listOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths)
+    }
+
+    @Test
+    fun `route hash changes route to long run owner evidence`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/kotlin/com/ktome/game/RouteHash.kt"))
+
+        assertTrue(plan.impactedDomains.any { impact -> impact.domainId == "longrun" })
+        assertTrue(plan.requestedTaskPaths.contains(":game:longRunLab"))
+    }
+
+    @Test
+    fun `talent sidebar presentation changes do not route to long run owner evidence`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("client/src/main/kotlin/com/ktome/client/ui/talent/TalentSidebarPresenter.kt"))
+
+        assertFalse(plan.impactedDomains.any { impact -> impact.domainId == "longrun" })
+        assertFalse(plan.requestedTaskPaths.contains(":game:longRunLab"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
     }
 
     @Test
