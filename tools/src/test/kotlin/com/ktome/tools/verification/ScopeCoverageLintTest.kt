@@ -40,6 +40,27 @@ class ScopeCoverageLintTest {
         val bossOwnerCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "boss_owner_scope" }
         val organicHiddenOwnerCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "organic_hidden_owner_scope" }
         val longrunOwnerCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "longrun_owner_scope" }
+        val routeHashLongrunOwnerCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "route_hash_longrun_owner_scope" }
+        val pr06LongrunRuntimeOwnerCases =
+            listOf(
+                "affix_build_tags_longrun_owner_scope",
+                "build_identity_adoption_policy_longrun_owner_scope",
+                "milestone_reward_selector_longrun_owner_scope",
+            ).map { caseId ->
+                cases.first { case -> case.getValue("caseId").jsonPrimitive.content == caseId }
+            }
+        val pr06LongrunDataOwnerCases =
+            listOf(
+                "loot_data_longrun_owner_scope",
+                "items_data_longrun_owner_scope",
+                "build_identity_data_longrun_owner_scope",
+                "secret_zones_data_longrun_owner_scope",
+                "hidden_events_data_longrun_owner_scope",
+                "mapgen_zones_data_longrun_owner_scope",
+            ).map { caseId ->
+                cases.first { case -> case.getValue("caseId").jsonPrimitive.content == caseId }
+            }
+        val talentSidebarPresentationOnlyCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "talent_sidebar_presentation_only_scope" }
         val scriptedHiddenOwnerBaselineCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "scripted_hidden_owner_baseline_scope" }
         val organicHiddenOwnerBaselineCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "organic_hidden_owner_baseline_scope" }
         val lootOwnerBaselineCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "loot_owner_baseline_scope" }
@@ -48,7 +69,7 @@ class ScopeCoverageLintTest {
         val phase4ReportOnlyCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "phase4_report_only_scope" }
         val phase4ReportHelperCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "phase4_report_helper_scope" }
 
-        assertTrue(run.caseCount >= 20)
+        assertTrue(run.caseCount >= 36)
         assertTrue(coreCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "mapgen" })
         assertTrue(coreCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "maintainability" })
         assertTrue(coreCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:whiteBoxMapgen" })
@@ -79,6 +100,17 @@ class ScopeCoverageLintTest {
         assertTrue(bossOwnerCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:bossHarness" })
         assertTrue(organicHiddenOwnerCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:organicHiddenProbe" })
         assertTrue(longrunOwnerCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":game:longRunLab" })
+        assertTrue(routeHashLongrunOwnerCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":game:longRunLab" })
+        pr06LongrunRuntimeOwnerCases.forEach { ownerCase ->
+            assertTrue(ownerCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":game:longRunLab" })
+            assertTrue(ownerCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "longrun" })
+        }
+        pr06LongrunDataOwnerCases.forEach { ownerCase ->
+            assertTrue(ownerCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":game:longRunLab" })
+            assertTrue(ownerCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "longrun" })
+        }
+        assertTrue(talentSidebarPresentationOnlyCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":game:longRunLab" })
+        assertTrue(talentSidebarPresentationOnlyCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "maintainability" })
         assertTrue(scriptedHiddenOwnerBaselineCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:reportPhase4Only" })
         assertTrue(scriptedHiddenOwnerBaselineCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":tools:hiddenContentHarness" })
         assertTrue(organicHiddenOwnerBaselineCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:reportPhase4Only" })

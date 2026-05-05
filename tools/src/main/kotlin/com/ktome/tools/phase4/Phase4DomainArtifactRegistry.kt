@@ -411,6 +411,11 @@ internal object Phase4DomainArtifactRegistry {
         val inscriptionCategoryCountDistribution = payload.requireArtifactMetric("longRunLab", "inscriptionCategoryCountDistribution")
         val shopInscriptionOfferConversionRate = payload.requireArtifactMetric("longRunLab", "shopInscriptionOfferConversionRate")
         val inscriptionReplaceReasonDistribution = payload.requireArtifactMetric("longRunLab", "inscriptionReplaceReasonDistribution")
+        val routeDiversity = payload.getValue("zoneRouteHashDiversity").jsonObject
+        val actualFullRouteHashDistinctCount =
+            payload["actualFullRouteHashDistinctCount"]
+                ?: routeDiversity["actualFullRouteHashDistinctCount"]
+                ?: JsonPrimitive(0)
         val professionTopWeaponBaseIds =
             payload["professionTopWeaponBaseIds"] ?: deriveProfessionTopWeaponBaseIds(professionTerminalWeaponDistribution.jsonObject)
         val professionTopWeaponSemanticTags =
@@ -430,6 +435,20 @@ internal object Phase4DomainArtifactRegistry {
                     put("scenarioCount", payload.intValue("scenarioCount"))
                     put("fullRouteCount", fullRouteCount)
                     put("branchInclusiveCount", payload.intValue("branchInclusiveCount"))
+                    put("routeProbeCount", payload.intValue("routeProbeCount"))
+                    put("lateRouteProbeCount", payload.intValue("lateRouteProbeCount"))
+                    put("scenarioTypeDistribution", payload.getValue("scenarioTypeDistribution"))
+                    put("zoneRouteHashDistribution", payload.getValue("zoneRouteHashDistribution"))
+                    put("zoneRouteHashDiversity", routeDiversity)
+                    put("zoneRouteHashDiversity.topHashShare", routeDiversity.doubleValue("topHashShare"))
+                    put("fullRouteIntentDistinctCount", payload.intValue("fullRouteIntentDistinctCount"))
+                    put("actualFullRouteHashDistinctCount", actualFullRouteHashDistinctCount)
+                    put("topologyCategoryDiversityPerSmokeRun.reportOnly", payload.doubleValue("topologyCategoryDiversityPerSmokeRun.reportOnly"))
+                    put("routeTokenSample", payload.getValue("routeTokenSample"))
+                    payload["fullRouteTokenSample"]?.let { put("fullRouteTokenSample", it) }
+                    payload["branchRouteTokenSample"]?.let { put("branchRouteTokenSample", it) }
+                    put("probeRouteHashSample", payload.getValue("probeRouteHashSample"))
+                    put("branchRouteHashDistribution", payload.getValue("branchRouteHashDistribution"))
                     put("terminalWeaponBaseDiversity", payload.intValue("terminalWeaponBaseDiversity"))
                     put("crossProfessionTopWeaponDominance", payload.doubleValue("crossProfessionTopWeaponDominance"))
                     put("professionAlignedWeaponAdoptionRate", payload.doubleValue("professionAlignedWeaponAdoptionRate"))

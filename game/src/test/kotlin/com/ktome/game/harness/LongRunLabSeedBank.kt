@@ -28,4 +28,20 @@ internal object LongRunLabSeedBank {
         require(raceIndex >= 0) { "Unknown raceId=$raceId for long-run seed bank." }
         return fullRouteSeedBase + professionIndex * professionSeedStride + raceIndex
     }
+
+    fun pr06FullRouteSpecs(
+        corpusId: String,
+        initialTalentPointGrant: Int = 0,
+    ): List<ScenarioSpec> = Phase4V4Pr06RouteDiversityCorpus.fullRouteSpecs(corpusId, initialTalentPointGrant)
+
+    fun pr06BranchInclusiveSpecs(
+        corpusId: String,
+        initialTalentPointGrant: Int = 0,
+    ): List<ScenarioSpec> = Phase4V4Pr06RouteDiversityCorpus.branchInclusiveSpecs(corpusId, initialTalentPointGrant)
+
+    fun pr06RouteProbeSpecs(corpusId: String): List<ScenarioSpec> =
+        Phase4V4Pr06RouteDiversityCorpus.routeProbeSpecs(corpusId)
+
+    fun pr06LateRouteProbeSpecs(corpusId: String): List<ScenarioSpec> =
+        Phase4V4Pr06RouteDiversityCorpus.lateRouteProbeSpecs(corpusId)
 }

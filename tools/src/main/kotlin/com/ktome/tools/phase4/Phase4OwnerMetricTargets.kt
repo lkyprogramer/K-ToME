@@ -35,6 +35,8 @@ internal object Phase4OwnerMetricTargets {
             "frontstageSearchCueVisibilityRate",
             "zoneHookCoverage",
             "topFiveAffixExposureShare",
+            "zoneRouteHashDiversity.topHashShare",
+            "topologyCategoryDiversityPerSmokeRun.reportOnly",
             "milestoneRewardSlotBalance.maxSlotShare",
             "milestoneRewardSlotBalance.WEAPON",
             "milestoneRewardSlotBalance.OFF_HAND",

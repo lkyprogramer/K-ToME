@@ -153,6 +153,7 @@ data class ValidationScenarioRuntimeSpec(
         require(zoneId.isNotBlank()) { "Validation scenario runtime must declare zoneId." }
         require(floor > 0) { "Validation scenario runtime must declare a positive floor." }
         require(routeIndex >= -1) { "Validation scenario runtime routeIndex must be -1 or greater." }
+        validatePresetStartZone(preset = preset, zoneId = zoneId)
     }
 }
 

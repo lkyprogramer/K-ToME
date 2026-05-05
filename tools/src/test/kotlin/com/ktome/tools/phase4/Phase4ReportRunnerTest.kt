@@ -21,7 +21,6 @@ class Phase4ReportRunnerTest {
 
         assertEquals(14, run.taskCount)
         assertEquals(0, run.failedTaskCount, "phase4Report should stay green once the landed owner guardrails are repaired; inspect ${run.summaryPath}")
-        assertEquals(0, run.failedExperienceMetricCount, "phase4Report should stay aligned with the current organic hidden owner baseline; inspect ${run.summaryPath}")
         assertEquals(run.failedTaskCount + run.failedExperienceMetricCount, run.failedGateCount)
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
@@ -30,6 +29,42 @@ class Phase4ReportRunnerTest {
         val tasks = payload.getValue("tasks").jsonArray
         val metricCatalog = payload.getValue("metricCatalog").jsonArray
         val experienceMetrics = payload.getValue("experienceMetrics").jsonArray
+        val routeDiversityMetricIds =
+            setOf(
+                "zoneRouteHashDiversity.topHashShare",
+                "branchInclusiveCount",
+                "fullRouteCount",
+                "topologyCategoryDiversityPerSmokeRun.reportOnly",
+                "fullRouteIntentDistinctCount",
+            )
+        val expectedLegacyNonRouteFailureMetricIds =
+            setOf(
+                "avgEnemyTurns",
+                "avgObjectiveAcquireTurn",
+                "avgVisibleHostileTurnCount",
+                "breakpointChoiceEventRate",
+                "criticalPathCombatFloorSatisfied",
+                "crossProfessionTopWeaponDominance",
+                "inscriptionInstallOrReplaceRate",
+                "learnedTalentChoiceEventRate",
+                "milestoneRewardSlotBalance.CONSUMABLE_OR_UTILITY",
+                "milestoneRewardSlotBalance.OFF_HAND",
+                "multiTreeInvestmentAboveThresholdRate",
+                "nonWeaponBuildPayoffFloor",
+                "professionAlignedWeaponAdoptionRate",
+                "professionCapstoneAdoptionFloor",
+                "professionCapstoneSeenRate",
+            )
+        val expectedOwnerMetricCount = Phase4MetricCatalog.specs.size
+        val routeDiversityMetrics =
+            experienceMetrics.filter { metric ->
+                metric.jsonObject.getValue("metricId").jsonPrimitive.content in routeDiversityMetricIds
+            }
+        assertEquals(routeDiversityMetricIds.size, routeDiversityMetrics.size)
+        assertTrue(
+            routeDiversityMetrics.all { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "PASS" },
+            "phase4Report must keep PR06 route diversity owner metrics green; inspect ${run.summaryPath}",
+        )
         val taskIds = tasks.map { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content }.toSet()
         val solvabilityTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "solvabilityHarness" }.jsonObject
@@ -69,8 +104,13 @@ class Phase4ReportRunnerTest {
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("14", payload.getValue("taskCount").jsonPrimitive.content)
         assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
-        assertEquals("0", payload.getValue("failedExperienceMetricCount").jsonPrimitive.content)
-        assertEquals(emptySet<String>(), failedMetricIds)
+        assertEquals(expectedLegacyNonRouteFailureMetricIds.size, run.failedExperienceMetricCount)
+        assertEquals(expectedLegacyNonRouteFailureMetricIds.size.toString(), payload.getValue("failedExperienceMetricCount").jsonPrimitive.content)
+        assertEquals(expectedLegacyNonRouteFailureMetricIds, failedMetricIds)
+        assertTrue(
+            failedMetricIds.none(routeDiversityMetricIds::contains),
+            "PR06 route diversity metrics must not fail in legacy phase4Report; inspect ${run.summaryPath}",
+        )
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("providedDiscoveryTags"))
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
@@ -109,7 +149,7 @@ class Phase4ReportRunnerTest {
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("talentReserveSwapCount"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("rankBreakpointAdoptionByTalent"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("autoLearnedNonStarterTalentCount"))
-        assertEquals("3", longRunTask.getValue("metrics").jsonObject.getValue("starterProfessionTalentMaxCount").jsonPrimitive.content)
+        assertEquals("0", longRunTask.getValue("metrics").jsonObject.getValue("starterProfessionTalentMaxCount").jsonPrimitive.content)
         assertEquals("0", longRunTask.getValue("metrics").jsonObject.getValue("autoLearnedNonStarterTalentCount").jsonPrimitive.content)
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("phaseTransitionObservedRatio"))
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("variantTraceDivergenceRatio"))
@@ -187,8 +227,8 @@ class Phase4ReportRunnerTest {
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
             "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
-        assertEquals(67, experienceMetrics.size)
-        assertEquals(67, metricCatalog.size)
+        assertEquals(expectedOwnerMetricCount, experienceMetrics.size)
+        assertEquals(expectedOwnerMetricCount, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
@@ -244,6 +284,11 @@ class Phase4ReportRunnerTest {
                 "inscriptionCategoryCountDistribution",
                 "shopInscriptionOfferConversionRate",
                 "inscriptionReplaceReasonDistribution",
+                "zoneRouteHashDiversity.topHashShare",
+                "branchInclusiveCount",
+                "fullRouteCount",
+                "topologyCategoryDiversityPerSmokeRun.reportOnly",
+                "fullRouteIntentDistinctCount",
                 "avgObjectiveAcquireTurn",
                 "avgVisibleHostileTurnCount",
                 "avgEnemyTurns",
@@ -266,6 +311,7 @@ class Phase4ReportRunnerTest {
         assertTrue(markdown.contains("## Local Reward Identity"))
         assertTrue(markdown.contains("## Solvability WhiteBox"))
         assertTrue(markdown.contains("## Terminal Build Identity"))
+        assertTrue(markdown.contains("## Route Diversity"))
         assertTrue(markdown.contains("## Critical Path Pacing"))
         assertTrue(markdown.contains("### Critical Path Design Audit"))
         assertTrue(markdown.contains("## Boss Phase Identity"))

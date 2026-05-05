@@ -44,11 +44,12 @@ class ReportPhase4RunnerTest {
             val ownerMetrics = payload.getValue("ownerMetrics").jsonArray
             val metricCatalog = payload.getValue("metricCatalog").jsonArray
             val sections = payload.getValue("sections").jsonObject
+            val expectedOwnerMetricCount = Phase4MetricCatalog.specs.size
 
             assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-            assertEquals("67", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+            assertEquals(expectedOwnerMetricCount.toString(), payload.getValue("ownerMetricCount").jsonPrimitive.content)
             assertEquals(
                 ownerMetrics.count { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "UNEXPECTED_REGRESSION" }.toString(),
                 payload.getValue("unexpectedRegressionCount").jsonPrimitive.content,
@@ -65,7 +66,7 @@ class ReportPhase4RunnerTest {
             assertTrue(payload.containsKey("artifactReuseRate"))
             assertTrue(payload.containsKey("topInvalidationReasons"))
             assertEquals(14, inputs.size)
-            assertEquals(67, ownerMetrics.size)
+            assertEquals(expectedOwnerMetricCount, ownerMetrics.size)
 
             val terrainInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
@@ -83,6 +84,12 @@ class ReportPhase4RunnerTest {
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" }.jsonObject
             val satisfiedMetric =
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied" }.jsonObject
+            val routeHashMetric =
+                ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "zoneRouteHashDiversity.topHashShare" }.jsonObject
+            val branchInclusiveMetric =
+                ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "branchInclusiveCount" }.jsonObject
+            val routeTopologyMetric =
+                ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "topologyCategoryDiversityPerSmokeRun.reportOnly" }.jsonObject
             val lootCatalogMetric =
                 metricCatalog.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }.jsonObject
             val lootInput =
@@ -190,6 +197,10 @@ class ReportPhase4RunnerTest {
             assertTrue(markdown.contains("searchPromptRequired"))
             assertTrue(markdown.contains("criticalPathZoneIds"))
             assertTrue(markdown.contains("criticalPathCombatFloorSatisfied"))
+            assertTrue(markdown.contains("## Route Diversity"))
+            assertEquals("zoneRouteHashDiversity.topHashShare", routeHashMetric.getValue("metricId").jsonPrimitive.content)
+            assertEquals("branchInclusiveCount", branchInclusiveMetric.getValue("metricId").jsonPrimitive.content)
+            assertEquals("topologyCategoryDiversityPerSmokeRun.reportOnly", routeTopologyMetric.getValue("metricId").jsonPrimitive.content)
             assertTrue(debugArtifact.containsKey("rewardSourceSelections"))
             assertTrue(debugArtifact.containsKey("topRejectedCapstoneCandidates"))
             assertTrue(debugArtifact.containsKey("perProfessionSourceCoverage"))
@@ -208,7 +219,7 @@ class ReportPhase4RunnerTest {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("67", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals("72", comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }

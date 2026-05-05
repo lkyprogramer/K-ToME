@@ -299,6 +299,28 @@ private const val BUILD_IDENTITY_DEBUG_FILE: String = "build-identity-debug.json
                     sampleMissingZoneIds = sampleMissingZoneIds,
                 ).toSectionJson(),
             )
+            val topHashMetric = requireOwnerMetric(ownerMetrics, "zoneRouteHashDiversity.topHashShare")
+            val branchCountMetric = requireOwnerMetric(ownerMetrics, "branchInclusiveCount")
+            val fullRouteCountMetric = requireOwnerMetric(ownerMetrics, "fullRouteCount")
+            val topologyDiversityMetric = requireOwnerMetric(ownerMetrics, "topologyCategoryDiversityPerSmokeRun.reportOnly")
+            val fullRouteIntentMetric = requireOwnerMetric(ownerMetrics, "fullRouteIntentDistinctCount")
+            put(
+                "routeDiversity",
+                buildJsonObject {
+                    put("scenarioTypeDistribution", topHashMetric.details.getValue("scenarioTypeDistribution"))
+                    put("zoneRouteHashDistribution", topHashMetric.details.getValue("zoneRouteHashDistribution"))
+                    put("zoneRouteHashDiversity", topHashMetric.details.getValue("zoneRouteHashDiversity"))
+                    put("routeTokenSample", topHashMetric.details.getValue("routeTokenSample"))
+                    put("probeRouteHashSample", topHashMetric.details.getValue("probeRouteHashSample"))
+                    put("branchRouteHashDistribution", topHashMetric.details.getValue("branchRouteHashDistribution"))
+                    put("topHashShareStatus", topHashMetric.status.name)
+                    put("topHashShareText", topHashMetric.currentValueText)
+                    put("branchInclusiveCountText", branchCountMetric.currentValueText)
+                    put("fullRouteCountText", fullRouteCountMetric.currentValueText)
+                    put("topologyCategoryDiversityPerSmokeRunText", topologyDiversityMetric.currentValueText)
+                    put("fullRouteIntentDistinctCountText", fullRouteIntentMetric.currentValueText)
+                },
+            )
         }
     }
 
@@ -529,7 +551,13 @@ private const val BUILD_IDENTITY_DEBUG_FILE: String = "build-identity-debug.json
             val nonWeaponFloorMetric = requireOwnerMetric(report.ownerMetrics, "nonWeaponBuildPayoffFloor")
             val milestoneRewardAdoptionDeltaMetric = requireOwnerMetric(report.ownerMetrics, "milestoneRewardAdoptionDelta")
             val milestoneRewardSlotBalanceMetric = requireOwnerMetric(report.ownerMetrics, "milestoneRewardSlotBalance.maxSlotShare")
+            val routeTopHashMetric = requireOwnerMetric(report.ownerMetrics, "zoneRouteHashDiversity.topHashShare")
+            val branchInclusiveMetric = requireOwnerMetric(report.ownerMetrics, "branchInclusiveCount")
+            val fullRouteCountMetric = requireOwnerMetric(report.ownerMetrics, "fullRouteCount")
+            val topologyDiversityMetric = requireOwnerMetric(report.ownerMetrics, "topologyCategoryDiversityPerSmokeRun.reportOnly")
+            val fullRouteIntentMetric = requireOwnerMetric(report.ownerMetrics, "fullRouteIntentDistinctCount")
             val criticalPathSection = requireSection(report.sections, "criticalPathPacing")
+            val routeDiversitySection = requireSection(report.sections, "routeDiversity")
             val criticalPathZoneIds =
                 criticalPathSection.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
                     zoneId.jsonPrimitive.content
@@ -656,6 +684,24 @@ private const val BUILD_IDENTITY_DEBUG_FILE: String = "build-identity-debug.json
                         "    - candidateBaseIds (debug): `${summary.getValue("candidateBaseIds").jsonArray.joinToString { baseId -> baseId.jsonPrimitive.content }.ifBlank { "none" }}`",
                     )
                 }
+            appendLine()
+            appendLine("## Route Diversity")
+            appendLine("- sourceTask: `${routeTopHashMetric.sourceTaskId}`")
+            appendLine("- `scenarioTypeDistribution`: `${routeDiversitySection.getValue("scenarioTypeDistribution")}`")
+            appendLine("- `zoneRouteHashDistribution`: `${routeDiversitySection.getValue("zoneRouteHashDistribution")}`")
+            appendLine("- `zoneRouteHashDiversity.topHashShare`: ${routeTopHashMetric.currentValueText} / `${routeTopHashMetric.status}`")
+            appendLine("- `branchInclusiveCount`: ${branchInclusiveMetric.currentValueText} / `${branchInclusiveMetric.status}`")
+            appendLine("- `fullRouteCount`: ${fullRouteCountMetric.currentValueText} / `${fullRouteCountMetric.status}`")
+            appendLine("- `topologyCategoryDiversityPerSmokeRun.reportOnly`: ${topologyDiversityMetric.currentValueText} / `${topologyDiversityMetric.status}`")
+            appendLine("- `fullRouteIntentDistinctCount`: ${fullRouteIntentMetric.currentValueText} / `${fullRouteIntentMetric.status}`")
+            appendLine("- `probeRouteHashSample`: `${routeDiversitySection.getValue("probeRouteHashSample").jsonArray.joinToString { hash -> hash.jsonPrimitive.content }.ifBlank { "none" }}`")
+            appendLine("- `routeTokenSample`: `${routeDiversitySection.getValue("routeTokenSample").jsonArray.joinToString { token -> token.jsonPrimitive.content }.ifBlank { "none" }}`")
+            routeDiversitySection["fullRouteTokenSample"]?.jsonArray?.let { tokens ->
+                appendLine("- `fullRouteTokenSample`: `${tokens.joinToString { token -> token.jsonPrimitive.content }.ifBlank { "none" }}`")
+            }
+            routeDiversitySection["branchRouteTokenSample"]?.jsonArray?.let { tokens ->
+                appendLine("- `branchRouteTokenSample`: `${tokens.joinToString { token -> token.jsonPrimitive.content }.ifBlank { "none" }}`")
+            }
             appendLine()
             appendLine("## Critical Path Pacing")
             appendLine("- sourceTask: `${satisfiedMetric.sourceTaskId}`")

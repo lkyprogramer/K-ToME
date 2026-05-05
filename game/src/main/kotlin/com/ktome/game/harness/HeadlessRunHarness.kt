@@ -17,6 +17,9 @@ import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.isSecretRouteMarker
+import com.ktome.game.routeToken
+import com.ktome.game.secretRouteMarker
 import com.ktome.game.zoneRouteHash
 import java.nio.file.Files
 import java.nio.file.Path
@@ -39,17 +42,27 @@ class HeadlessRunHarness(
         applyInitialTalentPointGrant(session, spec)
         val schemaCatalog = schemaCatalogFor(session)
         val zoneObjectiveBindings = buildZoneObjectiveBindings(schemaCatalog)
+        val primarySecretBindingId =
+            spec.primarySecretZoneId?.let { secretZoneId ->
+                schemaCatalog.zoneMapgenProfiles
+                    .asSequence()
+                    .flatMap { profile -> profile.hiddenEntrancePlans.asSequence() }
+                    .firstOrNull { plan -> plan.targetSecretZoneId.id == secretZoneId }
+                    ?.bindingId
+            }
         val commandStats = linkedMapOf<String, Int>()
         val commandTail = ArrayDeque<String>()
         val zoneHeadlessMilestones = mutableListOf<ZoneHeadlessMilestone>()
         val zoneTraversalAccumulators = linkedMapOf<String, ZoneTraversalAccumulator>()
         val visitedZonePath = mutableListOf<String>()
+        val visitedRouteTokenParts = mutableListOf<String>()
         val captainEncounterTrace = ArrayDeque<CaptainEncounterTraceEntry>()
         val breakpointPayoffObservations = mutableListOf<BreakpointPayoffObservation>()
         val seenBreakpointPayoffKeys = linkedSetOf<String>()
         val affixSynergyActivationTotals = linkedMapOf<String, Int>()
         var previousAffixSynergySnapshot = emptyMap<String, Int>()
         val stallDetector = StallDetector(maxRepeats = stallRepeats)
+        val visitedSecretZoneIds = linkedSetOf<String>()
         var turnCount = 0
         var checkpointVerified = false
         var checkpointSeen = false
@@ -59,7 +72,16 @@ class HeadlessRunHarness(
         var observation = RunObservationCapture.capture(session, turnCount)
         var bossCombatLock = updateBossCombatLock(session, observation, currentLock = null)
         var previousBuildHash = session.currentCommittedBuildHash()
-        appendVisitedZone(visitedZonePath, session.config.zoneId)
+        appendVisitedRouteZone(
+            visitedZonePath = visitedZonePath,
+            visitedRouteTokenParts = visitedRouteTokenParts,
+            zoneId = session.config.zoneId,
+        )
+        recordVisitedSecretZones(
+            visitedSecretZoneIds = visitedSecretZoneIds,
+            visitedRouteTokenParts = visitedRouteTokenParts,
+            session = session,
+        )
         beginZoneVisit(
             accumulators = zoneTraversalAccumulators,
             zoneId = session.config.zoneId,
@@ -104,7 +126,7 @@ class HeadlessRunHarness(
             observations = breakpointPayoffObservations,
         )
 
-        while (turnCount < spec.maxTurns && !observation.runOutcome.isTerminal && !goalSatisfied(spec, observation, checkpointTurn)) {
+        while (turnCount < spec.maxTurns && !observation.runOutcome.isTerminal && !goalSatisfied(spec, observation, checkpointTurn, visitedSecretZoneIds)) {
             val checkpoint = spec.saveLoadCheckpoint
             if (checkpoint != null && !checkpointSeen && observation.floor >= checkpoint.floor) {
                 val roundTrip = roundTripCheckpoint(session, saveManager)
@@ -117,7 +139,16 @@ class HeadlessRunHarness(
                 }
                 session = roundTrip.loadedSession ?: session
                 observation = RunObservationCapture.capture(session, turnCount)
-                appendVisitedZone(visitedZonePath, session.config.zoneId)
+                appendVisitedRouteZone(
+                    visitedZonePath = visitedZonePath,
+                    visitedRouteTokenParts = visitedRouteTokenParts,
+                    zoneId = session.config.zoneId,
+                )
+                recordVisitedSecretZones(
+                    visitedSecretZoneIds = visitedSecretZoneIds,
+                    visitedRouteTokenParts = visitedRouteTokenParts,
+                    session = session,
+                )
                 beginZoneVisit(
                     accumulators = zoneTraversalAccumulators,
                     zoneId = session.config.zoneId,
@@ -169,14 +200,23 @@ class HeadlessRunHarness(
             val commandZoneId = observation.zoneId
             val headlessBeforeCommand = session.currentHeadlessTurnEquivalent()
             val visibleThreatCount = distinctVisibleThreatCount(observation)
-            val command =
+            val routeCommand =
                 routeProgressCommand(session, observation)
                     .takeIf { shouldPrioritizeRouteProgress(spec, observation, bossCombatLock != null) }
+            val command =
+                primarySecretRouteCommand(
+                    session = session,
+                    observation = observation,
+                    spec = spec,
+                    primarySecretBindingId = primarySecretBindingId,
+                    visitedSecretZoneIds = visitedSecretZoneIds,
+                )
+                    ?: routeCommand
                     ?: bot.decide(observation)
                     ?: run {
-                    failureReason = "Bot returned no command."
-                    break
-                }
+                        failureReason = "Bot returned no command."
+                        break
+                    }
             val renderedCommand = renderCommand(command)
             commandStats[command.commandName()] = (commandStats[command.commandName()] ?: 0) + 1
             commandTail.addLast(renderedCommand)
@@ -213,6 +253,11 @@ class HeadlessRunHarness(
             }
 
             observation = RunObservationCapture.capture(session, turnCount)
+            recordVisitedSecretZones(
+                visitedSecretZoneIds = visitedSecretZoneIds,
+                visitedRouteTokenParts = visitedRouteTokenParts,
+                session = session,
+            )
             finishZoneVisitIfTransitioned(
                 accumulators = zoneTraversalAccumulators,
                 previousZoneId = commandZoneId,
@@ -233,7 +278,11 @@ class HeadlessRunHarness(
                 turnIndex = turnCount,
             )
             bossCombatLock = updateBossCombatLock(session, observation, bossCombatLock)
-            appendVisitedZone(visitedZonePath, session.config.zoneId)
+            appendVisitedRouteZone(
+                visitedZonePath = visitedZonePath,
+                visitedRouteTokenParts = visitedRouteTokenParts,
+                zoneId = session.config.zoneId,
+            )
             appendZoneMilestone(
                 milestones = zoneHeadlessMilestones,
                 zoneId = session.config.zoneId,
@@ -269,7 +318,7 @@ class HeadlessRunHarness(
             }
         }
 
-        if (failureReason == null && stuckReason == null && turnCount >= spec.maxTurns && !goalSatisfied(spec, observation, checkpointTurn)) {
+        if (failureReason == null && stuckReason == null && turnCount >= spec.maxTurns && !goalSatisfied(spec, observation, checkpointTurn, visitedSecretZoneIds)) {
             failureReason = "Turn budget exhausted."
         }
 
@@ -284,90 +333,102 @@ class HeadlessRunHarness(
                         }.sortedBy { diagnostic -> zoneDepth(diagnostic.zoneId) }
                 val talentChoiceSummary = session.currentTalentChoiceRunSummary()
                 val inscriptionSummary = session.currentInscriptionRunSummary()
+                val routeEvidence =
+                    routeEvidenceForReport(
+                        spec = spec,
+                        visitedZonePath = visitedZonePath,
+                        visitedRouteTokenParts = visitedRouteTokenParts,
+                        visitedSecretZoneIds = visitedSecretZoneIds,
+                    )
 
-            ScenarioReport(
-                name = spec.name,
-                seed = spec.seed,
-                zoneId = spec.zoneId,
-                professionId = spec.professionId,
-                raceId = spec.raceId,
-                routeIndex = spec.routeIndex,
-                finalZoneId = session.config.zoneId,
-                zoneRouteHash = zoneRouteHash(visitedZonePath),
-                zonePath = visitedZonePath.toList(),
-                scenarioType = spec.scenarioType,
-                success = false,
-                outcome = session.runOutcome(),
-                floorReached = session.currentFloor(),
-                turns = turnCount,
-                headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
-                buildId = HarnessMetadata.BUILD_ID,
-                phaseId = HarnessMetadata.PHASE_ID,
-                rulesetVersion = HarnessMetadata.RULESET_VERSION,
-                traceSchemaVersion = HarnessMetadata.TRACE_SCHEMA_VERSION,
-                corpusId = spec.corpusId,
-                localeId = session.localizer().locale.id,
-                profileId = HarnessMetadata.PROFILE_ID,
-                buildHash = session.currentBuildHash(),
-                terminalWeaponBaseId = session.currentEquippedBaseItemId(EquipSlot.WEAPON),
-                breakpointPayoffs = session.currentBreakpointPayoffSummaries(),
-                breakpointPayoffObservations = breakpointPayoffObservations.toList(),
-                milestoneRewards = session.milestoneRewardSummaries(),
-                milestoneRewardScoreSamples =
-                    session.milestoneRewardScoreSamples().map { sample ->
-                        sample.copy(scenarioName = spec.name)
-                    },
-                cadenceRewardCount = session.currentCadenceRewardCount(),
-                shopRefreshPurchaseCount = session.currentShopRefreshPurchaseCount(),
-                lateRunReliquaryPurchaseCount = session.currentLateRunReliquaryPurchaseCount(),
-                lateRunReliquaryVisitCount = session.currentLateRunReliquaryVisitCount(),
-                lateRunReliquaryRefreshCount = session.currentLateRunReliquaryRefreshCount(),
-                lateRunReliquaryItemPurchaseCount = session.currentLateRunReliquaryItemPurchaseCount(),
-                lateRunReliquaryNonMandatoryPurchaseCount = session.currentLateRunReliquaryNonMandatoryPurchaseCount(),
-                lateRunReliquaryShardSpent = session.currentLateRunReliquaryShardSpent(),
-                lateRunReliquaryTagDistribution = session.currentLateRunReliquaryPurchaseTagDistribution(),
-                affixSynergyActivationCount = affixSynergyActivationTotals.values.sum(),
-                affixSynergyActivationDistribution = affixSynergyActivationTotals.toMap(linkedMapOf()),
-                starterProfessionTalentCount = talentChoiceSummary.starterProfessionTalentCount,
-                learnedTalentChoiceEventCount = talentChoiceSummary.learnedTalentChoiceEventCount,
-                learnableNonStarterTalentCount = talentChoiceSummary.learnableNonStarterTalentCount,
-                breakpointChoiceEventCount = talentChoiceSummary.breakpointChoiceEventCount,
-                breakpointPreviewAvailable = talentChoiceSummary.breakpointPreviewAvailable,
-                talentTreeInvestmentByTree = talentChoiceSummary.treeInvestmentByTree,
-                talentTreePrimaryInvestmentTreeId = talentChoiceSummary.primaryInvestmentTreeId,
-                talentTreePrimaryInvestmentPoints = talentChoiceSummary.primaryInvestmentPoints,
-                multiTreeInvestmentAboveThreshold = talentChoiceSummary.multiTreeInvestmentAboveThreshold,
-                talentReserveSwapCount = talentChoiceSummary.reserveSwapCount,
-                rankBreakpointAdoptionByTalent = talentChoiceSummary.rankBreakpointAdoptionByTalent,
-                autoLearnedNonStarterTalentCount = talentChoiceSummary.autoLearnedNonStarterTalentCount,
-                startingInscriptionCount = inscriptionSummary.startingInscriptionCount,
-                inscriptionInstallCount = inscriptionSummary.installCount,
-                inscriptionReplaceCount = inscriptionSummary.replaceCount,
-                fullSlotInscriptionPurchaseBlockedWithoutReplacementCount = inscriptionSummary.fullSlotPurchaseBlockedWithoutReplacementCount,
-                fullSlotInscriptionPurchaseReplacementPromptCount = inscriptionSummary.fullSlotPurchaseReplacementPromptCount,
-                inscriptionPurchaseCancelledAfterReplacementPrompt = inscriptionSummary.purchaseCancelledAfterReplacementPrompt,
-                shopPurchaseDeniedInsufficientGoldCount = inscriptionSummary.deniedInsufficientGoldCount,
-                shopInscriptionOfferSeenCount = inscriptionSummary.shopInscriptionOfferSeenCount,
-                shopInscriptionOfferPurchaseCount = inscriptionSummary.shopInscriptionOfferPurchaseCount,
-                terminalInscriptionLoadout = inscriptionSummary.terminalLoadout,
-                terminalInscriptionCategoryCounts = inscriptionSummary.terminalCategoryCounts,
-                inscriptionReplaceReasonDistribution = inscriptionSummary.replaceReasonDistribution,
-                goalReached = goalSatisfied(spec, observation, checkpointTurn),
-                failureReason = failureReason,
-                stuckReason = stuckReason,
-                checkpointRoundTripVerified = checkpointVerified,
-                commandStats = commandStats.toMap(),
-                zoneHeadlessMilestones = zoneHeadlessMilestones.toList(),
-                zoneObjectiveSummaries = zoneObjectiveSummaries,
-                zoneTraversalDiagnostics = zoneTraversalDiagnostics,
-                captainEncounterTrace = captainEncounterTrace.toList(),
-                lastCommands = commandTail.toList(),
-                lastMessages = observation.messageLogTail,
-                eventTail = observation.eventTail,
-            )
+                ScenarioReport(
+                    name = spec.name,
+                    seed = spec.seed,
+                    zoneId = spec.zoneId,
+                    professionId = spec.professionId,
+                    raceId = spec.raceId,
+                    routeIndex = spec.routeIndex,
+                    finalZoneId = session.config.zoneId,
+                    zoneRouteHash = zoneRouteHash(routeEvidence.tokenParts),
+                    zonePath = visitedZonePath.toList(),
+                    routeToken = routeToken(routeEvidence.tokenParts),
+                    routeIntent = spec.routeIntent,
+                    primarySecretZoneId = spec.primarySecretZoneId,
+                    visitedSecretZoneIds = visitedSecretZoneIds,
+                    probeRouteHash = spec.probeRoute.takeIf { route -> route.isNotEmpty() }?.let(::zoneRouteHash),
+                    scenarioType = spec.scenarioType,
+                    success = false,
+                    outcome = session.runOutcome(),
+                    floorReached = session.currentFloor(),
+                    turns = turnCount,
+                    headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+                    buildId = HarnessMetadata.BUILD_ID,
+                    phaseId = HarnessMetadata.PHASE_ID,
+                    rulesetVersion = HarnessMetadata.RULESET_VERSION,
+                    traceSchemaVersion = HarnessMetadata.TRACE_SCHEMA_VERSION,
+                    corpusId = spec.corpusId,
+                    localeId = session.localizer().locale.id,
+                    profileId = HarnessMetadata.PROFILE_ID,
+                    buildHash = session.currentBuildHash(),
+                    terminalWeaponBaseId = session.currentEquippedBaseItemId(EquipSlot.WEAPON),
+                    breakpointPayoffs = session.currentBreakpointPayoffSummaries(),
+                    breakpointPayoffObservations = breakpointPayoffObservations.toList(),
+                    milestoneRewards = session.milestoneRewardSummaries(),
+                    milestoneRewardScoreSamples =
+                        session.milestoneRewardScoreSamples().map { sample ->
+                            sample.copy(scenarioName = spec.name)
+                        },
+                    cadenceRewardCount = session.currentCadenceRewardCount(),
+                    shopRefreshPurchaseCount = session.currentShopRefreshPurchaseCount(),
+                    lateRunReliquaryPurchaseCount = session.currentLateRunReliquaryPurchaseCount(),
+                    lateRunReliquaryVisitCount = session.currentLateRunReliquaryVisitCount(),
+                    lateRunReliquaryRefreshCount = session.currentLateRunReliquaryRefreshCount(),
+                    lateRunReliquaryItemPurchaseCount = session.currentLateRunReliquaryItemPurchaseCount(),
+                    lateRunReliquaryNonMandatoryPurchaseCount = session.currentLateRunReliquaryNonMandatoryPurchaseCount(),
+                    lateRunReliquaryShardSpent = session.currentLateRunReliquaryShardSpent(),
+                    lateRunReliquaryTagDistribution = session.currentLateRunReliquaryPurchaseTagDistribution(),
+                    affixSynergyActivationCount = affixSynergyActivationTotals.values.sum(),
+                    affixSynergyActivationDistribution = affixSynergyActivationTotals.toMap(linkedMapOf()),
+                    starterProfessionTalentCount = talentChoiceSummary.starterProfessionTalentCount,
+                    learnedTalentChoiceEventCount = talentChoiceSummary.learnedTalentChoiceEventCount,
+                    learnableNonStarterTalentCount = talentChoiceSummary.learnableNonStarterTalentCount,
+                    breakpointChoiceEventCount = talentChoiceSummary.breakpointChoiceEventCount,
+                    breakpointPreviewAvailable = talentChoiceSummary.breakpointPreviewAvailable,
+                    talentTreeInvestmentByTree = talentChoiceSummary.treeInvestmentByTree,
+                    talentTreePrimaryInvestmentTreeId = talentChoiceSummary.primaryInvestmentTreeId,
+                    talentTreePrimaryInvestmentPoints = talentChoiceSummary.primaryInvestmentPoints,
+                    multiTreeInvestmentAboveThreshold = talentChoiceSummary.multiTreeInvestmentAboveThreshold,
+                    talentReserveSwapCount = talentChoiceSummary.reserveSwapCount,
+                    rankBreakpointAdoptionByTalent = talentChoiceSummary.rankBreakpointAdoptionByTalent,
+                    autoLearnedNonStarterTalentCount = talentChoiceSummary.autoLearnedNonStarterTalentCount,
+                    startingInscriptionCount = inscriptionSummary.startingInscriptionCount,
+                    inscriptionInstallCount = inscriptionSummary.installCount,
+                    inscriptionReplaceCount = inscriptionSummary.replaceCount,
+                    fullSlotInscriptionPurchaseBlockedWithoutReplacementCount = inscriptionSummary.fullSlotPurchaseBlockedWithoutReplacementCount,
+                    fullSlotInscriptionPurchaseReplacementPromptCount = inscriptionSummary.fullSlotPurchaseReplacementPromptCount,
+                    inscriptionPurchaseCancelledAfterReplacementPrompt = inscriptionSummary.purchaseCancelledAfterReplacementPrompt,
+                    shopPurchaseDeniedInsufficientGoldCount = inscriptionSummary.deniedInsufficientGoldCount,
+                    shopInscriptionOfferSeenCount = inscriptionSummary.shopInscriptionOfferSeenCount,
+                    shopInscriptionOfferPurchaseCount = inscriptionSummary.shopInscriptionOfferPurchaseCount,
+                    terminalInscriptionLoadout = inscriptionSummary.terminalLoadout,
+                    terminalInscriptionCategoryCounts = inscriptionSummary.terminalCategoryCounts,
+                    inscriptionReplaceReasonDistribution = inscriptionSummary.replaceReasonDistribution,
+                    goalReached = goalSatisfied(spec, observation, checkpointTurn, visitedSecretZoneIds),
+                    failureReason = failureReason,
+                    stuckReason = stuckReason,
+                    checkpointRoundTripVerified = checkpointVerified,
+                    commandStats = commandStats.toMap(),
+                    zoneHeadlessMilestones = zoneHeadlessMilestones.toList(),
+                    zoneObjectiveSummaries = zoneObjectiveSummaries,
+                    zoneTraversalDiagnostics = zoneTraversalDiagnostics,
+                    captainEncounterTrace = captainEncounterTrace.toList(),
+                    lastCommands = commandTail.toList(),
+                    lastMessages = observation.messageLogTail,
+                    eventTail = observation.eventTail,
+                ).copy(assertionFailures = listOfNotNull(routeEvidence.assertionFailure))
             }
 
-        val assertionFailures = spec.assertions.mapNotNull { it.verify(provisional) }
+        val assertionFailures = provisional.assertionFailures + spec.assertions.mapNotNull { it.verify(provisional) }
         val success = provisional.failureReason == null && provisional.stuckReason == null && provisional.goalReached && assertionFailures.isEmpty()
 
         return provisional.copy(
@@ -375,6 +436,129 @@ class HeadlessRunHarness(
             assertionFailures = assertionFailures,
         )
     }
+
+    private fun routeEvidenceForReport(
+        spec: ScenarioSpec,
+        visitedZonePath: List<String>,
+        visitedRouteTokenParts: List<String>,
+        visitedSecretZoneIds: Set<String>,
+    ): RouteEvidence {
+        val primarySecretZoneId = spec.primarySecretZoneId
+        if (primarySecretZoneId == null) {
+            return RouteEvidence(
+                tokenParts = visitedRouteTokenParts,
+                assertionFailure =
+                    if (requiresRoutePlanValidation(spec)) {
+                        routePathMismatch(
+                            scenarioName = spec.name,
+                            expectedRoute = spec.routeTokenParts,
+                            actualRoute = visitedZonePath,
+                        )
+                    } else {
+                        null
+                    },
+            )
+        }
+        if (primarySecretZoneId !in visitedSecretZoneIds) {
+            return RouteEvidence(
+                tokenParts = visitedZonePath,
+                assertionFailure =
+                    "Scenario '${spec.name}' primary secret zone '$primarySecretZoneId' was not visited; visitedSecretZoneIds=$visitedSecretZoneIds.",
+            )
+        }
+
+        val marker = secretRouteMarker(primarySecretZoneId)
+        val expectedMarkerIndex = spec.routeTokenParts.indexOf(marker)
+        if (expectedMarkerIndex < 0) {
+            return RouteEvidence(
+                tokenParts = visitedRouteTokenParts,
+                assertionFailure = "Scenario '${spec.name}' primary secret route marker '$marker' is missing from routeTokenParts.",
+            )
+        }
+        val actualMarkerIndex = visitedRouteTokenParts.indexOf(marker)
+        if (actualMarkerIndex < 0) {
+            return RouteEvidence(
+                tokenParts = visitedRouteTokenParts,
+                assertionFailure = "Scenario '${spec.name}' primary secret route marker '$marker' was not recorded in visitedRouteTokenParts=$visitedRouteTokenParts.",
+            )
+        }
+
+        val expectedBeforeMarker = spec.routeTokenParts.take(expectedMarkerIndex).filterNot(::isSecretRouteMarker)
+        val expectedAfterMarker = spec.routeTokenParts.drop(expectedMarkerIndex + 1).filterNot(::isSecretRouteMarker)
+        val actualBeforeMarker = visitedRouteTokenParts.take(actualMarkerIndex).filterNot(::isSecretRouteMarker)
+        val actualAfterMarker = visitedRouteTokenParts.drop(actualMarkerIndex + 1).filterNot(::isSecretRouteMarker)
+        val mismatch =
+            when {
+                actualBeforeMarker != expectedBeforeMarker ->
+                    "Scenario '${spec.name}' route before marker expected $expectedBeforeMarker but visited $actualBeforeMarker."
+                expectedAfterMarker.take(actualAfterMarker.size) != actualAfterMarker ->
+                    "Scenario '${spec.name}' route after marker expected prefix ${expectedAfterMarker.take(actualAfterMarker.size)} but visited $actualAfterMarker."
+                else -> null
+            }
+        return RouteEvidence(tokenParts = visitedRouteTokenParts, assertionFailure = mismatch)
+    }
+
+    private fun routePathMismatch(
+        scenarioName: String,
+        expectedRoute: List<String>,
+        actualRoute: List<String>,
+    ): String? {
+        val expectedMandatoryRoute = expectedRoute.filterNot(::isSecretRouteMarker)
+        return when {
+            actualRoute.size > expectedMandatoryRoute.size ->
+                "Scenario '$scenarioName' visited route $actualRoute extends beyond expected route $expectedMandatoryRoute."
+            expectedMandatoryRoute.take(actualRoute.size) != actualRoute ->
+                "Scenario '$scenarioName' expected route prefix ${expectedMandatoryRoute.take(actualRoute.size)} but visited $actualRoute."
+            else -> null
+        }
+    }
+
+    private fun primarySecretRouteCommand(
+        session: FoundationGameSession,
+        observation: RunObservation,
+        spec: ScenarioSpec,
+        primarySecretBindingId: com.ktome.core.world.solvability.SearchBindingId?,
+        visitedSecretZoneIds: Set<String>,
+    ): PlayerCommand? {
+        val primarySecretZoneId = spec.primarySecretZoneId ?: return null
+        if (primarySecretZoneId in visitedSecretZoneIds) {
+            return null
+        }
+        if (observation.activeShopId != null || observation.visibleBossPositions.isNotEmpty()) {
+            return null
+        }
+        val bindingId = primarySecretBindingId ?: return null
+        val expectedEntrancePoint = session.automationHiddenEntrancePointForBinding(bindingId)
+        val visibleHiddenEntrance =
+            observation.visibleInteractables
+                .firstOrNull { interactable ->
+                    interactable.id == "hidden_entrance" &&
+                        "secret" in interactable.interactionTags &&
+                        interactable.position == expectedEntrancePoint
+                }
+        if (visibleHiddenEntrance != null) {
+            if (visibleHiddenEntrance.position == observation.playerPosition) {
+                return PlayerCommand.Interact
+            }
+            return stepToward(observation, visibleHiddenEntrance.position)
+                ?.let { step -> PlayerCommand.Move(step.deltaFrom(observation.playerPosition)) }
+        }
+
+        val searchPoint = session.automationSearchPointForBinding(bindingId) ?: return null
+        if (searchPoint == observation.playerPosition) {
+            return if (observation.searchPromptAvailable) PlayerCommand.Search else null
+        }
+        return stepToward(observation, searchPoint)
+            ?.let { step -> PlayerCommand.Move(step.deltaFrom(observation.playerPosition)) }
+    }
+
+    private data class RouteEvidence(
+        val tokenParts: List<String>,
+        val assertionFailure: String?,
+    )
+
+    private fun requiresRoutePlanValidation(spec: ScenarioSpec): Boolean =
+        spec.name.startsWith("long-run-pr06-") || spec.primarySecretZoneId != null
 
     private fun applyInitialTalentPointGrant(
         session: FoundationGameSession,
@@ -461,13 +645,30 @@ class HeadlessRunHarness(
         spec: ScenarioSpec,
         observation: RunObservation,
         checkpointTurn: Int?,
+        visitedSecretZoneIds: Set<String>,
     ): Boolean {
         if (!spec.goal.isSatisfied(observation)) {
+            return false
+        }
+        val primarySecretZoneId = spec.primarySecretZoneId
+        if (primarySecretZoneId != null && primarySecretZoneId !in visitedSecretZoneIds) {
             return false
         }
         val checkpoint = spec.saveLoadCheckpoint ?: return true
         val observedCheckpointTurn = checkpointTurn ?: return false
         return observation.turnIndex - observedCheckpointTurn >= checkpoint.continueTurns
+    }
+
+    private fun recordVisitedSecretZones(
+        visitedSecretZoneIds: MutableSet<String>,
+        visitedRouteTokenParts: MutableList<String>,
+        session: FoundationGameSession,
+    ) {
+        session.automationVisitedSecretZoneIds().forEach { secretZoneId ->
+            if (visitedSecretZoneIds.add(secretZoneId.id)) {
+                visitedRouteTokenParts += secretRouteMarker(secretZoneId.id)
+            }
+        }
     }
 
     private fun shouldPrioritizeRouteProgress(
@@ -705,12 +906,14 @@ class HeadlessRunHarness(
             }
     }
 
-    private fun appendVisitedZone(
+    private fun appendVisitedRouteZone(
         visitedZonePath: MutableList<String>,
+        visitedRouteTokenParts: MutableList<String>,
         zoneId: String,
     ) {
         if (visitedZonePath.lastOrNull() != zoneId) {
             visitedZonePath += zoneId
+            visitedRouteTokenParts += zoneId
         }
     }
 

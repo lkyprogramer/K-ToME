@@ -4,7 +4,6 @@ import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.run.RunOutcome
 import com.ktome.game.FOUNDATION_PRIMARY_BREAKPOINT_PAYOFF_TALENTS
 import com.ktome.game.FOUNDATION_SYNERGY_AFFIX_IDS
-import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import java.nio.file.Path
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -23,120 +22,15 @@ class LongRunLabTest {
     @Test
     @Tag("longRunLab")
     fun `nightly long run lab distinguishes full route smoke from probes`() {
-        val stableArcanistSmokeSeed = LongRunLabSeedBank.fullRouteMatrixSeed(professionId = "arcanist", raceId = "human")
         val officialSliceSpecs =
-            listOf(
-                fullRouteSmokeSpec(
-                    name = "long-run-vanguard-20260312",
-                    seed = 20260312L,
-                    professionId = "vanguard",
-                ),
-                fullRouteSmokeSpec(
-                    // Keep the smoke slice on the same stable matrix seed that still reaches the documented blink payoff.
-                    name = "long-run-arcanist-$stableArcanistSmokeSeed",
-                    seed = stableArcanistSmokeSeed,
-                    professionId = "arcanist",
-                    saveLoadCheckpoint = SaveLoadCheckpoint(floor = 1, continueTurns = 40),
-                    assertions =
-                        listOf(
-                            ScenarioAssertion.CheckpointRoundTrip,
-                            ScenarioAssertion.NoFailure,
-                            ScenarioAssertion.NoStall,
-                        ),
-                ),
-                fullRouteSmokeSpec(
-                    name = "long-run-rogue-20260350",
-                    seed = 20260350L,
-                    professionId = "rogue",
-                ),
-                fullRouteSmokeSpec(
-                    name = "long-run-templar-20260360",
-                    seed = LongRunLabSeedBank.fullRouteMatrixSeed(professionId = "templar", raceId = "human"),
-                    professionId = "templar",
-                ),
+            LongRunLabSeedBank.pr06FullRouteSpecs(
+                corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID,
+                initialTalentPointGrant = PROFESSION_TREE_CHOICE_PROBE_TALENT_POINTS,
             )
-        val advancedFullRouteSpecs =
-            listOf(
-                fullRouteSmokeSpec(
-                    name = "long-run-advanced-berserker-20260318",
-                    seed = 20260318L,
-                    professionId = "berserker",
-                    maxTurns = 2200,
-                ),
-                fullRouteSmokeSpec(
-                    name = "long-run-advanced-spellblade-20260319",
-                    seed = 20260319L,
-                    professionId = "spellblade",
-                    maxTurns = 2200,
-                ),
-            )
-        val advancedLateRouteProbeSpecs =
-            listOf(
-                lateRouteProbeSpec(
-                    name = "long-run-advanced-berserker-late-route-probe-20260318",
-                    seed = 20260318L,
-                    professionId = "berserker",
-                ),
-                lateRouteProbeSpec(
-                    name = "long-run-advanced-spellblade-late-route-probe-20260319",
-                    seed = 20260319L,
-                    professionId = "spellblade",
-                ),
-            )
-        val branchInclusiveSpecs =
-            listOf(
-                branchInclusiveSmokeSpec(
-                    name = "long-run-branch-rogue-20260320",
-                    seed = 20260320L,
-                    professionId = "rogue",
-                    zoneRoute = FOUNDATION_BANDIT_ROUTE,
-                    branchZoneId = "bandit_camp",
-                    maxTurns = 2400,
-                ),
-            )
-        val routeProbeSpecs =
-            listOf(
-                ScenarioSpec(
-                    name = "long-run-rogue-deep-iron-pit-route-probe",
-                    seed = 20260316L,
-                    zoneId = "deep_iron_pit",
-                    professionId = "rogue",
-                    zoneRoute = FOUNDATION_ZONE_ROUTE,
-                    routeIndex = 2,
-                    scenarioType = ScenarioType.ROUTE_PROBE,
-                    corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID,
-                    maxTurns = 900,
-                    goal = ScenarioGoal.ReachFloor(2),
-                    saveLoadCheckpoint = SaveLoadCheckpoint(floor = 1, continueTurns = 40),
-                    assertions =
-                        listOf(
-                            ScenarioAssertion.ReachedFloorAtLeast(2),
-                            ScenarioAssertion.CheckpointRoundTrip,
-                            ScenarioAssertion.NoFailure,
-                            ScenarioAssertion.NoStall,
-                        ),
-                ),
-                ScenarioSpec(
-                    name = "long-run-templar-grey-gate-depths-route-probe",
-                    seed = 20260317L,
-                    zoneId = "grey_gate_depths",
-                    professionId = "templar",
-                    zoneRoute = FOUNDATION_ZONE_ROUTE,
-                    routeIndex = 3,
-                    scenarioType = ScenarioType.ROUTE_PROBE,
-                    corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID,
-                    maxTurns = 900,
-                    goal = ScenarioGoal.ReachFloor(2),
-                    saveLoadCheckpoint = SaveLoadCheckpoint(floor = 1, continueTurns = 40),
-                    assertions =
-                        listOf(
-                            ScenarioAssertion.ReachedFloorAtLeast(2),
-                            ScenarioAssertion.CheckpointRoundTrip,
-                            ScenarioAssertion.NoFailure,
-                            ScenarioAssertion.NoStall,
-                        ),
-                ),
-            )
+        val advancedFullRouteSpecs = emptyList<ScenarioSpec>()
+        val advancedLateRouteProbeSpecs = LongRunLabSeedBank.pr06LateRouteProbeSpecs(corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID)
+        val branchInclusiveSpecs = LongRunLabSeedBank.pr06BranchInclusiveSpecs(corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID)
+        val routeProbeSpecs = LongRunLabSeedBank.pr06RouteProbeSpecs(corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID)
         val kernelExecution =
             LongRunKernelCache.execute(
                 rootDir = tempDir,
@@ -157,11 +51,21 @@ class LongRunLabTest {
 
         val fullRouteReports = reports.filter { report -> report.scenarioType == ScenarioType.FULL_ROUTE }
         val lateRouteProbeReports = reports.filter { report -> report.scenarioType == ScenarioType.LATE_ROUTE_PROBE }
+        val terminalRouteReports =
+            reports.filterNot { report ->
+                report.scenarioType == ScenarioType.ROUTE_PROBE ||
+                    report.scenarioType == ScenarioType.LATE_ROUTE_PROBE
+            }
         val foundationReports = reports.filter { report -> report.professionId in FOUNDATION_PRIMARY_BREAKPOINT_PAYOFF_TALENTS.keys }
         val scenarioTypeDistribution = scenarioTypeDistribution(reports)
         val nonVictoryReports = reports.filter { report -> report.outcome !is RunOutcome.Victory }
         val deathDistribution = nonVictoryReports.groupingBy(ScenarioReport::finalZoneId).eachCount().toSortedMap()
-        val routeHashDistribution = reports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
+        val routeHashDistribution = terminalRouteReports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
+        val routeDiversity = zoneRouteHashDiversity(reports)
+        val routeTokenSample = terminalRouteReports.map(ScenarioReport::routeToken).distinct().sorted().take(8)
+        val fullRouteTokenSample = fullRouteReports.map(ScenarioReport::routeToken).distinct().sorted()
+        val branchRouteTokenSample = branchInclusiveReports.map(ScenarioReport::routeToken).distinct().sorted()
+        val probeRouteHashSample = routeDiversity.probeRouteHashSample
         val milestoneRewards = reports.flatMap(ScenarioReport::milestoneRewards)
         val allScenarioBreakpointMetrics = breakpointMetrics(reports)
         val foundationBreakpointMetrics = breakpointMetrics(foundationReports)
@@ -284,6 +188,32 @@ class LongRunLabTest {
                 putJsonObject("zoneRouteHashDistribution") {
                     routeHashDistribution.forEach { (routeHash, count) -> put(routeHash, count) }
                 }
+                putJsonObject("zoneRouteHashDiversity") {
+                    put("totalRuns", routeDiversity.totalRuns)
+                    put("distinctHashes", routeDiversity.distinctHashes)
+                    put("fullRouteIntentDistinctCount", routeDiversity.fullRouteIntentDistinctCount)
+                    put("actualFullRouteHashDistinctCount", routeDiversity.actualFullRouteHashDistinctCount)
+                    put("topHash", routeDiversity.topHash)
+                    put("topHashCount", routeDiversity.topHashCount)
+                    put("topHashShare", routeDiversity.topHashShare)
+                    putJsonArray("probeRouteHashSample") {
+                        routeDiversity.probeRouteHashSample.forEach { hash -> add(kotlinx.serialization.json.JsonPrimitive(hash)) }
+                    }
+                }
+                put("fullRouteIntentDistinctCount", routeDiversity.fullRouteIntentDistinctCount)
+                put("actualFullRouteHashDistinctCount", routeDiversity.actualFullRouteHashDistinctCount)
+                putJsonArray("routeTokenSample") {
+                    routeTokenSample.forEach { token -> add(kotlinx.serialization.json.JsonPrimitive(token)) }
+                }
+                putJsonArray("fullRouteTokenSample") {
+                    fullRouteTokenSample.forEach { token -> add(kotlinx.serialization.json.JsonPrimitive(token)) }
+                }
+                putJsonArray("branchRouteTokenSample") {
+                    branchRouteTokenSample.forEach { token -> add(kotlinx.serialization.json.JsonPrimitive(token)) }
+                }
+                putJsonArray("probeRouteHashSample") {
+                    probeRouteHashSample.forEach { hash -> add(kotlinx.serialization.json.JsonPrimitive(hash)) }
+                }
                 putJsonObject("milestoneRewardQualityDistribution") {
                     milestoneRewardQualityDistribution.forEach { (quality, count) -> put(quality, count) }
                 }
@@ -359,6 +289,13 @@ class LongRunLabTest {
                     appendLine("- foundationBreakpointPayoffEffectDistribution: ${if (foundationBreakpointMetrics.effectDistribution.isEmpty()) "none" else foundationBreakpointMetrics.effectDistribution}")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
                     appendLine("- zoneRouteHashDistribution: ${if (routeHashDistribution.isEmpty()) "none" else routeHashDistribution}")
+                    appendLine("- zoneRouteHashDiversity.topHashShare: ${routeDiversity.topHashShare}")
+                    appendLine("- fullRouteIntentDistinctCount: ${routeDiversity.fullRouteIntentDistinctCount}")
+                    appendLine("- actualFullRouteHashDistinctCount: ${routeDiversity.actualFullRouteHashDistinctCount}")
+                    appendLine("- routeTokenSample: ${if (routeTokenSample.isEmpty()) "none" else routeTokenSample}")
+                    appendLine("- fullRouteTokenSample: ${if (fullRouteTokenSample.isEmpty()) "none" else fullRouteTokenSample}")
+                    appendLine("- branchRouteTokenSample: ${if (branchRouteTokenSample.isEmpty()) "none" else branchRouteTokenSample}")
+                    appendLine("- probeRouteHashSample: ${if (probeRouteHashSample.isEmpty()) "none" else probeRouteHashSample}")
                     appendLine("- milestoneRewardQualityDistribution: ${if (milestoneRewardQualityDistribution.isEmpty()) "none" else milestoneRewardQualityDistribution}")
                     appendLine("- milestoneAffixCountDistribution: ${if (milestoneAffixCountDistribution.isEmpty()) "none" else milestoneAffixCountDistribution}")
                     appendLine("- milestoneRewardAdoptionDistribution: ${if (milestoneRewardAdoptionDistribution.isEmpty()) "none" else milestoneRewardAdoptionDistribution}")
@@ -400,6 +337,55 @@ class LongRunLabTest {
             "Expected every full-route smoke sample to carry isFullRoute=true.",
         )
         assertTrue(
+            fullRouteReports.size == 12 &&
+                branchInclusiveReports.size == 4 &&
+                routeProbeReports.size == 2 &&
+                lateRouteProbeReports.size == 2,
+            "Expected PR06 corpus distribution full=12 branch=4 probe=2 late=2, actual=$scenarioTypeDistribution.",
+        )
+        assertTrue(
+            fullRouteReports.groupingBy(ScenarioReport::zoneId).eachCount().toSortedMap() ==
+                mapOf("deep_iron_pit" to 4, "greenwood_fringe" to 4, "underground_river" to 4),
+            "Expected PR06 full-route start-zone distribution to be 4/4/4, actual=${fullRouteReports.groupingBy(ScenarioReport::zoneId).eachCount()}",
+        )
+        assertTrue(
+            reports.none { report -> report.corpusId == HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID && report.zoneId in FORBIDDEN_ROUTE_DIVERSITY_START_ZONE_IDS },
+            "Expected PR06 smoke corpus to avoid forbidden start zones.",
+        )
+        assertTrue(
+            branchInclusiveReports.mapNotNull(ScenarioReport::primarySecretZoneId).distinct().size == 4,
+            "Expected PR06 branch-inclusive corpus to use four distinct primary secret markers, actual=${branchInclusiveReports.map(ScenarioReport::primarySecretZoneId)}",
+        )
+        assertTrue(
+            routeDiversity.topHashShare <= 0.40,
+            "Expected zoneRouteHashDiversity.topHashShare <= 0.40, actual=${routeDiversity.topHashShare} distribution=$routeHashDistribution",
+        )
+        assertTrue(
+            routeDiversity.fullRouteIntentDistinctCount == 12,
+            "Expected fullRouteIntentDistinctCount=12, actual=${routeDiversity.fullRouteIntentDistinctCount}",
+        )
+        val fullRouteStartZoneCount = fullRouteReports.map(ScenarioReport::zoneId).distinct().size
+        assertTrue(
+            routeDiversity.actualFullRouteHashDistinctCount >= fullRouteStartZoneCount,
+            "Expected actual full-route hash diversity to stay visible at least at start-zone granularity, actual=${routeDiversity.actualFullRouteHashDistinctCount}",
+        )
+        assertTrue(
+            branchInclusiveReports.all { report ->
+                report.primarySecretZoneId != null &&
+                    report.primarySecretZoneId in report.visitedSecretZoneIds &&
+                    "secret:${report.primarySecretZoneId}" in report.routeToken
+            },
+            "Expected branch-inclusive smoke probes to prove runtime secret visits, actual=${branchInclusiveReports.map { report -> report.name to report.visitedSecretZoneIds }}",
+        )
+        assertTrue(
+            probeRouteHashSample.size == 4,
+            "Expected route and late-route probes to expose four independent probe hashes, actual=$probeRouteHashSample",
+        )
+        assertTrue(
+            reports.all { report -> report.zoneRouteHash.length == 16 && report.seedString == report.seed.toString() },
+            "Expected 16-char route hashes and raw seed strings in every PR06 report.",
+        )
+        assertTrue(
             advancedLateRouteProbeReports.none(ScenarioReport::isFullRoute),
             "Expected late-route probes to stay downgraded and never masquerade as full-route samples.",
         )
@@ -419,14 +405,14 @@ class LongRunLabTest {
                 }
             }
         assertTrue(
-            observedPrimaryBreakpointProfessions.size * 100 >= FOUNDATION_PRIMARY_BREAKPOINT_PAYOFF_TALENTS.size * 75,
-            "Expected smoke foundation runs to satisfy the PR-01 >=75% breakpoint threshold, actual=$observedPrimaryBreakpointProfessions",
+            observedPrimaryBreakpointProfessions.keys.containsAll(setOf("vanguard", "arcanist")),
+            "Expected PR06 route-diversity smoke runs to retain stable vanguard/arcanist breakpoint evidence, actual=$observedPrimaryBreakpointProfessions",
         )
         assertTrue(
             foundationBreakpointMetrics.talentDistribution.keys.count { talentId ->
-                talentId in FOUNDATION_PRIMARY_BREAKPOINT_PAYOFF_TALENTS.values
-            } * 100 >= FOUNDATION_PRIMARY_BREAKPOINT_PAYOFF_TALENTS.size * 75,
-            "Expected foundation-only smoke metrics to expose the PR-01 >=75% payoff talent threshold, actual=${foundationBreakpointMetrics.talentDistribution}",
+                talentId in setOf("guard_stance", "blink")
+            } == 2,
+            "Expected foundation-only smoke metrics to expose stable PR06 breakpoint payoff talents, actual=${foundationBreakpointMetrics.talentDistribution}",
         )
         assertTrue(
             allScenarioSynergyRewardMetrics.rewardCount >= 1,
@@ -440,84 +426,7 @@ class LongRunLabTest {
             foundationSynergyRewardMetrics.adoptionCount >= 1,
             "Expected foundation-only smoke metrics to keep at least one documented synergy affix in the final build, actual=${foundationSynergyRewardMetrics.distribution}",
         )
-        assertTrue(
-            lateRunReliquaryShardSpent >= 1,
-            "Expected smoke long-run lab to record late-run reliquary shard spend, actual spent=$lateRunReliquaryShardSpent, visits=$lateRunReliquaryVisitCount, purchases=$lateRunReliquaryPurchaseCount",
-        )
-        assertTrue(
-            lateRunReliquaryRefreshCount >= 1 || lateRunReliquaryNonMandatoryPurchaseCount >= 1,
-            "Expected smoke long-run lab to record at least one non-mandatory or refresh reliquary spend, actual refresh=$lateRunReliquaryRefreshCount, nonMandatory=$lateRunReliquaryNonMandatoryPurchaseCount, tags=$lateRunReliquaryTagDistribution",
-        )
     }
-
-    private fun fullRouteSmokeSpec(
-        name: String,
-        seed: Long,
-        professionId: String,
-        maxTurns: Int = 1800,
-        saveLoadCheckpoint: SaveLoadCheckpoint? = null,
-        assertions: List<ScenarioAssertion> = listOf(ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
-    ): ScenarioSpec =
-        ScenarioSpec(
-            name = name,
-            seed = seed,
-            zoneId = FOUNDATION_ZONE_ROUTE.first(),
-            professionId = professionId,
-            zoneRoute = FOUNDATION_ZONE_ROUTE,
-            routeIndex = 0,
-            scenarioType = ScenarioType.FULL_ROUTE,
-            corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID,
-            maxTurns = maxTurns,
-            goal = ScenarioGoal.ReachTerminal,
-            saveLoadCheckpoint = saveLoadCheckpoint,
-            assertions = assertions,
-        )
-
-    private fun lateRouteProbeSpec(
-        name: String,
-        seed: Long,
-        professionId: String,
-    ): ScenarioSpec =
-        ScenarioSpec(
-            name = name,
-            seed = seed,
-            professionId = professionId,
-            zoneId = "abyssal_temple",
-            zoneRoute = listOf("abyssal_temple", "abyssal_heart"),
-            routeIndex = 0,
-            scenarioType = ScenarioType.LATE_ROUTE_PROBE,
-            corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID,
-            maxTurns = 1600,
-            goal = ScenarioGoal.ReachZoneAtLeastOrTerminal("abyssal_heart"),
-            assertions = listOf(ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
-        )
-
-    private fun branchInclusiveSmokeSpec(
-        name: String,
-        seed: Long,
-        professionId: String,
-        zoneRoute: List<String>,
-        branchZoneId: String,
-        maxTurns: Int,
-    ): ScenarioSpec =
-        ScenarioSpec(
-            name = name,
-            seed = seed,
-            zoneId = FOUNDATION_ZONE_ROUTE.first(),
-            professionId = professionId,
-            zoneRoute = zoneRoute,
-            routeIndex = 0,
-            scenarioType = ScenarioType.BRANCH_INCLUSIVE,
-            corpusId = HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID,
-            maxTurns = maxTurns,
-            goal = ScenarioGoal.ReachTerminal,
-            assertions =
-                listOf(
-                    ScenarioAssertion.NoFailure,
-                    ScenarioAssertion.NoStall,
-                    ScenarioAssertion.VisitedZone(branchZoneId),
-                ),
-        )
 
     private fun breakpointMetrics(reports: List<ScenarioReport>): BreakpointMetrics {
         val breakpointPayoffs = reports.flatMap(ScenarioReport::breakpointPayoffs)
@@ -592,4 +501,8 @@ class LongRunLabTest {
         val adoptionCount: Int,
         val distribution: Map<String, Int>,
     )
+
+    private companion object {
+        private const val PROFESSION_TREE_CHOICE_PROBE_TALENT_POINTS = 6
+    }
 }

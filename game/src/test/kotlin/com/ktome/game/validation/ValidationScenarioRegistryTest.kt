@@ -5,6 +5,7 @@ import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -213,6 +214,37 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `pr06 route diversity scenario matches fixed phase4 v4 contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr06"))
+
+        assertEquals("PR-06", scenario.prId)
+        assertEquals(ValidationPreset.MAPGEN_DIFF, scenario.runtime.preset)
+        assertEquals(2026042436L, scenario.runtime.seed)
+        assertEquals("rogue", scenario.runtime.professionId)
+        assertEquals("human", scenario.runtime.raceId)
+        assertEquals("greenwood_fringe", scenario.runtime.zoneId)
+        assertEquals(1, scenario.runtime.floor)
+        assertEquals(0, scenario.runtime.routeIndex)
+        assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+        assertEquals(
+            listOf(
+                "evidence/phase4-v4-pr06-scenario-distribution.png",
+                "evidence/phase4-v4-pr06-route-hash-diversity.png",
+                "evidence/phase4-v4-pr06-branch-inclusive-routes.png",
+                "evidence/phase4-v4-pr06-verifychanged-routing.png",
+                "evidence/phase4-v4-pr06-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals(
+            "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr06-long-run-route-diversity.md",
+            scenario.evidence.manualRecordPath,
+        )
+        assertEquals(listOf("log.validation.phase4_v4.action"), scenario.evidence.requiredLogEventKeys)
+        assertEquals("validation.phase4.v4.phase4-v4-pr06.evidence.summary_note", scenario.evidence.scenarioNoteLabelKey)
+    }
+
+    @Test
     fun `scenario yaml ids stay in parity with typed registry`() {
         val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
         val parity =
@@ -294,6 +326,21 @@ class ValidationScenarioRegistryTest {
 
         assertThrows(IllegalArgumentException::class.java) {
             scenario.runtime.copy(routeIndex = -2)
+        }
+    }
+
+    @Test
+    fun `mapgen diff runtime rejects route diversity forbidden start zones`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr00-selftest"))
+
+        assertThrows(IllegalArgumentException::class.java) {
+            scenario.runtime.copy(zoneId = "abyssal_temple")
+        }
+        val options = scenario.toSessionOptions()
+        assertThrows(IllegalArgumentException::class.java) {
+            options.copy(
+                foundationConfig = options.foundationConfig.copy(zoneId = "grey_gate_depths"),
+            )
         }
     }
 
@@ -514,6 +561,104 @@ class ValidationScenarioRegistryTest {
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "boss.variant.abyssal_eclipse.phase_override.entered" })
     }
 
+    @Test
+    fun `pr06 scenario actions expose route diversity and routing summaries`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr06"))
+        val repoRoot = tempDir.resolve("phase4-v4-pr06-artifacts")
+        writePr06ValidationArtifacts(repoRoot)
+
+        withRepoRootProperty(repoRoot) {
+            val session =
+                GameModule.newValidationSession(
+                    ValidationSessionRequest(
+                        saveManager = SaveManager(tempDir.resolve("phase4-v4-pr06-scenario-actions")),
+                        options = scenario.toSessionOptions(),
+                    ),
+                )
+
+            assertTrue(
+                session.perform(
+                    PlayerCommand.Validation(
+                        ValidationAction.Phase4V4ScenarioAction(
+                            scenarioId = scenario.id,
+                            actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                        ),
+                    ),
+                ),
+            )
+            val primaryResult = requireNotNull(session.validationSummarySnapshot()?.lastResult?.argumentValue("result"))
+            assertTrue(primaryResult.contains("artifactStatus=loaded"), primaryResult)
+            assertTrue(primaryResult.contains("full_route=98"), primaryResult)
+            assertTrue(primaryResult.contains("branch_inclusive=7"), primaryResult)
+            assertTrue(primaryResult.contains("route_probe=5"), primaryResult)
+            assertTrue(primaryResult.contains("late_route_probe=4"), primaryResult)
+            assertTrue(primaryResult.contains("zoneRouteHashDistribution=2_hashes,max=98/114"), primaryResult)
+            assertTrue(primaryResult.contains("topHashShare=0.13<=0.40"), primaryResult)
+            assertTrue(primaryResult.contains("branchInclusiveRoutes=1(secret:artifact_secret)"), primaryResult)
+
+            assertTrue(
+                session.perform(
+                    PlayerCommand.Validation(
+                        ValidationAction.Phase4V4ScenarioAction(
+                            scenarioId = scenario.id,
+                            actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                        ),
+                    ),
+                ),
+            )
+            val secondaryResult = requireNotNull(session.validationSummarySnapshot()?.lastResult?.argumentValue("result"))
+            assertTrue(secondaryResult.contains("verifyChangedArtifactStatus=loaded"), secondaryResult)
+            assertTrue(secondaryResult.contains(":game:longRunLab"), secondaryResult)
+            assertTrue(secondaryResult.contains(":tools:scopeCoverageLint"), secondaryResult)
+        }
+    }
+
+    @Test
+    fun `pr06 scenario actions prefer launch materialized route summaries`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr06"))
+        val primaryProperty = "artifactStatus=loaded;scenarioTypeDistribution={full_route=12,branch_inclusive=4}"
+        val evidenceProperty = "artifactStatus=loaded;verifyChangedArtifactStatus=loaded;verifyChangedTasks=:game:longRunLab"
+
+        withSystemProperty(Phase4V4Pr06WhiteboxProperties.PRIMARY_RESULT, primaryProperty) {
+            withSystemProperty(Phase4V4Pr06WhiteboxProperties.EVIDENCE_RESULT, evidenceProperty) {
+                val session =
+                    GameModule.newValidationSession(
+                        ValidationSessionRequest(
+                            saveManager = SaveManager(tempDir.resolve("phase4-v4-pr06-launch-summary")),
+                            options = scenario.toSessionOptions(),
+                        ),
+                    )
+
+                assertTrue(
+                    session.perform(
+                        PlayerCommand.Validation(
+                            ValidationAction.Phase4V4ScenarioAction(
+                                scenarioId = scenario.id,
+                                actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                            ),
+                        ),
+                    ),
+                )
+                val primaryResult = requireNotNull(session.validationSummarySnapshot()?.lastResult?.argumentValue("result"))
+                assertEquals(primaryProperty, primaryResult)
+
+                assertTrue(
+                    session.perform(
+                        PlayerCommand.Validation(
+                            ValidationAction.Phase4V4ScenarioAction(
+                                scenarioId = scenario.id,
+                                actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                            ),
+                        ),
+                    ),
+                )
+                val secondaryResult = requireNotNull(session.validationSummarySnapshot()?.lastResult?.argumentValue("result"))
+                assertTrue(secondaryResult.contains(evidenceProperty), secondaryResult)
+                assertTrue(secondaryResult.contains("uiSurface=>clientSmoke+goldenScreenshot"), secondaryResult)
+            }
+        }
+    }
+
 
     @Test
     fun `phase4 v4 scenario actions dispatch through validation command path`() {
@@ -571,6 +716,95 @@ class ValidationScenarioRegistryTest {
             ),
         )
         assertEquals(evidenceSummary, session.validationSummarySnapshot()?.scenarioEvidenceSummary)
+    }
+
+    private fun com.ktome.core.snapshot.RenderTextTokenSnapshot.argumentValue(name: String): String? =
+        arguments.firstOrNull { argument -> argument.name == name }?.value
+
+    private fun writePr06ValidationArtifacts(repoRoot: Path) {
+        val longRunPath = repoRoot.resolve("build/reports/harness/long-run-full.json")
+        Files.createDirectories(longRunPath.parent)
+        Files.writeString(longRunPath, """{"buildId":"test","scenarioCount":114}""")
+        val reportPath = repoRoot.resolve("tools/build/reports/verification/phase4/report-phase4-summary.json")
+        Files.createDirectories(reportPath.parent)
+        Files.writeString(
+            reportPath,
+            """
+            |{
+            |  "sections": {
+            |    "routeDiversity": {
+            |      "scenarioTypeDistribution": {
+            |        "full_route": 98,
+            |        "branch_inclusive": 7,
+            |        "route_probe": 5,
+            |        "late_route_probe": 4
+            |      },
+            |      "zoneRouteHashDistribution": {
+            |        "artifact_hash": 98,
+            |        "secondary_hash": 16
+            |      },
+            |      "zoneRouteHashDiversity": {
+            |        "totalRuns": 114,
+            |        "distinctHashes": 2,
+            |        "fullRouteIntentDistinctCount": 98,
+            |        "actualFullRouteHashDistinctCount": 9,
+            |        "topHash": "artifact_hash",
+            |        "topHashCount": 13,
+            |        "topHashShare": 0.13,
+            |        "probeRouteHashSample": [
+            |          "artifact_probe_hash"
+            |        ]
+            |      },
+            |      "routeTokenSample": [
+            |        "artifact_route>secret:artifact_secret",
+            |        "secondary_route"
+            |      ],
+            |      "probeRouteHashSample": [
+            |        "artifact_probe_hash"
+            |      ]
+            |    }
+            |  }
+            |}
+            """.trimMargin(),
+        )
+        val verifyChangedPath = repoRoot.resolve("build/verification/verify-changed/verify-changed-plan.json")
+        Files.createDirectories(verifyChangedPath.parent)
+        Files.writeString(
+            verifyChangedPath,
+            """
+            |{
+            |  "requestedTaskPaths": [
+            |    ":game:longRunLab",
+            |    ":tools:scopeCoverageLint"
+            |  ]
+            |}
+            """.trimMargin(),
+        )
+    }
+
+    private fun withRepoRootProperty(
+        repoRoot: Path,
+        block: () -> Unit,
+    ) {
+        withSystemProperty("ktome.repo.root", repoRoot.toString(), block)
+    }
+
+    private fun withSystemProperty(
+        name: String,
+        value: String,
+        block: () -> Unit,
+    ) {
+        val previous = System.getProperty(name)
+        System.setProperty(name, value)
+        try {
+            block()
+        } finally {
+            if (previous == null) {
+                System.clearProperty(name)
+            } else {
+                System.setProperty(name, previous)
+            }
+        }
     }
 
     private fun talentTreeNode(

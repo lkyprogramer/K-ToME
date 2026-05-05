@@ -2,6 +2,7 @@ package com.ktome.tools.whitebox
 
 import com.ktome.game.validation.ValidationScenarioDef
 import com.ktome.game.validation.ValidationScenarioRegistry
+import com.ktome.game.validation.Phase4V4Pr06WhiteboxProperties
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlin.io.path.createDirectories
@@ -12,6 +13,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 object Phase4V4WhiteboxScenarioCli {
     private val json = Json { prettyPrint = true }
@@ -101,6 +107,7 @@ object Phase4V4WhiteboxScenarioCli {
         val evidence = scenario.evidence
         val manualRecord = evidence.manualRecordPath
         val appExecutableSha256 = repoRelative(repoRoot, paths.appExecutableSha256)
+        val extraLaunchProperties = renderExtraLaunchProperties(repoRoot, scenario)
         return """
             |#!/usr/bin/env bash
             |set -euo pipefail
@@ -132,7 +139,8 @@ object Phase4V4WhiteboxScenarioCli {
             |} > "${'$'}APP_LOG"
             |cp "${'$'}APP_LOG" "${'$'}SCENARIO_APP_LOG"
             |BEFORE_PIDS="$(pgrep -f "${'$'}APP_EXECUTABLE" || true)"
-            |JAVA_TOOL_OPTIONS="-Duser.home=$runtimeHome -Dktome.validation.scenario=${scenario.id.value} -Dktome.whitebox.root=$whiteboxRoot -Dktome.whitebox.evidenceDir=$evidenceDir -Dktome.whitebox.manualRecord=$manualRecord -Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"
+            |$extraLaunchProperties
+            |JAVA_TOOL_OPTIONS="-Duser.home=$runtimeHome -Dktome.validation.scenario=${scenario.id.value} -Dktome.repo.root=${'$'}REPO_ROOT -Dktome.whitebox.root=$whiteboxRoot -Dktome.whitebox.evidenceDir=$evidenceDir -Dktome.whitebox.manualRecord=$manualRecord -Dktome.whitebox.appHash=${'$'}EXPECTED_HASH${'$'}EXTRA_JAVA_TOOL_OPTIONS"
             |env JAVA_TOOL_OPTIONS="${'$'}JAVA_TOOL_OPTIONS" open -n "${'$'}APP_BUNDLE"
             |APP_PID=""
             |for _ in {1..20}; do
@@ -156,6 +164,23 @@ object Phase4V4WhiteboxScenarioCli {
             |
         """.trimMargin()
     }
+
+    private fun renderExtraLaunchProperties(
+        repoRoot: Path,
+        scenario: ValidationScenarioDef,
+    ): String =
+        if (scenario.id.value == "phase4-v4-pr06") {
+            val summary = Phase4V4Pr06LaunchSummary.fromArtifacts(repoRoot)
+            val primary = shellSingleQuote(summary.primaryResult)
+            val evidence = shellSingleQuote(summary.evidenceResult)
+            """
+                |PR06_PRIMARY_RESULT=$primary
+                |PR06_EVIDENCE_RESULT=$evidence
+                |EXTRA_JAVA_TOOL_OPTIONS=" -D${Phase4V4Pr06WhiteboxProperties.PRIMARY_RESULT}=${'$'}PR06_PRIMARY_RESULT -D${Phase4V4Pr06WhiteboxProperties.EVIDENCE_RESULT}=${'$'}PR06_EVIDENCE_RESULT"
+            """.trimMargin()
+        } else {
+            """EXTRA_JAVA_TOOL_OPTIONS="""".trimMargin()
+        }
 
     private fun renderRunbook(
         repoRoot: Path,
@@ -349,6 +374,186 @@ object Phase4V4WhiteboxScenarioCli {
     }
 
     private fun fail(message: String): Nothing = throw IllegalArgumentException(message)
+
+    private fun shellSingleQuote(value: String): String = "'" + value.replace("'", "'\"'\"'") + "'"
+}
+
+private data class Phase4V4Pr06LaunchSummary(
+    val primaryResult: String,
+    val evidenceResult: String,
+) {
+    companion object {
+        private val canonicalReportPath = Path.of("tools/build/reports/verification/phase4/report-phase4-summary.json")
+        private val longRunProducerPath = Path.of("build/reports/harness/long-run-full.json")
+        private val verifyChangedPlanPath = Path.of("build/verification/verify-changed/verify-changed-plan.json")
+        private val summaryJson = Json { ignoreUnknownKeys = true }
+
+        fun fromArtifacts(repoRoot: Path): Phase4V4Pr06LaunchSummary {
+            val canonicalReport = repoRoot.resolve(canonicalReportPath)
+            val longRunProducer = repoRoot.resolve(longRunProducerPath)
+            val verifyChangedPlan = repoRoot.resolve(verifyChangedPlanPath)
+            val canonicalPayload = readJsonObject(canonicalReport)
+            val producerPayload = readJsonObject(longRunProducer)
+            val routeDiversity =
+                canonicalPayload?.objectOrNull("sections")?.objectOrNull("routeDiversity")
+                    ?: canonicalPayload?.objectOrNull("routeDiversity")
+                    ?: producerPayload
+            val artifactStatus =
+                artifactStatus(
+                    canonicalReport = canonicalReport,
+                    longRunProducer = longRunProducer,
+                    routeDiversity = routeDiversity,
+                )
+            val producerArtifactStatus = if (longRunProducer.exists()) "loaded" else "missing"
+            val verifyChangedArtifactStatus = if (verifyChangedPlan.exists()) "loaded" else "missing"
+            val sourcePath = if (canonicalPayload != null) canonicalReportPath else longRunProducerPath
+            val verifyChangedTasks =
+                readJsonObject(verifyChangedPlan)
+                    ?.stringList("requestedTaskPaths")
+                    .orEmpty()
+
+            return Phase4V4Pr06LaunchSummary(
+                primaryResult =
+                    primaryResultText(
+                        routeDiversity = routeDiversity,
+                        artifactStatus = artifactStatus,
+                        sourcePath = sourcePath,
+                        producerArtifactStatus = producerArtifactStatus,
+                    ),
+                evidenceResult =
+                    evidenceResultText(
+                        routeDiversity = routeDiversity,
+                        artifactStatus = artifactStatus,
+                        sourcePath = sourcePath,
+                        producerArtifactStatus = producerArtifactStatus,
+                        verifyChangedArtifactStatus = verifyChangedArtifactStatus,
+                        verifyChangedTasks = verifyChangedTasks,
+                    ),
+            )
+        }
+
+        private fun artifactStatus(
+            canonicalReport: Path,
+            longRunProducer: Path,
+            routeDiversity: JsonObject?,
+        ): String =
+            when {
+                routeDiversity == null -> "unavailable"
+                !canonicalReport.exists() -> "producerOnly"
+                longRunProducer.exists() &&
+                    java.nio.file.Files.getLastModifiedTime(longRunProducer).toMillis() >
+                    java.nio.file.Files.getLastModifiedTime(canonicalReport).toMillis() -> "stale"
+                else -> "loaded"
+            }
+
+        private fun primaryResultText(
+            routeDiversity: JsonObject?,
+            artifactStatus: String,
+            sourcePath: Path,
+            producerArtifactStatus: String,
+        ): String {
+            val payload =
+                routeDiversity
+                    ?: return "artifactStatus=unavailable;artifact=$sourcePath;producerArtifactStatus=$producerArtifactStatus"
+            val scenarioDistribution = payload.intMap("scenarioTypeDistribution")
+            val routeHashDistribution = payload.intMap("zoneRouteHashDistribution")
+            val diversity = payload.objectOrNull("zoneRouteHashDiversity")
+            val routeTokenSample = payload.stringList("routeTokenSample")
+            val secretSamples = routeTokenSample.secretSamples()
+            return listOf(
+                "artifactStatus=$artifactStatus",
+                "producerArtifactStatus=$producerArtifactStatus",
+                "scenarioTypeDistribution=${scenarioDistribution.toCompactText()}",
+                "zoneRouteHashDistribution=${routeHashDistribution.summaryText()}",
+                "topHashShare=${diversity?.doubleValue("topHashShare") ?: 0.0}<=0.40",
+                "branchInclusiveRoutes=${secretSamples.size}(secret:${secretSamples.joinToString("|")})",
+            ).joinToString(";")
+        }
+
+        private fun evidenceResultText(
+            routeDiversity: JsonObject?,
+            artifactStatus: String,
+            sourcePath: Path,
+            producerArtifactStatus: String,
+            verifyChangedArtifactStatus: String,
+            verifyChangedTasks: List<String>,
+        ): String {
+            val payload =
+                routeDiversity
+                    ?: return "artifactStatus=unavailable;artifact=$sourcePath;producerArtifactStatus=$producerArtifactStatus;verifyChangedArtifactStatus=$verifyChangedArtifactStatus"
+            val scenarioDistribution = payload.intMap("scenarioTypeDistribution")
+            val diversity = payload.objectOrNull("zoneRouteHashDiversity")
+            val topHashShare = diversity?.doubleValue("topHashShare") ?: 1.0
+            return listOf(
+                "artifactStatus=$artifactStatus",
+                "producerArtifactStatus=$producerArtifactStatus",
+                "full_route=${scenarioDistribution.getOrDefault("full_route", 0)}",
+                "branch_inclusive=${scenarioDistribution.getOrDefault("branch_inclusive", 0)}",
+                "route_probe=${scenarioDistribution.getOrDefault("route_probe", 0)}",
+                "late_route_probe=${scenarioDistribution.getOrDefault("late_route_probe", 0)}",
+                "topHashShare<=0.40:${topHashShare <= 0.4}",
+                "verifyChangedArtifactStatus=$verifyChangedArtifactStatus",
+                "verifyChangedTasks=${verifyChangedTasks.summaryText()}",
+            ).joinToString(";")
+        }
+
+        private fun readJsonObject(path: Path): JsonObject? =
+            if (!path.exists()) {
+                null
+            } else {
+                runCatching { summaryJson.parseToJsonElement(java.nio.file.Files.readString(path)).jsonObject }.getOrNull()
+            }
+    }
+}
+
+private fun JsonObject.objectOrNull(key: String): JsonObject? = this[key] as? JsonObject
+
+private fun JsonObject.stringList(key: String): List<String> =
+    (this[key] as? JsonArray)
+        ?.mapNotNull { element -> element.jsonPrimitive.contentOrNull }
+        .orEmpty()
+
+private fun JsonObject.intMap(key: String): Map<String, Int> =
+    objectOrNull(key)
+        ?.entries
+        ?.associate { (name, count) -> name to (count.jsonPrimitive.intOrNull ?: 0) }
+        .orEmpty()
+
+private fun JsonObject.intValue(key: String): Int = this[key]?.jsonPrimitive?.intOrNull ?: 0
+
+private fun JsonObject.doubleValue(key: String): Double = this[key]?.jsonPrimitive?.doubleOrNull ?: 0.0
+
+private fun Map<String, Int>.toCompactText(): String =
+    entries.joinToString(separator = ",", prefix = "{", postfix = "}") { (key, value) -> "$key=$value" }
+
+private fun Map<String, Int>.summaryText(): String {
+    val total = values.sum()
+    val maxCount = values.maxOrNull() ?: 0
+    return "${size}_hashes,max=$maxCount/$total"
+}
+
+private fun List<String>.secretSamples(): List<String> =
+    asSequence()
+        .filter { token -> "secret:" in token }
+        .mapNotNull { token ->
+            token
+                .split(">")
+                .firstOrNull { segment -> segment.startsWith("secret:") }
+                ?.removePrefix("secret:")
+        }
+        .distinct()
+        .take(4)
+        .toList()
+
+private fun List<String>.summaryText(): String {
+    val representativeTasks =
+        listOf(
+            ":game:longRunLab",
+            ":tools:scopeCoverageLint",
+            ":tools:reportPhase4Only",
+            ":tools:maintainabilityLint",
+        ).filter { task -> task in this }
+    return "${size}_tasks(${representativeTasks.joinToString("|")})"
 }
 
 private data class Phase4V4RunbookStep(

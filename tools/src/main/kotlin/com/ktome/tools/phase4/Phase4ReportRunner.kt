@@ -239,6 +239,10 @@ object Phase4ReportRunner {
                 longRun.metrics,
                 thresholds = CriticalPathPacingThresholds.fromBaseline(criticalPathPacingBaseline),
             )
+        val routeDiversityEntriesByMetricId =
+            Phase4AggregationInputRunner.routeDiversityEvaluation(task = longRun, baseline = criticalPathPacingBaseline)
+                .entries
+                .associateBy(EvaluationEntry::metricId)
         val bossPhaseIdentityEntriesByMetricId =
             Phase4AggregationInputRunner.bossPhaseIdentityEvaluation(task = boss, baseline = bossPhaseIdentityBaseline)
                 .entries
@@ -422,6 +426,12 @@ object Phase4ReportRunner {
                 outputSection = "inscription-shop-replacement",
             ).forEach { metricId ->
                 add(inscriptionShopReplacementEntriesByMetricId.getValue(metricId).toLegacyExperienceMetric(longRun.taskId))
+            }
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "longRunLab",
+                outputSection = "route-diversity",
+            ).forEach { metricId ->
+                add(routeDiversityEntriesByMetricId.getValue(metricId).toLegacyExperienceMetric(longRun.taskId))
             }
             addAll(
                 criticalPathPacingEvaluation.toExperienceMetrics(longRun.taskId).map { metric ->
@@ -634,6 +644,20 @@ object Phase4ReportRunner {
             appendLine("```json")
             appendLine(professionCapstoneBreakdown.toString())
             appendLine("```")
+            appendLine()
+            appendLine("## Route Diversity")
+            appendLine("- sourceTask: `${longRunTask.taskId}`")
+            appendLine("- `zoneRouteHashDiversity.topHashShare`: ${metricsById.getValue("zoneRouteHashDiversity.topHashShare").currentValueText} / ${metricsById.getValue("zoneRouteHashDiversity.topHashShare").status}")
+            appendLine("- `branchInclusiveCount`: ${metricsById.getValue("branchInclusiveCount").currentValueText} / ${metricsById.getValue("branchInclusiveCount").status}")
+            appendLine("- `fullRouteCount`: ${metricsById.getValue("fullRouteCount").currentValueText} / ${metricsById.getValue("fullRouteCount").status}")
+            appendLine("- `topologyCategoryDiversityPerSmokeRun.reportOnly`: ${metricsById.getValue("topologyCategoryDiversityPerSmokeRun.reportOnly").currentValueText} / ${metricsById.getValue("topologyCategoryDiversityPerSmokeRun.reportOnly").status}")
+            appendLine("- `fullRouteIntentDistinctCount`: ${metricsById.getValue("fullRouteIntentDistinctCount").currentValueText} / ${metricsById.getValue("fullRouteIntentDistinctCount").status}")
+            appendLine("- `scenarioTypeDistribution`: `${longRunTask.metrics.getValue("scenarioTypeDistribution")}`")
+            appendLine("- `zoneRouteHashDistribution`: `${longRunTask.metrics.getValue("zoneRouteHashDistribution")}`")
+            appendLine("- `branchRouteHashDistribution`: `${longRunTask.metrics.getValue("branchRouteHashDistribution")}`")
+            appendLine("- `probeRouteHashSample`: `${longRunTask.metrics.getValue("probeRouteHashSample")}`")
+            longRunTask.metrics["fullRouteTokenSample"]?.let { appendLine("- `fullRouteTokenSample`: `$it`") }
+            longRunTask.metrics["branchRouteTokenSample"]?.let { appendLine("- `branchRouteTokenSample`: `$it`") }
             appendLine()
             appendLine("## Critical Path Pacing")
             appendLine("- sourceTask: `${longRunTask.taskId}`")

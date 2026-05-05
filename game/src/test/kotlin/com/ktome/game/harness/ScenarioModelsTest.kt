@@ -4,12 +4,88 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.run.RunOutcome
 import com.ktome.game.PlayerStatus
+import com.ktome.game.routeToken
+import com.ktome.game.secretRouteMarker
+import com.ktome.game.zoneRouteHash
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 
 class ScenarioModelsTest {
+    @Test
+    fun `pr06 route diversity corpus matches fixed scenario distribution`() {
+        val specs = Phase4V4Pr06RouteDiversityCorpus.smokeSpecs(HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID)
+        val summary = Phase4V4Pr06RouteDiversitySummary.from(specs)
+
+        assertEquals(20, specs.size)
+        assertEquals(12, summary.scenarioTypeDistribution.getValue("full_route"))
+        assertEquals(4, summary.scenarioTypeDistribution.getValue("branch_inclusive"))
+        assertEquals(2, summary.scenarioTypeDistribution.getValue("route_probe"))
+        assertEquals(2, summary.scenarioTypeDistribution.getValue("late_route_probe"))
+        assertEquals(12, summary.fullRouteIntentDistinctCount)
+        assertEquals(
+            specs
+                .filter { spec -> spec.scenarioType == ScenarioType.FULL_ROUTE }
+                .map(ScenarioSpec::zoneId)
+                .distinct()
+                .size,
+            summary.actualFullRouteHashDistinctCount,
+        )
+        assertEquals(3, summary.fullRouteTokenSample.size)
+        assertTrue(summary.topHashShare <= 0.4, "summary=$summary")
+        assertEquals(4, summary.probeRouteHashSample.size)
+        assertTrue(specs.none { spec -> spec.zoneId in FORBIDDEN_ROUTE_DIVERSITY_START_ZONE_IDS })
+        assertEquals(4, summary.branchRouteTokens.count { token -> "secret:" in token })
+        assertTrue(summary.routeTokenSample.any { token -> "secret:" in token })
+        assertTrue(summary.zoneRouteHashDistribution.keys.all { hash -> hash.length == 16 })
+    }
+
+    @Test
+    fun `route hash uses sixteen character sha of route token with secret markers`() {
+        val routeParts = listOf("greenwood_fringe", secretRouteMarker("greenwood_hidden_cache"), "deep_iron_pit")
+
+        assertEquals("c7413ee4001c8cf9", zoneRouteHash(routeParts))
+    }
+
+    @Test
+    fun `route token rejects reserved delimiters outside generated secret markers`() {
+        listOf(
+            listOf("greenwood_fringe", "deep>iron"),
+            listOf("greenwood_fringe", "deep|iron"),
+            listOf("greenwood_fringe", "deep:iron"),
+            listOf("greenwood_fringe", "secret:bad:marker"),
+        ).forEach { routeParts ->
+            assertThrows<IllegalArgumentException> {
+                routeToken(routeParts)
+            }
+        }
+    }
+
+    @Test
+    fun `scenario spec validates route token parts and probe route delimiters`() {
+        assertThrows<IllegalArgumentException> {
+            ScenarioSpec(
+                name = "invalid-route-token-part",
+                seed = 1L,
+                routeTokenParts = listOf("greenwood_fringe", "deep>iron"),
+                maxTurns = 1,
+                goal = ScenarioGoal.ReachFloor(1),
+            )
+        }
+
+        assertThrows<IllegalArgumentException> {
+            ScenarioSpec(
+                name = "invalid-probe-route",
+                seed = 1L,
+                probeRoute = listOf("greenwood:fringe"),
+                maxTurns = 1,
+                goal = ScenarioGoal.ReachFloor(1),
+            )
+        }
+    }
+
     @Test
     fun `scenario spec infers full route only for canonical shattered outpost mainline start`() {
         val spec =
@@ -174,6 +250,32 @@ class ScenarioModelsTest {
         val error = ScenarioAssertion.VisitedZone("bandit_camp").verify(report)
 
         assertTrue(error != null)
+    }
+
+    @Test
+    fun `primary secret assertion requires runtime secret visit and route marker`() {
+        val baseReport =
+            report(
+                success = true,
+                goalReached = true,
+                outcome = RunOutcome.InProgress,
+            ).copy(
+                primarySecretZoneId = "greenwood_hidden_cache",
+                routeToken = routeToken(listOf("greenwood_fringe")),
+                zonePath = listOf("greenwood_fringe"),
+            )
+
+        assertTrue(ScenarioAssertion.VisitedPrimarySecretZone.verify(baseReport) != null)
+
+        val markedWithoutVisit =
+            baseReport.copy(
+                routeToken = routeToken(listOf("greenwood_fringe", secretRouteMarker("greenwood_hidden_cache"))),
+            )
+        assertTrue(ScenarioAssertion.VisitedPrimarySecretZone.verify(markedWithoutVisit) != null)
+
+        val proven =
+            markedWithoutVisit.copy(visitedSecretZoneIds = setOf("greenwood_hidden_cache"))
+        assertEquals(null, ScenarioAssertion.VisitedPrimarySecretZone.verify(proven))
     }
 
     private fun observation(

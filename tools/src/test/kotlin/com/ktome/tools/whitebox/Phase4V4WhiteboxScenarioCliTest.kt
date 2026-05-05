@@ -203,6 +203,43 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `pr06 scenario generates route diversity evidence names from the typed registry`() {
+        val config = baseConfig(scenarioId = "phase4-v4-pr06")
+        writePr06Artifacts(config.repoRoot)
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                config,
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/phase4-v4-pr06/evidence/phase4-v4-pr06-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=phase4-v4-pr06"))
+        assertTrue(launchScript.contains("-Dktome.repo.root=${'$'}REPO_ROOT"))
+        assertTrue(launchScript.contains("PR06_PRIMARY_RESULT='artifactStatus=loaded;producerArtifactStatus=loaded;scenarioTypeDistribution={full_route=12,branch_inclusive=4,route_probe=2,late_route_probe=2}"))
+        assertTrue(launchScript.contains("zoneRouteHashDistribution=2_hashes,max=4/5"))
+        assertTrue(launchScript.contains("branchInclusiveRoutes=1(secret:greenwood_hidden_cache)"))
+        assertTrue(launchScript.contains("-Dktome.phase4.v4.pr06.primaryResult=${'$'}PR06_PRIMARY_RESULT"))
+        assertTrue(launchScript.contains("-Dktome.phase4.v4.pr06.evidenceResult=${'$'}PR06_EVIDENCE_RESULT"))
+        assertTrue(launchScript.contains("verifyChangedTasks=2_tasks(:game:longRunLab|:tools:scopeCoverageLint)"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("phase4-v4-pr06-scenario-distribution.png"))
+        assertTrue(runbook.contains("phase4-v4-pr06-route-hash-diversity.png"))
+        assertTrue(runbook.contains("phase4-v4-pr06-branch-inclusive-routes.png"))
+        assertTrue(runbook.contains("phase4-v4-pr06-verifychanged-routing.png"))
+        assertTrue(runbook.contains("log.validation.phase4_v4.action"))
+        assertTrue(runbook.contains("docs/review/phase4/v4-pr/manual-records/phase4-v4-pr06-long-run-route-diversity.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"phase4-v4-pr06\""))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr06-app.log"))
+        assertTrue(expectedEvidence.contains("phase4-v4-pr06-verifychanged-routing.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `whitebox materialization catalog stays in parity with scenario registry`() {
         val parity = Phase4V4WhiteboxScenarioMaterializationCatalog.validateRegistryParity()
 
@@ -228,6 +265,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr03
             |  - id: phase4-v4-pr04
             |  - id: phase4-v4-pr05
+            |  - id: phase4-v4-pr06
             |
             """.trimMargin(),
         )
@@ -243,5 +281,54 @@ class Phase4V4WhiteboxScenarioCliTest {
     private fun assertFalseMachinePath(payload: String) {
         assertTrue(!payload.contains("/" + "Users/"))
         assertTrue(!payload.contains("/" + "tmp/"))
+    }
+
+    private fun writePr06Artifacts(repoRoot: Path) {
+        val reportPath = repoRoot.resolve("tools/build/reports/verification/phase4/report-phase4-summary.json")
+        Files.createDirectories(reportPath.parent)
+        reportPath.writeText(
+            """
+            |{
+            |  "sections": {
+            |    "routeDiversity": {
+            |      "scenarioTypeDistribution": {
+            |        "full_route": 12,
+            |        "branch_inclusive": 4,
+            |        "route_probe": 2,
+            |        "late_route_probe": 2
+            |      },
+            |      "zoneRouteHashDistribution": {
+            |        "hash_a": 4,
+            |        "hash_b": 1
+            |      },
+            |      "zoneRouteHashDiversity": {
+            |        "fullRouteIntentDistinctCount": 12,
+            |        "actualFullRouteHashDistinctCount": 7,
+            |        "topHashShare": 0.25
+            |      },
+            |      "routeTokenSample": [
+            |        "greenwood_fringe>secret:greenwood_hidden_cache",
+            |        "deep_iron_pit>grey_gate_depths"
+            |      ]
+            |    }
+            |  }
+            |}
+            """.trimMargin(),
+        )
+        val longRunPath = repoRoot.resolve("build/reports/harness/long-run-full.json")
+        Files.createDirectories(longRunPath.parent)
+        longRunPath.writeText("""{"scenarioTypeDistribution":{"full_route":12}}""")
+        val verifyChangedPath = repoRoot.resolve("build/verification/verify-changed/verify-changed-plan.json")
+        Files.createDirectories(verifyChangedPath.parent)
+        verifyChangedPath.writeText(
+            """
+            |{
+            |  "requestedTaskPaths": [
+            |    ":game:longRunLab",
+            |    ":tools:scopeCoverageLint"
+            |  ]
+            |}
+            """.trimMargin(),
+        )
     }
 }
