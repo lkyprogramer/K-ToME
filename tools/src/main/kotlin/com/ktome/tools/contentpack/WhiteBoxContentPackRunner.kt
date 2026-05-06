@@ -147,12 +147,14 @@ object WhiteBoxContentPackRunner {
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.sample_pack_visibility_reported",
                                             passed =
-                                                kernelRun.analysis.summary.samplePackContentPlayerVisibilityRate >= 1.0 &&
-                                                    kernelRun.analysis.summary.samplePackTouchedContentIds.containsAll(requiredSamplePackTouchedIds) &&
+                                                kernelRun.analysis.summary.samplePackTouchedContentIds.containsAll(requiredSamplePackTouchedIds) &&
                                                     kernelRun.analysis.summary.samplePackTouchedContentIds.any { contentId ->
                                                         contentId.startsWith("sample.flooded_relics.") &&
                                                             contentId !in requiredSamplePackTouchedIds
-                                                    },
+                                                    } &&
+                                                    kernelRun.analysis.summary.samplePackAddOnlyMainPath &&
+                                                    kernelRun.analysis.summary.samplePackSecondarySecretSlotUsed &&
+                                                    kernelRun.analysis.summary.samplePackFixedSeedVisibilityCase,
                                             message =
                                                 "PR-07-origin / PR-09 sample fixed-seed route reaches sample secret zone, hidden event, and loot profile; " +
                                                     "deterministic reward traces include generated sample item evidence.",

@@ -2017,7 +2017,7 @@ class FoundationGameSession internal constructor(
 
     private fun preparePhase4V4Pr07SecondaryScene(): String {
         val sampleBindingId = com.ktome.core.world.solvability.SearchBindingId("sample.flooded_relics.search.flooded_reliquary")
-        removeAllMonstersForValidation()
+        killAllMonstersForValidation()
         val crystalCachePoint = automationInteractablePoint("crystal_cache_chest") ?: return "sample_pack_crystal_cache_missing"
         automationMovePlayerTo(crystalCachePoint)
         if (!perform(PlayerCommand.Interact)) {
@@ -2029,7 +2029,7 @@ class FoundationGameSession internal constructor(
         return "sample_pack_secret_search_ready; bindingId=${sampleBindingId.value}"
     }
 
-    private fun removeAllMonstersForValidation() {
+    private fun killAllMonstersForValidation() {
         world.entitiesWith(MonsterTemplateId::class, Health::class)
             .toList()
             .forEach(world::destroyEntity)
