@@ -128,6 +128,18 @@ class ItemGenerator(
             specialTierEligibility = specialTierEligibility,
         ).item
 
+    fun generateSpecialTemplate(
+        templateId: String,
+        itemLevel: Int,
+    ): ItemInstance {
+        require(itemLevel > 0) { "ItemGenerator.generateSpecialTemplate itemLevel must be positive." }
+        val template =
+            requireNotNull(bundle.specialTemplate(templateId)) {
+                "Unknown special item template '$templateId'."
+            }
+        return buildSpecialItemInstance(template = template, itemLevel = itemLevel)
+    }
+
     private fun generateStandardItem(
         lootRoll: LootRollResult,
         previousPityTracker: PityTracker,
@@ -219,26 +231,7 @@ class ItemGenerator(
         previousPityTracker: PityTracker,
         template: SpecialItemTemplate,
     ): GeneratedItemRoll {
-        val base =
-            requireNotNull(bundle.baseItems.firstOrNull { item -> item.id == template.itemId }) {
-                "Special template '${template.id}' references unknown item '${template.itemId}'."
-            }
-        val material = template.fixedMaterialId?.let { materialId -> chooseMaterial(base = base, itemLevel = lootRoll.budget.qLvl, fixedMaterialId = materialId) }
-        val affixes =
-            template.fixedAffixIds.map { affixId ->
-                requireNotNull(bundle.affixes.firstOrNull { affix -> affix.id == affixId }) {
-                    "Special template '${template.id}' references unknown affix '$affixId'."
-                }
-            }
-        val item =
-            buildItemInstance(
-                base = base,
-                material = material,
-                affixes = affixes,
-                quality = RarityTier.RARE,
-                name = base.name,
-                specialTemplateId = template.id,
-            )
+        val item = buildSpecialItemInstance(template = template, itemLevel = lootRoll.budget.qLvl)
         return GeneratedItemRoll(
             item = item,
             rollResult = lootRoll,
@@ -249,12 +242,40 @@ class ItemGenerator(
                     previousPityTracker = previousPityTracker,
                     specialTier = template.specialTier,
                     specialTemplateId = template.id,
-                    affixCostBreakdown = affixes.map(AffixDef::toAffixCost),
+                    affixCostBreakdown = item.affixes.map(AffixDef::toAffixCost),
                     affixBudgetTarget = 0,
                     affixBudgetConsumed = 0,
                     affixBudgetDeviation = 0,
                     rawAffixBudgetShortfall = 0,
                 ),
+        )
+    }
+
+    private fun buildSpecialItemInstance(
+        template: SpecialItemTemplate,
+        itemLevel: Int,
+    ): ItemInstance {
+        val base =
+            requireNotNull(bundle.baseItems.firstOrNull { item -> item.id == template.itemId }) {
+                "Special template '${template.id}' references unknown item '${template.itemId}'."
+            }
+        val material =
+            template.fixedMaterialId?.let { materialId ->
+                chooseMaterial(base = base, itemLevel = itemLevel, fixedMaterialId = materialId)
+            }
+        val affixes =
+            template.fixedAffixIds.map { affixId ->
+                requireNotNull(bundle.affixes.firstOrNull { affix -> affix.id == affixId }) {
+                    "Special template '${template.id}' references unknown affix '$affixId'."
+                }
+            }
+        return buildItemInstance(
+            base = base,
+            material = material,
+            affixes = affixes,
+            quality = RarityTier.RARE,
+            name = base.name,
+            specialTemplateId = template.id,
         )
     }
 

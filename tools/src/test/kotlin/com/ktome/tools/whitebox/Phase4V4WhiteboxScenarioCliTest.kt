@@ -266,6 +266,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr04
             |  - id: phase4-v4-pr05
             |  - id: phase4-v4-pr06
+            |  - id: phase4-v4-pr07
             |
             """.trimMargin(),
         )
@@ -284,6 +285,9 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     private fun writePr06Artifacts(repoRoot: Path) {
+        val longRunPath = repoRoot.resolve("build/reports/harness/long-run-full.json")
+        Files.createDirectories(longRunPath.parent)
+        longRunPath.writeText("""{"scenarioTypeDistribution":{"full_route":12}}""")
         val reportPath = repoRoot.resolve("tools/build/reports/verification/phase4/report-phase4-summary.json")
         Files.createDirectories(reportPath.parent)
         reportPath.writeText(
@@ -315,9 +319,6 @@ class Phase4V4WhiteboxScenarioCliTest {
             |}
             """.trimMargin(),
         )
-        val longRunPath = repoRoot.resolve("build/reports/harness/long-run-full.json")
-        Files.createDirectories(longRunPath.parent)
-        longRunPath.writeText("""{"scenarioTypeDistribution":{"full_route":12}}""")
         val verifyChangedPath = repoRoot.resolve("build/verification/verify-changed/verify-changed-plan.json")
         Files.createDirectories(verifyChangedPath.parent)
         verifyChangedPath.writeText(

@@ -1,6 +1,6 @@
-id: fixture.sample_flooded_relics_override
+id: fixture_sample_flooded_relics_override
 version: 1.0.0
-schemaVersion: 1
+schemaVersion: 2
 gameVersionRange: ">=0.4.0 <0.5.0"
 namespace: fixture_sample_flooded_relics_override
 dependencies:
@@ -14,6 +14,6 @@ audioManifest: audio/audio-manifest.json
 overlays:
   - targetRef:
       registry: secret_zone
-      id: underground_river_crystal_rift
+      id: sample.flooded_relics.secret_zone.flooded_reliquary
     op: REPLACE
-    sourceFile: data/secret-zones/underground_river_crystal_rift.yaml
+    sourceFile: data/secret-zones/sample.flooded_relics.secret_zone.flooded_reliquary.yaml

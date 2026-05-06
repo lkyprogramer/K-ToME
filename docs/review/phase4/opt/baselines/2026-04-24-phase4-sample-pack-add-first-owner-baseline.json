@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "baselineId": "phase4-sample-pack-add-first-v1",
+  "domainId": "content-pack",
+  "mode": "BUDGET_THRESHOLD",
+  "metricDefinitionVersion": "phase4-v4-pr07-sample-pack-add-first-v1",
+  "approvedDebtKeys": [],
+  "expectedFailureCodes": [],
+  "ceilings": [],
+  "expectedMetricRanges": [
+    {
+      "metricId": "samplePackContentPlayerVisibilityRate.reportOnly",
+      "minValue": 1.0,
+      "notes": "Every active sample fixed-seed run must touch at least one sample content id through runtime play-path evidence."
+    }
+  ],
+  "sourceArtifactPath": "tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json",
+  "notes": [
+    "Phase4 v4 PR-07 report-only owner baseline for sample content pack ADD-first visibility.",
+    "This warning floor must stay visible in reportPhase4 but must not become a blocking release gate in PR-07."
+  ],
+  "metadata": {}
+}

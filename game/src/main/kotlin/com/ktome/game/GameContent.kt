@@ -22,6 +22,8 @@ import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.i18n.Localizer
+import com.ktome.game.contentpack.ContentPackKeyResolutionSummary
+import com.ktome.game.contentpack.ContentPackOverlaySummary
 import com.ktome.game.elites.BossVariantPhaseOverrideContracts
 import com.ktome.game.elites.BossVariantRegistry
 import com.ktome.game.elites.EliteMutationRegistry
@@ -97,6 +99,8 @@ internal data class GameContent(
     val localizer: Localizer,
     val activePackIds: List<PackId> = emptyList(),
     val activePackManifestVersions: Map<PackId, String> = emptyMap(),
+    val activePackOverlaySummaries: List<ContentPackOverlaySummary> = emptyList(),
+    val activePackKeyResolutionSummary: ContentPackKeyResolutionSummary = ContentPackKeyResolutionSummary(),
     val telegraphRegistry: TelegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
     val threatProfileRegistry: ThreatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
     val zoneMapgenProfileResolver: ZoneMapgenProfileResolver = EmptyZoneMapgenProfileResolver,

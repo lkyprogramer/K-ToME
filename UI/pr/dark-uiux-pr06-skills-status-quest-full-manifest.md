@@ -20,6 +20,7 @@
 | `UI06-M04` | status / quest / skill presentation | `client` | `StatusPresentationModelTest`, `StatusIconResolverTest` | `clientSmoke`, `goldenScreenshot` | `build/reports/tests/` | `required` |
 | `UI06-M05` | PR-03/05 rejected cell 返修 | `assets` / `tools` | coverage artifact diff check | `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=final-full` | dark coverage artifact | `N/A` |
 | `UI06-M06` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+| `UI06-M07` | validation overlay / pack summary | `client` | `ValidationPackSummaryTextTest`, validation smoke | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
 
 ### Gate Budget
 
@@ -39,6 +40,7 @@ canonical artifact 固定为 Round 8-9 / rejected polish contact sheet、key reg
 2. 完成 fallback、debug、missing、hidden 资源返修。
 3. 将新视觉纪元覆盖到 `visual-manifest.json` 的玩家可见资源。
 4. 把 PR-04 暂时复用的职业树 icon 切换到新风格资源。
+5. 将验证模式运行时 overlay、active content pack summary、scenario evidence summary 的玩家可见 presentation 纳入 dark-v1 全量覆盖；setup 页 layout 仍归 PR-01，最终证据归 PR-07。
 
 ## 2. 影响范围
 
@@ -50,7 +52,11 @@ canonical artifact 固定为 Round 8-9 / rejected polish contact sheet、key reg
 | `client/src/main/resources/manifests/visual-manifest.json` | 由 `syncPhase2Manifests` 同步生成 runtime manifest |
 | `client/src/main/kotlin/com/ktome/client/ui/status/StatusIconResolver.kt` | 确认 status icon key 覆盖 |
 | `client/src/main/kotlin/com/ktome/client/assets/TalentAssetReferences.kt` | 确认 talent/tree icon key 覆盖 |
+| `client/src/main/kotlin/com/ktome/client/render/ValidationPackSummaryText.kt` | 确认 validation overlay / active pack summary 文案 compact 且可读 |
+| `client/src/main/kotlin/com/ktome/client/render/ValidationScenarioEvidenceSummaryLines.kt` | 确认 validation evidence summary 不遮挡 HUD/日志 |
+| `client/src/main/kotlin/com/ktome/client/validation/ValidationScenarioPresentationCatalog.kt` | 确认 validation scenario presentation 不引入旧风格 marker |
 | `client/src/test/kotlin/com/ktome/client/ui/status/StatusIconResolverTest.kt` | 覆盖 `icon.status.*` 与 `icon.mutation.*` 双前缀解析 |
+| `client/src/test/kotlin/com/ktome/client/render/ValidationPackSummaryTextTest.kt` | 覆盖 active pack summary、fallback 和长文本 |
 
 ## 3. 资源范围
 
@@ -66,10 +72,10 @@ canonical artifact 固定为 Round 8-9 / rejected polish contact sheet、key reg
 Raw sheet 生成交接：
 
 1. 先按 PR-00 固定命令生成 Round 8-9 prompt 文件和 `prompt-index.json`。
-2. lky 在 Codex app 中执行 prompt，并将 PNG 放到 `sheet-plan.yaml.rawSheetPath` 指定位置。
+2. 逐个执行 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --overwrite`，由脚本调用 Codex CLI 并复制最新生成图片到 `sheet-plan.yaml.rawSheetPath` 指定位置。
 3. 文件名必须等于 `{sheetId}.png`，例如 `r08-skills-vanguard-berserker.png`、`r09-fallback-debug.png`、`r09-rejected-polish.png`。
 4. Round 7、Round 2-6 rejected cell 返修也必须走同一 prompt 文件和 raw path 机制，不允许直接替换切分后的单 PNG。
-5. PR 描述必须列出 prompt path、raw sheet path、raw sheet hash、coverage artifact 和 contact sheet QA path。
+5. PR 描述必须列出 prompt path、raw sheet path、raw sheet hash、Codex CLI transient source folder/source image 摘要、coverage artifact 和 contact sheet QA path。
 
 职业范围：
 
@@ -90,6 +96,7 @@ Raw sheet 生成交接：
 1. 不改技能效果、状态结算、damage type 枚举或 quest 规则。
 2. 不改音频资源，除非现有 lint 强制要求同步 manifest；如触发，必须补 `audioLint`。
 3. 不把旧资源删干净作为本 PR 目标；可保留历史/debug fallback，但玩家主路径必须指向新风格。
+4. 不改 validation scenario 选择、content pack 加载、scenario bootstrap 或 whitebox materialization 规则；只改 overlay / summary 的 presentation 与资源覆盖。
 
 ## 6. 验收标准
 
@@ -99,6 +106,7 @@ Raw sheet 生成交接：
 4. 职业树、HUD、背包、状态栏同时出现时，图标风格一致，不出现明显跨时代资源。
 5. 产出 `assets-src/image/manifests/dark-v1-manifest-coverage.json`。
 6. `assetLint / styleLint / manifestLint` 只作为旧资源合同和 canonical/runtime 一致性回归门禁，不作为 dark-v1 覆盖权威。
+7. 验证模式 overlay / active pack summary 在 debug client 与 PR-07 packaged app 场景中不遮挡地图、HUD、日志或任务；content pack、scenario、evidence summary 不回退到旧风格 marker。
 
 Coverage artifact 要求：
 
@@ -134,7 +142,7 @@ Manifest key 切换表必须至少包含：
 ```bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
-./gradlew assetLint styleLint manifestLint darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint :client:test --tests com.ktome.client.ui.status.StatusPresentationModelTest --tests com.ktome.client.ui.status.StatusIconResolverTest --tests com.ktome.client.ui.talent.TalentSidebarPresenterTest --tests com.ktome.client.input.InputHandlerTest --tests com.ktome.client.assets.ManifestResolveTest :client:clientSmoke :client:goldenScreenshot localeLint contractLint maintainabilityLint verifyChanged
+./gradlew assetLint styleLint manifestLint darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint :client:test --tests com.ktome.client.ui.status.StatusPresentationModelTest --tests com.ktome.client.ui.status.StatusIconResolverTest --tests com.ktome.client.ui.talent.TalentSidebarPresenterTest --tests com.ktome.client.input.InputHandlerTest --tests com.ktome.client.render.ValidationPackSummaryTextTest --tests com.ktome.client.assets.ManifestResolveTest :client:clientSmoke :client:goldenScreenshot localeLint contractLint maintainabilityLint verifyChanged
 ./gradlew syncPhase2Manifests manifestLint
 ```
 
@@ -152,4 +160,5 @@ sdk env
 1. 打开主 HUD、背包、状态栏、职业树、任务提示，确认 icon 风格统一。
 2. 触发至少 3 类状态和 2 类技能预览，确认状态/技能图标不混淆。
 3. 故意注入一个 missing key 的测试路径，确认 fallback 风格可接受且 report 可定位。
-4. 必填证据：skill/status/quest/profession tree 同屏截图、manifest coverage artifact、fallback injection record。
+4. 打开 validation overlay / active pack summary，确认 scenario、pack、evidence summary 可读且不遮挡 HUD/日志。
+5. 必填证据：skill/status/quest/profession tree 同屏截图、manifest coverage artifact、fallback injection record、`dark-uiux-pr07-validation-overlay` 的 PR-07 evidence 引用。

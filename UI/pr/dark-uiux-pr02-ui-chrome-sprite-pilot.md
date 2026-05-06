@@ -19,10 +19,11 @@
 | `UI02-M03` | §6 验收标准 / manifest coverage | `tools` | `ManifestResolveTest` | `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02` | dark manifest coverage report | `N/A` |
 | `UI02-M04` | §7 / §8 golden 与白盒证据 | `client` | client asset focused tests | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
 | `UI02-M05` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
+| `UI02-M06` | §4 standalone screen chrome key | `client` / `tools` | `ManifestResolveTest`, `MainMenuScreenTextTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
 
 ### Gate Budget
 
-预计重型任务：`assetLint`、`styleLint`、`manifestLint`、`darkKeyRegistryLint`、`darkSpriteSheetLint`、`spriteSheetMapLint`、`darkManifestCoverageLint`、`:client:clientSmoke`、`:client:goldenScreenshot`、`verifyChanged`。触发原因是 PR-02 首次提交正式 dark UI chrome / HUD sheet 到 manifest 与 golden。
+预计重型任务：`assetLint`、`styleLint`、`manifestLint`、`darkKeyRegistryLint`、`darkSpriteSheetLint`、`spriteSheetMapLint`、`darkManifestCoverageLint`、`:client:clientSmoke`、`:client:goldenScreenshot`、`verifyChanged`。触发原因是 PR-02 首次提交正式 dark UI chrome / HUD / standalone screen chrome sheet 到 manifest 与 golden。
 
 ### Canonical Artifact
 
@@ -37,6 +38,7 @@ canonical artifact 固定为 sheet plan、key registry、contact sheet QA、cano
 1. 跑通第一组正式 sheet：`r01-ui-chrome`、`r01-ui-controls`、`r01-ui-hud-icons`。
 2. 交付 `raw sheet -> sliced PNG -> processed PNG -> visual-manifest -> golden` 完整闭环。
 3. 新增 UI chrome / HUD key，并让 client 实际消费 panel/slot/modal/HUD 的最小可运行子集。
+4. 新增 standalone screen chrome / control key，供首页、验证 setup、结算页、错误页、loading state 统一消费；这些 screen 不得继续使用旧硬编码纯色块作为主视觉。
 
 ## 2. 影响范围
 
@@ -50,11 +52,12 @@ canonical artifact 固定为 sheet plan、key registry、contact sheet QA、cano
 | `client/src/main/resources/dark-v1/ui/` | 保存切分后的 runtime PNG |
 | `client/src/main/resources/manifests/visual-manifest.json` | 由 `syncPhase2Manifests` 同步生成 runtime manifest |
 | `client` renderer | 消费新 key，保留 fallback |
+| `client` standalone screens | 首页、验证 setup、结算、错误/loading 页消费共享 chrome/control key 或明确 fallback |
 
 ## 3. Round 1 Sheet 内容
 
 1. `r01-ui-chrome`: `large-sheet 1024x1024 / 4x4 / 256x256`，包含 panel、corner、edge、tooltip、modal、slot frame。
-2. `r01-ui-controls`: `icon-sheet 1024x1024 / 8x8 / 128x128`，包含 tab、button、empty state、lock、invalid、target、selection marker、backpack、equipment、combat action、talent state glyph。
+2. `r01-ui-controls`: `icon-sheet 1024x1024 / 8x8 / 128x128`，包含 tab、button、empty state、lock、invalid、target、selection marker、back/confirm/copy、validation/debug marker、error/loading marker、backpack、equipment、combat action、talent state glyph。
 3. `r01-ui-hud-icons`: `icon-sheet 1024x1024 / 8x8 / 128x128`，包含 health、stamina、xp、gold、key、quest marker、log marker、warning。
 4. 切分后的 runtime canvas 由 category policy 决定；HUD 显示 `32x32`、装备 slot 显示 `48x48/64x64` 是 renderer/layout 决策，不是 source sheet cell 尺寸。
 5. 每个 cell 必须在 `sheet-plan.yaml` 写明 `targetKey` 和 `outputName`。
@@ -63,10 +66,10 @@ canonical artifact 固定为 sheet plan、key registry、contact sheet QA、cano
 Raw sheet 生成交接：
 
 1. 先按 PR-00 固定命令生成 `001-r01-ui-chrome.prompt.txt`、`002-r01-ui-controls.prompt.txt`、`003-r01-ui-hud-icons.prompt.txt` 和 `prompt-index.json`。
-2. lky 在 Codex app 中逐个执行 prompt。
-3. 生成图必须分别放到 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`、`r01-ui-controls.png`、`r01-ui-hud-icons.png`。
+2. 逐个执行 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --overwrite`。
+3. 脚本输出必须分别落到 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`、`r01-ui-controls.png`、`r01-ui-hud-icons.png`。
 4. raw PNG 放置完成后才运行切分、contact sheet 和 manifest coverage gate。
-5. PR 描述必须列出 prompt path、raw sheet path、raw sheet hash 和 contact sheet QA path。
+5. PR 描述必须列出 prompt path、raw sheet path、raw sheet hash、`scripts/codex-generate-image.py` 输出的 source folder/source image 摘要和 contact sheet QA path；source folder 只作为 transient evidence，不作为 canonical path。
 
 ## 4. UI Key Registry 初始清单
 
@@ -88,6 +91,16 @@ Raw sheet 生成交接：
 | `ui.hud.warning.icon` | `icon` | `r01-ui-hud-icons` | `missing_visual` | HUD danger/attention cue | `ManifestResolveTest` |
 | `ui.hud.quest_marker.icon` | `icon` | `r01-ui-hud-icons` | `missing_visual` | quest summary marker | `ManifestResolveTest` |
 | `ui.hud.log_marker.icon` | `icon` | `r01-ui-hud-icons` | `missing_visual` | log category marker | `ManifestResolveTest` |
+| `ui.screen.home.title_frame` | `ui_frame` | `r01-ui-chrome` | `ui.frame.panel.body` | `MainMenuScreen` title/header | `ManifestResolveTest` / `dark-uiux-pr02-standalone-screen-chrome` |
+| `ui.screen.home.action_frame` | `ui_frame` | `r01-ui-chrome` | `ui.frame.panel.body` | main menu action stack | `ManifestResolveTest` / `MainMenuScreenTextTest` |
+| `ui.screen.validation.badge` | `icon` | `r01-ui-controls` | `ui.hud.warning.icon` | validation mode marker | `ManifestResolveTest` |
+| `ui.screen.outcome.victory_marker` | `icon` | `r01-ui-controls` | `ui.hud.quest_marker.icon` | `VictoryScreen` summary marker | `ManifestResolveTest` |
+| `ui.screen.outcome.defeat_marker` | `icon` | `r01-ui-controls` | `ui.hud.warning.icon` | `GameOverScreen` summary marker | `ManifestResolveTest` |
+| `ui.screen.error.marker` | `icon` | `r01-ui-controls` | `ui.hud.warning.icon` | `UiErrorScreen` / runtime error state | `ManifestResolveTest` |
+| `ui.screen.loading.marker` | `icon` | `r01-ui-controls` | `ui.hud.log_marker.icon` | loading state | `ManifestResolveTest` |
+| `ui.control.back.icon` | `icon` | `r01-ui-controls` | `ui.hud.log_marker.icon` | standalone screen back action | `ManifestResolveTest` |
+| `ui.control.confirm.icon` | `icon` | `r01-ui-controls` | `ui.hud.quest_marker.icon` | standalone screen primary action | `ManifestResolveTest` |
+| `ui.control.copy.icon` | `icon` | `r01-ui-controls` | `ui.hud.log_marker.icon` | continue/error detail copy action | `ManifestResolveTest` |
 | `ui.control.backpack.icon` | `icon` | `r01-ui-controls` | `missing_visual` | left/right rail navigation | `ManifestResolveTest` |
 | `ui.control.equipment.icon` | `icon` | `r01-ui-controls` | `missing_visual` | equipment panel marker | `ManifestResolveTest` |
 | `ui.combat.action.icon` | `icon` | `r01-ui-controls` | `missing_visual` | combat action chooser | `ManifestResolveTest` |
@@ -100,7 +113,7 @@ Raw sheet 生成交接：
 | `ui.state.active.icon` | `icon` | `r01-ui-controls` | `missing_visual` | talent active glyph | `TalentSidebarPresenterTest` / `ManifestResolveTest` |
 | `ui.state.reserve.icon` | `icon` | `r01-ui-controls` | `missing_visual` | talent reserve glyph | `TalentSidebarPresenterTest` / `ManifestResolveTest` |
 
-`missing_visual` 只允许作为 PR-02 owner-scope 早期 fallback；PR-06 final-full 必须用 dark-v1 fallback/polish 资源替换玩家主路径中的旧风格 fallback。
+`missing_visual` 只允许作为 PR-02 owner-scope 早期 fallback；PR-06 final-full 必须用 dark-v1 fallback/polish 资源替换玩家主路径中的旧风格 fallback。standalone screen key 必须优先复用 `ui.frame.*` 和 `ui.control.*`，只有确实需要语义区分时才新增 `ui.screen.*`，避免为每个 screen 生成一套不可复用 chrome。
 金币、钥匙、任务 marker 如果与 item/quest 图标复用同一图，必须通过 key registry `aliasOf` 表达；不得让 PR-02 与 PR-03/PR-06 分别生成语义相同但风格略不同的图。
 
 ## 5. 非目标
@@ -108,6 +121,7 @@ Raw sheet 生成交接：
 1. 不批量替换 538 个资源。
 2. 不引入 atlas/region manifest。
 3. 不生成技能、装备、怪物、地图 tile 资源。
+4. 不在 PR-02 重新设计首页、验证 setup、结算或错误页行为；PR-02 只交付这些 screen 可消费的共享 chrome/control 资源。
 
 ## 6. 验收标准
 
@@ -115,7 +129,8 @@ Raw sheet 生成交接：
 2. canonical/runtime `visual-manifest.json` 的 `rawOutputPath` 与 `sheet-plan.yaml.outputName` 完全一致。
 3. manifest 中新增 key 都能通过 `VisualManifestResolver` 解析。
 4. golden 能看到至少一个 panel/slot/modal chrome 和至少一个 HUD/icon 资源。
-5. 资源加载失败时使用正式 fallback，不出现空白方块或 crash。
+5. 首页、验证 setup、结算页、错误页至少各能解析共享 screen chrome/control key；未进入当前 golden 的 screen 必须在 PR-07 evidence index 中补证据。
+6. 资源加载失败时使用正式 fallback，不出现空白方块或 crash。
 
 ## 7. 验证
 
@@ -139,7 +154,8 @@ sdk env
 
 1. `dark-uiux-pr02-round1-chrome`：panel、slot、tooltip/modal frame 可见。
 2. `dark-uiux-pr02-hud-icons-pilot`：HP / stamina / XP / gold 至少 2 个来自新 sheet。
-3. contact sheet QA 路径和 manifest diff 路径必须写入 PR 描述。
+3. `dark-uiux-pr02-standalone-screen-chrome`：首页或验证 setup 至少一个 standalone screen 能看到新 screen chrome/control key。
+4. contact sheet QA 路径和 manifest diff 路径必须写入 PR 描述。
 
 ## 9. 回滚边界
 

@@ -57,6 +57,7 @@ import com.ktome.core.mapgen.VaultDef
 import com.ktome.core.mapgen.VaultTemplateDef
 import com.ktome.core.mapgen.ZoneMapgenProfile
 import com.ktome.core.mapgen.ZoneRewardProfile
+import com.ktome.core.mapgen.HiddenEntrancePlan
 import com.ktome.core.world.solvability.ContentRef
 import com.ktome.core.world.solvability.DiscoveryPredicate
 import com.ktome.core.world.solvability.DiscoveryPredicateType
@@ -170,7 +171,12 @@ import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.data.schema.ZoneConnectionSchemaV2
 import com.ktome.game.TalentProgression
 import com.ktome.game.contentpack.ContentPackResources
+import com.ktome.game.contentpack.ContentPackHiddenBranchBinding
+import com.ktome.game.contentpack.ContentPackHiddenBranchPathClass
+import com.ktome.game.contentpack.ContentPackHiddenBranchSlot
+import com.ktome.game.contentpack.ContentPackKeyResolutionSummary
 import com.ktome.game.contentpack.ContentPackLoadException
+import com.ktome.game.contentpack.ContentPackOverlaySummary
 import com.ktome.game.contentpack.ContentPackRuntimeResolver
 import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.contentpack.OverlayOp
@@ -187,6 +193,7 @@ import com.ktome.game.elites.MutationStatModifierDef
 import com.ktome.game.elites.MutationTier
 import com.ktome.game.elites.StatModifierRef
 import com.ktome.game.elites.TalentGrantRef
+import com.ktome.game.i18n.ClasspathTextResources
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
@@ -286,8 +293,183 @@ class DataLoader(
     val activePackManifestVersions: Map<PackId, String>
         get() = resolvedContentPackSelection.activePackManifestVersions
 
+    val activePackOverlaySummaries: List<ContentPackOverlaySummary>
+        get() {
+            val activePackIds = resolvedContentPackSelection.activePackIds.toSet()
+            return resolvedContentPackSelection.orderedPacks
+                .filter { pack -> pack.id in activePackIds }
+                .map { pack ->
+                    ContentPackOverlaySummary(
+                        packId = pack.id.value,
+                        namespace = pack.namespace,
+                        opCounts =
+                            OverlayOp.entries.associate { op ->
+                                op.name to pack.manifest.overlays.count { overlay -> overlay.op == op }
+                            },
+                    )
+                }
+        }
+
+    val activePackKeyResolutionSummary: ContentPackKeyResolutionSummary
+        get() = buildActivePackKeyResolutionSummary()
+
     private val resolvedContentPackSelection: ResolvedContentPackSelection
         get() = resolvedContentPackSelectionDelegate.value
+
+    private fun buildActivePackKeyResolutionSummary(): ContentPackKeyResolutionSummary {
+        val activePackIds = resolvedContentPackSelection.activePackIds.toSet()
+        val activePacks =
+            resolvedContentPackSelection.orderedPacks
+                .filter { pack -> pack.id in activePackIds }
+        if (activePacks.isEmpty()) {
+            return ContentPackKeyResolutionSummary()
+        }
+        val baseCatalog = loadBaseSchemaCatalog()
+        val baseLocaleKeys =
+            GameLocale.entries.flatMapTo(linkedSetOf()) { gameLocale ->
+                val rawBundle =
+                    ClasspathTextResources.read(
+                        LocalizationBundle::class.java,
+                        "/i18n/${gameLocale.id}.json",
+                    )
+                ContentPackResources.parseLocaleBundle(rawBundle).keys
+            }
+        val visualKeys = linkedSetOf<String>()
+        val audioKeys = linkedSetOf<String>()
+        val localeKeys = linkedSetOf<String>()
+        val requiredKeys = ContentPackKeyRequirements()
+        activePacks.forEach { pack ->
+            pack.manifest.visualManifest
+                ?.let(pack::resolvePath)
+                ?.let(ContentPackResources::parseVisualKeys)
+                ?.let(visualKeys::addAll)
+            pack.manifest.audioManifest
+                ?.let(pack::resolvePath)
+                ?.let(ContentPackResources::parseAudioKeys)
+                ?.let(audioKeys::addAll)
+            pack.localeBundlePaths().values.flatten().forEach { localePath ->
+                localeKeys += loadContentPackLocaleKeys(pack = pack, localePath = localePath)
+            }
+            pack.manifest.overlays.forEach { overlay ->
+                requiredKeys.add(parsePackOverlayPayload(pack = pack, overlay = overlay))
+            }
+        }
+        val mergedVisualKeys = baseCatalog.visualKeys + visualKeys
+        val mergedAudioKeys = baseCatalog.audioProfiles + audioKeys
+        val mergedLocaleKeys = baseLocaleKeys + localeKeys
+        return ContentPackKeyResolutionSummary(
+            resolvedVisualKeys = requiredKeys.visualKeys.count { key -> key in mergedVisualKeys },
+            resolvedAudioKeys = requiredKeys.audioKeys.count { key -> key in mergedAudioKeys },
+            resolvedLocaleKeys = requiredKeys.localeKeys.count { key -> key in mergedLocaleKeys },
+            overriddenKeys =
+                visualKeys.count { key -> key in baseCatalog.visualKeys } +
+                    audioKeys.count { key -> key in baseCatalog.audioProfiles },
+            warningVisualKeys = requiredKeys.visualKeys.filterNot { key -> key in mergedVisualKeys }.sorted(),
+            warningAudioKeys = requiredKeys.audioKeys.filterNot { key -> key in mergedAudioKeys }.sorted(),
+            warningLocaleKeys = requiredKeys.localeKeys.filterNot { key -> key in mergedLocaleKeys }.sorted(),
+        )
+    }
+
+    private class ContentPackKeyRequirements {
+        val visualKeys: MutableSet<String> = linkedSetOf()
+        val audioKeys: MutableSet<String> = linkedSetOf()
+        val localeKeys: MutableSet<String> = linkedSetOf()
+
+        fun add(payload: ParsedPackOverlayPayload) {
+            when (payload) {
+                is ParsedPackOverlayPayload.SecretZone -> add(payload.entry)
+                is ParsedPackOverlayPayload.Monster -> add(payload.entry)
+                is ParsedPackOverlayPayload.Item -> add(payload.entry)
+                is ParsedPackOverlayPayload.Material -> add(payload.entry)
+                is ParsedPackOverlayPayload.Affix -> add(payload.entry)
+                is ParsedPackOverlayPayload.SpecialItemTemplate -> add(payload.entry)
+                is ParsedPackOverlayPayload.EliteMutation -> {
+                    localeKeys += payload.entry.nameKey
+                    visualKeys += payload.entry.iconKey
+                }
+                is ParsedPackOverlayPayload.HiddenEvent,
+                is ParsedPackOverlayPayload.LootProfile,
+                is ParsedPackOverlayPayload.MutationStatModifier,
+                is ParsedPackOverlayPayload.BossVariant,
+                is ParsedPackOverlayPayload.ActionWeightProfile,
+                -> Unit
+            }
+        }
+
+        private fun add(entry: SecretZoneDef) {
+            addSemanticKeys(
+                nameKey = entry.nameKey,
+                descKey = entry.descKey,
+                visualKey = entry.visualKey,
+                iconKey = entry.iconKey,
+                audioProfile = entry.audioProfile,
+            )
+        }
+
+        private fun add(entry: MonsterSchemaV2) {
+            addSemanticKeys(
+                nameKey = entry.nameKey,
+                descKey = entry.descKey,
+                visualKey = entry.visualKey,
+                iconKey = entry.iconKey,
+                audioProfile = entry.audioProfile,
+            )
+        }
+
+        private fun add(entry: ItemSchemaV2) {
+            addSemanticKeys(
+                nameKey = entry.nameKey,
+                descKey = entry.descKey,
+                visualKey = entry.visualKey,
+                iconKey = entry.iconKey,
+                audioProfile = entry.audioProfile,
+            )
+        }
+
+        private fun add(entry: MaterialSchemaV2) {
+            addSemanticKeys(
+                nameKey = entry.nameKey,
+                descKey = entry.descKey,
+                visualKey = entry.visualKey,
+                iconKey = entry.iconKey,
+                audioProfile = entry.audioProfile,
+            )
+        }
+
+        private fun add(entry: AffixSchemaV2) {
+            addSemanticKeys(
+                nameKey = entry.nameKey,
+                descKey = entry.descKey,
+                visualKey = entry.visualKey,
+                iconKey = entry.iconKey,
+                audioProfile = entry.audioProfile,
+            )
+        }
+
+        private fun add(entry: SpecialItemTemplateSchemaV2) {
+            addSemanticKeys(
+                nameKey = entry.nameKey,
+                descKey = entry.descKey,
+                visualKey = entry.visualKey,
+                iconKey = entry.iconKey,
+                audioProfile = entry.audioProfile,
+            )
+        }
+
+        private fun addSemanticKeys(
+            nameKey: String,
+            descKey: String,
+            visualKey: String,
+            iconKey: String,
+            audioProfile: String,
+        ) {
+            localeKeys += nameKey
+            localeKeys += descKey
+            visualKeys += visualKey
+            visualKeys += iconKey
+            audioKeys += audioProfile
+        }
+    }
 
     fun loadSchemaCatalog(): SchemaCatalog {
         val baseCatalog = loadBaseSchemaCatalog()
@@ -503,6 +685,7 @@ class DataLoader(
         val bossVariantsById = baseCatalog.bossVariants.associateByTo(linkedMapOf(), BossVariantDef::id)
         val actionWeightProfilesById =
             baseCatalog.actionWeightProfiles.associateByTo(linkedMapOf(), ActionWeightProfileDef::id)
+        val zoneMapgenProfilesById = baseCatalog.zoneMapgenProfiles.associateByTo(linkedMapOf(), ZoneMapgenProfile::id)
 
         selection.orderedPacks.forEach { pack ->
             pack.manifest.overlays.forEach { overlay ->
@@ -617,6 +800,12 @@ class DataLoader(
                 }
             }
         }
+        applyContentPackHiddenBranchBindings(
+            selection = selection,
+            secretZonesById = secretZonesById,
+            hiddenEventsById = hiddenEventsById,
+            zoneMapgenProfilesById = zoneMapgenProfilesById,
+        )
 
         val mergedVisualKeys = linkedSetOf<String>().apply { addAll(baseCatalog.visualKeys); addAll(ContentPackResources.collectVisualKeys(selection)) }
         val mergedAudioProfiles = linkedSetOf<String>().apply { addAll(baseCatalog.audioProfiles); addAll(ContentPackResources.collectAudioKeys(selection)) }
@@ -642,9 +831,115 @@ class DataLoader(
             eliteMutations = eliteMutationsById.values.toList(),
             bossVariants = bossVariantsById.values.toList(),
             actionWeightProfiles = actionWeightProfilesById.values.toList(),
+            zoneMapgenProfiles = zoneMapgenProfilesById.values.toList(),
             visualKeys = mergedVisualKeys,
             audioProfiles = mergedAudioProfiles,
         )
+    }
+
+    private fun applyContentPackHiddenBranchBindings(
+        selection: ResolvedContentPackSelection,
+        secretZonesById: MutableMap<String, SecretZoneDef>,
+        hiddenEventsById: MutableMap<String, HiddenEventDef>,
+        zoneMapgenProfilesById: MutableMap<String, ZoneMapgenProfile>,
+    ) {
+        selection.orderedPacks.forEach { pack ->
+            pack.manifest.extensions.hiddenBranchBindings.forEach { binding ->
+                val secretZone =
+                    secretZonesById[binding.secretZoneId.id]
+                        ?: throw packManifestLoadException(
+                            code = "content-pack.hidden-branch-binding.secret-zone-missing",
+                            message = "Hidden branch binding '${binding.bindingId.value}' references missing secret zone '${binding.secretZoneId.id}'.",
+                            pack = pack,
+                            targetRef = binding.secretZoneId,
+                        )
+                hiddenEventsById[binding.hiddenEventId.id]
+                    ?: throw packManifestLoadException(
+                        code = "content-pack.hidden-branch-binding.hidden-event-missing",
+                        message = "Hidden branch binding '${binding.bindingId.value}' references missing hidden event '${binding.hiddenEventId.id}'.",
+                        pack = pack,
+                        targetRef = binding.hiddenEventId,
+                    )
+                if (binding.hiddenEventId !in secretZone.guaranteedContent) {
+                    throw packManifestLoadException(
+                        code = "content-pack.hidden-branch-binding.event-not-guaranteed",
+                        message = "Hidden branch binding '${binding.bindingId.value}' hiddenEventId must be guaranteed content on '${secretZone.id.id}'.",
+                        pack = pack,
+                        targetRef = binding.hiddenEventId,
+                    )
+                }
+                if (!secretZone.entryRule.predicates.any { predicate -> predicate.type == DiscoveryPredicateType.REQUIRED_TAG && predicate.requiredTag == binding.anchorTag }) {
+                    throw packManifestLoadException(
+                        code = "content-pack.hidden-branch-binding.anchor-tag-mismatch",
+                        message = "Hidden branch binding '${binding.bindingId.value}' anchorTag must match a REQUIRED_TAG predicate on '${secretZone.id.id}'.",
+                        pack = pack,
+                        targetRef = binding.secretZoneId,
+                        details = mapOf("anchorTag" to binding.anchorTag),
+                    )
+                }
+                val anchorId = binding.sourceAnchorId()
+                if (secretZone.entranceBindingId != anchorId) {
+                    throw packManifestLoadException(
+                        code = "content-pack.hidden-branch-binding.entrance-anchor-mismatch",
+                        message = "Hidden branch binding '${binding.bindingId.value}' must match secret zone entranceBindingId '${anchorId.value}'.",
+                        pack = pack,
+                        targetRef = binding.secretZoneId,
+                        details = mapOf("actualEntranceBindingId" to secretZone.entranceBindingId.value),
+                    )
+                }
+                if (!secretZone.selectorMatches(binding.slot)) {
+                    throw packManifestLoadException(
+                        code = "content-pack.hidden-branch-binding.selector-slot-mismatch",
+                        message = "Hidden branch binding '${binding.bindingId.value}' must match secret zone selector slot '${binding.slot.name.lowercase()}'.",
+                        pack = pack,
+                        targetRef = binding.secretZoneId,
+                    )
+                }
+                val profiles = zoneMapgenProfilesById.values.filter { profile -> profile.zoneId == binding.zoneId }
+                if (profiles.isEmpty()) {
+                    throw packManifestLoadException(
+                        code = "content-pack.hidden-branch-binding.zone-profile-missing",
+                        message = "Hidden branch binding '${binding.bindingId.value}' references missing mapgen zone '${binding.zoneId}'.",
+                        pack = pack,
+                        targetRef = binding.secretZoneId,
+                    )
+                }
+                profiles.forEach { profile ->
+                    if (profile.hiddenEntrancePlans.any { plan -> plan.sourceAnchorId == anchorId }) {
+                        throw packManifestLoadException(
+                            code = "content-pack.hidden-branch-binding.slot-conflict",
+                            message = "Hidden branch binding '${binding.bindingId.value}' conflicts with an existing hidden entrance plan in zone '${binding.zoneId}'.",
+                            pack = pack,
+                            targetRef = binding.secretZoneId,
+                            details = mapOf("sourceAnchorId" to anchorId.value, "profileId" to profile.id),
+                        )
+                    }
+                    if (profile.hiddenEntrancePlans.any { plan -> plan.bindingId == binding.bindingId }) {
+                        throw packManifestLoadException(
+                            code = "content-pack.hidden-branch-binding.duplicate-binding",
+                            message = "Hidden branch binding '${binding.bindingId.value}' is already declared in zone '${binding.zoneId}'.",
+                            pack = pack,
+                            targetRef = binding.secretZoneId,
+                            details = mapOf("profileId" to profile.id),
+                        )
+                    }
+                    zoneMapgenProfilesById[profile.id] =
+                        profile.copy(
+                            hiddenEntrancePlans =
+                                profile.hiddenEntrancePlans +
+                                    HiddenEntrancePlan(
+                                        bindingId = binding.bindingId,
+                                        sourceAnchorId = anchorId,
+                                        entranceAnchorId = anchorId,
+                                        targetAnchorId = NodeAnchorId("secret.${binding.secretZoneId.id}"),
+                                        targetSecretZoneId = binding.secretZoneId,
+                                        discoveryRule = secretZone.entryRule,
+                                        pathClass = binding.runtimePathClass(),
+                                    ),
+                        )
+                }
+            }
+        }
     }
 
     private fun parsePackOverlayPayload(
@@ -962,6 +1257,64 @@ class DataLoader(
                 ),
             ),
         )
+
+    private fun packManifestLoadException(
+        code: String,
+        message: String,
+        pack: ResolvedContentPack,
+        targetRef: ContentRef? = null,
+        sourcePath: Path? = null,
+        details: Map<String, String> = emptyMap(),
+    ): ContentPackLoadException =
+        ContentPackLoadException(
+            listOf(
+                com.ktome.game.contentpack.ContentPackDiagnostic(
+                    code = code,
+                    message = message,
+                    packId = pack.id,
+                    targetRef = targetRef,
+                    sourcePath = (sourcePath ?: pack.manifestPath).toString(),
+                    details = details,
+                ),
+            ),
+        )
+
+    private fun loadContentPackLocaleKeys(
+        pack: ResolvedContentPack,
+        localePath: Path,
+    ): Set<String> =
+        runCatching {
+            ContentPackResources.parseLocaleBundle(Files.readString(localePath)).keys
+        }.getOrElse { exception ->
+            throw packManifestLoadException(
+                code = "content-pack.locale-bundle.load-failure",
+                message = "Failed to load locale bundle at '$localePath'.",
+                pack = pack,
+                sourcePath = localePath,
+                details =
+                    mapOf(
+                        "exceptionType" to exception::class.java.name,
+                        "exceptionMessage" to (exception.message ?: "N/A"),
+                    ),
+            )
+        }
+
+    private fun ContentPackHiddenBranchBinding.sourceAnchorId(): NodeAnchorId =
+        when (slot) {
+            ContentPackHiddenBranchSlot.PRIMARY -> NodeAnchorId("hidden.branch")
+            ContentPackHiddenBranchSlot.SECONDARY -> NodeAnchorId("hidden.critical.adjacent")
+        }
+
+    private fun ContentPackHiddenBranchBinding.runtimePathClass(): PathClass =
+        when (pathClass) {
+            ContentPackHiddenBranchPathClass.OPTIONAL_SECRET -> PathClass.SECRET
+        }
+
+    private fun SecretZoneDef.selectorMatches(slot: ContentPackHiddenBranchSlot): Boolean =
+        when (slot) {
+            ContentPackHiddenBranchSlot.PRIMARY -> secretZoneSelector?.primarySlot == true
+            ContentPackHiddenBranchSlot.SECONDARY -> secretZoneSelector?.secondarySlot == true
+        }
 
     private sealed interface ParsedPackOverlayPayload {
         data class HiddenEvent(

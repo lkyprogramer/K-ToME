@@ -13,6 +13,7 @@ import com.ktome.tools.whitebox.WhiteBoxReportWriter
 import com.ktome.tools.whitebox.toVerificationReportHeader
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -29,6 +30,12 @@ object WhiteBoxContentPackRunner {
     const val HARNESS_ID: String = "whiteBoxContentPack"
     private const val DOMAIN_ID: String = "content-pack"
     private const val CORPUS_ID: String = "P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX"
+    private val requiredSamplePackTouchedIds: Set<String> =
+        setOf(
+            "sample.flooded_relics.secret_zone.flooded_reliquary",
+            "sample.flooded_relics.hidden_event.flooded_reliquary.reward",
+            "sample.flooded_relics.loot.flooded_reliquary.secret",
+        )
 
     fun run(): WhiteBoxContentPackRun {
         val kernelRun = ContentPackHarnessRunner.executeKernel()
@@ -88,6 +95,17 @@ object WhiteBoxContentPackRunner {
                                         put("precedenceFailureCount", kernelRun.analysis.summary.precedenceFailureCount)
                                         put("resourceContractFailureCount", kernelRun.analysis.summary.resourceContractFailureCount)
                                         put("generatedTemplateFailureCount", kernelRun.analysis.summary.generatedTemplateFailureCount)
+                                        put("samplePackContentPlayerVisibilityRate.reportOnly", kernelRun.analysis.summary.samplePackContentPlayerVisibilityRate)
+                                        putJsonArray("samplePackTouchedContentIds") {
+                                            kernelRun.analysis.summary.samplePackTouchedContentIds.forEach { contentId ->
+                                                add(JsonPrimitive(contentId))
+                                            }
+                                        }
+                                        put("samplePackAddOnlyMainPath", kernelRun.analysis.summary.samplePackAddOnlyMainPath)
+                                        put("samplePackSecondarySecretSlotUsed", kernelRun.analysis.summary.samplePackSecondarySecretSlotUsed)
+                                        put("samplePackFixedSeedVisibilityCase", kernelRun.analysis.summary.samplePackFixedSeedVisibilityCase)
+                                        put("activeSampleFixedSeedRunCount", kernelRun.analysis.summary.activeSampleFixedSeedRunCount)
+                                        put("touchedSampleRunCount", kernelRun.analysis.summary.touchedSampleRunCount)
                                         put("legacyLootProfileSchemaRejectCount", kernelRun.analysis.summary.legacyLootProfileSchemaRejectCount)
                                         putJsonArray("legacyLootProfileSchemaRejectSummaries") {
                                             kernelRun.analysis.summary.legacyLootProfileSchemaRejectSummaries.forEach { summary ->
@@ -125,6 +143,19 @@ object WhiteBoxContentPackRunner {
                                             ruleId = "content-pack.aggregate.generated_template_present",
                                             passed = kernelRun.analysis.summary.generatedTemplateFailureCount == 0,
                                             message = "Fixed-seed sample reward traces still reach sample_flooded_relics special templates.",
+                                        ),
+                                        WhiteBoxAssertionResult(
+                                            ruleId = "content-pack.aggregate.sample_pack_visibility_reported",
+                                            passed =
+                                                kernelRun.analysis.summary.samplePackContentPlayerVisibilityRate >= 1.0 &&
+                                                    kernelRun.analysis.summary.samplePackTouchedContentIds.containsAll(requiredSamplePackTouchedIds) &&
+                                                    kernelRun.analysis.summary.samplePackTouchedContentIds.any { contentId ->
+                                                        contentId.startsWith("sample.flooded_relics.") &&
+                                                            contentId !in requiredSamplePackTouchedIds
+                                                    },
+                                            message =
+                                                "PR-07-origin / PR-09 sample fixed-seed route reaches sample secret zone, hidden event, and loot profile; " +
+                                                    "deterministic reward traces include generated sample item evidence.",
                                         ),
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.precedence_verified",
@@ -255,6 +286,10 @@ object WhiteBoxContentPackRunner {
                         appendLine("lootProfileSpecialTemplateTagPreference: ${result.lootProfileSpecialTemplateTagPreference}")
                         appendLine("lootProfileAffixTagPreference: ${result.lootProfileAffixTagPreference}")
                         appendLine("specialTemplateIds: ${result.specialTemplateIds}")
+                        appendLine("samplePackTouchedContentIds: ${result.samplePackTouchedContentIds}")
+                        appendLine("samplePackAddOnlyMainPath: ${result.samplePackAddOnlyMainPath}")
+                        appendLine("samplePackSecondarySecretSlotUsed: ${result.samplePackSecondarySecretSlotUsed}")
+                        appendLine("samplePackFixedSeedVisibilityCase: ${result.samplePackFixedSeedVisibilityCase}")
                     },
                 tags = listOf("manifest", "merge", "content-pack"),
             ),
@@ -294,6 +329,7 @@ object WhiteBoxContentPackRunner {
                         appendLine("seedList: ${result.seedList}")
                         appendLine("headlessRunSucceeded: ${result.headlessRunSucceeded}")
                         appendLine("generatedSpecialTemplateIds: ${result.generatedSpecialTemplateIds}")
+                        appendLine("samplePackTouchedContentIds: ${result.samplePackTouchedContentIds}")
                         appendLine("fallbackToBaseVerified: ${result.fallbackToBaseVerified}")
                     },
                 tags = listOf("headless", "seed", "reward"),

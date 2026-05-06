@@ -1,6 +1,6 @@
 id: fixture.sample_flooded_relics_bias_split
 version: 1.0.0
-schemaVersion: 1
+schemaVersion: 2
 gameVersionRange: ">=0.4.0 <0.5.0"
 namespace: fixture_sample_flooded_relics_bias_split
 dependencies:

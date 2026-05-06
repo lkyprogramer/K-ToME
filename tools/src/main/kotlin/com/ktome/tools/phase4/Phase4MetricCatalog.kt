@@ -208,6 +208,14 @@ internal object Phase4MetricCatalog {
                 decisionNotes = "Unlike the staged adoption and non-weapon floors, preferred source coverage is part of the current hardening contract and must fail before long-run verification.",
             ),
             Phase4MetricSpec(
+                id = "samplePackContentPlayerVisibilityRate.reportOnly",
+                ownerTaskId = "whiteBoxContentPack",
+                outputSection = "content-pack-visibility",
+                formula = "touchedSampleRuns / activeSampleFixedSeedRuns",
+                failSemantics = "Report-only in PR07; values below 100% must warn but must not become a release-facing blocking gate.",
+                decisionNotes = "Runtime touch evidence must come from the fixed-seed whiteBoxContentPack trace, not from registry presence.",
+            ),
+            Phase4MetricSpec(
                 id = "zoneRouteHashDiversity.topHashShare",
                 ownerTaskId = "longRunLab",
                 outputSection = "route-diversity",

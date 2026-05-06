@@ -29,6 +29,8 @@ internal object Phase4OwnerBaselineRegistry {
         "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json"
     const val TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH: String =
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-terrain-per-zone-lower-bound-baseline.json"
+    const val SAMPLE_PACK_ADD_FIRST_BASELINE_RELATIVE_PATH: String =
+        "docs/review/phase4/opt/baselines/2026-04-24-phase4-sample-pack-add-first-owner-baseline.json"
 
     private val baselinePathsByTaskId: Map<String, List<String>> =
         mapOf(
@@ -45,6 +47,7 @@ internal object Phase4OwnerBaselineRegistry {
                 ),
             "bossHarness" to listOf(BOSS_PHASE_IDENTITY_BASELINE_RELATIVE_PATH),
             "terrainInteractionBatch" to listOf(TERRAIN_UNIFIED_BASELINE_RELATIVE_PATH, TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH),
+            "whiteBoxContentPack" to listOf(SAMPLE_PACK_ADD_FIRST_BASELINE_RELATIVE_PATH),
         )
 
     fun registeredTaskIds(): Set<String> = baselinePathsByTaskId.keys
@@ -73,6 +76,8 @@ internal object Phase4OwnerBaselineRegistry {
     fun terrainUnifiedBaselinePath(): String = ownerBaselinePaths("terrainInteractionBatch")[0]
 
     fun terrainPerZoneBaselinePath(): String = ownerBaselinePaths("terrainInteractionBatch")[1]
+
+    fun samplePackAddFirstBaselinePath(): String = ownerBaselinePaths("whiteBoxContentPack").single()
 
     fun allOwnerBaselinePaths(): Set<String> =
         baselinePathsByTaskId.values

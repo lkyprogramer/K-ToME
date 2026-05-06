@@ -26,7 +26,7 @@
 
 ### Canonical Artifact
 
-canonical artifact 固定为 `UI/sprite-sheets/sheet-plan.yaml`、`UI/sprite-sheets/key-registry.yaml`、canonical/runtime visual manifest、dark coverage artifact 和 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。Codex app 下载目录、dry-run 临时 PNG 和本机绝对路径不得进入合同。
+canonical artifact 固定为 `UI/sprite-sheets/sheet-plan.yaml`、`UI/sprite-sheets/key-registry.yaml`、canonical/runtime visual manifest、dark coverage artifact 和 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。`/Users/luo/.codex/generated_images`、dry-run 临时 PNG 和本机绝对路径不得进入合同。
 
 ### Failure Rule
 
@@ -36,10 +36,10 @@ PR-00 的 gate 失败必须先修 schema、registry、sheet plan 或 manifest au
 
 1. 冻结 `ktome-dark-fantasy-sprite-ui-v1` 风格合同，作为后续 PR 的唯一视觉判断入口。
 2. 定义 `UI/sprite-sheets/sheet-plan.yaml` 的 schema、命名、cell mapping、切分输出和 QA report。
-3. 定义 prompt 生成、Codex app 手工生图交接、切图、contact sheet、manifest diff、mapping verify 的输入输出合同。
+3. 定义 prompt 生成、Codex CLI 生图脚本交接、切图、contact sheet、manifest diff、mapping verify 的输入输出合同。
 4. 选择 Round 1 中任一 `r01-*` sheet 做 dry-run 示例，但本 PR 不提交正式 runtime 资源。
 5. 新增或接线 root gate：`darkKeyRegistryLint`、`darkSpriteSheetLint`、`spriteSheetMapLint`、`darkManifestCoverageLint`。
-6. 固定 Codex app 手工生图交接流程：脚本只生成 prompt，你手动生成 raw PNG，脚本再切分和验证。
+6. 固定 Codex CLI 生图交接流程：脚本生成 prompt，`scripts/codex-generate-image.py` 调用 `codex exec` 并复制最新生成图片到 `rawSheetPath`，后续脚本再切分和验证。
 
 ## 2. 影响范围
 
@@ -74,6 +74,7 @@ PR-00 的 gate 失败必须先修 schema、registry、sheet plan 或 manifest au
 | Script | Input | Output |
 | --- | --- | --- |
 | `scripts/generate_sheet_prompt.py` | `UI/sprite-sheets/sheet-plan.yaml` | `UI/sprite-sheets/prompts/dark-v1/*.prompt.txt` + `prompt-index.json` |
+| `scripts/codex-generate-image.py` | prompt text + `rawSheetPath` | `assets-src/image/raw/sheets/dark-v1/{sheetId}.png` |
 | `scripts/verify_dark_key_registry.py` | key registry + sheet plan | lint result + optional `build/reports/dark-v1/key-registry.json` |
 | `scripts/slice_spritesheet.py` | sheet plan + raw sheet | `client/src/main/resources/dark-v1/**/*.png` |
 | `scripts/render_contact_sheet.py` | sheet plan + sliced PNG | `assets-src/image/contact-sheets/dark-v1/*.png` |
@@ -108,12 +109,19 @@ Raw sheet 获取流程：
 1. prompt 只能由 `generate_sheet_prompt.py` 从 `sheet-plan.yaml` 生成。
 2. prompt 文件名固定为 `{threeDigitOrder}-{sheetId}.prompt.txt`，例如 `001-r01-ui-chrome.prompt.txt`。
 3. prompt 文件头必须写出 `Prompt ID / Sheet ID / Expected output file / Canvas / Grid / Cell / Style tag`。
-4. raw PNG 只能由 lky 在 Codex app 中按 prompt 手动生成；仓库脚本不直接调用生图服务。
-5. 生成后的 PNG 必须重命名并放到 `Expected output file`，也就是 `sheet-plan.yaml.rawSheetPath`。
+4. raw PNG 只能由 `scripts/codex-generate-image.py` 调用 Codex CLI 生成并复制到 `Expected output file`，也就是 `sheet-plan.yaml.rawSheetPath`。
+5. `scripts/codex-generate-image.py` 固定执行 `codex exec "<prompt>" --skip-git-repo-check`，然后按修改时间选取 `/Users/luo/.codex/generated_images` 下最新文件夹里的最新图片。
 6. 正式 raw 目录 `assets-src/image/raw/sheets/dark-v1/` 中每个 `sheetId` 只能存在一个 `{sheetId}.png`。
-7. raw PNG 必须 repo-relative；如果未来启用 LFS 或外部 artifact，PR-00 必须同步 `.gitignore` / LFS / README 策略。
+7. raw PNG 必须 repo-relative；`/Users/luo/.codex/generated_images` 只能作为 transient source，不能进入 manifest、coverage artifact、manual record 或 PR 描述的 canonical path。
 8. 生成失败先重生成 raw sheet；不得通过改 `row/col` 或手工猜裁修补语义错位。
 9. 所有 raw sheet 入库前必须有 contact sheet QA record。
+10. 示例命令：
+
+```bash
+scripts/codex-generate-image.py "$(cat UI/sprite-sheets/prompts/dark-v1/001-r01-ui-chrome.prompt.txt)" \
+  --out assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png \
+  --overwrite
+```
 
 prompt 文件头示例：
 
@@ -166,6 +174,7 @@ PR-00 必须让后续资源 PR 有可运行的验证入口：
 6. 旧 `assetLint / styleLint / manifestLint` 继续保护旧 plan；dark-v1 不作为旧 lint 的 `--extra-plan` 静默塞入，避免旧 `EXPECTED_STYLE_TAG` 误判。
 7. 脚本测试必须覆盖 dry-run fixture；可使用 `python3 -m pytest scripts/tests/test_dark_sprite_sheet_pipeline.py` 或等价 Gradle task。
 8. 最小脚本测试必须覆盖：`missingRawSheet`、alias 同 sheet/跨 sheet、alias 循环拒绝、capacity 超限、prompt 编号稳定、owner-scope 缺 `ownerPr` fail fast、final-full 残留旧风格 fail fast。
+9. `scripts/codex-generate-image.py` 必须有 smoke 记录，证明它能从 `/Users/luo/.codex/generated_images/<latest-session>/` 取最新图片并复制到指定输出路径；该 smoke 输出放在 `build/` 或临时目录，不作为正式资源提交。
 
 lint 输入边界固定如下：
 
@@ -242,6 +251,7 @@ Coverage artifact schema 分层：
 8. `verifyChanged` 对 dark-v1 路径、canonical/runtime manifest 和 coverage/report 变更触发 dark gate。
 9. prompt 文件和 `prompt-index.json` 可复现，重复运行生成命令不会改变未改动 sheet 的 prompt hash。
 10. raw PNG 缺失、命名错误、尺寸错误或放错目录时，`spriteSheetMapLint` 必须 fail fast，并指出 expected path。
+11. `scripts/codex-generate-image.py` 能执行一次 smoke，并输出 source folder、source image、repo output 和 sha256。
 
 ## 9. 验证
 

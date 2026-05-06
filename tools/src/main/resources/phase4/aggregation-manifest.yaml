@@ -77,3 +77,5 @@ tasks:
     taskPath: :tools:whiteBoxContentPack
     artifactRelativePath: tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json
     role: OWNER
+    metricIds:
+      - samplePackContentPlayerVisibilityRate.reportOnly

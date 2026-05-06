@@ -98,6 +98,13 @@ data class ContentPackCaseResult(
     val lootProfileAffixTagPreference: List<String>,
     val specialTemplateIds: List<String>,
     val generatedSpecialTemplateIds: List<String>,
+    val samplePackTouchedContentIds: List<String>,
+    val samplePackFixedSeedTouchedContentIds: List<String>,
+    val samplePackFixedSeedRunCount: Int,
+    val samplePackFixedSeedTouchedRunCount: Int,
+    val samplePackAddOnlyMainPath: Boolean,
+    val samplePackSecondarySecretSlotUsed: Boolean,
+    val samplePackFixedSeedVisibilityCase: Boolean,
     val resourceContractVerified: Boolean,
     val resourceContractDetails: List<String>,
     val precedenceVerified: Boolean,
@@ -162,6 +169,17 @@ data class ContentPackCaseResult(
             putJsonArray("generatedSpecialTemplateIds") {
                 generatedSpecialTemplateIds.forEach { templateId -> add(JsonPrimitive(templateId)) }
             }
+            putJsonArray("samplePackTouchedContentIds") {
+                samplePackTouchedContentIds.forEach { contentId -> add(JsonPrimitive(contentId)) }
+            }
+            putJsonArray("samplePackFixedSeedTouchedContentIds") {
+                samplePackFixedSeedTouchedContentIds.forEach { contentId -> add(JsonPrimitive(contentId)) }
+            }
+            put("samplePackFixedSeedRunCount", samplePackFixedSeedRunCount)
+            put("samplePackFixedSeedTouchedRunCount", samplePackFixedSeedTouchedRunCount)
+            put("samplePackAddOnlyMainPath", samplePackAddOnlyMainPath)
+            put("samplePackSecondarySecretSlotUsed", samplePackSecondarySecretSlotUsed)
+            put("samplePackFixedSeedVisibilityCase", samplePackFixedSeedVisibilityCase)
             put("resourceContractVerified", resourceContractVerified)
             putJsonArray("resourceContractDetails") {
                 resourceContractDetails.forEach { detail -> add(JsonPrimitive(detail)) }
@@ -220,6 +238,13 @@ internal data class ContentPackSummaryMetrics(
     val precedenceFailureCount: Int,
     val resourceContractFailureCount: Int,
     val generatedTemplateFailureCount: Int,
+    val samplePackContentPlayerVisibilityRate: Double,
+    val samplePackTouchedContentIds: List<String>,
+    val samplePackAddOnlyMainPath: Boolean,
+    val samplePackSecondarySecretSlotUsed: Boolean,
+    val samplePackFixedSeedVisibilityCase: Boolean,
+    val activeSampleFixedSeedRunCount: Int,
+    val touchedSampleRunCount: Int,
     val legacyLootProfileSchemaRejectCount: Int,
     val legacyLootProfileSchemaRejectSummaries: List<LegacyLootProfileSchemaRejectSummary>,
 ) {
@@ -238,6 +263,12 @@ internal data class ContentPackKernelRun(
     val analysis: ContentPackAnalysis,
 )
 
+internal data class SampleRewardTrace(
+    val seed: Long,
+    val generatedSpecialTemplateId: String?,
+    val touchedContentIds: List<String>,
+)
+
 internal data class ResourceContractCheck(
     val verified: Boolean,
     val details: List<String>,
@@ -246,12 +277,16 @@ internal data class ResourceContractCheck(
 object ContentPackHarnessRunner {
     private const val SUMMARY_FILE: String = "content-pack-summary.json"
     private const val RUNS_FILE: String = "content-pack-runs.jsonl"
-    private const val secretZoneId: String = "underground_river_crystal_rift"
-    private const val secretBindingId: String = "search.underground_river.crystal_rift"
+    private const val sampleSecretZoneId: String = "sample.flooded_relics.secret_zone.flooded_reliquary"
+    private const val baseSecretZoneId: String = "underground_river_crystal_rift"
+    private const val sampleSecretBindingId: String = "sample.flooded_relics.search.flooded_reliquary"
     private const val crystalCacheChestId: String = "crystal_cache_chest"
-    private const val hiddenEventId: String = "hidden.event.underground_river.crystal_rift.reward"
+    private const val sampleHiddenEventId: String = "sample.flooded_relics.hidden_event.flooded_reliquary.reward"
+    private const val baseHiddenEventId: String = "hidden.event.underground_river.crystal_rift.reward"
     private const val sampleLootProfileId: String = "sample.flooded_relics.loot.flooded_reliquary.secret"
     private const val baseLootProfileId: String = "loot.underground_river_crystal_rift.secret"
+    private const val fixedSeedVisibilityCaseId: String = "sample_flooded_relics_active_2026042437"
+    private const val fixedSeedVisibilitySeed: Long = 2026042437L
     private const val imagePlanPath: String = "assets-src/image/specs/phase4-pr09-gemini-plan.yaml"
     private const val imageGenerationReportPath: String = "assets-src/image/manifests/phase4-pr09-generation-report.jsonl"
     private const val imageProcessingReportPath: String = "assets-src/image/manifests/phase4-pr09-processing-report.jsonl"
@@ -364,6 +399,8 @@ object ContentPackHarnessRunner {
                             availablePackRoots = listOf(ContentPackFixtureCatalog.samplePackRoot()),
                         )
                     },
+                    expectedSecretZoneId = baseSecretZoneId,
+                    expectedHiddenEventId = baseHiddenEventId,
                     expectedSecretZoneNameKey = "zone.secret.underground_river_crystal_rift.name",
                     expectedSecretZoneVisualKey = "zone.secret.underground_river_crystal_rift.visual",
                     expectedSecretZoneAudioProfile = "audio.secret_zone.underground_river_crystal_rift",
@@ -588,8 +625,8 @@ object ContentPackHarnessRunner {
             val catalog = loader.loadSchemaCatalog()
             val assetBundle = loadAssetBundle(selection = selection, resolvedSelection = currentResolvedSelection)
             try {
-                val secretZone = catalog.secretZones.firstOrNull { zone -> zone.id.id == secretZoneId }
-                val hiddenEvent = catalog.hiddenEvents.firstOrNull { event -> event.id == hiddenEventId }
+                val secretZone = catalog.secretZones.firstOrNull { zone -> zone.id.id == scenario.expectedSecretZoneId }
+                val hiddenEvent = catalog.hiddenEvents.firstOrNull { event -> event.id == scenario.expectedHiddenEventId }
                 val lootProfile = scenario.expectedLootProfileId?.let { expectedId -> catalog.lootProfiles.firstOrNull { profile -> profile.id == expectedId } }
                 val packSpecialTemplates =
                     (catalog.itemBundle.uniqueTemplates + catalog.itemBundle.artifactTemplates)
@@ -597,15 +634,47 @@ object ContentPackHarnessRunner {
                 val localeChecks = verifyLocaleKeys(localizer = loader.localizer, keys = scenario.localeKeys)
                 val visualChecks = verifyVisualKeys(bundle = assetBundle, keys = scenario.visualKeys)
                 val audioChecks = verifyAudioKeys(bundle = assetBundle, keys = scenario.audioKeys)
-                val generatedSpecialTemplateIds =
+                val sampleRewardTraces =
                     if (scenario.verifyGeneratedTemplates) {
-                        generateSampleRewardTemplateIds(
+                        generateSampleRewardTraces(
                             selection = selection,
                             seedList = scenario.generatedTemplateSeedList,
                         )
                     } else {
                         emptyList()
                     }
+                val generatedSpecialTemplateIds = sampleRewardTraces.mapNotNull(SampleRewardTrace::generatedSpecialTemplateId)
+                val samplePackTouchedContentIds =
+                    sampleRewardTraces
+                        .flatMap(SampleRewardTrace::touchedContentIds)
+                        .distinct()
+                        .sorted()
+                val samplePackFixedSeedTraces =
+                    sampleRewardTraces.filter { trace -> trace.seed == fixedSeedVisibilitySeed }
+                val samplePackFixedSeedTouchedContentIds =
+                    samplePackFixedSeedTraces
+                        .flatMap(SampleRewardTrace::touchedContentIds)
+                        .distinct()
+                        .sorted()
+                val samplePackFixedSeedTouchedRunCount =
+                    samplePackFixedSeedTraces.count { trace -> hasSampleFixedSeedRuntimeTouch(trace.touchedContentIds) }
+                val sampleManifest = currentResolvedSelection.orderedPacks.firstOrNull { pack -> pack.id == ContentPackFixtureCatalog.samplePackId }?.manifest
+                val samplePackAddOnlyMainPath = sampleManifest?.overlays?.all { overlay -> overlay.op == OverlayOp.ADD } == true
+                val samplePackFixedSeedVisibilityCase =
+                    sampleManifest
+                        ?.extensions
+                        ?.hiddenBranchBindings
+                        ?.any { binding -> binding.fixedSeedVisibilityCase == fixedSeedVisibilityCaseId } == true
+                val sampleSecretPlanUsed =
+                    catalog.zoneMapgenProfiles
+                        .firstOrNull { profile -> profile.zoneId == "underground_river" }
+                        ?.hiddenEntrancePlans
+                        ?.any { plan ->
+                            plan.bindingId.value == sampleSecretBindingId &&
+                                plan.sourceAnchorId.value == "hidden.critical.adjacent" &&
+                                plan.targetSecretZoneId.id == sampleSecretZoneId
+                        } == true
+                val samplePackSecondarySecretSlotUsed = secretZone?.secretZoneSelector?.secondarySlot == true && sampleSecretPlanUsed
                 val headlessRunSucceeded =
                     if (scenario.seedList.isNotEmpty()) {
                         scenario.seedList.all { seed -> runHeadlessCase(selection = selection, seed = seed) }
@@ -695,6 +764,22 @@ object ContentPackHarnessRunner {
                         ) {
                             add("case.generated_special_template_missing")
                         }
+                        if (scenario.verifyGeneratedTemplates &&
+                            !hasSampleFixedSeedRuntimeTouch(samplePackFixedSeedTouchedContentIds)
+                        ) {
+                            add("case.sample_pack_runtime_touch_missing")
+                        }
+                        if (scenario.verifyGeneratedTemplates &&
+                            !hasSampleItemTouch(samplePackFixedSeedTouchedContentIds)
+                        ) {
+                            add("case.sample_pack_item_touch_missing")
+                        }
+                        if (scenario.verifyGeneratedTemplates && !samplePackSecondarySecretSlotUsed) {
+                            add("case.sample_pack_secondary_secret_slot_missing")
+                        }
+                        if (scenario.verifyGeneratedTemplates && !samplePackFixedSeedVisibilityCase) {
+                            add("case.sample_pack_fixed_seed_visibility_missing")
+                        }
                     }
                 ContentPackCaseResult(
                     fixtureId = scenario.fixtureId,
@@ -743,6 +828,13 @@ object ContentPackHarnessRunner {
                     lootProfileAffixTagPreference = lootProfile?.affixTagPreference.orEmpty(),
                     specialTemplateIds = packSpecialTemplates.map(SpecialItemTemplateSchemaV2::id).sorted(),
                     generatedSpecialTemplateIds = generatedSpecialTemplateIds,
+                    samplePackTouchedContentIds = samplePackTouchedContentIds,
+                    samplePackFixedSeedTouchedContentIds = samplePackFixedSeedTouchedContentIds,
+                    samplePackFixedSeedRunCount = samplePackFixedSeedTraces.size,
+                    samplePackFixedSeedTouchedRunCount = samplePackFixedSeedTouchedRunCount,
+                    samplePackAddOnlyMainPath = samplePackAddOnlyMainPath,
+                    samplePackSecondarySecretSlotUsed = samplePackSecondarySecretSlotUsed,
+                    samplePackFixedSeedVisibilityCase = samplePackFixedSeedVisibilityCase,
                     resourceContractVerified = resourceContracts.verified,
                     resourceContractDetails = resourceContracts.details,
                     precedenceVerified = precedenceVerified,
@@ -807,6 +899,13 @@ object ContentPackHarnessRunner {
                 lootProfileAffixTagPreference = emptyList(),
                 specialTemplateIds = emptyList(),
                 generatedSpecialTemplateIds = emptyList(),
+                samplePackTouchedContentIds = emptyList(),
+                samplePackFixedSeedTouchedContentIds = emptyList(),
+                samplePackFixedSeedRunCount = 0,
+                samplePackFixedSeedTouchedRunCount = 0,
+                samplePackAddOnlyMainPath = false,
+                samplePackSecondarySecretSlotUsed = false,
+                samplePackFixedSeedVisibilityCase = false,
                 resourceContractVerified = !scenario.verifyResourceContracts,
                 resourceContractDetails = emptyList(),
                 precedenceVerified = precedenceMatches(scenario = scenario, resolvedOrder = resolvedOrder, overlayOps = overlayOps),
@@ -852,10 +951,10 @@ object ContentPackHarnessRunner {
             ClientAssetBundleLoader.load(resolvedSelection)
         }
 
-    private fun generateSampleRewardTemplateIds(
+    private fun generateSampleRewardTraces(
         selection: ContentPackSelection,
         seedList: List<Long>,
-    ): List<String> {
+    ): List<SampleRewardTrace> {
         return seedList.mapNotNull { seed ->
             val saveDir = Files.createTempDirectory("ktome-content-pack-generated-template")
             try {
@@ -866,23 +965,26 @@ object ContentPackHarnessRunner {
                         locale = baseLocale,
                         contentPackSelection = selection,
                     )
-                generateSampleRewardTemplateId(session)
+                generateSampleRewardTrace(session, seed)
             } finally {
                 saveDir.toFile().deleteRecursively()
             }
         }
     }
 
-    private fun generateSampleRewardTemplateId(session: FoundationGameSession): String? {
+    private fun generateSampleRewardTrace(
+        session: FoundationGameSession,
+        seed: Long,
+    ): SampleRewardTrace {
         clearMonsters(session)
-        val bindingId = SearchBindingId(secretBindingId)
+        val bindingId = SearchBindingId(sampleSecretBindingId)
         val crystalChestPoint = requireNotNull(session.automationInteractablePoint(crystalCacheChestId)) {
             "Expected crystal cache chest for sample content-pack harness."
         }
         session.automationMovePlayerTo(crystalChestPoint)
         check(session.perform(PlayerCommand.Interact)) { "Failed to open crystal cache chest for sample content-pack harness." }
         val searchPoint = requireNotNull(session.automationSearchPointForBinding(bindingId)) {
-            "Missing search point for sample content-pack harness binding '$secretBindingId'."
+            "Missing search point for sample content-pack harness binding '$sampleSecretBindingId'."
         }
         val bindingSearchResult =
             session.automationSearchState()
@@ -898,8 +1000,8 @@ object ContentPackHarnessRunner {
         }
         session.automationMovePlayerTo(entrancePoint)
         check(session.perform(PlayerCommand.Interact)) { "Failed to enter sample content-pack secret zone for harness verification." }
-        check(session.automationVisitedSecretZoneIds().any { secretZone -> secretZone.id == secretZoneId }) {
-            "Sample content-pack secret zone '$secretZoneId' was not visited through the runtime route."
+        check(session.automationVisitedSecretZoneIds().any { secretZone -> secretZone.id == sampleSecretZoneId }) {
+            "Sample content-pack secret zone '$sampleSecretZoneId' was not visited through the runtime route."
         }
 
         val rewardPoint = requireNotNull(session.automationSecretRewardPointForBinding(bindingId)) {
@@ -910,7 +1012,12 @@ object ContentPackHarnessRunner {
         }
         session.automationMovePlayerTo(rewardPoint)
         check(session.perform(PlayerCommand.Interact)) { "Failed to claim sample content-pack reward through runtime route." }
-        return session.inventoryItems().firstOrNull { item -> item.specialTemplateId != null }?.specialTemplateId
+        val generatedSpecialTemplateId = session.inventoryItems().firstOrNull { item -> item.specialTemplateId != null }?.specialTemplateId
+        return SampleRewardTrace(
+            seed = seed,
+            generatedSpecialTemplateId = generatedSpecialTemplateId,
+            touchedContentIds = session.automationActivePackTouchedContentIds(),
+        )
     }
 
     private fun clearMonsters(session: FoundationGameSession) {
@@ -1169,10 +1276,24 @@ object ContentPackHarnessRunner {
                 if (results.any { result -> !result.precedenceVerified }) add("aggregate.precedence_failure")
                 if (results.any { result -> "case.resource_contract_failed" in result.failureReasons }) add("aggregate.resource_contract_failure")
                 if (results.any { result -> "case.generated_special_template_missing" in result.failureReasons }) add("aggregate.generated_special_template_missing")
+                if (results.any { result -> "case.sample_pack_runtime_touch_missing" in result.failureReasons }) add("aggregate.sample_pack_runtime_touch_missing")
+                if (results.any { result -> "case.sample_pack_item_touch_missing" in result.failureReasons }) add("aggregate.sample_pack_item_touch_missing")
+                if (results.any { result -> "case.sample_pack_secondary_secret_slot_missing" in result.failureReasons }) add("aggregate.sample_pack_secondary_secret_slot_missing")
+                if (results.any { result -> "case.sample_pack_fixed_seed_visibility_missing" in result.failureReasons }) add("aggregate.sample_pack_fixed_seed_visibility_missing")
                 if (results.any { result -> "legacy_v2_loot_profile_rejected" == result.fixtureId && !result.success }) {
                     add("aggregate.legacy_loot_profile_schema_reject_failure")
                 }
             }
+        val officialSampleResults = results.filter { result -> result.fixtureId == "official_sample_pack" }
+        val touchedSampleRunCount =
+            officialSampleResults.sumOf(ContentPackCaseResult::samplePackFixedSeedTouchedRunCount)
+        val activeSampleFixedSeedRunCount =
+            officialSampleResults.sumOf(ContentPackCaseResult::samplePackFixedSeedRunCount)
+        val samplePackTouchedContentIds =
+            officialSampleResults
+                .flatMap(ContentPackCaseResult::samplePackFixedSeedTouchedContentIds)
+                .distinct()
+                .sorted()
         val summary =
             ContentPackSummaryMetrics(
                 totalCases = results.size,
@@ -1189,6 +1310,14 @@ object ContentPackHarnessRunner {
                 precedenceFailureCount = results.count { result -> !result.precedenceVerified },
                 resourceContractFailureCount = results.count { result -> "case.resource_contract_failed" in result.failureReasons },
                 generatedTemplateFailureCount = results.count { result -> "case.generated_special_template_missing" in result.failureReasons },
+                samplePackContentPlayerVisibilityRate =
+                    if (activeSampleFixedSeedRunCount == 0) 0.0 else touchedSampleRunCount.toDouble() / activeSampleFixedSeedRunCount.toDouble(),
+                samplePackTouchedContentIds = samplePackTouchedContentIds,
+                samplePackAddOnlyMainPath = officialSampleResults.singleOrNull()?.samplePackAddOnlyMainPath == true,
+                samplePackSecondarySecretSlotUsed = officialSampleResults.singleOrNull()?.samplePackSecondarySecretSlotUsed == true,
+                samplePackFixedSeedVisibilityCase = officialSampleResults.singleOrNull()?.samplePackFixedSeedVisibilityCase == true,
+                activeSampleFixedSeedRunCount = activeSampleFixedSeedRunCount,
+                touchedSampleRunCount = touchedSampleRunCount,
                 legacyLootProfileSchemaRejectCount = legacyLootProfileSchemaRejectSummaries.size,
                 legacyLootProfileSchemaRejectSummaries = legacyLootProfileSchemaRejectSummaries,
             )
@@ -1224,6 +1353,15 @@ object ContentPackHarnessRunner {
                     put("precedenceFailureCount", analysis.summary.precedenceFailureCount)
                     put("resourceContractFailureCount", analysis.summary.resourceContractFailureCount)
                     put("generatedTemplateFailureCount", analysis.summary.generatedTemplateFailureCount)
+                    put("samplePackContentPlayerVisibilityRate.reportOnly", analysis.summary.samplePackContentPlayerVisibilityRate)
+                    putJsonArray("samplePackTouchedContentIds") {
+                        analysis.summary.samplePackTouchedContentIds.forEach { contentId -> add(JsonPrimitive(contentId)) }
+                    }
+                    put("samplePackAddOnlyMainPath", analysis.summary.samplePackAddOnlyMainPath)
+                    put("samplePackSecondarySecretSlotUsed", analysis.summary.samplePackSecondarySecretSlotUsed)
+                    put("samplePackFixedSeedVisibilityCase", analysis.summary.samplePackFixedSeedVisibilityCase)
+                    put("activeSampleFixedSeedRunCount", analysis.summary.activeSampleFixedSeedRunCount)
+                    put("touchedSampleRunCount", analysis.summary.touchedSampleRunCount)
                     put("legacyLootProfileSchemaRejectCount", analysis.summary.legacyLootProfileSchemaRejectCount)
                     putJsonArray("legacyLootProfileSchemaRejectSummaries") {
                         analysis.summary.legacyLootProfileSchemaRejectSummaries.forEach { summary ->
@@ -1264,6 +1402,17 @@ object ContentPackHarnessRunner {
             zone.environmentTheme.takeIf(String::isNotBlank)?.lowercase()?.let(::add)
         }
 
+    private fun hasSampleFixedSeedRuntimeTouch(touchedContentIds: List<String>): Boolean =
+        sampleSecretZoneId in touchedContentIds &&
+            sampleHiddenEventId in touchedContentIds &&
+            sampleLootProfileId in touchedContentIds
+
+    private fun hasSampleItemTouch(touchedContentIds: List<String>): Boolean =
+        touchedContentIds.any { contentId ->
+            contentId.startsWith("sample.flooded_relics.") &&
+                contentId !in setOf(sampleSecretZoneId, sampleHiddenEventId, sampleLootProfileId)
+        }
+
     private data class HarnessScenario(
         val fixtureId: String,
         val reportPackId: PackId,
@@ -1273,6 +1422,8 @@ object ContentPackHarnessRunner {
         val expectedFailureCodes: Set<String> = emptySet(),
         val expectedResolvedOrder: List<PackId> = emptyList(),
         val expectedOverlayOps: List<OverlayOp> = emptyList(),
+        val expectedSecretZoneId: String = sampleSecretZoneId,
+        val expectedHiddenEventId: String = sampleHiddenEventId,
         val expectedSecretZoneNameKey: String? = null,
         val expectedSecretZoneVisualKey: String? = null,
         val expectedSecretZoneAudioProfile: String? = null,

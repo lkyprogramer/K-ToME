@@ -1266,10 +1266,73 @@ internal object TileRenderModelBuilder {
             TileTextRow(
                 localizer.text(
                     "ui.validation.active_packs",
-                    "value" to summary.activePackIds.ifEmpty { listOf(localizer.text("ui.validation.none")) }.joinToString(", "),
+                    "value" to ValidationPackSummaryText.activePackIds(localizer, summary.activePackIds),
                 ),
                 TileTextTone.WHITE,
             )
+        rows +=
+            TileTextRow(
+                localizer.text(
+                    "ui.validation.pack.namespaces",
+                    "value" to ValidationPackSummaryText.namespaces(localizer, summary.activePackSummaries),
+                ),
+                TileTextTone.WHITE,
+            )
+        rows +=
+            TileTextRow(
+                localizer.text(
+                    "ui.validation.pack.overlay_ops",
+                    "value" to ValidationPackSummaryText.overlayOps(localizer, summary.activePackSummaries),
+                ),
+                TileTextTone.WHITE,
+            )
+        rows +=
+            TileTextRow(
+                localizer.text(
+                    "ui.validation.pack.touched_ids",
+                    "value" to ValidationPackSummaryText.touchedContentIds(localizer, summary.touchedContentIds),
+                ),
+                TileTextTone.WHITE,
+            )
+        rows +=
+            TileTextRow(
+                localizer.text(
+                    "ui.validation.pack.key_resolution",
+                    "visual" to summary.packKeyResolutionSummary.resolvedVisualKeys,
+                    "audio" to summary.packKeyResolutionSummary.resolvedAudioKeys,
+                    "locale" to summary.packKeyResolutionSummary.resolvedLocaleKeys,
+                    "overrides" to summary.packKeyResolutionSummary.overriddenKeys,
+                    "warnings" to summary.packKeyResolutionSummary.warningCount,
+                ),
+                TileTextTone.WHITE,
+            )
+        rows +=
+            TileTextRow(
+                ValidationPackSummaryText.keyWarnings(localizer, summary.packKeyResolutionSummary),
+                TileTextTone.WHITE,
+            )
+        summary.packVisibilityComparison?.let { comparison ->
+            rows +=
+                TileTextRow(
+                    localizer.text(
+                        "ui.validation.pack.no_pack_state",
+                        "active" to ValidationPackSummaryText.activePackIds(localizer, comparison.noPackState.activePackIds),
+                        "ops" to ValidationPackSummaryText.overlayOps(localizer, comparison.noPackState.activePackSummaries),
+                        "touched" to ValidationPackSummaryText.touchedContentIds(localizer, comparison.noPackState.touchedContentIds),
+                    ),
+                    TileTextTone.WHITE,
+                )
+            rows +=
+                TileTextRow(
+                    localizer.text(
+                        "ui.validation.pack.active_sample_state",
+                        "active" to ValidationPackSummaryText.activePackIds(localizer, comparison.activeSamplePackState.activePackIds),
+                        "ops" to ValidationPackSummaryText.overlayOps(localizer, comparison.activeSamplePackState.activePackSummaries),
+                        "touched" to ValidationPackSummaryText.touchedContentIds(localizer, comparison.activeSamplePackState.touchedContentIds),
+                    ),
+                    TileTextTone.WHITE,
+                )
+        }
         rows +=
             TileTextRow(
                 localizer.text(

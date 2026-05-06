@@ -8,6 +8,7 @@ import com.ktome.game.hidden.HiddenEventRewardPayload
 import com.ktome.game.hidden.LOOT_PROFILE_REGISTRY_ID
 import com.ktome.game.hidden.MONSTER_REGISTRY_ID
 import com.ktome.game.hidden.SecretRewardAuthorityAssertions
+import com.ktome.game.hidden.SPECIAL_ITEM_TEMPLATE_REGISTRY_ID
 import com.ktome.game.hidden.STATUS_REGISTRY_ID
 import com.ktome.game.model.MonsterTemplate
 
@@ -63,6 +64,11 @@ object Phase4StaticContentValidator {
                     "monster" ->
                         require(monsterTemplatesById.containsKey(contentRef.id)) {
                             "Secret zone '${secretZone.id.id}' guaranteed content references unknown monster '${contentRef.id}'."
+                        }
+
+                    SPECIAL_ITEM_TEMPLATE_REGISTRY_ID ->
+                        require((schemaCatalog.itemBundle.uniqueTemplates + schemaCatalog.itemBundle.artifactTemplates).any { template -> template.id == contentRef.id }) {
+                            "Secret zone '${secretZone.id.id}' guaranteed content references unknown special item template '${contentRef.id}'."
                         }
 
                     else -> error("Secret zone '${secretZone.id.id}' guaranteed content registry '${contentRef.registry.value}' is unsupported.")

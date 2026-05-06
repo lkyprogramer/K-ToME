@@ -669,10 +669,73 @@ internal object AsciiRenderModelBuilder {
             AsciiTextLine(
                 localizer.text(
                     "ui.validation.active_packs",
-                    "value" to summary.activePackIds.ifEmpty { listOf(localizer.text("ui.validation.none")) }.joinToString(", "),
+                    "value" to ValidationPackSummaryText.activePackIds(localizer, summary.activePackIds),
                 ),
                 AsciiTextTone.WHITE,
             )
+        lines +=
+            AsciiTextLine(
+                localizer.text(
+                    "ui.validation.pack.namespaces",
+                    "value" to ValidationPackSummaryText.namespaces(localizer, summary.activePackSummaries),
+                ),
+                AsciiTextTone.WHITE,
+            )
+        lines +=
+            AsciiTextLine(
+                localizer.text(
+                    "ui.validation.pack.overlay_ops",
+                    "value" to ValidationPackSummaryText.overlayOps(localizer, summary.activePackSummaries),
+                ),
+                AsciiTextTone.WHITE,
+            )
+        lines +=
+            AsciiTextLine(
+                localizer.text(
+                    "ui.validation.pack.touched_ids",
+                    "value" to ValidationPackSummaryText.touchedContentIds(localizer, summary.touchedContentIds),
+                ),
+                AsciiTextTone.WHITE,
+            )
+        lines +=
+            AsciiTextLine(
+                localizer.text(
+                    "ui.validation.pack.key_resolution",
+                    "visual" to summary.packKeyResolutionSummary.resolvedVisualKeys,
+                    "audio" to summary.packKeyResolutionSummary.resolvedAudioKeys,
+                    "locale" to summary.packKeyResolutionSummary.resolvedLocaleKeys,
+                    "overrides" to summary.packKeyResolutionSummary.overriddenKeys,
+                    "warnings" to summary.packKeyResolutionSummary.warningCount,
+                ),
+                AsciiTextTone.WHITE,
+            )
+        lines +=
+            AsciiTextLine(
+                ValidationPackSummaryText.keyWarnings(localizer, summary.packKeyResolutionSummary),
+                AsciiTextTone.WHITE,
+            )
+        summary.packVisibilityComparison?.let { comparison ->
+            lines +=
+                AsciiTextLine(
+                    localizer.text(
+                        "ui.validation.pack.no_pack_state",
+                        "active" to ValidationPackSummaryText.activePackIds(localizer, comparison.noPackState.activePackIds),
+                        "ops" to ValidationPackSummaryText.overlayOps(localizer, comparison.noPackState.activePackSummaries),
+                        "touched" to ValidationPackSummaryText.touchedContentIds(localizer, comparison.noPackState.touchedContentIds),
+                    ),
+                    AsciiTextTone.WHITE,
+                )
+            lines +=
+                AsciiTextLine(
+                    localizer.text(
+                        "ui.validation.pack.active_sample_state",
+                        "active" to ValidationPackSummaryText.activePackIds(localizer, comparison.activeSamplePackState.activePackIds),
+                        "ops" to ValidationPackSummaryText.overlayOps(localizer, comparison.activeSamplePackState.activePackSummaries),
+                        "touched" to ValidationPackSummaryText.touchedContentIds(localizer, comparison.activeSamplePackState.touchedContentIds),
+                    ),
+                    AsciiTextTone.WHITE,
+                )
+        }
         lines +=
             AsciiTextLine(
                 localizer.text(

@@ -1,5 +1,11 @@
 package com.ktome.tools.phase4
 
+import com.ktome.tools.verification.BaselineMode
+import com.ktome.tools.verification.EvaluationEntryStatus
+import com.ktome.tools.verification.EvaluationVerdict
+import com.ktome.tools.verification.VERIFICATION_BASELINE_SCHEMA_VERSION
+import com.ktome.tools.verification.VerificationBaseline
+import com.ktome.tools.verification.VerificationExpectedMetricRange
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -21,6 +27,50 @@ import org.junit.jupiter.api.io.TempDir
 class Phase4AggregationInputRunnerTest {
     @TempDir
     lateinit var tempDir: Path
+
+    @Test
+    fun `sample pack visibility report-only warning does not fail phase evaluation`() {
+        val metricId = "samplePackContentPlayerVisibilityRate.reportOnly"
+        val baseline =
+            VerificationBaseline(
+                schemaVersion = VERIFICATION_BASELINE_SCHEMA_VERSION,
+                baselineId = "phase4-sample-pack-add-first-owner-baseline",
+                domainId = "content-pack",
+                mode = BaselineMode.BUDGET_THRESHOLD,
+                metricDefinitionVersion = "phase4-v4-pr07-sample-pack-add-first-v1",
+                expectedMetricRanges =
+                    listOf(
+                        VerificationExpectedMetricRange(
+                            metricId = metricId,
+                            minValue = 1.0,
+                        ),
+                    ),
+            )
+        val task =
+            Phase4TaskAggregate(
+                taskId = "whiteBoxContentPack",
+                status = "PASS",
+                sourcePath = "tools/build/reports/verification/content-pack/whitebox-content-pack.json",
+                metrics =
+                    buildJsonObject {
+                        put(metricId, JsonPrimitive(0.0))
+                        put("touchedSampleRunCount", JsonPrimitive(0))
+                        put("activeSampleFixedSeedRunCount", JsonPrimitive(1))
+                        put("samplePackTouchedContentIds", buildJsonArray {})
+                        put("samplePackAddOnlyMainPath", JsonPrimitive(true))
+                        put("samplePackSecondarySecretSlotUsed", JsonPrimitive(false))
+                        put("samplePackFixedSeedVisibilityCase", JsonPrimitive("sample_flooded_relics_active_2026042437"))
+                    },
+            )
+
+        val result = Phase4AggregationInputRunner.samplePackVisibilityEvaluation(task = task, baseline = baseline)
+        val entry = result.entries.single()
+
+        assertEquals(EvaluationVerdict.PASS, result.verdict)
+        assertEquals(0, result.unexpectedRegressionCount)
+        assertEquals(EvaluationEntryStatus.PASS, entry.status)
+        assertTrue(entry.note.orEmpty().startsWith("report-only warning:"))
+    }
 
     @Test
     @Tag("reportPhase4Fixture")

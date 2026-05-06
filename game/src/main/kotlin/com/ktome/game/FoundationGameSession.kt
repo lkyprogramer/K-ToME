@@ -285,12 +285,15 @@ import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
+import com.ktome.game.contentpack.ContentPackVisibilityComparisonSummary
+import com.ktome.game.contentpack.ContentPackVisibilityStateSummary
 import com.ktome.game.hidden.HiddenConditionKey
 import com.ktome.game.hidden.HiddenEventDef
 import com.ktome.game.hidden.HiddenEventRewardPayload
 import com.ktome.game.hidden.HiddenTriggerType
 import com.ktome.game.hidden.SecretRewardAuthority
 import com.ktome.game.hidden.SecretEncounterRuntime
+import com.ktome.game.hidden.SPECIAL_ITEM_TEMPLATE_REGISTRY_ID
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.data.schema.InteractableSchemaV2
 import com.ktome.game.objective.ObjectiveCompletionRule
@@ -739,6 +742,7 @@ class FoundationGameSession internal constructor(
     private var cachedRenderSnapshot: RenderSnapshot? = null
     private var lastValidationResult: RenderTextTokenSnapshot? = null
     private var validationScenarioEvidenceSummaryOpen: Boolean = false
+    private var validationPackVisibilityComparisonOpen: Boolean = false
     private var phase4V4Pr05SecondaryActionCount: Int = 0
     private var pendingValidationRestartOptions: ValidationSessionOptions? = null
     private var cachedCurrentBuildHash: String? = null
@@ -1234,6 +1238,9 @@ class FoundationGameSession internal constructor(
                 zoneId = config.zoneId,
                 floor = currentFloor(),
                 activePackIds = content.activePackIds.map { packId -> packId.value },
+                activePackSummaries = content.activePackOverlaySummaries,
+                touchedContentIds = validationTouchedContentIds(),
+                packKeyResolutionSummary = content.activePackKeyResolutionSummary,
                 bossVariantModeId = options.foundationConfig.bossVariantSelectionMode.name,
                 preferredBossVariantId = options.foundationConfig.preferredBossVariantId,
                 lastResult = lastValidationResult,
@@ -1244,8 +1251,66 @@ class FoundationGameSession internal constructor(
                     } else {
                         null
                     },
+                packVisibilityComparison =
+                    if (validationPackVisibilityComparisonOpen && options.scenarioId == ValidationScenarioId("phase4-v4-pr07")) {
+                        phase4V4Pr07PackVisibilityComparison()
+                    } else {
+                        null
+                    },
             )
         }
+
+    private fun validationTouchedContentIds(): List<String> {
+        val activePackPrefixes = content.activePackIds.map { packId -> "${packId.value}." }
+        if (activePackPrefixes.isEmpty()) {
+            return emptyList()
+        }
+        fun belongsToActivePack(contentId: String): Boolean =
+            activePackPrefixes.any(contentId::startsWith)
+
+        val touchedIds = linkedSetOf<String>()
+        val activeConsumedHiddenEventIds =
+            activeFloorState.consumedHiddenEventIds
+                .filter(::belongsToActivePack)
+                .toSet()
+        activeFloorState.visitedSecretZoneIds
+            .filter { contentRef -> belongsToActivePack(contentRef.id) }
+            .mapTo(touchedIds) { contentRef -> contentRef.id }
+        activeFloorState.visitedSecretZoneIds
+            .mapNotNull(content::secretZone)
+            .filter { secretZone -> secretZone.guaranteedContent.any { contentRef -> contentRef.id in activeConsumedHiddenEventIds } }
+            .forEach { secretZone ->
+                touchedIds += secretZone.rewardProfileId.id
+                secretZone.guaranteedContent
+                    .map { contentRef -> contentRef.id }
+                    .filterTo(touchedIds, ::belongsToActivePack)
+            }
+        activeConsumedHiddenEventIds
+            .filterTo(touchedIds, ::belongsToActivePack)
+        world.get<Inventory>(playerId)?.itemIds.orEmpty().forEach { itemId ->
+            val item = world.get<ItemInstance>(itemId) ?: return@forEach
+            item.specialTemplateId?.let { templateId ->
+                if (belongsToActivePack(templateId)) {
+                    touchedIds += templateId
+                }
+            }
+            if (belongsToActivePack(item.baseId)) {
+                touchedIds += item.baseId
+            }
+        }
+        return touchedIds.filter(::belongsToActivePack)
+    }
+
+    private fun phase4V4Pr07PackVisibilityComparison(): ContentPackVisibilityComparisonSummary =
+        ContentPackVisibilityComparisonSummary(
+            activeSamplePackState =
+                ContentPackVisibilityStateSummary(
+                    activePackIds = content.activePackIds.map { packId -> packId.value },
+                    activePackSummaries = content.activePackOverlaySummaries,
+                    touchedContentIds = validationTouchedContentIds(),
+                    keyResolutionSummary = content.activePackKeyResolutionSummary,
+                ),
+        )
 
     fun consumePendingValidationRestartOptions(): ValidationSessionOptions? =
         pendingValidationRestartOptions.also {
@@ -1355,6 +1420,8 @@ class FoundationGameSession internal constructor(
     fun automationPendingObjectivePenaltyMultiplier(): Double = pendingObjectivePenaltyMultiplier
 
     fun automationConsumedHiddenEventIds(): Set<String> = activeFloorState.consumedHiddenEventIds.toSet()
+
+    fun automationActivePackTouchedContentIds(): List<String> = validationTouchedContentIds()
 
     fun automationHasExistingEliteMonster(): Boolean = nearestLivingEliteMonsterId() != null
 
@@ -1833,6 +1900,7 @@ class FoundationGameSession internal constructor(
                 "boss_variant_molten_glass_phase_override_ready"
             }
             "phase4-v4-pr06" -> Phase4V4Pr06RouteDiversityArtifactSummary.primaryResultText()
+            "phase4-v4-pr07" -> preparePhase4V4Pr07PrimaryScene()
             else -> "ok"
         }
 
@@ -1856,6 +1924,7 @@ class FoundationGameSession internal constructor(
             }
             "phase4-v4-pr05" -> preparePhase4V4Pr05SecondaryScene()
             "phase4-v4-pr06" -> Phase4V4Pr06RouteDiversityArtifactSummary.evidenceResultText() + "; uiSurface=>clientSmoke+goldenScreenshot"
+            "phase4-v4-pr07" -> preparePhase4V4Pr07SecondaryScene()
             else -> "ok"
         }
 
@@ -1937,6 +2006,34 @@ class FoundationGameSession internal constructor(
             perform(PlayerCommand.CloseShop)
         }
         renderSnapshot()
+    }
+
+    private fun preparePhase4V4Pr07PrimaryScene(): String {
+        validationPackVisibilityComparisonOpen = true
+        invalidateRenderSnapshot()
+        val activePackIds = content.activePackIds.joinToString(",") { packId -> packId.value }
+        return "sample_pack_summary_ready; noPackActivePackIds=N/A; activePackIds=$activePackIds"
+    }
+
+    private fun preparePhase4V4Pr07SecondaryScene(): String {
+        val sampleBindingId = com.ktome.core.world.solvability.SearchBindingId("sample.flooded_relics.search.flooded_reliquary")
+        removeAllMonstersForValidation()
+        val crystalCachePoint = automationInteractablePoint("crystal_cache_chest") ?: return "sample_pack_crystal_cache_missing"
+        automationMovePlayerTo(crystalCachePoint)
+        if (!perform(PlayerCommand.Interact)) {
+            return "sample_pack_crystal_cache_open_failed"
+        }
+        val searchPoint = automationSearchPointForBinding(sampleBindingId) ?: return "sample_pack_secret_search_missing"
+        automationMovePlayerTo(searchPoint)
+        renderSnapshot()
+        return "sample_pack_secret_search_ready; bindingId=${sampleBindingId.value}"
+    }
+
+    private fun removeAllMonstersForValidation() {
+        world.entitiesWith(MonsterTemplateId::class, Health::class)
+            .toList()
+            .forEach(world::destroyEntity)
+        invalidateRenderSnapshot()
     }
 
     private fun preparePhase4V4Pr05PrimaryScene() {
@@ -12496,6 +12593,8 @@ class FoundationGameSession internal constructor(
         when (contentRef.registry.value) {
             "hidden_event" -> activeFloorState.hasConsumedHiddenEvent(contentRef.id)
             "monster" -> activeFloorState.hasConsumedHiddenEvent(secretZoneGuaranteedContentConsumptionKey(secretZoneId = secretZoneId, contentRef = contentRef))
+            SPECIAL_ITEM_TEMPLATE_REGISTRY_ID ->
+                activeFloorState.hasConsumedHiddenEvent(secretZoneGuaranteedContentConsumptionKey(secretZoneId = secretZoneId, contentRef = contentRef))
             else -> error("Secret zone '${secretZoneId.id}' guaranteed content registry '${contentRef.registry.value}' is unsupported at runtime.")
         }
 
@@ -12518,8 +12617,55 @@ class FoundationGameSession internal constructor(
                 true
             }
 
+            SPECIAL_ITEM_TEMPLATE_REGISTRY_ID -> {
+                grantSecretZoneSpecialTemplateReward(secretZoneId = secretZoneId, templateId = contentRef.id)
+                activeFloorState.markHiddenEventConsumed(secretZoneGuaranteedContentConsumptionKey(secretZoneId = secretZoneId, contentRef = contentRef))
+                true
+            }
+
             else -> error("Secret zone '${secretZoneId.id}' guaranteed content registry '${contentRef.registry.value}' is unsupported at runtime.")
         }
+
+    private fun grantSecretZoneSpecialTemplateReward(
+        secretZoneId: ContentRef,
+        templateId: String,
+    ) {
+        val reward = specialTemplateRewardItem(secretZoneId = secretZoneId, templateId = templateId)
+        val stored = grantRewardItem(reward, playerPosition())
+        if (reward.slot != null) {
+            recordMilestoneReward(
+                rewardSource = MilestoneRewardSource.CACHE,
+                sourceId = "secret_zone:${secretZoneId.id}:$templateId",
+                reward = reward,
+            )
+            if (stored) {
+                equipMilestoneRewardIfNeeded(reward = reward, rewardSource = MilestoneRewardSource.CACHE)
+            }
+        }
+        recordRecentRewardPresentation(source = RewardPresentationSourceSnapshot.SECRET_ZONE, reward = reward)
+        announceCapstoneRewardIfNeeded(reward)
+        recordFrontstageSecretCue(
+            if (stored) "log.hidden.reward.claimed" else "log.hidden.reward.dropped",
+            priority = FrontstageActionPrioritySnapshot.CRITICAL,
+            stableKey = "secret:guaranteed_item:${secretZoneId.id}:$templateId",
+            keyArg("zone", secretZoneNameKey(secretZoneId)),
+            keyArg("item", rewardItemNameKey(reward, "secret item")),
+        )
+    }
+
+    private fun specialTemplateRewardItem(
+        secretZoneId: ContentRef,
+        templateId: String,
+    ): ItemInstance {
+        val rewardContext =
+            hiddenRewardGenerationContext(sourceId = "secret_zone:${secretZoneId.id}:$templateId")
+                .copy(qualityFloor = RarityTier.RARE)
+        val itemLevel = previewRewardItemLevel(rewardContext)
+        return ItemGenerator(content.itemBundle, sessionRandom).generateSpecialTemplate(
+            templateId = templateId,
+            itemLevel = itemLevel,
+        )
+    }
 
     private fun secretZoneGuaranteedContentConsumptionKey(
         secretZoneId: ContentRef,

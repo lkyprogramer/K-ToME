@@ -288,6 +288,8 @@ internal object Phase4AggregationInputRunner {
                 evaluations += terrainAggregateEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
                 evaluations += terrainPerZoneLowerBoundEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
             }
+            "whiteBoxContentPack" ->
+                evaluations += samplePackVisibilityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.samplePackAddFirstBaselinePath()))
         }
         val baselinePaths = baselinesByPath.keys.toList().sorted()
         return ReportAggregationInput(
@@ -455,6 +457,56 @@ internal object Phase4AggregationInputRunner {
             note = task.sourcePath,
             details = task.metrics,
         )
+
+    internal fun samplePackVisibilityEvaluation(
+        task: Phase4TaskAggregate,
+        baseline: VerificationBaseline,
+    ): EvaluationResult {
+        val metricId = "samplePackContentPlayerVisibilityRate.reportOnly"
+        val range = baseline.requiredMetric(metricId)
+        val rate = task.metrics.doubleValue(metricId)
+        val touchedRuns = task.metrics.intValue("touchedSampleRunCount")
+        val activeRuns = task.metrics.intValue("activeSampleFixedSeedRunCount")
+        val note = "reportOnly=true, producer=whiteBoxContentPack, fixedSeedVisibilityCase=sample_flooded_relics_active_2026042437"
+        val entry =
+            EvaluationEntry(
+                metricId = metricId,
+                status = EvaluationEntryStatus.PASS,
+                currentValue =
+                    buildJsonObject {
+                        put("rate", rate)
+                        put("touchedSampleRunCount", touchedRuns)
+                        put("activeSampleFixedSeedRunCount", activeRuns)
+                        put("samplePackTouchedContentIds", task.metrics.getValue("samplePackTouchedContentIds"))
+                        put("samplePackAddOnlyMainPath", task.metrics.getValue("samplePackAddOnlyMainPath"))
+                        put("samplePackSecondarySecretSlotUsed", task.metrics.getValue("samplePackSecondarySecretSlotUsed"))
+                        put("samplePackFixedSeedVisibilityCase", task.metrics.getValue("samplePackFixedSeedVisibilityCase"))
+                    },
+                currentValueText = "${formatPercent(rate)} ($touchedRuns/$activeRuns)",
+                targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
+                note =
+                    if (Phase4OwnerMetricTargets.passes(range, rate)) {
+                        note
+                    } else {
+                        "report-only warning: $note"
+                    },
+                details = task.metrics,
+            )
+        return EvaluationResult(
+            evaluationId = "contentPack.samplePackVisibility",
+            domainId = "content-pack",
+            mode = baseline.mode,
+            verdict = EvaluationVerdict.PASS,
+            baselineId = baseline.baselineId,
+            metricDefinitionVersion = baseline.metricDefinitionVersion,
+            passCount = 1,
+            approvedDebtCount = 0,
+            expectedFailureCount = 0,
+            unexpectedRegressionCount = 0,
+            improvedDebtCount = 0,
+            entries = listOf(entry),
+        )
+    }
 
     internal fun scriptedHiddenEvaluation(
         task: Phase4TaskAggregate,

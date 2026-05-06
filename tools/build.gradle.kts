@@ -813,6 +813,7 @@ val phase4OwnerBaselineInputs =
         "docs/review/phase4/opt/baselines/2026-04-16-phase4-boss-phase-identity-owner-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-terrain-per-zone-lower-bound-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-24-phase4-sample-pack-add-first-owner-baseline.json",
     )
 val phase4AggregationManifest =
     providers.of(Phase4AggregationManifestValueSource::class) {

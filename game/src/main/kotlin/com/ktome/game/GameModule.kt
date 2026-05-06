@@ -403,6 +403,8 @@ object GameModule {
             localizer = loader.localizer,
             activePackIds = loader.activePackIds,
             activePackManifestVersions = loader.activePackManifestVersions,
+            activePackOverlaySummaries = loader.activePackOverlaySummaries,
+            activePackKeyResolutionSummary = loader.activePackKeyResolutionSummary,
             telegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
             threatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
             zoneMapgenProfileResolver = zoneMapgenProfileResolver,

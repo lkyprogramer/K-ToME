@@ -10,11 +10,12 @@
 - 专项美术合同：[ART_STYLE_BIBLE.md](./ART_STYLE_BIBLE.md)
 - 父级世界观美术合同：[docs/2026-03-13-art-style-bible.md](../docs/2026-03-13-art-style-bible.md)
 
-Codex CLI 验证结论：
+Codex CLI 生图验证结论：
 
-- 本机 `codex-cli 0.125.0` 支持 prompt 输入和 `--image <FILE>` 图片附件。
-- 未发现直接 `prompt -> PNG` 的 CLI 生图子命令。
-- 方案采用：Codex 交互式生成 raw sheet/demo，仓库脚本负责切分、校验、处理、注册 manifest。
+- `codex exec "生成一个上海一日旅游海报图片" --skip-git-repo-check` 已验证会把图片写入 `/Users/luo/.codex/generated_images/<latest-session>/`。
+- 仓库固定通过 `scripts/codex-generate-image.py` 调用 Codex CLI，按目录修改时间选取 `/Users/luo/.codex/generated_images` 下最新文件夹中的最新图片，并复制到调用方指定的 repo-relative `rawSheetPath`。
+- `/Users/luo/.codex/generated_images` 只是 transient source，不进入 manifest、coverage artifact 或 PR 合同；正式合同只认 `assets-src/image/raw/sheets/dark-v1/{sheetId}.png` 这类 repo-relative 输出路径。
+- 方案采用：脚本生成 prompt，`scripts/codex-generate-image.py` 调用 Codex CLI 生成并落位 raw sheet，仓库脚本负责切分、校验、处理、注册 manifest。
 
 ## Art Style Authority
 新增 [ART_STYLE_BIBLE.md](./ART_STYLE_BIBLE.md) 作为本方案的 UI/UX 与雪碧图专项风格合同。
@@ -185,7 +186,7 @@ sheets:
 8. `sheetId`、`targetKey` prefix、`category` 必须与 [pr/README.md](./pr/README.md) 的 SheetId Ownership 和 key registry 匹配。
 
 ### Prompt Generation Contract
-每张 sheet 的最终 prompt 由 `generate_sheet_prompt.py` 生成，结构固定。raw sheet 生成是人工 Codex app 步骤，不能假设 CI 或 Codex CLI 能直接生 PNG。
+每张 sheet 的最终 prompt 由 `generate_sheet_prompt.py` 生成，结构固定。raw sheet 通过 `scripts/codex-generate-image.py` 调用 Codex CLI 生成；该脚本只从 `/Users/luo/.codex/generated_images` 读取最新输出并复制到 `rawSheetPath`，不把本机生成目录写入长期合同。
 
 Prompt 输出目录固定为 `UI/sprite-sheets/prompts/dark-v1/`。文件名由脚本按 `round + sheet order + sheetId` 生成，格式固定：
 
@@ -198,7 +199,7 @@ Prompt 输出目录固定为 `UI/sprite-sheets/prompts/dark-v1/`。文件名由�
 029-r09-rejected-polish.prompt.txt
 ```
 
-prompt 文件头必须包含可人工执行的信息：
+prompt 文件头必须包含脚本可执行的信息：
 
 ```text
 Prompt ID: 001-r01-ui-chrome
@@ -210,7 +211,15 @@ Cell: 256x256
 Style tag: ktome-dark-fantasy-sprite-ui-v1
 ```
 
-你在 Codex app 中执行 prompt 后，只做一件事：把生成的 PNG 重命名为 `rawSheetPath` 指定的文件名，并放入 `assets-src/image/raw/sheets/dark-v1/`。例如 `001-r01-ui-chrome.prompt.txt` 对应 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`。后续切分、contact sheet、QA 和 manifest 校验都由脚本执行。
+生成 raw sheet 时，只允许通过脚本把 Codex CLI 最新输出复制到 `rawSheetPath` 指定文件名。例如 `001-r01-ui-chrome.prompt.txt` 对应 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`：
+
+```bash
+scripts/codex-generate-image.py "$(cat UI/sprite-sheets/prompts/dark-v1/001-r01-ui-chrome.prompt.txt)" \
+  --out assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png \
+  --overwrite
+```
+
+后续切分、contact sheet、QA 和 manifest 校验都由脚本执行。
 
 ```text
 Create a {canvasWidth}x{canvasHeight} transparent-background sprite sheet for K-ToME.
@@ -239,11 +248,11 @@ row 0 col 2: focused target reticle over a worn stone tile.
 3. `render_contact_sheet.py`：生成带 `row,col,targetKey` 标签的验收图。
 4. `verify_sprite_sheet_map.py`：校验映射、路径、coverage、透明边距和 manifest 一致性。
 
-人工/自动边界：
+生成/验证边界：
 
 1. 脚本生成 prompt：`sheet-plan.yaml -> UI/sprite-sheets/prompts/dark-v1/*.prompt.txt`。
-2. 人工调用 Codex app：逐个复制 prompt 生成图片。
-3. 人工放置 raw sheet：文件必须放到 `rawSheetPath`，文件名必须等于 `{sheetId}.png`。
+2. 脚本调用 Codex CLI：`scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --overwrite`。
+3. 脚本落位 raw sheet：文件必须放到 `rawSheetPath`，文件名必须等于 `{sheetId}.png`。
 4. 脚本验证 raw sheet：尺寸、grid、hash、文件名、repo-relative path 和 prompt index 对齐。
 5. 脚本切分 PNG、生成 contact sheet、输出 QA report。
 6. 人工只在 contact sheet 上判断语义和风格是否可接受；不得通过改 `row/col` 掩盖生成错位。
@@ -307,7 +316,7 @@ row 0 col 2: focused target reticle over a worn stone tile.
 
 Round 9 专门用于 fallback/debug 收口与返修。`r09-fallback-debug` 先覆盖 current manifest 中所有 missing/hidden/debug/fallback/ASCII placeholder 相关 key；`r09-rejected-polish` 只承接已写入 coverage artifact 的 rejected cell，避免 fallback sheet 容量被返修资源挤占。
 
-容量矩阵是 prompt index、coverage artifact 和人工生成批次的单一总量真源：
+容量矩阵是 prompt index、coverage artifact 和生图批次的单一总量真源：
 
 | Sheet Type | Count | Capacity Each | Total Cells |
 | --- | ---: | ---: | ---: |
@@ -339,8 +348,24 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | `ui.hud.warning.icon` | HUD 警告/危险提示 icon |
 | `ui.hud.quest_marker.icon` | HUD 任务提示 marker |
 | `ui.hud.log_marker.icon` | HUD 日志提示 marker |
+| `ui.screen.home.title_frame` | 首页标题/header frame |
+| `ui.screen.home.action_frame` | 首页主操作栈 frame |
+| `ui.screen.validation.badge` | 验证模式标识 marker |
+| `ui.screen.outcome.victory_marker` | 胜利结算 marker |
+| `ui.screen.outcome.defeat_marker` | 失败结算 marker |
+| `ui.screen.error.marker` | error / asset failure marker |
+| `ui.screen.loading.marker` | loading marker |
+| `ui.control.back.icon` | 返回动作 icon |
+| `ui.control.confirm.icon` | 确认/开始动作 icon |
+| `ui.control.copy.icon` | 复制详情 icon |
 | `ui.control.backpack.icon` | 背包入口 icon |
 | `ui.control.equipment.icon` | 装备面板入口 icon |
+| `ui.shop.offer.frame` | shop offer card frame，默认 alias 到 PR-02 panel frame |
+| `ui.shop.price.affordable` | 可购买价格 marker |
+| `ui.shop.price.unaffordable` | 不可购买价格 marker |
+| `ui.shop.offer.disabled` | 不可购买/不可售卖 marker |
+| `ui.shop.inscription.marker` | 铭文 offer 类型 marker |
+| `ui.shop.replacement.slot_marker` | 铭文满槽替换槽位 marker |
 | `ui.combat.action.icon` | 战斗动作选择 icon |
 | `ui.combat.method.icon` | 战斗方式选择 icon |
 | `ui.combat.target.icon` | 战斗目标选择 icon |
@@ -356,14 +381,21 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 ## UI/UX Target
 最终 UI 形态：
 
-1. 中央地图保持主视图，但使用暗色框架、地图阴影和边界材质增强质感。
-2. 左侧新增导航/区域栏：当前 dungeon、楼层、任务摘要、关键提示。
-3. 右侧改为玩家面板：角色状态、装备格、背包 grid、资源计数。
-4. 底部只保留一套 HUD：生命/耐力/经验、日志、快捷栏、键位提示。
-5. 删除重复状态栏；快捷键提示改为紧凑分组，不再挤压日志。
-6. 装备、技能、物品、状态全部图标化，文字只作为名称、数量、tooltip 或日志补充。
-7. 职业树 UI 使用暗黑侧栏/面板化表达，继续消费正在开发的 `TalentSidebarPresenter`、`TalentTreeNodeSnapshot`、`DescriptionPresenter` 和 `ACTIVE_TALENT_SLOT_CHOICE` 合同。
-8. 不引入 D-pad；当前阶段继续以键盘输入为主。
+1. 首页/主菜单是玩家第一屏，必须与局内 UI 使用同一暗黑 token、同一焦点态、同一禁用态和同一键盘优先交互语义；不能保留旧风格“标题 + 文本菜单”孤岛。
+2. 验证模式入口和 `ValidationSetupScreen` 必须纳入正式 UI 改造。验证模式可以标记为 validation/debug flow，但视觉、布局、locale、焦点和返回路径必须与正式 UI 统一。
+3. 中央地图保持主视图，但使用暗色框架、地图阴影和边界材质增强质感。
+4. 左侧新增导航/区域栏：当前 dungeon、楼层、任务摘要、关键提示。
+5. 右侧改为玩家面板：角色状态、装备格、背包 grid、资源计数。
+6. 底部只保留一套 HUD：生命/耐力/经验、日志、快捷栏、键位提示。
+7. 删除重复状态栏；快捷键提示改为紧凑分组，不再挤压日志。
+8. 装备、技能、物品、状态全部图标化，文字只作为名称、数量、tooltip 或日志补充。
+9. 铭文商店 / shop 是装备、背包、物品 UX family 的一部分，必须统一为暗黑 offer card、buy/sell 双列、价格/禁用态、满槽替换 modal、空态和 tooltip。
+10. 职业树 UI 使用暗黑侧栏/面板化表达，继续消费正在开发的 `TalentSidebarPresenter`、`TalentTreeNodeSnapshot`、`DescriptionPresenter` 和 `ACTIVE_TALENT_SLOT_CHOICE` 合同。
+11. 胜利/失败结算、loading、runtime error、独立 `UiErrorScreen`、设置/无障碍、world route、stat assign、reward/frontstage、Look/Inspect 等玩家可见 surface 必须进入最终覆盖矩阵；不能只因为它们不是局内常驻 HUD 就跳过。
+12. ASCII 只作为 debug/fallback path 保留；Tile dark UI 是正式玩家路径。
+13. 不引入 D-pad；当前阶段继续以键盘输入为主。
+
+全量 UI 面覆盖清单以 [pr/screen-coverage-matrix.md](./pr/screen-coverage-matrix.md) 为审计入口。PR-07 关闭前，矩阵中所有 Required/Conditional 项必须有 owner PR、focused test 或 golden/manual evidence、packaged app 或 debug client 白盒记录。
 
 ## PR-Level Development Documents
 本文件只保留总方案、风格合同、资源合同和公共验证纪律；具体执行拆分落到 [pr/README.md](./pr/README.md) 与各 PR 文档。
@@ -371,13 +403,13 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | PR | 文档 | 工作量 | 目标 |
 | --- | --- | --- | --- |
 | `dark-uiux-pr00` | [Style And Pipeline Contract](./pr/dark-uiux-pr00-style-and-pipeline-contract.md) | M | 冻结风格合同、sheet schema、prompt/切分/验收流程 |
-| `dark-uiux-pr01` | [Client Shell Layout](./pr/dark-uiux-pr01-client-shell-layout.md) | L | 三栏 + 底部 HUD 框架、token、renderer 拆分 |
-| `dark-uiux-pr02` | [UI Chrome Sprite Pilot](./pr/dark-uiux-pr02-ui-chrome-sprite-pilot.md) | L | 跑通 UI chrome/HUD 第一批 sheet 到 manifest/golden |
-| `dark-uiux-pr03` | [Equipment Inventory Items](./pr/dark-uiux-pr03-equipment-inventory-items.md) | L | 装备/背包 grid、item icon、quality、空态/tooltip |
+| `dark-uiux-pr01` | [Client Shell Layout](./pr/dark-uiux-pr01-client-shell-layout.md) | L | 首页/主菜单、验证入口、三栏 + 底部 HUD 框架、token、renderer 拆分 |
+| `dark-uiux-pr02` | [UI Chrome Sprite Pilot](./pr/dark-uiux-pr02-ui-chrome-sprite-pilot.md) | L | 跑通 UI chrome/HUD/standalone screen chrome 第一批 sheet 到 manifest/golden |
+| `dark-uiux-pr03` | [Equipment Inventory Items](./pr/dark-uiux-pr03-equipment-inventory-items.md) | L | 装备/背包 grid、item icon、铭文商店、quality、空态/tooltip |
 | `dark-uiux-pr04` | [Profession Tree UI](./pr/dark-uiux-pr04-profession-tree-ui.md) | M | 职业树 dark UI、节点状态、预览、主动槽 modal |
 | `dark-uiux-pr05` | [Map Actor Portrait Replacement](./pr/dark-uiux-pr05-map-actor-portrait-replacement.md) | XL | Tile、prop、VFX、actor、portrait 统一替换 |
 | `dark-uiux-pr06` | [Skills Status Quest Full Manifest](./pr/dark-uiux-pr06-skills-status-quest-full-manifest.md) | XL | 技能、状态、任务、fallback、全 manifest 收口 |
-| `dark-uiux-pr07` | [Golden Whitebox Polish](./pr/dark-uiux-pr07-golden-whitebox-polish.md) | M | golden、白盒、性能与 atlas 决策 |
+| `dark-uiux-pr07` | [Golden Whitebox Polish](./pr/dark-uiux-pr07-golden-whitebox-polish.md) | M | 全 UI 面 golden/白盒、验证模式、结算/错误页、性能与 atlas 决策 |
 
 执行顺序固定为：`PR-00 -> PR-01 -> PR-02 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
 
@@ -390,9 +422,9 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | `UI/sprite-sheets/sheet-plan.yaml` | sheet/cell/visualKey/outputName 映射真源 |
 | `UI/sprite-sheets/key-registry.yaml` | `targetKey / ownerPr / fallbackKey / consumer / consumerTest` 审计入口 |
 | `UI/sprite-sheets/coverage-schema.md` | `dark-v1-manifest-coverage.json` common/owner/final 字段合同 |
-| `UI/sprite-sheets/prompts/dark-v1/*.prompt.txt` | 编号后的 Codex app 手工生图 prompt |
+| `UI/sprite-sheets/prompts/dark-v1/*.prompt.txt` | 编号后的 Codex CLI 生图 prompt |
 | `UI/sprite-sheets/prompts/dark-v1/prompt-index.json` | promptId、sheetId、rawSheetPath、prompt hash 索引 |
-| `assets-src/image/raw/sheets/dark-v1/*.png` | Codex 交互式生成的 raw sheet |
+| `assets-src/image/raw/sheets/dark-v1/*.png` | `scripts/codex-generate-image.py` 从 Codex CLI 最新输出复制来的 raw sheet |
 | `assets-src/image/contact-sheets/dark-v1/*.png` | 带 row/col/key 标签的验收图 |
 | `assets-src/image/manifests/dark-v1-sprite-report.jsonl` | 切分与 QA report |
 | `assets-src/image/manifests/phase2-visual-manifest.json` | canonical visual manifest，先更新它 |
@@ -419,7 +451,10 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 - 总入口：`./gradlew verifyChanged`
 - 若改 Gradle/依赖/bootstrap：`./scripts/verify-bootstrap.sh`
 - 职业树 UI 改造额外覆盖：`TalentSidebarPresenterTest`、`InputHandlerTest`、`AsciiRenderModelTest`、`TileRendererCanvasTest`、`phase4-v4-pr01` 白盒场景。
-- 白盒检查：桌面端确认左侧栏、地图、右侧装备/背包、底部 HUD、职业树、主动槽 modal、快捷键提示、中文文本、fallback、窗口缩放均正常。
+- 首页/验证入口额外覆盖：`MainMenuFocusPolicyTest`、`MainMenuControllerTest`、`MainMenuScreenTextTest`、`ValidationSetupControllerTest`、`GameAppLifecycleTest` 中主菜单/验证 setup case。
+- 铭文商店额外覆盖：`InputHandlerTest` shop / inscription replacement case、`DescriptionPresenterTest` shop item lines、`TileRendererCanvasTest` shop modal/card 不重叠断言。
+- 结算/错误/loading 额外覆盖：`OutcomeSummaryPresenterTest`、`UiErrorPayloadTest`、`UiLoadingStateTest`、golden outcome set。
+- 白盒检查：桌面端确认首页/主菜单、角色创建、继续游戏异常、验证模式 setup、验证 overlay、左侧栏、地图、右侧装备/背包、铭文商店、底部 HUD、职业树、主动槽 modal、胜利/失败结算、runtime error/loading、设置/无障碍、快捷键提示、中文文本、fallback、窗口缩放均正常。
 - PR-07 必须执行 packaged app 白盒；只有明确没有 package-facing 改动且 PR 文档记录豁免原因时才允许跳过。
 
 Atlas 决策阈值：
@@ -436,5 +471,5 @@ Atlas 决策阈值：
 ## Assumptions
 - “全量替换”限定为视觉资源和 UI 表现，不修改核心规则、数值、存档、replay、profile schema。
 - 旧资源迁移期可保留作回滚参考，但新 manifest 默认只指向新纪元资源。
-- Codex CLI 未来若支持直接图片输出，只替换 raw sheet 获取步骤，不改变切分、manifest、验证流程。
+- 如果未来 Codex CLI 支持显式 `--out` 图片路径，只替换 `scripts/codex-generate-image.py` 内部获取步骤，不改变 prompt、切分、manifest、验证流程。
 - 职业树 UI PR 只消费 Phase4 v4 PR-01 已落地的 presentation/snapshot 合同；如职业树功能分支尚未合入，必须以它为上游分支或等价文档合同，不能在 UI PR 中重新实现职业树规则。
