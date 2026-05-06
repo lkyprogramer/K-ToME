@@ -7,7 +7,7 @@ import org.yaml.snakeyaml.Yaml
 
 object ContentPackFixtureCatalog {
     val samplePackId: PackId = PackId("sample.flooded_relics")
-    val samplePrecedenceFixturePackId: PackId = PackId("fixture.sample_flooded_relics_override")
+    val samplePrecedenceFixturePackId: PackId = PackId("fixture_sample_flooded_relics_override")
     val sampleBiasSplitFixturePackId: PackId = PackId("fixture.sample_flooded_relics_bias_split")
     val addPackId: PackId = PackId("fixture.add_monster")
     val replacePackId: PackId = PackId("fixture.replace_monster")
@@ -56,6 +56,10 @@ object ContentPackFixtureCatalog {
 
     fun harnessSpec(packId: PackId): ContentPackHarnessSpec {
         val path = sidecarPath(packId)
+        if (!Files.exists(path)) {
+            val repoRoot = repoRoot()
+            error("Missing content-pack harness sidecar for packId=${packId.value}: ${repoRoot.relativize(path)}")
+        }
         val root = Files.newBufferedReader(path).use { reader -> Yaml().load<Map<String, Any?>>(reader) }
             ?: error("Harness spec root must not be null: $path")
         return ContentPackHarnessSpec(

@@ -188,6 +188,12 @@ class Phase4ReportRunnerTest {
         assertEquals("PASS", lootTask.getValue("status").jsonPrimitive.content)
         assertEquals("0", lootTask.getValue("metrics").jsonObject.getValue("failedAssertions").jsonPrimitive.content)
         assertEquals("13", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)
+        assertEquals(
+            "1.0",
+            contentPackTask.getValue("metrics").jsonObject.getValue("samplePackContentPlayerVisibilityRate.reportOnly").jsonPrimitive.content,
+        )
+        assertTrue(contentPackTask.getValue("metrics").jsonObject.getValue("samplePackAddOnlyMainPath").jsonPrimitive.content.toBooleanStrict())
+        assertTrue(whiteBoxContentPackTask.getValue("metrics").jsonObject.getValue("samplePackSecondarySecretSlotUsed").jsonPrimitive.content.toBooleanStrict())
         assertEquals("1", contentPackTask.getValue("metrics").jsonObject.getValue("legacyLootProfileSchemaRejectCount").jsonPrimitive.content)
         assertEquals(
             "loot.foundation.common",
@@ -253,6 +259,7 @@ class Phase4ReportRunnerTest {
                 "sameZoneSecretVsRewardMaxOverlap",
                 "secretZoneRewardAuthorityViolations",
                 "professionCapstoneSourceCoverage.reportOnly",
+                "samplePackContentPlayerVisibilityRate.reportOnly",
                 "terminalWeaponBaseDiversity",
                 "crossProfessionTopWeaponDominance",
                 "professionAlignedWeaponAdoptionRate",

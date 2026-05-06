@@ -294,6 +294,9 @@
    - runtime 主路径固定为 `ADD + whole-entry REPLACE`
    - official sample pack 只承担 `ADD` 的玩家可见验证；非 `ADD` 语义由第二夹具或模拟双包场景覆盖
    - 第二 pack fixture 或模拟双 pack 场景下，loader precedence 与 conflict 处理符合文档约定
+   - 仓库内 runtime `manifest.yaml` 的 `schemaVersion` 必须等于 `ContentPackManifest.SCHEMA_VERSION`；sidecar harness spec 不参与该校验
+   - active sample pack fixed-seed run 必须通过 `extensions.hiddenBranchBindings` 触达 sample namespaced secret zone、hidden event 和至少一个 sample item id，不能用 registry presence 替代 runtime touch
+   - `whiteBoxContentPack` 必须输出 `samplePackContentPlayerVisibilityRate.reportOnly`、`samplePackTouchedContentIds`、`samplePackSecondarySecretSlotUsed` 和 `samplePackFixedSeedVisibilityCase`
    - `harnessSeeds` 只能来自 sidecar harness spec，不得出现在 runtime manifest
    - 缺失依赖、依赖环、`versionRange` 冲突和 namespace 冲突都有结构化失败诊断
 

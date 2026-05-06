@@ -151,6 +151,7 @@ object Phase4ReportRunner {
         val longRun = requireTask(tasksById, "longRunLab")
         val boss = requireTask(tasksById, "bossHarness")
         val terrain = requireTask(tasksById, "terrainInteractionBatch")
+        val contentPack = requireTask(tasksById, "whiteBoxContentPack")
         val scriptedHiddenBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.scriptedHiddenBaselinePath()))
         val organicHiddenBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.organicHiddenBaselinePath()))
         val lootBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath()))
@@ -162,6 +163,7 @@ object Phase4ReportRunner {
         val bossPhaseIdentityBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.bossPhaseIdentityBaselinePath()))
         val terrainUnifiedBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
         val terrainPerZoneBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
+        val samplePackAddFirstBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.samplePackAddFirstBaselinePath()))
         val terrainBaseline = readTerrainBaseline(repoRoot)
         val cadenceOverlapRange = lootBaseline.requiredMetric("sameZoneSecretVsCadenceMaxOverlap")
         val rewardOverlapRange = lootBaseline.requiredMetric("sameZoneSecretVsRewardMaxOverlap")
@@ -245,6 +247,10 @@ object Phase4ReportRunner {
                 .associateBy(EvaluationEntry::metricId)
         val bossPhaseIdentityEntriesByMetricId =
             Phase4AggregationInputRunner.bossPhaseIdentityEvaluation(task = boss, baseline = bossPhaseIdentityBaseline)
+                .entries
+                .associateBy(EvaluationEntry::metricId)
+        val samplePackVisibilityEntriesByMetricId =
+            Phase4AggregationInputRunner.samplePackVisibilityEvaluation(task = contentPack, baseline = samplePackAddFirstBaseline)
                 .entries
                 .associateBy(EvaluationEntry::metricId)
         val terrainEncounterRate = terrain.metrics.doubleValue("terrainInteractionEncounterRate")
@@ -343,6 +349,16 @@ object Phase4ReportRunner {
             add(
                 localRewardEntriesByMetricId.getValue("professionCapstoneSourceCoverage.reportOnly").toLegacyExperienceMetric(loot.taskId),
             )
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "whiteBoxContentPack",
+                outputSection = "content-pack-visibility",
+            ).forEach { metricId ->
+                add(
+                    requireNotNull(samplePackVisibilityEntriesByMetricId[metricId]) {
+                        "Missing sample pack visibility evaluation entry '$metricId'."
+                    }.toLegacyExperienceMetric(contentPack.taskId),
+                )
+            }
             add(
                 Phase4ExperienceMetric(
                     metricId = "terminalWeaponBaseDiversity",

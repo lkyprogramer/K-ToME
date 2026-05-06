@@ -1,10 +1,10 @@
 events:
-  - id: hidden.event.underground_river.crystal_rift.reward
+  - id: sample.flooded_relics.hidden_event.flooded_reliquary.reward
     triggerType: INTERACT_TILE
     optionalOnly: true
     conditions:
       - key: SECRET_ZONE_ID
-        expectedValue: underground_river_crystal_rift
+        expectedValue: sample.flooded_relics.secret_zone.flooded_reliquary
     rewards:
       - key: TRIGGER_ENCOUNTER
         payload:

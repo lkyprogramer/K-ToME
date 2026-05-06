@@ -75,11 +75,11 @@ Per-round checkpoint：
 
 Raw sheet 生成交接：
 
-1. 每个 checkpoint 开始前，只为当前 Round 生成 prompt 文件和 `prompt-index.json` 子集，不一次性要求 lky 生成 Round 2-6 全部 raw sheet。
-2. lky 在 Codex app 中执行当前 checkpoint 的 prompt，并将 PNG 放到对应 `sheet-plan.yaml.rawSheetPath`。
+1. 每个 checkpoint 开始前，只为当前 Round 生成 prompt 文件和 `prompt-index.json` 子集，不一次性要求生成 Round 2-6 全部 raw sheet。
+2. 开发者通过 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --overwrite` 执行当前 checkpoint 的 prompt，并由脚本将 Codex CLI 最新生成图片复制到对应 `sheet-plan.yaml.rawSheetPath`。
 3. 文件名必须等于 `{sheetId}.png`，例如 `r02-tiles-ground.png`、`r04-actors-boss.png`。
 4. 当前 checkpoint 的 raw PNG 全部通过尺寸、grid、hash 和路径校验后，才能切分 runtime PNG。
-5. 每个 checkpoint 的 PR 描述或阶段记录必须列出 prompt path、raw sheet path、raw sheet hash、contact sheet QA path 和 coverage summary。
+5. 每个 checkpoint 的 PR 描述或阶段记录必须列出 prompt path、raw sheet path、raw sheet hash、Codex CLI transient source folder/source image 摘要、contact sheet QA path 和 coverage summary。
 
 ## 4. 实现任务
 

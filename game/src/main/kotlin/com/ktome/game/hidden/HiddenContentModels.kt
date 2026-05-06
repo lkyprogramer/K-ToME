@@ -11,6 +11,7 @@ const val SECRET_ZONE_REGISTRY_ID: String = "secret_zone"
 const val LOOT_PROFILE_REGISTRY_ID: String = "loot_profile"
 const val STATUS_REGISTRY_ID: String = "status"
 const val MONSTER_REGISTRY_ID: String = "monster"
+const val SPECIAL_ITEM_TEMPLATE_REGISTRY_ID: String = "special_item_template"
 
 enum class HiddenTriggerType {
     ENTER_ROOM,

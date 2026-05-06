@@ -2,6 +2,7 @@ package com.ktome.game.contentpack
 
 import com.ktome.core.phase.PackId
 import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.SearchBindingId
 import java.nio.file.Path
 
 data class PackDependency(
@@ -36,6 +37,49 @@ data class OverlayEntry(
     }
 }
 
+enum class ContentPackHiddenBranchSlot {
+    PRIMARY,
+    SECONDARY,
+}
+
+enum class ContentPackHiddenBranchPathClass {
+    OPTIONAL_SECRET,
+}
+
+data class ContentPackHiddenBranchBinding(
+    val bindingId: SearchBindingId,
+    val zoneId: String,
+    val slot: ContentPackHiddenBranchSlot,
+    val secretZoneId: ContentRef,
+    val hiddenEventId: ContentRef,
+    val anchorTag: String,
+    val pathClass: ContentPackHiddenBranchPathClass,
+    val fixedSeedVisibilityCase: String,
+) {
+    init {
+        require(zoneId.isNotBlank()) { "ContentPackHiddenBranchBinding.zoneId must not be blank." }
+        require(anchorTag.isNotBlank()) { "ContentPackHiddenBranchBinding.anchorTag must not be blank." }
+        require(fixedSeedVisibilityCase.isNotBlank()) { "ContentPackHiddenBranchBinding.fixedSeedVisibilityCase must not be blank." }
+    }
+}
+
+data class ContentPackManifestExtensions(
+    val hiddenBranchBindings: List<ContentPackHiddenBranchBinding> = emptyList(),
+) {
+    init {
+        val duplicateBindingIds =
+            hiddenBranchBindings
+                .groupingBy { binding -> binding.bindingId }
+                .eachCount()
+                .filterValues { count -> count > 1 }
+                .keys
+        require(duplicateBindingIds.isEmpty()) {
+            "ContentPackManifestExtensions.hiddenBranchBindings duplicate bindingIds: " +
+                duplicateBindingIds.joinToString()
+        }
+    }
+}
+
 data class ContentPackManifest(
     val id: PackId,
     val version: String,
@@ -47,6 +91,7 @@ data class ContentPackManifest(
     val localeBundles: List<String>,
     val visualManifest: String?,
     val audioManifest: String?,
+    val extensions: ContentPackManifestExtensions = ContentPackManifestExtensions(),
 ) {
     init {
         require(version.isNotBlank()) { "ContentPackManifest.version must not be blank." }
@@ -63,7 +108,7 @@ data class ContentPackManifest(
     }
 
     companion object {
-        const val SCHEMA_VERSION: Int = 1
+        const val SCHEMA_VERSION: Int = 2
     }
 }
 

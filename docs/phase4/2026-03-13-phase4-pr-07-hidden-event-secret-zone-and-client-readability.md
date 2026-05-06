@@ -125,7 +125,7 @@ enum class ReturnBridgePolicy {
    - `special encounter`
    - `secret entrance reveal`
 2. `rewardProfileId` 必须引用正式 loot registry。
-3. `guaranteedContent` 使用 `ContentRef` typed 引用，不允许自由字符串。
+3. `guaranteedContent` 使用 `ContentRef` typed 引用，不允许自由字符串；runtime 支持的 registry 固定为 `hidden_event`、`monster`、`special_item_template`。
 4. `HiddenEventReward` 的 payload 必须复用主文档已冻结的 typed payload 结构，不允许把 `REVEAL_SECRET_ZONE / LOOT_PROFILE / TRIGGER_ENCOUNTER / GRANT_BUFF` 再降回自由字符串。
 5. 静态内容层不直接写 `returnBridgeNodeId`；只声明 `entranceBindingId + returnBridgePolicy (+ returnBridgeAnchorTag)`。
 6. mapgen / solvability 实例化阶段必须把这些静态绑定解析成运行时 `resolvedReturnBridgeNodeId`，并满足：

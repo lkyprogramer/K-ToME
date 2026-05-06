@@ -2,9 +2,12 @@ package com.ktome.game.validation
 
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.TalentNodeStateSnapshot
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.contentpack.ContentPackFixtureCatalog
+import com.ktome.game.contentpack.ContentPackSelection
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -242,6 +245,29 @@ class ValidationScenarioRegistryTest {
         )
         assertEquals(listOf("log.validation.phase4_v4.action"), scenario.evidence.requiredLogEventKeys)
         assertEquals("validation.phase4.v4.phase4-v4-pr06.evidence.summary_note", scenario.evidence.scenarioNoteLabelKey)
+    }
+
+    @Test
+    fun `pr07 sample pack visibility scenario matches fixed phase4 v4 contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr07"))
+
+        assertEquals("PR-07", scenario.prId)
+        assertEquals(ValidationPreset.CONTENT_PACK, scenario.runtime.preset)
+        assertEquals(2026042437L, scenario.runtime.seed)
+        assertEquals("arcanist", scenario.runtime.professionId)
+        assertEquals("human", scenario.runtime.raceId)
+        assertEquals("underground_river", scenario.runtime.zoneId)
+        assertEquals(1, scenario.runtime.floor)
+        assertEquals(-1, scenario.runtime.routeIndex)
+        assertEquals(ValidationScenarioContentPackMode.SAMPLE_PACK_ENABLED, scenario.runtime.contentPackMode)
+        assertTrue("evidence/phase4-v4-pr07-active-sample-pack-summary.png" in scenario.evidence.requiredEvidenceFiles)
+        assertTrue("evidence/phase4-v4-pr07-touched-content-ids.png" in scenario.evidence.requiredEvidenceFiles)
+        assertEquals(
+            "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr07-sample-pack-add-first-visibility.md",
+            scenario.evidence.manualRecordPath,
+        )
+        assertEquals(listOf("log.validation.phase4_v4.action"), scenario.evidence.requiredLogEventKeys)
+        assertEquals("validation.phase4.v4.phase4-v4-pr07.evidence.summary_note", scenario.evidence.scenarioNoteLabelKey)
     }
 
     @Test
@@ -611,6 +637,76 @@ class ValidationScenarioRegistryTest {
             assertTrue(secondaryResult.contains(":game:longRunLab"), secondaryResult)
             assertTrue(secondaryResult.contains(":tools:scopeCoverageLint"), secondaryResult)
         }
+    }
+
+    @Test
+    fun `pr07 scenario actions expose sample pack summary and runtime touched ids`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr07"))
+        val sampleBindingId = SearchBindingId("sample.flooded_relics.search.flooded_reliquary")
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("phase4-v4-pr07-scenario-actions")),
+                    options =
+                        scenario.toSessionOptions(
+                            samplePackSelection = ContentPackSelection.of(ContentPackFixtureCatalog.samplePackRoot()),
+                        ),
+                ),
+            )
+
+        assertEquals(listOf("sample.flooded_relics"), requireNotNull(session.validationSummarySnapshot()).activePackIds)
+        assertTrue(
+            requireNotNull(session.validationSummarySnapshot()).activePackSummaries.single().opCounts.getValue("ADD") >= 5,
+        )
+        assertEquals(0, requireNotNull(session.validationSummarySnapshot()).packKeyResolutionSummary.warningCount)
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        val primaryResult = requireNotNull(session.validationSummarySnapshot()?.lastResult?.argumentValue("result"))
+        assertTrue(primaryResult.contains("sample_pack_summary_ready"), primaryResult)
+        assertTrue(primaryResult.contains("noPackActivePackIds=N/A"), primaryResult)
+        val primarySummary = requireNotNull(session.validationSummarySnapshot())
+        assertTrue(primarySummary.touchedContentIds.isEmpty())
+        val comparison = requireNotNull(primarySummary.packVisibilityComparison)
+        assertTrue(comparison.noPackState.activePackIds.isEmpty())
+        assertTrue(comparison.noPackState.activePackSummaries.isEmpty())
+        assertTrue(comparison.noPackState.touchedContentIds.isEmpty())
+        assertEquals(listOf("sample.flooded_relics"), comparison.activeSamplePackState.activePackIds)
+        assertTrue(comparison.activeSamplePackState.activePackSummaries.single().opCounts.getValue("ADD") >= 5)
+
+        assertTrue(session.perform(PlayerCommand.DropInventoryItem(session.inventoryItems().first().index)))
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        val secondaryResult = requireNotNull(session.validationSummarySnapshot()?.lastResult?.argumentValue("result"))
+        assertTrue(secondaryResult.contains(sampleBindingId.value), secondaryResult)
+
+        assertTrue(session.perform(PlayerCommand.Search))
+        session.automationMovePlayerTo(requireNotNull(session.automationHiddenEntrancePointForBinding(sampleBindingId)))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        session.automationMovePlayerTo(requireNotNull(session.automationSecretRewardPointForBinding(sampleBindingId)))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val touchedContentIds = requireNotNull(session.validationSummarySnapshot()).touchedContentIds
+        assertTrue("sample.flooded_relics.secret_zone.flooded_reliquary" in touchedContentIds, touchedContentIds.toString())
+        assertTrue("sample.flooded_relics.hidden_event.flooded_reliquary.reward" in touchedContentIds, touchedContentIds.toString())
+        assertTrue("sample.flooded_relics.unique.floodtide_lantern" in touchedContentIds, touchedContentIds.toString())
+        assertTrue("sample.flooded_relics.loot.flooded_reliquary.secret" in touchedContentIds, touchedContentIds.toString())
     }
 
     @Test

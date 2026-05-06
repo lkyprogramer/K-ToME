@@ -86,6 +86,8 @@ class ReportPhase4RunnerTest {
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied" }.jsonObject
             val routeHashMetric =
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "zoneRouteHashDiversity.topHashShare" }.jsonObject
+            val samplePackVisibilityMetric =
+                ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "samplePackContentPlayerVisibilityRate.reportOnly" }.jsonObject
             val branchInclusiveMetric =
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "branchInclusiveCount" }.jsonObject
             val routeTopologyMetric =
@@ -154,6 +156,9 @@ class ReportPhase4RunnerTest {
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionRate" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffRate" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSourceCoverage.reportOnly" })
+            assertEquals("whiteBoxContentPack", samplePackVisibilityMetric.getValue("sourceTaskId").jsonPrimitive.content)
+            assertEquals("PASS", samplePackVisibilityMetric.getValue("status").jsonPrimitive.content)
+            assertTrue(samplePackVisibilityMetric.getValue("currentValue").jsonObject.getValue("samplePackTouchedContentIds").jsonArray.isNotEmpty())
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffFloor" })
             assertFalse(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor.reportOnly" })
@@ -219,7 +224,7 @@ class ReportPhase4RunnerTest {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("72", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals(expectedOwnerMetricCount.toString(), comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }

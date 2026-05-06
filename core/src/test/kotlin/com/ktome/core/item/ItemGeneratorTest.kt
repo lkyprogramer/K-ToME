@@ -323,6 +323,22 @@ class ItemGeneratorTest {
     }
 
     @Test
+    fun `direct special template generation reuses fixed material and affix rules`() {
+        val generated =
+            ItemGenerator(bundle, TestRandomSource()).generateSpecialTemplate(
+                templateId = "artifact.river_echo",
+                itemLevel = 7,
+            )
+
+        assertEquals("river_echo_artifact", generated.baseId)
+        assertEquals("artifact.river_echo", generated.specialTemplateId)
+        assertEquals("STEEL", generated.materialId)
+        assertEquals(listOf("of_haste"), generated.affixes.map(AffixDef::id))
+        assertEquals(RarityTier.RARE, generated.quality)
+        assertEquals(20, generated.stats.castSpeedRating)
+    }
+
+    @Test
     fun `special template generation fails fast when fixed affix payload is incomplete`() {
         val brokenBundle =
             bundle.copy(

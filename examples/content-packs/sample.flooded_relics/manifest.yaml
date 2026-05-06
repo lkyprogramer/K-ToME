@@ -1,6 +1,6 @@
 id: sample.flooded_relics
 version: 1.0.0
-schemaVersion: 1
+schemaVersion: 2
 gameVersionRange: ">=0.4.0 <0.5.0"
 namespace: sample_flooded_relics
 dependencies: []
@@ -12,14 +12,14 @@ audioManifest: audio/audio-manifest.json
 overlays:
   - targetRef:
       registry: secret_zone
-      id: underground_river_crystal_rift
-    op: REPLACE
-    sourceFile: data/secret-zones/underground_river_crystal_rift.yaml
+      id: sample.flooded_relics.secret_zone.flooded_reliquary
+    op: ADD
+    sourceFile: data/secret-zones/sample.flooded_relics.secret_zone.flooded_reliquary.yaml
   - targetRef:
       registry: hidden_event
-      id: hidden.event.underground_river.crystal_rift.reward
-    op: REPLACE
-    sourceFile: data/events/hidden.event.underground_river.crystal_rift.reward.yaml
+      id: sample.flooded_relics.hidden_event.flooded_reliquary.reward
+    op: ADD
+    sourceFile: data/events/sample.flooded_relics.hidden_event.flooded_reliquary.reward.yaml
   - targetRef:
       registry: loot_profile
       id: sample.flooded_relics.loot.flooded_reliquary.secret
@@ -35,3 +35,13 @@ overlays:
       id: sample.flooded_relics.artifact.tideglass_echo
     op: ADD
     sourceFile: data/items/sample.flooded_relics.artifact.tideglass_echo.yaml
+extensions:
+  hiddenBranchBindings:
+    - bindingId: sample.flooded_relics.search.flooded_reliquary
+      zoneId: underground_river
+      slot: secondary
+      secretZoneId: sample.flooded_relics.secret_zone.flooded_reliquary
+      hiddenEventId: sample.flooded_relics.hidden_event.flooded_reliquary.reward
+      anchorTag: hidden.primer.underground_river.crystal_rift
+      pathClass: OPTIONAL_SECRET
+      fixedSeedVisibilityCase: sample_flooded_relics_active_2026042437

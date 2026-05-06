@@ -70,7 +70,7 @@ class BossVariantDataLoaderTest {
             """
             |id: fixture.boss_variant_loader
             |version: 1.0.0
-            |schemaVersion: 1
+            |schemaVersion: 2
             |gameVersionRange: ">=0.4.0 <0.5.0"
             |namespace: fixture_boss_variant_loader
             |dependencies: []

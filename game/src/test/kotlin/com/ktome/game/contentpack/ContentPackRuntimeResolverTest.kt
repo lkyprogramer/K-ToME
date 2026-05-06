@@ -1,9 +1,11 @@
 package com.ktome.game.contentpack
 
 import com.ktome.core.phase.PackId
+import com.ktome.core.world.solvability.SearchBindingId
 import java.nio.file.Path
 import kotlin.io.path.writeText
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
@@ -65,7 +67,7 @@ class ContentPackRuntimeResolverTest {
             """
             id: fixture.schema_mismatch
             version: 1.0.0
-            schemaVersion: 2
+            schemaVersion: 1
             gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_schema_mismatch
             dependencies: []
@@ -83,6 +85,87 @@ class ContentPackRuntimeResolverTest {
     }
 
     @Test
+    fun `resolver rejects duplicate hidden branch binding ids`() {
+        val packRoot = tempDir.resolve("fixture.hidden_branch_binding_duplicate")
+        packRoot.toFile().mkdirs()
+        packRoot.resolve("manifest.yaml").writeText(
+            """
+            id: fixture.hidden_branch_binding_duplicate
+            version: 1.0.0
+            schemaVersion: 2
+            gameVersionRange: ">=0.4.0 <0.5.0"
+            namespace: fixture_hidden_branch_binding_duplicate
+            dependencies: []
+            overlays: []
+            extensions:
+              hiddenBranchBindings:
+                - bindingId: fixture_hidden_branch_binding_duplicate.search.flooded_reliquary
+                  zoneId: underground_river
+                  slot: secondary
+                  secretZoneId: fixture_hidden_branch_binding_duplicate.secret_zone.flooded_reliquary
+                  hiddenEventId: fixture_hidden_branch_binding_duplicate.hidden_event.flooded_reliquary.reward
+                  anchorTag: hidden.primer.underground_river.crystal_rift
+                  pathClass: OPTIONAL_SECRET
+                  fixedSeedVisibilityCase: sample_flooded_relics_active_2026042437
+                - bindingId: fixture_hidden_branch_binding_duplicate.search.flooded_reliquary
+                  zoneId: underground_river
+                  slot: secondary
+                  secretZoneId: fixture_hidden_branch_binding_duplicate.secret_zone.flooded_reliquary
+                  hiddenEventId: fixture_hidden_branch_binding_duplicate.hidden_event.flooded_reliquary.reward
+                  anchorTag: hidden.primer.underground_river.crystal_rift
+                  pathClass: OPTIONAL_SECRET
+                  fixedSeedVisibilityCase: sample_flooded_relics_active_2026042437
+            """.trimIndent(),
+        )
+        val selection = ContentPackSelection.of(packRoot)
+
+        val exception =
+            assertThrows<ContentPackLoadException> {
+                ContentPackRuntimeResolver.resolve(selection)
+            }
+
+        val diagnostic = exception.diagnostics.single()
+        assertEquals("content-pack.manifest.invalid", diagnostic.code)
+        assertNotNull(diagnostic.message)
+        assertTrue(diagnostic.message.contains(SearchBindingId("fixture_hidden_branch_binding_duplicate.search.flooded_reliquary").value))
+    }
+
+    @Test
+    fun `resolver rejects hidden branch binding ids outside the pack namespace`() {
+        val packRoot = tempDir.resolve("fixture.hidden_branch_binding_namespace")
+        packRoot.toFile().mkdirs()
+        packRoot.resolve("manifest.yaml").writeText(
+            """
+            id: fixture.hidden_branch_binding_namespace
+            version: 1.0.0
+            schemaVersion: 2
+            gameVersionRange: ">=0.4.0 <0.5.0"
+            namespace: fixture_hidden_branch_binding_namespace
+            dependencies: []
+            overlays: []
+            extensions:
+              hiddenBranchBindings:
+                - bindingId: foreign.search.flooded_reliquary
+                  zoneId: underground_river
+                  slot: secondary
+                  secretZoneId: fixture.hidden_branch_binding_namespace.secret_zone.flooded_reliquary
+                  hiddenEventId: fixture.hidden_branch_binding_namespace.hidden_event.flooded_reliquary.reward
+                  anchorTag: hidden.primer.underground_river.crystal_rift
+                  pathClass: OPTIONAL_SECRET
+                  fixedSeedVisibilityCase: sample_flooded_relics_active_2026042437
+            """.trimIndent(),
+        )
+        val selection = ContentPackSelection.of(packRoot)
+
+        val exception =
+            assertThrows<ContentPackLoadException> {
+                ContentPackRuntimeResolver.resolve(selection)
+            }
+
+        assertEquals(setOf("content-pack.hidden-branch-binding.namespace-mismatch"), exception.diagnostics.map { diagnostic -> diagnostic.code }.toSet())
+    }
+
+    @Test
     fun `resolver rejects append targets outside the phase4 whitelist`() {
         val packRoot = tempDir.resolve("fixture.append_invalid")
         packRoot.resolve("data/monsters").toFile().mkdirs()
@@ -90,7 +173,7 @@ class ContentPackRuntimeResolverTest {
             """
             id: fixture.append_invalid
             version: 1.0.0
-            schemaVersion: 1
+            schemaVersion: 2
             gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_append_invalid
             dependencies: []
@@ -152,7 +235,7 @@ class ContentPackRuntimeResolverTest {
             """
             id: fixture.append_loot_profile_bias
             version: 1.0.0
-            schemaVersion: 1
+            schemaVersion: 2
             gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_append_loot_profile_bias
             dependencies: []
@@ -193,7 +276,7 @@ class ContentPackRuntimeResolverTest {
             """
             id: fixture.deny_non_optional
             version: 1.0.0
-            schemaVersion: 1
+            schemaVersion: 2
             gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_deny_non_optional
             dependencies: []
@@ -223,7 +306,7 @@ class ContentPackRuntimeResolverTest {
             """
             id: fixture.replace_missing_target
             version: 1.0.0
-            schemaVersion: 1
+            schemaVersion: 2
             gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_replace_missing_target
             dependencies: []
@@ -284,7 +367,7 @@ class ContentPackRuntimeResolverTest {
             """
             id: fixture.path_escape
             version: 1.0.0
-            schemaVersion: 1
+            schemaVersion: 2
             gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_path_escape
             dependencies: []

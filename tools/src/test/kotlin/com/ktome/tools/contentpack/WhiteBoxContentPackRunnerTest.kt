@@ -26,6 +26,14 @@ class WhiteBoxContentPackRunnerTest {
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
         val summary = payload.getValue("summary").jsonObject
         val corpus = payload.getValue("corpus").jsonObject
+        val corpusMetrics =
+            payload
+                .getValue("aggregates")
+                .jsonArray
+                .single { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" }
+                .jsonObject
+                .getValue("metrics")
+                .jsonObject
         val firstCase =
             Json.parseToJsonElement(Files.readAllLines(run.casesPath).first { line -> line.isNotBlank() }).jsonObject
         val artifactIds =
@@ -36,6 +44,17 @@ class WhiteBoxContentPackRunnerTest {
         assertEquals("P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
         assertEquals("13", summary.getValue("caseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
+        assertEquals("1.0", corpusMetrics.getValue("samplePackContentPlayerVisibilityRate.reportOnly").jsonPrimitive.content)
+        assertEquals("1", corpusMetrics.getValue("activeSampleFixedSeedRunCount").jsonPrimitive.content)
+        assertEquals("1", corpusMetrics.getValue("touchedSampleRunCount").jsonPrimitive.content)
+        assertEquals("true", corpusMetrics.getValue("samplePackSecondarySecretSlotUsed").jsonPrimitive.content)
+        val touchedContentIds =
+            corpusMetrics.getValue("samplePackTouchedContentIds").jsonArray
+                .map { value -> value.jsonPrimitive.content }
+        assertTrue(
+            touchedContentIds.contains("sample.flooded_relics.secret_zone.flooded_reliquary"),
+            "Expected sample touched content ids to include sample secret zone; found: $touchedContentIds",
+        )
         assertEquals(
             setOf(
                 "pack-manifest-resolve",

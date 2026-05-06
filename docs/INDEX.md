@@ -46,6 +46,7 @@
 3. 想看某个阶段怎么拆任务：
    - 先看对应 `phaseN/roadmap.md` 和该阶段主文档
    - Phase 2 入口： [phase2/roadmap.md](./phase2/roadmap.md)
+   - Phase 4 content pack schema / schema v1 -> v2 迁移入口： [phase4/2026-03-13-phase4-procgen-loot-and-content-pack.md#453-版本兼容策略](./phase4/2026-03-13-phase4-procgen-loot-and-content-pack.md#453-版本兼容策略)
 4. 想看某个工作包如何验收：
    - 看对应阶段 checklist
 5. 想看统一白盒验证、AI 如何消费报告、以及自动化白盒如何与人工体验对齐：

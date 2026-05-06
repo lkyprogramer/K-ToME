@@ -203,7 +203,7 @@ internal class ValidationSetupScreen(
     private fun packSummary(options: ValidationSessionOptions): String =
         options.contentPackSelection.activePackRoots
             .map { root -> root.fileName.toString() }
-            .ifEmpty { listOf(app.text("ui.validation.none")) }
+            .ifEmpty { listOf(app.text("ui.validation.not_available")) }
             .joinToString(", ")
 
     private fun ensureResources() {

@@ -83,7 +83,7 @@ dark UI/UX canonical artifact 包括：
 
 禁止把以下内容作为长期合同：
 
-1. Codex app 下载目录。
+1. `/Users/luo/.codex/generated_images` 或 Codex CLI transient source 目录。
 2. 本机绝对路径。
 3. 未切分 raw PNG 的临时文件名。
 4. 未确认的候选 contact sheet。

@@ -845,9 +845,21 @@ tasks.register<Exec>("audioProcess") {
     )
 }
 
+tasks.register<Exec>("contentPackRuntimeManifestLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates repository content pack runtime manifest schema versions."
+    commandLine(
+        "python3",
+        "scripts/content-pack-runtime-manifest-lint.py",
+        "--repo-root",
+        ".",
+    )
+}
+
 tasks.register<Exec>("manifestLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates the Phase 2 image manifest against the asset plan."
+    dependsOn("contentPackRuntimeManifestLint")
     dependsOn("syncPhase2Manifests")
     commandLine(
         "python3",

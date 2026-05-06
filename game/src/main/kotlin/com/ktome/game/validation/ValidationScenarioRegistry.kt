@@ -444,6 +444,73 @@ object ValidationScenarioRegistry {
                         scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr06.evidence.summary_note",
                     ),
             ),
+            ValidationScenarioDef(
+                id = ValidationScenarioId("phase4-v4-pr07"),
+                prId = "PR-07",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.CONTENT_PACK,
+                        seed = 2026042437L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "arcanist",
+                        raceId = "human",
+                        zoneId = "underground_river",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.SAMPLE_PACK_ENABLED,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/phase4-v4-pr07-active-sample-pack-summary.png",
+                                "evidence/phase4-v4-pr07-no-pack-empty-state.png",
+                                "evidence/phase4-v4-pr07-sample-secret-touch.png",
+                                "evidence/phase4-v4-pr07-touched-content-ids.png",
+                                "evidence/phase4-v4-pr07-key-resolution-warning.png",
+                                "evidence/phase4-v4-pr07-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9",
+                                    expectedVisibleResult = "Validation overlay shows active pack id, namespace, ADD-only op summary, touched content ids empty state, and key resolution status.",
+                                    evidenceFile = "evidence/phase4-v4-pr07-active-sample-pack-summary.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "prepare-primary-scene result exposes no-pack empty state and active sample pack summary from validation snapshot data.",
+                                    evidenceFile = "evidence/phase4-v4-pr07-no-pack-empty-state.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter, R, Enter",
+                                    expectedVisibleResult = "prepare-secondary-scene places the player on sample.flooded_relics.search.flooded_reliquary; formal R/Enter Search/Interact touches the sample secret content.",
+                                    evidenceFile = "evidence/phase4-v4-pr07-sample-secret-touch.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9",
+                                    expectedVisibleResult = "Overlay touched content ids contain sample.flooded_relics namespaced secret, hidden event, or item ids after runtime interaction.",
+                                    evidenceFile = "evidence/phase4-v4-pr07-touched-content-ids.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Right, Enter",
+                                    expectedVisibleResult = "Evidence summary lists pack-local key resolution status as UI-only warning surface; runtime rules remain unchanged.",
+                                    evidenceFile = "evidence/phase4-v4-pr07-key-resolution-warning.png",
+                                ),
+                            ),
+                        manualRecordPath = "docs/review/phase4/v4-pr/manual-records/phase4-v4-pr07-sample-pack-add-first-visibility.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.validation.phase4_v4.action",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr07.evidence.summary_note",
+                    ),
+            ),
         )
 
     fun all(): List<ValidationScenarioDef> = scenarios

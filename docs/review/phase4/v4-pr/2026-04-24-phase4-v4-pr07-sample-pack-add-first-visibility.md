@@ -375,6 +375,12 @@ sdk env
 4. `show-evidence-summary` 必须列出 no-pack、active sample pack、sample secret touch、touched ids、key warning 五组证据。
 5. active pack、namespace、touched ids、key resolution 必须来自 content pack runtime resolver 与 validation summary，不得由 client 写死 sample 文案。
 
+实现映射：
+
+1. `FoundationGameSession.preparePhase4V4Pr07PrimaryScene` 打开 pack visibility comparison，返回 `sample_pack_summary_ready; noPackActivePackIds=N/A; activePackIds=<ids>`。
+2. `FoundationGameSession.preparePhase4V4Pr07SecondaryScene` 先执行 `killAllMonstersForValidation`，再打开 `crystal_cache_chest`，移动到 `sample.flooded_relics.search.flooded_reliquary`，返回 `sample_pack_secret_search_ready; bindingId=sample.flooded_relics.search.flooded_reliquary`。
+3. 自动化覆盖点固定在 `ValidationScenarioRegistryTest.pr07 scenario actions expose sample pack summary and runtime touched ids`；packaged 白盒仍以本节 manual flow 为准。
+
 固定环境：
 
 1. `locale`: `zh-CN`

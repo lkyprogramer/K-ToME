@@ -25,7 +25,7 @@ class ContentPackRewardPresentationTest {
     private val samplePackHarnessSpec by lazy(LazyThreadSafetyMode.NONE) {
         ContentPackFixtureCatalog.harnessSpec(ContentPackFixtureCatalog.samplePackId)
     }
-    private val sampleSecretBindingId = SearchBindingId("search.underground_river.crystal_rift")
+    private val sampleSecretBindingId = SearchBindingId("sample.flooded_relics.search.flooded_reliquary")
 
     @TempDir
     lateinit var tempDir: Path
@@ -122,12 +122,18 @@ class ContentPackRewardPresentationTest {
 
         session.automationMovePlayerTo(requireNotNull(session.automationHiddenEntrancePointForBinding(sampleSecretBindingId)))
         assertTrue(session.perform(PlayerCommand.Interact))
-        assertTrue(session.automationVisitedSecretZoneIds().any { secretZone -> secretZone.id == "underground_river_crystal_rift" })
+        assertTrue(session.automationVisitedSecretZoneIds().any { secretZone -> secretZone.id == "sample.flooded_relics.secret_zone.flooded_reliquary" })
         val secretZoneId = requireNotNull(session.automationVisitedSecretZoneIds().firstOrNull())
         val content = sessionContent(session)
         val secretZone = requireNotNull(content.secretZone(secretZoneId))
-        assertEquals(listOf("hidden.event.underground_river.crystal_rift.reward"), secretZone.guaranteedContent.map { contentRef -> contentRef.id })
-        val hiddenEvent = requireNotNull(content.hiddenEventRegistry.resolve("hidden.event.underground_river.crystal_rift.reward"))
+        assertEquals(
+            listOf(
+                "sample.flooded_relics.hidden_event.flooded_reliquary.reward",
+                "sample.flooded_relics.unique.floodtide_lantern",
+            ),
+            secretZone.guaranteedContent.map { contentRef -> contentRef.id },
+        )
+        val hiddenEvent = requireNotNull(content.hiddenEventRegistry.resolve("sample.flooded_relics.hidden_event.flooded_reliquary.reward"))
         assertNotNull(hiddenEvent)
         assertTrue(hiddenEvent.rewards.any { reward -> reward.payload is com.ktome.game.hidden.HiddenEventRewardPayload.SecretZoneReward })
         assertEquals("sample.flooded_relics.loot.flooded_reliquary.secret", secretZone.rewardProfileId.id)

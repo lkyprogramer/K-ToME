@@ -1,5 +1,6 @@
 package com.ktome.tools.contentpack
 
+import com.ktome.core.phase.PackId
 import com.ktome.game.contentpack.ContentPackFixtureCatalog
 import java.nio.file.Files
 import kotlinx.serialization.json.Json
@@ -10,8 +11,21 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class ContentPackHarnessRunnerTest {
+    @Test
+    @Tag("contentPackHarness")
+    fun `content-pack harness sidecar lookup fails fast with pack id`() {
+        val exception =
+            assertThrows<IllegalStateException> {
+                ContentPackFixtureCatalog.harnessSpec(PackId("fixture.missing_sidecar"))
+            }
+
+        assertTrue(exception.message.orEmpty().contains("packId=fixture.missing_sidecar"), exception.message)
+        assertTrue(exception.message.orEmpty().contains("tools/src/main/resources/fixtures/content-packs/fixture.missing_sidecar.yaml"), exception.message)
+    }
+
     @Test
     @Tag("contentPackHarness")
     fun `content-pack harness writes fixed reports and validates runtime plus failure fixtures`() {
@@ -50,17 +64,23 @@ class ContentPackHarnessRunnerTest {
         assertEquals("0", summary.getValue("precedenceFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("resourceContractFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("generatedTemplateFailureCount").jsonPrimitive.content)
+        assertEquals("1.0", summary.getValue("samplePackContentPlayerVisibilityRate.reportOnly").jsonPrimitive.content)
+        assertEquals("true", summary.getValue("samplePackAddOnlyMainPath").jsonPrimitive.content)
+        assertEquals("true", summary.getValue("samplePackSecondarySecretSlotUsed").jsonPrimitive.content)
+        assertEquals("true", summary.getValue("samplePackFixedSeedVisibilityCase").jsonPrimitive.content)
+        assertEquals("1", summary.getValue("activeSampleFixedSeedRunCount").jsonPrimitive.content)
+        assertEquals("1", summary.getValue("touchedSampleRunCount").jsonPrimitive.content)
         assertEquals("1", summary.getValue("legacyLootProfileSchemaRejectCount").jsonPrimitive.content)
         assertEquals(
             listOf("official_sample_pack", "disabled_pack_fallback", "precedence_fixture", "split_bias_fixture"),
             cases.take(4).map { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content },
         )
         assertEquals(
-            listOf("sample.flooded_relics", "fixture.sample_flooded_relics_override"),
+            listOf("sample.flooded_relics", "fixture_sample_flooded_relics_override"),
             precedenceCase.getValue("resolvedOrder").jsonArray.map { value -> value.jsonPrimitive.content },
         )
         assertEquals(
-            listOf("REPLACE", "REPLACE", "REPLACE"),
+            listOf("REPLACE"),
             precedenceCase.getValue("overlayOps").jsonArray.map { value -> value.jsonPrimitive.content }.filter { op -> op != "ADD" },
         )
         assertEquals("true", officialCase.getValue("resourceContractVerified").jsonPrimitive.content)
@@ -80,6 +100,28 @@ class ContentPackHarnessRunnerTest {
             officialCase.getValue("generatedSpecialTemplateIds").jsonArray.any { value ->
                 value.jsonPrimitive.content.startsWith("sample.flooded_relics.")
             },
+        )
+        assertTrue(
+            officialCase.getValue("samplePackTouchedContentIds").jsonArray.map { value -> value.jsonPrimitive.content }
+                .containsAll(
+                    listOf(
+                        "sample.flooded_relics.secret_zone.flooded_reliquary",
+                        "sample.flooded_relics.hidden_event.flooded_reliquary.reward",
+                        "sample.flooded_relics.loot.flooded_reliquary.secret",
+                    ),
+                ),
+        )
+        assertEquals("1", officialCase.getValue("samplePackFixedSeedRunCount").jsonPrimitive.content)
+        assertEquals("1", officialCase.getValue("samplePackFixedSeedTouchedRunCount").jsonPrimitive.content)
+        assertTrue(
+            officialCase.getValue("samplePackFixedSeedTouchedContentIds").jsonArray.map { value -> value.jsonPrimitive.content }
+                .containsAll(
+                    listOf(
+                        "sample.flooded_relics.secret_zone.flooded_reliquary",
+                        "sample.flooded_relics.hidden_event.flooded_reliquary.reward",
+                        "sample.flooded_relics.loot.flooded_reliquary.secret",
+                    ),
+                ),
         )
         assertEquals(listOf("underground_river"), splitBiasCase.getValue("lootProfileSpecialTemplateTagPreference").jsonArray.map { value -> value.jsonPrimitive.content })
         assertEquals(listOf("water"), splitBiasCase.getValue("lootProfileAffixTagPreference").jsonArray.map { value -> value.jsonPrimitive.content })

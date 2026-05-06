@@ -141,7 +141,7 @@ class ReportPhase4MaterializationTest {
             assertTrue(Files.exists(comparisonPath), "Expected canonical parity report at $comparisonPath")
             val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(comparisonPath)).jsonObject
             assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-            assertEquals("72", comparison.getValue("metricCount").jsonPrimitive.content)
+            assertEquals("73", comparison.getValue("metricCount").jsonPrimitive.content)
         } else {
             assertNull(run.comparisonPath)
             assertFalse(Files.exists(staleComparisonPath), "Canonical report-only run should remove stale legacy comparison artifacts.")

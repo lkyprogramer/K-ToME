@@ -1,6 +1,9 @@
 package com.ktome.game.contentpack
 
 import com.ktome.core.phase.PackId
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.RegistryId
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.data.DataLoader
 import java.nio.file.Files
@@ -186,6 +189,7 @@ object ContentPackRuntimeResolver {
         validateManifestFilesExist(packRoot = packRoot, manifest = manifest, diagnostics = diagnostics)
         validateNamespace(packRoot = packRoot, manifest = manifest, diagnostics = diagnostics)
         validateOverlayShape(packRoot = packRoot, manifest = manifest, diagnostics = diagnostics)
+        validateManifestExtensions(packRoot = packRoot, manifest = manifest, diagnostics = diagnostics)
         return ContentPackManifestFile(packRoot = packRoot, manifest = manifest)
     }
 
@@ -198,13 +202,96 @@ object ContentPackRuntimeResolver {
             diagnostics.addDiagnostic(
                 code = "content-pack.schema-version.mismatch",
                 message =
-                    "Pack '${manifest.id.value}' must use schemaVersion ${ContentPackManifest.SCHEMA_VERSION}, " +
-                        "got ${manifest.schemaVersion}.",
+                    "Pack '${manifest.id.value}' must refresh content pack manifest schema to schemaVersion " +
+                        "${ContentPackManifest.SCHEMA_VERSION}; got ${manifest.schemaVersion}.",
                 packId = manifest.id,
                 sourcePath = packRoot.resolve(ResolvedContentPack.MANIFEST_FILE_NAME),
                 details = mapOf("expectedSchemaVersion" to ContentPackManifest.SCHEMA_VERSION.toString()),
             )
         }
+    }
+
+    private fun validateManifestExtensions(
+        packRoot: Path,
+        manifest: ContentPackManifest,
+        diagnostics: MutableList<ContentPackDiagnostic>,
+    ) {
+        val manifestPath = packRoot.resolve(ResolvedContentPack.MANIFEST_FILE_NAME)
+        val namespacePrefix = "${manifest.id.value}."
+        manifest.extensions.hiddenBranchBindings.forEach { binding ->
+            if (!binding.bindingId.value.startsWith(namespacePrefix)) {
+                diagnostics.addDiagnostic(
+                    code = "content-pack.hidden-branch-binding.namespace-mismatch",
+                    message =
+                        "extensions.hiddenBranchBindings '${binding.bindingId.value}' bindingId must belong to " +
+                            "pack namespace '${manifest.id.value}'.",
+                    packId = manifest.id,
+                    sourcePath = manifestPath,
+                    details = mapOf("bindingId" to binding.bindingId.value),
+                )
+            }
+            if (!binding.secretZoneId.id.startsWith(namespacePrefix)) {
+                diagnostics.addDiagnostic(
+                    code = "content-pack.hidden-branch-binding.namespace-mismatch",
+                    message =
+                        "extensions.hiddenBranchBindings '${binding.bindingId.value}' secretZoneId must belong to " +
+                            "pack namespace '${manifest.id.value}'.",
+                    packId = manifest.id,
+                    targetRef = binding.secretZoneId,
+                    sourcePath = manifestPath,
+                )
+            }
+            if (!binding.hiddenEventId.id.startsWith(namespacePrefix)) {
+                diagnostics.addDiagnostic(
+                    code = "content-pack.hidden-branch-binding.namespace-mismatch",
+                    message =
+                        "extensions.hiddenBranchBindings '${binding.bindingId.value}' hiddenEventId must belong to " +
+                            "pack namespace '${manifest.id.value}'.",
+                    packId = manifest.id,
+                    targetRef = binding.hiddenEventId,
+                    sourcePath = manifestPath,
+                )
+            }
+            if (binding.secretZoneId.registry.value != "secret_zone") {
+                diagnostics.addDiagnostic(
+                    code = "content-pack.hidden-branch-binding.registry-mismatch",
+                    message =
+                        "extensions.hiddenBranchBindings '${binding.bindingId.value}' secretZoneId must use " +
+                            "registry 'secret_zone'.",
+                    packId = manifest.id,
+                    targetRef = binding.secretZoneId,
+                    sourcePath = manifestPath,
+                )
+            }
+            if (binding.hiddenEventId.registry.value != "hidden_event") {
+                diagnostics.addDiagnostic(
+                    code = "content-pack.hidden-branch-binding.registry-mismatch",
+                    message =
+                        "extensions.hiddenBranchBindings '${binding.bindingId.value}' hiddenEventId must use " +
+                            "registry 'hidden_event'.",
+                    packId = manifest.id,
+                    targetRef = binding.hiddenEventId,
+                    sourcePath = manifestPath,
+                )
+            }
+        }
+        manifest.extensions.hiddenBranchBindings
+            .groupBy { binding -> binding.zoneId to binding.slot }
+            .filterValues { bindings -> bindings.size > 1 }
+            .forEach { (zoneSlot, bindings) ->
+                val (zoneId, slot) = zoneSlot
+                bindings.forEach { binding ->
+                    diagnostics.addDiagnostic(
+                        code = "content-pack.hidden-branch-binding.duplicate-slot",
+                        message =
+                            "Pack '${manifest.id.value}' declares multiple extensions.hiddenBranchBindings for " +
+                                "zone '$zoneId' slot '${slot.name.lowercase()}'.",
+                        packId = manifest.id,
+                        sourcePath = manifestPath,
+                        details = mapOf("bindingId" to binding.bindingId.value),
+                    )
+                }
+            }
     }
 
     private fun validateManifestFilesExist(
@@ -820,6 +907,28 @@ private fun Map<String, Any?>.toContentPackManifest(): ContentPackManifest =
         localeBundles = optionalStringList("localeBundles"),
         visualManifest = optionalString("visualManifest"),
         audioManifest = optionalString("audioManifest"),
+        extensions =
+            optionalMap("extensions")
+                ?.toContentPackManifestExtensions()
+                ?: ContentPackManifestExtensions(),
+    )
+
+private fun Map<*, *>.toContentPackManifestExtensions(): ContentPackManifestExtensions =
+    ContentPackManifestExtensions(
+        hiddenBranchBindings =
+            optionalList("hiddenBranchBindings").map { entry ->
+                val binding = entry.requiredMap()
+                ContentPackHiddenBranchBinding(
+                    bindingId = SearchBindingId(binding.requiredString("bindingId")),
+                    zoneId = binding.requiredString("zoneId"),
+                    slot = ContentPackHiddenBranchSlot.valueOf(binding.requiredString("slot").uppercase()),
+                    secretZoneId = ContentRef(RegistryId("secret_zone"), binding.requiredString("secretZoneId")),
+                    hiddenEventId = ContentRef(RegistryId("hidden_event"), binding.requiredString("hiddenEventId")),
+                    anchorTag = binding.requiredString("anchorTag"),
+                    pathClass = ContentPackHiddenBranchPathClass.valueOf(binding.requiredString("pathClass").uppercase()),
+                    fixedSeedVisibilityCase = binding.requiredString("fixedSeedVisibilityCase"),
+                )
+            },
     )
 
 private fun Map<*, *>.toContentRef(): com.ktome.core.world.solvability.ContentRef =
@@ -848,6 +957,12 @@ private fun Any?.requiredMap(): Map<*, *> =
 
 private fun Map<*, *>.requiredMap(key: String): Map<*, *> =
     this[key] as? Map<*, *> ?: error("Missing required map '$key'.")
+
+private fun Map<*, *>.optionalMap(key: String): Map<*, *>? =
+    this[key] as? Map<*, *>
+
+private fun Map<*, *>.optionalList(key: String): List<Any?> =
+    (this[key] as? List<Any?>).orEmpty()
 
 private fun Map<*, *>.optionalString(key: String): String? =
     this[key]?.toString()?.trim()?.takeIf(String::isNotBlank)

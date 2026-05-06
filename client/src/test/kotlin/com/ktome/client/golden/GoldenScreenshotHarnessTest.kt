@@ -83,7 +83,7 @@ class GoldenScreenshotHarnessTest {
     lateinit var tempDir: Path
 
     private val optPr03ItemBundle = DataLoader().loadItemBundle()
-    private val sampleSecretBindingId = SearchBindingId("search.underground_river.crystal_rift")
+    private val sampleSecretBindingId = SearchBindingId("sample.flooded_relics.search.flooded_reliquary")
 
     @Test
     fun `golden screenshot hashes remain stable for english and chinese formal screens`() {
@@ -95,13 +95,13 @@ class GoldenScreenshotHarnessTest {
                 "10c7931dc33386a9b673866a3c2b44e319855084093bef4459fc22c84bde46d7",
                 "fcd576e018ad6216d7cc04ae4fbb5b313ec2bd66680dd6da26353e379d91719b",
                 "15338a89f1cbabb025b947dc46f231be2d839894536f954f39e631f952a6002a",
-                "e25d2e423f90eb698d9c5b2961e8a483ac91116e37741fc442dac3e27ae20ce1",
-                "8bf3679e3604e9e790adc5855e1e75b6a2ee6ea42b1250e455f89d27c5c492d3",
+                "0b4e7496eb699b7907b02ae1b726eae0fbab0e2ea20c8603c2ec072d548dddce",
+                "ed44af62d2f5e796ad459dfc80a91aee6f581894f8bc0bf8e8bdff695e856dc2",
                 "93752d2697f8db4bdc40ff058ea62ec30836edb4f37770785557cef621d2eae9",
-                "a0ae612180596d4d44c7031c30b9286b494e5334e7329b7eb9b64098b4f65f90",
-                "55aebba1cb43f652b90c64d65f5d6e21041a33ad77e1997395b0a426bd610298",
-                "b2ba545cb1bd9bfbff966b4efb0a9532083138e598a2b2ffd52293cd02c0ed40",
-                "68151636323f76535c0f3a8b342ff87c71ba206f5dc99850c26ffab1b5e2eb94",
+                "81a4a4e554ff8f270eecd93939285266c516a6f122a7fae5a18c72a8e547b005",
+                "f58990d759212aa159fdf8e04c396b27b93477ad2e866c3dec9ef023cc9197c1",
+                "817a93d2252b5409d83538ce847b26351c32b867ac023fd413e7675bca9a483f",
+                "54e5b32d821b5eb5e614a1b81697d07c6fe91312dc5311937ccc2604b0c73529",
             ),
             english + chinese,
         )
@@ -114,8 +114,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "d2a6e8a9c4da73e2748c2113eaceffd26d1398ad5f71b510e7004d5432619210",
-                "4a4c43a75b3082282d34f2a47d939726c07a1e6455ba1881e45ac386b4026ef3",
+                "b63c1e7004cede951d9811fbd56a684ce9909e250befc1c361fb54470c3a201e",
+                "19206ffb050ce575651f82b0778518a195e0e2385b17ee596f3591178279552b",
             ),
             listOf(english, chinese),
         )
@@ -128,9 +128,9 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "f81ddf8304438062e29204cf0bdc7084154cd4b2c8887f2afc23ab87e3451e9b",
-                "9afaa35eeed39bfa9f9f58f6ee3b7af8e0a331539176648a9f554a39c3465393",
-                "8af028a537d8dbd3a9dbd9601f52bd14818f3c63db68f69ee6e195eac38d2d46",
+                "d875b2ae33718d4c8c6d46198a15516537d8b067139df969665738c30eb3b225",
+                "71f855e2699ffe2adcdbde1ed9f041465049b9dc2f457d63813f549af151654e",
+                "f80c77bc0f718ad217ea7263fa390c701669bfc856117d9223bfd5aef5a543ef",
                 "fc9d60add5ce082e75937630c34d4e8813e0bb6ef491e0c2e962f44357b9f279",
                 "763191e759524085b44456409d1d33f838e8d76fcf31c245d179ed19062c9f3a",
                 "0c5f8a16351f0b88180d51f08bd208de92813720cef32f66293260255b835dd8",
@@ -190,9 +190,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "450e7caf5c08a15a48c92829f8bdfbacd38b2f5291fb61f4696ec0d325e53633",
-                "3945f7570016afa10b51fa5251242aef7175b90f12878f6a489f360fd947057b",
+                "554d20d6a1866d505213c2fb4c361b71742161559260e593e496f9ee1444baf7",
                 "1b2502c2e7fd673dde69ef26ed55b91ba246883c2a10d3a470e74a9c7853647a",
-                "4a632ad46bb58bd28943f7803c20daa6826545783d92917beec04edea6b6c74d",
+                "2c93343dcbbd4466bd3a9ce6f745efdea8927021df985ea7a5033c75d9903c35",
             ),
             english + chinese,
         )
@@ -202,7 +202,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("612be70495ad1e82991ce612dce0fb29e74af392c8e97488136004408d043bf6", hash)
+        assertEquals("8327bbbd185f2153e31554a9f888a14dde63ff37d8e7a6eb86dd7c3b8a02ccc0", hash)
     }
 
     @Test
@@ -212,16 +212,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "48141a05055719cbc96f347e169a40da0f93fd501e50047259ed32c3b6ee8376",
-                "24344425196986d58cf6fa22f7ee4a6578eabe9f84420a4c6feafb805cabb6f0",
-                "7e8f3320fec8decd80e1fb8e60305f91a7e56dc9bf5cad4ea21fc603b50f433e",
-                "948460e945d46f0cb1d9ad44406fbc81d58f7d159288a3ab4f22b2cc796bcd3f",
-                "c872e2181fe21381fca89e141925eb1b520abc6cad3cd6bd210e9153339acb0c",
-                "b089e148c89aa80d0a9ad0215114f07d4eb79cce9322f5ee4fa961fc4244419e",
-                "870017bf0af1b7de73c9f13035da473281c15a1eae71203766c53b7c699b17d6",
-                "f4fb8a27d306306b3777a3062297c585eb416ace3d8adbc3b79e08bc17d07a32",
-                "566757aba68903eddba71cb12bd3840daff66a461b71a905498c845273512edb",
-                "17408f5294646026ac962b4f295e1b3a0bcc890b6b9764f06d766e8bf61408de",
+                "0a6ec391805efd5619b055ad7eb2bba114d7a14db45720e94ffe763e23c38a6d",
+                "43cf5498a5b5e1208cf846eeab3b3b15dbe6bace44cc251de5bf71e7de85ed4f",
+                "c10bb18218a880e9f2a4f6b6637de9347a8e25bbe1218c8de44deb8f18f1396b",
+                "834e93d1565d72c038dbb642b1e44693e1f2504d97dd118ef15e79550ac7f332",
+                "ac5595d1f18ba56ae0f28cd18a4b42130ed863f57c7d96bc988d21128ea983c3",
+                "05f0cb802735a1854d3da0e59e6139d2800b9097b0afbdc0ef954398fcad28dd",
+                "597ad5b3b902810f72d9a331f17073b93006fb2ee741510ef6f2295657cf3d1a",
+                "9b8daff754a4830712f95a600b063e523b01c7daeb73db4bc81bd127465a7f23",
+                "256d8ab0880ba035e9c4d1d2c5575fd486406d11493df43df4bcfa1debcf889c",
+                "1fb26d38c27eb586153bd97f40030f113bc5c7ce6787f0c35a59583fd9daed77",
             ),
             english + chinese,
         )
@@ -241,7 +241,7 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "phase4-uiux-pr05-telegraph-triple-surface" to "c4e1d2ba1245871624888a271d67b3880cbcfa1c2e9f224e1c9bcb1a1a676c16",
+                "phase4-uiux-pr05-telegraph-triple-surface" to "9ceeaefa20f6de97b11399f9f927bec40af0939dfc9adb153559a0c96c084a4e",
                 "phase4-uiux-pr05-combat-action" to "c967d35688bde456d86d485e4b1c9fb32f07468c42babc3fbd220f97181f15a3",
                 "phase4-uiux-pr05-combat-method" to "a18d019199db3e26e658b55698b7c63c93bc42e89c8fe85396a0910ecfd84228",
                 "phase4-uiux-pr05-combat-target" to "e7f74536e4677cb8712062a045972d6042f23153529edf95c775dcc857f1d36d",
@@ -264,7 +264,7 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             mapOf(
                 "phase4-v4-pr05-molten-glass-phase-override-warning" to "b72fb70452f7571d67ab30567f3bd62493c2881a00b6ec34a701695b4d5ce9df",
-                "phase4-v4-pr05-grey-crown-phase-override-warning" to "d0880b07bce4fe0bee4c81356f744c4c91f462ca43c9e1d232f9942db8b9ee8f",
+                "phase4-v4-pr05-grey-crown-phase-override-warning" to "73c86e73c4ae379aed42d38912f46a166b6a3610746bb63ad13c8168192d67c0",
                 "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "22fa699ed97f1853184a36419840d84a94e4a0cc3b6fbe8fd6c564da4455a6bd",
             ),
             hashes,

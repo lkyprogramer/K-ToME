@@ -701,6 +701,13 @@ internal object Phase4DomainArtifactRegistry {
                     put("precedenceFailureCount", summary.intValue("precedenceFailureCount"))
                     put("resourceContractFailureCount", summary.intValue("resourceContractFailureCount"))
                     put("generatedTemplateFailureCount", summary.intValue("generatedTemplateFailureCount"))
+                    put("samplePackContentPlayerVisibilityRate.reportOnly", summary.doubleValue("samplePackContentPlayerVisibilityRate.reportOnly"))
+                    put("samplePackTouchedContentIds", summary.getValue("samplePackTouchedContentIds"))
+                    put("samplePackAddOnlyMainPath", summary.getValue("samplePackAddOnlyMainPath"))
+                    put("samplePackSecondarySecretSlotUsed", summary.getValue("samplePackSecondarySecretSlotUsed"))
+                    put("samplePackFixedSeedVisibilityCase", summary.getValue("samplePackFixedSeedVisibilityCase"))
+                    put("activeSampleFixedSeedRunCount", summary.intValue("activeSampleFixedSeedRunCount"))
+                    put("touchedSampleRunCount", summary.intValue("touchedSampleRunCount"))
                     put("legacyLootProfileSchemaRejectCount", summary.intValue("legacyLootProfileSchemaRejectCount"))
                     put("legacyLootProfileSchemaRejectSummaries", summary.getValue("legacyLootProfileSchemaRejectSummaries"))
                     put("whiteBoxFailedAssertions", whiteBoxFailedAssertions)
@@ -797,6 +804,7 @@ internal object Phase4DomainArtifactRegistry {
         val header = payload.getValue("header").jsonObject
         val summary = payload.getValue("summary").jsonObject
         val failedAssertions = summary.intValue("failedAssertions")
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
         return Phase4TaskAggregate(
             taskId = "whiteBoxContentPack",
             status = if (failedAssertions == 0) "PASS" else "FAIL",
@@ -811,6 +819,14 @@ internal object Phase4DomainArtifactRegistry {
                     put("artifactCount", summary.intValue("artifactCount"))
                     put("failedCaseCount", payload.intValue("failedCaseCount"))
                     put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    put("samplePackContentPlayerVisibilityRate.reportOnly", corpusMetrics.getValue("samplePackContentPlayerVisibilityRate.reportOnly"))
+                    put("samplePackTouchedContentIds", corpusMetrics.getValue("samplePackTouchedContentIds"))
+                    put("samplePackAddOnlyMainPath", corpusMetrics.getValue("samplePackAddOnlyMainPath"))
+                    put("samplePackSecondarySecretSlotUsed", corpusMetrics.getValue("samplePackSecondarySecretSlotUsed"))
+                    put("samplePackFixedSeedVisibilityCase", corpusMetrics.getValue("samplePackFixedSeedVisibilityCase"))
+                    put("activeSampleFixedSeedRunCount", corpusMetrics.getValue("activeSampleFixedSeedRunCount"))
+                    put("touchedSampleRunCount", corpusMetrics.getValue("touchedSampleRunCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
                     payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
                 },
         )

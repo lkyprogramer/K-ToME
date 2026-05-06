@@ -625,6 +625,7 @@ data class SecretZoneDef(
 6. 静态 schema 不直接保存实例级 `returnBridgeNodeId`；return bridge 必须通过 `entranceBindingId + returnBridgePolicy` 在实例化阶段解析，再由 harness 记录 `resolvedReturnBridgeNodeId`。
 7. `REVEAL_SECRET_ZONE` 只使既有入口在地图或 UI 上可见，等同于自动通过 discovery check，不创建新的物理入口。
 8. 用于揭示 secret zone 的 hidden event 默认位于主 zone 或外层 optional 路径，不计入该 secret zone 的 `guaranteedContent`。
+9. `guaranteedContent` 的 runtime registry 白名单为 `hidden_event`、`monster`、`special_item_template`；`special_item_template` 用于 content pack / sample pack 这类需要固定展示 pack-local item 的奖励节点，必须引用正式 special item template registry。
 
 `hidden entrance` 最小示例：
 
@@ -658,10 +659,30 @@ rewardProfileId:
   registry: reward_profile
   id: secret.cache.river
 guaranteedContent:
-  - registry: vault
-    id: flooded_cache
+  - registry: hidden_event
+    id: hidden.event.forgotten_cache.reward
 entranceBindingId: branch_anchor.river_optional_01
 returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR
+```
+
+`guaranteedContent` 迁移与示例：
+
+1. 现有 secret zone 若引用白名单外 registry，先迁移为 `hidden_event` 触发、`monster` encounter，或新增正式 `special_item_template` 后再引用；不得在 runtime 加临时 registry 分支。
+2. 仓库当前 base secret zone 只使用 `hidden_event`，official sample pack 使用 `hidden_event + special_item_template`，没有发现白名单外 runtime 引用。
+3. `monster` 示例：
+
+```yaml
+guaranteedContent:
+  - registry: monster
+    id: undead.bone_archer
+```
+
+4. `special_item_template` 示例：
+
+```yaml
+guaranteedContent:
+  - registry: special_item_template
+    id: sample.flooded_relics.unique.floodtide_lantern
 ```
 
 ### 4.3 Loot 生态 V2
@@ -1091,6 +1112,53 @@ data class ContentPackManifest(
     val localeBundles: List<String>,
     val visualManifest: String?,
     val audioManifest: String?,
+    val extensions: ContentPackManifestExtensions = ContentPackManifestExtensions(),
+)
+
+data class ContentPackManifestExtensions(
+    val hiddenBranchBindings: List<ContentPackHiddenBranchBinding> = emptyList(),
+)
+
+enum class ContentPackHiddenBranchSlot {
+    /** Primary slot is reserved for the base route branch. Pack overlays normally use SECONDARY. */
+    PRIMARY,
+
+    /** Secondary slot injects optional pack-local hidden/search content without replacing the base branch. */
+    SECONDARY,
+}
+
+enum class ContentPackHiddenBranchPathClass {
+    /** Optional secret branch; use for pack-local content that can be skipped without blocking main progression. */
+    OPTIONAL_SECRET,
+}
+
+/**
+ * Binds pack-local hidden/search content into the merged schema consumed by mapgen.
+ *
+ * The branch is injected after manifest merge and before `HiddenContentMapgenPipeline` consumes the schema.
+ * Anchors must follow section 4.2.3, so `anchorTag` should identify an existing hidden-content placement tag
+ * rather than a raw map coordinate or validation-only hook.
+ *
+ * @property bindingId namespaced search binding id. It must be unique in `extensions.hiddenBranchBindings` and
+ * belong to the same pack namespace.
+ * @property zoneId base zone where the branch can be injected.
+ * @property slot branch placement slot. `PRIMARY` is the base-route slot; `SECONDARY` is the pack-local optional slot.
+ * @property secretZoneId pack-local secret zone content ref; cross-pack references fail lint.
+ * @property hiddenEventId pack-local hidden event content ref; cross-pack references fail lint.
+ * @property anchorTag placement anchor tag, aligned with section 4.2.3 hidden-content anchors.
+ * @property pathClass hidden branch class. Phase 4 currently supports `OPTIONAL_SECRET`.
+ * @property fixedSeedVisibilityCase deterministic visibility case id used by harness/report evidence, for example
+ * `sample_flooded_relics_active_2026042437`; it does not change runtime selection outside the fixed-seed evidence path.
+ */
+data class ContentPackHiddenBranchBinding(
+    val bindingId: SearchBindingId,
+    val zoneId: String,
+    val slot: ContentPackHiddenBranchSlot,
+    val secretZoneId: ContentRef,
+    val hiddenEventId: ContentRef,
+    val anchorTag: String,
+    val pathClass: ContentPackHiddenBranchPathClass,
+    val fixedSeedVisibilityCase: String,
 )
 ```
 
@@ -1158,12 +1226,34 @@ packs/<pack-id>/
 
 冻结策略：
 
-1. `ContentPackManifest.schemaVersion` 与 base game `contentSchemaVersion` 分离管理。
+1. `ContentPackManifest.schemaVersion` 与 base game `contentSchemaVersion` 分离管理；当前 runtime manifest schema 固定为 `ContentPackManifest.SCHEMA_VERSION`（当前值为 `2`）。
 2. pack 兼容性的最低要求是：
    - `schemaVersion` 匹配
    - `gameVersionRange` 覆盖当前 base game 版本
-3. `0.4.x` 内的小版本升级只要 `schemaVersion` 不变，pack 可继续兼容。
-4. 若 schemaVersion 不匹配，loader 必须 fail-fast，而不是尝试部分加载。
+3. `schemaVersion: 1` 的 runtime manifest 必须 fail-fast，错误信息要求刷新 content pack manifest schema；不提供 dual-read、legacy alias、字段回填或降级加载。
+4. `0.4.x` 内的小版本升级只要 `schemaVersion` 不变，pack 可继续兼容。
+5. 若 schemaVersion 不匹配，loader 必须 fail-fast，而不是尝试部分加载。
+6. `extensions.hiddenBranchBindings` 是 schema v2 的正式 root field，用于 pack-local hidden branch 绑定；缺省表示该 pack 没有 hidden branch binding。
+
+schema v1 -> v2 迁移：
+
+1. 识别旧 manifest：`ContentPackManifest.schemaVersion == 1` 或 loader 报 `content-pack.schema-version.mismatch`。
+2. 修改字段：把 `schemaVersion` 改为 `2`；新增 top-level `extensions.hiddenBranchBindings` 支持，没有 hidden branch binding 的 pack 可省略 `extensions` 或写空列表。
+3. `extensions.hiddenBranchBindings` 示例：
+   ```yaml
+   extensions:
+     hiddenBranchBindings:
+       - bindingId: sample.flooded_relics.search.flooded_reliquary
+         zoneId: underground_river
+         slot: SECONDARY
+         secretZoneId: sample.flooded_relics.secret_zone.flooded_reliquary
+         hiddenEventId: sample.flooded_relics.hidden_event.flooded_reliquary.reward
+         anchorTag: hidden.critical.adjacent
+         pathClass: OPTIONAL_SECRET
+         fixedSeedVisibilityCase: sample_flooded_relics_active_2026042437
+   ```
+4. 预期 fail-fast 文案包含：`must refresh content pack manifest schema to schemaVersion 2`；该错误必须通过修改 pack manifest 修复，不允许 runtime dual-read、legacy alias 或字段回填。
+5. 测试 checklist：先跑 `./gradlew contentPackRuntimeManifestLint` 或 `./gradlew manifestLint` 校验仓库 runtime manifest，再用 loader schema mismatch 用例覆盖旧 manifest fail-fast，最后跑 `contentPackHarness / whiteBoxContentPack` 验证 hidden branch binding 的固定 seed 可见度证据。
 
 runtime / test metadata 分层：
 
@@ -1207,7 +1297,7 @@ runtime / test metadata 分层：
 ```yaml
 id: sample.flooded_relics
 version: 0.4.0
-schemaVersion: 1
+schemaVersion: 2
 gameVersionRange: ">=0.4.0 <0.5.0"
 namespace: sample_flooded_relics
 dependencies: []
@@ -1223,6 +1313,8 @@ overlays:
     op: ADD
     sourceFile: data/events/sample_flooded_relics.sunken_altar.yaml
 ```
+
+当前最小 pack 示例应使用 `schemaVersion: 2`；若 pack 需要 ADD 内容进入 hidden/search 玩家路径，可在 root `extensions.hiddenBranchBindings` 下声明 pack-local binding，且目标 secret zone / hidden event 必须属于同一 pack namespace。
 
 对应 `tools/src/main/resources/fixtures/content-packs/sample.flooded_relics.yaml` 最小示例：
 

@@ -117,6 +117,31 @@ data class ContentPackManifest(
     val localeBundles: List<String>,
     val visualManifest: String?,
     val audioManifest: String?,
+    val extensions: ContentPackManifestExtensions = ContentPackManifestExtensions(),
+)
+
+data class ContentPackManifestExtensions(
+    val hiddenBranchBindings: List<ContentPackHiddenBranchBinding> = emptyList(),
+)
+
+enum class ContentPackHiddenBranchSlot {
+    PRIMARY,
+    SECONDARY,
+}
+
+enum class ContentPackHiddenBranchPathClass {
+    OPTIONAL_SECRET,
+}
+
+data class ContentPackHiddenBranchBinding(
+    val bindingId: SearchBindingId,
+    val zoneId: String,
+    val slot: ContentPackHiddenBranchSlot,
+    val secretZoneId: ContentRef,
+    val hiddenEventId: ContentRef,
+    val anchorTag: String,
+    val pathClass: ContentPackHiddenBranchPathClass,
+    val fixedSeedVisibilityCase: String,
 )
 ```
 
@@ -140,6 +165,21 @@ data class ContentPackHarnessSpec(
 
 1. sidecar YAML 中 `packId / fixturePackId / expectedOrder` 仍以字符串序列化，但 loader/lint/harness 的 contract 语义按 `PackId` 处理。
 2. `fixtureOrder` 用于固定 harness / white-box 的 fixture 执行顺序，避免把顺序语义继续塞回 runtime manifest。
+3. runtime manifest 当前 schema 固定为 `ContentPackManifest.SCHEMA_VERSION`；该 Kotlin 常量是唯一权威，lint、loader 与文档不得再维护第二个字面量版本。
+4. `extensions.hiddenBranchBindings` 用于把 pack-local hidden/search branch 接入合并后的 schema：`bindingId` 是搜索绑定，`zoneId` 是 base zone，`slot` 固定 `PRIMARY / SECONDARY`，`secretZoneId / hiddenEventId` 必须引用同 pack namespace 内容，`fixedSeedVisibilityCase` 只用于报告/白盒证据标识。
+
+```yaml
+extensions:
+  hiddenBranchBindings:
+    - bindingId: sample.flooded_relics.search.flooded_reliquary
+      zoneId: underground_river
+      slot: SECONDARY
+      secretZoneId: sample.flooded_relics.secret_zone.flooded_reliquary
+      hiddenEventId: sample.flooded_relics.hidden_event.flooded_reliquary.reward
+      anchorTag: hidden.critical.adjacent
+      pathClass: OPTIONAL_SECRET
+      fixedSeedVisibilityCase: sample_flooded_relics_active_2026042437
+```
 
 ### 4.2 JSON 资源边界
 
@@ -158,12 +198,14 @@ data class ContentPackHarnessSpec(
 最小检查：
 
 1. `schemaVersion` 匹配。
-2. `gameVersionRange` 覆盖当前 base game。
-3. `namespace` 唯一。
-4. 未声明 `REPLACE` 的重复 ID 直接失败。
-5. i18n / visual / audio key 能解析。
-6. 至少存在一个双 pack fixture，覆盖 `REPLACE / APPEND / DENY` 中至少一种非 `ADD` 场景。
-7. 必须输出可读失败诊断：
+2. 仓库内所有 runtime `manifest.yaml` 必须与 `ContentPackManifest.SCHEMA_VERSION` 一致；`tools/src/main/resources/fixtures/content-packs/*.yaml` sidecar harness spec 不参与 runtime schemaVersion 校验。
+3. `gameVersionRange` 覆盖当前 base game。
+4. `namespace` 唯一。
+5. 未声明 `REPLACE` 的重复 ID 直接失败。
+6. i18n / visual / audio key 能解析。
+7. `extensions.hiddenBranchBindings` 必须在 pack load / validation 阶段校验 namespace：`bindingId`、`secretZoneId`、`hiddenEventId` 都必须属于同一 pack namespace；跨 pack 引用必须以 `content-pack.hidden-branch-binding.namespace-mismatch` 失败，诊断文本必须明确包含 `extensions.hiddenBranchBindings`、`secretZoneId` 或 `hiddenEventId`。
+8. 至少存在一个双 pack fixture，覆盖 `REPLACE / APPEND / DENY` 中至少一种非 `ADD` 场景。
+9. 必须输出可读失败诊断：
    - 缺失依赖
    - 依赖环
    - `versionRange` 冲突

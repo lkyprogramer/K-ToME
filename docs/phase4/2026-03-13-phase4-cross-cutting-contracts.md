@@ -220,11 +220,21 @@ enum class SearchActionResult {
    - `localeBundles`
    - `visualManifest`
    - `audioManifest`
-2. `harnessSeeds`、fixture 顺序、双包 precedence 场景等 QA 信息必须移出 runtime manifest。
-3. `Phase 4` 统一使用 sidecar：
+   - `extensions.hiddenBranchBindings`（schema v2，pack-local hidden branch binding；缺省为空）
+2. 当前 runtime manifest schema 固定为 `ContentPackManifest.SCHEMA_VERSION`（当前值为 `2`）；`schemaVersion: 1` 必须 fail-fast，不做 dual-read 或 legacy alias。
+   - v1 -> v2 的迁移方式是作者侧显式升级：把 runtime manifest 的 `schemaVersion` 改为 `2`，按需新增 root `extensions.hiddenBranchBindings`；没有 hidden branch binding 的 pack 使用缺省空 extensions 即可。
+   - 本阶段不提供运行时 grace period；过期 manifest 通过 loader schema check 与 `manifestLint` 暴露，修复点必须落在 pack manifest，而不是在 runtime 增加 dual-read。
+   - 迁移 delta：`schemaVersion` 从 `1` 升级为 `2`，runtime manifest 新增 root `extensions.hiddenBranchBindings`；该字段缺省为空，不改变 overlay `ADD / REPLACE / APPEND / DENY` 白名单。
+   - 作者迁移 checklist：
+     1. 将 pack `manifest.yaml` 的 `schemaVersion` 改为 `2`。
+     2. 若 pack 需要把 namespaced hidden/search content 接入玩家路径，显式填写 `extensions.hiddenBranchBindings`；否则省略 `extensions` 或保留空 `hiddenBranchBindings`。
+     3. 运行 `./gradlew contentPackRuntimeManifestLint` 或包含它的 `./gradlew manifestLint`，并通过 loader schema check；旧 manifest 的预期错误为 `content-pack.schema-version.mismatch`，不得通过 runtime fallback 修复。
+3. `harnessSeeds`、fixture 顺序、双包 precedence 场景等 QA 信息必须移出 runtime manifest。
+4. `Phase 4` 统一使用 sidecar：
    - `tools/src/main/resources/fixtures/content-packs/<packId>.yaml`
-4. `contentPackHarness` 只读取 sidecar 测试元数据，不要求 runtime loader 了解测试字段。
-5. pack-local `i18n / visual / audio` 的 merge 结果必须继续喂给现有单一 resolver / manifest 消费接口，不额外引入 pack-only resolver。
+5. `contentPackHarness` 只读取 sidecar 测试元数据，不要求 runtime loader 了解测试字段；缺失 `<packId>.yaml` sidecar 必须 hard fail，错误需包含 `packId` 与缺失的 repo-relative sidecar path，禁止使用隐式默认值或静默跳过。
+6. pack-local `i18n / visual / audio` 的 merge 结果必须继续喂给现有单一 resolver / manifest 消费接口，不额外引入 pack-only resolver。
+7. pack-local hidden branch binding 只能把 pack namespaced content 接进 merged schema；`HiddenContentMapgenPipeline` 只消费合并后的 schema，不读取 pack 文件路径、system property 或 harness flag。
 
 建议结构：
 

@@ -539,6 +539,31 @@ class ClientSmokeHarnessTest {
                 },
             )
 
+            val noPackSnapshot =
+                captureValidationOverlay(
+                    name = "validation-content-pack-overlay-empty",
+                    options =
+                        com.ktome.game.validation.validationSessionOptionsForPreset(
+                            preset = com.ktome.game.validation.ValidationPreset.CONTENT_PACK,
+                            contentPackSelection = ContentPackSelection.EMPTY,
+                        ),
+                )
+            assertTrue(
+                noPackSnapshot.capture.rows.any { row ->
+                    row == noPackSnapshot.localizer.text("ui.validation.active_packs", "value" to "N/A")
+                },
+            )
+            assertTrue(
+                noPackSnapshot.capture.rows.any { row ->
+                    row == noPackSnapshot.localizer.text("ui.validation.pack.overlay_ops", "value" to noPackSnapshot.localizer.text("ui.validation.empty"))
+                },
+            )
+            assertTrue(
+                noPackSnapshot.capture.rows.any { row ->
+                    row == noPackSnapshot.localizer.text("ui.validation.pack.touched_ids", "value" to noPackSnapshot.localizer.text("ui.validation.empty"))
+                },
+            )
+
             val contentPackSnapshot =
                 captureValidationOverlay(
                     name = "validation-content-pack-overlay",
@@ -551,6 +576,34 @@ class ClientSmokeHarnessTest {
             assertTrue(
                 contentPackSnapshot.capture.rows.any { row ->
                     row == contentPackSnapshot.localizer.text("ui.validation.active_packs", "value" to "sample.flooded_relics")
+                },
+            )
+            assertTrue(
+                contentPackSnapshot.capture.rows.any { row ->
+                    row == contentPackSnapshot.localizer.text(
+                        "ui.validation.pack.namespaces",
+                        "value" to "sample.flooded_relics:sample_flooded_relics",
+                    )
+                },
+            )
+            assertTrue(
+                contentPackSnapshot.capture.rows.any { row ->
+                    row.contains(contentPackSnapshot.localizer.text("ui.validation.pack.overlay_ops", "value" to "sample.flooded_relics:ADD=5"))
+                },
+            )
+            assertTrue(
+                contentPackSnapshot.capture.rows.any { row ->
+                    row.contains("visual=") && row.contains("audio=") && row.contains("warnings=0")
+                },
+            )
+            assertTrue(
+                contentPackSnapshot.capture.rows.any { row ->
+                    row == contentPackSnapshot.localizer.text(
+                        "ui.validation.pack.key_warnings",
+                        "visual" to contentPackSnapshot.localizer.text("ui.validation.empty"),
+                        "audio" to contentPackSnapshot.localizer.text("ui.validation.empty"),
+                        "locale" to contentPackSnapshot.localizer.text("ui.validation.empty"),
+                    )
                 },
             )
             assertTrue(
