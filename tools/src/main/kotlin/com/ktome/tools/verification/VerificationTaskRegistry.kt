@@ -216,6 +216,7 @@ object VerificationTaskRegistry {
                         pathPrefixes =
                             listOf(
                                 "scripts/dark_sprite_sheet_contract.py",
+                                "scripts/asset_pipeline_common.py",
                                 "scripts/generate_sheet_prompt.py",
                                 "scripts/codex-generate-image.py",
                                 "scripts/verify_dark_key_registry.py",

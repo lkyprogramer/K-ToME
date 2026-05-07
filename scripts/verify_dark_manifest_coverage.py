@@ -26,6 +26,17 @@ def raw_output_path(entry: dict[str, Any] | None) -> str:
     return str(entry.get("rawOutputPath", "")).strip()
 
 
+def output_state(entry: dict[str, Any] | None) -> str:
+    if entry is None:
+        return "missing"
+    raw_path = raw_output_path(entry)
+    if raw_path in ("", PENDING_RAW_OUTPUT):
+        return "pending"
+    if raw_path.startswith(DARK_RUNTIME_PREFIX):
+        return "dark"
+    return "old-style"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate dark-v1 manifest coverage by mode.")
     parser.add_argument("--coverage-mode", choices=("pr00-dry-run", "owner-scope", "final-full"), default="final-full")
@@ -39,18 +50,15 @@ def parse_args() -> argparse.Namespace:
 
 
 def is_dark_output(entry: dict[str, Any] | None) -> bool:
-    return raw_output_path(entry).startswith(DARK_RUNTIME_PREFIX)
+    return output_state(entry) == "dark"
 
 
 def is_pending_output(entry: dict[str, Any] | None) -> bool:
-    if entry is None:
-        return True
-    return raw_output_path(entry) in ("", PENDING_RAW_OUTPUT)
+    return output_state(entry) == "pending"
 
 
 def is_old_style_output(entry: dict[str, Any] | None) -> bool:
-    raw_path = raw_output_path(entry)
-    return raw_path not in ("", PENDING_RAW_OUTPUT) and not raw_path.startswith(DARK_RUNTIME_PREFIX)
+    return output_state(entry) == "old-style"
 
 
 def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]:
@@ -75,10 +83,28 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
     else:
         expected_keys = registry_keys
 
-    missing_keys = sorted(key for key in expected_keys if key not in manifest_by_key or key not in runtime_by_key)
-    pending_keys = sorted(key for key in expected_keys if is_pending_output(manifest_by_key.get(key)))
-    old_style_keys = sorted(key for key in expected_keys if is_old_style_output(manifest_by_key.get(key)))
-    covered_keys = sorted(key for key in expected_keys if is_dark_output(manifest_by_key.get(key)))
+    canonical_state_by_key = {key: output_state(manifest_by_key.get(key)) for key in expected_keys}
+    runtime_state_by_key = {key: output_state(runtime_by_key.get(key)) for key in expected_keys}
+    missing_keys = sorted(
+        key
+        for key in expected_keys
+        if canonical_state_by_key[key] == "missing" or runtime_state_by_key[key] == "missing"
+    )
+    pending_keys = sorted(
+        key
+        for key in expected_keys
+        if canonical_state_by_key[key] == "pending" or runtime_state_by_key[key] == "pending"
+    )
+    old_style_keys = sorted(
+        key
+        for key in expected_keys
+        if canonical_state_by_key[key] == "old-style" or runtime_state_by_key[key] == "old-style"
+    )
+    covered_keys = sorted(
+        key
+        for key in expected_keys
+        if canonical_state_by_key[key] == "dark" and runtime_state_by_key[key] == "dark"
+    )
 
     if args.coverage_mode == "owner-scope" and missing_keys:
         errors.append(f"owner-scope missing keys for {args.owner_pr}: {', '.join(missing_keys)}.")
@@ -117,7 +143,9 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
                 "ownerCoveredKeys": covered_keys,
                 "ownerMissingKeys": missing_keys,
                 "scopeExternalPendingKeys": sorted(
-                    key for key in set(registry_keys) - set(expected_keys) if is_pending_output(manifest_by_key.get(key))
+                    key
+                    for key in set(registry_keys) - set(expected_keys)
+                    if is_pending_output(manifest_by_key.get(key)) or is_pending_output(runtime_by_key.get(key))
                 ),
                 "allowedOwnerFallbackKeys": pending_keys,
             }
@@ -133,7 +161,7 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
                 "fallbackKeyUsage": {
                     key: str(registry_by_key.get(key, {}).get("fallbackKey", "")).strip()
                     for key in expected_keys
-                    if is_pending_output(manifest_by_key.get(key))
+                    if is_pending_output(manifest_by_key.get(key)) or is_pending_output(runtime_by_key.get(key))
                 },
                 "allowedFallbackKeys": ["missing_visual"] if args.coverage_mode == "pr00-dry-run" else [],
                 "allowedCoverageExclusions": [],

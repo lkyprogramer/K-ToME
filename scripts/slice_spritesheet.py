@@ -6,10 +6,18 @@ from __future__ import annotations
 import argparse
 import pathlib
 
-from PIL import Image
-
 from dark_sprite_sheet_contract import DARK_RUNTIME_PREFIX, load_sheet_plan, print_errors
 from verify_sprite_sheet_map import cell_rect
+
+
+def load_pillow_image():
+    try:
+        from PIL import Image
+    except ModuleNotFoundError as exc:
+        if exc.name == "PIL":
+            raise RuntimeError("Pillow is required when slice_spritesheet writes dark-v1 PNG outputs.") from exc
+        raise
+    return Image
 
 
 def parse_args() -> argparse.Namespace:
@@ -34,17 +42,26 @@ def main() -> int:
         return print_errors("slice-spritesheet", errors)
     written = 0
     skipped_pending = 0
+    image_module = None
     for sheet in sheets:
+        sheet_cells = [candidate for candidate in cells if candidate.sheet_id == sheet.sheet_id]
+        dark_cells = [candidate for candidate in sheet_cells if candidate.output_name.startswith(DARK_RUNTIME_PREFIX)]
+        skipped_pending += len(sheet_cells) - len(dark_cells)
+        if not dark_cells:
+            continue
         raw_path = raw_sheet_path(sheet, args.raw_root)
         if not raw_path.is_file():
             errors.append(f"missingRawSheet sheetId={sheet.sheet_id} expected={raw_path.as_posix()}.")
             continue
-        with Image.open(raw_path) as image:
+        if image_module is None:
+            try:
+                image_module = load_pillow_image()
+            except RuntimeError as exc:
+                errors.append(str(exc))
+                break
+        with image_module.open(raw_path) as image:
             rgba = image.convert("RGBA")
-            for cell in [candidate for candidate in cells if candidate.sheet_id == sheet.sheet_id]:
-                if not cell.output_name.startswith(DARK_RUNTIME_PREFIX):
-                    skipped_pending += 1
-                    continue
+            for cell in dark_cells:
                 output_path = args.runtime_root / cell.output_name
                 if output_path.exists() and not args.overwrite:
                     errors.append(f"Output already exists; pass --overwrite to replace it: {output_path.as_posix()}.")

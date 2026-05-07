@@ -9,8 +9,6 @@ import json
 import pathlib
 from typing import Any
 
-from PIL import Image
-
 from dark_sprite_sheet_contract import (
     DARK_CONTACT_SHEET_DIR,
     DARK_RUNTIME_PREFIX,
@@ -21,6 +19,18 @@ from dark_sprite_sheet_contract import (
     repo_relative_error,
     sha256_file,
 )
+
+
+def load_pillow_image():
+    try:
+        from PIL import Image
+    except ModuleNotFoundError as exc:
+        if exc.name == "PIL":
+            raise RuntimeError(
+                "Pillow is required for --check map image inspection; install the PIL package or run --check sheet-plan."
+            ) from exc
+        raise
+    return Image
 
 
 def parse_args() -> argparse.Namespace:
@@ -94,6 +104,7 @@ def validate_map(
     errors += validate_manifest_mapping(cells, manifest_path)
     cells_by_sheet = {sheet.sheet_id: [cell for cell in cells if cell.sheet_id == sheet.sheet_id] for sheet in sheets}
     records: list[dict[str, Any]] = []
+    image_module = None
 
     for sheet in sheets:
         raw_path = raw_sheet_path(sheet, raw_root)
@@ -103,7 +114,13 @@ def validate_map(
         if raw_path.name != f"{sheet.sheet_id}.png":
             errors.append(f"{sheet.sheet_id} raw sheet file must be named {sheet.sheet_id}.png, got {raw_path.name}.")
         raw_hash = sha256_file(raw_path)
-        with Image.open(raw_path) as image:
+        if image_module is None:
+            try:
+                image_module = load_pillow_image()
+            except RuntimeError as exc:
+                errors.append(str(exc))
+                break
+        with image_module.open(raw_path) as image:
             expected_size = sheet.canvas_size
             if image.size != expected_size:
                 errors.append(f"{sheet.sheet_id} raw sheet size must be {expected_size}, got {image.size}.")

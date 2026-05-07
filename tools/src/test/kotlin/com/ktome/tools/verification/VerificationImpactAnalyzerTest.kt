@@ -305,6 +305,7 @@ class VerificationImpactAnalyzerTest {
                 "assets-src/image/manifests/phase2-visual-manifest.json",
                 "client/src/main/resources/manifests/visual-manifest.json",
                 "assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl",
+                "scripts/asset_pipeline_common.py",
                 "scripts/codex-generate-image.py",
                 "scripts/manifest-lint.py",
             )

@@ -528,7 +528,7 @@ class DarkSpriteSheetPipelineScriptTest {
             writeImage(contactSheet)
 
             val slice =
-                runScript(
+                runScriptWithFakePillow(
                     "scripts/slice_spritesheet.py",
                     "--plan",
                     plan.toString(),
@@ -539,7 +539,7 @@ class DarkSpriteSheetPipelineScriptTest {
                     "--overwrite",
                 )
             val map =
-                runScript(
+                runScriptWithFakePillow(
                     "scripts/verify_sprite_sheet_map.py",
                     "--check",
                     "map",
@@ -672,6 +672,59 @@ class DarkSpriteSheetPipelineScriptTest {
         assertTrue(reportText.contains("\"ui.test.b\""), reportText)
         assertTrue(reportText.contains("\"pendingOrRejectedPlayerVisibleCells\": ["), reportText)
         assertTrue(reportText.contains("\"ui.test.a\""), reportText)
+    }
+
+    @Test
+    fun `coverage lint rejects stale runtime fallback when canonical manifest is dark`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val report = tempDir.resolve("runtime-coverage.json")
+        writeText(plan, largeSheetPlan("r95-runtime-coverage", defaultCells()))
+        writeText(registry, registry("r95-runtime-coverage", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(
+            manifest,
+            manifestWithRawPaths(
+                "ui.test.a" to "dark-v1/test/a.png",
+                "ui.test.b" to "dark-v1/test/b.png",
+                "ui.test.c" to "dark-v1/test/c.png",
+                "ui.test.d" to "dark-v1/test/d.png",
+            ),
+        )
+        writeText(
+            runtimeManifest,
+            manifestWithRawPaths(
+                "ui.test.a" to "debug/missing_visual.png",
+                "ui.test.b" to "dark-v1/test/b.png",
+                "ui.test.c" to "dark-v1/test/c.png",
+                "ui.test.d" to "dark-v1/test/d.png",
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("pendingOrRejectedPlayerVisibleCells"), result.output)
+        assertTrue(reportText.contains("\"pendingOrRejectedPlayerVisibleCells\": ["), reportText)
+        assertTrue(reportText.contains("\"ui.test.a\""), reportText)
+        assertFalse(reportText.contains("\"coveredKeySet\": [\"ui.test.a\""), reportText)
     }
 
     @Test
@@ -827,12 +880,24 @@ class DarkSpriteSheetPipelineScriptTest {
     private fun runScript(vararg args: String): ScriptResult =
         runScriptWithEnv(emptyMap(), *args)
 
+    private fun runScriptWithFakePillow(vararg args: String): ScriptResult =
+        runScriptWithEnv(mapOf("PYTHONPATH" to fakePillowPythonPath().toString()), *args)
+
     private fun runScriptWithEnv(extraEnv: Map<String, String>, vararg args: String): ScriptResult {
         val processBuilder =
             ProcessBuilder(listOf("python3") + args.toList())
                 .directory(repoRoot().toFile())
                 .redirectErrorStream(true)
-        processBuilder.environment().putAll(extraEnv)
+        val environment = processBuilder.environment()
+        val requestedPythonPath = extraEnv["PYTHONPATH"]
+        if (!requestedPythonPath.isNullOrBlank()) {
+            environment["PYTHONPATH"] =
+                listOfNotNull(requestedPythonPath, environment["PYTHONPATH"]?.takeIf(String::isNotBlank))
+                    .joinToString(File.pathSeparator)
+        }
+        extraEnv
+            .filterKeys { key -> key != "PYTHONPATH" }
+            .forEach { (key, value) -> environment[key] = value }
         val process =
             processBuilder.start()
         val completed = process.waitFor(30, TimeUnit.SECONDS)
@@ -850,6 +915,54 @@ class DarkSpriteSheetPipelineScriptTest {
         System.getProperty("ktome.repo.root")
             ?.let(Path::of)
             ?: Path.of("").toAbsolutePath().normalize()
+
+    private fun fakePillowPythonPath(): Path {
+        val moduleRoot = tempDir.resolve("python-modules")
+        val pilDir = moduleRoot.resolve("PIL")
+        val initFile = pilDir.resolve("__init__.py")
+        val imageFile = pilDir.resolve("Image.py")
+        if (!Files.exists(imageFile)) {
+            writeText(initFile, "from . import Image")
+            writeText(
+                imageFile,
+                """
+                import pathlib
+
+                class FakeImage:
+                    def __init__(self, path=None, rect=(0, 0, 1024, 1024)):
+                        self.path = str(path or "")
+                        self.rect = tuple(rect)
+                        self.size = (self.rect[2] - self.rect[0], self.rect[3] - self.rect[1])
+
+                    def __enter__(self):
+                        return self
+
+                    def __exit__(self, exc_type, exc_value, traceback):
+                        return False
+
+                    def convert(self, mode):
+                        return self
+
+                    def crop(self, rect):
+                        return FakeImage(self.path, rect)
+
+                    def getbbox(self):
+                        return (0, 0, self.size[0], self.size[1])
+
+                    def tobytes(self):
+                        payload = f"{self.path}|{self.rect}|{self.size}".encode("utf-8")
+                        return payload * 32
+
+                    def save(self, path):
+                        pathlib.Path(path).write_bytes(b"fake-png:" + self.tobytes())
+
+                def open(path):
+                    return FakeImage(path)
+                """.trimIndent(),
+            )
+        }
+        return moduleRoot
+    }
 
     private fun writeText(path: Path, content: String) {
         Files.createDirectories(path.parent)
@@ -965,6 +1078,25 @@ class DarkSpriteSheetPipelineScriptTest {
                 val comma = if (index == entries.lastIndex) "" else ","
                 appendLine(
                     """    {"key":"$key","category":"${if (key == "missing_visual") "debug" else "icon"}","rawOutputPath":"debug/missing_visual.png","footprint":"ui","pivotX":0.5,"pivotY":0.5,"tags":["test"]}$comma""",
+                )
+            }
+            appendLine("  ],")
+            appendLine("""  "prefixRules": []""")
+            appendLine("}")
+        }
+
+    private fun manifestWithRawPaths(vararg entries: Pair<String, String>): String =
+        buildString {
+            appendLine("{")
+            appendLine("""  "manifestVersion": 1,""")
+            appendLine("""  "styleTag": "ktome-middle-fantasy-painterly-tile-v1",""")
+            appendLine("""  "fallbackKey": "missing_visual",""")
+            appendLine("""  "entries": [""")
+            val allEntries = listOf("missing_visual" to "debug/missing_visual.png") + entries.toList()
+            allEntries.forEachIndexed { index, (key, rawPath) ->
+                val comma = if (index == allEntries.lastIndex) "" else ","
+                appendLine(
+                    """    {"key":"$key","category":"${if (key == "missing_visual") "debug" else "icon"}","rawOutputPath":"$rawPath","footprint":"ui","pivotX":0.5,"pivotY":0.5,"tags":["test"]}$comma""",
                 )
             }
             appendLine("  ],")
