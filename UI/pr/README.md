@@ -151,6 +151,8 @@ PR-00 的 lint 合同必须让非 reserved cell 缺少 key registry 记录或缺
 
 coverage artifact schema 以 PR-00 文档为权威。README 只要求 common fields：`scopeMode / ownerPr / expectedKeySetSource / strictOldStyleResidue`。
 
+PR-00 的 `verifyChanged` dark route 必须显式调用 `darkManifestCoveragePr00DryRun`。PR-00 fixture 允许 `missing_visual` 用来证明 manifest/resolver/coverage 链路；正式资源 PR 必须用 `owner-scope` 或 `final-full` 逐步替换该 dry-run 口径。
+
 HUD 与 item namespace 必须分开：
 
 | UI 概念 | Namespace | Owner |
@@ -172,8 +174,8 @@ HUD 与 item namespace 必须分开：
 1. 开发者更新 `UI/sprite-sheets/sheet-plan.yaml`。
 2. 运行 PR-00 固定的 prompt 生成命令，输出 `UI/sprite-sheets/prompts/dark-v1/*.prompt.txt` 和 `prompt-index.json`。
 3. prompt 文件按 `001-r01-ui-chrome.prompt.txt` 这种格式编号；编号只表示执行顺序，语义仍以 `sheetId` 为准。
-4. 开发者运行 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --overwrite`。
-5. 脚本执行 `codex exec "<prompt>" --skip-git-repo-check`，从 `/Users/luo/.codex/generated_images` 最新目录取最新图片，并复制到 prompt 文件头指定的 `Expected output file`。
+4. 开发者运行 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --smoke-report <buildReportPath> --overwrite`。
+5. 脚本执行 `codex exec "<prompt>" --skip-git-repo-check`，从本次运行创建或触碰的 `/Users/luo/.codex/generated_images` 目录取最新图片，并复制到 prompt 文件头指定的 `Expected output file`。
 6. 输出文件名必须等于 `{sheetId}.png`，例如 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`。
 7. 开发者运行切分、contact sheet、QA 和 manifest/coverage 校验脚本。
 8. contact sheet 被人工确认后，后续 PR 才能把切分后的 runtime PNG 和 manifest patch 作为可评审产物。
@@ -183,6 +185,8 @@ HUD 与 item namespace 必须分开：
 ```bash
 scripts/codex-generate-image.py "$(cat UI/sprite-sheets/prompts/dark-v1/001-r01-ui-chrome.prompt.txt)" \
   --out assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png \
+  --smoke-report build/reports/verification/dark-uiux/codex-image-smoke-r01-ui-chrome.json \
+  --timeout-seconds 300 \
   --overwrite
 ```
 

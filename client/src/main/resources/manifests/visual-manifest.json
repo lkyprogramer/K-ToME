@@ -8212,6 +8212,41 @@
       ],
       "asciiGlyph": "?",
       "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "ui.frame.panel.body",
+      "category": "ui_frame",
+      "rawOutputPath": "debug/missing_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr00",
+        "dry-run",
+        "ui",
+        "frame"
+      ],
+      "asciiGlyph": "#",
+      "asciiColorHex": "#2B3542"
+    },
+    {
+      "key": "ui.frame.panel.focus",
+      "category": "ui_frame",
+      "rawOutputPath": "debug/missing_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr00",
+        "dry-run",
+        "ui",
+        "frame",
+        "focus"
+      ],
+      "asciiGlyph": "#",
+      "asciiColorHex": "#1CB7C8"
     }
   ],
   "prefixRules": [

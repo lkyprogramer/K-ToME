@@ -1,0 +1,22 @@
+{
+  "prompts": [
+    {
+      "cellCount": 4,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 256,
+        "cellWidth": 256,
+        "columns": 4,
+        "rows": 4
+      },
+      "gridCapacity": 16,
+      "promptHash": "8812a5d428abab429f94df86865c8d5e4fdc9d71894bff37d63551176828bb4a",
+      "promptId": "001-r01-ui-chrome",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/001-r01-ui-chrome.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png",
+      "round": 1,
+      "sheetId": "r01-ui-chrome"
+    }
+  ],
+  "schemaVersion": "dark-prompt-index-v1"
+}

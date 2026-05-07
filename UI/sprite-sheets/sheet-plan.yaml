@@ -1,0 +1,47 @@
+schemaVersion: dark-sprite-sheet-plan-v1
+styleTag: ktome-dark-fantasy-sprite-ui-v1
+# PR-00 keeps selected cells on debug/missing_visual to prove the registry,
+# manifest, resolver, and dry-run coverage chain before formal runtime PNGs.
+sheets:
+  - sheetId: r01-ui-chrome
+    round: 1
+    type: large-sheet
+    styleTag: ktome-dark-fantasy-sprite-ui-v1
+    rawSheetPath: assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png
+    outputRoot: client/src/main/resources
+    promptBase: Dark fantasy roguelike UI chrome sheet, no text, transparent background
+    grid:
+      columns: 4
+      rows: 4
+      cellWidth: 256
+      cellHeight: 256
+    cells:
+      - row: 0
+        col: 0
+        targetKey: ui.frame.panel.body
+        category: ui_frame
+        outputName: debug/missing_visual.png
+        subject: forged iron and worn stone panel body with ember edge scratches
+      - row: 0
+        col: 1
+        targetKey: ui.frame.panel.focus
+        category: ui_frame
+        outputName: debug/missing_visual.png
+        subject: focused panel frame variant with restrained cyan edge glow
+        aliasOf: ui.frame.panel.body
+      - row: 0
+        col: 2
+        targetKey: ui.combat.action.icon
+        category: icon
+        outputName: phase4/uiux_pr05/ui_combat_action_icon.png
+        subject: crossed weapon and ember spark action-choice icon
+      - row: 0
+        col: 3
+        targetKey: ui.combat.method.icon
+        category: icon
+        outputName: phase4/uiux_pr05/ui_combat_method_icon.png
+        subject: branching tactic glyph with two route strokes
+      - row: 3
+        col: 3
+        reserved: true
+        note: unused PR-00 dry-run polish slot

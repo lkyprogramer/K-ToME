@@ -294,6 +294,40 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
+    fun `dark ui sprite sheet and manifest changes route to pr00 dry run dark gates`() {
+        val changedFiles =
+            listOf(
+                "UI/sprite-sheets/sheet-plan.yaml",
+                "UI/sprite-sheets/key-registry.yaml",
+                "assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png",
+                "assets-src/image/contact-sheets/dark-v1/r01-ui-chrome-contact.png",
+                "client/src/main/resources/dark-v1/ui/action_attack.png",
+                "assets-src/image/manifests/phase2-visual-manifest.json",
+                "client/src/main/resources/manifests/visual-manifest.json",
+                "assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl",
+                "scripts/asset_pipeline_common.py",
+                "scripts/codex-generate-image.py",
+                "scripts/manifest-lint.py",
+            )
+
+        changedFiles.forEach { changedFile ->
+            val plan = VerificationImpactAnalyzer.analyze(listOf(changedFile))
+
+            assertEquals(
+                setOf("dark-uiux-pipeline"),
+                plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet(),
+                "changedFile=$changedFile plan=$plan",
+            )
+            assertTrue(plan.requestedTaskPaths.contains(":tools:darkKeyRegistryLint"), "changedFile=$changedFile plan=$plan")
+            assertTrue(plan.requestedTaskPaths.contains(":tools:darkSpriteSheetLint"), "changedFile=$changedFile plan=$plan")
+            assertTrue(plan.requestedTaskPaths.contains(":tools:spriteSheetMapLint"), "changedFile=$changedFile plan=$plan")
+            assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr00DryRun"), "changedFile=$changedFile plan=$plan")
+            assertFalse(plan.requestedTaskPaths.contains(":tools:darkManifestCoverageLint"), "changedFile=$changedFile plan=$plan")
+            assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedPreflightTaskPaths, "changedFile=$changedFile plan=$plan")
+        }
+    }
+
+    @Test
     fun `foundation session false negative no longer fans validation changes into loot and hidden owner domains`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt"))
 

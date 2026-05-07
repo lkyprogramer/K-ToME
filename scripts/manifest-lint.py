@@ -16,6 +16,7 @@ from asset_pipeline_common import (
     print_errors,
     split_phase2_fallback_budget,
 )
+from dark_sprite_sheet_contract import load_key_registry, load_sheet_plan
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,6 +61,16 @@ def parse_args() -> argparse.Namespace:
         "--require-files",
         action="store_true",
         help="Fail if plan rawOutputPath entries do not exist under --asset-root",
+    )
+    parser.add_argument(
+        "--dark-key-registry",
+        default=None,
+        help="Optional dark-v1 key registry YAML whose keys count as upstream visual coverage.",
+    )
+    parser.add_argument(
+        "--dark-sheet-plan",
+        default=None,
+        help="Optional dark-v1 sheet-plan YAML whose cell outputName values must match canonical manifest rawOutputPath.",
     )
     return parser.parse_args()
 
@@ -142,6 +153,8 @@ def validate_manifest(
     bundled_spec_path: pathlib.Path,
     asset_root: pathlib.Path,
     require_files: bool,
+    dark_key_registry_path: pathlib.Path | None,
+    dark_sheet_plan_path: pathlib.Path | None,
 ) -> list[str]:
     plans = [load_yaml(path) for path in plan_paths]
     plan = plans[0]
@@ -266,6 +279,52 @@ def validate_manifest(
                     errors.append(f"generated raw file not found for plan visualKey '{visual_key}': {candidate}.")
 
     expected_spec_keys = set(plan_by_key) | set(bundled_by_key)
+    for key in sorted(set(source_by_key) & set(bundled_by_key)):
+        source_entry = source_by_key[key]
+        bundled_entry = bundled_by_key[key]
+        for field_name in ("category", "rawOutputPath", "footprint", "pivotX", "pivotY", "tags", "asciiGlyph", "asciiColorHex"):
+            if bundled_entry.get(field_name) != source_entry.get(field_name):
+                errors.append(
+                    f"canonical visual manifest field mismatch for bundled spec '{key}' -> {field_name}: "
+                    f"spec='{bundled_entry.get(field_name)}' source='{source_entry.get(field_name)}'."
+                )
+
+    if dark_key_registry_path or dark_sheet_plan_path:
+        if not dark_key_registry_path or not dark_sheet_plan_path:
+            errors.append("--dark-key-registry and --dark-sheet-plan must be provided together.")
+        else:
+            _, dark_cells, dark_plan_errors = load_sheet_plan(dark_sheet_plan_path)
+            dark_registry_by_key, dark_registry_errors = load_key_registry(dark_key_registry_path)
+            errors += [f"dark sheet plan bridge: {error}" for error in dark_plan_errors]
+            errors += [f"dark key registry bridge: {error}" for error in dark_registry_errors]
+            if dark_plan_errors or dark_registry_errors:
+                errors.append("dark manifest bridge skipped because dark sheet plan or key registry failed validation.")
+            else:
+                dark_cell_by_key = {cell.target_key: cell for cell in dark_cells}
+                missing_dark_registry_keys = sorted(set(dark_cell_by_key) - set(dark_registry_by_key))
+                if missing_dark_registry_keys:
+                    errors.append(
+                        "dark sheet plan keys missing from dark key registry: "
+                        + ", ".join(missing_dark_registry_keys)
+                        + "."
+                    )
+                for key, cell in sorted(dark_cell_by_key.items()):
+                    source_entry = source_by_key.get(key)
+                    if source_entry is None:
+                        errors.append(f"canonical visual manifest is missing dark sheet-plan targetKey '{key}'.")
+                        continue
+                    if str(source_entry.get("category", "")).strip() != cell.category:
+                        errors.append(
+                            f"canonical visual manifest category mismatch for dark key '{key}': "
+                            f"sheet-plan='{cell.category}' source='{source_entry.get('category')}'."
+                        )
+                    if str(source_entry.get("rawOutputPath", "")).strip() != cell.output_name:
+                        errors.append(
+                            f"canonical visual manifest rawOutputPath mismatch for dark key '{key}': "
+                            f"sheet-plan='{cell.output_name}' source='{source_entry.get('rawOutputPath')}'."
+                        )
+                expected_spec_keys |= set(dark_cell_by_key)
+
     missing_spec_keys = sorted(source_by_key.keys() - expected_spec_keys)
     extra_spec_keys = sorted(expected_spec_keys - source_by_key.keys())
     if missing_spec_keys:
@@ -281,16 +340,6 @@ def validate_manifest(
             + "."
         )
 
-    for key in sorted(set(source_by_key) & set(bundled_by_key)):
-        source_entry = source_by_key[key]
-        bundled_entry = bundled_by_key[key]
-        for field_name in ("category", "rawOutputPath", "footprint", "pivotX", "pivotY", "tags", "asciiGlyph", "asciiColorHex"):
-            if bundled_entry.get(field_name) != source_entry.get(field_name):
-                errors.append(
-                    f"canonical visual manifest field mismatch for bundled spec '{key}' -> {field_name}: "
-                    f"spec='{bundled_entry.get(field_name)}' source='{source_entry.get(field_name)}'."
-                )
-
     return errors
 
 
@@ -304,6 +353,8 @@ def main() -> int:
         pathlib.Path(args.bundled_spec),
         pathlib.Path(args.asset_root),
         args.require_files,
+        pathlib.Path(args.dark_key_registry) if args.dark_key_registry else None,
+        pathlib.Path(args.dark_sheet_plan) if args.dark_sheet_plan else None,
     )
     if errors:
         return print_errors(errors)
