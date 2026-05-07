@@ -9,6 +9,7 @@ import java.security.MessageDigest
 import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
@@ -27,6 +28,7 @@ val verifyChangedTaskPathsFile = rootProject.layout.buildDirectory.file("verific
 val verifyChangedPreflightTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/preflight-task-paths.txt")
 val verifyChangedBaseRef = rootProject.findProperty("verifyChangedBaseRef")?.toString() ?: "origin/main"
 val maintainabilityLintOutputDir = layout.buildDirectory.dir("reports/verification/maintainability")
+val darkUiuxReportDir = rootProject.layout.buildDirectory.dir("reports/verification/dark-uiux")
 
 dependencies {
     implementation(project(":client"))
@@ -483,6 +485,157 @@ tasks.register<Test>("acceptanceContractLint") {
         },
     ).withPathSensitivity(PathSensitivity.RELATIVE)
 }
+
+tasks.register<Exec>("darkKeyRegistryLint") {
+    group = "verification"
+    description = "Validates dark-v1 key registry ownership, fallbacks, aliases, and sheet consistency."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3",
+        "scripts/verify_dark_key_registry.py",
+        "--report",
+        darkUiuxReportDir.get().file("key-registry.json").asFile.path,
+    )
+    inputs.files(
+        rootProject.files(
+            "scripts/verify_dark_key_registry.py",
+            "scripts/dark_sprite_sheet_contract.py",
+            "scripts/asset_pipeline_common.py",
+            "UI/sprite-sheets/key-registry.yaml",
+            "UI/sprite-sheets/sheet-plan.yaml",
+            "assets-src/image/manifests/phase2-visual-manifest.json",
+        ),
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.file(darkUiuxReportDir.map { dir -> dir.file("key-registry.json") })
+}
+
+tasks.register<Exec>("darkSpriteSheetLint") {
+    group = "verification"
+    description = "Validates dark-v1 sheet-plan schema, style tag, grid policy, cells, aliases, and repo-relative paths."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3",
+        "scripts/verify_sprite_sheet_map.py",
+        "--check",
+        "sheet-plan",
+    )
+    inputs.files(
+        rootProject.files(
+            "scripts/verify_sprite_sheet_map.py",
+            "scripts/dark_sprite_sheet_contract.py",
+            "scripts/asset_pipeline_common.py",
+            "UI/sprite-sheets/sheet-plan.yaml",
+        ),
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
+tasks.register<Exec>("spriteSheetMapLint") {
+    group = "verification"
+    description = "Validates dark-v1 raw sheet dimensions, contact sheet, hash report, and manifest rawOutputPath mapping."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3",
+        "scripts/verify_sprite_sheet_map.py",
+        "--check",
+        "map",
+    )
+    inputs.files(
+        rootProject.files(
+            "scripts/verify_sprite_sheet_map.py",
+            "scripts/dark_sprite_sheet_contract.py",
+            "scripts/asset_pipeline_common.py",
+            "UI/sprite-sheets/sheet-plan.yaml",
+            "assets-src/image/manifests/phase2-visual-manifest.json",
+        ),
+        rootProject.fileTree("assets-src/image/raw/sheets/dark-v1") {
+            include("*.png")
+        },
+        rootProject.fileTree("assets-src/image/contact-sheets/dark-v1") {
+            include("*.png")
+        },
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.file(rootProject.layout.projectDirectory.file("assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl"))
+}
+
+fun registerDarkManifestCoverageTask(
+    name: String,
+    mode: String,
+    ownerPr: String,
+    reportFileName: String,
+): TaskProvider<Exec> =
+    tasks.register<Exec>(name) {
+        group = "verification"
+        description = "Validates dark-v1 manifest coverage in $mode mode."
+        workingDir = rootProject.projectDir
+        val command =
+            mutableListOf(
+                "python3",
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                mode,
+                "--report",
+                darkUiuxReportDir.get().file(reportFileName).asFile.path,
+            )
+        if (ownerPr.isNotBlank()) {
+            command += listOf("--owner-pr", ownerPr)
+        }
+        commandLine(command)
+        inputs.files(
+            rootProject.files(
+                "scripts/verify_dark_manifest_coverage.py",
+                "scripts/dark_sprite_sheet_contract.py",
+                "scripts/asset_pipeline_common.py",
+                "UI/sprite-sheets/key-registry.yaml",
+                "UI/sprite-sheets/sheet-plan.yaml",
+                "assets-src/image/manifests/phase2-visual-manifest.json",
+                "client/src/main/resources/manifests/visual-manifest.json",
+            ),
+        ).withPathSensitivity(PathSensitivity.RELATIVE)
+        outputs.file(darkUiuxReportDir.map { dir -> dir.file(reportFileName) })
+    }
+
+val darkCoverageMode = rootProject.providers.gradleProperty("ktome.darkUiux.coverageMode").orElse("final-full")
+val darkCoverageOwnerPr = rootProject.providers.gradleProperty("ktome.darkUiux.ownerPr").orElse("")
+
+tasks.register<Exec>("darkManifestCoverageLint") {
+    group = "verification"
+    description = "Validates dark-v1 manifest coverage using ktome.darkUiux.coverageMode."
+    workingDir = rootProject.projectDir
+    val command =
+        mutableListOf(
+            "python3",
+            "scripts/verify_dark_manifest_coverage.py",
+            "--coverage-mode",
+            darkCoverageMode.get(),
+            "--report",
+            darkUiuxReportDir.get().file("dark-v1-manifest-coverage.json").asFile.path,
+        )
+    if (darkCoverageOwnerPr.get().isNotBlank()) {
+        command += listOf("--owner-pr", darkCoverageOwnerPr.get())
+    }
+    commandLine(command)
+    inputs.files(
+        rootProject.files(
+            "scripts/verify_dark_manifest_coverage.py",
+            "scripts/dark_sprite_sheet_contract.py",
+            "scripts/asset_pipeline_common.py",
+            "UI/sprite-sheets/key-registry.yaml",
+            "UI/sprite-sheets/sheet-plan.yaml",
+            "assets-src/image/manifests/phase2-visual-manifest.json",
+            "client/src/main/resources/manifests/visual-manifest.json",
+        ),
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property("ktome.darkUiux.coverageMode", darkCoverageMode)
+    inputs.property("ktome.darkUiux.ownerPr", darkCoverageOwnerPr)
+    outputs.file(darkUiuxReportDir.map { dir -> dir.file("dark-v1-manifest-coverage.json") })
+}
+
+registerDarkManifestCoverageTask(
+    name = "darkManifestCoveragePr00DryRun",
+    mode = "pr00-dry-run",
+    ownerPr = "",
+    reportFileName = "dark-v1-manifest-coverage-pr00-dry-run.json",
+)
 
 tasks.register<VerificationTask>("verifyContractLintPreflight") {
     description = "Runs the contractLint STATIC_GRAPH demo through the unified verification task foundation."
@@ -983,6 +1136,10 @@ tasks.register<Test>("reportPhase4Fixture") {
 listOf(
     tasks.named("contractLint"),
     tasks.named("keywordRegistryLint"),
+    tasks.named("darkKeyRegistryLint"),
+    tasks.named("darkSpriteSheetLint"),
+    tasks.named("spriteSheetMapLint"),
+    tasks.named("darkManifestCoveragePr00DryRun"),
     tasks.named("verifyContractLintPreflight"),
     tasks.named("verifyLootPreflight"),
     tasks.named("verifyHiddenPreflight"),

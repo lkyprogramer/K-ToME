@@ -171,6 +171,80 @@ object VerificationTaskRegistry {
             artifactPolicy = VerificationArtifactPolicy(),
         )
 
+    private val darkUiuxPipelineDomain =
+        VerificationDomainSpec(
+            domainId = "dark-uiux-pipeline",
+            phaseIds = setOf("dark-uiux"),
+            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "dark-uiux.pipeline",
+                        description = "Runs the dark-v1 sprite sheet, key registry, map, and PR-00 dry-run coverage gates.",
+                        workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedTags = listOf("darkUiuxPipeline"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "dark-uiux.assets",
+                        pathPrefixes =
+                            listOf(
+                                "UI/sprite-sheets/",
+                                "assets-src/image/raw/sheets/dark-v1/",
+                                "assets-src/image/contact-sheets/dark-v1/",
+                                "client/src/main/resources/dark-v1/",
+                            ),
+                        ownerRequired = true,
+                    ),
+                    InputScope(
+                        scopeId = "dark-uiux.manifest",
+                        pathPrefixes =
+                            listOf(
+                                "assets-src/image/manifests/phase2-visual-manifest.json",
+                                "client/src/main/resources/manifests/visual-manifest.json",
+                                "assets-src/image/manifests/dark-v1-",
+                            ),
+                        ownerRequired = true,
+                    ),
+                    InputScope(
+                        scopeId = "dark-uiux.pipeline-scripts",
+                        pathPrefixes =
+                            listOf(
+                                "scripts/dark_sprite_sheet_contract.py",
+                                "scripts/generate_sheet_prompt.py",
+                                "scripts/codex-generate-image.py",
+                                "scripts/verify_dark_key_registry.py",
+                                "scripts/verify_sprite_sheet_map.py",
+                                "scripts/verify_dark_manifest_coverage.py",
+                                "scripts/slice_spritesheet.py",
+                                "scripts/render_contact_sheet.py",
+                                "scripts/manifest-lint.py",
+                            ),
+                        ownerRequired = true,
+                    ),
+                ),
+            ownerTaskPaths =
+                listOf(
+                    ":tools:darkKeyRegistryLint",
+                    ":tools:darkSpriteSheetLint",
+                    ":tools:spriteSheetMapLint",
+                    ":tools:darkManifestCoveragePr00DryRun",
+                ),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
     private val lootDomain =
         VerificationDomainSpec(
             domainId = "loot",
@@ -756,6 +830,7 @@ object VerificationTaskRegistry {
             contractLintDomain,
             maintainabilityDomain,
             keywordRegistryDomain,
+            darkUiuxPipelineDomain,
             lootDomain,
             hiddenDomain,
             organicHiddenDomain,

@@ -1,0 +1,32 @@
+schemaVersion: dark-key-registry-v1
+styleTag: ktome-dark-fantasy-sprite-ui-v1
+entries:
+  - targetKey: ui.frame.panel.body
+    category: ui_frame
+    ownerPr: PR-00
+    sheetId: r01-ui-chrome
+    fallbackKey: missing_visual
+    consumer: client visual manifest resolver dry-run fixture
+    consumerTest: com.ktome.client.assets.ManifestResolveTest#dark ui dry-run frame keys resolve through exact manifest entries
+  - targetKey: ui.frame.panel.focus
+    category: ui_frame
+    ownerPr: PR-00
+    sheetId: r01-ui-chrome
+    fallbackKey: ui.frame.panel.body
+    consumer: client visual manifest resolver dry-run fixture
+    consumerTest: com.ktome.client.assets.ManifestResolveTest#dark ui dry-run frame keys resolve through exact manifest entries
+    aliasOf: ui.frame.panel.body
+  - targetKey: ui.combat.action.icon
+    category: icon
+    ownerPr: PR-00
+    sheetId: r01-ui-chrome
+    fallbackKey: missing_visual
+    consumer: client combat decision affordance
+    consumerTest: com.ktome.client.assets.ManifestResolveTest
+  - targetKey: ui.combat.method.icon
+    category: icon
+    ownerPr: PR-00
+    sheetId: r01-ui-chrome
+    fallbackKey: missing_visual
+    consumer: client combat decision affordance
+    consumerTest: com.ktome.client.assets.ManifestResolveTest

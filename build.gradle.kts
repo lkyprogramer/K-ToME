@@ -88,6 +88,10 @@ val verifyChangedTaskPaths =
         ":tools:prepareVerifyChangedPlan",
         ":tools:scopeCoverageLint",
         ":tools:maintainabilityLint",
+        ":tools:darkKeyRegistryLint",
+        ":tools:darkSpriteSheetLint",
+        ":tools:spriteSheetMapLint",
+        ":tools:darkManifestCoveragePr00DryRun",
         ":tools:verifyContractLintPreflight",
         ":tools:contractLint",
         ":tools:keywordRegistryLint",
@@ -436,6 +440,30 @@ tasks.register("acceptanceContractLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates Phase4 v4 PR acceptance matrices and governance links."
     dependsOn(":tools:acceptanceContractLint")
+}
+
+tasks.register("darkKeyRegistryLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates the dark-v1 key registry against the sprite sheet plan and canonical manifest."
+    dependsOn(":tools:darkKeyRegistryLint")
+}
+
+tasks.register("darkSpriteSheetLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates the dark-v1 sprite sheet plan schema and repo-relative paths."
+    dependsOn(":tools:darkSpriteSheetLint")
+}
+
+tasks.register("spriteSheetMapLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates dark-v1 raw sheet mapping, contact sheet, hashes, and manifest paths."
+    dependsOn(":tools:spriteSheetMapLint")
+}
+
+tasks.register("darkManifestCoverageLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates dark-v1 manifest coverage using ktome.darkUiux.coverageMode."
+    dependsOn(":tools:darkManifestCoverageLint")
 }
 
 tasks.register("verifyContractLintPreflight") {
@@ -902,6 +930,10 @@ tasks.register<Exec>("manifestLint") {
         "client/src/main/resources/manifests/visual-manifest.json",
         "--runtime-root",
         "client/src/main/resources",
+        "--dark-key-registry",
+        "UI/sprite-sheets/key-registry.yaml",
+        "--dark-sheet-plan",
+        "UI/sprite-sheets/sheet-plan.yaml",
     )
 }
 

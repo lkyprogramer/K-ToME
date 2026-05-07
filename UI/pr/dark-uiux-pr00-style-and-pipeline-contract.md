@@ -110,7 +110,7 @@ Raw sheet 获取流程：
 2. prompt 文件名固定为 `{threeDigitOrder}-{sheetId}.prompt.txt`，例如 `001-r01-ui-chrome.prompt.txt`。
 3. prompt 文件头必须写出 `Prompt ID / Sheet ID / Expected output file / Canvas / Grid / Cell / Style tag`。
 4. raw PNG 只能由 `scripts/codex-generate-image.py` 调用 Codex CLI 生成并复制到 `Expected output file`，也就是 `sheet-plan.yaml.rawSheetPath`。
-5. `scripts/codex-generate-image.py` 固定执行 `codex exec "<prompt>" --skip-git-repo-check`，然后按修改时间选取 `/Users/luo/.codex/generated_images` 下最新文件夹里的最新图片。
+5. `scripts/codex-generate-image.py` 固定执行 `codex exec "<prompt>" --skip-git-repo-check`，然后从本次运行创建或触碰的 `/Users/luo/.codex/generated_images` 目录选取最新图片。
 6. 正式 raw 目录 `assets-src/image/raw/sheets/dark-v1/` 中每个 `sheetId` 只能存在一个 `{sheetId}.png`。
 7. raw PNG 必须 repo-relative；`/Users/luo/.codex/generated_images` 只能作为 transient source，不能进入 manifest、coverage artifact、manual record 或 PR 描述的 canonical path。
 8. 生成失败先重生成 raw sheet；不得通过改 `row/col` 或手工猜裁修补语义错位。
@@ -120,6 +120,8 @@ Raw sheet 获取流程：
 ```bash
 scripts/codex-generate-image.py "$(cat UI/sprite-sheets/prompts/dark-v1/001-r01-ui-chrome.prompt.txt)" \
   --out assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png \
+  --smoke-report build/reports/verification/dark-uiux/codex-image-smoke-r01-ui-chrome.json \
+  --timeout-seconds 300 \
   --overwrite
 ```
 
@@ -214,6 +216,8 @@ gate 分三个 stop condition：
 3. `pr00-dry-run` 不允许修改玩家主路径覆盖结论，只证明管线能解释 missing/pending。
 4. `verifyChanged` 触发 dark gate 时必须由 impact routing 显式选择 mode，不能依赖裸 task 默认值。
 
+PR-00 的 `verifyChanged` impact routing 必须显式选择 `darkManifestCoveragePr00DryRun`。这是本 PR 的 canary 出口，不等价于 final-full 验收；PR-02 / PR-03 / PR-05 资源 PR 关闭时改用对应 `owner-scope`，PR-06 / PR-07 关闭时才允许把默认 dark route 收敛到 `final-full`。
+
 Coverage artifact schema 分层：
 
 | Layer | Fields |
@@ -221,6 +225,8 @@ Coverage artifact schema 分层：
 | common | `schemaVersion`, `styleTag`, `scopeMode`, `ownerPr`, `expectedKeySetSource`, `strictOldStyleResidue`, `generatedAt`, `sourceManifestPath`, `runtimeManifestPath`, `keyRegistryPath`, `sheetPlanPath` |
 | owner-scope | `ownerSheetIds`, `ownerExpectedKeys`, `ownerCoveredKeys`, `ownerMissingKeys`, `scopeExternalPendingKeys`, `allowedOwnerFallbackKeys` |
 | final-full | `expectedKeySet`, `coveredKeySet`, `missingKeys`, `oldStylePlayerVisibleKeys`, `pendingOrRejectedPlayerVisibleCells`, `fallbackKeyUsage`, `allowedFallbackKeys`, `allowedCoverageExclusions`, `sourceSheetIds` |
+
+`pendingOrRejectedPlayerVisibleCells` 只记录 `missing_visual` / 空输出这类待生成或被拒绝的 fallback；`oldStylePlayerVisibleKeys` 只记录仍指向非 `dark-v1/` 且非 fallback 的旧风格输出。两者在 `final-full` 中都必须为空。
 
 ## 6. Style Epoch 策略
 

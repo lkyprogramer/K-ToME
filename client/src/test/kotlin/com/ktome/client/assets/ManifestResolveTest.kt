@@ -47,6 +47,20 @@ class ManifestResolveTest {
     }
 
     @Test
+    fun `dark ui dry-run frame keys resolve through exact manifest entries`() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        listOf("ui.frame.panel.body", "ui.frame.panel.focus").forEach { key ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals("ui_frame", resolved.entry.category)
+            assertFalse(resolved.fallbackUsed)
+            assertFalse(resolved.matchedByPrefix)
+        }
+    }
+
+    @Test
     fun `damage type icons resolve as exact visual family entries`() {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 
