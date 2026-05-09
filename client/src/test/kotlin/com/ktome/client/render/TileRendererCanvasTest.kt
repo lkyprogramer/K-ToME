@@ -9,6 +9,7 @@ import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
 import com.ktome.client.ui.combat.CombatDecisionFrame
 import com.ktome.client.ui.combat.CombatDecisionFrameState
@@ -56,6 +57,9 @@ import com.ktome.core.snapshot.TalentTreeNodeSnapshot
 import com.ktome.core.snapshot.TalentTreeSnapshot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
+import com.ktome.game.validation.ValidationPhase4Guide
+import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationSummarySnapshot
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -223,6 +227,30 @@ class TileRendererCanvasTest {
 
         assertEquals(TileMapDimensions(3, 3), model.mapDimensions)
         assertEquals(TileMapDimensions(3, 3), diagnostics.viewport.identity.mapDimensions)
+    }
+
+    @Test
+    fun `render canvas passes validation inspect projection into viewport resolver`() {
+        val cursor = com.ktome.core.map.Point(2, 2)
+        val diagnostics =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 5, height = 5),
+                overlayState =
+                    OverlayState(
+                        mode = UiMode.VALIDATION,
+                        validationPanel = validationPanel(cursor),
+                    ),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        assertEquals(TileViewportFocusMode.INSPECT, diagnostics.viewport.identity.focusMode)
+        assertEquals(cursor, diagnostics.viewport.state.lastFocusTile)
+        assertEquals(TileTooltipSource.INSPECT_CURSOR, diagnostics.overlayFrame.overlayModel.selectedTooltipSource)
+        assertEquals(cursor, (diagnostics.overlayFrame.overlayModel.selectedTooltip?.anchor?.source as TileOverlayAnchor.WorldTile).tile)
     }
 
     @Test
@@ -2339,6 +2367,32 @@ class TileRendererCanvasTest {
                 ),
             logEvents = logEvents,
             combatFeedbackEvents = combatFeedbackEvents,
+        )
+
+    private fun validationPanel(cursor: com.ktome.core.map.Point): ValidationOverlayPanelState =
+        ValidationOverlayPanelState(
+            summary =
+                ValidationSummarySnapshot(
+                    preset = ValidationPreset.CUSTOM,
+                    seed = 1L,
+                    seedCorpus = listOf(1L),
+                    zoneId = "shattered_outpost",
+                    floor = 1,
+                    activePackIds = emptyList(),
+                    bossVariantModeId = "none",
+                    preferredBossVariantId = null,
+                    lastResult = null,
+                ),
+            zoneNameKey = "zone.shattered_outpost.name",
+            inspectCursor = cursor,
+            phase4Guide =
+                ValidationPhase4Guide(
+                    targetLabelKeys = emptyList(),
+                    quickPathLabelKeys = emptyList(),
+                    evidenceLabelKeys = emptyList(),
+                ),
+            scenarioContext = null,
+            sections = emptyList(),
         )
 }
 

@@ -357,6 +357,7 @@ class TileRenderer(
                     TileViewportFocusProjectionRequest(
                         playerTile = model.playerTile,
                         overlayState = overlayState,
+                        validationInspectProjection = validationInspectProjection(overlayState),
                     ),
                 )
             val viewport =
@@ -437,6 +438,18 @@ class TileRenderer(
                 textLayout = buildShellTextLayout(model, layout),
                 paneFocusAnchor = overlayState.paneFocusAnchor.takeIf { overlayState.mode == UiMode.MAP },
             )
+
+        private fun validationInspectProjection(overlayState: OverlayState): ValidationInspectProjection? {
+            if (overlayState.mode != UiMode.VALIDATION) {
+                return null
+            }
+            return overlayState.validationPanel?.inspectCursor?.let { cursor ->
+                ValidationInspectProjection(
+                    cursor = cursor,
+                    reason = ValidationProjectionReason.MANUAL_VALIDATION_PROBE,
+                )
+            }
+        }
 
         private fun buildShellTextLayout(
             model: TileRenderModel,

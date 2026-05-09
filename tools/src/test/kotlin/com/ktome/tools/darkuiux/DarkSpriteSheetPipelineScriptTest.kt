@@ -986,6 +986,50 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `owner contract requires cell counts for every required sheet`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val ownerContract = tempDir.resolve("owner-contract.yaml")
+        val sheetKeys =
+            listOf(
+                "r95-count-a" to keysFor("count-a"),
+                "r95-count-b" to keysFor("count-b"),
+            )
+        writeText(plan, largeSheetPlan(sheetKeys.map { (sheetId, keys) -> sheetId to fullGridCellsForKeys(keys) }))
+        val contractText =
+            ownerContractForSheets(
+                ownerPr = "PR-02",
+                sheetKeys = sheetKeys,
+                direct = 4,
+                alias = 0,
+                reserved = 12,
+                total = 16,
+            )
+                .lineSequence()
+                .filterNot { line -> line.trim().startsWith("r95-count-b:") }
+                .joinToString("\n")
+        writeText(ownerContract, "$contractText\n")
+
+        val result =
+            runScript(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "sheet-plan",
+                "--plan",
+                plan.toString(),
+                "--require-full-grid",
+                "--owner-contract",
+                ownerContract.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(
+            result.output.contains("owner contract requiredCellCountsBySheet must include every requiredSheetIds entry"),
+            result.output,
+        )
+        assertTrue(result.output.contains("missing=r95-count-b"), result.output)
+    }
+
+    @Test
     fun `coverage lint separates pending fallback from old style residue`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val registry = tempDir.resolve("key-registry.yaml")

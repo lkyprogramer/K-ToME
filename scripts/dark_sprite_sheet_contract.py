@@ -424,6 +424,13 @@ def load_owner_contract(path: pathlib.Path) -> tuple[OwnerContract | None, list[
                 errors.append(f"{owner} direct + alias + reserved must equal total.")
             required_counts_by_sheet[sheet_id_text] = counts
 
+    missing_count_sheet_ids = sorted(set(required_sheet_ids) - set(required_counts_by_sheet))
+    if missing_count_sheet_ids:
+        errors.append(
+            "owner contract requiredCellCountsBySheet must include every requiredSheetIds entry: "
+            f"missing={', '.join(missing_count_sheet_ids)}."
+        )
+
     required_direct_counts: dict[str, int] = {}
     for cell in required_cells:
         required_direct_counts[cell.sheet_id] = required_direct_counts.get(cell.sheet_id, 0) + 1
