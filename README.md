@@ -186,7 +186,7 @@ Phase 4 canonical report 输出到：
 1. `tools/build/reports/verification/phase4/report-phase4-summary.json`
 2. `tools/build/reports/verification/phase4/report-phase4-summary.md`
 
-`phase4Report` / `phase4ReportOnly` 仍保留为兼容入口；新文档和 PR 收口优先使用 `reportPhase4` / `reportPhase4Only`。
+`phase4Report` / `phase4ReportOnly` 是 canonical unified aggregate 入口；`phase4LegacyReport*` 仅保留为手工 fallback；`reportPhase4` / `reportPhase4Only` 用于显式 parity/materialization 对账。
 
 ### Dark UI/UX
 

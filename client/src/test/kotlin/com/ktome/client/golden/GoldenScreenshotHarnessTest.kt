@@ -41,6 +41,7 @@ import com.ktome.core.item.StatModifier
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.Point
 import com.ktome.core.mapgen.center
+import com.ktome.core.profile.ProfileManager
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
@@ -644,7 +645,10 @@ class GoldenScreenshotHarnessTest {
             val app =
                 GameApp(
                     saveManager = SaveManager(tempDir.resolve(saveFolderName)),
+                    validationSaveManager = SaveManager(tempDir.resolve("$saveFolderName-validation-save")),
                     defaultConfig = defaultConfig,
+                    profileManager = ProfileManager(tempDir.resolve("$saveFolderName-profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("$saveFolderName-validation-profile")),
                     menuInputSourceFactory = { NoOpInputSource },
                     gameCommandSourceFactory = { overlaySource },
                     outcomeInputSourceFactory = { NoOpInputSource },
