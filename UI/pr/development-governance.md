@@ -46,7 +46,7 @@ dark UI/UX PR 固定按以下顺序执行：
    - 运行 PR 文档声明的 focused client test、manifest resolver test 或 resource static lint。
 3. resource gate
    - 资源 PR 运行 `assetLint styleLint manifestLint darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint`。
-   - owner-scope coverage 必须显式传 `ownerPr`。
+   - `owner-scope` coverage 必须显式传 `ownerPr`；PR-06 / PR-07 的 close gate 必须使用 `final-full`，不得传 `ownerPr` 缩小分母。
 4. client evidence
    - 运行 `:client:clientSmoke` 和 `:client:goldenScreenshot`。
 5. governance gate
@@ -105,5 +105,5 @@ dark UI/UX canonical artifact 包括：
 
 1. PR-00 交付 style / pipeline / lint 合同，是后续 PR 的前置。
 2. PR-01 到 PR-04 以 client presentation 和 golden 为主，不改变 gameplay rule。
-3. PR-05 到 PR-06 是资源与 manifest 主体，必须严格执行 owner-scope coverage。
+3. PR-05 是资源与 manifest 主体的 owner-scope 收口；PR-06 是 full manifest 主体收口，必须严格执行 final-full coverage；PR-07 继续使用 final-full 做最终 packaged / golden / whitebox polish。
 4. PR-07 是最终 packaged app、golden、whitebox polish 收口，不新增大范围资源合同。

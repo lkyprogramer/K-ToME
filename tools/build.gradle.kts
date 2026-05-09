@@ -509,16 +509,24 @@ tasks.register<Exec>("darkKeyRegistryLint") {
     outputs.file(darkUiuxReportDir.map { dir -> dir.file("key-registry.json") })
 }
 
+val darkSpriteSheetRequireFullGrid =
+    rootProject.providers.gradleProperty("ktome.darkUiux.requireFullGrid").orElse("false")
+
 tasks.register<Exec>("darkSpriteSheetLint") {
     group = "verification"
     description = "Validates dark-v1 sheet-plan schema, style tag, grid policy, cells, aliases, and repo-relative paths."
     workingDir = rootProject.projectDir
-    commandLine(
-        "python3",
-        "scripts/verify_sprite_sheet_map.py",
-        "--check",
-        "sheet-plan",
-    )
+    val command =
+        mutableListOf(
+            "python3",
+            "scripts/verify_sprite_sheet_map.py",
+            "--check",
+            "sheet-plan",
+        )
+    if (darkSpriteSheetRequireFullGrid.get().toBooleanStrictOrNull() == true) {
+        command += "--require-full-grid"
+    }
+    commandLine(command)
     inputs.files(
         rootProject.files(
             "scripts/verify_sprite_sheet_map.py",
@@ -527,7 +535,12 @@ tasks.register<Exec>("darkSpriteSheetLint") {
             "UI/sprite-sheets/sheet-plan.yaml",
         ),
     ).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property("ktome.darkUiux.requireFullGrid", darkSpriteSheetRequireFullGrid)
 }
+
+val darkSpriteMapReportPath =
+    rootProject.providers.gradleProperty("ktome.darkUiux.spriteMapReport")
+        .orElse("assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl")
 
 tasks.register<Exec>("spriteSheetMapLint") {
     group = "verification"
@@ -538,6 +551,8 @@ tasks.register<Exec>("spriteSheetMapLint") {
         "scripts/verify_sprite_sheet_map.py",
         "--check",
         "map",
+        "--report",
+        darkSpriteMapReportPath.get(),
     )
     inputs.files(
         rootProject.files(
@@ -554,7 +569,8 @@ tasks.register<Exec>("spriteSheetMapLint") {
             include("*.png")
         },
     ).withPathSensitivity(PathSensitivity.RELATIVE)
-    outputs.file(rootProject.layout.projectDirectory.file("assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl"))
+    inputs.property("ktome.darkUiux.spriteMapReport", darkSpriteMapReportPath)
+    outputs.file(rootProject.layout.projectDirectory.file(darkSpriteMapReportPath.get()))
 }
 
 fun registerDarkManifestCoverageTask(
@@ -596,6 +612,8 @@ fun registerDarkManifestCoverageTask(
 
 val darkCoverageMode = rootProject.providers.gradleProperty("ktome.darkUiux.coverageMode").orElse("final-full")
 val darkCoverageOwnerPr = rootProject.providers.gradleProperty("ktome.darkUiux.ownerPr").orElse("")
+val darkCoverageRequiredOwnerSheetIds =
+    rootProject.providers.gradleProperty("ktome.darkUiux.requiredOwnerSheetIds").orElse("")
 
 tasks.register<Exec>("darkManifestCoverageLint") {
     group = "verification"
@@ -613,6 +631,9 @@ tasks.register<Exec>("darkManifestCoverageLint") {
     if (darkCoverageOwnerPr.get().isNotBlank()) {
         command += listOf("--owner-pr", darkCoverageOwnerPr.get())
     }
+    if (darkCoverageRequiredOwnerSheetIds.get().isNotBlank()) {
+        command += listOf("--required-owner-sheet-ids", darkCoverageRequiredOwnerSheetIds.get())
+    }
     commandLine(command)
     inputs.files(
         rootProject.files(
@@ -627,6 +648,7 @@ tasks.register<Exec>("darkManifestCoverageLint") {
     ).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.property("ktome.darkUiux.coverageMode", darkCoverageMode)
     inputs.property("ktome.darkUiux.ownerPr", darkCoverageOwnerPr)
+    inputs.property("ktome.darkUiux.requiredOwnerSheetIds", darkCoverageRequiredOwnerSheetIds)
     outputs.file(darkUiuxReportDir.map { dir -> dir.file("dark-v1-manifest-coverage.json") })
 }
 
