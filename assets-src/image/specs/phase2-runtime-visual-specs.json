@@ -10,9 +10,7 @@
       "tags": [
         "phase2",
         "monster"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.beast.rat",
@@ -24,9 +22,7 @@
       "tags": [
         "phase2",
         "monster"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.cultist.dungeon_lord",
@@ -40,9 +36,7 @@
         "p2-c",
         "boss",
         "cultist"
-      ],
-      "asciiGlyph": "B",
-      "asciiColorHex": "#FF5555"
+      ]
     },
     {
       "key": "actor.orc.raider",
@@ -54,9 +48,7 @@
       "tags": [
         "phase2",
         "monster"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.player",
@@ -68,9 +60,7 @@
       "tags": [
         "phase2",
         "player"
-      ],
-      "asciiGlyph": "@",
-      "asciiColorHex": "#FFD700"
+      ]
     },
     {
       "key": "actor.undead.bone_archer",
@@ -82,9 +72,7 @@
       "tags": [
         "phase2",
         "monster"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.unknown",
@@ -96,9 +84,7 @@
       "tags": [
         "fallback",
         "phase2"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "affix.of_fortitude.icon",
@@ -1336,9 +1322,7 @@
       "tags": [
         "fallback",
         "phase2"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FF69B4"
+      ]
     },
     {
       "key": "talent.arcanist.arcane_shield.icon",
@@ -1833,37 +1817,7 @@
       "tags": [
         "fallback",
         "phase2"
-      ],
-      "asciiGlyph": " ",
-      "asciiColorHex": "#000000"
-    },
-    {
-      "key": "tileset.foundation.ascii.floor",
-      "category": "tile_ground",
-      "rawOutputPath": "debug/tileset_foundation_ascii_floor.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase2",
-        "ascii"
-      ],
-      "asciiGlyph": ".",
-      "asciiColorHex": "#FFFFFF"
-    },
-    {
-      "key": "tileset.foundation.ascii.wall",
-      "category": "tile_wall",
-      "rawOutputPath": "debug/tileset_foundation_ascii_wall.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase2",
-        "ascii"
-      ],
-      "asciiGlyph": "#",
-      "asciiColorHex": "#D3D3D3"
+      ]
     },
     {
       "key": "tree.arcanist_arcane",
@@ -2059,9 +2013,7 @@
         "p2-c",
         "zone",
         "mine"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "zone.greenwood_fringe.icon",
@@ -2089,9 +2041,7 @@
         "p2-c",
         "zone",
         "forest-edge"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "zone.grey_gate_depths.icon",
@@ -2119,9 +2069,7 @@
         "p2-c",
         "zone",
         "shadow-depths"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "zone.shattered_outpost.icon",
@@ -2149,9 +2097,7 @@
         "p2-c",
         "zone",
         "ruins"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     }
   ]
 }

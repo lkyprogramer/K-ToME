@@ -1,6 +1,4 @@
 tilesets:
-  - id: tileset.foundation.ascii
-    schemaVersion: 2
   - id: tileset.ruins
     schemaVersion: 2
   - id: tileset.forest_edge

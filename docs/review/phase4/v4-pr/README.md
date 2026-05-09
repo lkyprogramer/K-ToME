@@ -76,7 +76,7 @@ PR-01 合入后，后续 PR 必须继承以下实现边界：
 1. `TalentTreeNodeSnapshot.category` 是 `TalentCategory` typed enum；JSON wire 仍是 `"ACTIVE" / "PASSIVE" / "SUSTAINED"` 字符串枚举名。
 2. client、game harness、tools 不得再对 `snapshot.category` 做 `TalentCategory.valueOf(...)` 或字符串分支；snapshot consumer 必须直接消费 typed enum。
 3. Talent tree sidebar 的 presentation authority 固定为 `client.ui.talent.TalentSidebarPresenter`。
-4. `AsciiRenderModel` 和 `TileRenderModel` 只能把 `TalentSidebarLine.role` 映射为各自 tone；Tile 可以额外 resolve `iconKey`。不得在 renderer 内重新拼装 talent tree 文案、glyph、rank label、preview 展开/折叠、active-slot-choice 文案或 footer。
+4. `TileRenderModel` 只能把 `TalentSidebarLine.role` 映射为 Tile tone，并可 resolve `iconKey`。不得在 renderer 内重新拼装 talent tree 文案、glyph、rank label、preview 展开/折叠、active-slot-choice 文案或 footer。
 5. `DescriptionPresenter.presentTalentTreeNodeLines` 继续负责 talent node 描述文本；renderer 不得绕过 presenter 直接为 talent tree sidebar 组装描述行。
 6. 后续 PR 若触碰 talent sidebar、active-slot-choice modal、`TalentTreeNodeSnapshot` 或相关 RenderSnapshot serialization，必须同步更新 `TalentSidebarPresenterTest`、`InputHandlerTest`、ASCII/Tile render model 测试，以及 snapshot serialization 测试。
 
@@ -202,7 +202,7 @@ Phase4 canonical report 产物固定为 `tools/build/reports/verification/phase4
 
 | PR | UI surface | 必测测试面 |
 | --- | --- | --- |
-| PR-01 | Talent tree sidebar、active slot choice modal | `client/src/test/kotlin/com/ktome/client/ui/talent/TalentSidebarPresenterTest.kt`、`AsciiRenderModelTest`、`TileRendererCanvasTest` |
+| PR-01 | Talent tree sidebar、active slot choice modal | `client/src/test/kotlin/com/ktome/client/ui/talent/TalentSidebarPresenterTest.kt`、`TileRendererCanvasTest` |
 | PR-02 | Inscription replacement modal | `client/src/test/kotlin/com/ktome/client/ui/card/**/*SnapshotTest.kt` |
 | PR-04 | Frontstage cue / log priority | `client/src/test/kotlin/com/ktome/client/render/**/*SnapshotTest.kt` |
 | PR-05 | Boss variant warning / telegraph presentation | `client/src/test/kotlin/com/ktome/client/render/**/*SnapshotTest.kt` |

@@ -51,8 +51,8 @@ canonical artifact 固定为 sheet plan、key registry、contact sheet QA、cano
 | `assets-src/image/manifests/phase2-visual-manifest.json` | 先增加或更新 UI chrome key 的 canonical manifest entry |
 | `client/src/main/resources/dark-v1/ui/` | 保存切分后的 runtime PNG |
 | `client/src/main/resources/manifests/visual-manifest.json` | 由 `syncPhase2Manifests` 同步生成 runtime manifest |
-| `client` renderer | 消费新 key，保留 fallback |
-| `client` standalone screens | 首页、验证 setup、结算、错误/loading 页消费共享 chrome/control key 或明确 fallback |
+| `client` renderer | 消费新 key，保留 manifest fallback |
+| `client` standalone screens | 首页、验证 setup、结算、错误/loading 页消费共享 chrome/control key 或明确 manifest fallback |
 
 ## 3. Round 1 Sheet 内容
 
@@ -113,7 +113,7 @@ Raw sheet 生成交接：
 | `ui.state.active.icon` | `icon` | `r01-ui-controls` | `missing_visual` | talent active glyph | `TalentSidebarPresenterTest` / `ManifestResolveTest` |
 | `ui.state.reserve.icon` | `icon` | `r01-ui-controls` | `missing_visual` | talent reserve glyph | `TalentSidebarPresenterTest` / `ManifestResolveTest` |
 
-`missing_visual` 只允许作为 PR-02 owner-scope 早期 fallback；PR-06 final-full 必须用 dark-v1 fallback/polish 资源替换玩家主路径中的旧风格 fallback。standalone screen key 必须优先复用 `ui.frame.*` 和 `ui.control.*`，只有确实需要语义区分时才新增 `ui.screen.*`，避免为每个 screen 生成一套不可复用 chrome。
+`missing_visual` 只允许作为 PR-02 owner-scope 早期 manifest fallback；PR-06 final-full 必须用 dark-v1 fallback/polish 资源替换玩家主路径中的旧风格 fallback。standalone screen key 必须优先复用 `ui.frame.*` 和 `ui.control.*`，只有确实需要语义区分时才新增 `ui.screen.*`，避免为每个 screen 生成一套不可复用 chrome。
 金币、钥匙、任务 marker 如果与 item/quest 图标复用同一图，必须通过 key registry `aliasOf` 表达；不得让 PR-02 与 PR-03/PR-06 分别生成语义相同但风格略不同的图。
 
 ## 5. 非目标
@@ -130,7 +130,7 @@ Raw sheet 生成交接：
 3. manifest 中新增 key 都能通过 `VisualManifestResolver` 解析。
 4. golden 能看到至少一个 panel/slot/modal chrome 和至少一个 HUD/icon 资源。
 5. 首页、验证 setup、结算页、错误页至少各能解析共享 screen chrome/control key；未进入当前 golden 的 screen 必须在 PR-07 evidence index 中补证据。
-6. 资源加载失败时使用正式 fallback，不出现空白方块或 crash。
+6. 资源加载失败时使用正式 manifest fallback，不出现空白方块或 crash。
 
 ## 7. 验证
 

@@ -101,7 +101,7 @@ Raw sheet 生成交接：
 2. Boss warning / telegraph 不被普通 VFX 淹没。
 3. actor 不遮挡地面掉落 marker 和职业树/modal 层。
 4. 地图在暗色背景下仍能区分可走、不可走、可交互和危险区域。
-5. actor Y-sort、ground loot marker 与 boss telegraph 的先后关系必须有 `TileLayerComposerTest` 或等价 canvas 层级断言。
+5. actor Y-sort、ground loot marker 与 boss telegraph 的先后关系必须由 `TileLayerComposerTest` 或等价 composer-owner test 锁定；`TileRendererCanvasTest` 只能作为最终 canvas wiring 佐证。
 
 ## 7. 验证
 
@@ -121,7 +121,7 @@ sdk env
 
 每个 checkpoint 必须输出当前 Round 的 coverage summary；scope 外 pending 必须写入 coverage artifact。不得用裸 `darkManifestCoverageLint` 代替本 PR close gate。
 
-如果仓库最终不新增独立 `TileLayerComposerTest`，必须在 `TileRendererCanvasTest` 中以同名测试覆盖 ground / wall / decal / actor / VFX / boss telegraph 六层先后；PR 文档和验证命令要同步调整。
+`TileLayerComposerTest` 是 PR-01-1 冻结的 map sublayer owner。PR-05 只能在该 test 中追加 ground / wall / decal / actor / VFX / boss telegraph / Y-sort / loot marker 覆盖，不得退回只用 `TileRendererCanvasTest` 承接 layer authority；`TileRendererCanvasTest` 只作为最终 canvas wiring 和 non-overlap 佐证。
 
 ## 8. 人工白盒
 

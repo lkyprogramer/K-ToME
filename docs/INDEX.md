@@ -59,3 +59,11 @@
    - 需要可编辑源图时，看 [project-architecture-drawio.drawio](./project-architecture-drawio.drawio)
    - 看 [project-functional-flow-mermaid.md](./project-functional-flow-mermaid.md)
    - 需要可编辑源图时，看 [project-functional-flow-drawio.drawio](./project-functional-flow-drawio.drawio)
+8. 想做 PR 级 review 或复审 PR 文档：
+   - 通用规范看 [review/rule/pr-level-review-standard.md](./review/rule/pr-level-review-standard.md)
+   - 具体 PR 系列若有自己的 governance，以系列 governance 收敛 owner、gate、artifact 和白盒字段取值，但不能放宽通用规范的证据和验真要求
+9. 想看当前 dark UI/UX 大改版：
+   - 总方案看 [../UI/PLAN.md](../UI/PLAN.md)
+   - PR 拆分、资源/manifest 合同和执行顺序看 [../UI/pr/README.md](../UI/pr/README.md)
+   - PR-01-1 的 player-centered viewport、renderer 拆分和 overlay layer 看 [../UI/pr/dark-uiux-pr01-1-client-viewport-renderer-overlay.md](../UI/pr/dark-uiux-pr01-1-client-viewport-renderer-overlay.md)
+   - `docs/opt/ui-pr/*`、旧 `phase4-uiux-pr*` 和更早 MVP/架构草稿只作历史参考；若与当前 Tile-only、无 client ASCII fallback、无 ASCII manifest 字段合同冲突，以 `UI/PLAN.md`、`UI/pr/README.md` 和当前代码为准。

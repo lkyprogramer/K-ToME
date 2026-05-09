@@ -40,14 +40,14 @@ Codex CLI 生图验证结论：
 稳定合同：
 
 - 第一阶段不改玩法规则、不改存档/replay/profile schema。
-- 第一阶段不改 `VisualManifestEntry` schema，仍输出单 PNG 并写入 `rawOutputPath`。
+- 第一阶段不引入 atlas / region manifest schema，仍输出单 PNG 并写入 `rawOutputPath`；`VisualManifestEntry` 字段合同以 [pr/README.md](./pr/README.md#visual-manifest-field-policy) 为准，不保留 ASCII manifest 字段。
 - 不把规则状态复制进 client；client 只消费 snapshot 和 manifest。
 - 图片本身不是资源映射真相；`sheet-plan.yaml` 才是 `sheet cell -> visualKey -> rawOutputPath` 的唯一权威。
 
 ## Pipeline Gate Strategy
 PR-00 必须先把暗黑雪碧图管线接入可执行 gate，后续资源 PR 才能开始。当前仓库已有 `assetLint / styleLint / manifestLint` 仍以旧 `assets-src/image/specs/*` 和 `ktome-middle-fantasy-painterly-tile-v1` 为主，不能把它们误认为已经覆盖 `UI/sprite-sheets/sheet-plan.yaml`。
 
-第一阶段采用 **multi-epoch sidecar validation**，不改 `VisualManifestEntry` schema：
+第一阶段采用 **multi-epoch sidecar validation**，不引入 atlas / region manifest schema：
 
 1. `VisualManifest.styleTag` 在混合资源阶段继续保持现有 canonical manifest 兼容语义。
 2. `ktome-dark-fantasy-sprite-ui-v1` 记录在 `sheet-plan.yaml`、prompt、切分 report、contact sheet、manifest coverage artifact 中。
@@ -57,7 +57,7 @@ PR-00 必须先把暗黑雪碧图管线接入可执行 gate，后续资源 PR �
 6. `darkKeyRegistryLint` 校验 key registry 的 owner、fallback、consumer、test、alias 和 sheet ownership 一致性。
 7. `darkManifestCoverageLint` 校验 dark-v1 player-visible key coverage、allowed fallback、old-style key residue 和 manifest `rawOutputPath`。
 8. PR-02 之后所有资源 PR 必须同时跑旧资源 lint 和 dark-v1 gate：`assetLint styleLint manifestLint darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint`，并按当前 PR 显式传 `darkManifestCoverageLint` mode。
-9. PR-07 基于覆盖率与性能证据决定是否另开 manifest epoch PR，把顶层 manifest style 表达升级为 entry-level epoch 或新的 manifest schema；不得在资源替换 PR 中半途扩大 manifest schema。
+9. PR-07 基于覆盖率与性能证据决定是否另开 manifest epoch PR，把顶层 manifest style 表达升级为 entry-level epoch 或 atlas / region manifest schema；不得在资源替换 PR 中半途扩大 manifest 结构。
 
 Manifest 权威关系固定为 canonical-first：
 
@@ -314,7 +314,7 @@ row 0 col 2: focused target reticle over a worn stone tile.
 | 9 | `r09-fallback-debug` | `icon-sheet` | 64 | missing、hidden、debug、fallback、locked/placeholder |
 | 9 | `r09-rejected-polish` | `large-sheet` | 16 | PR-03/05/06 rejected cell 与高风险返修资源 |
 
-Round 9 专门用于 fallback/debug 收口与返修。`r09-fallback-debug` 先覆盖 current manifest 中所有 missing/hidden/debug/fallback/ASCII placeholder 相关 key；`r09-rejected-polish` 只承接已写入 coverage artifact 的 rejected cell，避免 fallback sheet 容量被返修资源挤占。
+Round 9 专门用于 resource fallback / debug resource 收口与返修。`r09-fallback-debug` 先覆盖 current manifest 中所有 `missing_visual`、hidden、resource-debug、fallback、locked/placeholder 相关 key；不包含 client ASCII renderer、ASCII manifest 字段或 ASCII 可玩/调试路径，这些已从 client 合同删除。`r09-rejected-polish` 只承接已写入 coverage artifact 的 rejected cell，避免 fallback sheet 容量被返修资源挤占。
 
 容量矩阵是 prompt index、coverage artifact 和生图批次的单一总量真源：
 
@@ -392,7 +392,7 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 9. 铭文商店 / shop 是装备、背包、物品 UX family 的一部分，必须统一为暗黑 offer card、buy/sell 双列、价格/禁用态、满槽替换 modal、空态和 tooltip。
 10. 职业树 UI 使用暗黑侧栏/面板化表达，继续消费正在开发的 `TalentSidebarPresenter`、`TalentTreeNodeSnapshot`、`DescriptionPresenter` 和 `ACTIVE_TALENT_SLOT_CHOICE` 合同。
 11. 胜利/失败结算、loading、runtime error、独立 `UiErrorScreen`、设置/无障碍、world route、stat assign、reward/frontstage、Look/Inspect 等玩家可见 surface 必须进入最终覆盖矩阵；不能只因为它们不是局内常驻 HUD 就跳过。
-12. ASCII 只作为 debug/fallback path 保留；Tile dark UI 是正式玩家路径。
+12. Tile dark UI 是唯一正式 client 渲染路径；不再保留 ASCII fallback/debug renderer。
 13. 不引入 D-pad；当前阶段继续以键盘输入为主。
 
 全量 UI 面覆盖清单以 [pr/screen-coverage-matrix.md](./pr/screen-coverage-matrix.md) 为审计入口。PR-07 关闭前，矩阵中所有 Required/Conditional 项必须有 owner PR、focused test 或 golden/manual evidence、packaged app 或 debug client 白盒记录。
@@ -404,6 +404,7 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | --- | --- | --- | --- |
 | `dark-uiux-pr00` | [Style And Pipeline Contract](./pr/dark-uiux-pr00-style-and-pipeline-contract.md) | M | 冻结风格合同、sheet schema、prompt/切分/验收流程 |
 | `dark-uiux-pr01` | [Client Shell Layout](./pr/dark-uiux-pr01-client-shell-layout.md) | L | 首页/主菜单、验证入口、三栏 + 底部 HUD 框架、token、renderer 拆分 |
+| `dark-uiux-pr01-1` | [Client Viewport Renderer And Overlay Architecture](./pr/dark-uiux-pr01-1-client-viewport-renderer-overlay.md) | XL | 玩家居中 viewport、TileRenderer orchestration 拆分、tooltip/modal overlay layer |
 | `dark-uiux-pr02` | [UI Chrome Sprite Pilot](./pr/dark-uiux-pr02-ui-chrome-sprite-pilot.md) | L | 跑通 UI chrome/HUD/standalone screen chrome 第一批 sheet 到 manifest/golden |
 | `dark-uiux-pr03` | [Equipment Inventory Items](./pr/dark-uiux-pr03-equipment-inventory-items.md) | L | 装备/背包 grid、item icon、铭文商店、quality、空态/tooltip |
 | `dark-uiux-pr04` | [Profession Tree UI](./pr/dark-uiux-pr04-profession-tree-ui.md) | M | 职业树 dark UI、节点状态、预览、主动槽 modal |
@@ -411,7 +412,7 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | `dark-uiux-pr06` | [Skills Status Quest Full Manifest](./pr/dark-uiux-pr06-skills-status-quest-full-manifest.md) | XL | 技能、状态、任务、fallback、全 manifest 收口 |
 | `dark-uiux-pr07` | [Golden Whitebox Polish](./pr/dark-uiux-pr07-golden-whitebox-polish.md) | M | 全 UI 面 golden/白盒、验证模式、结算/错误页、性能与 atlas 决策 |
 
-执行顺序固定为：`PR-00 -> PR-01 -> PR-02 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
+执行顺序固定为：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
 
 ## Asset Pipeline Deliverables
 必须新增或更新以下文件族：
@@ -450,11 +451,11 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 - 治理检查：`./gradlew maintainabilityLint`
 - 总入口：`./gradlew verifyChanged`
 - 若改 Gradle/依赖/bootstrap：`./scripts/verify-bootstrap.sh`
-- 职业树 UI 改造额外覆盖：`TalentSidebarPresenterTest`、`InputHandlerTest`、`AsciiRenderModelTest`、`TileRendererCanvasTest`、`phase4-v4-pr01` 白盒场景。
+- 职业树 UI 改造额外覆盖：`TalentSidebarPresenterTest`、`InputHandlerTest`、`TileRendererCanvasTest`、`phase4-v4-pr01` 白盒场景。
 - 首页/验证入口额外覆盖：`MainMenuFocusPolicyTest`、`MainMenuControllerTest`、`MainMenuScreenTextTest`、`ValidationSetupControllerTest`、`GameAppLifecycleTest` 中主菜单/验证 setup case。
 - 铭文商店额外覆盖：`InputHandlerTest` shop / inscription replacement case、`DescriptionPresenterTest` shop item lines、`TileRendererCanvasTest` shop modal/card 不重叠断言。
 - 结算/错误/loading 额外覆盖：`OutcomeSummaryPresenterTest`、`UiErrorPayloadTest`、`UiLoadingStateTest`、golden outcome set。
-- 白盒检查：桌面端确认首页/主菜单、角色创建、继续游戏异常、验证模式 setup、验证 overlay、左侧栏、地图、右侧装备/背包、铭文商店、底部 HUD、职业树、主动槽 modal、胜利/失败结算、runtime error/loading、设置/无障碍、快捷键提示、中文文本、fallback、窗口缩放均正常。
+- 白盒检查：桌面端确认首页/主菜单、角色创建、继续游戏异常、验证模式 setup、验证 overlay、左侧栏、地图、右侧装备/背包、铭文商店、底部 HUD、职业树、主动槽 modal、胜利/失败结算、runtime error/loading、设置/无障碍、快捷键提示、中文文本、manifest fallback / missing visual 状态（不含 ASCII renderer）、窗口缩放均正常。
 - PR-07 必须执行 packaged app 白盒；只有明确没有 package-facing 改动且 PR 文档记录豁免原因时才允许跳过。
 
 Atlas 决策阈值：
@@ -466,7 +467,7 @@ Atlas 决策阈值：
 | 切场景峰值 GPU memory | `> 256MB` |
 | `goldenScreenshot` 阶段耗时相对当前基线增量 | `> 25%` |
 
-达到任一阈值时，PR-07 只记录证据并新开 atlas/region manifest PR；不得在 PR-07 直接改变 `VisualManifestEntry` schema。
+达到任一阈值时，PR-07 只记录证据并新开 atlas/region manifest PR；不得在 PR-07 直接改变 `VisualManifestEntry` 字段集合或 atlas/region 结构。
 
 ## Assumptions
 - “全量替换”限定为视觉资源和 UI 表现，不修改核心规则、数值、存档、replay、profile schema。

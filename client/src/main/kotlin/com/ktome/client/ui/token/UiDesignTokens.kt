@@ -74,6 +74,32 @@ internal data class UiStatusColors(
     val badge: UiStatusBadgeColors,
 )
 
+internal data class UiBorderColors(
+    val subtle: UiColorToken,
+    val strong: UiColorToken,
+)
+
+internal data class UiSlotColors(
+    val empty: UiColorToken,
+    val filled: UiColorToken,
+    val selected: UiColorToken,
+)
+
+internal data class UiBarColors(
+    val hp: UiColorToken,
+    val resource: UiColorToken,
+    val secondaryResource: UiColorToken,
+    val experience: UiColorToken,
+    val background: UiColorToken,
+)
+
+internal data class UiTalentToneColors(
+    val locked: UiColorToken,
+    val learnable: UiColorToken,
+    val reserve: UiColorToken,
+    val active: UiColorToken,
+)
+
 internal data class UiMenuSelectionColors(
     val focused: UiColorToken,
     val disabled: UiColorToken,
@@ -92,6 +118,10 @@ internal data class UiDesignColors(
     val accent: UiSpecialAccentColors,
     val telegraph: UiTelegraphColors,
     val status: UiStatusColors,
+    val border: UiBorderColors,
+    val slot: UiSlotColors,
+    val bar: UiBarColors,
+    val talent: UiTalentToneColors,
     val menu: UiMenuColors,
 )
 
@@ -132,6 +162,21 @@ internal data class UiMotionTokens(
     val fastMs: Int,
     val mediumMs: Int,
     val slowMs: Int,
+)
+
+internal data class UiFixedDimensionTokens(
+    val standaloneWidth: Float,
+    val standaloneHeight: Float,
+    val standaloneContentWidth: Float,
+    val actionStackWidth: Float,
+    val actionStackHeight: Float,
+    val playerCreationSectionWidth: Float,
+    val playerCreationSectionHeight: Float,
+    val validationListWidth: Float,
+    val validationListHeight: Float,
+    val shellLeftRailMinWidth: Float,
+    val shellRightPanelMinWidth: Float,
+    val shellBottomHudHeight: Float,
 )
 
 internal object UiDesignTokens {
@@ -190,6 +235,32 @@ internal object UiDesignTokens {
                             cap = UiColorToken("D8DEE9"),
                         ),
                 ),
+            border =
+                UiBorderColors(
+                    subtle = UiColorToken("2B3342", 0.86f),
+                    strong = UiColorToken("53627A", 0.94f),
+                ),
+            slot =
+                UiSlotColors(
+                    empty = UiColorToken("121620", 0.92f),
+                    filled = UiColorToken("202837", 0.95f),
+                    selected = focusRing,
+                ),
+            bar =
+                UiBarColors(
+                    hp = UiColorToken("C84646"),
+                    resource = UiColorToken("4EA1D3"),
+                    secondaryResource = UiColorToken("7FE0A0"),
+                    experience = UiColorToken("C9A646"),
+                    background = UiColorToken("080A0F", 0.88f),
+                ),
+            talent =
+                UiTalentToneColors(
+                    locked = UiColorToken("59616C"),
+                    learnable = UiColorToken("1CB7C8"),
+                    reserve = UiColorToken("D99A2B"),
+                    active = UiColorToken("52C989"),
+                ),
             menu =
                 UiMenuColors(
                     selection =
@@ -244,5 +315,21 @@ internal object UiDesignTokens {
             fastMs = 90,
             mediumMs = 140,
             slowMs = 220,
+        )
+
+    val fixed: UiFixedDimensionTokens =
+        UiFixedDimensionTokens(
+            standaloneWidth = 960f,
+            standaloneHeight = 540f,
+            standaloneContentWidth = 720f,
+            actionStackWidth = 320f,
+            actionStackHeight = 176f,
+            playerCreationSectionWidth = 342f,
+            playerCreationSectionHeight = 124f,
+            validationListWidth = 720f,
+            validationListHeight = 292f,
+            shellLeftRailMinWidth = 184f,
+            shellRightPanelMinWidth = 240f,
+            shellBottomHudHeight = 224f,
         )
 }

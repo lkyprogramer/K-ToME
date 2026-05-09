@@ -115,7 +115,7 @@ def compare_entries(
     for key in sorted(source_keys & runtime_keys):
         source_entry = source_by_key[key]
         runtime_entry = runtime_by_key[key]
-        for field_name in ("category", "rawOutputPath", "footprint", "pivotX", "pivotY", "tags", "asciiGlyph", "asciiColorHex"):
+        for field_name in ("category", "rawOutputPath", "footprint", "pivotX", "pivotY", "tags", "tintColorHex"):
             if source_entry.get(field_name) != runtime_entry.get(field_name):
                 errors.append(
                     f"runtime visual manifest field mismatch for '{key}' -> {field_name}: "
@@ -282,7 +282,7 @@ def validate_manifest(
     for key in sorted(set(source_by_key) & set(bundled_by_key)):
         source_entry = source_by_key[key]
         bundled_entry = bundled_by_key[key]
-        for field_name in ("category", "rawOutputPath", "footprint", "pivotX", "pivotY", "tags", "asciiGlyph", "asciiColorHex"):
+        for field_name in ("category", "rawOutputPath", "footprint", "pivotX", "pivotY", "tags", "tintColorHex"):
             if bundled_entry.get(field_name) != source_entry.get(field_name):
                 errors.append(
                     f"canonical visual manifest field mismatch for bundled spec '{key}' -> {field_name}: "

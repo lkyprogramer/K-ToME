@@ -29,7 +29,7 @@ class RenderSnapshotSerializationTest {
                         playerY = 0,
                         zoneVisualKey = "zone.shattered_outpost.visual",
                         zoneAudioProfile = "audio.zone.shattered_outpost",
-                        tilesetKey = "tileset.foundation.ascii",
+                        tilesetKey = "tileset.ruins",
                         ambientProfile = "ambient.shattered_outpost",
                     ),
                 mapCells =
@@ -39,7 +39,7 @@ class RenderSnapshotSerializationTest {
                             y = 0,
                             visibility = CellVisibilitySnapshot.VISIBLE,
                             terrainTypeId = "floor",
-                            terrainVisualKey = "tileset.foundation.ascii.floor",
+                            terrainVisualKey = "tileset.ruins.ground_01",
                             items =
                                 listOf(
                                     ItemRenderSnapshot(

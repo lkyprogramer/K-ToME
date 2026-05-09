@@ -113,7 +113,7 @@ K-ToME 是 `Kotlin + libGDX` 单机 Roguelike。项目概况、当前状态、�
 4. 每个 phase 都必须以真实可玩的纵切收尾，不允许长期主干不可玩
 5. `Phase 4` 只做到 content pack 与 overlay 级扩展，不引入 Lua runtime、行为树平台、通用脚本宿主或完整 Mod SDK
 6. 除文档显式定义的职业解锁、`ProfileData`、run history 外，不引入数值型 meta progression
-7. 从 `P2-B` 起，Tile 是正式玩家路径；ASCII 只允许作为 debug 或 fallback
+7. 从 `P2-B` 起，Tile 是唯一正式 client 渲染路径；client ASCII fallback / debug renderer 已删除
 
 ### 3.2 跨阶段冻结合同
 

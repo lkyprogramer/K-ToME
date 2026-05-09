@@ -1,7 +1,5 @@
 package com.ktome.client.telegraph
 
-import com.ktome.client.render.AsciiTextLine
-import com.ktome.client.render.AsciiTextTone
 import com.ktome.client.render.TileTextRow
 import com.ktome.client.render.TileTextTone
 import com.ktome.client.ui.settings.AccessibilityToggle
@@ -36,21 +34,6 @@ internal object TelegraphRenderer {
                     tone = tileTone(overlay.dangerLevel),
                 )
             }
-
-    fun asciiLines(
-        localizer: Localizer,
-        snapshot: RenderSnapshot,
-    ): List<AsciiTextLine> {
-        val accessibility = AccessibilityToggle.fromSystemProperties()
-        return TelegraphPresentationModel
-            .sorted(snapshot.overlays)
-            .map { (overlay, presentation) ->
-                AsciiTextLine(
-                    text = rowText(localizer, overlay, presentation, accessibility),
-                    tone = asciiTone(overlay.dangerLevel),
-                )
-            }
-    }
 
     fun alpha(dangerLevel: Int): Float =
         alpha(dangerLevel = dangerLevel, accessibility = AccessibilityToggle.fromSystemProperties())
@@ -152,11 +135,4 @@ internal object TelegraphRenderer {
             else -> TileTextTone.CYAN
         }
 
-    private fun asciiTone(dangerLevel: Int): AsciiTextTone =
-        when {
-            dangerLevel >= 4 -> AsciiTextTone.MAGENTA
-            dangerLevel == 3 -> AsciiTextTone.RED
-            dangerLevel == 2 -> AsciiTextTone.GOLD
-            else -> AsciiTextTone.CYAN
-        }
 }

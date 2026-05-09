@@ -83,21 +83,27 @@ class TileRendererCanvasTest {
     }
 
     @Test
-    fun `render canvas places sidebar inside upper right sidebar panel`() {
+    fun `render canvas places shell rail and right panel inside their bounds`() {
         val canvas = RecordingTileCanvas()
+        val snapshot = sampleSnapshot(height = 6)
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
 
         TileRenderer.renderToCanvas(
             localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
             visualResolver = sampleResolver(),
-            snapshot = sampleSnapshot(height = 6),
+            snapshot = snapshot,
             overlayState = OverlayState(mode = UiMode.MAP),
             canvas = canvas,
             cellWidth = 32f,
             cellHeight = 32f,
         )
 
-        val titleDraw = canvas.textDraws.first { draw -> draw.text == "Ground" }
-        assertTrue(titleDraw.y > TileRenderer.uiRows * 32f)
+        val leftTitle = canvas.textDraws.first { draw -> draw.text.startsWith("Shatter") }
+        val rightTitle = canvas.textDraws.first { draw -> draw.text == "Hero" && draw.x >= layout.shell.rightPanelBounds.x }
+        assertTrue(leftTitle.x >= layout.shell.leftRailBounds.x)
+        assertTrue(leftTitle.x < layout.shell.leftRailBounds.right)
+        assertTrue(rightTitle.x >= layout.shell.rightPanelBounds.x)
+        assertTrue(rightTitle.x < layout.shell.rightPanelBounds.right)
     }
 
     @Test
@@ -673,14 +679,15 @@ class TileRendererCanvasTest {
             cellHeight = 32f,
         )
 
+        val layout = TileRenderer.layoutMetrics(mapWidth = 3, mapHeight = 1, cellWidth = 32f, cellHeight = 32f)
         val mapOffsetY = TileRenderer.uiRows * 32f
         val cellRects =
             canvas.rectDraws.filter { draw ->
                 draw.y == mapOffsetY && draw.width == 32f && draw.height == 32f
             }
 
-        assertTrue(cellRects.any { draw -> draw.x == 32f && draw.color.a == 0.42f })
-        assertTrue(cellRects.any { draw -> draw.x == 64f && draw.color.a == 0.94f })
+        assertTrue(cellRects.any { draw -> draw.x == layout.shell.mapBounds.x + 32f && draw.color.a == 0.42f })
+        assertTrue(cellRects.any { draw -> draw.x == layout.shell.mapBounds.x + 64f && draw.color.a == 0.94f })
     }
 
     @Test
@@ -738,23 +745,23 @@ class TileRendererCanvasTest {
             cellHeight = 32f,
         )
 
-        val subtitleDraw =
+        val titleDraw =
             canvas.textDraws.first { draw ->
-                draw.text.contains("Shattered Outpost")
+                draw.text == "Hero"
             }
-        val subtitleBounds =
+        val titleBounds =
             TileRenderer.textApproximationBounds(
-                style = subtitleDraw.style,
-                text = subtitleDraw.text,
-                x = subtitleDraw.x,
-                y = subtitleDraw.y,
+                style = titleDraw.style,
+                text = titleDraw.text,
+                x = titleDraw.x,
+                y = titleDraw.y,
             )
-        val subtitleTextBottom = subtitleDraw.y - subtitleBounds[3]
-        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 14f }
+        val titleTextBottom = titleDraw.y - titleBounds[3]
+        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 11f }
         val topGauge = requireNotNull(gaugeBackgrounds.maxByOrNull { draw -> draw.y })
 
-        assertTrue(topGauge.y + topGauge.height <= subtitleTextBottom)
-        assertTrue(subtitleTextBottom - (topGauge.y + topGauge.height) >= 4f)
+        assertTrue(topGauge.y + topGauge.height <= titleTextBottom)
+        assertTrue(titleTextBottom - (topGauge.y + topGauge.height) >= 4f)
     }
 
     @Test
@@ -996,14 +1003,14 @@ class TileRendererCanvasTest {
             cellHeight = 32f,
         )
 
-        val subtitleDraw = requireNotNull(canvas.textDraws.getOrNull(1))
-        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 14f }
+        val titleDraw = canvas.textDraws.first { draw -> draw.text == "Hero" }
+        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 11f }
         val sortedGaugeBackgrounds = gaugeBackgrounds.sortedBy { draw -> draw.y }
 
-        assertEquals(3, sortedGaugeBackgrounds.size)
-        assertTrue(sortedGaugeBackgrounds.zipWithNext().all { (lower, upper) -> upper.y >= lower.y + lower.height + 4f })
-        assertTrue(sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height <= subtitleDraw.y)
-        assertTrue(subtitleDraw.y - (sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height) >= 4f)
+        assertEquals(4, sortedGaugeBackgrounds.size)
+        assertTrue(sortedGaugeBackgrounds.zipWithNext().all { (lower, upper) -> upper.y >= lower.y + lower.height + 3f })
+        assertTrue(sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height <= titleDraw.y)
+        assertTrue(titleDraw.y - (sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height) >= 4f)
     }
 
     @Test
@@ -1128,13 +1135,12 @@ class TileRendererCanvasTest {
         assertTrue(metrics.cardY + metrics.cardHeight <= metrics.mapOffsetY)
         assertTrue(metrics.infoX + metrics.infoWidth <= metrics.logX)
         assertTrue(metrics.logX + metrics.logWidth + metrics.panelGap <= metrics.focusX)
-        assertTrue(metrics.sidebarX >= 18 * 32f + metrics.panelGap)
-        val mapWidthPx = 18 * 32f
+        assertTrue(metrics.sidebarX >= metrics.shell.mapBounds.right + metrics.panelGap)
         val focusRingRects =
             canvas.rectDraws.filter { draw ->
-                draw.x >= 0f &&
+                draw.x >= metrics.shell.mapBounds.x &&
                     draw.y >= metrics.mapOffsetY &&
-                    draw.x + draw.width <= mapWidthPx &&
+                    draw.x + draw.width <= metrics.shell.mapBounds.right &&
                     draw.y + draw.height <= metrics.worldHeight &&
                     ((draw.width == 32f && draw.height == 2f) || (draw.width == 2f && draw.height == 32f))
             }
@@ -1225,6 +1231,59 @@ class TileRendererCanvasTest {
         assertEquals(3, model.hud.secondaryResourceGauge!!.stableMin)
         assertEquals(9, model.hud.secondaryResourceGauge!!.stableMax)
         assertFalse(model.hud.summaryText.contains("EQL"))
+    }
+
+    @Test
+    fun `shell model keeps hp resource and xp in bottom hud instead of right panel`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertEquals("EXPERIENCE", model.hud.experienceGauge.resourceTypeId)
+        assertTrue(model.shell.leftRail.rows.any { row -> row.text == "Critical Hint" })
+        assertTrue(model.shell.rightPanel.rows.any { row -> row.text == "HP, resource, and XP are owned by bottom HUD." })
+        assertFalse(model.shell.rightPanel.rows.any { row -> row.text.startsWith("HP ") })
+        assertFalse(model.shell.rightPanel.rows.any { row -> row.text.startsWith("STA ") })
+        assertFalse(model.shell.rightPanel.rows.any { row -> row.text.contains(model.hud.experienceGauge.summary) })
+    }
+
+    @Test
+    fun `shell quest summary consumes latest objective log token when available`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        logEvents =
+                            listOf(
+                                RenderLogEventSnapshot(
+                                    RenderTextTokenSnapshot(
+                                        key = "log.objective.progress",
+                                        arguments =
+                                            listOf(
+                                                RenderTextArgumentSnapshot(name = "objective", valueKey = "objective.shattered_outpost_breach.name"),
+                                                RenderTextArgumentSnapshot(name = "step", valueKey = "objective.shattered_outpost_breach.step.inner_breach"),
+                                            ),
+                                    ),
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertTrue(
+            model.shell.leftRail.rows.any { row ->
+                row.text == "Objective updated: Breach The Outpost. You break into the outpost's inner yard."
+            },
+        )
+        assertFalse(model.shell.leftRail.rows.any { row -> row.text == "No active quest summary." })
     }
 
     @Test
@@ -1374,7 +1433,8 @@ class TileRendererCanvasTest {
         )
 
         val feedbackDraw = canvas.textDraws.first { draw -> draw.text == "24" }
-        assertTrue(feedbackDraw.x > 32f)
+        val layout = TileRenderer.layoutMetrics(mapWidth = 2, mapHeight = sampleSnapshot().metadata.height, cellWidth = 32f, cellHeight = 32f)
+        assertTrue(feedbackDraw.x > layout.shell.mapBounds.x + 32f)
     }
 
     @Test
@@ -1867,7 +1927,7 @@ class TileRendererCanvasTest {
                                 category = "vfx_overlay",
                                 rawOutputPath = "phase4/pr06/boss_variant_molten_glass.png",
                                 footprint = "1x1",
-                                asciiColorHex = "#FF7A3C",
+                                tintColorHex = "#FF7A3C",
                             ),
                         ),
                     prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),

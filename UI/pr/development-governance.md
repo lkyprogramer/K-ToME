@@ -2,6 +2,8 @@
 
 本文是 `UI/pr/` 后续 dark UI/UX 开发的 repo-owned 执行合同。它复用 Phase4 v4 治理中的 Acceptance Matrix、Gate Budget、canonical artifact 和失败复盘纪律，但 gate surface 以 UI / resource / client 验证为准。
 
+通用 PR 级 review 方法论以 [docs/review/rule/pr-level-review-standard.md](../../docs/review/rule/pr-level-review-standard.md) 为准；本文只收敛 dark UI/UX 系列的 owner 取值、gate ladder、canonical artifact 和白盒证据口径。
+
 ## 1. 目标
 
 dark UI/UX PR 不再依赖人工记忆执行资源 gate、golden 和白盒流程。每个 PR 必须先把文档合同结构化成验收矩阵，再按 fast lane、resource gate、client evidence、最终 `verifyChanged` 串行闭环。
@@ -83,7 +85,7 @@ dark UI/UX canonical artifact 包括：
 
 禁止把以下内容作为长期合同：
 
-1. `/Users/luo/.codex/generated_images` 或 Codex CLI transient source 目录。
+1. Codex CLI transient source 目录，例如 `<codex-generated-images-dir>`。
 2. 本机绝对路径。
 3. 未切分 raw PNG 的临时文件名。
 4. 未确认的候选 contact sheet。

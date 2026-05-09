@@ -7,7 +7,9 @@ import com.ktome.client.screen.MainMenuController
 import com.ktome.client.screen.PlayerCreationFocus
 import com.ktome.client.ui.token.UiDesignTokens
 
-private const val PLAYER_CREATION_SECTION_OFFSET_X = 380f
+internal const val PLAYER_CREATION_SECTION_OFFSET_X = 380f
+internal const val PLAYER_CREATION_SECTION_MAX_CHARS = 34
+internal const val PLAYER_CREATION_ACTION_MAX_CHARS = 28
 
 internal data class PlayerCreationPanelEntryModel(
     val text: String,
@@ -88,7 +90,7 @@ internal object PlayerCreationPanel {
                     entry.selected -> UiDesignTokens.color.menu.selection.focused.color()
                     else -> UiDesignTokens.color.menu.selection.normal.color()
                 }
-            font.draw(batch, entry.text, x, topY - 132f - index * 32f)
+            font.draw(batch, fitText(entry.text, PLAYER_CREATION_ACTION_MAX_CHARS), x, topY - 132f - index * 32f)
         }
     }
 
@@ -102,18 +104,34 @@ internal object PlayerCreationPanel {
         focused: Boolean,
     ) {
         font.color = if (focused) UiDesignTokens.color.focus.ring.color() else UiDesignTokens.color.text.primary.color()
-        font.draw(batch, model.title, x, topY)
+        font.draw(batch, fitText(model.title, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY)
         font.color = stateColor
-        font.draw(batch, model.state, x, topY - 28f)
+        font.draw(batch, fitText(model.state, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - 28f)
         font.color = UiDesignTokens.color.text.disabled.color()
-        font.draw(batch, model.description, x, topY - 56f)
+        font.draw(batch, fitText(model.description, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - 56f)
         model.detail?.takeIf(String::isNotBlank)?.let { detail ->
-            font.draw(batch, detail, x, topY - 84f)
+            font.draw(batch, fitText(detail, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - 84f)
         }
         model.note?.takeIf(String::isNotBlank)?.let { note ->
-            font.draw(batch, note, x, topY - 108f)
+            font.draw(batch, fitText(note, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - 108f)
         }
     }
 
     private fun disabledColor(): Color = UiDesignTokens.color.menu.selection.disabled.color()
+
+    internal fun fitText(
+        text: String,
+        maxChars: Int,
+    ): String {
+        if (maxChars <= 0) {
+            return ""
+        }
+        if (text.length <= maxChars) {
+            return text
+        }
+        if (maxChars == 1) {
+            return "…"
+        }
+        return text.take(maxChars - 1) + "…"
+    }
 }

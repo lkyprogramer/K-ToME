@@ -15,7 +15,7 @@
 | requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
 | --- | --- | --- | --- | --- | --- | --- |
 | `UI01-M01` | §3 shell layout / renderer 拆分 | `client` | `GameShellLayoutTest`, `TileRendererCanvasTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
-| `UI01-M02` | §3 dark UI token / fixed dimensions | `client` | `AsciiRenderModelTest`, layout focused tests | `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI01-M02` | §3 dark UI token / fixed dimensions | `client` | layout focused tests, `TileRendererCanvasTest` | `goldenScreenshot` | `client/build/reports/golden/` | `required` |
 | `UI01-M03` | §5 必测行为 | `client` | PR focused client tests | `clientSmoke` | `build/reports/tests/` | `N/A` |
 | `UI01-M04` | §6 验证命令 / governance | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
 | `UI01-M05` | §3 首页 / 主菜单 / 验证入口 | `client` | `MainMenuFocusPolicyTest`, `MainMenuControllerTest`, `MainMenuScreenTextTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
@@ -40,7 +40,7 @@ layout / golden 失败时先补 focused layout test 或修 renderer 尺寸约束
 3. 引入或收敛暗黑 UI token：背景、边框、slot、bar、状态色、spacing、固定尺寸、standalone screen header/body/footer。
 4. 拆分 `TileRenderer` 的 map、left rail、right panel、bottom HUD、tooltip/modal 绘制职责。
 5. 删除重复状态栏，快捷键提示迁移到底部紧凑 footer。
-6. 明确 ASCII 只作为 debug/fallback path，Tile dark UI 和 standalone dark screen 是正式玩家路径。
+6. 明确 Tile dark UI 和 standalone dark screen 是唯一正式 client 渲染路径；不保留 ASCII fallback/debug renderer。
 
 ## 2. 影响范围
 
@@ -56,10 +56,8 @@ layout / golden 失败时先补 focused layout test 或修 renderer 尺寸约束
 | `client/src/main/kotlin/com/ktome/client/screen/GameOverScreen.kt` / `VictoryScreen.kt` / `UiErrorScreen.kt` | 本 PR 建立 shared standalone screen token；PR-07 最终补 golden/白盒 |
 | `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt` | 拆分绘制入口和布局函数 |
 | `client/src/main/kotlin/com/ktome/client/render/TileRenderModel.kt` | 增加 shell 所需 presentation model |
-| `client/src/main/kotlin/com/ktome/client/render/AsciiRenderModel.kt` | 保持 ASCII fallback 语义一致 |
 | `client/src/test/kotlin/com/ktome/client/render/GameShellLayoutTest.kt` | 新增或更新 bounds 不重叠、最小窗口、底部 HUD 单一状态测试 |
 | `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt` | 覆盖文本不越界、tooltip/modal 层级、slot 固定尺寸 |
-| `client/src/test/kotlin/com/ktome/client/render/AsciiRenderModelTest.kt` | 确认 ASCII fallback 日志和状态语义未丢失 |
 | `client/src/test/kotlin/com/ktome/client/screen/MainMenuFocusPolicyTest.kt` | 覆盖主菜单初始焦点、continue unavailable、validation fallback |
 | `client/src/test/kotlin/com/ktome/client/screen/MainMenuControllerTest.kt` | 覆盖 quick start、continue、validation mode、复制错误详情 |
 | `client/src/test/kotlin/com/ktome/client/screen/MainMenuScreenTextTest.kt` | 覆盖主菜单文案、footer/help 位置、长文本不挤压 |
@@ -80,7 +78,7 @@ layout / golden 失败时先补 focused layout test 或修 renderer 尺寸约束
 10. 验证模式入口不能被降级成 debug-only 文本；它是主菜单的一等入口，但文案必须清楚标记 validation mode。
 11. `ValidationSetupScreen` 必须移除旧硬编码临时色彩，接入 dark token；scenario/preset 列表和 active pack summary 在最小窗口下必须可读。
 12. `GameOverScreen`、`VictoryScreen`、`UiErrorScreen` 在本 PR 先接入 standalone screen token 和布局约束；PR-07 负责最终 golden/packaged evidence。
-13. ASCII fallback 只保留语义完整性；不得用 ASCII 截图证明 Tile dark UI 已完成。
+13. 不新增 ASCII fallback、debug renderer 或 ASCII 截图验收；所有玩家可见 evidence 必须走 Tile dark UI。
 
 ## 4. 非目标
 
@@ -96,20 +94,19 @@ layout / golden 失败时先补 focused layout test 或修 renderer 尺寸约束
 1. `1280x800` 下四个区域不重叠，且底部只出现一套生命/耐力/经验状态。
 2. 最小支持窗口下中文文本不越界；长 dungeon/quest 名称必须截断或换行。
 3. 地图视口仍以玩家附近内容为主，不因新增左右栏导致玩家偏出可视中心。
-4. ASCII fallback 不因为 Tile shell 改造丢失关键日志或状态信息。
-5. 首页第一屏不是 marketing/说明页，而是可操作的主菜单；默认焦点落在当前最合理主操作。
-6. Continue available / absent / unavailable 三种状态都有稳定视觉和焦点行为；复制错误详情不阻塞新开局或验证模式。
-7. 角色创建长职业名、长区域说明、中文 locale、英文 locale 都不能遮挡 action stack 或 footer。
-8. 验证模式 setup 页能用键盘选择 preset/scenario、返回主菜单、启动默认 preset。
-9. Loading/error/outcome standalone screen 不保留旧红/绿/白字临时风格；PR-07 最终补 evidence 前，本 PR 至少完成 token 接入和布局约束。
-10. 桌面标题和可见版本/locale 文案不包含本机绝对路径。
+4. 首页第一屏不是 marketing/说明页，而是可操作的主菜单；默认焦点落在当前最合理主操作。
+5. Continue available / absent / unavailable 三种状态都有稳定视觉和焦点行为；复制错误详情不阻塞新开局或验证模式。
+6. 角色创建长职业名、长区域说明、中文 locale、英文 locale 都不能遮挡 action stack 或 footer。
+7. 验证模式 setup 页能用键盘选择 preset/scenario、返回主菜单、启动默认 preset。
+8. Loading/error/outcome standalone screen 不保留旧红/绿/白字临时风格；PR-07 最终补 evidence 前，本 PR 至少完成 token 接入和布局约束。
+9. 桌面标题和可见版本/locale 文案不包含本机绝对路径。
 
 ## 6. 验证
 
 ```bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
-./gradlew :client:test --tests com.ktome.client.render.GameShellLayoutTest --tests com.ktome.client.render.TileRendererCanvasTest --tests com.ktome.client.render.AsciiRenderModelTest :client:clientSmoke :client:goldenScreenshot localeLint contractLint maintainabilityLint verifyChanged
+./gradlew :client:test --tests com.ktome.client.render.GameShellLayoutTest --tests com.ktome.client.render.TileRendererCanvasTest :client:clientSmoke :client:goldenScreenshot localeLint contractLint maintainabilityLint verifyChanged
 ```
 
 首页/验证入口 focused lane：

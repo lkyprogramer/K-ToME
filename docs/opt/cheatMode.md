@@ -64,7 +64,7 @@
    - `automationSetTerrainOverride`
    - `automationVisibleShopOffers`
    - `automationCanPurchaseShopOffer`
-7. `TileRenderModel` / `AsciiRenderModel` 的 inspect/sidebar 已能显示大量白盒信息，例如：
+7. `TileRenderModel` 的 inspect/sidebar 已能显示大量白盒信息，例如：
    - terrain rule / remaining turns
    - elite mutation 名称、icon、summary
    - boss variant 信息
@@ -160,7 +160,7 @@ client
     ├─ MainMenuScreen / MainMenuController
     ├─ ValidationSetupScreen / Controller
     ├─ InputHandler 接受 `validationEnabled` 构造参数
-    ├─ TileRenderModel / AsciiRenderModel
+    ├─ TileRenderModel
     └─ ValidationCommandSource / overlay 衔接层
 
 game
@@ -824,10 +824,9 @@ F9 打开/关闭 Validation 面板
 
 1. `InputHandler`
 2. `TileRenderModel`
-3. `AsciiRenderModel`
-4. 任何根据 `UiMode` 分支标题或 controls 文案的渲染代码
+3. 任何根据 `UiMode` 分支标题或 controls 文案的渲染代码
 
-不允许只改 tile path，留下 ASCII / smoke / test 编译缺口。
+client ASCII renderer 已删除；不允许为 validation mode 重新引入 `AsciiRenderModel`、ASCII 截图或 ASCII manifest 字段。新增 UI mode 只以 Tile dark UI、smoke 和 focused test 为验收路径。
 
 ### 8.4 代码范围
 
@@ -838,7 +837,6 @@ F9 打开/关闭 Validation 面板
 - `client/src/main/kotlin/com/ktome/client/input/CommandSource.kt`
 - `client/src/main/kotlin/com/ktome/client/input/ValidationCommandSource.kt`
 - `client/src/main/kotlin/com/ktome/client/render/TileRenderModel.kt`
-- `client/src/main/kotlin/com/ktome/client/render/AsciiRenderModel.kt`
 - `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt`
 - `client/src/main/kotlin/com/ktome/client/screen/FoundationGameScreen.kt`
 - `client/src/test/kotlin/com/ktome/client/input/InputHandlerTest.kt`

@@ -10,9 +10,11 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["fixture", "content-pack", "precedence"],
-      "asciiGlyph": "~",
-      "asciiColorHex": "#8FB7CC"
+      "tags": [
+        "fixture",
+        "content-pack",
+        "precedence"
+      ]
     },
     {
       "key": "fixture_sample_flooded_relics_override.zone.flooded_reliquary.icon",
@@ -21,9 +23,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["fixture", "content-pack", "precedence", "icon"],
-      "asciiGlyph": "~",
-      "asciiColorHex": "#8FB7CC"
+      "tags": [
+        "fixture",
+        "content-pack",
+        "precedence",
+        "icon"
+      ]
     }
   ],
   "prefixRules": []

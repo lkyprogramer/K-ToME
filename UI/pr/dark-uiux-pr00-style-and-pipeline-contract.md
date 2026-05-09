@@ -232,7 +232,7 @@ Coverage artifact schema 分层：
 
 第一阶段选择 multi-epoch sidecar validation：
 
-1. 不改 `VisualManifestEntry` schema。
+1. 不引入 atlas / region manifest schema；`VisualManifestEntry` 严格字段集合以 [README.md](./README.md#visual-manifest-field-policy) 为准，禁止 `asciiGlyph` / `asciiColorHex`。
 2. 混合阶段不强行用顶层 `VisualManifest.styleTag` 表达每个 entry 的风格。
 3. `ktome-dark-fantasy-sprite-ui-v1` 由 `sheet-plan.yaml`、sprite report、contact sheet、coverage artifact 持有。
 4. PR-06 通过 `dark-v1-manifest-coverage.json` 证明玩家可见主路径已经迁移。

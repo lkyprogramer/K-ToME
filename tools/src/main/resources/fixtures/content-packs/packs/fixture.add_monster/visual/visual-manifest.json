@@ -10,9 +10,11 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
-      "tags": ["fixture", "content-pack", "monster"],
-      "asciiGlyph": "r",
-      "asciiColorHex": "#4FA3D9"
+      "tags": [
+        "fixture",
+        "content-pack",
+        "monster"
+      ]
     },
     {
       "key": "fixture_add_monster.icon.flooded_rat",
@@ -21,9 +23,11 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["fixture", "content-pack", "icon"],
-      "asciiGlyph": "r",
-      "asciiColorHex": "#4FA3D9"
+      "tags": [
+        "fixture",
+        "content-pack",
+        "icon"
+      ]
     }
   ],
   "prefixRules": []

@@ -35,36 +35,77 @@ internal object InfoSurfaceLayoutSolver {
         val tokens = UiDesignTokens
         val mapWidthPx = request.mapWidth * request.cellWidth
         val mapHeightPx = request.mapHeight * request.cellHeight
-        val mapOffsetY = request.uiRows * request.cellHeight
-        val sidebarGap = tokens.spacing.lg
-        val sidebarWidth = (mapWidthPx * 0.55f).coerceIn(340f, 420f)
-        val worldWidth = mapWidthPx + sidebarGap + sidebarWidth + tokens.spacing.lg
+        val mapOffsetY = tokens.fixed.shellBottomHudHeight.coerceAtLeast(request.uiRows * request.cellHeight)
+        val panelGap = tokens.spacing.md
+        val leftRailWidth =
+            if (mapWidthPx >= 700f) {
+                208f
+            } else {
+                tokens.fixed.shellLeftRailMinWidth
+            }
+        val rightPanelWidth =
+            if (mapWidthPx >= 700f) {
+                268f
+            } else {
+                tokens.fixed.shellRightPanelMinWidth
+            }
+        val worldWidth = leftRailWidth + panelGap + mapWidthPx + panelGap + rightPanelWidth
         val worldHeight = mapHeightPx + mapOffsetY
         val bottomInset = tokens.spacing.md
-        val panelGap = tokens.spacing.md
+        val shell =
+            GameShellLayout(
+                leftRailBounds =
+                    GameShellBounds(
+                        x = 0f,
+                        y = mapOffsetY,
+                        width = leftRailWidth,
+                        height = mapHeightPx,
+                    ),
+                mapBounds =
+                    GameShellBounds(
+                        x = leftRailWidth + panelGap,
+                        y = mapOffsetY,
+                        width = mapWidthPx,
+                        height = mapHeightPx,
+                    ),
+                rightPanelBounds =
+                    GameShellBounds(
+                        x = leftRailWidth + panelGap + mapWidthPx + panelGap,
+                        y = mapOffsetY,
+                        width = rightPanelWidth,
+                        height = mapHeightPx,
+                    ),
+                bottomHudBounds =
+                    GameShellBounds(
+                        x = 0f,
+                        y = 0f,
+                        width = worldWidth,
+                        height = mapOffsetY,
+                    ),
+            )
         val hotbarX = bottomInset
-        val hotbarY = tokens.spacing.md
+        val hotbarY = tokens.spacing.xl + tokens.spacing.sm
         val hotbarGap = 12f
         val availableHotbarWidth =
             (worldWidth - bottomInset * 2 - hotbarGap * (PLAYER_ACTIVE_TALENT_SLOT_COUNT - 1)).coerceAtLeast(0f)
         val hotbarCardWidth = (availableHotbarWidth / PLAYER_ACTIVE_TALENT_SLOT_COUNT).coerceAtMost(156f)
-        val hotbarCardHeight = 84f
+        val hotbarCardHeight = 72f
         val cardY = hotbarY + hotbarCardHeight + tokens.spacing.md
-        val cardHeight = (mapOffsetY - cardY - tokens.spacing.md).coerceAtLeast(96f)
+        val cardHeight = (mapOffsetY - cardY - tokens.spacing.md).coerceAtLeast(88f)
         val panelWidth = worldWidth - bottomInset * 2
         val minLogWidth = 180f
-        var infoWidth = (panelWidth * 0.28f).coerceIn(360f, 480f)
-        var focusWidth = (panelWidth * 0.17f).coerceIn(250f, 340f)
+        var infoWidth = (panelWidth * 0.28f).coerceIn(260f, 360f)
+        var focusWidth = (panelWidth * 0.17f).coerceIn(280f, 340f)
         val infoX = bottomInset
         var focusX = bottomInset + panelWidth - focusWidth
         var availableLogWidth = focusX - panelGap - (infoX + infoWidth)
         if (availableLogWidth < minLogWidth) {
             var deficit = minLogWidth - availableLogWidth
-            val focusShrink = minOf((focusWidth - 170f).coerceAtLeast(0f), deficit * 0.55f)
-            focusWidth -= focusShrink
-            deficit -= focusShrink
             val infoShrink = minOf((infoWidth - 260f).coerceAtLeast(0f), deficit)
             infoWidth -= infoShrink
+            deficit -= infoShrink
+            val focusShrink = minOf((focusWidth - 250f).coerceAtLeast(0f), deficit)
+            focusWidth -= focusShrink
             focusX = bottomInset + panelWidth - focusWidth
             availableLogWidth = focusX - panelGap - (infoX + infoWidth)
         }
@@ -77,11 +118,12 @@ internal object InfoSurfaceLayoutSolver {
         val logX = infoX + infoWidth + panelGap
         val logWidth = (focusX - panelGap - logX).coerceAtLeast(minLogWidth)
         return TileLayoutMetrics(
+            shell = shell,
             mapOffsetY = mapOffsetY,
             worldWidth = worldWidth,
             worldHeight = worldHeight,
-            sidebarX = mapWidthPx + sidebarGap,
-            sidebarWidth = sidebarWidth,
+            sidebarX = shell.rightPanelBounds.x + tokens.spacing.sm,
+            sidebarWidth = shell.rightPanelBounds.width - tokens.spacing.md,
             bottomInset = bottomInset,
             panelGap = panelGap,
             cardY = cardY,
