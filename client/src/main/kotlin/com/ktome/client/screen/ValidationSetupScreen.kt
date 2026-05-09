@@ -2,7 +2,6 @@ package com.ktome.client.screen
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.ScreenAdapter
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
@@ -12,6 +11,7 @@ import com.ktome.client.bossVariantModeLabelKey
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.client.validation.ValidationScenarioPresentationCatalog
 import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.validation.ValidationScenarioId
@@ -38,6 +38,7 @@ internal class ValidationSetupScreen(
     private val controller = ValidationSetupController(input = inputSource, context = context)
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
+    private var chrome: StandaloneScreenChrome? = null
 
     override fun show() {
         app.audioRouterOrNull()?.onMenuShown()
@@ -78,38 +79,52 @@ internal class ValidationSetupScreen(
         val batch = requireNotNull(batch)
         val font = requireNotNull(font)
         val text = textSnapshot(poll.options)
+        val layout = DarkStandaloneScreenLayout.validationSetup()
 
-        ScreenUtils.clear(0.03f, 0.04f, 0.06f, 1f)
+        val surfaceBase = UiDesignTokens.color.surface.base.color()
+        ScreenUtils.clear(surfaceBase.r, surfaceBase.g, surfaceBase.b, surfaceBase.a)
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
 
         batch.begin()
-        font.color = Color.GOLD
+        requireNotNull(chrome).draw(
+            batch,
+            StandaloneChromeRequest(
+                layout = layout,
+                detailAreaMode =
+                    if (text.notice == null) {
+                        StandaloneDetailAreaMode.HIDDEN
+                    } else {
+                        StandaloneDetailAreaMode.VISIBLE
+                    },
+            ),
+        )
+        font.color = UiDesignTokens.color.quality.rare.color()
         font.draw(batch, text.title, MAIN_MENU_TEXT_X, MAIN_MENU_TITLE_Y)
-        font.color = Color.LIGHT_GRAY
+        font.color = UiDesignTokens.color.text.secondary.color()
         font.draw(batch, text.subtitle, MAIN_MENU_TEXT_X, MAIN_MENU_SUBTITLE_Y)
-        font.color = Color.GRAY
-        font.draw(batch, text.presetSummary, MAIN_MENU_TEXT_X, MAIN_MENU_PANEL_TOP_Y + 20f)
-        font.draw(batch, text.activePackSummary, MAIN_MENU_TEXT_X, MAIN_MENU_PANEL_TOP_Y - 4f)
+        font.color = UiDesignTokens.color.text.secondary.color()
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.presetSummary, 78), layout.secondaryPanel.x, layout.secondaryPanel.top - 12f)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.activePackSummary, 78), layout.secondaryPanel.x, layout.secondaryPanel.top - 36f)
         text.notice?.let { message ->
-            font.color = Color.SALMON
-            font.draw(batch, message, MAIN_MENU_TEXT_X, MAIN_MENU_PANEL_TOP_Y - 28f)
+            font.color = UiDesignTokens.color.status.badge.turns.color()
+            font.draw(batch, DarkStandaloneScreenLayout.truncate(message, 78), layout.disabledDetailArea.x, layout.disabledDetailArea.top)
         }
 
-        var y = if (text.notice == null) MAIN_MENU_PANEL_TOP_Y - 36f else MAIN_MENU_PANEL_TOP_Y - 60f
+        val entryPlacements = DarkStandaloneScreenLayout.validationEntryPlacements(text.entries.size)
         text.entries.forEachIndexed { index, line ->
+            val entryPlacement = entryPlacements[index]
             font.color =
                 if (controller.selectedEntry() == ValidationSetupEntryId.entries[index]) {
-                    Color.CYAN
+                    UiDesignTokens.color.focus.ring.color()
                 } else {
-                    Color.WHITE
-                }
-            font.draw(batch, line, MAIN_MENU_TEXT_X, y)
-            y -= 24f
+                    UiDesignTokens.color.text.primary.color()
+            }
+            font.draw(batch, DarkStandaloneScreenLayout.truncate(line, entryPlacement.maxChars), entryPlacement.x, entryPlacement.baselineY)
         }
 
-        font.color = Color.GRAY
-        font.draw(batch, app.text("ui.validation.controls"), MAIN_MENU_TEXT_X, MAIN_MENU_FOOTER_CONTROLS_DEFAULT_Y)
+        font.color = UiDesignTokens.color.text.disabled.color()
+        font.draw(batch, app.text("ui.validation.controls"), layout.footerHelp.x, DarkStandaloneScreenLayout.validationFooterControlsBaselineY)
         batch.end()
     }
 
@@ -122,6 +137,8 @@ internal class ValidationSetupScreen(
     override fun dispose() {
         font?.dispose()
         font = null
+        chrome?.dispose()
+        chrome = null
         batch?.dispose()
         batch = null
     }
@@ -212,6 +229,9 @@ internal class ValidationSetupScreen(
         }
         if (font == null) {
             font = KtomeFonts.createUiFont(size = 20)
+        }
+        if (chrome == null) {
+            chrome = StandaloneScreenChrome()
         }
     }
 }

@@ -1,14 +1,14 @@
 package com.ktome.client.render
 
-import com.ktome.client.bossVariantModeLabelKey
-import com.ktome.client.telegraph.TelegraphPresentationModel
-import com.ktome.client.telegraph.TelegraphRenderer
-import com.ktome.client.telegraph.TelegraphStyle
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
+import com.ktome.client.bossVariantModeLabelKey
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
+import com.ktome.client.telegraph.TelegraphPresentationModel
+import com.ktome.client.telegraph.TelegraphRenderer
+import com.ktome.client.telegraph.TelegraphStyle
 import com.ktome.client.ui.card.ModalCardModel
 import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
 import com.ktome.client.ui.combat.CombatDecisionFeedbackKeys
@@ -165,6 +165,7 @@ internal data class TileHudModel(
     val hpGauge: TileGaugeModel,
     val resourceGauge: TileGaugeModel,
     val secondaryResourceGauge: TileGaugeModel? = null,
+    val experienceGauge: TileGaugeModel,
     val statusIcons: List<StatusHudIconModel>,
     val focusIcon: ResolvedVisualAsset?,
     val focusName: String?,
@@ -176,6 +177,17 @@ internal data class TileHudModel(
 internal data class TileSidebarModel(
     val title: String,
     val rows: List<TileTextRow>,
+)
+
+internal data class TilePanelModel(
+    val title: String,
+    val rows: List<TileTextRow>,
+)
+
+internal data class TileShellModel(
+    val leftRail: TilePanelModel,
+    val rightPanel: TilePanelModel,
+    val footerHints: List<TileTextRow>,
 )
 
 internal data class TileRenderModel(
@@ -196,6 +208,7 @@ internal data class TileRenderModel(
     val actionPanel: ActionPanelModel,
     val combatFeedback: List<TileCombatFeedbackModel>,
     val sidebar: TileSidebarModel,
+    val shell: TileShellModel,
 )
 
 internal object TileRenderModelBuilder {
@@ -332,6 +345,7 @@ internal object TileRenderModelBuilder {
             }
         val messageLines = baseMessageLines + listOfNotNull(uiMessageLine)
 
+        val sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint, propByPoint, combatPanel)
         return TileRenderModel(
             terrainTiles = terrainTiles,
             propTiles = propTiles,
@@ -382,7 +396,8 @@ internal object TileRenderModelBuilder {
                         emptyStateText = localizer.text("ui.action.empty"),
                     ),
             combatFeedback = buildCombatFeedback(localizer, snapshot.metadata.width, overlayCells, snapshot.combatFeedbackEvents),
-            sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint, propByPoint, combatPanel),
+            sidebar = sidebar,
+            shell = buildShell(localizer, snapshot, hud, sidebar, messageLines),
         )
     }
 
@@ -401,18 +416,18 @@ internal object TileRenderModelBuilder {
         val frontstageFocus = frontstageFocus(localizer, snapshot, overlayState, focusActor)
         val statusIcons = StatusIconResolver.resolveIcons(visualResolver, player.statusEffects)
         val hotbar =
-                snapshot.uiState.talents.map { talent ->
-                    TileHotbarSlotModel(
-                        slot = talent.slot,
-                        label = localizer.text(talent.nameKey),
-                        icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
-                        accentIcon = talent.damageTypeIconKey?.let { resolveVisual(visualResolver, it) },
-                        resourceText = talentUsageSummary(localizer, talent),
-                        cooldownText =
-                            if (talent.currentCooldown > 0) {
-                                localizer.text("ui.sidebar.cooldown.short") + ":" + talent.currentCooldown
-                            } else {
-                                null
+            snapshot.uiState.talents.map { talent ->
+                TileHotbarSlotModel(
+                    slot = talent.slot,
+                    label = localizer.text(talent.nameKey),
+                    icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
+                    accentIcon = talent.damageTypeIconKey?.let { resolveVisual(visualResolver, it) },
+                    resourceText = talentUsageSummary(localizer, talent),
+                    cooldownText =
+                        if (talent.currentCooldown > 0) {
+                            localizer.text("ui.sidebar.cooldown.short") + ":" + talent.currentCooldown
+                        } else {
+                            null
                         },
                 )
             }
@@ -455,6 +470,14 @@ internal object TileRenderModelBuilder {
                 ),
             resourceGauge = resourceHud.primaryGauge.toTileGauge(),
             secondaryResourceGauge = resourceHud.secondaryGauge?.toTileGauge(),
+            experienceGauge =
+                TileGaugeModel(
+                    label = localizer.text("ui.hud.xp.short"),
+                    current = playerStatus.currentExperience,
+                    max = playerStatus.nextLevelRequirement,
+                    tone = TileTextTone.GOLD,
+                    resourceTypeId = "EXPERIENCE",
+                ),
             statusIcons = statusIcons,
             focusIcon = focusActor?.let { actor -> resolveVisual(visualResolver, actor.visualKey) },
             focusName = focusName,
@@ -463,6 +486,129 @@ internal object TileRenderModelBuilder {
             summaryText = resourceHud.summaryText,
         )
     }
+
+    private fun buildShell(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+        hud: TileHudModel,
+        sidebar: TileSidebarModel,
+        messageLines: List<TileMessageLine>,
+    ): TileShellModel {
+        val status = snapshot.uiState.playerStatus
+        val zoneDescription =
+            snapshot.metadata.zoneDescKey
+                ?.let(localizer::text)
+                ?: localizer.text("ui.shell.quest.none")
+        val questSummary = questSummaryText(localizer, snapshot)
+        val criticalHint =
+            messageLines
+                .lastOrNull { line -> line.tone == TileTextTone.RED || line.tone == TileTextTone.GOLD || line.tone == TileTextTone.CYAN }
+                ?.text
+                ?: localizer.text("ui.shell.critical_hint.none")
+        val awarenessRows = frontstageSidebarRows(localizer, snapshot).take(6)
+        val recentRewardRows =
+            snapshot.uiState.recentRewards.asReversed().flatMap { entry ->
+                listOf(
+                    TileTextRow(
+                        recentRewardText(
+                            sourceLabel = renderTextToken(localizer, ModalCardModel.rewardPresentationSummary(entry)),
+                            itemDisplayName = renderTextToken(localizer, entry.itemDisplayName),
+                        ),
+                        rewardPresentationTone(entry.source),
+                    ),
+                ) +
+                    ModalCardModel.rewardPresentationDetailLines(entry).map { detailText ->
+                        TileTextRow(recentRewardDetailText(renderTextToken(localizer, detailText)), TileTextTone.LIGHT_GRAY)
+                    }
+            }.take(4)
+        val inventoryCount = snapshot.uiState.inventory.size
+        val equipmentRows =
+            snapshot.uiState.equipment.map { equipment ->
+                val itemName = equipment.item?.let { item -> renderItemDisplay(localizer, item) } ?: "-"
+                TileTextRow("${equipmentSlotLabel(localizer, equipment.slotId)}: $itemName", TileTextTone.WHITE)
+            }
+        val pointRows =
+            listOfNotNull(
+                status.statPoints.takeIf { points -> points > 0 }?.let { points ->
+                    TileTextRow("${localizer.text("ui.hud.stat.short")} $points", TileTextTone.GOLD)
+                },
+                status.talentPoints.takeIf { points -> points > 0 }?.let { points ->
+                    TileTextRow("${localizer.text("ui.hud.talent.short")} $points", TileTextTone.GOLD)
+                },
+                status.raceTalentPoints.takeIf { points -> points > 0 }?.let { points ->
+                    TileTextRow("${localizer.text("ui.hud.race_talent.short")} $points", TileTextTone.GOLD)
+                },
+            )
+        val modeRows =
+            if (snapshot.uiState.activeShop != null || sidebar.title != TileRenderer.sidebarTitle(localizer, UiMode.MAP)) {
+                listOf(TileTextRow(sidebar.title, TileTextTone.GOLD)) + sidebar.rows.take(5)
+            } else {
+                emptyList()
+            }
+
+        return TileShellModel(
+            leftRail =
+                TilePanelModel(
+                    title = hud.zoneName,
+                    rows =
+                        listOf(
+                            TileTextRow(hud.floorText, TileTextTone.GOLD),
+                            TileTextRow(zoneDescription, TileTextTone.LIGHT_GRAY),
+                            TileTextRow(localizer.text("ui.shell.quest.summary"), TileTextTone.GOLD),
+                            TileTextRow(questSummary, TileTextTone.LIGHT_GRAY),
+                            TileTextRow(localizer.text("ui.shell.critical_hint"), TileTextTone.GOLD),
+                            TileTextRow(criticalHint, TileTextTone.CYAN),
+                        ) +
+                            if (awarenessRows.isEmpty()) {
+                                emptyList()
+                            } else {
+                                listOf(TileTextRow(localizer.text("ui.hud.frontstage.title"), TileTextTone.GOLD)) + awarenessRows
+                            } +
+                            if (recentRewardRows.isEmpty()) {
+                                emptyList()
+                            } else {
+                                listOf(TileTextRow(localizer.text("ui.sidebar.recent_rewards"), TileTextTone.GOLD)) + recentRewardRows
+                            },
+                ),
+            rightPanel =
+                TilePanelModel(
+                    title = hud.playerName,
+                    rows =
+                        listOf(
+                            TileTextRow(
+                                "${localizer.text("ui.hud.level.short")} ${status.level}",
+                                TileTextTone.GOLD,
+                            ),
+                            TileTextRow(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), TileTextTone.GOLD),
+                        ) +
+                            pointRows +
+                            listOf(TileTextRow(localizer.text("ui.sidebar.equipment"), TileTextTone.GOLD)) +
+                            equipmentRows +
+                            listOf(
+                                TileTextRow(localizer.text("ui.shell.backpack.summary", "count" to inventoryCount), TileTextTone.LIGHT_GRAY),
+                                TileTextRow(localizer.text("ui.shell.resources.bottom_owned"), TileTextTone.GRAY),
+                            ) +
+                            modeRows,
+                ),
+            footerHints =
+                listOf(
+                    TileTextRow(localizer.text("ui.controls.map.inventory"), TileTextTone.LIGHT_GRAY),
+                    TileTextRow(localizer.text("ui.controls.map.pick_up"), TileTextTone.LIGHT_GRAY),
+                    TileTextRow(localizer.text("ui.controls.map.save"), TileTextTone.LIGHT_GRAY),
+                ),
+        )
+    }
+
+    private fun questSummaryText(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+    ): String =
+        snapshot.logEvents
+            .asReversed()
+            .map(RenderLogEventSnapshot::message)
+            .firstOrNull { token -> token.key.startsWith("log.objective.") }
+            ?.let { token -> renderTextToken(localizer, token) }
+            ?: localizer.text("ui.shell.quest.none")
 
     private fun buildTargetCardModel(
         localizer: Localizer,
@@ -1073,9 +1219,12 @@ internal object TileRenderModelBuilder {
         visualResolver: VisualManifestResolver,
         actor: ActorRenderSnapshot,
     ): String? =
-        actor.bossVariant?.visualTintKey
-            ?.let { tintKey -> resolveVisual(visualResolver, tintKey).entry.asciiColorHex }
-            ?: actor.displayTintColorHex
+        actor.displayTintColorHex
+            ?: actor.bossVariant?.visualTintKey
+                ?.let { tintKey -> resolveVisual(visualResolver, tintKey) }
+                ?.takeIf { resolved -> resolved.fallbackUsed.not() }
+                ?.entry
+                ?.tintColorHex
 
     private fun rewardPresentationTone(source: RewardPresentationSourceSnapshot): TileTextTone =
         when (source) {
@@ -1408,7 +1557,19 @@ internal object TileRenderModelBuilder {
         if (overlayState.mode != UiMode.MAP || focusActor != null) {
             return null
         }
-        val lines = frontstagePresentationEntries(snapshot).map { entry -> renderTextToken(localizer, entry.token) }
+        val lines =
+            frontstagePresentationEntries(snapshot).map { entry -> renderTextToken(localizer, entry.token) } +
+                snapshot.uiState.recentRewards.asReversed().flatMap { entry ->
+                    listOf(
+                        recentRewardText(
+                            sourceLabel = renderTextToken(localizer, ModalCardModel.rewardPresentationSummary(entry)),
+                            itemDisplayName = renderTextToken(localizer, entry.itemDisplayName),
+                        ),
+                    ) +
+                        ModalCardModel.rewardPresentationDetailLines(entry).map { detailText ->
+                            recentRewardDetailText(renderTextToken(localizer, detailText))
+                        }
+                }
         if (lines.isEmpty()) {
             return null
         }

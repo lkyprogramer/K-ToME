@@ -37,7 +37,7 @@ canonical artifact 固定为 Round 8-9 / rejected polish contact sheet、key reg
 ## 1. 阶段目标
 
 1. 替换技能、状态、damage type、quest、zone、profession/tree icon。
-2. 完成 fallback、debug、missing、hidden 资源返修。
+2. 完成 manifest fallback、debug resource、missing、hidden 资源返修。
 3. 将新视觉纪元覆盖到 `visual-manifest.json` 的玩家可见资源。
 4. 把 PR-04 暂时复用的职业树 icon 切换到新风格资源。
 5. 将验证模式运行时 overlay、active content pack summary、scenario evidence summary 的玩家可见 presentation 纳入 dark-v1 全量覆盖；setup 页 layout 仍归 PR-01，最终证据归 PR-07。
@@ -56,7 +56,7 @@ canonical artifact 固定为 Round 8-9 / rejected polish contact sheet、key reg
 | `client/src/main/kotlin/com/ktome/client/render/ValidationScenarioEvidenceSummaryLines.kt` | 确认 validation evidence summary 不遮挡 HUD/日志 |
 | `client/src/main/kotlin/com/ktome/client/validation/ValidationScenarioPresentationCatalog.kt` | 确认 validation scenario presentation 不引入旧风格 marker |
 | `client/src/test/kotlin/com/ktome/client/ui/status/StatusIconResolverTest.kt` | 覆盖 `icon.status.*` 与 `icon.mutation.*` 双前缀解析 |
-| `client/src/test/kotlin/com/ktome/client/render/ValidationPackSummaryTextTest.kt` | 覆盖 active pack summary、fallback 和长文本 |
+| `client/src/test/kotlin/com/ktome/client/render/ValidationPackSummaryTextTest.kt` | 覆盖 active pack summary、manifest fallback 和长文本 |
 
 ## 3. 资源范围
 
@@ -65,9 +65,9 @@ canonical artifact 固定为 Round 8-9 / rejected polish contact sheet、key reg
 3. Round 7 剩余 item、affix、material 返修。
 4. Round 2-6 中 QA rejected 的玩家可见资源返修。
 5. `r09-status-damage` 同时覆盖 `icon.status.*` 和 `icon.mutation.*`；不新增 `icon_mutation` category。
-6. `r09-fallback-debug` owner 固定为 PR-06，必须覆盖 `missing_visual`、hidden/debug/fallback、locked/placeholder 主路径。
+6. `r09-fallback-debug` owner 固定为 PR-06，必须覆盖 `missing_visual`、hidden / resource-debug / fallback、locked/placeholder 主路径。
 7. `r09-rejected-polish` owner 固定为 PR-06，只承接 PR-03/05/06 coverage artifact 已记录的 rejected cell；PR-07 只能返修这些记录，不重新拥有 sheet。
-8. 当前 fallback/hidden/debug 主路径估算约 25-30 cell，`r09-fallback-debug` 的 64 cell 容量足够作为首选；如果开工前 inventory 盘点超过 64，必须拆出 `r09-fallback-debug-a/b` 并同步更新 `UI/PLAN.md`、`UI/pr/README.md`、sheet plan 和 key registry。
+8. 当前 manifest fallback / hidden / resource-debug 主路径估算约 25-30 cell，`r09-fallback-debug` 的 64 cell 容量足够作为首选；如果开工前 inventory 盘点超过 64，必须拆出 `r09-fallback-debug-a/b` 并同步更新 `UI/PLAN.md`、`UI/pr/README.md`、sheet plan 和 key registry。
 
 Raw sheet 生成交接：
 
@@ -95,12 +95,12 @@ Raw sheet 生成交接：
 
 1. 不改技能效果、状态结算、damage type 枚举或 quest 规则。
 2. 不改音频资源，除非现有 lint 强制要求同步 manifest；如触发，必须补 `audioLint`。
-3. 不把旧资源删干净作为本 PR 目标；可保留历史/debug fallback，但玩家主路径必须指向新风格。
+3. 不把旧资源删干净作为本 PR 目标；可保留历史/debug resource fallback，但玩家主路径必须指向新风格。
 4. 不改 validation scenario 选择、content pack 加载、scenario bootstrap 或 whitebox materialization 规则；只改 overlay / summary 的 presentation 与资源覆盖。
 
 ## 6. 验收标准
 
-1. `visual-manifest.json` 玩家可见主路径不再指向旧风格资源，允许仅保留历史/debug fallback。
+1. `visual-manifest.json` 玩家可见主路径不再指向旧风格资源，允许仅保留历史/debug resource fallback。
 2. `darkManifestCoverageLint + ManifestResolveTest` 证明 `icon.skill.*`、`icon.tree.*`、`icon.status.*`、`icon.quest.*` 全部可解析并已进入 dark-v1 玩家主路径。
 3. contact sheet QA report 没有 `pending` 或 `rejected` 的玩家可见资源。
 4. 职业树、HUD、背包、状态栏同时出现时，图标风格一致，不出现明显跨时代资源。
@@ -119,10 +119,10 @@ Fallback/debug final inventory 必须在开工前生成并随 PR 提交：
 | `missing_visual` | 生成 dark-v1 missing/fallback 主视觉 | `r09-fallback-debug` |
 | `tile.hidden` / hidden entrance / secret zone | 生成 hidden/secret readable icon or portrait | `r09-fallback-debug` 或对应 zone sheet |
 | `category=debug` player-visible starter/item visuals | 若玩家可见则迁移；纯 debug/history 可列入 allowed fallback | `r09-fallback-debug` 或 Round 7 owner sheet |
-| ASCII/debug tiles | 如仅 debug fallback，列入 `allowedFallbackKeys` 并说明原因 | `r09-fallback-debug` 或 allowed fallback |
+| debug-only tiles / missing visual sentinel | 不允许 client ASCII renderer 或 ASCII manifest 字段；纯 debug/history resource fallback 可列入 `allowedFallbackKeys` 并说明原因 | `r09-fallback-debug` 或 allowed fallback |
 | PR-03/05 rejected cells | 只处理 coverage artifact 中列明的 rejected cell | `r09-rejected-polish` |
 
-如果 final inventory 中 fallback/debug/hidden/rejected cell 总数超过当前 sheet capacity，PR-06 必须先新增 `r09-fallback-debug-*` 或 `r09-rejected-polish-*` sheetId，并同步更新 `UI/PLAN.md`、`UI/pr/README.md` 和 key registry；不得把超额 key 留作 silent pending。
+如果 final inventory 中 manifest fallback / debug resource / hidden / rejected cell 总数超过当前 sheet capacity，PR-06 必须先新增 `r09-fallback-debug-*` 或 `r09-rejected-polish-*` sheetId，并同步更新 `UI/PLAN.md`、`UI/pr/README.md` 和 key registry；不得把超额 key 留作 silent pending。
 PR-06 close 前玩家可见 rejected cell 必须为 0；PR-07 只能处理 PR-06 coverage artifact 中记录的非玩家可见 polish 项或后验发现的单点问题。若 PR-07 发现玩家可见 rejected cell，视为 PR-06 未完成，不能在 PR-07 静默修补。
 
 Manifest key 切换表必须至少包含：
@@ -135,7 +135,7 @@ Manifest key 切换表必须至少包含：
 | `tree.*` | tree portrait 切到 dark-v1 |
 | `icon.status.*` / `icon.mutation.*` | 全量切到 dark-v1 |
 | `icon.quest.*` / zone/profession/tree/difficulty icon | 全量切到 dark-v1 |
-| `missing_visual` / hidden/debug fallback | Round 9 polish 或 allowed fallback 说明 |
+| `missing_visual` / hidden / debug resource fallback | Round 9 polish 或 allowed fallback 说明 |
 
 ## 7. 验证
 
@@ -159,6 +159,6 @@ sdk env
 
 1. 打开主 HUD、背包、状态栏、职业树、任务提示，确认 icon 风格统一。
 2. 触发至少 3 类状态和 2 类技能预览，确认状态/技能图标不混淆。
-3. 故意注入一个 missing key 的测试路径，确认 fallback 风格可接受且 report 可定位。
+3. 故意注入一个 missing key 的测试路径，确认 manifest fallback 风格可接受且 report 可定位。
 4. 打开 validation overlay / active pack summary，确认 scenario、pack、evidence summary 可读且不遮挡 HUD/日志。
 5. 必填证据：skill/status/quest/profession tree 同屏截图、manifest coverage artifact、fallback injection record、`dark-uiux-pr07-validation-overlay` 的 PR-07 evidence 引用。

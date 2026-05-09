@@ -28,7 +28,7 @@ class ContinueUnavailablePayloadFormatterTest {
         val lines = payload.split("\n")
         assertEquals("Continue Game Unavailable", lines[0])
         assertEquals("Unclassified save issue. Copy error detail and report it.", lines[1])
-        assertEquals("savePath: /tmp/run-save.json", lines[2])
+        assertEquals("savePath: <local-save-dir>/run-save.json", lines[2])
         assertEquals("reasonCode: UNKNOWN", lines[3])
         assertEquals("gameVersion: 0.4.0-test", lines[4])
         assertEquals("throwableClass: java.io.EOFException", lines[5])
@@ -36,6 +36,7 @@ class ContinueUnavailablePayloadFormatterTest {
         assertTrue(lines[6].endsWith("..."))
         assertEquals("[ktome/abcdef1]", lines[7])
         assertFalse(payload.contains("\r"))
+        assertFalse(payload.contains("/tmp/"))
         assertFalse(payload.contains("at com."))
     }
 }

@@ -660,7 +660,8 @@ class GameAppLifecycleTest {
             screen.render(0f)
 
             val copied = requireNotNull(copiedPayload)
-            assertTrue(copied.contains("savePath: $savePath"))
+            assertTrue(copied.contains("savePath: <local-save-dir>/run-save.json"))
+            assertFalse(copied.contains(savePath.toString()))
             assertTrue(copied.contains("reasonCode: CORRUPTED"))
             assertTrue(copied.contains("gameVersion:"))
             assertTrue(copied.contains("[ktome/"))

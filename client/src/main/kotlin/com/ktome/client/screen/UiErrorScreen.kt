@@ -3,7 +3,6 @@ package com.ktome.client.screen
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx.ScreenAdapter
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
@@ -12,10 +11,7 @@ import com.ktome.client.GameApp
 import com.ktome.client.render.KtomeFonts
 import com.ktome.client.ui.card.ModalCardAction
 import com.ktome.client.ui.state.UiErrorState
-import kotlin.math.max
-
-private const val errorScreenWidth = 960f
-private const val errorScreenHeight = 540f
+import com.ktome.client.ui.token.UiDesignTokens
 
 internal class UiErrorScreen(
     private val app: GameApp,
@@ -27,7 +23,8 @@ internal class UiErrorScreen(
 ) : ScreenAdapter() {
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
-    private val viewport = FitViewport(errorScreenWidth, errorScreenHeight)
+    private var chrome: StandaloneScreenChrome? = null
+    private val viewport = FitViewport(UiDesignTokens.fixed.standaloneWidth, UiDesignTokens.fixed.standaloneHeight)
 
     override fun show() {
         if (!renderEnabled) {
@@ -47,19 +44,23 @@ internal class UiErrorScreen(
         ensureResources()
         val batch = requireNotNull(batch)
         val font = requireNotNull(font)
-        ScreenUtils.clear(0.06f, 0.02f, 0.02f, 1f)
+        val layout = DarkStandaloneScreenLayout.outcome()
+        val surfaceBase = UiDesignTokens.color.surface.base.color()
+        ScreenUtils.clear(surfaceBase.r, surfaceBase.g, surfaceBase.b, surfaceBase.a)
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
         batch.begin()
-        font.color = Color.WHITE
-        var y = max(120f, viewport.worldHeight - 48f)
-        font.draw(batch, app.text(errorState.heading), 40f, y)
-        y -= 40f
-        font.draw(batch, app.text(errorState.detail), 40f, y)
-        y -= 60f
-        errorState.actions.forEach { action ->
-            font.draw(batch, uiErrorActionLabel(action, app::text, errorState.copyDetailLabelKey), 40f, y)
-            y -= 32f
+        requireNotNull(chrome).draw(batch, StandaloneChromeRequest(layout = layout, detailAreaMode = StandaloneDetailAreaMode.HIDDEN))
+        font.color = UiDesignTokens.color.telegraph.high.color()
+        font.draw(batch, app.text(errorState.heading), layout.header.x, layout.header.top - 22f)
+        font.color = UiDesignTokens.color.text.primary.color()
+        val bodyLines =
+            listOf(DarkStandaloneScreenLayout.truncate(app.text(errorState.detail), 82)) +
+                errorState.actions.map { action ->
+                    DarkStandaloneScreenLayout.truncate(uiErrorActionLabel(action, app::text, errorState.copyDetailLabelKey), 82)
+                }
+        bodyLines.zip(DarkStandaloneScreenLayout.outcomeBodyLineBaselines(bodyLines.size)).forEach { (line, y) ->
+            font.draw(batch, line, layout.primaryActionStack.x, y)
         }
         batch.end()
     }
@@ -73,6 +74,8 @@ internal class UiErrorScreen(
     override fun dispose() {
         font?.dispose()
         font = null
+        chrome?.dispose()
+        chrome = null
         batch?.dispose()
         batch = null
     }
@@ -104,6 +107,9 @@ internal class UiErrorScreen(
         }
         if (font == null) {
             font = KtomeFonts.createUiFont(size = 24)
+        }
+        if (chrome == null) {
+            chrome = StandaloneScreenChrome()
         }
     }
 }

@@ -27,22 +27,20 @@ data class VisualManifestEntry(
     val pivotX: Double = 0.5,
     val pivotY: Double = 0.5,
     val tags: List<String> = emptyList(),
-    val asciiGlyph: String? = null,
-    val asciiColorHex: String? = null,
+    val tintColorHex: String? = null,
 ) {
     init {
         require(key.isNotBlank()) { "Visual manifest key must not be blank." }
         require(category.isNotBlank()) { "Visual manifest category must not be blank." }
         require(rawOutputPath.isNotBlank()) { "Visual manifest rawOutputPath must not be blank." }
         require(footprint.isNotBlank()) { "Visual manifest footprint must not be blank." }
-        require(asciiGlyph == null || asciiGlyph.length == 1) {
-            "Visual manifest asciiGlyph must be a single character when present."
-        }
-        require(asciiColorHex == null || asciiColorHex.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
-            "Visual manifest asciiColorHex must match #RRGGBB when present."
+        require(tintColorHex == null || tintColorHex.matches(HEX_COLOR_PATTERN)) {
+            "Visual manifest tintColorHex must match #RRGGBB when present."
         }
     }
 }
+
+private val HEX_COLOR_PATTERN = Regex("^#[0-9A-Fa-f]{6}$")
 
 @Serializable
 data class AudioManifest(

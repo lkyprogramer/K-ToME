@@ -11,6 +11,7 @@ import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.render.layout.GameShellLayout
 import com.ktome.client.render.layout.InfoSurfaceLayout
 import com.ktome.client.render.layout.InfoSurfaceLayoutRequest
 import com.ktome.client.render.layout.InfoSurfaceLayoutSolver
@@ -84,6 +85,7 @@ internal object NoOpTileCanvas : TileCanvas {
 }
 
 internal data class TileLayoutMetrics(
+    val shell: GameShellLayout,
     val mapOffsetY: Float,
     val worldWidth: Float,
     val worldHeight: Float,
@@ -250,33 +252,40 @@ class TileRenderer(
                 color = UiDesignTokens.color.surface.base.color(),
             )
             canvas.drawRect(
-                x = 0f,
-                y = layout.mapOffsetY,
-                width = mapWidth * cellWidth,
-                height = mapHeight * cellHeight,
+                x = layout.shell.mapBounds.x,
+                y = layout.shell.mapBounds.y,
+                width = layout.shell.mapBounds.width,
+                height = layout.shell.mapBounds.height,
                 color = UiDesignTokens.color.surface.base.color(),
             )
             canvas.drawRect(
-                x = 0f,
-                y = 0f,
-                width = layout.worldWidth,
-                height = layout.mapOffsetY,
+                x = layout.shell.bottomHudBounds.x,
+                y = layout.shell.bottomHudBounds.y,
+                width = layout.shell.bottomHudBounds.width,
+                height = layout.shell.bottomHudBounds.height,
                 color = UiDesignTokens.color.surface.raised.color(),
             )
             canvas.drawRect(
-                x = layout.sidebarX - 10f,
-                y = layout.mapOffsetY,
-                width = layout.sidebarWidth + 20f,
-                height = mapHeight * cellHeight,
+                x = layout.shell.leftRailBounds.x,
+                y = layout.shell.leftRailBounds.y,
+                width = layout.shell.leftRailBounds.width,
+                height = layout.shell.leftRailBounds.height,
+                color = UiDesignTokens.color.surface.overlay.color(),
+            )
+            canvas.drawRect(
+                x = layout.shell.rightPanelBounds.x,
+                y = layout.shell.rightPanelBounds.y,
+                width = layout.shell.rightPanelBounds.width,
+                height = layout.shell.rightPanelBounds.height,
                 color = UiDesignTokens.color.surface.overlay.color(),
             )
 
             TileLayerComposer.compose(model).forEach { placement ->
-                drawPlacement(canvas, placement, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
+                drawPlacement(canvas, placement, mapHeight, layout.shell.mapBounds.x, layout.mapOffsetY, cellWidth, cellHeight)
             }
-            drawGroundLootMarkers(canvas, model.groundLootMarkers, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
-            drawFogOverlays(canvas, model.fogTiles, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
-            drawCombatFeedback(canvas, model.combatFeedback, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
+            drawGroundLootMarkers(canvas, model.groundLootMarkers, mapHeight, layout.shell.mapBounds.x, layout.mapOffsetY, cellWidth, cellHeight)
+            drawFogOverlays(canvas, model.fogTiles, mapHeight, layout.shell.mapBounds.x, layout.mapOffsetY, cellWidth, cellHeight)
+            drawCombatFeedback(canvas, model.combatFeedback, mapHeight, layout.shell.mapBounds.x, layout.mapOffsetY, cellWidth, cellHeight)
 
             model.targetCursor?.let { cursor ->
                 drawCursor(
@@ -284,6 +293,7 @@ class TileRenderer(
                     cursor.x,
                     cursor.y,
                     mapHeight,
+                    layout.shell.mapBounds.x,
                     layout.mapOffsetY,
                     cellWidth,
                     cellHeight,
@@ -291,13 +301,25 @@ class TileRenderer(
                 )
             }
             model.inspectCursor?.let { cursor ->
-                drawCursor(canvas, cursor.x, cursor.y, mapHeight, layout.mapOffsetY, cellWidth, cellHeight, UiDesignTokens.color.focus.ring.color())
+                drawCursor(
+                    canvas,
+                    cursor.x,
+                    cursor.y,
+                    mapHeight,
+                    layout.shell.mapBounds.x,
+                    layout.mapOffsetY,
+                    cellWidth,
+                    cellHeight,
+                    UiDesignTokens.color.focus.ring.color(),
+                )
             }
 
             drawPaneFocusRing(canvas, overlayState, layout, mapWidth, mapHeight, cellWidth, cellHeight)
+            drawLeftRail(canvas, model.shell.leftRail, layout)
             drawHud(canvas, model, layout)
             drawMessages(canvas, model.logPresentation, model.messageLines, layout)
-            drawSidebar(canvas, model.sidebar, layout, mapHeight, cellHeight)
+            drawRightPanel(canvas, model.shell.rightPanel, layout)
+            drawFooterHints(canvas, model.shell.footerHints, layout)
         }
 
         internal fun worldWidth(
@@ -356,16 +378,9 @@ class TileRenderer(
                 textTopY,
                 tone(TileTextTone.GOLD),
             )
-            canvas.drawText(
-                TileTextStyle.SMALL,
-                truncateTextToWidth("${hud.zoneName}  ${hud.floorText}", layout.infoWidth - 24f, TileTextStyle.SMALL),
-                layout.infoX + 12f,
-                textTopY - smallLineHeight,
-                tone(TileTextTone.LIGHT_GRAY),
-            )
-            val gaugeHeight = 14f
-            val gaugeGap = 4f
-            val gauges = listOfNotNull(hud.secondaryResourceGauge, hud.resourceGauge, hud.hpGauge)
+            val gaugeHeight = 11f
+            val gaugeGap = 3f
+            val gauges = listOfNotNull(hud.experienceGauge, hud.secondaryResourceGauge, hud.resourceGauge, hud.hpGauge)
             gauges.forEachIndexed { index, gauge ->
                 val gaugeY = layout.cardY + 8f + index * (gaugeHeight + gaugeGap)
                 drawGauge(canvas, gauge, layout.infoX + 12f, gaugeY, layout.infoWidth - 24f, gaugeHeight)
@@ -429,15 +444,15 @@ class TileRenderer(
             actionPanel.entries.forEachIndexed { index, entry ->
                 val slot = hud.hotbar.getOrNull(index)
                 val x = layout.hotbarX + index * (layout.hotbarCardWidth + layout.hotbarGap)
-                canvas.drawRect(x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, UiDesignTokens.color.surface.raised.color())
-                (entry.icon ?: slot?.icon)?.let { icon -> canvas.drawAsset(icon, x + 10f, layout.hotbarY + 18f, 44f, 44f) }
-                slot?.accentIcon?.let { icon -> canvas.drawAsset(icon, x + 40f, layout.hotbarY + 48f, 16f, 16f) }
-                canvas.drawText(TileTextStyle.SMALL, entry.hotkey, x + 8f, layout.hotbarY + 74f, tone(TileTextTone.GOLD))
+                canvas.drawRect(x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, UiDesignTokens.color.slot.filled.color())
+                (entry.icon ?: slot?.icon)?.let { icon -> canvas.drawAsset(icon, x + 10f, layout.hotbarY + 14f, 38f, 38f) }
+                slot?.accentIcon?.let { icon -> canvas.drawAsset(icon, x + 35f, layout.hotbarY + 42f, 16f, 16f) }
+                canvas.drawText(TileTextStyle.SMALL, entry.hotkey, x + 8f, layout.hotbarY + layout.hotbarCardHeight - 10f, tone(TileTextTone.GOLD))
                 canvas.drawText(
                     TileTextStyle.SMALL,
                     truncateTextToWidth(entry.label, layout.hotbarCardWidth - 64f, TileTextStyle.SMALL),
                     x + 62f,
-                    layout.hotbarY + 66f,
+                    layout.hotbarY + layout.hotbarCardHeight - 18f,
                     tone(TileTextTone.WHITE),
                 )
                 slot?.cooldownText?.let { cooldown ->
@@ -445,14 +460,14 @@ class TileRenderer(
                         TileTextStyle.SMALL,
                         truncateTextToWidth(cooldown, layout.hotbarCardWidth - 64f, TileTextStyle.SMALL),
                         x + 62f,
-                        layout.hotbarY + 34f,
+                        layout.hotbarY + 28f,
                         tone(TileTextTone.RED),
                     )
                 } ?: canvas.drawText(
                     TileTextStyle.SMALL,
                     truncateTextToWidth(slot?.resourceText.orEmpty(), layout.hotbarCardWidth - 64f, TileTextStyle.SMALL),
                     x + 62f,
-                    layout.hotbarY + 34f,
+                    layout.hotbarY + 28f,
                     tone(TileTextTone.LIGHT_GRAY),
                 )
             }
@@ -526,7 +541,7 @@ class TileRenderer(
                 PaneFocusAnchor.WORLD ->
                     drawRectOutline(
                         canvas = canvas,
-                        x = 0f,
+                        x = layout.shell.mapBounds.x,
                         y = layout.mapOffsetY,
                         width = mapWidth * cellWidth,
                         height = mapHeight * cellHeight,
@@ -577,12 +592,13 @@ class TileRenderer(
             canvas: TileCanvas,
             markers: List<TileGroundLootMarkerModel>,
             mapHeight: Int,
+            mapOffsetX: Float,
             mapOffsetY: Float,
             cellWidth: Float,
             cellHeight: Float,
         ) {
             markers.forEach { marker ->
-                val cellLeft = marker.x * cellWidth
+                val cellLeft = mapOffsetX + marker.x * cellWidth
                 val cellBottom = mapOffsetY + (mapHeight - marker.y - 1) * cellHeight
                 val actorCorner = marker.placement == com.ktome.client.ui.item.GroundLootMarkerPlacement.ACTOR_CORNER
                 val iconSize = if (actorCorner) cellWidth * 0.52f else cellWidth * 0.72f
@@ -619,12 +635,13 @@ class TileRenderer(
             canvas: TileCanvas,
             combatFeedback: List<TileCombatFeedbackModel>,
             mapHeight: Int,
+            mapOffsetX: Float,
             mapOffsetY: Float,
             cellWidth: Float,
             cellHeight: Float,
         ) {
             combatFeedback.forEach { feedback ->
-                val worldX = feedback.x * cellWidth + 4f + feedback.horizontalOffsetCells * (cellWidth + 6f)
+                val worldX = mapOffsetX + feedback.x * cellWidth + 4f + feedback.horizontalOffsetCells * (cellWidth + 6f)
                 val worldY = mapOffsetY + (mapHeight - feedback.y - 1) * cellHeight + cellHeight - 2f + feedback.stackIndex * 15f
                 val backgroundWidth = (feedback.text.length * 11f).coerceAtLeast(28f)
                 canvas.drawRect(worldX - 2f, worldY - 16f, backgroundWidth, 18f, UiDesignTokens.color.surface.baseDim.color())
@@ -638,38 +655,73 @@ class TileRenderer(
             }
         }
 
-        private fun drawSidebar(
+        private fun drawLeftRail(
             canvas: TileCanvas,
-            sidebar: TileSidebarModel,
+            panel: TilePanelModel,
             layout: TileLayoutMetrics,
-            mapHeight: Int,
-            cellHeight: Float,
         ) {
-            val titleY = layout.mapOffsetY + mapHeight * cellHeight - 16f
-            val lineHeight = 32f
-            val maxRows = (((mapHeight * cellHeight) - 56f) / lineHeight).toInt().coerceAtLeast(0)
-            val titleMaxChars = maxCharsForWidth(layout.sidebarWidth - 12f, TileTextStyle.UI)
-            val bodyMaxChars = maxCharsForWidth(layout.sidebarWidth - 40f, TileTextStyle.SMALL)
-            canvas.drawText(
-                TileTextStyle.UI,
-                truncateText(sidebar.title, titleMaxChars),
-                layout.sidebarX,
-                titleY,
-                tone(TileTextTone.GOLD),
+            val bounds = layout.shell.leftRailBounds
+            drawPanelRows(
+                canvas = canvas,
+                panel = panel,
+                x = bounds.x + 12f,
+                topY = bounds.top - 16f,
+                width = bounds.width - 24f,
+                maxRows = ((bounds.height - 54f) / 30f).toInt().coerceAtLeast(0),
             )
-            sidebar.rows.take(maxRows).forEachIndexed { index, row ->
-                val baseline = titleY - 32f - index * lineHeight
-                row.icon?.let { icon ->
-                    canvas.drawAsset(icon, layout.sidebarX, baseline - 18f, 20f, 20f, alpha = if (row.selected) 1f else 0.95f)
-                }
+        }
+
+        private fun drawRightPanel(
+            canvas: TileCanvas,
+            panel: TilePanelModel,
+            layout: TileLayoutMetrics,
+        ) {
+            val bounds = layout.shell.rightPanelBounds
+            drawPanelRows(
+                canvas = canvas,
+                panel = panel,
+                x = bounds.x + 12f,
+                topY = bounds.top - 16f,
+                width = bounds.width - 24f,
+                maxRows = ((bounds.height - 54f) / 28f).toInt().coerceAtLeast(0),
+            )
+        }
+
+        private fun drawPanelRows(
+            canvas: TileCanvas,
+            panel: TilePanelModel,
+            x: Float,
+            topY: Float,
+            width: Float,
+            maxRows: Int,
+        ) {
+            val titleMaxChars = maxCharsForWidth(width, TileTextStyle.UI)
+            val bodyMaxChars = maxCharsForWidth(width, TileTextStyle.SMALL)
+            canvas.drawText(TileTextStyle.UI, truncateText(panel.title, titleMaxChars), x, topY, tone(TileTextTone.GOLD))
+            panel.rows.take(maxRows).forEachIndexed { index, row ->
+                val baseline = topY - 34f - index * 28f
                 canvas.drawText(
                     style = if (row.tone == TileTextTone.GOLD && row.icon == null) TileTextStyle.UI else TileTextStyle.SMALL,
                     text = truncateText(row.text, bodyMaxChars - if (row.icon == null) 0 else 3),
-                    x = layout.sidebarX + if (row.icon == null) 0f else 30f,
+                    x = x + if (row.icon == null) 0f else 28f,
                     y = baseline,
                     color = tone(if (row.selected) TileTextTone.CYAN else row.tone),
                 )
+                row.icon?.let { icon ->
+                    canvas.drawAsset(icon, x, baseline - 18f, 18f, 18f, alpha = if (row.selected) 1f else 0.95f)
+                }
             }
+        }
+
+        private fun drawFooterHints(
+            canvas: TileCanvas,
+            hints: List<TileTextRow>,
+            layout: TileLayoutMetrics,
+        ) {
+            val y = UiDesignTokens.spacing.lg
+            val maxChars = maxCharsForWidth(layout.worldWidth - layout.bottomInset * 2f, TileTextStyle.SMALL)
+            val text = truncateText(hints.joinToString("  ") { hint -> hint.text }, maxChars)
+            canvas.drawText(TileTextStyle.SMALL, text, layout.bottomInset, y, tone(TileTextTone.LIGHT_GRAY))
         }
 
         private fun drawGauge(
@@ -680,22 +732,35 @@ class TileRenderer(
             width: Float,
             height: Float,
         ) {
-            canvas.drawRect(x, y, width, height, UiDesignTokens.color.surface.overlay.color())
-            canvas.drawRect(x + 2f, y + 2f, (width - 4f) * gauge.percent, height - 4f, tone(gauge.tone))
+            canvas.drawRect(x, y, width, height, UiDesignTokens.color.bar.background.color())
+            canvas.drawRect(x + 2f, y + 2f, (width - 4f) * gauge.percent, height - 4f, gaugeFillColor(gauge))
             canvas.drawText(TileTextStyle.SMALL, gauge.summary, x + 6f, y + height - 3f, tone(TileTextTone.WHITE))
         }
+
+        private fun gaugeFillColor(gauge: TileGaugeModel): Color =
+            when (gauge.resourceTypeId) {
+                "HEALTH" -> UiDesignTokens.color.bar.hp.color()
+                "EXPERIENCE" -> UiDesignTokens.color.bar.experience.color()
+                else ->
+                    if (gauge.stableMin != null || gauge.stableMax != null) {
+                        UiDesignTokens.color.bar.secondaryResource.color()
+                    } else {
+                        UiDesignTokens.color.bar.resource.color()
+                    }
+            }
 
         private fun drawCursor(
             canvas: TileCanvas,
             x: Int,
             y: Int,
             mapHeight: Int,
+            mapOffsetX: Float,
             mapOffsetY: Float,
             cellWidth: Float,
             cellHeight: Float,
             color: Color,
         ) {
-            val worldX = x * cellWidth
+            val worldX = mapOffsetX + x * cellWidth
             val worldY = mapOffsetY + (mapHeight - y - 1) * cellHeight
             drawRectOutline(canvas, worldX, worldY, cellWidth, cellHeight, 2f, color)
         }
@@ -704,6 +769,7 @@ class TileRenderer(
             canvas: TileCanvas,
             placement: TileVisualPlacement,
             mapHeight: Int,
+            mapOffsetX: Float,
             mapOffsetY: Float,
             cellWidth: Float,
             cellHeight: Float,
@@ -711,7 +777,7 @@ class TileRenderer(
             val footprint = footprintDimensions(placement.asset.entry.footprint)
             val width = cellWidth * footprint.first
             val height = cellHeight * footprint.second
-            val anchorX = placement.x * cellWidth + cellWidth * placement.asset.entry.pivotX.toFloat()
+            val anchorX = mapOffsetX + placement.x * cellWidth + cellWidth * placement.asset.entry.pivotX.toFloat()
             val cellBottom = mapOffsetY + (mapHeight - placement.y - 1) * cellHeight
             val anchorY = cellBottom + cellHeight * placement.asset.entry.pivotY.toFloat()
             val drawX = anchorX - width * placement.asset.entry.pivotX.toFloat()
@@ -723,12 +789,13 @@ class TileRenderer(
             canvas: TileCanvas,
             fogTiles: List<TileFogPlacement>,
             mapHeight: Int,
+            mapOffsetX: Float,
             mapOffsetY: Float,
             cellWidth: Float,
             cellHeight: Float,
         ) {
             fogTiles.forEach { fog ->
-                val worldX = fog.x * cellWidth
+                val worldX = mapOffsetX + fog.x * cellWidth
                 val worldY = mapOffsetY + (mapHeight - fog.y - 1) * cellHeight
                 canvas.drawRect(worldX, worldY, cellWidth, cellHeight, color("05070A", fog.alpha))
             }

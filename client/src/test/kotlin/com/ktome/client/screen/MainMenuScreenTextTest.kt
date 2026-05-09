@@ -1,5 +1,8 @@
 package com.ktome.client.screen
 
+import com.ktome.client.ui.creation.PLAYER_CREATION_ACTION_MAX_CHARS
+import com.ktome.client.ui.creation.PLAYER_CREATION_SECTION_MAX_CHARS
+import com.ktome.client.ui.creation.PlayerCreationPanel
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -71,6 +74,15 @@ class MainMenuScreenTextTest {
         val minimumMenuWidth = 960f
 
         assertTrue(minimumMenuWidth - MAIN_MENU_BUILD_SUMMARY_X >= 380f)
+    }
+
+    @Test
+    fun `player creation copy is constrained to fixed dark layout slots`() {
+        val longProfession = "Class: Chronomantic Cartographer Of The Ninth Archive"
+        val longAction = "Continue Game With A Very Long Corrupted Save Detail"
+
+        assertTrue(PlayerCreationPanel.fitText(longProfession, PLAYER_CREATION_SECTION_MAX_CHARS).length <= PLAYER_CREATION_SECTION_MAX_CHARS)
+        assertTrue(PlayerCreationPanel.fitText(longAction, PLAYER_CREATION_ACTION_MAX_CHARS).length <= PLAYER_CREATION_ACTION_MAX_CHARS)
     }
 
     @Test

@@ -23,11 +23,11 @@ import com.ktome.game.i18n.Localizer
 
 internal const val menuWidth = 960f
 internal const val menuHeight = 540f
-internal const val MAIN_MENU_TEXT_X = 120f
-internal const val MAIN_MENU_TITLE_Y = 420f
-internal const val MAIN_MENU_SUBTITLE_Y = 392f
-internal const val MAIN_MENU_PANEL_TOP_Y = 352f
-internal const val MAIN_MENU_BUILD_SUMMARY_X = MAIN_MENU_TEXT_X + 455f
+internal const val MAIN_MENU_TEXT_X = 80f
+internal const val MAIN_MENU_TITLE_Y = 472f
+internal const val MAIN_MENU_SUBTITLE_Y = 438f
+internal const val MAIN_MENU_PANEL_TOP_Y = 370f
+internal const val MAIN_MENU_BUILD_SUMMARY_X = 438f
 internal const val MAIN_MENU_FOOTER_LINE_HEIGHT = 24f
 internal const val MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y = 132f
 internal const val MAIN_MENU_CLASS_ENTRY_STEP_Y = 32f
@@ -35,9 +35,9 @@ internal const val MAIN_MENU_PLAYER_CREATION_SECTION_BOTTOM_Y = MAIN_MENU_PANEL_
 internal const val MAIN_MENU_HELP_TOP_Y = MAIN_MENU_PANEL_TOP_Y - MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y - 12f
 internal const val MAIN_MENU_HELP_BLOCK_STEP_Y = MAIN_MENU_FOOTER_LINE_HEIGHT + 4f
 internal const val MAIN_MENU_HELP_MAX_WIDTH = menuWidth - MAIN_MENU_BUILD_SUMMARY_X - 40f
-internal const val MAIN_MENU_FOOTER_LANGUAGE_DEFAULT_Y = 128f
-internal const val MAIN_MENU_FOOTER_CONTROLS_DEFAULT_Y = 80f
-internal const val MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y = 44f
+internal const val MAIN_MENU_FOOTER_LANGUAGE_DEFAULT_Y = 100f
+internal const val MAIN_MENU_FOOTER_CONTROLS_DEFAULT_Y = 72f
+internal const val MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y = 42f
 internal const val MAIN_MENU_ENTRY_TO_FOOTER_CLEARANCE_Y = MAIN_MENU_FOOTER_LINE_HEIGHT + 4f
 internal const val MAIN_MENU_FOOTER_STACK_CLEARANCE_Y = MAIN_MENU_FOOTER_LINE_HEIGHT + 4f
 
@@ -120,6 +120,7 @@ internal class MainMenuScreen(
             .map { option -> option.displayNameKey }
     private val audioRouter: AudioRouter? = app.audioRouterOrNull()
     private var menuNotice: String? = notice
+    private var chrome: StandaloneScreenChrome? = null
 
     override fun show() {
         audioRouter?.onMenuShown()
@@ -175,6 +176,7 @@ internal class MainMenuScreen(
         val batch = requireNotNull(batch)
         val font = requireNotNull(font)
         val text = textSnapshot()
+        val layout = DarkStandaloneScreenLayout.mainMenu()
 
         val surfaceBase = UiDesignTokens.color.surface.base.color()
         ScreenUtils.clear(surfaceBase.r, surfaceBase.g, surfaceBase.b, surfaceBase.a)
@@ -210,6 +212,18 @@ internal class MainMenuScreen(
             )
 
         batch.begin()
+        requireNotNull(chrome).draw(
+            batch,
+            StandaloneChromeRequest(
+                layout = layout,
+                detailAreaMode =
+                    if (text.footerNotice == null) {
+                        StandaloneDetailAreaMode.HIDDEN
+                    } else {
+                        StandaloneDetailAreaMode.VISIBLE
+                    },
+            ),
+        )
         font.color = UiDesignTokens.color.quality.rare.color()
         font.draw(batch, text.title, MAIN_MENU_TEXT_X, MAIN_MENU_TITLE_Y)
         font.color = UiDesignTokens.color.text.secondary.color()
@@ -258,6 +272,8 @@ internal class MainMenuScreen(
     override fun dispose() {
         font?.dispose()
         font = null
+        chrome?.dispose()
+        chrome = null
         batch?.dispose()
         batch = null
     }
@@ -268,6 +284,9 @@ internal class MainMenuScreen(
         }
         if (font == null) {
             font = KtomeFonts.createUiFont(size = 24)
+        }
+        if (chrome == null) {
+            chrome = StandaloneScreenChrome()
         }
     }
 

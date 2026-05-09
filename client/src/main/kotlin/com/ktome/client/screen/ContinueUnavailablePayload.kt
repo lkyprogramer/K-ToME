@@ -16,7 +16,7 @@ internal object ContinueUnavailablePayloadFormatter {
     ): UiErrorPayload {
         val context =
             mutableListOf(
-                "savePath" to unavailable.savePath,
+                "savePath" to redactedSavePath(unavailable.savePath),
                 "reasonCode" to unavailable.reasonCode.name,
                 "gameVersion" to gameVersion,
             )
@@ -38,4 +38,10 @@ internal object ContinueUnavailablePayloadFormatter {
         } else {
             message.take(throwableMessageMaxChars - 3) + "..."
         }
+
+    private fun redactedSavePath(savePath: String): String {
+        val normalized = savePath.replace('\\', '/')
+        val fileName = normalized.substringAfterLast('/').ifBlank { "save" }
+        return "<local-save-dir>/$fileName"
+    }
 }

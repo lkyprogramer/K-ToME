@@ -8,6 +8,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 0 | [PR-00 Style And Pipeline Contract](dark-uiux-pr00-style-and-pipeline-contract.md) | P0 | M | 冻结风格合同、sheet schema、prompt/切分/验收流程 | 不生成正式资源 |
 | 1 | [PR-01 Client Shell Layout](dark-uiux-pr01-client-shell-layout.md) | P0 | L | 首页/主菜单、验证入口、三栏 + 底部 HUD 框架、token、renderer 拆分 | 不生成正式资源 |
+| 1.1 | [PR-01-1 Client Viewport Renderer Overlay](dark-uiux-pr01-1-client-viewport-renderer-overlay.md) | P0 | XL | 玩家居中地图视口、TileRenderer orchestration 化、tooltip/modal overlay layer | 不生成正式资源 |
 | 2 | [PR-02 UI Chrome Sprite Pilot](dark-uiux-pr02-ui-chrome-sprite-pilot.md) | P0 | L | 跑通 UI chrome/HUD/standalone screen chrome 第一批 sheet 到 manifest/golden | Round 1 |
 | 3 | [PR-03 Equipment Inventory Items](dark-uiux-pr03-equipment-inventory-items.md) | P0 | L | 装备/背包 grid、item icon、铭文商店、quality、空态/tooltip | Round 7 部分 |
 | 4 | [PR-04 Profession Tree UI](dark-uiux-pr04-profession-tree-ui.md) | P0 | M | 职业树 dark UI、节点状态、预览、主动槽 modal | 默认复用现有资源 |
@@ -17,10 +18,10 @@
 
 ## 依赖规则
 
-1. 串行推进：`PR-00 -> PR-01 -> PR-02 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
+1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
 2. 每个 PR 必须先读 [UI/PLAN.md](../PLAN.md)、[UI/ART_STYLE_BIBLE.md](../ART_STYLE_BIBLE.md) 和本 PR 文档。
 3. 每个 PR 完成后必须做一次 doc-vs-implementation self-audit。
-4. 每个 PR 的 golden label 使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。
+4. 每个 PR 的 golden label 使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1` 是合法细分特例，必须使用 `dark-uiux-pr01-1-*`，不得复用 `dark-uiux-pr01-*`；如替换 PR-01 等价截图，只能在 manual record 中说明映射关系。
 5. 新增图片、manifest、sheet plan、contact sheet 或 runtime PNG 的 PR 必须补跑 `assetLint styleLint manifestLint`。
 6. 新增或改中文 UI 文案、locale token、presentation token 的 PR 必须补跑 `localeLint contractLint`。
 7. 修改 Kotlin 文件数 `>= 5`、新增 public presentation model、或重排 renderer 共享组件的 PR 必须补跑 `maintainabilityLint`。
@@ -41,11 +42,11 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 
 ## 全量 UI 面覆盖入口
 
-全量界面覆盖清单固定为 [screen-coverage-matrix.md](./screen-coverage-matrix.md)。它把首页/主菜单、角色创建、继续游戏异常、验证模式 setup 与 overlay、局内 shell、loading/error、独立错误页、胜利/失败结算、装备背包、铭文商店、职业树、技能/状态/任务、战斗选择、Look/Inspect、世界路线、属性分配、reward/frontstage、地图资源、设置/无障碍、ASCII fallback 和 desktop title 全部映射到 owner PR 与证据。
+全量界面覆盖清单固定为 [screen-coverage-matrix.md](./screen-coverage-matrix.md)。它把首页/主菜单、角色创建、继续游戏异常、验证模式 setup 与 overlay、局内 shell、loading/error、独立错误页、胜利/失败结算、装备背包、铭文商店、职业树、技能/状态/任务、战斗选择、Look/Inspect、世界路线、属性分配、reward/frontstage、地图资源、设置/无障碍和 desktop title 全部映射到 owner PR 与证据。
 
 执行规则：
 
-1. PR-01 必须先覆盖首页、验证入口、standalone screen token、局内 shell 和 ASCII fallback 边界。
+1. PR-01 必须先覆盖首页、验证入口、standalone screen token 和局内 shell；client ASCII fallback 不再作为验收面。
 2. PR-02 必须让首页、验证 setup、结算页、错误页和 modal 可消费统一 chrome/control key。
 3. PR-03 必须把铭文商店、buy/sell、满槽替换 modal 和 shop disabled reason 纳入装备/背包同一 UX family。
 4. PR-07 必须输出 `dark-uiux-pr07-final-all-screens` evidence index，逐项引用矩阵中每个 Required/Conditional 面的 golden、manual record、focused test 和 packaged app evidence。
@@ -101,6 +102,14 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | PR-06 | skill / talent / status / mutation / quest / profession / tree / fallback | Round 8-9、PR-03/05 rejected cell、allowed fallback/exclusion |
 
 职业覆盖使用 `releasePlayable=[vanguard, arcanist, rogue, templar]`、`devPlayable=[berserker, spellblade]`、`excludedFrozen=[shadowblade, warden]`。PR-06 必须把 frozen 排除写入 coverage artifact，不能把它们显示成 missing。
+
+## Visual Manifest Field Policy
+
+canonical、runtime、example 与 content-pack visual manifest 必须使用同一套严格字段合同。`VisualManifestEntry` 的玩家表现字段只允许承载资源定位、分类、footprint、pivot、tags 和可选 `tintColorHex`；不得在任何新提交的 manifest 里重新引入 client ASCII fallback 所需的 `asciiGlyph`、`asciiColorHex` 或等价字段。
+
+`tintColorHex` 只用于同一基础视觉资源的表现层 tint metadata，例如 boss variant / actor variant 的色调差异；格式必须为 `#RRGGBB`。它不能表达规则状态、locale 文案、资源路径 fallback 或 terrain/item 通用颜色系统；需要新图时仍必须走 key registry、sheet plan、canonical manifest、runtime manifest 和 resolver/test 闭环。
+
+`manifestLint`、runtime loader strict decoding、content-pack fixture 和 sample pack 必须把未知字段当作错误处理。发现 canonical / runtime / fixture / sample-pack manifest 中存在 `asciiGlyph` / `asciiColorHex` 时，正确修复是删除字段并补 Tile visual key 或 `tintColorHex`，不是恢复旧 ASCII renderer。runtime loader 只允许对 manifest v1 输入做 decode-only legacy strip：在 strict model decode 前剥离这两个历史字段，其他未知字段仍 fail fast，manifest v2+ 不继承该例外。
 
 ## Key Registry Contract
 

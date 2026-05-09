@@ -15,7 +15,7 @@
 | requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
 | --- | --- | --- | --- | --- | --- | --- |
 | `UI04-M01` | §2 硬依赖合同 | `client` | `TalentSidebarPresenterTest`, `InputHandlerTest` | `contractLint` | `build/reports/tests/` | `N/A` |
-| `UI04-M02` | §5 职业树 UI 改造范围 | `client` | `AsciiRenderModelTest`, `TileRendererCanvasTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
+| `UI04-M02` | §5 职业树 UI 改造范围 | `client` | `TileRendererCanvasTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/` | `required` |
 | `UI04-M03` | §7 验证 / phase4-v4-pr01 scenario | `client` / `docs` | validation scenario bootstrap tests | `preparePhase4V4Whitebox` when whitebox is required | `UI/manual-records/` | `required` |
 | `UI04-M04` | §9 回滚边界 | `docs` / `tools` | `acceptanceContractLint` | `maintainabilityLint`, `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
 
@@ -98,7 +98,7 @@ rg -n "TalentSidebarPresenter|TalentTreeNodeSnapshot|ACTIVE_TALENT_SLOT_CHOICE" 
 ```bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
-./gradlew :client:test --tests com.ktome.client.ui.talent.TalentSidebarPresenterTest --tests com.ktome.client.input.InputHandlerTest --tests com.ktome.client.render.AsciiRenderModelTest --tests com.ktome.client.render.TileRendererCanvasTest assetLint :client:clientSmoke :client:goldenScreenshot localeLint contractLint maintainabilityLint verifyChanged
+./gradlew :client:test --tests com.ktome.client.ui.talent.TalentSidebarPresenterTest --tests com.ktome.client.input.InputHandlerTest --tests com.ktome.client.render.TileRendererCanvasTest assetLint :client:clientSmoke :client:goldenScreenshot localeLint contractLint maintainabilityLint verifyChanged
 ```
 
 白盒准备：

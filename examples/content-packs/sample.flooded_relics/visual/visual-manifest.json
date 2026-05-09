@@ -10,9 +10,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["content-pack", "sample", "zone", "secret"],
-      "asciiGlyph": "~",
-      "asciiColorHex": "#5B8FAF"
+      "tags": [
+        "content-pack",
+        "sample",
+        "zone",
+        "secret"
+      ]
     },
     {
       "key": "sample_flooded_relics.zone.flooded_reliquary.icon",
@@ -21,9 +24,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["content-pack", "sample", "zone", "icon"],
-      "asciiGlyph": "~",
-      "asciiColorHex": "#79BEDC"
+      "tags": [
+        "content-pack",
+        "sample",
+        "zone",
+        "icon"
+      ]
     },
     {
       "key": "sample_flooded_relics.prop.reliquary_node.visual",
@@ -32,9 +38,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.16,
-      "tags": ["content-pack", "sample", "prop", "reward"],
-      "asciiGlyph": "*",
-      "asciiColorHex": "#A6E2F3"
+      "tags": [
+        "content-pack",
+        "sample",
+        "prop",
+        "reward"
+      ]
     },
     {
       "key": "sample_flooded_relics.prop.return_bridge.visual",
@@ -43,9 +52,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.18,
-      "tags": ["content-pack", "sample", "prop", "return"],
-      "asciiGlyph": "=",
-      "asciiColorHex": "#88AFC6"
+      "tags": [
+        "content-pack",
+        "sample",
+        "prop",
+        "return"
+      ]
     },
     {
       "key": "sample_flooded_relics.item.floodtide_lantern.visual",
@@ -54,9 +66,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.12,
-      "tags": ["content-pack", "sample", "item", "unique"],
-      "asciiGlyph": "]",
-      "asciiColorHex": "#7FAFBD"
+      "tags": [
+        "content-pack",
+        "sample",
+        "item",
+        "unique"
+      ]
     },
     {
       "key": "sample_flooded_relics.item.floodtide_lantern.icon",
@@ -65,9 +80,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["content-pack", "sample", "item", "icon"],
-      "asciiGlyph": "]",
-      "asciiColorHex": "#7FAFBD"
+      "tags": [
+        "content-pack",
+        "sample",
+        "item",
+        "icon"
+      ]
     },
     {
       "key": "sample_flooded_relics.item.tideglass_echo.visual",
@@ -76,9 +94,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.12,
-      "tags": ["content-pack", "sample", "item", "artifact"],
-      "asciiGlyph": ")",
-      "asciiColorHex": "#5FA8D2"
+      "tags": [
+        "content-pack",
+        "sample",
+        "item",
+        "artifact"
+      ]
     },
     {
       "key": "sample_flooded_relics.item.tideglass_echo.icon",
@@ -87,9 +108,12 @@
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["content-pack", "sample", "item", "icon"],
-      "asciiGlyph": ")",
-      "asciiColorHex": "#5FA8D2"
+      "tags": [
+        "content-pack",
+        "sample",
+        "item",
+        "icon"
+      ]
     }
   ],
   "prefixRules": []

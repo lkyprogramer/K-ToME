@@ -3,7 +3,6 @@ package com.ktome.client.screen
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx.ScreenAdapter
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
@@ -12,6 +11,7 @@ import com.ktome.client.GameApp
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.game.OutcomeSummary
 
 class GameOverScreen(
@@ -24,6 +24,7 @@ class GameOverScreen(
         get() = OutcomeSummaryPresenter.bodyLines(app, summary, isVictory = false)
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
+    private var chrome: StandaloneScreenChrome? = null
     private val viewport = FitViewport(menuWidth, menuHeight)
 
     override fun show() {
@@ -46,22 +47,23 @@ class GameOverScreen(
         ensureResources()
         val batch = requireNotNull(batch)
         val font = requireNotNull(font)
+        val layout = DarkStandaloneScreenLayout.outcome()
 
-        ScreenUtils.clear(0.08f, 0.02f, 0.02f, 1f)
+        val surfaceBase = UiDesignTokens.color.surface.base.color()
+        ScreenUtils.clear(surfaceBase.r, surfaceBase.g, surfaceBase.b, surfaceBase.a)
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
 
         batch.begin()
-        font.color = Color.SCARLET
-        font.draw(batch, app.text("ui.game_over.title"), 120f, 470f)
-        font.color = Color.WHITE
-        var y = 418f
-        bodyLines.forEach { line ->
-            font.draw(batch, line, 120f, y)
-            y -= 26f
+        requireNotNull(chrome).draw(batch, StandaloneChromeRequest(layout = layout, detailAreaMode = StandaloneDetailAreaMode.HIDDEN))
+        font.color = UiDesignTokens.color.telegraph.high.color()
+        font.draw(batch, app.text("ui.game_over.title"), layout.header.x, layout.header.top - 22f)
+        font.color = UiDesignTokens.color.text.primary.color()
+        bodyLines.zip(DarkStandaloneScreenLayout.outcomeBodyLineBaselines(bodyLines.size)).forEach { (line, y) ->
+            font.draw(batch, DarkStandaloneScreenLayout.truncate(line, 80), layout.primaryActionStack.x, y)
         }
-        font.color = Color.LIGHT_GRAY
-        font.draw(batch, app.text("ui.screen.return_to_menu"), 120f, 40f)
+        font.color = UiDesignTokens.color.text.disabled.color()
+        font.draw(batch, app.text("ui.screen.return_to_menu"), layout.footerHelp.x, MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y)
         batch.end()
     }
 
@@ -74,6 +76,8 @@ class GameOverScreen(
     override fun dispose() {
         font?.dispose()
         font = null
+        chrome?.dispose()
+        chrome = null
         batch?.dispose()
         batch = null
     }
@@ -84,6 +88,9 @@ class GameOverScreen(
         }
         if (font == null) {
             font = KtomeFonts.createUiFont(size = 20)
+        }
+        if (chrome == null) {
+            chrome = StandaloneScreenChrome()
         }
     }
 }

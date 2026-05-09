@@ -15,9 +15,7 @@
         "followup",
         "monster",
         "abyssal"
-      ],
-      "asciiGlyph": "h",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.abyssal.eclipsed_seraph",
@@ -31,9 +29,7 @@
         "followup",
         "monster",
         "abyssal"
-      ],
-      "asciiGlyph": "E",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.abyssal.guardian",
@@ -47,9 +43,7 @@
         "followup",
         "monster",
         "abyssal"
-      ],
-      "asciiGlyph": "A",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.abyssal.null_lancer",
@@ -63,9 +57,7 @@
         "followup",
         "monster",
         "abyssal"
-      ],
-      "asciiGlyph": "n",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.abyssal.reliquary_guard",
@@ -79,9 +71,7 @@
         "followup",
         "monster",
         "abyssal"
-      ],
-      "asciiGlyph": "G",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.abyssal.ritual_binder",
@@ -95,9 +85,7 @@
         "followup",
         "monster",
         "abyssal"
-      ],
-      "asciiGlyph": "r",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.abyssal.void_preacher",
@@ -111,9 +99,7 @@
         "followup",
         "monster",
         "abyssal"
-      ],
-      "asciiGlyph": "p",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.abyssal.ward_breaker",
@@ -127,9 +113,7 @@
         "followup",
         "monster",
         "abyssal"
-      ],
-      "asciiGlyph": "w",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.arcanist",
@@ -142,9 +126,7 @@
         "phase2",
         "profession",
         "arcanist"
-      ],
-      "asciiGlyph": "@",
-      "asciiColorHex": "#FFD700"
+      ]
     },
     {
       "key": "actor.bandit.archer",
@@ -158,9 +140,7 @@
         "p2-b",
         "monster",
         "bandit"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.bandit.banner_guard",
@@ -174,9 +154,7 @@
         "followup",
         "monster",
         "bandit"
-      ],
-      "asciiGlyph": "g",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.bandit.cache_overseer",
@@ -190,9 +168,7 @@
         "followup",
         "monster",
         "bandit"
-      ],
-      "asciiGlyph": "O",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.bandit.captain",
@@ -206,9 +182,7 @@
         "p2-b",
         "boss",
         "bandit"
-      ],
-      "asciiGlyph": "B",
-      "asciiColorHex": "#FF5555"
+      ]
     },
     {
       "key": "actor.bandit.cutthroat",
@@ -222,9 +196,7 @@
         "followup",
         "monster",
         "bandit"
-      ],
-      "asciiGlyph": "c",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.bandit.pillager",
@@ -238,9 +210,7 @@
         "followup",
         "monster",
         "bandit"
-      ],
-      "asciiGlyph": "p",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.bandit.raider",
@@ -254,9 +224,7 @@
         "p2-b",
         "monster",
         "bandit"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.bandit.sentry",
@@ -268,9 +236,7 @@
       "tags": [
         "phase2",
         "monster"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.bandit.slingshotter",
@@ -284,9 +250,7 @@
         "followup",
         "monster",
         "bandit"
-      ],
-      "asciiGlyph": "s",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.beast.rat",
@@ -298,9 +262,7 @@
       "tags": [
         "phase2",
         "monster"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.boss.ashgate_warden",
@@ -314,9 +276,7 @@
         "p2-c",
         "boss",
         "ashgate"
-      ],
-      "asciiGlyph": "B",
-      "asciiColorHex": "#FF5555"
+      ]
     },
     {
       "key": "actor.crystal.beam_savant",
@@ -330,9 +290,7 @@
         "followup",
         "monster",
         "crystal"
-      ],
-      "asciiGlyph": "b",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.crystal.prism_weaver",
@@ -346,9 +304,7 @@
         "followup",
         "monster",
         "crystal"
-      ],
-      "asciiGlyph": "w",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.crystal.resonant_colossus",
@@ -362,9 +318,7 @@
         "followup",
         "monster",
         "crystal"
-      ],
-      "asciiGlyph": "C",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.crystal.seal_keeper",
@@ -378,9 +332,7 @@
         "followup",
         "monster",
         "crystal"
-      ],
-      "asciiGlyph": "k",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.crystal.shardling",
@@ -394,9 +346,7 @@
         "followup",
         "monster",
         "crystal"
-      ],
-      "asciiGlyph": "x",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.cultist.dungeon_lord",
@@ -410,9 +360,7 @@
         "p2-c",
         "boss",
         "cultist"
-      ],
-      "asciiGlyph": "B",
-      "asciiColorHex": "#FF5555"
+      ]
     },
     {
       "key": "actor.cultist.shadow_priest",
@@ -426,9 +374,7 @@
         "p2-c",
         "monster",
         "cultist"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.forge.anvil_guard",
@@ -442,9 +388,7 @@
         "followup",
         "monster",
         "forge"
-      ],
-      "asciiGlyph": "g",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.forge.chain_overseer",
@@ -458,9 +402,7 @@
         "followup",
         "monster",
         "forge"
-      ],
-      "asciiGlyph": "o",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.forge.crucible_knight",
@@ -474,9 +416,7 @@
         "followup",
         "monster",
         "forge"
-      ],
-      "asciiGlyph": "K",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.forge.heat_channeler",
@@ -490,9 +430,7 @@
         "followup",
         "monster",
         "forge"
-      ],
-      "asciiGlyph": "h",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.forge.slag_tender",
@@ -506,9 +444,7 @@
         "followup",
         "monster",
         "forge"
-      ],
-      "asciiGlyph": "s",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.orc.miner",
@@ -522,9 +458,7 @@
         "p2-c",
         "monster",
         "orc"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.orc.molten_giant",
@@ -538,9 +472,7 @@
         "followup",
         "monster",
         "orc"
-      ],
-      "asciiGlyph": "B",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.orc.raider",
@@ -552,9 +484,7 @@
       "tags": [
         "phase2",
         "monster"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.player",
@@ -566,9 +496,7 @@
       "tags": [
         "phase2",
         "player"
-      ],
-      "asciiGlyph": "@",
-      "asciiColorHex": "#FFD700"
+      ]
     },
     {
       "key": "actor.river.current_reaver",
@@ -582,9 +510,7 @@
         "followup",
         "monster",
         "river"
-      ],
-      "asciiGlyph": "R",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.river.drowned_stalker",
@@ -598,9 +524,7 @@
         "followup",
         "monster",
         "river"
-      ],
-      "asciiGlyph": "d",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.river.ferry_raider",
@@ -614,9 +538,7 @@
         "followup",
         "monster",
         "river"
-      ],
-      "asciiGlyph": "f",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.river.hook_lurker",
@@ -630,9 +552,7 @@
         "followup",
         "monster",
         "river"
-      ],
-      "asciiGlyph": "h",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.river.silt_shaman",
@@ -646,9 +566,7 @@
         "followup",
         "monster",
         "river"
-      ],
-      "asciiGlyph": "S",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.river.tide_mender",
@@ -662,9 +580,7 @@
         "followup",
         "monster",
         "river"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.river.undertow_brute",
@@ -678,9 +594,7 @@
         "followup",
         "monster",
         "river"
-      ],
-      "asciiGlyph": "u",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.rogue",
@@ -693,9 +607,7 @@
         "phase2",
         "profession",
         "rogue"
-      ],
-      "asciiGlyph": "@",
-      "asciiColorHex": "#FFD700"
+      ]
     },
     {
       "key": "actor.templar",
@@ -708,9 +620,7 @@
         "phase2",
         "profession",
         "templar"
-      ],
-      "asciiGlyph": "@",
-      "asciiColorHex": "#FFD700"
+      ]
     },
     {
       "key": "actor.undead.bone_archer",
@@ -722,9 +632,7 @@
       "tags": [
         "phase2",
         "monster"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.undead.restless_skeleton",
@@ -738,9 +646,7 @@
         "p2-b",
         "monster",
         "undead"
-      ],
-      "asciiGlyph": "m",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.unknown",
@@ -752,9 +658,7 @@
       "tags": [
         "fallback",
         "phase2"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.vanguard",
@@ -767,9 +671,7 @@
         "phase2",
         "profession",
         "vanguard"
-      ],
-      "asciiGlyph": "@",
-      "asciiColorHex": "#FFD700"
+      ]
     },
     {
       "key": "actor.warded_ruin.cleanse_adept",
@@ -783,9 +685,7 @@
         "followup",
         "monster",
         "warded_ruin"
-      ],
-      "asciiGlyph": "a",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.warded_ruin.relic_guard",
@@ -799,9 +699,7 @@
         "followup",
         "monster",
         "warded_ruin"
-      ],
-      "asciiGlyph": "r",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.warded_ruin.shard_archivist",
@@ -815,9 +713,7 @@
         "followup",
         "monster",
         "warded_ruin"
-      ],
-      "asciiGlyph": "A",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.warded_ruin.vault_watcher",
@@ -831,9 +727,7 @@
         "followup",
         "monster",
         "warded_ruin"
-      ],
-      "asciiGlyph": "V",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "actor.warded_ruin.ward_lancer",
@@ -847,9 +741,7 @@
         "followup",
         "monster",
         "warded_ruin"
-      ],
-      "asciiGlyph": "L",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "affix.anchored.icon",
@@ -1480,9 +1372,7 @@
         "followup",
         "boss",
         "abyssal"
-      ],
-      "asciiGlyph": "A",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "boss.cultist.dungeon_lord.icon",
@@ -1539,9 +1429,7 @@
         "followup",
         "boss",
         "orc"
-      ],
-      "asciiGlyph": "B",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "difficulty.normal.icon",
@@ -1582,9 +1470,7 @@
         "icon",
         "damage-type",
         "cold"
-      ],
-      "asciiGlyph": "C",
-      "asciiColorHex": "#6EC6FF"
+      ]
     },
     {
       "key": "icon.damage_type.fire",
@@ -1599,9 +1485,7 @@
         "icon",
         "damage-type",
         "fire"
-      ],
-      "asciiGlyph": "F",
-      "asciiColorHex": "#FF6B3D"
+      ]
     },
     {
       "key": "icon.damage_type.holy",
@@ -1616,9 +1500,7 @@
         "icon",
         "damage-type",
         "holy"
-      ],
-      "asciiGlyph": "H",
-      "asciiColorHex": "#FFF4B0"
+      ]
     },
     {
       "key": "icon.damage_type.lightning",
@@ -1633,9 +1515,7 @@
         "icon",
         "damage-type",
         "lightning"
-      ],
-      "asciiGlyph": "L",
-      "asciiColorHex": "#FFE066"
+      ]
     },
     {
       "key": "icon.damage_type.physical",
@@ -1650,9 +1530,7 @@
         "icon",
         "damage-type",
         "physical"
-      ],
-      "asciiGlyph": "P",
-      "asciiColorHex": "#C0C0C0"
+      ]
     },
     {
       "key": "icon.damage_type.shadow",
@@ -1667,9 +1545,7 @@
         "icon",
         "damage-type",
         "shadow"
-      ],
-      "asciiGlyph": "S",
-      "asciiColorHex": "#7E57C2"
+      ]
     },
     {
       "key": "icon.item.mana_potion",
@@ -2341,9 +2217,7 @@
         "pr06",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "B",
-      "asciiColorHex": "#D4A373"
+      ]
     },
     {
       "key": "icon.mutation.corrosion_cloud",
@@ -2358,9 +2232,7 @@
         "pr02",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "C",
-      "asciiColorHex": "#7E9A52"
+      ]
     },
     {
       "key": "icon.mutation.dread_aura",
@@ -2374,9 +2246,7 @@
         "pr06",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "D",
-      "asciiColorHex": "#8C6FF7"
+      ]
     },
     {
       "key": "icon.mutation.emberblood",
@@ -2390,9 +2260,7 @@
         "pr06",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "E",
-      "asciiColorHex": "#FF6A3D"
+      ]
     },
     {
       "key": "icon.mutation.frostbound",
@@ -2407,9 +2275,7 @@
         "pr02",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "F",
-      "asciiColorHex": "#8FDBFF"
+      ]
     },
     {
       "key": "icon.mutation.hunt_protocol",
@@ -2423,9 +2289,7 @@
         "pr06",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "H",
-      "asciiColorHex": "#88C070"
+      ]
     },
     {
       "key": "icon.mutation.ironhide",
@@ -2440,9 +2304,7 @@
         "pr02",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "I",
-      "asciiColorHex": "#8A939B"
+      ]
     },
     {
       "key": "icon.mutation.phase_runner",
@@ -2457,9 +2319,7 @@
         "pr02",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "P",
-      "asciiColorHex": "#6FA9FF"
+      ]
     },
     {
       "key": "icon.mutation.stonehide",
@@ -2473,9 +2333,7 @@
         "pr06",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "S",
-      "asciiColorHex": "#B7B7B7"
+      ]
     },
     {
       "key": "icon.mutation.tidebound",
@@ -2489,9 +2347,7 @@
         "pr06",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "T",
-      "asciiColorHex": "#59B7FF"
+      ]
     },
     {
       "key": "icon.mutation.void_mirror",
@@ -2506,9 +2362,7 @@
         "pr02",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "V",
-      "asciiColorHex": "#6D7FD6"
+      ]
     },
     {
       "key": "icon.mutation.war_caller",
@@ -2523,9 +2377,7 @@
         "pr02",
         "mutation",
         "icon"
-      ],
-      "asciiGlyph": "W",
-      "asciiColorHex": "#D8894C"
+      ]
     },
     {
       "key": "icon.profession.arcanist",
@@ -5427,9 +5279,7 @@
       "tags": [
         "fallback",
         "phase2"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FF69B4"
+      ]
     },
     {
       "key": "portrait.arcanist",
@@ -5499,9 +5349,7 @@
         "p2-b",
         "ruins",
         "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "prop.armory_gate",
@@ -5515,9 +5363,7 @@
         "p2-b",
         "ruins",
         "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "prop.crystal_resonance_node",
@@ -5531,9 +5377,7 @@
         "followup",
         "crystal",
         "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#F4FDFF"
+      ]
     },
     {
       "key": "prop.heart_ward_focus",
@@ -5547,9 +5391,7 @@
         "followup",
         "abyssal",
         "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#C8B8FF"
+      ]
     },
     {
       "key": "prop.hidden_entrance.return_bridge",
@@ -5563,9 +5405,7 @@
         "pr07",
         "hidden",
         "return"
-      ],
-      "asciiGlyph": "<",
-      "asciiColorHex": "#D7E7FF"
+      ]
     },
     {
       "key": "prop.hidden_entrance.revealed",
@@ -5579,9 +5419,7 @@
         "pr07",
         "hidden",
         "entrance"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#CFE5B6"
+      ]
     },
     {
       "key": "prop.mine_furnace",
@@ -5595,9 +5433,7 @@
         "p2-c",
         "mine",
         "prop"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "prop.ritual_altar",
@@ -5611,9 +5447,7 @@
         "p2-c",
         "shadow-depths",
         "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "prop.river_ferry_anchor",
@@ -5627,9 +5461,7 @@
         "followup",
         "river",
         "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#D7F0FF"
+      ]
     },
     {
       "key": "prop.stairs.down",
@@ -5643,9 +5475,7 @@
         "p2-b",
         "ruins",
         "stairs"
-      ],
-      "asciiGlyph": ">",
-      "asciiColorHex": "#D7E7FF"
+      ]
     },
     {
       "key": "prop.stairs.up",
@@ -5659,9 +5489,7 @@
         "p2-b",
         "ruins",
         "stairs"
-      ],
-      "asciiGlyph": "<",
-      "asciiColorHex": "#D7E7FF"
+      ]
     },
     {
       "key": "prop.supply_crate",
@@ -5675,9 +5503,7 @@
         "p2-b",
         "ruins",
         "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "prop.temple_ward_reliquary",
@@ -5691,9 +5517,7 @@
         "followup",
         "abyssal",
         "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#E7E0C1"
+      ]
     },
     {
       "key": "talent.arcanist.arcane_shield.icon",
@@ -7084,9 +6908,7 @@
       "tags": [
         "fallback",
         "phase2"
-      ],
-      "asciiGlyph": " ",
-      "asciiColorHex": "#000000"
+      ]
     },
     {
       "key": "tileset.forest_edge.ground_01",
@@ -7100,9 +6922,7 @@
         "p2-c",
         "forest",
         "tile_ground"
-      ],
-      "asciiGlyph": ".",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "tileset.forest_edge.wall_01",
@@ -7116,37 +6936,7 @@
         "p2-c",
         "forest",
         "tile_wall"
-      ],
-      "asciiGlyph": "#",
-      "asciiColorHex": "#D3D3D3"
-    },
-    {
-      "key": "tileset.foundation.ascii.floor",
-      "category": "tile_ground",
-      "rawOutputPath": "debug/tileset_foundation_ascii_floor.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase2",
-        "ascii"
-      ],
-      "asciiGlyph": ".",
-      "asciiColorHex": "#FFFFFF"
-    },
-    {
-      "key": "tileset.foundation.ascii.wall",
-      "category": "tile_wall",
-      "rawOutputPath": "debug/tileset_foundation_ascii_wall.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase2",
-        "ascii"
-      ],
-      "asciiGlyph": "#",
-      "asciiColorHex": "#D3D3D3"
+      ]
     },
     {
       "key": "tileset.mine.ground_01",
@@ -7160,9 +6950,7 @@
         "p2-c",
         "mine",
         "tile_ground"
-      ],
-      "asciiGlyph": ".",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "tileset.mine.wall_01",
@@ -7176,9 +6964,7 @@
         "p2-c",
         "mine",
         "tile_wall"
-      ],
-      "asciiGlyph": "#",
-      "asciiColorHex": "#D3D3D3"
+      ]
     },
     {
       "key": "tileset.ruins.ground_01",
@@ -7192,9 +6978,7 @@
         "p2-b",
         "ruins",
         "tile_ground"
-      ],
-      "asciiGlyph": ".",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "tileset.ruins.wall_01",
@@ -7208,9 +6992,7 @@
         "p2-b",
         "ruins",
         "tile_wall"
-      ],
-      "asciiGlyph": "#",
-      "asciiColorHex": "#D3D3D3"
+      ]
     },
     {
       "key": "tileset.shadow_depths.ground_01",
@@ -7224,9 +7006,7 @@
         "p2-c",
         "shadow-depths",
         "tile_ground"
-      ],
-      "asciiGlyph": ".",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "tileset.shadow_depths.wall_01",
@@ -7240,9 +7020,7 @@
         "p2-c",
         "shadow-depths",
         "tile_wall"
-      ],
-      "asciiGlyph": "#",
-      "asciiColorHex": "#D3D3D3"
+      ]
     },
     {
       "key": "tree.arcanist_arcane",
@@ -7426,9 +7204,7 @@
         "ui",
         "reward",
         "card"
-      ],
-      "asciiGlyph": "*",
-      "asciiColorHex": "#F6C445"
+      ]
     },
     {
       "key": "ui.card.shop.header.icon",
@@ -7444,9 +7220,7 @@
         "ui",
         "shop",
         "card"
-      ],
-      "asciiGlyph": "$",
-      "asciiColorHex": "#F6C445"
+      ]
     },
     {
       "key": "ui.empty.inspect.icon",
@@ -7462,9 +7236,7 @@
         "ui",
         "empty_state",
         "inspect"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#8FD3FF"
+      ]
     },
     {
       "key": "ui.empty.inventory.icon",
@@ -7480,9 +7252,7 @@
         "ui",
         "empty_state",
         "inventory"
-      ],
-      "asciiGlyph": "I",
-      "asciiColorHex": "#F6C445"
+      ]
     },
     {
       "key": "ui.empty.shop.icon",
@@ -7498,9 +7268,7 @@
         "ui",
         "empty_state",
         "shop"
-      ],
-      "asciiGlyph": "$",
-      "asciiColorHex": "#C9A15D"
+      ]
     },
     {
       "key": "vfx.boss.variant.abyssal_eclipse",
@@ -7515,8 +7283,7 @@
         "boss",
         "variant"
       ],
-      "asciiGlyph": "A",
-      "asciiColorHex": "#6AD0C4"
+      "tintColorHex": "#6AD0C4"
     },
     {
       "key": "vfx.boss.variant.grey_crown",
@@ -7531,8 +7298,7 @@
         "boss",
         "variant"
       ],
-      "asciiGlyph": "G",
-      "asciiColorHex": "#9BB4D4"
+      "tintColorHex": "#9BB4D4"
     },
     {
       "key": "vfx.boss.variant.molten_glass",
@@ -7547,8 +7313,7 @@
         "boss",
         "variant"
       ],
-      "asciiGlyph": "M",
-      "asciiColorHex": "#FF7A3C"
+      "tintColorHex": "#FF7A3C"
     },
     {
       "key": "vfx.boss.warning.sigil_01",
@@ -7562,9 +7327,7 @@
         "p2-b",
         "vfx",
         "boss-warning"
-      ],
-      "asciiGlyph": "!",
-      "asciiColorHex": "#FF2400"
+      ]
     },
     {
       "key": "vfx.telegraph.warning.sigil_01",
@@ -7578,9 +7341,7 @@
         "p2-b",
         "vfx",
         "telegraph"
-      ],
-      "asciiGlyph": "!",
-      "asciiColorHex": "#FFA500"
+      ]
     },
     {
       "key": "vfx.terrain.interaction.ice",
@@ -7594,9 +7355,7 @@
         "pr06",
         "terrain",
         "ice"
-      ],
-      "asciiGlyph": "*",
-      "asciiColorHex": "#BFE8FF"
+      ]
     },
     {
       "key": "vfx.terrain.interaction.oil",
@@ -7610,9 +7369,7 @@
         "pr06",
         "terrain",
         "oil"
-      ],
-      "asciiGlyph": "o",
-      "asciiColorHex": "#5F5648"
+      ]
     },
     {
       "key": "vfx.terrain.interaction.oil_burning",
@@ -7626,9 +7383,7 @@
         "pr06",
         "terrain",
         "oil-burning"
-      ],
-      "asciiGlyph": "!",
-      "asciiColorHex": "#FF7A3C"
+      ]
     },
     {
       "key": "vfx.terrain.interaction.water",
@@ -7642,9 +7397,7 @@
         "pr06",
         "terrain",
         "water"
-      ],
-      "asciiGlyph": "~",
-      "asciiColorHex": "#4FB6FF"
+      ]
     },
     {
       "key": "vfx.zone.effect.crystal_shard_01",
@@ -7658,9 +7411,7 @@
         "followup",
         "crystal",
         "zone-effect"
-      ],
-      "asciiGlyph": "^",
-      "asciiColorHex": "#E7FDFF"
+      ]
     },
     {
       "key": "vfx.zone.effect.current_lane_01",
@@ -7674,9 +7425,7 @@
         "followup",
         "river",
         "zone-effect"
-      ],
-      "asciiGlyph": "~",
-      "asciiColorHex": "#8FD9FF"
+      ]
     },
     {
       "key": "vfx.zone.effect.void_pressure_01",
@@ -7690,9 +7439,7 @@
         "followup",
         "abyssal",
         "zone-effect"
-      ],
-      "asciiGlyph": "*",
-      "asciiColorHex": "#7E6B9A"
+      ]
     },
     {
       "key": "vfx.zone.effect.ward_seal_01",
@@ -7706,9 +7453,7 @@
         "p2-b",
         "vfx",
         "zone-effect"
-      ],
-      "asciiGlyph": "*",
-      "asciiColorHex": "#FFF4B0"
+      ]
     },
     {
       "key": "zone.abyssal_heart.icon",
@@ -7820,9 +7565,7 @@
         "p2-c",
         "zone",
         "mine"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "zone.greenwood_fringe.icon",
@@ -7850,9 +7593,7 @@
         "p2-c",
         "zone",
         "forest-edge"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "zone.grey_gate_depths.icon",
@@ -7880,9 +7621,7 @@
         "p2-c",
         "zone",
         "shadow-depths"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "zone.secret.abyssal_temple_warded_archive.icon",
@@ -8096,9 +7835,7 @@
         "p2-c",
         "zone",
         "ruins"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "zone.underground_river.icon",
@@ -8141,9 +7878,7 @@
         "pr05",
         "combat",
         "affordance"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "ui.combat.method.icon",
@@ -8158,9 +7893,7 @@
         "pr05",
         "combat",
         "affordance"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "ui.combat.target.icon",
@@ -8175,9 +7908,7 @@
         "pr05",
         "combat",
         "affordance"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "ui.combat.lock.icon",
@@ -8192,9 +7923,7 @@
         "pr05",
         "combat",
         "affordance"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "ui.combat.invalid.icon",
@@ -8209,9 +7938,7 @@
         "pr05",
         "combat",
         "affordance"
-      ],
-      "asciiGlyph": "?",
-      "asciiColorHex": "#FFFFFF"
+      ]
     },
     {
       "key": "ui.frame.panel.body",
@@ -8226,9 +7953,7 @@
         "dry-run",
         "ui",
         "frame"
-      ],
-      "asciiGlyph": "#",
-      "asciiColorHex": "#2B3542"
+      ]
     },
     {
       "key": "ui.frame.panel.focus",
@@ -8244,9 +7969,7 @@
         "ui",
         "frame",
         "focus"
-      ],
-      "asciiGlyph": "#",
-      "asciiColorHex": "#1CB7C8"
+      ]
     }
   ],
   "prefixRules": [
