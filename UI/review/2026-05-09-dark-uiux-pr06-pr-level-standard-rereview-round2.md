@@ -439,4 +439,3 @@ sdk env
 PR06 比上一轮明显进步：artifact 路径、key family、quest consumer、overlay compact、transient path、final-full mode、talent state badge 都已经写进文档，`acceptanceContractLint` 也通过了。
 
 剩余问题集中在“写了合同但还不能机械执行”：final-full inventory 没有接入 coverage gate，frozen profession exclusion 不能 per-key 输出和校验，PR03/PR05 handoff 仍缺 exact path。修掉这三项后，PR06 才能从“设计草案增强版”变成真正可执行的开发文档。
-
