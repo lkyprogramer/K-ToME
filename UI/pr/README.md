@@ -10,7 +10,7 @@
 | 1 | [PR-01 Client Shell Layout](dark-uiux-pr01-client-shell-layout.md) | P0 | L | 首页/主菜单、验证入口、三栏 + 底部 HUD 框架、token、renderer 拆分 | 不生成正式资源 |
 | 1.1 | [PR-01-1 Client Viewport Renderer Overlay](dark-uiux-pr01-1-client-viewport-renderer-overlay.md) | P0 | XL | 玩家居中地图视口、TileRenderer orchestration 化、tooltip/modal overlay layer | 不生成正式资源 |
 | 2 | [PR-02 UI Chrome Sprite Pilot](dark-uiux-pr02-ui-chrome-sprite-pilot.md) | P0 | L | 跑通 UI chrome/HUD/standalone screen chrome 第一批 sheet 到 manifest/golden | Round 1 |
-| 3 | [PR-03 Equipment Inventory Items](dark-uiux-pr03-equipment-inventory-items.md) | P0 | L | 装备/背包 grid、item icon、铭文商店、quality、空态/tooltip | Round 7 部分 |
+| 3 | [PR-03 Equipment Inventory Items And Shop](dark-uiux-pr03-equipment-inventory-items.md) | P0 | L | 装备/背包 grid、item icon、铭文商店、quality、空态/tooltip | Round 7 部分 |
 | 4 | [PR-04 Profession Tree UI](dark-uiux-pr04-profession-tree-ui.md) | P0 | M | 职业树 dark UI、节点状态、预览、主动槽 modal | 默认复用现有资源 |
 | 5 | [PR-05 Map Actor Portrait Replacement](dark-uiux-pr05-map-actor-portrait-replacement.md) | P1 | XL | Tile、prop、VFX、actor、portrait 统一替换 | Round 2-6 |
 | 6 | [PR-06 Skills Status Quest Full Manifest](dark-uiux-pr06-skills-status-quest-full-manifest.md) | P1 | XL | 技能、状态、任务、fallback、全 manifest 收口 | Round 8-9 + 返修 |
@@ -48,7 +48,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 
 1. PR-01 必须先覆盖首页、验证入口、standalone screen token 和局内 shell；client ASCII fallback 不再作为验收面。
 2. PR-02 必须让首页、验证 setup、结算页、错误页和 modal 可消费统一 chrome/control key。
-3. PR-03 必须把铭文商店、buy/sell、满槽替换 modal 和 shop disabled reason 纳入装备/背包同一 UX family。
+3. PR-03 必须把铭文商店、buy/sell、满槽替换 modal、价格/affordability marker 和购买失败反馈纳入装备/背包同一 UX family；pre-rendered disabled reason 只有在同 PR 新增 typed source 时才是 blocking 状态。
 4. PR-07 必须输出 `dark-uiux-pr07-final-all-screens` evidence index，逐项引用矩阵中每个 Required/Conditional 面的 golden、manual record、focused test 和 packaged app evidence。
 
 ## SheetId Ownership
@@ -61,19 +61,19 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | `r01-ui-chrome` | PR-02 | `ui_frame` | `ui.frame.*`, screen frame alias for `ui.screen.*` |
 | `r01-ui-controls` | PR-02 | `icon` | `ui.control.*`, `ui.combat.*`, `ui.state.*`, `ui.screen.*` marker |
 | `r01-ui-hud-icons` | PR-02 | `icon` | `ui.hud.*` |
-| `r02-tiles-ground` | PR-05 | `tile_ground` | `tile.ground.*` |
-| `r02-tiles-wall` | PR-05 | `tile_wall` | `tile.wall.*` |
-| `r02-tiles-decal` | PR-05 | `tile_decal` | `tile.decal.*` |
-| `r03-props-interactable` | PR-05 | `prop_interactable` | `prop.*`, `interactable.*` |
-| `r03-props-environment` | PR-05 | `prop_environment` | environment props |
-| `r03-vfx-telegraph` | PR-05 | `vfx_plate` | `vfx.*`, `telegraph.*` |
+| `r02-tiles-ground` | PR-05 | `tile_ground` | `tileset.<tilesetId>.ground_01` for `forest_edge`, `mine`, `ruins`, `shadow_depths` |
+| `r02-tiles-wall` | PR-05 | `tile_wall` | `tileset.<tilesetId>.wall_01` for `forest_edge`, `mine`, `ruins`, `shadow_depths` |
+| `r02-tiles-decal` | PR-05 | `tile_decal` | `vfx.terrain.interaction.*`; no new `tile.decal.*` runtime key |
+| `r03-props-interactable` | PR-05 | `prop_interactable` | `prop.*` entries representing stairs, crate, gate, altar, ferry, reliquary or other interactable map props |
+| `r03-props-environment` | PR-05 | `prop_environment` | decorative / environmental `prop.*`, excluding `zone.*.visual` |
+| `r03-vfx-telegraph` | PR-05 | `vfx_plate`, `tile_decal` | `vfx_plate`: `vfx.boss.warning.*`, `vfx.telegraph.warning.*`, `vfx.boss.variant.*`; `tile_decal`: `vfx.zone.effect.*` when kept as `1x1` map decals |
 | `r04-actors-player` | PR-05 | `actor_sprite` | `actor.player`, profession actors |
 | `r04-actors-humanoid` | PR-05 | `actor_sprite` | bandit/orc/cultist/humanoid actors |
 | `r04-actors-monster` | PR-05 | `actor_sprite` | beast/undead/abyssal/crystal/river/forge actors |
-| `r04-actors-boss` | PR-05 | `actor_sprite` | `actor.boss.*` |
-| `r05-bestiary-humanoid-icons` | PR-05 | `icon` | humanoid monster icons |
-| `r05-bestiary-creature-icons` | PR-05 | `icon` | creature monster icons |
-| `r05-boss-icons` | PR-05 | `icon` | boss icons and boss variant icons |
+| `r04-actors-boss` | PR-05 | `actor_sprite` | `actor.boss.*`, `boss.*.visual` |
+| `r05-bestiary-humanoid-icons` | PR-05 | `icon` | humanoid-family `icon.monster.*` |
+| `r05-bestiary-creature-icons` | PR-05 | `icon` | creature-family `icon.monster.*` |
+| `r05-boss-icons` | PR-05 | `icon` | `boss.*.icon` |
 | `r06-portraits-classes` | PR-05 | `portrait` | `portrait.*` class keys |
 | `r06-portraits-trees` | PR-05 | `portrait` | `tree.*` portrait keys |
 | `r06-portraits-zones` | PR-05 | `portrait` | `zone.*.visual`, secret zone visuals |
@@ -84,7 +84,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | `r08-skills-templar-rogue` | PR-06 | `icon_skill` | Templar and Rogue skills/talents |
 | `r08-skills-arcanist-spellblade` | PR-06 | `icon_skill` | Arcanist and Spellblade skills/talents |
 | `r09-status-damage` | PR-06 | `icon_status`, `icon_damage_type` | status, mutation, damage type |
-| `r09-quest-zone-profession` | PR-06 | `icon_quest`, `icon` | `icon.quest.*`, `icon.zone.*`, `icon.profession.*`, `icon.tree.*`, `icon.difficulty.*` |
+| `r09-quest-zone-profession` | PR-06 | `icon_quest`, `icon` | `icon.quest.*`, `zone.*.icon`, `icon.profession.*`, `icon.tree.*`, `difficulty.normal.icon` |
 | `r09-fallback-debug` | PR-06 | `debug`, `icon`, `ui_frame` | missing, hidden, debug, fallback, locked/placeholder |
 | `r09-rejected-polish` | PR-06 | original valid cell category per rejected source | PR-03/05/06 rejected-cell polish |
 
@@ -97,7 +97,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | PR | 目标覆盖范围 | 目标口径 |
 | --- | --- | --- |
 | PR-02 | UI chrome / HUD / controls / standalone screen chrome | Round 1 三张 sheet 的全部非 reserved cell，含首页/验证/结算/error/loading 共享 key |
-| PR-03 | item / equipment / affix / material / shop | `item.*`, item quality/frame, inventory-specific UI key, `ui.shop.*` presentation marker |
+| PR-03 | item / equipment / affix / material / shop | `item.*`, item quality marker, inventory-specific UI key, `ui.shop.price.*`, `ui.shop.inscription.marker`, `ui.shop.replacement.slot_marker`; `ui.shop.offer.frame` alias 到 PR-02 `ui.frame.panel.body`，`ui.shop.offer.disabled` 默认 deferred |
 | PR-05 | tile / prop / VFX / actor / portrait | Round 2-6 全部 player-visible key |
 | PR-06 | skill / talent / status / mutation / quest / profession / tree / fallback | Round 8-9、PR-03/05 rejected cell、allowed fallback/exclusion |
 
@@ -160,7 +160,7 @@ PR-00 的 lint 合同必须让非 reserved cell 缺少 key registry 记录或缺
 
 coverage artifact schema 以 PR-00 文档为权威。README 只要求 common fields：`scopeMode / ownerPr / expectedKeySetSource / strictOldStyleResidue`。
 
-PR-00 的 `verifyChanged` dark route 必须显式调用 `darkManifestCoveragePr00DryRun`。PR-00 fixture 允许 `missing_visual` 用来证明 manifest/resolver/coverage 链路；正式资源 PR 必须用 `owner-scope` 或 `final-full` 逐步替换该 dry-run 口径。
+PR-00 的 `verifyChanged` dark route 必须显式调用 `darkManifestCoveragePr00DryRun`。PR-00 fixture 允许 `missing_visual` 用来证明 manifest/resolver/coverage 链路；PR-02 / PR-03 / PR-05 必须用 `owner-scope` 逐步替换该 dry-run 口径，PR-06 / PR-07 必须用 `final-full` 收口。
 
 HUD 与 item namespace 必须分开：
 
@@ -227,8 +227,8 @@ prompt 文件头必须包含：
 | --- | --- |
 | PR-01 | `dark-uiux-pr01-home-main-menu`、`dark-uiux-pr01-home-new-run`、`dark-uiux-pr01-continue-unavailable`、`dark-uiux-pr01-validation-entry`、`dark-uiux-pr01-shell-1280x800`、`dark-uiux-pr01-shell-min-window`、`UI/manual-records/dark-uiux-pr01-shell.md` |
 | PR-02 | `dark-uiux-pr02-round1-chrome`、`dark-uiux-pr02-hud-icons-pilot`、`dark-uiux-pr02-standalone-screen-chrome`、contact sheet QA、manifest diff |
-| PR-03 | `dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked`、`dark-uiux-pr03-inscription-shop`、`dark-uiux-pr03-shop-full-slot-replace`、fallback key injection record |
-| PR-04 | `dark-uiux-pr04-talent-sidebar-start`、`dark-uiux-pr04-active-slot-choice`、`phase4-v4-pr01` scenario evidence |
+| PR-03 | `dark-uiux-pr03-equipment-slots`、`dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked`、`dark-uiux-pr03-inscription-shop`、`dark-uiux-pr03-shop-full-slot-replace`、`UI/manual-records/dark-uiux-pr03-fallback-key-injection.md` |
+| PR-04 | `dark-uiux-pr04-talent-sidebar-start`、`dark-uiux-pr04-active-slot-choice`、`dark-uiux-pr04-talent-sidebar-min-window-log-visible`、`UI/manual-records/dark-uiux-pr04-profession-tree-ui.md`、`phase4-v4-pr01` scenario evidence |
 | PR-05 | `dark-uiux-pr05-map-layer-stack`、`dark-uiux-pr05-actor-boss-telegraph`、contact sheet QA |
 | PR-06 | `dark-uiux-pr06-status-quest-skill-overview`、`dark-uiux-pr06-talent-icon-rebaseline`、validation overlay coverage reference、manifest coverage artifact |
 | PR-07 | packaged app command, runtime home, evidence dir, manual record, final doc-vs-implementation checklist, `dark-uiux-pr07-final-all-screens` evidence index |
@@ -272,7 +272,7 @@ sdk env
 ./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=<pr00-dry-run|final-full>
 ```
 
-`owner-scope` 必须显式传 `ownerPr`；`pr00-dry-run` 与 `final-full` 不得使用 `ownerPr` 改变分母。
+`owner-scope` 必须显式传 `ownerPr`；`pr00-dry-run` 与 `final-full` 不得使用 `ownerPr` 改变分母。若 PR 文档声明了专属 sprite map report，例如 PR-03 的 `assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl`，`spriteSheetMapLint` 必须显式传对应 `-Pktome.darkUiux.spriteMapReport=...`，不得落回 PR-00 默认报告路径。
 
 PR-00 必须把以下路径纳入 `verifyChanged` impact routing：`UI/sprite-sheets/**`、`assets-src/image/raw/sheets/dark-v1/**`、`assets-src/image/contact-sheets/dark-v1/**`、`client/src/main/resources/dark-v1/**`、`assets-src/image/manifests/phase2-visual-manifest.json`、`client/src/main/resources/manifests/visual-manifest.json`、`assets-src/image/manifests/dark-v1-*.json`、`assets-src/image/manifests/dark-v1-*.jsonl`。
 

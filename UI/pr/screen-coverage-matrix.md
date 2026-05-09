@@ -36,11 +36,11 @@
 | 胜利结算页 | `VictoryScreen`、`OutcomeSummaryPresenter` | 胜利标题、run summary、奖励/历史、返回主菜单、继续流程、中文/英文布局 | PR-01 + PR-07 | `dark-uiux-pr07-outcome-victory`；`OutcomeSummaryPresenterTest`；golden outcome set |
 | 失败结算页 | `GameOverScreen`、`OutcomeSummaryPresenter` | 死因、floor、run summary、重开/返回、失败语气和可读性；不能保留旧红色占位风格 | PR-01 + PR-07 | `dark-uiux-pr07-outcome-defeat`；`OutcomeSummaryPresenterTest`；golden outcome set |
 | 装备面板 | `TileRenderModel` equipment section、`EquipmentSlotLabels` | 装备 slot、已装备/空/选中态、quality frame、tooltip、固定 hitbox | PR-03 + PR-07 | `dark-uiux-pr03-equipment-slots`；`EquipmentInventoryPresenterTest`；`TileRendererCanvasTest` |
-| 背包 grid | inventory snapshot / renderer | 空态、满格、stack count、quality、disabled/unusable、tooltip、scroll/overflow 策略 | PR-03 + PR-07 | `dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked` |
-| 铭文商店 / Shop buy-sell | `UiMode.SHOP`、`ShopPanelSnapshot`、`ShopOfferSnapshot`、`DescriptionPresenter.presentShopItemLines` | shop header、buy/sell 双列、offer card、price/affordability、inscription tag、disabled reason、空商店、tooltip | PR-03 + PR-07 | `dark-uiux-pr03-inscription-shop`；`InputHandlerTest` shop cases；`DescriptionPresenterTest` shop item lines；manual record |
-| 铭文满槽替换 modal | `inscriptionReplacementPrompt`、`ShopFocus`、`PlayerCommand.BuyShopOffer` replacement hotkey | 满槽提示、候选槽位、`1-6`/取消、购买前确认、不会吞金币/碎片、焦点和返回路径 | PR-03 + PR-07 | `dark-uiux-pr03-shop-full-slot-replace`；`InputHandlerTest` replacement prompt cases；manual record |
-| 职业树侧栏 | `TalentSidebarPresenter`、`TalentTreeNodeSnapshot` | 三树、四态、节点连线、预览、locked/learnable/reserve/active、长描述截断 | PR-04 + PR-06 + PR-07 | `dark-uiux-pr04-talent-sidebar-start`、`dark-uiux-pr06-talent-icon-rebaseline` |
-| 主动槽选择 modal | `ACTIVE_TALENT_SLOT_CHOICE`、`InputHandler` | `1-4` 替换、`R` reserve、`Esc` 取消、数字键边界、modal chrome、焦点态 | PR-04 + PR-07 | `dark-uiux-pr04-active-slot-choice`；`InputHandlerTest` |
+| 背包 grid | inventory snapshot / renderer | 空态、满格、quality、tooltip、scroll/overflow 策略；stack count / disabled 只有在 typed snapshot 或 presentation field 存在时才作为 blocking 状态 | PR-03 + PR-07 | `dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked` |
+| 铭文商店 / Shop buy-sell | `UiMode.SHOP`、`ShopPanelSnapshot`、`ShopOfferSnapshot`、`DescriptionPresenter.presentShopItemLines` | shop header、buy/sell 双列、offer card、price/affordability、inscription tag、购买失败/金币不足反馈、空商店、tooltip；pre-rendered disabled reason 仅在 typed source 存在时要求 | PR-03 + PR-07 | `dark-uiux-pr03-inscription-shop`；`InputHandlerTest` shop cases；`DescriptionPresenterTest` shop item lines；manual record |
+| 铭文满槽替换 modal | `inscriptionReplacementPrompt`、`ShopFocus`、`PlayerCommand.BuyShopOffer` replacement hotkey | 满槽提示、候选槽位、`5-8`/取消、购买前确认、不会吞金币/碎片、焦点和返回路径 | PR-03 + PR-07 | `dark-uiux-pr03-shop-full-slot-replace`；`InputHandlerTest` replacement prompt cases；manual record |
+| 职业树侧栏 | `TalentSidebarPresenter`、`TalentTreeNodeSnapshot` | 三树、四态、节点连线、预览、locked/learnable/reserve/active、active slot strip、长描述截断、最小窗口不遮挡最新日志反馈 | PR-04 + PR-06 + PR-07 | `dark-uiux-pr04-talent-sidebar-start`、`dark-uiux-pr04-talent-sidebar-min-window-log-visible`、`dark-uiux-pr06-talent-icon-rebaseline` |
+| 主动槽选择 modal | `ACTIVE_TALENT_SLOT_CHOICE`、`InputHandler` | `1-4` 替换、`R` reserve、`Esc` 取消、数字键边界、modal chrome、焦点态、四槽 replacement strip 与 reserve hint | PR-04 + PR-07 | `dark-uiux-pr04-active-slot-choice`；`InputHandlerTest` |
 | 技能 / 状态 / 任务面板 | status/quest/skill presentation models | skill icon、status icon、duration/stack、quest marker、manifest fallback / missing visual、tooltip/readability | PR-06 + PR-07 | `dark-uiux-pr06-status-quest-skill-overview`；`StatusPresentationModelTest`、`StatusIconResolverTest` |
 | 战斗选择 / 行动提示 | `CombatDecisionPanel`、`ActionHintModel`、frontstage cue | action/method/target、locked/invalid、资源不足、free-cursor targeting、telegraph linkage | PR-02 + PR-05 + PR-06 + PR-07 | combat focused tests；`dark-uiux-pr07-combat-decision` manual/golden |
 | Look / Inspect / Explain pane | inspect/explain presenters、modal card/layout | inspect card、keyword explanation、status/passive lines、tooltip/modal 层级 | PR-01 + PR-06 + PR-07 | `dark-uiux-pr07-look-inspect`；Explain/Description focused tests |
@@ -64,12 +64,14 @@
 | `dark-uiux-pr01-shell-1280x800` | PR-01 | 标准窗口局内 shell |
 | `dark-uiux-pr01-shell-min-window` | PR-01 | 最小窗口局内 shell |
 | `dark-uiux-pr02-standalone-screen-chrome` | PR-02 | 首页、验证 setup、结算、错误页共享 chrome/key 消费 |
+| `dark-uiux-pr03-equipment-slots` | PR-03 | 装备 slot、已装备/空/选中态、quality frame、tooltip、固定 hitbox |
 | `dark-uiux-pr03-inventory-empty` | PR-03 | 空背包/空装备 |
-| `dark-uiux-pr03-inventory-stacked` | PR-03 | 堆叠物品、数量 badge、quality |
+| `dark-uiux-pr03-inventory-stacked` | PR-03 | 重复物品/未来 stack count anchor、quality；真实数量 badge 依赖 typed field |
 | `dark-uiux-pr03-inscription-shop` | PR-03 | shop buy/sell、铭文 offer、价格/禁用态 |
 | `dark-uiux-pr03-shop-full-slot-replace` | PR-03 | 铭文满槽替换 modal |
 | `dark-uiux-pr04-talent-sidebar-start` | PR-04 | 职业树初始态 |
-| `dark-uiux-pr04-active-slot-choice` | PR-04 | 主动槽 modal |
+| `dark-uiux-pr04-active-slot-choice` | PR-04 | 主动槽 modal、四槽 replacement strip、reserve hint |
+| `dark-uiux-pr04-talent-sidebar-min-window-log-visible` | PR-04 | 最小窗口下职业树侧栏不遮挡底部最新关键日志反馈 |
 | `dark-uiux-pr05-map-layer-stack` | PR-05 | 地图层级、prop、actor |
 | `dark-uiux-pr05-actor-boss-telegraph` | PR-05 | boss/telegraph 遮挡与可读性 |
 | `dark-uiux-pr06-status-quest-skill-overview` | PR-06 | 状态、任务、技能 icon/readability |

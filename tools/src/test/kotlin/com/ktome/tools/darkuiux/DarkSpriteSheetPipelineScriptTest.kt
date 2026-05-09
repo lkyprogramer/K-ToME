@@ -620,6 +620,266 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `coverage lint fails owner scope when owner expected keys are empty`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val report = tempDir.resolve("empty-owner.json")
+        writeText(plan, largeSheetPlan("r95-empty-owner", defaultCells()))
+        writeText(registry, registry("r95-empty-owner", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(manifest, manifest("ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(runtimeManifest, manifest("ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "owner-scope",
+                "--owner-pr",
+                "PR-02",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("owner-scope coverage found no expected keys for PR-02"), result.output)
+        assertTrue(reportText.contains("\"ownerExpectedKeys\": []"), reportText)
+        assertTrue(reportText.contains("\"status\": \"FAIL\""), reportText)
+    }
+
+    @Test
+    fun `coverage lint fails owner scope when required owner sheet ids are missing`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val report = tempDir.resolve("missing-required-sheets.json")
+        writeText(plan, largeSheetPlan("r01-ui-chrome", defaultCells()))
+        writeText(
+            registry,
+            registry("r01-ui-chrome", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d")
+                .replace("ownerPr: PR-00", "ownerPr: PR-02"),
+        )
+        writeText(
+            manifest,
+            manifestWithRawPaths(
+                "ui.test.a" to "dark-v1/test/a.png",
+                "ui.test.b" to "dark-v1/test/b.png",
+                "ui.test.c" to "dark-v1/test/c.png",
+                "ui.test.d" to "dark-v1/test/d.png",
+            ),
+        )
+        writeText(runtimeManifest, Files.readString(manifest))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "owner-scope",
+                "--owner-pr",
+                "PR-02",
+                "--required-owner-sheet-ids",
+                "r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("owner-scope missing required sheet ids for PR-02"), result.output)
+        assertTrue(result.output.contains("missing=r01-ui-controls, r01-ui-hud-icons"), result.output)
+        assertTrue(reportText.contains("\"requiredOwnerSheetIds\": ["), reportText)
+        assertTrue(reportText.contains("\"r01-ui-controls\""), reportText)
+        assertTrue(reportText.contains("\"r01-ui-hud-icons\""), reportText)
+        assertTrue(reportText.contains("\"ownerSheetIds\": ["), reportText)
+        assertTrue(reportText.contains("\"r01-ui-chrome\""), reportText)
+        assertTrue(reportText.contains("\"status\": \"FAIL\""), reportText)
+    }
+
+    @Test
+    fun `coverage lint fails owner scope when owner keys are pending`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val report = tempDir.resolve("pending-owner.json")
+        writeText(plan, largeSheetPlan("r95-pending-owner", defaultCells()))
+        writeText(
+            registry,
+            registry("r95-pending-owner", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d")
+                .replace("ownerPr: PR-00", "ownerPr: PR-02"),
+        )
+        writeText(manifest, manifest("ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(runtimeManifest, Files.readString(manifest))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "owner-scope",
+                "--owner-pr",
+                "PR-02",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("owner-scope pending keys for PR-02"), result.output)
+        assertTrue(reportText.contains("\"ownerPendingKeys\": ["), reportText)
+        assertTrue(reportText.contains("\"ui.test.a\""), reportText)
+        assertTrue(reportText.contains("\"ownerCoveredKeys\": []"), reportText)
+    }
+
+    @Test
+    fun `coverage lint fails owner scope when owner keys use old style output`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val report = tempDir.resolve("old-style-owner.json")
+        writeText(plan, largeSheetPlan("r95-old-style-owner", defaultCells()))
+        writeText(
+            registry,
+            registry("r95-old-style-owner", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d")
+                .replace("ownerPr: PR-00", "ownerPr: PR-02"),
+        )
+        writeText(
+            manifest,
+            manifestWithRawPaths(
+                "ui.test.a" to "phase4/legacy_a.png",
+                "ui.test.b" to "dark-v1/ui/test_b.png",
+                "ui.test.c" to "dark-v1/ui/test_c.png",
+                "ui.test.d" to "dark-v1/ui/test_d.png",
+            ),
+        )
+        writeText(runtimeManifest, Files.readString(manifest))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "owner-scope",
+                "--owner-pr",
+                "PR-02",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("owner-scope old-style keys for PR-02"), result.output)
+        assertTrue(reportText.contains("\"ownerOldStyleKeys\": ["), reportText)
+        assertTrue(reportText.contains("\"ui.test.a\""), reportText)
+    }
+
+    @Test
+    fun `coverage lint passes owner scope when required sheets have only dark outputs`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val report = tempDir.resolve("covered-owner.json")
+        val sheetKeys =
+            listOf(
+                "r01-ui-chrome" to keysFor("chrome"),
+                "r01-ui-controls" to keysFor("controls"),
+                "r01-ui-hud-icons" to keysFor("hud"),
+            )
+        writeText(plan, largeSheetPlan(sheetKeys.map { (sheetId, keys) -> sheetId to cellsForKeys(keys) }))
+        writeText(registry, registryForSheets(ownerPr = "PR-02", sheetKeys))
+        val manifestEntries =
+            sheetKeys
+                .flatMap { (_, keys) -> keys }
+                .map { key -> key to "dark-v1/ui/${key.replace('.', '_')}.png" }
+                .toTypedArray()
+        writeText(manifest, manifestWithRawPaths(*manifestEntries))
+        writeText(runtimeManifest, Files.readString(manifest))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "owner-scope",
+                "--owner-pr",
+                "PR-02",
+                "--required-owner-sheet-ids",
+                "r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(0, result.exitCode, result.output)
+        assertTrue(reportText.contains("\"status\": \"PASS\""), reportText)
+        assertTrue(reportText.contains("\"ownerPendingKeys\": []"), reportText)
+        assertTrue(reportText.contains("\"ownerOldStyleKeys\": []"), reportText)
+        assertTrue(reportText.contains("\"requiredOwnerSheetIds\": ["), reportText)
+    }
+
+    @Test
+    fun `sheet plan lint can require every grid slot to be listed`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        writeText(plan, largeSheetPlan("r95-full-grid", defaultCells()))
+
+        val result =
+            runScript(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "sheet-plan",
+                "--plan",
+                plan.toString(),
+                "--require-full-grid",
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("r95-full-grid must list every grid slot"), result.output)
+        assertTrue(result.output.contains("missing slots="), result.output)
+    }
+
+    @Test
     fun `coverage lint separates pending fallback from old style residue`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val registry = tempDir.resolve("key-registry.yaml")
@@ -1004,12 +1264,18 @@ class DarkSpriteSheetPipelineScriptTest {
     private fun defaultCells(): String =
         cellsFor("test")
 
+    private fun keysFor(prefix: String): List<String> =
+        listOf("ui.$prefix.a", "ui.$prefix.b", "ui.$prefix.c", "ui.$prefix.d")
+
     private fun cellsFor(prefix: String): String =
+        cellsForKeys(keysFor(prefix))
+
+    private fun cellsForKeys(keys: List<String>): String =
         """
-        - { row: 0, col: 0, targetKey: ui.$prefix.a, category: icon, outputName: debug/missing_visual.png, subject: action icon }
-        - { row: 0, col: 1, targetKey: ui.$prefix.b, category: icon, outputName: debug/missing_visual.png, subject: method icon, aliasOf: ui.$prefix.a }
-        - { row: 0, col: 2, targetKey: ui.$prefix.c, category: icon, outputName: debug/missing_visual.png, subject: target icon }
-        - { row: 0, col: 3, targetKey: ui.$prefix.d, category: icon, outputName: debug/missing_visual.png, subject: lock icon }
+        - { row: 0, col: 0, targetKey: ${keys[0]}, category: icon, outputName: debug/missing_visual.png, subject: action icon }
+        - { row: 0, col: 1, targetKey: ${keys[1]}, category: icon, outputName: debug/missing_visual.png, subject: method icon, aliasOf: ${keys[0]} }
+        - { row: 0, col: 2, targetKey: ${keys[2]}, category: icon, outputName: debug/missing_visual.png, subject: target icon }
+        - { row: 0, col: 3, targetKey: ${keys[3]}, category: icon, outputName: debug/missing_visual.png, subject: lock icon }
         - { row: 3, col: 3, reserved: true, note: reserved }
         """.trimIndent()
 
@@ -1048,20 +1314,28 @@ class DarkSpriteSheetPipelineScriptTest {
         sheetId: String,
         vararg keys: String,
     ): String =
+        registryForSheets(ownerPr = "PR-00", listOf(sheetId to keys.toList()))
+
+    private fun registryForSheets(
+        ownerPr: String,
+        sheetKeys: List<Pair<String, List<String>>>,
+    ): String =
         buildString {
             appendLine("schemaVersion: dark-key-registry-v1")
             appendLine("styleTag: ktome-dark-fantasy-sprite-ui-v1")
             appendLine("entries:")
-            keys.forEachIndexed { index, key ->
-                appendLine("  - targetKey: $key")
-                appendLine("    category: icon")
-                appendLine("    ownerPr: PR-00")
-                appendLine("    sheetId: $sheetId")
-                appendLine("    fallbackKey: missing_visual")
-                appendLine("    consumer: test")
-                appendLine("    consumerTest: test")
-                if (index == 1) {
-                    appendLine("    aliasOf: ${keys[0]}")
+            sheetKeys.forEach { (sheetId, keys) ->
+                keys.forEachIndexed { index, key ->
+                    appendLine("  - targetKey: $key")
+                    appendLine("    category: icon")
+                    appendLine("    ownerPr: $ownerPr")
+                    appendLine("    sheetId: $sheetId")
+                    appendLine("    fallbackKey: missing_visual")
+                    appendLine("    consumer: test")
+                    appendLine("    consumerTest: test")
+                    if (index == 1) {
+                        appendLine("    aliasOf: ${keys[0]}")
+                    }
                 }
             }
         }

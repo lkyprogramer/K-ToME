@@ -363,7 +363,7 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | `ui.shop.offer.frame` | shop offer card frame，默认 alias 到 PR-02 panel frame |
 | `ui.shop.price.affordable` | 可购买价格 marker |
 | `ui.shop.price.unaffordable` | 不可购买价格 marker |
-| `ui.shop.offer.disabled` | 不可购买/不可售卖 marker |
+| `ui.shop.offer.disabled` | deferred marker；只有存在 typed disabled source 的 PR 才能生成，PR-03 默认不生成 |
 | `ui.shop.inscription.marker` | 铭文 offer 类型 marker |
 | `ui.shop.replacement.slot_marker` | 铭文满槽替换槽位 marker |
 | `ui.combat.action.icon` | 战斗动作选择 icon |
@@ -422,7 +422,7 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | `UI/ART_STYLE_BIBLE.md` | 暗黑 UI/UX 专项美术合同 |
 | `UI/sprite-sheets/sheet-plan.yaml` | sheet/cell/visualKey/outputName 映射真源 |
 | `UI/sprite-sheets/key-registry.yaml` | `targetKey / ownerPr / fallbackKey / consumer / consumerTest` 审计入口 |
-| `UI/sprite-sheets/coverage-schema.md` | `dark-v1-manifest-coverage.json` common/owner/final 字段合同 |
+| PR-00 document + `scripts/verify_dark_manifest_coverage.py` output | `dark-v1-manifest-coverage.json` common/owner/final 字段合同；`UI/sprite-sheets/coverage-schema.md` 只有实际落盘后才能成为输入 |
 | `UI/sprite-sheets/prompts/dark-v1/*.prompt.txt` | 编号后的 Codex CLI 生图 prompt |
 | `UI/sprite-sheets/prompts/dark-v1/prompt-index.json` | promptId、sheetId、rawSheetPath、prompt hash 索引 |
 | `assets-src/image/raw/sheets/dark-v1/*.png` | `scripts/codex-generate-image.py` 从 Codex CLI 最新输出复制来的 raw sheet |

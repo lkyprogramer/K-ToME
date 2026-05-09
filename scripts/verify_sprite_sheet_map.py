@@ -15,8 +15,10 @@ from dark_sprite_sheet_contract import (
     STYLE_TAG,
     load_manifest_entries,
     load_sheet_plan,
+    load_yaml,
     print_errors,
     repo_relative_error,
+    safe_int,
     sha256_file,
 )
 
@@ -42,6 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--contact-root", type=pathlib.Path, default=pathlib.Path(DARK_CONTACT_SHEET_DIR))
     parser.add_argument("--runtime-root", type=pathlib.Path, default=pathlib.Path("client/src/main/resources"))
     parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl"))
+    parser.add_argument("--require-full-grid", action="store_true")
     return parser.parse_args()
 
 
@@ -76,17 +79,58 @@ def validate_manifest_mapping(cells, manifest_path: pathlib.Path) -> list[str]:
     return errors
 
 
-def validate_sheet_plan_only(plan_path: pathlib.Path) -> list[str]:
+def validate_full_grid_occupancy(plan_path: pathlib.Path, sheets) -> list[str]:
+    payload = load_yaml(plan_path)
+    sheet_payloads = payload.get("sheets")
+    if not isinstance(sheet_payloads, list):
+        return []
+
+    sheet_by_id = {sheet.sheet_id: sheet for sheet in sheets}
+    errors: list[str] = []
+    for sheet_payload in sheet_payloads:
+        if not isinstance(sheet_payload, dict):
+            continue
+        sheet_id = str(sheet_payload.get("sheetId", "")).strip()
+        sheet = sheet_by_id.get(sheet_id)
+        if sheet is None:
+            continue
+        cells = sheet_payload.get("cells")
+        if not isinstance(cells, list):
+            continue
+        listed_slots = {
+            (safe_int(cell.get("row"), -1), safe_int(cell.get("col"), -1))
+            for cell in cells
+            if isinstance(cell, dict)
+        }
+        expected_slots = {
+            (row, col)
+            for row in range(sheet.grid["rows"])
+            for col in range(sheet.grid["columns"])
+        }
+        missing_slots = sorted(expected_slots - listed_slots)
+        if missing_slots:
+            preview = ", ".join(f"{row}:{col}" for row, col in missing_slots[:12])
+            suffix = "" if len(missing_slots) <= 12 else f", ... total={len(missing_slots)}"
+            errors.append(
+                f"{sheet_id} must list every grid slot when --require-full-grid is set; "
+                f"missing slots={preview}{suffix}."
+            )
+    return errors
+
+
+def validate_sheet_plan_only(plan_path: pathlib.Path, require_full_grid: bool) -> list[str]:
     sheets, cells, errors = load_sheet_plan(plan_path)
     if len([cell for cell in cells if not cell.reserved]) < 3:
         errors.append("sheet-plan must contain at least 3 non-reserved dry-run cells.")
-    if not any(cell.alias_of for cell in cells):
+    if not require_full_grid and not any(cell.alias_of for cell in cells):
         errors.append("sheet-plan must contain at least 1 alias cell.")
     for sheet in sheets:
         for field_name, value in (("rawSheetPath", sheet.raw_sheet_path), ("outputRoot", sheet.output_root)):
             error = repo_relative_error(value, field_name, sheet.sheet_id)
             if error:
                 errors.append(error)
+    if require_full_grid:
+        errors += validate_full_grid_occupancy(plan_path, sheets)
     return errors
 
 
@@ -174,7 +218,7 @@ def validate_map(
 def main() -> int:
     args = parse_args()
     if args.check == "sheet-plan":
-        errors = validate_sheet_plan_only(args.plan)
+        errors = validate_sheet_plan_only(args.plan, args.require_full_grid)
         label = "dark-sprite-sheet-lint"
     else:
         errors = validate_map(args.plan, args.manifest, args.raw_root, args.contact_root, args.runtime_root, args.report)

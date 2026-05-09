@@ -41,12 +41,21 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate dark-v1 manifest coverage by mode.")
     parser.add_argument("--coverage-mode", choices=("pr00-dry-run", "owner-scope", "final-full"), default="final-full")
     parser.add_argument("--owner-pr", default="")
+    parser.add_argument("--required-owner-sheet-ids", default="")
     parser.add_argument("--plan", type=pathlib.Path, default=pathlib.Path("UI/sprite-sheets/sheet-plan.yaml"))
     parser.add_argument("--registry", type=pathlib.Path, default=pathlib.Path("UI/sprite-sheets/key-registry.yaml"))
     parser.add_argument("--manifest", type=pathlib.Path, default=pathlib.Path("assets-src/image/manifests/phase2-visual-manifest.json"))
     parser.add_argument("--runtime-manifest", type=pathlib.Path, default=pathlib.Path("client/src/main/resources/manifests/visual-manifest.json"))
     parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json"))
     return parser.parse_args()
+
+
+def parse_required_sheet_ids(raw_value: str) -> list[str]:
+    return sorted(
+        sheet_id
+        for sheet_id in (part.strip() for part in raw_value.split(","))
+        if sheet_id
+    )
 
 
 def is_dark_output(entry: dict[str, Any] | None) -> bool:
@@ -72,6 +81,9 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
         errors.append("owner-scope coverage requires --owner-pr.")
     if args.coverage_mode != "owner-scope" and args.owner_pr:
         errors.append(f"{args.coverage_mode} coverage must not set --owner-pr.")
+    required_owner_sheet_ids = parse_required_sheet_ids(args.required_owner_sheet_ids)
+    if args.coverage_mode != "owner-scope" and required_owner_sheet_ids:
+        errors.append(f"{args.coverage_mode} coverage must not set --required-owner-sheet-ids.")
 
     registry_keys = sorted(registry_by_key)
     if args.coverage_mode == "owner-scope":
@@ -80,6 +92,11 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
             for target_key, entry in registry_by_key.items()
             if str(entry.get("ownerPr", "")).strip() == args.owner_pr
         )
+        if args.owner_pr and not expected_keys:
+            errors.append(
+                "owner-scope coverage found no expected keys for "
+                f"{args.owner_pr} from {args.registry.as_posix()}."
+            )
     else:
         expected_keys = registry_keys
 
@@ -108,6 +125,10 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
 
     if args.coverage_mode == "owner-scope" and missing_keys:
         errors.append(f"owner-scope missing keys for {args.owner_pr}: {', '.join(missing_keys)}.")
+    if args.coverage_mode == "owner-scope" and pending_keys:
+        errors.append(f"owner-scope pending keys for {args.owner_pr}: {', '.join(pending_keys)}.")
+    if args.coverage_mode == "owner-scope" and old_style_keys:
+        errors.append(f"owner-scope old-style keys for {args.owner_pr}: {', '.join(old_style_keys)}.")
     if args.coverage_mode == "final-full":
         if missing_keys:
             errors.append(f"final-full missing keys: {', '.join(missing_keys)}.")
@@ -136,12 +157,23 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
                 for key in expected_keys
             }
         )
+        missing_required_sheet_ids = sorted(set(required_owner_sheet_ids) - set(owner_sheet_ids))
+        if missing_required_sheet_ids:
+            errors.append(
+                "owner-scope missing required sheet ids for "
+                f"{args.owner_pr}: required={', '.join(required_owner_sheet_ids)}, "
+                f"actual={', '.join(owner_sheet_ids) if owner_sheet_ids else '<empty>'}, "
+                f"missing={', '.join(missing_required_sheet_ids)}."
+            )
         common.update(
             {
                 "ownerSheetIds": owner_sheet_ids,
+                "requiredOwnerSheetIds": required_owner_sheet_ids,
                 "ownerExpectedKeys": expected_keys,
                 "ownerCoveredKeys": covered_keys,
                 "ownerMissingKeys": missing_keys,
+                "ownerPendingKeys": pending_keys,
+                "ownerOldStyleKeys": old_style_keys,
                 "scopeExternalPendingKeys": sorted(
                     key
                     for key in set(registry_keys) - set(expected_keys)
