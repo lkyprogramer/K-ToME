@@ -511,6 +511,8 @@ tasks.register<Exec>("darkKeyRegistryLint") {
 
 val darkSpriteSheetRequireFullGrid =
     rootProject.providers.gradleProperty("ktome.darkUiux.requireFullGrid").orElse("false")
+val darkUiuxOwnerContract =
+    rootProject.providers.gradleProperty("ktome.darkUiux.ownerContract").orElse("")
 
 tasks.register<Exec>("darkSpriteSheetLint") {
     group = "verification"
@@ -526,6 +528,9 @@ tasks.register<Exec>("darkSpriteSheetLint") {
     if (darkSpriteSheetRequireFullGrid.get().toBooleanStrictOrNull() == true) {
         command += "--require-full-grid"
     }
+    if (darkUiuxOwnerContract.get().isNotBlank()) {
+        command += listOf("--owner-contract", darkUiuxOwnerContract.get())
+    }
     commandLine(command)
     inputs.files(
         rootProject.files(
@@ -534,8 +539,12 @@ tasks.register<Exec>("darkSpriteSheetLint") {
             "scripts/asset_pipeline_common.py",
             "UI/sprite-sheets/sheet-plan.yaml",
         ),
+        rootProject.fileTree("UI/sprite-sheets/owner-contracts") {
+            include("*.yaml")
+        },
     ).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.property("ktome.darkUiux.requireFullGrid", darkSpriteSheetRequireFullGrid)
+    inputs.property("ktome.darkUiux.ownerContract", darkUiuxOwnerContract)
 }
 
 val darkSpriteMapReportPath =
@@ -634,6 +643,9 @@ tasks.register<Exec>("darkManifestCoverageLint") {
     if (darkCoverageRequiredOwnerSheetIds.get().isNotBlank()) {
         command += listOf("--required-owner-sheet-ids", darkCoverageRequiredOwnerSheetIds.get())
     }
+    if (darkUiuxOwnerContract.get().isNotBlank()) {
+        command += listOf("--owner-contract", darkUiuxOwnerContract.get())
+    }
     commandLine(command)
     inputs.files(
         rootProject.files(
@@ -645,10 +657,14 @@ tasks.register<Exec>("darkManifestCoverageLint") {
             "assets-src/image/manifests/phase2-visual-manifest.json",
             "client/src/main/resources/manifests/visual-manifest.json",
         ),
+        rootProject.fileTree("UI/sprite-sheets/owner-contracts") {
+            include("*.yaml")
+        },
     ).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.property("ktome.darkUiux.coverageMode", darkCoverageMode)
     inputs.property("ktome.darkUiux.ownerPr", darkCoverageOwnerPr)
     inputs.property("ktome.darkUiux.requiredOwnerSheetIds", darkCoverageRequiredOwnerSheetIds)
+    inputs.property("ktome.darkUiux.ownerContract", darkUiuxOwnerContract)
     outputs.file(darkUiuxReportDir.map { dir -> dir.file("dark-v1-manifest-coverage.json") })
 }
 

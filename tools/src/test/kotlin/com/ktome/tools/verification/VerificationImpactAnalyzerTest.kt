@@ -118,6 +118,17 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
+    fun `client renderer changes route to client smoke and golden evidence`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt"))
+
+        assertEquals(setOf("client-ui-evidence", "maintainability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":client:clientSmoke"))
+        assertTrue(plan.requestedTaskPaths.contains(":client:goldenScreenshot"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths)
+    }
+
+    @Test
     fun `schema and locale change routes through contract lint preflight and owner`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/resources/i18n/en-US.json"))
 

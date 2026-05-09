@@ -59,6 +59,7 @@ import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -67,7 +68,8 @@ class TileRendererCanvasTest {
     fun `render canvas honors manifest footprint dimensions`() {
         val canvas = RecordingTileCanvas()
 
-        TileRenderer.renderToCanvas(
+        val summary =
+            TileRenderer.renderToCanvas(
             localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
             visualResolver = sampleResolver(),
             snapshot = sampleSnapshot(),
@@ -150,6 +152,77 @@ class TileRendererCanvasTest {
         assertFalse(model.playerCard.name.isBlank())
         assertEquals("No available actions.", model.actionPanel.emptyStateText)
         assertTrue(model.targetCard.emptyStateText.isNotBlank())
+    }
+
+    @Test
+    fun `render canvas rejects mismatched snapshot and model map dimensions`() {
+        val snapshot =
+            sampleSnapshot(
+                width = 2,
+                height = 1,
+                cells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 2,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                    ),
+            )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+        }
+    }
+
+    @Test
+    fun `render model map dimensions use snapshot metadata when map cells are sparse`() {
+        val snapshot =
+            sampleSnapshot(
+                width = 3,
+                height = 3,
+                cells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                    ),
+            )
+
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+        val diagnostics =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        assertEquals(TileMapDimensions(3, 3), model.mapDimensions)
+        assertEquals(TileMapDimensions(3, 3), diagnostics.viewport.identity.mapDimensions)
     }
 
     @Test
@@ -409,7 +482,8 @@ class TileRendererCanvasTest {
         assertTrue(model.actionPanel.entries.any { entry -> entry.icon?.resolvedKey == CombatAffordanceResourceKeys.ACTION_ICON })
 
         val canvas = RecordingTileCanvas()
-        TileRenderer.renderToCanvas(
+        val summary =
+            TileRenderer.renderToCanvas(
             localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
             visualResolver = sampleResolver(),
             snapshot =
@@ -641,7 +715,8 @@ class TileRendererCanvasTest {
     fun `render canvas draws dungeon fog for explored and hidden cells`() {
         val canvas = RecordingTileCanvas()
 
-        TileRenderer.renderToCanvas(
+        val summary =
+            TileRenderer.renderToCanvas(
             localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
             visualResolver = sampleResolver(),
             snapshot =
@@ -679,15 +754,15 @@ class TileRendererCanvasTest {
             cellHeight = 32f,
         )
 
-        val layout = TileRenderer.layoutMetrics(mapWidth = 3, mapHeight = 1, cellWidth = 32f, cellHeight = 32f)
-        val mapOffsetY = TileRenderer.uiRows * 32f
+        val explored = summary.viewport.tileRect(com.ktome.core.map.Point(1, 0))
+        val hidden = summary.viewport.tileRect(com.ktome.core.map.Point(2, 0))
         val cellRects =
             canvas.rectDraws.filter { draw ->
-                draw.y == mapOffsetY && draw.width == 32f && draw.height == 32f
+                draw.width == 32f && draw.height == 32f
             }
 
-        assertTrue(cellRects.any { draw -> draw.x == layout.shell.mapBounds.x + 32f && draw.color.a == 0.42f })
-        assertTrue(cellRects.any { draw -> draw.x == layout.shell.mapBounds.x + 64f && draw.color.a == 0.94f })
+        assertTrue(cellRects.any { draw -> draw.x == explored.x.toFloat() && draw.y == explored.y.toFloat() && draw.color.a == 0.42f })
+        assertTrue(cellRects.any { draw -> draw.x == hidden.x.toFloat() && draw.y == hidden.y.toFloat() && draw.color.a == 0.94f })
     }
 
     @Test
@@ -1101,10 +1176,10 @@ class TileRendererCanvasTest {
     @Test
     fun `responsive layout keeps sidebar compact on small maps`() {
         val metrics = TileRenderer.layoutMetrics(mapWidth = 11, mapHeight = 10, cellWidth = 32f, cellHeight = 32f)
-        val legacyWorldWidth = (11 + TileRenderer.sidebarColumns) * 32f
 
         assertTrue(metrics.sidebarWidth <= 420f)
-        assertTrue(metrics.worldWidth < legacyWorldWidth)
+        assertEquals(1280f, metrics.worldWidth)
+        assertTrue(metrics.shell.mapInnerPadding.left > 0)
     }
 
     @Test
@@ -1118,7 +1193,15 @@ class TileRendererCanvasTest {
     @Test
     fun `render canvas keeps map dominant regions separate at 1024 by 768 breakpoint`() {
         val canvas = RecordingTileCanvas()
-        val metrics = TileRenderer.layoutMetrics(mapWidth = 18, mapHeight = 17, cellWidth = 32f, cellHeight = 32f)
+        val metrics =
+            TileRenderer.layoutMetrics(
+                mapWidth = 18,
+                mapHeight = 17,
+                cellWidth = 32f,
+                cellHeight = 32f,
+                shellWorldWidth = 1024f,
+                shellWorldHeight = 768f,
+            )
 
         TileRenderer.renderToCanvas(
             localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
@@ -1128,6 +1211,8 @@ class TileRendererCanvasTest {
             canvas = canvas,
             cellWidth = 32f,
             cellHeight = 32f,
+            shellWorldWidth = 1024f,
+            shellWorldHeight = 768f,
         )
 
         assertTrue(metrics.worldWidth <= 1024f)
@@ -1153,6 +1238,164 @@ class TileRendererCanvasTest {
 
         assertEquals(metrics.infoX + metrics.infoWidth + metrics.panelGap, metrics.logX)
         assertTrue(metrics.logWidth >= 520f)
+    }
+
+    @Test
+    fun recordsExplicitLayerFlushBoundaries() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertEquals(
+            listOf(
+                TileLayerFlushReason.BACKGROUND,
+                TileLayerFlushReason.MAP_TERRAIN_BASE,
+                TileLayerFlushReason.MAP_PROPS_AND_DECALS,
+                TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS,
+                TileLayerFlushReason.MAP_ACTORS,
+                TileLayerFlushReason.MAP_FOG_VEILS,
+                TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS,
+                TileLayerFlushReason.MAP_PLAYER_INDICATOR,
+                TileLayerFlushReason.MAP_ACTIVE_CURSOR,
+                TileLayerFlushReason.MAP_COMBAT_FEEDBACK,
+                TileLayerFlushReason.SHELL_PANES,
+                TileLayerFlushReason.BOTTOM_HUD,
+                TileLayerFlushReason.OVERLAY_PASSIVE_TOOLTIP,
+                TileLayerFlushReason.OVERLAY_TOAST,
+                TileLayerFlushReason.OVERLAY_MODAL_BACKDROP,
+                TileLayerFlushReason.OVERLAY_MODAL,
+                TileLayerFlushReason.OVERLAY_MODAL_EXPLICIT_TOOLTIP,
+                TileLayerFlushReason.DEBUG_HINTS,
+            ),
+            canvas.flushes,
+        )
+    }
+
+    @Test
+    fun overlayFrameDoesNotCarryRawOverlayState() {
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val fieldNames = summary.overlayFrame::class.java.declaredFields.map { it.name }.toSet()
+        assertFalse("overlayState" in fieldNames)
+        assertFalse("modalFrames" in fieldNames)
+        assertFalse("projection" in fieldNames)
+        assertFalse("viewport" in fieldNames)
+    }
+
+    @Test
+    fun renderDiagnosticsDoesNotExposeAggregateFrameState() {
+        val diagnostics =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val fieldNames = diagnostics::class.java.declaredFields.map { it.name }.toSet()
+        assertEquals(setOf("viewport", "overlayFrame"), fieldNames)
+        assertFalse("projection" in fieldNames)
+        assertFalse("layerPlan" in fieldNames)
+        assertFalse("model" in fieldNames)
+    }
+
+    @Test
+    fun shellFrameCarriesPaneFocusFactAndTextLayoutOnly() {
+        val fieldNames = ShellRenderFrame::class.java.declaredFields.map { it.name }.toSet()
+
+        assertEquals(setOf("model", "layout", "textLayout", "paneFocusAnchor"), fieldNames)
+    }
+
+    @Test
+    fun viewportUsesShellMapBounds() {
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 90, height = 56),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+        val layout = TileRenderer.layoutMetrics(90, 56, 32f, 32f)
+
+        assertEquals(layout.shell.cellAlignedMapBounds, summary.viewport.mapBounds)
+        assertTrue(summary.viewport.visibleRange.columns < 90)
+    }
+
+    @Test
+    fun overlayDrawsAboveShellAndBottomHud() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.flushes.indexOf(TileLayerFlushReason.BOTTOM_HUD) < canvas.flushes.indexOf(TileLayerFlushReason.OVERLAY_PASSIVE_TOOLTIP))
+    }
+
+    @Test
+    fun modalUsesModalSafeBounds() {
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.INVENTORY, modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY))),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val modal = requireNotNull(summary.overlayFrame.overlayModel.activeModal)
+        assertTrue(modal.bounds.x >= summary.overlayFrame.modalSafeBounds.left)
+        assertTrue(modal.bounds.right <= summary.overlayFrame.modalSafeBounds.right)
+        assertTrue(modal.bounds.y >= summary.overlayFrame.modalSafeBounds.bottom)
+        assertTrue(modal.bounds.top <= summary.overlayFrame.modalSafeBounds.top)
+    }
+
+    @Test
+    fun tooltipAvoidsBottomLogReservedBounds() {
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+        val tooltip = requireNotNull(summary.overlayFrame.overlayModel.selectedTooltip)
+
+        assertTrue(tooltip.anchor.bounds.y >= summary.overlayFrame.bottomLogReservedBounds.top)
     }
 
     @Test
@@ -1250,6 +1493,65 @@ class TileRendererCanvasTest {
         assertFalse(model.shell.rightPanel.rows.any { row -> row.text.startsWith("HP ") })
         assertFalse(model.shell.rightPanel.rows.any { row -> row.text.startsWith("STA ") })
         assertFalse(model.shell.rightPanel.rows.any { row -> row.text.contains(model.hud.experienceGauge.summary) })
+    }
+
+    @Test
+    fun `shell right panel keeps ground equipment inscriptions and backpack sections in order`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val item =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        cells =
+                            listOf(
+                                MapCellSnapshot(
+                                    x = 0,
+                                    y = 0,
+                                    visibility = CellVisibilitySnapshot.VISIBLE,
+                                    terrainTypeId = "floor",
+                                    terrainVisualKey = "tileset.test.ground_01",
+                                    items = listOf(item),
+                                ),
+                            ),
+                        inscriptions =
+                            listOf(
+                                InscriptionSlotSnapshot(
+                                    hotkey = 5,
+                                    inscriptionId = "phase_door",
+                                    nameKey = "inscription.phase_door.name",
+                                    descKey = "inscription.phase_door.desc",
+                                    iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                                    categoryId = "MOVEMENT",
+                                    cooldownRemaining = 0,
+                                    maxCooldown = 10,
+                                ),
+                            ),
+                        inventory = listOf(InventoryEntrySnapshot(index = 0, item = item)),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        val rowTexts = model.shell.rightPanel.rows.map(TileTextRow::text)
+        val groundIndex = rowTexts.indexOf("Ground")
+        val equipmentIndex = rowTexts.indexOf("Equipment")
+        val inscriptionIndex = rowTexts.indexOf("Inscriptions")
+        val backpackIndex = rowTexts.indexOf("Backpack: 1 items")
+
+        assertTrue(groundIndex >= 0)
+        assertTrue(equipmentIndex > groundIndex)
+        assertTrue(inscriptionIndex > equipmentIndex)
+        assertTrue(backpackIndex > inscriptionIndex)
+        assertTrue(rowTexts.any { row -> row == "Short Sword" })
+        assertTrue(rowTexts.any { row -> row == "5. Phase Door" })
     }
 
     @Test
@@ -1970,15 +2272,17 @@ class TileRendererCanvasTest {
                 ),
             mapCells =
                 cells ?:
-                    listOf(
-                        MapCellSnapshot(
-                            x = 0,
-                            y = 0,
-                            visibility = CellVisibilitySnapshot.VISIBLE,
-                            terrainTypeId = "floor",
-                            terrainVisualKey = "tileset.test.ground_01",
-                        ),
-                    ),
+                    (0 until width).flatMap { x ->
+                        (0 until height).map { y ->
+                            MapCellSnapshot(
+                                x = x,
+                                y = y,
+                                visibility = CellVisibilitySnapshot.VISIBLE,
+                                terrainTypeId = "floor",
+                                terrainVisualKey = "tileset.test.ground_01",
+                            )
+                        }
+                    },
             overlays = overlays,
             actors =
                 listOf(
@@ -2068,6 +2372,7 @@ private class RecordingTileCanvas : TileCanvas {
     val assetDraws = mutableListOf<AssetDraw>()
     val rectDraws = mutableListOf<RectDraw>()
     val textDraws = mutableListOf<TextDraw>()
+    val flushes = mutableListOf<TileLayerFlushReason>()
 
     override fun drawRect(
         x: Float,
@@ -2099,5 +2404,9 @@ private class RecordingTileCanvas : TileCanvas {
         color: Color,
     ) {
         textDraws += TextDraw(style, text, x, y, Color(color))
+    }
+
+    override fun flushLayer(reason: TileLayerFlushReason) {
+        flushes += reason
     }
 }

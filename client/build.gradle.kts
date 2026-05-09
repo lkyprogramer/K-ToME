@@ -1,3 +1,4 @@
+import com.ktome.build.verification.VerifyChangedPlanGate
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Copy
@@ -13,9 +14,12 @@ import java.io.File
 plugins {
     application
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.ktome.build.verification")
 }
 
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
+val verifyChangedTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-paths.txt")
+val verifyChangedPreflightTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/preflight-task-paths.txt")
 val desktopMainClass = "com.ktome.client.DesktopLauncherKt"
 val desktopAppVersion = project.version.toString()
 val macAppName = "K-ToME"
@@ -361,5 +365,19 @@ tasks.register<Test>("goldenScreenshot") {
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform {
         includeTags("goldenScreenshot")
+    }
+}
+
+listOf(
+    tasks.named("clientSmoke"),
+    tasks.named("goldenScreenshot"),
+).forEach { taskProvider ->
+    taskProvider.configure {
+        VerifyChangedPlanGate.applyTo(
+            this,
+            verifyChangedTaskPathsFile,
+            verifyChangedPreflightTaskPathsFile,
+            ":tools:prepareVerifyChangedPlan",
+        )
     }
 }

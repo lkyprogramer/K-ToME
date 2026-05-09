@@ -36,8 +36,8 @@ class ManifestResolveTest {
     }
 
     @Test
-    fun `visual manifest v1 accepts removed ASCII entry fields as legacy input`() {
-        val manifest =
+    fun `visual manifest v1 rejects removed ASCII entry fields`() {
+        assertThrows(ManifestLoadException::class.java) {
             VisualManifestResourceLoader.decode(
                 visualManifestWithEntryFields(
                     manifestVersion = 1,
@@ -49,10 +49,7 @@ class ManifestResolveTest {
                 ),
                 path = "legacy-v1-visual-manifest.json",
             )
-
-        val entry = manifest.entries.single()
-        assertEquals("missing_visual", entry.key)
-        assertEquals(null, entry.tintColorHex)
+        }
     }
 
     @Test

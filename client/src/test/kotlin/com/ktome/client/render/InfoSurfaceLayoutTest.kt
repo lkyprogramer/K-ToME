@@ -20,6 +20,8 @@ class InfoSurfaceLayoutTest {
                         cellWidth = 32f,
                         cellHeight = 32f,
                         uiRows = TileRenderer.uiRows,
+                        shellWorldWidth = 1024f,
+                        shellWorldHeight = 768f,
                     ),
             )
 
@@ -40,6 +42,8 @@ class InfoSurfaceLayoutTest {
                         cellWidth = 32f,
                         cellHeight = 32f,
                         uiRows = TileRenderer.uiRows,
+                        shellWorldWidth = 1280f,
+                        shellWorldHeight = 800f,
                     ),
             )
 
@@ -57,6 +61,8 @@ class InfoSurfaceLayoutTest {
                 cellWidth = 32f,
                 cellHeight = 32f,
                 uiRows = TileRenderer.uiRows,
+                shellWorldWidth = 1280f,
+                shellWorldHeight = 800f,
             )
 
         assertThrows(UnsupportedOperationException::class.java) {

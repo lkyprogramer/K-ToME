@@ -14,6 +14,7 @@ from dark_sprite_sheet_contract import (
     DARK_RUNTIME_PREFIX,
     STYLE_TAG,
     load_manifest_entries,
+    load_owner_contract,
     load_sheet_plan,
     load_yaml,
     print_errors,
@@ -45,6 +46,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runtime-root", type=pathlib.Path, default=pathlib.Path("client/src/main/resources"))
     parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl"))
     parser.add_argument("--require-full-grid", action="store_true")
+    parser.add_argument("--owner-contract", type=pathlib.Path, default=None)
     return parser.parse_args()
 
 
@@ -118,7 +120,87 @@ def validate_full_grid_occupancy(plan_path: pathlib.Path, sheets) -> list[str]:
     return errors
 
 
-def validate_sheet_plan_only(plan_path: pathlib.Path, require_full_grid: bool) -> list[str]:
+def count_cells_by_sheet(plan_path: pathlib.Path) -> dict[str, dict[str, int]]:
+    payload = load_yaml(plan_path)
+    sheet_payloads = payload.get("sheets")
+    if not isinstance(sheet_payloads, list):
+        return {}
+
+    counts_by_sheet: dict[str, dict[str, int]] = {}
+    for sheet_payload in sheet_payloads:
+        if not isinstance(sheet_payload, dict):
+            continue
+        sheet_id = str(sheet_payload.get("sheetId", "")).strip()
+        cells = sheet_payload.get("cells")
+        if not sheet_id or not isinstance(cells, list):
+            continue
+        counts = {"direct": 0, "alias": 0, "reserved": 0, "total": 0}
+        for cell in cells:
+            if not isinstance(cell, dict):
+                continue
+            counts["total"] += 1
+            if cell.get("reserved") is True:
+                counts["reserved"] += 1
+            elif str(cell.get("aliasOf", "")).strip():
+                counts["alias"] += 1
+            else:
+                counts["direct"] += 1
+        counts_by_sheet[sheet_id] = counts
+    return counts_by_sheet
+
+
+def validate_owner_contract(plan_path: pathlib.Path, cells, owner_contract_path: pathlib.Path | None) -> list[str]:
+    if owner_contract_path is None:
+        return []
+
+    owner_contract, errors = load_owner_contract(owner_contract_path)
+    if owner_contract is None:
+        return errors
+
+    cells_by_key = {cell.target_key: cell for cell in cells}
+    for required_cell in owner_contract.required_cells:
+        plan_cell = cells_by_key.get(required_cell.target_key)
+        if plan_cell is None:
+            errors.append(
+                f"{owner_contract.owner_pr} owner contract required key is missing from sheet-plan: "
+                f"{required_cell.target_key}."
+            )
+            continue
+        if plan_cell.sheet_id != required_cell.sheet_id:
+            errors.append(
+                f"{required_cell.target_key} sheet mismatch: "
+                f"contract={required_cell.sheet_id} sheet-plan={plan_cell.sheet_id}."
+            )
+        if plan_cell.category != required_cell.category:
+            errors.append(
+                f"{required_cell.target_key} category mismatch: "
+                f"contract={required_cell.category} sheet-plan={plan_cell.category}."
+            )
+        if plan_cell.alias_of:
+            errors.append(f"{required_cell.target_key} must be a direct cell for {owner_contract.owner_pr}, not aliasOf={plan_cell.alias_of}.")
+
+    actual_counts = count_cells_by_sheet(plan_path)
+    for sheet_id, required_counts in owner_contract.required_counts_by_sheet.items():
+        actual = actual_counts.get(sheet_id, {"direct": 0, "alias": 0, "reserved": 0, "total": 0})
+        expected = {
+            "direct": required_counts.direct,
+            "alias": required_counts.alias,
+            "reserved": required_counts.reserved,
+            "total": required_counts.total,
+        }
+        if actual != expected:
+            errors.append(
+                f"{sheet_id} cell counts mismatch for {owner_contract.owner_pr}: "
+                f"expected={expected} actual={actual}."
+            )
+    return errors
+
+
+def validate_sheet_plan_only(
+    plan_path: pathlib.Path,
+    require_full_grid: bool,
+    owner_contract_path: pathlib.Path | None,
+) -> list[str]:
     sheets, cells, errors = load_sheet_plan(plan_path)
     if len([cell for cell in cells if not cell.reserved]) < 3:
         errors.append("sheet-plan must contain at least 3 non-reserved dry-run cells.")
@@ -131,6 +213,7 @@ def validate_sheet_plan_only(plan_path: pathlib.Path, require_full_grid: bool) -
                 errors.append(error)
     if require_full_grid:
         errors += validate_full_grid_occupancy(plan_path, sheets)
+    errors += validate_owner_contract(plan_path, cells, owner_contract_path)
     return errors
 
 
@@ -218,9 +301,11 @@ def validate_map(
 def main() -> int:
     args = parse_args()
     if args.check == "sheet-plan":
-        errors = validate_sheet_plan_only(args.plan, args.require_full_grid)
+        errors = validate_sheet_plan_only(args.plan, args.require_full_grid, args.owner_contract)
         label = "dark-sprite-sheet-lint"
     else:
+        if args.owner_contract is not None:
+            return print_errors("sprite-sheet-map-lint", ["--owner-contract is only supported with --check sheet-plan."])
         errors = validate_map(args.plan, args.manifest, args.raw_root, args.contact_root, args.runtime_root, args.report)
         label = "sprite-sheet-map-lint"
     if errors:

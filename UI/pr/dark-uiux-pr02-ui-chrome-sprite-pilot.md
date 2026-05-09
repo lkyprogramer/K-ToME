@@ -16,7 +16,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `UI02-M01` | §3 Round 1 sheet 内容 | `assets` | `darkSpriteSheetLint`, `spriteSheetMapLint` | `assetLint`, `styleLint` | `assets-src/image/contact-sheets/dark-v1/` | `required` |
 | `UI02-M02` | §4 UI key registry 初始清单 | `tools` | `darkKeyRegistryLint` | `manifestLint` | `UI/sprite-sheets/key-registry.yaml` | `N/A` |
-| `UI02-M03` | §6 验收标准 / manifest coverage | `tools` | `ManifestResolveTest` | `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02 -Pktome.darkUiux.requiredOwnerSheetIds=r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons` | `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json` | `N/A` |
+| `UI02-M03` | §6 验收标准 / manifest coverage | `tools` | `ManifestResolveTest` | `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02 -Pktome.darkUiux.ownerContract=UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml` | `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json` | `N/A` |
 | `UI02-M04` | §7 / §8 golden 与白盒证据 | `client` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries`, `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets`, `StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/`, `UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md` | `required` |
 | `UI02-M05` | governance inheritance | `docs` / `tools` | `acceptanceContractLint` | `verifyChanged` | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | `N/A` |
 | `UI02-M06` | §4 standalone screen shared chrome consumption | `client` / `tools` | `StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys`, `MainMenuScreenTextTest` | `clientSmoke`, `goldenScreenshot` | `client/build/reports/golden/`, `UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md` | `required` |
@@ -29,7 +29,7 @@ freshness 要求：
 
 1. `raw sheet hash`、切分 PNG、`sprite map report`、contact sheet QA、canonical manifest、runtime manifest、owner-scope coverage 和 golden output 必须来自同一批 `sheet-plan.yaml` / `key-registry.yaml`。
 2. `syncPhase2Manifests` 必须在 `ManifestResolveTest`、client focused evidence、`darkManifestCoverageLint owner-scope`、`:client:goldenScreenshot` 和最终 `verifyChanged` 之前完成。
-3. PR 描述或 manual record 必须摘录本轮 `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json` 的 `ownerSheetIds`、`ownerExpectedKeys` 数量、`ownerCoveredKeys` 数量、`ownerMissingKeys`、`scopeExternalPendingKeys`，不能只写 Gradle task green。
+3. `UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md` 必须摘录本轮 `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json` 的 `requiredOwnerSheetIds`、`requiredOwnerKeys` 数量、`ownerExpectedKeys` 数量、`ownerCoveredKeys` 数量、`ownerMissingKeys`、`ownerMissingRequiredKeys`、`ownerUnexpectedKeys`、`ownerPendingKeys`、`ownerOldStyleKeys`、`allowedOwnerFallbackKeys` 和 `scopeExternalPendingKeys`；PR 描述只引用/摘录 manual record 和 coverage artifact，不能只写 Gradle task green。
 4. PR close 前读取 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。若该文件不存在，PR 描述写明“本轮未产生 verifyChanged duration summary”，不得伪造耗时基线。
 5. 同一 resource gate 连续失败超过 2 次时，先补 `scripts/verify_sprite_sheet_map.py` / registry lint / focused resolver test 的最小断言，再重跑 full resource gate；不得把 `goldenScreenshot` 当资源切分调试循环。
 
@@ -39,18 +39,19 @@ canonical artifact 固定为以下 repo-relative 路径族：
 
 1. `UI/sprite-sheets/sheet-plan.yaml`
 2. `UI/sprite-sheets/key-registry.yaml`
-3. `UI/sprite-sheets/prompts/dark-v1/{001-r01-ui-chrome,002-r01-ui-controls,003-r01-ui-hud-icons}.prompt.txt`
-4. `UI/sprite-sheets/prompts/dark-v1/prompt-index.json`
-5. `assets-src/image/raw/sheets/dark-v1/{r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons}.png`
-6. `assets-src/image/contact-sheets/dark-v1/{r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons}-contact.png`
-7. `assets-src/image/manifests/phase2-visual-manifest.json`
-8. `client/src/main/resources/dark-v1/ui/`
-9. `client/src/main/resources/manifests/visual-manifest.json`
-10. `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json`
-11. `assets-src/image/manifests/dark-v1-pr02-sprite-map-report.jsonl`
-12. `build/reports/verification/dark-uiux/codex-image-smoke-{sheetId}.json`
-13. `client/build/reports/golden/`
-14. `UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md`
+3. `UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml`
+4. `UI/sprite-sheets/prompts/dark-v1/{001-r01-ui-chrome,002-r01-ui-controls,003-r01-ui-hud-icons}.prompt.txt`
+5. `UI/sprite-sheets/prompts/dark-v1/prompt-index.json`
+6. `assets-src/image/raw/sheets/dark-v1/{r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons}.png`
+7. `assets-src/image/contact-sheets/dark-v1/{r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons}-contact.png`
+8. `assets-src/image/manifests/phase2-visual-manifest.json`
+9. `client/src/main/resources/dark-v1/ui/`
+10. `client/src/main/resources/manifests/visual-manifest.json`
+11. `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json`
+12. `assets-src/image/manifests/dark-v1-pr02-sprite-map-report.jsonl`
+13. `build/reports/verification/dark-uiux/codex-image-smoke-{sheetId}.json`
+14. `client/build/reports/golden/`
+15. `UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md`
 
 raw PNG 只有在切分、QA、manifest 和 coverage 同批通过后才可作为可评审输入。`<codex-generated-images-dir>` 这类 Codex CLI transient source 只能出现在 smoke 摘要中，不能进入 manifest、coverage artifact、golden metadata 或 PR 合同。
 
@@ -61,9 +62,10 @@ raw PNG 只有在切分、QA、manifest 和 coverage 同批通过后才可作为
 PR-02 formal owner 迁移规则：
 
 1. PR-00 dry-run entries 只保留为 pipeline proof；PR-02 formal key 必须在 `key-registry.yaml` 中使用 `ownerPr: PR-02`，不能继续用 `PR-00` 充当本 PR 分母。
-2. `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02 -Pktome.darkUiux.requiredOwnerSheetIds=r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons` 必须在 `ownerExpectedKeys` 非空时才允许通过。
-3. owner-scope artifact 的 `ownerSheetIds` 必须至少包含 `r01-ui-chrome`、`r01-ui-controls`、`r01-ui-hud-icons`；少任一 sheet 必须由 coverage task fail fast，不能只靠 reviewer 人工读 artifact。
-4. `ui.frame.panel.focus` 在 PR-02 中升级为 formal direct key；不得让 manifest 存在该 key 而 PR-02 表格缺席。
+2. `UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml` 是 PR-02 machine owner contract，记录 required direct keys、required sheet 和 per-sheet direct cell counts；Markdown 表格是人类可读合同，二者必须同步。
+3. `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02 -Pktome.darkUiux.ownerContract=UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml` 必须在 `ownerExpectedKeys` 非空且等于 contract required keys 时才允许通过。
+4. owner-scope artifact 的 `ownerSheetIds` 必须至少包含 `r01-ui-chrome`、`r01-ui-controls`、`r01-ui-hud-icons`；少任一 sheet 必须由 coverage task fail fast，不能只靠 reviewer 人工读 artifact。
+5. `ui.frame.panel.focus` 在 PR-02 中升级为 formal direct key；不得让 manifest 存在该 key 而 PR-02 表格或 owner contract 缺席。
 
 ## 1. 阶段目标
 
@@ -91,25 +93,26 @@ PR-02 formal owner 迁移规则：
 开发必须按以下顺序推进，避免资源、manifest 和 client evidence 批次错位：
 
 1. **preflight**：读取本文件、[README.md](./README.md)、[development-governance.md](./development-governance.md)、[screen-coverage-matrix.md](./screen-coverage-matrix.md)，执行 `acceptanceContractLint`。如果 PR-01-1 尚未合并，不开始 PR-02 实现。
-2. **formal registry first**：先更新 `UI/sprite-sheets/key-registry.yaml`，新增 §4.2 / §4.3 / §4.4 的 `ownerPr: PR-02` entries。PR-00 dry-run entries 可以保留，但不能改成 PR-02 证据。
-3. **sheet plan second**：更新 `UI/sprite-sheets/sheet-plan.yaml`，新增三张 sheet 和逐 cell `targetKey / outputName`；本 PR 不新增 alias cell。所有未列为 formal key 的 cell 必须写 `reserved: true` 和 `note`，不能留空让实现者猜。
-4. **prompt generation**：运行 `scripts/generate_sheet_prompt.py`，确认 prompt 文件头中的 `Sheet ID`、`Expected output file`、`Canvas`、`Grid` 和 `Style tag` 与 sheet plan 完全一致。
-5. **raw sheet generation**：逐个运行 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --smoke-report <buildReportPath> --overwrite`。如果生成图串格、带文字、水印、跨 cell 或风格漂移，重生成 raw sheet，不通过改 `row/col` 迁就错误图片。
-6. **slice and QA**：运行切分、contact sheet 和 `spriteSheetMapLint`，人工检查 contact sheet 的 `row,col,targetKey` 与图像语义一致后，再进入 manifest patch。
-7. **canonical manifest patch**：只改 `assets-src/image/manifests/phase2-visual-manifest.json` 作为真源；runtime manifest 只能由 `syncPhase2Manifests` 生成。
-8. **sync before evidence**：执行 `syncPhase2Manifests manifestLint` 后，才运行 resolver tests、owner-scope coverage、client focused tests、golden 和 `verifyChanged`。
-9. **client consumption**：`TileRenderer` / standalone screen chrome 的主路径必须通过 `VisualManifestResolver` 消费 PR-02 keys；允许保留 manifest fallback，但不允许继续只画 token 色块作为 PR-02 目标 surface 的唯一主视觉。
-10. **evidence write-up**：PR 描述或 manual record 写明 prompt path、raw sheet path/hash、contact sheet QA path、canonical/runtime manifest diff、coverage artifact 摘录、focused test、golden label 和未覆盖 screen 的 PR-07 继承项。
+2. **owner contract first**：确认 `UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml` 与 §4.2 / §4.3 / §4.4 / §4.5 完全一致；新增或删除任何 PR-02 formal key 时先改 owner contract 和本节表格。
+3. **formal registry second**：更新 `UI/sprite-sheets/key-registry.yaml`，新增 §4.2 / §4.3 / §4.4 的 `ownerPr: PR-02` entries，且 `targetKey / sheetId / category` 必须与 owner contract 完全一致。PR-00 dry-run entries 可以保留，但不能改成 PR-02 证据。
+4. **sheet plan third**：更新 `UI/sprite-sheets/sheet-plan.yaml`，新增三张 sheet 和逐 cell `targetKey / category / outputName`；本 PR 不新增 alias cell。所有未列为 formal key 的 cell 必须写 `reserved: true` 和 `note`，不能留空让实现者猜。
+5. **prompt generation**：运行 `scripts/generate_sheet_prompt.py`，确认 prompt 文件头中的 `Sheet ID`、`Expected output file`、`Canvas`、`Grid` 和 `Style tag` 与 sheet plan 完全一致。
+6. **raw sheet generation**：逐个运行 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --smoke-report <buildReportPath> --overwrite`。如果生成图串格、带文字、水印、跨 cell 或风格漂移，重生成 raw sheet，不通过改 `row/col` 迁就错误图片。
+7. **slice and QA**：运行切分、contact sheet 和 `spriteSheetMapLint`，人工检查 contact sheet 的 `row,col,targetKey` 与图像语义一致后，再进入 manifest patch。
+8. **canonical manifest patch**：只改 `assets-src/image/manifests/phase2-visual-manifest.json` 作为真源；runtime manifest 只能由 `syncPhase2Manifests` 生成。
+9. **sync before evidence**：执行 `syncPhase2Manifests manifestLint` 后，才运行 resolver tests、owner-scope coverage、client focused tests、golden 和 `verifyChanged`。
+10. **client consumption**：`TileRenderer` / standalone screen chrome 的主路径必须通过 `VisualManifestResolver` 消费 PR-02 keys；允许保留 manifest fallback，但不允许继续只画 token 色块作为 PR-02 目标 surface 的唯一主视觉。
+11. **evidence write-up**：manual record 写明 prompt path、raw sheet path/hash、contact sheet QA path、canonical/runtime manifest diff、coverage artifact 摘录、focused test、golden label 和未覆盖 screen 的 PR-07 继承项；PR 描述引用 manual record 和 coverage artifact 摘要。
 
 实现期间任何新增 key 都必须先回到 §4 的表格补 `targetKey / sheetId / fallbackKey / consumer / consumerTest`，再改 registry / sheet plan；禁止先在 renderer 里写裸字符串。
 
 ## 3. Round 1 Sheet 内容
 
 1. `r01-ui-chrome`: `large-sheet 1024x1024 / 4x4 / 256x256`，包含 panel、corner、edge、tooltip、modal、slot frame。
-2. `r01-ui-controls`: `icon-sheet 1024x1024 / 8x8 / 128x128`，本 PR 只冻结 §4.3 中列出的 back/confirm/copy、validation/outcome/error/loading marker、backpack/equipment、combat action 和 talent state glyph。tab、button、empty state、debug marker、selection marker 若本 PR 不消费，必须写为 reserved / pending cell，不进入 PR-02 owner-scope 分母。
+2. `r01-ui-controls`: `icon-sheet 1024x1024 / 8x8 / 128x128`，本 PR 只冻结 §4.3 中列出的 back/confirm/copy、validation/outcome/error/loading marker、backpack/equipment、combat action 和 talent state glyph。tab、button、empty state、debug marker、selection marker 若本 PR 不消费，必须写为 `reserved: true` cell，不进入 key registry、manifest 或 PR-02 owner-scope 分母。
 3. `r01-ui-hud-icons`: `icon-sheet 1024x1024 / 8x8 / 128x128`，包含 health、stamina、xp、gold、key、quest marker、log marker、warning。
 4. 切分后的 runtime canvas 由 category policy 决定；HUD 显示 `32x32`、装备 slot 显示 `48x48/64x64` 是 renderer/layout 决策，不是 source sheet cell 尺寸。
-5. 每个 cell 必须在 `sheet-plan.yaml` 写明 `targetKey` 和 `outputName`。
+5. 每个 direct cell 必须在 `sheet-plan.yaml` 写明 `targetKey`、`category` 和 `outputName`。
 6. contact sheet 必须显示 `row,col,targetKey`，但 runtime PNG 不能烘焙文字。
 7. `sheet-plan.yaml` 中没有 `targetKey` 的 cell 必须显式 `reserved: true`；不能让空 cell 在切分或 coverage 中被隐式跳过。
 
@@ -119,80 +122,82 @@ Raw sheet 生成交接：
 2. 逐个执行 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --smoke-report build/reports/verification/dark-uiux/codex-image-smoke-<sheetId>.json --overwrite`。
 3. 脚本输出必须分别落到 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`、`r01-ui-controls.png`、`r01-ui-hud-icons.png`。
 4. raw PNG 放置完成后才运行切分、contact sheet 和 manifest coverage gate。
-5. PR 描述必须列出 prompt path、raw sheet path、raw sheet hash、`scripts/codex-generate-image.py` 输出的 smoke report 摘要和 contact sheet QA path；smoke report 中的 source folder/source image 只作为 transient evidence，不作为 canonical path、manifest 或 coverage 输入。
+5. manual record 必须列出 prompt path、raw sheet path、raw sheet hash、`scripts/codex-generate-image.py` 输出的 smoke report 摘要和 contact sheet QA path；PR 描述只引用 manual record 摘要。smoke report 中的 source folder/source image 只作为 transient evidence，不作为 canonical path、manifest 或 coverage 输入。
 
 ## 4. UI Key Registry 与 Cell Contract
 
 ### 4.1 Owner Scope Rule
 
-PR-02 owner-scope 只由 `key-registry.yaml.entries[].ownerPr == PR-02` 决定。Markdown 表格不是机器真源，但本节是实现合同；如果实现需要新增、删除或 alias 任一 key，必须同步更新本节、`key-registry.yaml`、`sheet-plan.yaml`、canonical/runtime manifest 和对应 test/golden evidence。
+PR-02 owner-scope 的实现分母来自 `key-registry.yaml.entries[].ownerPr == PR-02`，但 close gate 必须同时传入 `UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml` 作为固定机器合同。Markdown 表格是人类可读合同；如果实现需要新增、删除或 alias 任一 key，必须同步更新本节、owner contract、`key-registry.yaml`、`sheet-plan.yaml`、canonical/runtime manifest 和对应 test/golden evidence。
 
-`ownerExpectedKeys` 必须覆盖以下三类：
+`ownerExpectedKeys` 必须与以下两类完全一致：
 
-1. §4.2 / §4.3 / §4.4 的 direct cell keys。
-2. 任何实现阶段新增的 PR-02 formal key。
+1. `UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml.requiredCells[].targetKey`。
+2. §4.2 / §4.3 / §4.4 的 direct cell keys。
+
+如果实现阶段确实新增 PR-02 formal key，先同步 owner contract 与本节表格；否则 `ownerUnexpectedKeys` 必须 fail fast。
 
 PR-00 dry-run keys 不计入 PR-02 完成；`PR-00` 与 `PR-02` 可以同时存在于 registry，但 coverage artifact 必须能区分两者。
 
 ### 4.2 `r01-ui-chrome` direct cells
 
-| row | col | targetKey | outputName | fallbackKey | aliasOf | consumerTest |
-| ---: | ---: | --- | --- | --- | --- | --- |
-| 0 | 0 | `ui.frame.panel.body` | `dark-v1/ui/ui_frame_panel_body.png` | `missing_visual` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 0 | 1 | `ui.frame.panel.focus` | `dark-v1/ui/ui_frame_panel_focus.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 0 | 2 | `ui.frame.panel.corner_tl` | `dark-v1/ui/ui_frame_panel_corner_tl.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 0 | 3 | `ui.frame.panel.corner_tr` | `dark-v1/ui/ui_frame_panel_corner_tr.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 1 | 0 | `ui.frame.panel.corner_bl` | `dark-v1/ui/ui_frame_panel_corner_bl.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 1 | 1 | `ui.frame.panel.corner_br` | `dark-v1/ui/ui_frame_panel_corner_br.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 1 | 2 | `ui.frame.panel.edge_top` | `dark-v1/ui/ui_frame_panel_edge_top.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 1 | 3 | `ui.frame.panel.edge_right` | `dark-v1/ui/ui_frame_panel_edge_right.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 2 | 0 | `ui.frame.panel.edge_bottom` | `dark-v1/ui/ui_frame_panel_edge_bottom.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 2 | 1 | `ui.frame.panel.edge_left` | `dark-v1/ui/ui_frame_panel_edge_left.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 2 | 2 | `ui.frame.slot.empty` | `dark-v1/ui/ui_frame_slot_empty.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 2 | 3 | `ui.frame.slot.equipped` | `dark-v1/ui/ui_frame_slot_equipped.png` | `ui.frame.slot.empty` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 3 | 0 | `ui.frame.slot.selected` | `dark-v1/ui/ui_frame_slot_selected.png` | `ui.frame.slot.empty` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 3 | 1 | `ui.frame.tooltip.body` | `dark-v1/ui/ui_frame_tooltip_body.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 3 | 2 | `ui.frame.modal.body` | `dark-v1/ui/ui_frame_modal_body.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 3 | 3 | `reserved` | `N/A` | `N/A` | `N/A` | `N/A` |
+| row | col | targetKey | category | outputName | fallbackKey | aliasOf | consumerTest |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `ui.frame.panel.body` | `ui_frame` | `dark-v1/ui/ui_frame_panel_body.png` | `missing_visual` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 0 | 1 | `ui.frame.panel.focus` | `ui_frame` | `dark-v1/ui/ui_frame_panel_focus.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 0 | 2 | `ui.frame.panel.corner_tl` | `ui_frame` | `dark-v1/ui/ui_frame_panel_corner_tl.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 0 | 3 | `ui.frame.panel.corner_tr` | `ui_frame` | `dark-v1/ui/ui_frame_panel_corner_tr.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 1 | 0 | `ui.frame.panel.corner_bl` | `ui_frame` | `dark-v1/ui/ui_frame_panel_corner_bl.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 1 | 1 | `ui.frame.panel.corner_br` | `ui_frame` | `dark-v1/ui/ui_frame_panel_corner_br.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 1 | 2 | `ui.frame.panel.edge_top` | `ui_frame` | `dark-v1/ui/ui_frame_panel_edge_top.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 1 | 3 | `ui.frame.panel.edge_right` | `ui_frame` | `dark-v1/ui/ui_frame_panel_edge_right.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 2 | 0 | `ui.frame.panel.edge_bottom` | `ui_frame` | `dark-v1/ui/ui_frame_panel_edge_bottom.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 2 | 1 | `ui.frame.panel.edge_left` | `ui_frame` | `dark-v1/ui/ui_frame_panel_edge_left.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 2 | 2 | `ui.frame.slot.empty` | `ui_frame` | `dark-v1/ui/ui_frame_slot_empty.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 2 | 3 | `ui.frame.slot.equipped` | `ui_frame` | `dark-v1/ui/ui_frame_slot_equipped.png` | `ui.frame.slot.empty` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 3 | 0 | `ui.frame.slot.selected` | `ui_frame` | `dark-v1/ui/ui_frame_slot_selected.png` | `ui.frame.slot.empty` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 3 | 1 | `ui.frame.tooltip.body` | `ui_frame` | `dark-v1/ui/ui_frame_tooltip_body.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 3 | 2 | `ui.frame.modal.body` | `ui_frame` | `dark-v1/ui/ui_frame_modal_body.png` | `ui.frame.panel.body` | `N/A` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 3 | 3 | `reserved` | `N/A` | `N/A` | `N/A` | `N/A` | `N/A` |
 
 ### 4.3 `r01-ui-controls` direct cells
 
-| row | col | targetKey | outputName | fallbackKey | consumerTest |
-| ---: | ---: | --- | --- | --- | --- |
-| 0 | 0 | `ui.screen.validation.badge` | `dark-v1/ui/ui_screen_validation_badge.png` | `ui.hud.warning.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 1 | `ui.screen.outcome.victory_marker` | `dark-v1/ui/ui_screen_outcome_victory_marker.png` | `ui.hud.quest_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 2 | `ui.screen.outcome.defeat_marker` | `dark-v1/ui/ui_screen_outcome_defeat_marker.png` | `ui.hud.warning.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 3 | `ui.screen.error.marker` | `dark-v1/ui/ui_screen_error_marker.png` | `ui.hud.warning.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 4 | `ui.screen.loading.marker` | `dark-v1/ui/ui_screen_loading_marker.png` | `ui.hud.log_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 5 | `ui.control.back.icon` | `dark-v1/ui/ui_control_back_icon.png` | `ui.hud.log_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 6 | `ui.control.confirm.icon` | `dark-v1/ui/ui_control_confirm_icon.png` | `ui.hud.quest_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 7 | `ui.control.copy.icon` | `dark-v1/ui/ui_control_copy_icon.png` | `ui.hud.log_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 1 | 0 | `ui.control.backpack.icon` | `dark-v1/ui/ui_control_backpack_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 1 | 1 | `ui.control.equipment.icon` | `dark-v1/ui/ui_control_equipment_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 1 | 2 | `ui.combat.action.icon` | `dark-v1/ui/ui_combat_action_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 1 | 3 | `ui.combat.method.icon` | `dark-v1/ui/ui_combat_method_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 1 | 4 | `ui.combat.target.icon` | `dark-v1/ui/ui_combat_target_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 1 | 5 | `ui.combat.lock.icon` | `dark-v1/ui/ui_combat_lock_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 1 | 6 | `ui.combat.invalid.icon` | `dark-v1/ui/ui_combat_invalid_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 1 | 7 | `ui.state.locked.icon` | `dark-v1/ui/ui_state_locked_icon.png` | `missing_visual` | `TalentSidebarPresenterTest`, `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 2 | 0 | `ui.state.learnable.icon` | `dark-v1/ui/ui_state_learnable_icon.png` | `missing_visual` | `TalentSidebarPresenterTest`, `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 2 | 1 | `ui.state.active.icon` | `dark-v1/ui/ui_state_active_icon.png` | `missing_visual` | `TalentSidebarPresenterTest`, `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 2 | 2 | `ui.state.reserve.icon` | `dark-v1/ui/ui_state_reserve_icon.png` | `missing_visual` | `TalentSidebarPresenterTest`, `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| row | col | targetKey | category | outputName | fallbackKey | consumerTest |
+| ---: | ---: | --- | --- | --- | --- | --- |
+| 0 | 0 | `ui.screen.validation.badge` | `icon` | `dark-v1/ui/ui_screen_validation_badge.png` | `ui.hud.warning.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 1 | `ui.screen.outcome.victory_marker` | `icon` | `dark-v1/ui/ui_screen_outcome_victory_marker.png` | `ui.hud.quest_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 2 | `ui.screen.outcome.defeat_marker` | `icon` | `dark-v1/ui/ui_screen_outcome_defeat_marker.png` | `ui.hud.warning.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 3 | `ui.screen.error.marker` | `icon` | `dark-v1/ui/ui_screen_error_marker.png` | `ui.hud.warning.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 4 | `ui.screen.loading.marker` | `icon` | `dark-v1/ui/ui_screen_loading_marker.png` | `ui.hud.log_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 5 | `ui.control.back.icon` | `icon` | `dark-v1/ui/ui_control_back_icon.png` | `ui.hud.log_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 6 | `ui.control.confirm.icon` | `icon` | `dark-v1/ui/ui_control_confirm_icon.png` | `ui.hud.quest_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 7 | `ui.control.copy.icon` | `icon` | `dark-v1/ui/ui_control_copy_icon.png` | `ui.hud.log_marker.icon` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 1 | 0 | `ui.control.backpack.icon` | `icon` | `dark-v1/ui/ui_control_backpack_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 1 | 1 | `ui.control.equipment.icon` | `icon` | `dark-v1/ui/ui_control_equipment_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 1 | 2 | `ui.combat.action.icon` | `icon` | `dark-v1/ui/ui_combat_action_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 1 | 3 | `ui.combat.method.icon` | `icon` | `dark-v1/ui/ui_combat_method_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 1 | 4 | `ui.combat.target.icon` | `icon` | `dark-v1/ui/ui_combat_target_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 1 | 5 | `ui.combat.lock.icon` | `icon` | `dark-v1/ui/ui_combat_lock_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 1 | 6 | `ui.combat.invalid.icon` | `icon` | `dark-v1/ui/ui_combat_invalid_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 1 | 7 | `ui.state.locked.icon` | `icon` | `dark-v1/ui/ui_state_locked_icon.png` | `missing_visual` | `TalentSidebarPresenterTest`, `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 2 | 0 | `ui.state.learnable.icon` | `icon` | `dark-v1/ui/ui_state_learnable_icon.png` | `missing_visual` | `TalentSidebarPresenterTest`, `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 2 | 1 | `ui.state.active.icon` | `icon` | `dark-v1/ui/ui_state_active_icon.png` | `missing_visual` | `TalentSidebarPresenterTest`, `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 2 | 2 | `ui.state.reserve.icon` | `icon` | `dark-v1/ui/ui_state_reserve_icon.png` | `missing_visual` | `TalentSidebarPresenterTest`, `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
 
 `r01-ui-controls` 其余 cell 必须显式 reserved。若 implementation 发现某个 tab/button/empty/debug/selection key 已被 current client 主路径消费，先补本节 direct cell，再进入 registry/manifest；不能只在 renderer 或 manifest 中临时加 key。
 
 ### 4.4 `r01-ui-hud-icons` direct cells
 
-| row | col | targetKey | outputName | fallbackKey | consumerTest |
-| ---: | ---: | --- | --- | --- | --- |
-| 0 | 0 | `ui.hud.hp.icon` | `dark-v1/ui/ui_hud_hp_icon.png` | `missing_visual` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 0 | 1 | `ui.hud.stamina.icon` | `dark-v1/ui/ui_hud_stamina_icon.png` | `missing_visual` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 0 | 2 | `ui.hud.xp.icon` | `dark-v1/ui/ui_hud_xp_icon.png` | `missing_visual` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
-| 0 | 3 | `ui.hud.gold.icon` | `dark-v1/ui/ui_hud_gold_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 4 | `ui.hud.key.icon` | `dark-v1/ui/ui_hud_key_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 5 | `ui.hud.quest_marker.icon` | `dark-v1/ui/ui_hud_quest_marker_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 6 | `ui.hud.log_marker.icon` | `dark-v1/ui/ui_hud_log_marker_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
-| 0 | 7 | `ui.hud.warning.icon` | `dark-v1/ui/ui_hud_warning_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| row | col | targetKey | category | outputName | fallbackKey | consumerTest |
+| ---: | ---: | --- | --- | --- | --- | --- |
+| 0 | 0 | `ui.hud.hp.icon` | `icon` | `dark-v1/ui/ui_hud_hp_icon.png` | `missing_visual` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 0 | 1 | `ui.hud.stamina.icon` | `icon` | `dark-v1/ui/ui_hud_stamina_icon.png` | `missing_visual` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 0 | 2 | `ui.hud.xp.icon` | `icon` | `dark-v1/ui/ui_hud_xp_icon.png` | `missing_visual` | `TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets` |
+| 0 | 3 | `ui.hud.gold.icon` | `icon` | `dark-v1/ui/ui_hud_gold_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 4 | `ui.hud.key.icon` | `icon` | `dark-v1/ui/ui_hud_key_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 5 | `ui.hud.quest_marker.icon` | `icon` | `dark-v1/ui/ui_hud_quest_marker_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 6 | `ui.hud.log_marker.icon` | `icon` | `dark-v1/ui/ui_hud_log_marker_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
+| 0 | 7 | `ui.hud.warning.icon` | `icon` | `dark-v1/ui/ui_hud_warning_icon.png` | `missing_visual` | `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` |
 
 `r01-ui-hud-icons` 其余 cell 必须显式 reserved。PR-02 先交付独立 HUD marker；如果后续 PR 需要让 item/quest 图标复用这些图，必须另行更新 registry、manifest 和对应 owner 文档，不得在 PR-02 里隐式生成第二套语义相同但风格略不同的图。
 
@@ -206,6 +211,8 @@ PR-00 dry-run keys 不计入 PR-02 完成；`PR-00` 与 `PR-02` 可以同时存�
 
 PR-02 不新增 registry-only alias key。Standalone screen chrome 直接消费 `ui.frame.panel.body`；如果后续确实需要 `ui.screen.home.*` exact key，必须先在本节新增 direct cell、row/col、outputName、manifest entry 和 focused test，再进入实现。
 
+`darkSpriteSheetLint -Pktome.darkUiux.requireFullGrid=true -Pktome.darkUiux.ownerContract=UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml` 必须校验每张 sheet 的 direct / alias / reserved / total 计数与上表一致。把本应 formal 的 cell 写成 `reserved: true`、或把 reserved cell 写成 pending targetKey，都必须失败。
+
 ### 4.6 Client Consumer Contract
 
 PR-02 实现必须冻结到具体消费路径和断言：
@@ -215,6 +222,13 @@ PR-02 实现必须冻结到具体消费路径和断言：
 3. focused tests 必须使用 recording canvas、test texture repository 或 resolver spy 断言 resolved key 被绘制；不接受只断言颜色、文本位置或 golden hash。
 4. `ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries` 必须覆盖 §4.2-§4.4 的全部 PR-02 owner keys，且至少断言 `rawOutputPath` 前缀为 `dark-v1/ui/`。
 5. 如果 outcome/error/loading screen 在 PR-02 不进入 golden，PR-02 manual record 必须列出 skip reason、替代 resolver evidence 和 PR-07 evidence index owner label。
+
+Standalone screen chrome 推荐采用 request-level resolved asset seam，避免每个 screen 各自解析资源：
+
+1. 新增或扩展 `StandaloneChromeRequest`，由 screen owner 在 `MainMenuScreen`、`ValidationSetupScreen`、`VictoryScreen`、`GameOverScreen`、`UiErrorScreen` 中通过 `VisualManifestResolver + ClientTextureRepository` 解析 `ui.frame.panel.body` 和 action/control key 后传入 request。
+2. `StandaloneScreenChrome` 继续只拥有绘制职责，不直接创建或 dispose manifest texture；texture repository 仍由 screen/app owner 管理生命周期。
+3. `StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys` 使用 fake resolved asset / recording seam 断言 `ui.frame.panel.body` 被绘制；`StandaloneScreenLayoutTest.darkUiuxPr02ChromeUsesFallbackAssetWhenPanelBodyMissing` 断言缺图时走 manifest fallback，而不是只靠 golden hash。
+4. 禁止在各 standalone screen 内复制一套 `ui.frame.panel.body` 解析与 fallback 分支；如果确实需要抽象，优先把 resolved chrome asset 放进 typed request，而不是新增 screen-specific helper。
 
 `missing_visual` 只允许作为 PR-02 owner-scope 早期 manifest fallback；PR-06 final-full 必须用 dark-v1 fallback/polish 资源替换玩家主路径中的旧风格 fallback。
 
@@ -245,9 +259,9 @@ Gradle 命令必须串行执行。资源证据必须先 sync runtime manifest，
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew syncPhase2Manifests manifestLint
-./gradlew assetLint styleLint darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint -Pktome.darkUiux.requireFullGrid=true -Pktome.darkUiux.spriteMapReport=assets-src/image/manifests/dark-v1-pr02-sprite-map-report.jsonl
+./gradlew assetLint styleLint darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint -Pktome.darkUiux.requireFullGrid=true -Pktome.darkUiux.ownerContract=UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml -Pktome.darkUiux.spriteMapReport=assets-src/image/manifests/dark-v1-pr02-sprite-map-report.jsonl
 ./gradlew :client:test --tests com.ktome.client.assets.ManifestResolveTest --tests com.ktome.client.render.TileRendererCanvasTest --tests com.ktome.client.screen.StandaloneScreenLayoutTest
-./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02 -Pktome.darkUiux.requiredOwnerSheetIds=r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons
+./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02 -Pktome.darkUiux.ownerContract=UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml
 ./gradlew :client:clientSmoke :client:goldenScreenshot
 ./gradlew verifyChanged
 ```
@@ -259,11 +273,18 @@ PR close 不允许用裸 `darkManifestCoverageLint` 代替本 PR close gate。`b
 3. `ownerExpectedKeys` 非空
 4. `ownerSheetIds` 包含 `r01-ui-chrome`、`r01-ui-controls`、`r01-ui-hud-icons`
 5. `ownerMissingKeys=[]`
-6. `requiredOwnerSheetIds=["r01-ui-chrome","r01-ui-controls","r01-ui-hud-icons"]`
-7. `ownerCoveredKeys == ownerExpectedKeys`
-8. `ownerPendingKeys=[]`
-9. `ownerOldStyleKeys=[]`
-10. `allowedOwnerFallbackKeys=[]`
+6. `requiredOwnerSheetIds` 与 owner contract 的 required sheet 列表一致
+7. `requiredOwnerContractPath="UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml"`
+8. `requiredOwnerKeys` 等于 owner contract 的 targetKey 列表
+9. `ownerExpectedKeys == requiredOwnerKeys`
+10. `ownerCoveredKeys == ownerExpectedKeys`
+11. `ownerMissingRequiredKeys=[]`
+12. `ownerUnexpectedKeys=[]`
+13. `requiredOwnerKeyCountBySheet` 等于 owner contract 的 per-sheet direct cell counts
+14. `ownerExpectedKeyCountBySheet` 等于 owner contract 的 per-sheet direct cell counts
+15. `ownerPendingKeys=[]`
+16. `ownerOldStyleKeys=[]`
+17. `allowedOwnerFallbackKeys=[]`
 
 只强制 Round 1 UI chrome/HUD key；scope 外 pending 必须写入 coverage artifact。不得用裸 `darkManifestCoverageLint` 代替本 PR close gate。
 
@@ -276,7 +297,7 @@ PR close 不允许用裸 `darkManifestCoverageLint` 代替本 PR close gate。`b
 | `dark-uiux-pr02-standalone-screen-chrome` | 首页或 validation setup，保留返回/确认/copy action 可见 | `ui.frame.panel.body` 作为共享 chrome source 被解析并绘制，screen action 继续消费 `ui.control.*` key | golden/manual + `StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys` | outcome/error/loading 如果本 PR 不截图，manual record 必须列 skip reason、resolver evidence 和 PR-07 evidence label |
 | `dark-uiux-pr02-contact-sheet-qa` | 打开三张 contact sheet，逐格核对 `row,col,targetKey` | 每个 direct cell 语义与 §4 表一致，无文字、水印、串格、跨格 | `assets-src/image/contact-sheets/dark-v1/*-contact.png` + sprite map report | 不允许 skip；失败时重生成 raw sheet，不改 row/col 迁就图片 |
 
-contact sheet QA 路径、manifest diff 路径、coverage artifact 路径和 golden/manual label 必须写入 PR 描述，并同步写入 `UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md`。
+contact sheet QA 路径、manifest diff 路径、coverage artifact 路径和 golden/manual label 必须写入 `UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md`；PR 描述只引用 manual record 和关键 artifact 摘要。
 
 Manual record 必须使用以下字段，不得只保留在 GitHub PR 文本中：
 
@@ -290,7 +311,7 @@ Manual record 必须使用以下字段，不得只保留在 GitHub PR 文本中�
 | `canonicalManifestDiff` | canonical manifest diff 摘要或 commit hunk 引用 |
 | `runtimeManifestDiff` | `syncPhase2Manifests` 后 runtime manifest diff 摘要 |
 | `coverageReportPath` | `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json` |
-| `ownerExpectedKeys / ownerCoveredKeys / ownerMissingKeys / ownerPendingKeys / ownerOldStyleKeys` | 从 coverage artifact 机械摘录 |
+| `requiredOwnerSheetIds / requiredOwnerKeys / ownerExpectedKeys / ownerCoveredKeys / ownerMissingKeys / ownerMissingRequiredKeys / ownerUnexpectedKeys / ownerPendingKeys / ownerOldStyleKeys / allowedOwnerFallbackKeys` | 从 coverage artifact 机械摘录 |
 | `skippedScreens` | `screen / reason / replacementResolverEvidence / pr07OwnerLabel / residualRisk` |
 | `goldenLabels` | 本 PR 生成或复用的 golden label |
 | `manualReviewer / reviewedAt` | 人工 QA 记录；未执行时写 `NOT_RUN` 和原因 |

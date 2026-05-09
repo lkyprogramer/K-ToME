@@ -1,0 +1,53 @@
+schemaVersion: dark-owner-contract-v1
+ownerPr: PR-02
+requiredSheetIds:
+  - r01-ui-chrome
+  - r01-ui-controls
+  - r01-ui-hud-icons
+requiredCellCountsBySheet:
+  r01-ui-chrome: { direct: 15, alias: 0, reserved: 1, total: 16 }
+  r01-ui-controls: { direct: 19, alias: 0, reserved: 45, total: 64 }
+  r01-ui-hud-icons: { direct: 8, alias: 0, reserved: 56, total: 64 }
+requiredCells:
+  - { targetKey: ui.frame.panel.body, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.focus, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.corner_tl, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.corner_tr, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.corner_bl, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.corner_br, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.edge_top, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.edge_right, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.edge_bottom, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.edge_left, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.slot.empty, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.slot.equipped, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.slot.selected, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.tooltip.body, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.modal.body, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.screen.validation.badge, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.screen.outcome.victory_marker, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.screen.outcome.defeat_marker, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.screen.error.marker, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.screen.loading.marker, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.control.back.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.control.confirm.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.control.copy.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.control.backpack.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.control.equipment.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.combat.action.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.combat.method.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.combat.target.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.combat.lock.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.combat.invalid.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.state.locked.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.state.learnable.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.state.active.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.state.reserve.icon, sheetId: r01-ui-controls, category: icon }
+  - { targetKey: ui.hud.hp.icon, sheetId: r01-ui-hud-icons, category: icon }
+  - { targetKey: ui.hud.stamina.icon, sheetId: r01-ui-hud-icons, category: icon }
+  - { targetKey: ui.hud.xp.icon, sheetId: r01-ui-hud-icons, category: icon }
+  - { targetKey: ui.hud.gold.icon, sheetId: r01-ui-hud-icons, category: icon }
+  - { targetKey: ui.hud.key.icon, sheetId: r01-ui-hud-icons, category: icon }
+  - { targetKey: ui.hud.quest_marker.icon, sheetId: r01-ui-hud-icons, category: icon }
+  - { targetKey: ui.hud.log_marker.icon, sheetId: r01-ui-hud-icons, category: icon }
+  - { targetKey: ui.hud.warning.icon, sheetId: r01-ui-hud-icons, category: icon }

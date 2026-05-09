@@ -73,6 +73,16 @@ class VerifyChangedBuildContractTest {
     }
 
     @Test
+    fun `client verifyChanged plan gate applies to routed smoke and golden tasks`() {
+        val buildScript = Files.readString(repoRoot().resolve("client/build.gradle.kts"))
+
+        assertTrue(buildScript.contains("""tasks.named("clientSmoke")"""))
+        assertTrue(buildScript.contains("""tasks.named("goldenScreenshot")"""))
+        assertTrue(buildScript.contains("""VerifyChangedPlanGate.applyTo("""))
+        assertTrue(buildScript.contains("\":tools:prepareVerifyChangedPlan\""))
+    }
+
+    @Test
     fun `maintainability lint task declares the routed governance inputs`() {
         val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
 
