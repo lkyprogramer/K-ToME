@@ -125,7 +125,7 @@ class TileOverlayLayerTest {
     fun cornerAnchorsFlipInsideShellBounds() {
         val canvas = RecordingOverlayCanvas()
         val anchor = ResolvedTileOverlayAnchor(TileOverlayAnchor.WorldTile(Point(9, 9)), RectInt(924, 724, 32, 32), TileOverlayCoordinateAuthority.TILE_MAP_VIEWPORT)
-        val frame = overlayFrame(TileOverlayModel(TileTooltipModel(anchor, TileTextLine("Corner"), emptyList()), TileTooltipSource.INSPECT_CURSOR, null, null, null, emptyList(), emptyList()))
+        val frame = overlayFrame(TileOverlayModel(tooltip(anchor, "Corner"), TileTooltipSource.INSPECT_CURSOR, null, null, null, emptyList(), emptyList()))
 
         TileRenderer.renderOverlayFrame(canvas, frame)
 
@@ -139,6 +139,17 @@ class TileOverlayLayerTest {
         assertEquals(RectInt(900, 444, 360, 52), tooltipBackgroundRect(RectInt(900, 500, 32, 32)))
         assertEquals(RectInt(536, 230, 360, 52), tooltipBackgroundRect(RectInt(900, 230, 32, 32)))
         assertEquals(RectInt(900, 256, 360, 52), tooltipBackgroundRect(RectInt(900, 220, 32, 32)))
+    }
+
+    @Test
+    fun placesTooltipRectDuringOverlayModelBuild() {
+        val model =
+            overlayModel(
+                overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = Point(1, 1)),
+                projection = projection(TileViewportFocusMode.INSPECT, Point(1, 1)),
+            )
+
+        assertEquals(RectInt(68, 480, 360, 62), model.selectedTooltip?.placedRect)
     }
 
     @Test
@@ -185,6 +196,7 @@ class TileOverlayLayerTest {
                 anchorResolver = FrameTileOverlayAnchorResolver(viewport()),
                 shellContentBounds = GameShellBounds(0f, 224f, 1280f, 576f),
                 modalSafeBounds = ModalSafeBounds(12, 1000, 780, 236),
+                bottomLogReservedBounds = bottomLogReservedBounds(),
                 explicitModalTooltip = explicitModalTooltip,
             ),
         )
@@ -220,23 +232,23 @@ class TileOverlayLayerTest {
         )
 
     private fun explicitTooltip(): TileTooltipModel =
-        TileTooltipModel(
+        tooltip(
             anchor =
                 ResolvedTileOverlayAnchor(
                     source = TileOverlayAnchor.ModalRow(RectInt(400, 400, 120, 24), ModalFrameKind.ITEM_DETAIL, "row"),
                     bounds = RectInt(400, 400, 120, 24),
                     coordinateAuthority = TileOverlayCoordinateAuthority.PRESENTER_LAYOUT,
                 ),
-            titleLine = TileTextLine("Explicit", TileTextTone.GOLD),
-            bodyLines = emptyList(),
+            title = "Explicit",
         )
 
     private fun tooltipBackgroundRect(anchorBounds: RectInt): RectInt {
         val anchor = ResolvedTileOverlayAnchor(TileOverlayAnchor.WorldTile(Point.ZERO), anchorBounds, TileOverlayCoordinateAuthority.TILE_MAP_VIEWPORT)
+        val tooltip = tooltip(anchor)
         val frame =
             overlayFrame(
                 TileOverlayModel(
-                    selectedTooltip = TileTooltipModel(anchor, TileTextLine("Tooltip"), emptyList()),
+                    selectedTooltip = tooltip,
                     selectedTooltipSource = TileTooltipSource.INSPECT_CURSOR,
                     modalBackdrop = null,
                     activeModal = null,
@@ -249,17 +261,40 @@ class TileOverlayLayerTest {
 
         TileRenderer.renderOverlayFrame(canvas, frame)
 
+        assertEquals(tooltip.placedRect, canvas.tooltipRects.first())
         return canvas.tooltipRects.first()
     }
 
     private fun overlayFrame(overlayModel: TileOverlayModel): OverlayRenderFrame =
         OverlayRenderFrame(
             overlayModel = overlayModel,
-            shellContentBounds = GameShellBounds(0f, 224f, 1280f, 576f),
+            shellContentBounds = shellContentBounds(),
             modalSafeBounds = ModalSafeBounds(12, 1000, 780, 236),
-            bottomLogReservedBounds = GameShellBounds(0f, 18f, 1280f, 92f),
+            bottomLogReservedBounds = bottomLogReservedBounds(),
             textMetrics = TileTextMetrics,
         )
+
+    private fun tooltip(
+        anchor: ResolvedTileOverlayAnchor,
+        title: String = "Tooltip",
+        bodyLines: List<TileTextLine> = emptyList(),
+    ): TileTooltipModel =
+        TileTooltipModel(
+            anchor = anchor,
+            titleLine = TileTextLine(title, TileTextTone.GOLD),
+            bodyLines = bodyLines,
+            placedRect =
+                TileTooltipPlacementSolver.resolve(
+                    anchor = anchor,
+                    bodyLineCount = bodyLines.size,
+                    shellContentBounds = shellContentBounds(),
+                    bottomLogReservedBounds = bottomLogReservedBounds(),
+                ),
+        )
+
+    private fun shellContentBounds(): GameShellBounds = GameShellBounds(0f, 224f, 1280f, 576f)
+
+    private fun bottomLogReservedBounds(): GameShellBounds = GameShellBounds(0f, 18f, 1280f, 92f)
 }
 
 private class RecordingOverlayCanvas : TileCanvas {

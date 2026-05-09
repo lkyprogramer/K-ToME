@@ -167,6 +167,7 @@ internal data class TileTooltipModel(
     val anchor: ResolvedTileOverlayAnchor,
     val titleLine: TileTextLine,
     val bodyLines: List<TileTextLine>,
+    val placedRect: RectInt,
 )
 
 internal data class TileModalBackdropModel(
@@ -208,6 +209,7 @@ internal data class TileOverlayModelRequest(
     val anchorResolver: TileOverlayAnchorResolver,
     val shellContentBounds: GameShellBounds,
     val modalSafeBounds: ModalSafeBounds,
+    val bottomLogReservedBounds: GameShellBounds,
     val explicitModalTooltip: TileTooltipModel? = null,
 )
 
@@ -232,14 +234,15 @@ internal object TileOverlayModelBuilder {
                 )
             }
         val passiveTooltip = passiveTooltip(request)
+        val explicitTooltip = request.explicitModalTooltip?.let { tooltip -> tooltip.withPlacement(request) }
         val suppressed = mutableListOf<TileTooltipSuppression>()
         val selectedTooltip =
             when {
-                request.explicitModalTooltip != null -> {
+                explicitTooltip != null -> {
                     passiveTooltip?.let {
                         suppressed += TileTooltipSuppression(TileTooltipSource.FOCUSED_ENTITY, TileTooltipSuppressionReason.LOWER_PRIORITY_TOOLTIP)
                     }
-                    request.explicitModalTooltip
+                    explicitTooltip
                 }
                 activeModal != null && passiveTooltip != null -> {
                     suppressed +=
@@ -256,7 +259,7 @@ internal object TileOverlayModelBuilder {
             selectedTooltipSource =
                 when {
                     selectedTooltip == null -> null
-                    selectedTooltip === request.explicitModalTooltip -> TileTooltipSource.MODAL_EXPLICIT
+                    explicitTooltip != null && selectedTooltip === explicitTooltip -> TileTooltipSource.MODAL_EXPLICIT
                     else -> tooltipSourceForProjection(request.projection)
                 },
             activeModal = activeModal,
@@ -294,11 +297,29 @@ internal object TileOverlayModelBuilder {
                         ),
                     bodyLines =
                         (request.renderModel.targetCard.lines.ifEmpty { request.renderModel.hud.focusLines })
-                            .take(5)
+                            .take(TILE_TOOLTIP_BODY_LINE_LIMIT)
                             .map { line -> TileTextLine(line, TileTextTone.LIGHT_GRAY) },
+                    placedRect =
+                        TileTooltipPlacementSolver.resolve(
+                            anchor = resolution.anchor,
+                            bodyLineCount = (request.renderModel.targetCard.lines.ifEmpty { request.renderModel.hud.focusLines }).size,
+                            shellContentBounds = request.shellContentBounds,
+                            bottomLogReservedBounds = request.bottomLogReservedBounds,
+                        ),
                 )
         }
     }
+
+    private fun TileTooltipModel.withPlacement(request: TileOverlayModelRequest): TileTooltipModel =
+        copy(
+            placedRect =
+                TileTooltipPlacementSolver.resolve(
+                    anchor = anchor,
+                    bodyLineCount = bodyLines.size,
+                    shellContentBounds = request.shellContentBounds,
+                    bottomLogReservedBounds = request.bottomLogReservedBounds,
+                ),
+        )
 
     private fun passiveTooltipSuppressions(request: TileOverlayModelRequest): List<TileTooltipSuppression> {
         val anchorTile = request.projection.anchorTile ?: return emptyList()

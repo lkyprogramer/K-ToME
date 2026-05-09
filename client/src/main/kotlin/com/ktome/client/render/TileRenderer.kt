@@ -385,6 +385,7 @@ class TileRenderer(
                         anchorResolver = FrameTileOverlayAnchorResolver(viewport),
                         shellContentBounds = layout.shell.shellContentBounds,
                         modalSafeBounds = layout.shell.modalSafeBounds,
+                        bottomLogReservedBounds = layout.shell.bottomLogReservedBounds,
                     ),
                 )
             val overlayFrame =
@@ -698,7 +699,7 @@ class TileRenderer(
             ) {
                 val model = frame.overlayModel
                 if (model.activeModal == null && model.selectedTooltip != null) {
-                    drawTooltip(canvas, model.selectedTooltip, frame)
+                    drawTooltip(canvas, model.selectedTooltip)
                 }
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_PASSIVE_TOOLTIP)
                 model.toast?.let { toast ->
@@ -725,7 +726,7 @@ class TileRenderer(
                 model.activeModal?.let { modal -> drawModal(canvas, modal) }
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_MODAL)
                 if (model.activeModal != null && model.selectedTooltip != null) {
-                    drawTooltip(canvas, model.selectedTooltip, frame)
+                    drawTooltip(canvas, model.selectedTooltip)
                 }
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_MODAL_EXPLICIT_TOOLTIP)
                 canvas.flushLayer(TileLayerFlushReason.DEBUG_HINTS)
@@ -735,51 +736,14 @@ class TileRenderer(
         private fun drawTooltip(
             canvas: TileCanvas,
             tooltip: TileTooltipModel,
-            frame: OverlayRenderFrame,
         ) {
-            val rect = tooltipRect(tooltip, frame)
+            val rect = tooltip.placedRect
             canvas.drawRect(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat(), UiDesignTokens.color.surface.overlay.color())
             canvas.drawRect(rect.x.toFloat(), (rect.top - 3).toFloat(), rect.width.toFloat(), 3f, UiDesignTokens.color.focus.ring.color())
             canvas.drawText(TileTextStyle.SMALL, tooltip.titleLine.text, rect.x + 8f, rect.top - 10f, tone(tooltip.titleLine.tone))
-            tooltip.bodyLines.take(5).forEachIndexed { index, line ->
+            tooltip.bodyLines.take(TILE_TOOLTIP_BODY_LINE_LIMIT).forEachIndexed { index, line ->
                 canvas.drawText(TileTextStyle.SMALL, line.text, rect.x + 8f, rect.top - 36f - index * 22f, tone(line.tone))
             }
-        }
-
-        private fun tooltipRect(
-            tooltip: TileTooltipModel,
-            frame: OverlayRenderFrame,
-        ): RectInt {
-            val padding = UiDesignTokens.fixed.tooltipPadding.roundToInt()
-            val margin = UiDesignTokens.fixed.tooltipFlipMargin.roundToInt()
-            val width = UiDesignTokens.fixed.tooltipMaxWidth.roundToInt()
-            val height =
-                minOf(
-                    UiDesignTokens.fixed.tooltipMaxHeight.roundToInt(),
-                    padding * 2 + 24 + tooltip.bodyLines.take(5).size * 22,
-                ).coerceAtLeast(52)
-            val anchor = tooltip.anchor.bounds
-            val shell = frame.shellContentBounds
-            val bottomLogTop = frame.bottomLogReservedBounds.top
-            val minX = shell.x.roundToInt()
-            val maxX = shell.right.roundToInt()
-            val minY = maxOf(shell.y.roundToInt(), bottomLogTop.roundToInt())
-            val maxY = shell.top.roundToInt()
-            val candidates =
-                listOf(
-                    RectInt(anchor.right + margin, anchor.y, width, height),
-                    RectInt(anchor.x, anchor.y - margin - height, width, height),
-                    RectInt(anchor.x - margin - width, anchor.y, width, height),
-                    RectInt(anchor.x, anchor.top + margin, width, height),
-                )
-            return candidates.firstOrNull { rect ->
-                rect.x >= minX && rect.right <= maxX && rect.y >= minY && rect.top <= maxY
-            } ?: RectInt(
-                x = (anchor.right + margin).coerceIn(minX, maxX - width),
-                y = anchor.y.coerceIn(minY, maxY - height),
-                width = minOf(width, maxX - minX),
-                height = minOf(height, maxY - minY),
-            )
         }
 
         private fun drawModal(

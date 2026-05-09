@@ -147,9 +147,29 @@ Result:
 - `modalFrames order truth`: `OverlayState.modalFrames` is bottom-to-top; `ModalStackTest.framesAreBottomToTopForProjection` and `TileViewportFocusProjectionTest.scansModalFramesTopToBottomFromBottomFirstList` cover this.
 - `anchor resolution owner`: `FrameTileOverlayAnchorResolver`; `WORLD_TILE` resolves through current `TileMapViewport.tileRect`, panel/modal/row anchors resolve through typed rects.
 - `precomputed text layout fields`: `ShellTextLayout.playerName`, `summaryLines`, `targetTitle`, `targetLines`, `messageLines`, `leftRail`, `rightPanel`, `footerHints`, `hotbar`; plus `TileTooltipModel.titleLine`, `TileTooltipModel.bodyLines`, `TileModalModel.titleLine`, `TileModalModel.bodyLines`, `TileModalModel.footerHintLines`, `TileToastModel.line`, `TileDebugHintModel.line`.
+- `precomputed tooltip placement fields`: `TileTooltipModel.placedRect`; `TileTooltipPlacementSolver` owns `right -> down -> left -> up` candidate order, bottom-log avoidance and fallback clamp before `TileOverlayRenderer` draws.
 - `temporary dual-write fields`: `OverlayState.targetingCursor`, `OverlayState.inspectCursor`, `ModalFrameLocalState.targetingCursor`, `ModalFrameLocalState.inspectCursor`.
 - `current check owner`: `TileViewportFocusProjection`.
 - `deletion condition`: remove overlay-level cursor fallback fields when modal-local cursor becomes the sole spatial cursor authority for inspect / targeting / combat decision.
+
+| Owner type | Source file | Visibility | Notes |
+| --- | --- | --- | --- |
+| `TileMapRenderer` | `TileRenderer.kt` | `private object` | Map renderer pass nested under `TileRenderer` for this PR; consumes `TileMapLayerPlan` and `TileMapViewport`. |
+| `TileShellRenderer` | `TileRenderer.kt` | `private object` | Shell renderer pass nested under `TileRenderer`; consumes `ShellRenderFrame` and precomputed `ShellTextLayout`. |
+| `TileOverlayRenderer` | `TileRenderer.kt` | `private object` | Overlay renderer pass nested under `TileRenderer`; now consumes `TileTooltipModel.placedRect` instead of calculating tooltip placement in draw path. |
+| `TileOverlayModelBuilder` | `TileOverlayModels.kt` | `internal object` | Owns tooltip priority, modal suppression, active modal/backdrop and tooltip placement normalization. |
+| `FrameTileOverlayAnchorResolver` | `TileOverlayModels.kt` | `internal class` | Resolves world anchors through the current `TileMapViewport`; resolves panel/modal row anchors from presenter rects. |
+| `TileTooltipPlacementSolver` | `TileTooltipPlacementSolver.kt` | `internal object` | Owns tooltip rect placement and fallback clamp from typed shell/bottom-log bounds. |
+
+## Round 3 Review Absorption
+
+| Review item | Verification result | Action |
+| --- | --- | --- |
+| `tooltipRect` placement still ran in the overlay draw path | Confirmed: placement was calculated in `TileRenderer.drawTooltip` before this follow-up. | Fixed: placement moved to `TileTooltipPlacementSolver` and stored in `TileTooltipModel.placedRect`; renderer now only draws the precomputed rect. |
+| Frame ownership self-audit lacked an owner type to source file mapping | Confirmed: self-audit listed owners but did not map owner type, source file and visibility. | Fixed: added the owner mapping table above. |
+| `TileRenderer.kt` still hosts three renderer pass owners as nested `private object`s | Confirmed and structurally valid under the PR-01-1 equivalent naming clause, but it remains a follow-up maintainability risk. | Deferred: keep behavior stable in this PR; split `TileMapRenderer` / `TileShellRenderer` / `TileOverlayRenderer` into independent `internal object` files before PR-02 if scope allows. |
+| `TileRenderModel.kt` remains a 2000+ line presentation model file | Confirmed, but the file is mostly immutable presentation models and a broad split would be mechanical with high merge risk. | Deferred: split shell/overlay presentation model files in a dedicated cleanup PR before adding PR-03/PR-07 fields. |
+| `TileOverlayModels.kt` co-locates model, builder and resolver | Confirmed but only 334 lines at this point. | Deferred: split when new PR-03/PR-06/PR-07 anchor families add real pressure; no behavior change needed now. |
 
 ## Overlay Conflict Evidence
 

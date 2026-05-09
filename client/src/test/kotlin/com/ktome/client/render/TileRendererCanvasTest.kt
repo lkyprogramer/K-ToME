@@ -1423,7 +1423,7 @@ class TileRendererCanvasTest {
             )
         val tooltip = requireNotNull(summary.overlayFrame.overlayModel.selectedTooltip)
 
-        assertTrue(tooltip.anchor.bounds.y >= summary.overlayFrame.bottomLogReservedBounds.top)
+        assertTrue(tooltip.placedRect.y >= summary.overlayFrame.bottomLogReservedBounds.top)
     }
 
     @Test
