@@ -105,11 +105,11 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 
 ## Visual Manifest Field Policy
 
-canonical、runtime、example 与 content-pack visual manifest 必须使用同一套严格字段合同。`VisualManifestEntry` 的玩家表现字段只允许承载资源定位、分类、footprint、pivot、tags 和可选 `tintColorHex`；不得重新引入 client ASCII fallback 所需的 `asciiGlyph`、`asciiColorHex` 或等价字段。
+canonical、runtime、example 与 content-pack visual manifest 必须使用同一套严格字段合同。`VisualManifestEntry` 的玩家表现字段只允许承载资源定位、分类、footprint、pivot、tags 和可选 `tintColorHex`；不得在任何新提交的 manifest 里重新引入 client ASCII fallback 所需的 `asciiGlyph`、`asciiColorHex` 或等价字段。
 
 `tintColorHex` 只用于同一基础视觉资源的表现层 tint metadata，例如 boss variant / actor variant 的色调差异；格式必须为 `#RRGGBB`。它不能表达规则状态、locale 文案、资源路径 fallback 或 terrain/item 通用颜色系统；需要新图时仍必须走 key registry、sheet plan、canonical manifest、runtime manifest 和 resolver/test 闭环。
 
-`manifestLint`、runtime loader strict decoding、content-pack fixture 和 sample pack 必须把未知字段当作错误处理。发现 `asciiGlyph` / `asciiColorHex` 时，正确修复是删除字段并补 Tile visual key 或 `tintColorHex`，不是为旧 ASCII renderer 添加兼容解析。
+`manifestLint`、runtime loader strict decoding、content-pack fixture 和 sample pack 必须把未知字段当作错误处理。发现 canonical / runtime / fixture / sample-pack manifest 中存在 `asciiGlyph` / `asciiColorHex` 时，正确修复是删除字段并补 Tile visual key 或 `tintColorHex`，不是恢复旧 ASCII renderer。runtime loader 只允许对 manifest v1 输入做 decode-only legacy strip：在 strict model decode 前剥离这两个历史字段，其他未知字段仍 fail fast，manifest v2+ 不继承该例外。
 
 ## Key Registry Contract
 

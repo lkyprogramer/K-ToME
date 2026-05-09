@@ -22,6 +22,7 @@ import java.lang.reflect.Proxy
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -32,6 +33,59 @@ class ManifestResolveTest {
 
         assertEquals("ktome-middle-fantasy-painterly-tile-v1", assets.visualManifest.styleTag)
         assertEquals("audio.fallback.silence", assets.audioManifest.fallbackKey)
+    }
+
+    @Test
+    fun `visual manifest v1 accepts removed ASCII entry fields as legacy input`() {
+        val manifest =
+            VisualManifestResourceLoader.decode(
+                visualManifestWithEntryFields(
+                    manifestVersion = 1,
+                    extraEntryFields =
+                        """,
+                        "asciiGlyph": "?",
+                        "asciiColorHex": "#FFFFFF"
+                        """,
+                ),
+                path = "legacy-v1-visual-manifest.json",
+            )
+
+        val entry = manifest.entries.single()
+        assertEquals("missing_visual", entry.key)
+        assertEquals(null, entry.tintColorHex)
+    }
+
+    @Test
+    fun `visual manifest v1 still rejects non legacy unknown entry fields`() {
+        assertThrows(ManifestLoadException::class.java) {
+            VisualManifestResourceLoader.decode(
+                visualManifestWithEntryFields(
+                    manifestVersion = 1,
+                    extraEntryFields =
+                        """,
+                        "unexpectedField": true
+                        """,
+                ),
+                path = "unknown-field-visual-manifest.json",
+            )
+        }
+    }
+
+    @Test
+    fun `visual manifest v2 rejects removed ASCII entry fields`() {
+        assertThrows(ManifestLoadException::class.java) {
+            VisualManifestResourceLoader.decode(
+                visualManifestWithEntryFields(
+                    manifestVersion = 2,
+                    extraEntryFields =
+                        """,
+                        "asciiGlyph": "?",
+                        "asciiColorHex": "#FFFFFF"
+                        """,
+                ),
+                path = "v2-visual-manifest.json",
+            )
+        }
     }
 
     @Test
@@ -336,6 +390,29 @@ class ManifestResolveTest {
                     targetablePositions = emptyList(),
                 ),
         )
+
+    private fun visualManifestWithEntryFields(
+        manifestVersion: Int,
+        extraEntryFields: String,
+    ): String =
+        """
+        {
+          "manifestVersion": $manifestVersion,
+          "styleTag": "test-style",
+          "fallbackKey": "missing_visual",
+          "entries": [
+            {
+              "key": "missing_visual",
+              "category": "debug",
+              "rawOutputPath": "debug/missing_visual.png",
+              "footprint": "1x1",
+              "pivotX": 0.5,
+              "pivotY": 0.5,
+              "tags": []$extraEntryFields
+            }
+          ]
+        }
+        """.trimIndent()
 
     private fun <T> withHeadlessGdx(block: () -> T): T {
         val backend = HeadlessApplication(object : ApplicationAdapter() {}, HeadlessApplicationConfiguration())

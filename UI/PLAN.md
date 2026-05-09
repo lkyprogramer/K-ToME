@@ -40,7 +40,7 @@ Codex CLI 生图验证结论：
 稳定合同：
 
 - 第一阶段不改玩法规则、不改存档/replay/profile schema。
-- 第一阶段不引入 atlas / region manifest schema，仍输出单 PNG 并写入 `rawOutputPath`；`VisualManifestEntry` 字段合同以 [pr/README.md](./pr/README.md#visual-manifest-field-policy) 为准，不保留 ASCII manifest 字段。
+- 第一阶段不引入 atlas / region manifest schema，仍输出单 PNG 并写入 `rawOutputPath`；`VisualManifestEntry` 字段合同以 [pr/README.md](./pr/README.md#visual-manifest-field-policy) 为准，不在 canonical / runtime / fixture / sample-pack manifest 中保留 ASCII manifest 字段。旧 v1 manifest decode-only 剥离规则只用于避免历史 content pack 因已删除字段启动失败，不是新的 authoring 合同。
 - 不把规则状态复制进 client；client 只消费 snapshot 和 manifest。
 - 图片本身不是资源映射真相；`sheet-plan.yaml` 才是 `sheet cell -> visualKey -> rawOutputPath` 的唯一权威。
 

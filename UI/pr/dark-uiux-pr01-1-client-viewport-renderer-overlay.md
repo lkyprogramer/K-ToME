@@ -543,11 +543,11 @@ Modal worked examples:
 3. `client/src/test/kotlin/com/ktome/client/render/AsciiRenderModelTest.kt`
 4. `client/src/main/resources/debug/tileset_foundation_ascii_*.png`
 5. `game/src/main/resources/data/tilesets/index.yaml` 中的 `*.ascii*` client tileset key
-6. visual manifest / source spec 中的 `asciiGlyph`、`asciiColorHex` 和 `*.ascii*` client visual key，路径至少包括 `assets-src/image/specs/*.json`、`assets-src/image/manifests/*.json`、`client/src/main/resources/manifests/*.json`、`examples/content-packs/*/visual/*.json`、`tools/src/main/resources/fixtures/content-packs/**/visual/*.json`
+6. committed visual manifest / source spec artifact 中的 `asciiGlyph`、`asciiColorHex` 和 `*.ascii*` client visual key，路径至少包括 `assets-src/image/specs/*.json`、`assets-src/image/manifests/*.json`、`client/src/main/resources/manifests/*.json`、`examples/content-packs/*/visual/*.json`、`tools/src/main/resources/fixtures/content-packs/**/visual/*.json`
 7. locale 中只服务 client ASCII renderer 的 key；删除前必须在 manual record 列出待删 key 和消费者扫描结果
 8. golden/manual evidence 中的 `*ascii*` client screenshot 或 text snapshot
 
-允许 `GameMap.fromAscii`、core/game test fixture 的 ASCII map literal、Python resource scripts 中的 `json.dumps(..., ensure_ascii=...)` 参数、white-box raw ASCII map summary 继续存在；这些不是 client renderer，也不得作为玩家 UI evidence。PR close 前必须记录 §9 中合并后的 ASCII 删除扫描命令结果摘要：期望 client renderer/model/manifest 字段为 0 命中；如出现 `GameMap.fromAscii` 或 core/test fixture 命中，必须标记为允许的非 client renderer 路径。
+允许 `GameMap.fromAscii`、core/game test fixture 的 ASCII map literal、Python resource scripts 中的 `json.dumps(..., ensure_ascii=...)` 参数、white-box raw ASCII map summary、runtime loader 对历史 v1 visual manifest 的 decode-only field strip 继续存在；这些不是 client renderer，也不得作为玩家 UI evidence 或新 manifest authoring 合同。PR close 前必须记录 §9 中合并后的 ASCII 删除扫描命令结果摘要：期望 client renderer/model 和 committed manifest artifact 字段为 0 命中；如出现 `GameMap.fromAscii`、core/test fixture 或 loader legacy strip 命中，必须标记为允许的非 client renderer 路径。
 
 ## 7. 非目标
 
@@ -622,13 +622,19 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew acceptanceContractLint
 set +e
-rg -n -i 'AsciiRenderer|AsciiRenderModel|asciiGlyph|asciiColorHex|tileset_foundation_ascii|\.ascii' \
+rg -n -i 'AsciiRenderer|AsciiRenderModel|tileset_foundation_ascii|\.ascii' \
   client/src assets-src/image/specs assets-src/image/manifests client/src/main/resources examples/content-packs \
   tools/src/main/resources game/src/main/resources/data/tilesets
-asciiScanStatus=$?
+rendererScanStatus=$?
+rg -n -i 'asciiGlyph|asciiColorHex' \
+  assets-src/image/specs assets-src/image/manifests client/src/main/resources/manifests examples/content-packs \
+  tools/src/main/resources/fixtures/content-packs
+manifestScanStatus=$?
 set -e
-if [ "$asciiScanStatus" -eq 0 ]; then exit 1; fi
-if [ "$asciiScanStatus" -gt 1 ]; then exit "$asciiScanStatus"; fi
+if [ "$rendererScanStatus" -eq 0 ]; then exit 1; fi
+if [ "$rendererScanStatus" -gt 1 ]; then exit "$rendererScanStatus"; fi
+if [ "$manifestScanStatus" -eq 0 ]; then exit 1; fi
+if [ "$manifestScanStatus" -gt 1 ]; then exit "$manifestScanStatus"; fi
 ./gradlew :client:test --tests com.ktome.client.render.TileViewportFocusProjectionTest --tests com.ktome.client.render.TileMapViewportTest --tests com.ktome.client.render.GameShellLayoutTest --tests com.ktome.client.screen.FoundationViewportSupportTest --tests com.ktome.client.render.TileLayerComposerTest --tests com.ktome.client.render.TileRendererCanvasTest --tests com.ktome.client.render.TileOverlayLayerTest
 ./gradlew :client:test --tests com.ktome.client.input.InputHandlerTest --tests com.ktome.client.ui.layout.ModalStackTest --tests com.ktome.client.ui.layout.PaneFocusControllerTest
 ./gradlew :client:clientSmoke
@@ -636,7 +642,7 @@ if [ "$asciiScanStatus" -gt 1 ]; then exit "$asciiScanStatus"; fi
 ./gradlew localeLint contractLint maintainabilityLint verifyChanged
 ```
 
-`rg` 必须在 CI / 本地验证环境可用；若环境缺失 `rg`，manual record 必须提供等价 `grep -rIn` 命令与输出。ASCII 删除扫描必须覆盖 Deletion Checklist 中的 client source、client resources、assets source specs、assets manifests、examples content packs、tools fixtures 和 game tileset resources；只接受 `rg` no-match 退出码 `1` 作为通过，命中退出码 `0` 必须失败，命令错误退出码 `>1` 必须原样失败。允许保留的非 client fallback 例外只能写在 manual record 的 `ASCII Deletion Scan` 子段，不能通过缩小扫描路径隐藏。`acceptanceContractLint` 必须在 PR open 后第一次 commit 跑通；后续每次修改 Acceptance Matrix、Major Decisions、Token Contract 或 Deletion Checklist 都必须重跑。
+`rg` 必须在 CI / 本地验证环境可用；若环境缺失 `rg`，manual record 必须提供等价 `grep -rIn` 命令与输出。ASCII 删除扫描必须覆盖 Deletion Checklist 中的 client source、client resources、assets source specs、assets manifests、examples content packs、tools fixtures 和 game tileset resources；只接受 `rg` no-match 退出码 `1` 作为通过，命中退出码 `0` 必须失败，命令错误退出码 `>1` 必须原样失败。允许保留的非 client fallback / legacy decode 例外只能写在 manual record 的 `ASCII Deletion Scan` 子段，不能通过缩小扫描路径隐藏 committed manifest artifact 或 renderer/model 命中。`acceptanceContractLint` 必须在 PR open 后第一次 commit 跑通；后续每次修改 Acceptance Matrix、Major Decisions、Token Contract 或 Deletion Checklist 都必须重跑。
 
 测试命名必须能从失败名反推出合同：
 
