@@ -47,4 +47,14 @@ class ModalStackTest {
         assertEquals(2, stack.depth)
         assertEquals(listOf(ModalFrameKind.TARGETING, ModalFrameKind.COMBAT_DECISION), stack.frames().map(ModalFrame::kind))
     }
+
+    @Test
+    fun framesAreBottomToTopForProjection() {
+        val stack = ModalStack()
+        stack.push(ModalFrame(ModalFrameKind.INSPECT))
+        stack.push(ModalFrame(ModalFrameKind.ITEM_DETAIL))
+
+        assertEquals(listOf(ModalFrameKind.INSPECT, ModalFrameKind.ITEM_DETAIL), stack.frames().map(ModalFrame::kind))
+        assertEquals(ModalFrameKind.ITEM_DETAIL, stack.frames().last().kind)
+    }
 }

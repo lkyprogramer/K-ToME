@@ -197,9 +197,7 @@ internal data class TileRenderModel(
     val groundLootMarkers: List<TileGroundLootMarkerModel>,
     val actorTiles: List<TileVisualPlacement>,
     val fogTiles: List<TileFogPlacement>,
-    val targetCursor: com.ktome.core.map.Point?,
     val targetCursorState: TileTargetCursorState?,
-    val inspectCursor: com.ktome.core.map.Point?,
     val hud: TileHudModel,
     val messageLines: List<TileMessageLine>,
     val logPresentation: LogPresentationModel,
@@ -209,6 +207,8 @@ internal data class TileRenderModel(
     val combatFeedback: List<TileCombatFeedbackModel>,
     val sidebar: TileSidebarModel,
     val shell: TileShellModel,
+    val playerTile: com.ktome.core.map.Point,
+    val mapDimensions: TileMapDimensions,
 )
 
 internal object TileRenderModelBuilder {
@@ -223,6 +223,9 @@ internal object TileRenderModelBuilder {
         val propByPoint = snapshot.props.associateBy { prop -> point(prop.x, prop.y) }
         val player = requireNotNull(snapshot.actors.singleOrNull { actor -> actor.isPlayer }) {
             "Expected a single player actor in render snapshot."
+        }
+        val playerCell = requireNotNull(cellByPoint[point(snapshot.metadata.playerX, snapshot.metadata.playerY)]) {
+            "Expected player cell at (${snapshot.metadata.playerX}, ${snapshot.metadata.playerY}) in render snapshot."
         }
         val terrainTiles =
             snapshot.mapCells
@@ -345,7 +348,7 @@ internal object TileRenderModelBuilder {
             }
         val messageLines = baseMessageLines + listOfNotNull(uiMessageLine)
 
-        val sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint, propByPoint, combatPanel)
+        val sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint, propByPoint, playerCell, combatPanel)
         return TileRenderModel(
             terrainTiles = terrainTiles,
             propTiles = propTiles,
@@ -353,9 +356,7 @@ internal object TileRenderModelBuilder {
             groundLootMarkers = groundLootMarkers,
             actorTiles = actorTiles,
             fogTiles = fogTiles,
-            targetCursor = overlayState.targetingCursor,
             targetCursorState = combatDecisionTargetCursorState(snapshot, overlayState),
-            inspectCursor = overlayState.inspectCursor,
             hud = hud,
             messageLines = messageLines,
             logPresentation =
@@ -397,7 +398,9 @@ internal object TileRenderModelBuilder {
                     ),
             combatFeedback = buildCombatFeedback(localizer, snapshot.metadata.width, overlayCells, snapshot.combatFeedbackEvents),
             sidebar = sidebar,
-            shell = buildShell(localizer, snapshot, hud, sidebar, messageLines),
+            shell = buildShell(localizer, snapshot, hud, sidebar, messageLines, playerCell),
+            playerTile = point(player.x, player.y),
+            mapDimensions = TileMapDimensions(snapshot.metadata.width, snapshot.metadata.height),
         )
     }
 
@@ -493,6 +496,7 @@ internal object TileRenderModelBuilder {
         hud: TileHudModel,
         sidebar: TileSidebarModel,
         messageLines: List<TileMessageLine>,
+        playerCell: MapCellSnapshot,
     ): TileShellModel {
         val status = snapshot.uiState.playerStatus
         val zoneDescription =
@@ -522,11 +526,30 @@ internal object TileRenderModelBuilder {
                     }
             }.take(4)
         val inventoryCount = snapshot.uiState.inventory.size
+        val groundRows =
+            playerCell.items
+                .take(3)
+                .map { item ->
+                    TileTextRow(renderItemDisplay(localizer, item), itemTone(item))
+                }
+                .ifEmpty { listOf(TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)) }
         val equipmentRows =
             snapshot.uiState.equipment.map { equipment ->
                 val itemName = equipment.item?.let { item -> renderItemDisplay(localizer, item) } ?: "-"
                 TileTextRow("${equipmentSlotLabel(localizer, equipment.slotId)}: $itemName", TileTextTone.WHITE)
-            }
+            }.ifEmpty { listOf(TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)) }
+        val inscriptionRows =
+            snapshot.uiState.inscriptions
+                .map { inscription ->
+                    val cooldownSuffix =
+                        if (inscription.cooldownRemaining > 0) {
+                            " (${inscription.cooldownRemaining})"
+                        } else {
+                            ""
+                        }
+                    TileTextRow("${inscription.hotkey}. ${localizer.text(inscription.nameKey)}$cooldownSuffix", TileTextTone.WHITE)
+                }
+                .ifEmpty { listOf(TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)) }
         val pointRows =
             listOfNotNull(
                 status.statPoints.takeIf { points -> points > 0 }?.let { points ->
@@ -582,8 +605,12 @@ internal object TileRenderModelBuilder {
                             TileTextRow(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), TileTextTone.GOLD),
                         ) +
                             pointRows +
+                            listOf(TileTextRow(localizer.text("ui.sidebar.ground"), TileTextTone.GOLD)) +
+                            groundRows +
                             listOf(TileTextRow(localizer.text("ui.sidebar.equipment"), TileTextTone.GOLD)) +
                             equipmentRows +
+                            listOf(TileTextRow(localizer.text("ui.sidebar.inscriptions"), TileTextTone.GOLD)) +
+                            inscriptionRows +
                             listOf(
                                 TileTextRow(localizer.text("ui.shell.backpack.summary", "count" to inventoryCount), TileTextTone.LIGHT_GRAY),
                                 TileTextRow(localizer.text("ui.shell.resources.bottom_owned"), TileTextTone.GRAY),
@@ -682,11 +709,11 @@ internal object TileRenderModelBuilder {
         actorById: Map<Int, ActorRenderSnapshot>,
         cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
         propByPoint: Map<com.ktome.core.map.Point, PropRenderSnapshot>,
+        playerCell: MapCellSnapshot,
         combatPanel: CombatDecisionPanelModel?,
     ): TileSidebarModel {
         val rows = mutableListOf<TileTextRow>()
         val title = TileRenderer.sidebarTitle(localizer, overlayState.mode)
-        val playerCell = requireNotNull(cellByPoint[point(snapshot.metadata.playerX, snapshot.metadata.playerY)])
 
         when (overlayState.mode) {
             UiMode.MAP -> {

@@ -88,6 +88,8 @@ val verifyChangedTaskPaths =
         ":tools:prepareVerifyChangedPlan",
         ":tools:scopeCoverageLint",
         ":tools:maintainabilityLint",
+        ":client:clientSmoke",
+        ":client:goldenScreenshot",
         ":tools:darkKeyRegistryLint",
         ":tools:darkSpriteSheetLint",
         ":tools:spriteSheetMapLint",

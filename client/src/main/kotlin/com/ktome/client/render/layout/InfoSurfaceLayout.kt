@@ -3,6 +3,8 @@ package com.ktome.client.render.layout
 import com.ktome.client.render.TileLayoutMetrics
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
+import kotlin.math.floor
+import kotlin.math.roundToInt
 
 internal sealed interface InfoSurfaceLayout {
     data object MapDominant : InfoSurfaceLayout
@@ -18,6 +20,8 @@ internal data class InfoSurfaceLayoutRequest(
     val cellWidth: Float,
     val cellHeight: Float,
     val uiRows: Int,
+    val shellWorldWidth: Float = UiDesignTokens.fixed.shellPreferredWorldWidth,
+    val shellWorldHeight: Float = UiDesignTokens.fixed.shellPreferredWorldHeight,
 )
 
 internal object InfoSurfaceLayoutSolver {
@@ -33,24 +37,29 @@ internal object InfoSurfaceLayoutSolver {
 
     private fun mapDominantMetrics(request: InfoSurfaceLayoutRequest): TileLayoutMetrics {
         val tokens = UiDesignTokens
-        val mapWidthPx = request.mapWidth * request.cellWidth
-        val mapHeightPx = request.mapHeight * request.cellHeight
+        require(request.cellWidth.roundToInt() == request.cellHeight.roundToInt()) {
+            "Tile shell layout requires square cells."
+        }
+        val cellSize = request.cellWidth.roundToInt().coerceAtLeast(1)
+        val worldWidth = request.shellWorldWidth.coerceAtLeast(tokens.fixed.shellMinWorldWidth)
+        val worldHeight = request.shellWorldHeight.coerceAtLeast(tokens.fixed.shellMinWorldHeight)
         val mapOffsetY = tokens.fixed.shellBottomHudHeight.coerceAtLeast(request.uiRows * request.cellHeight)
         val panelGap = tokens.spacing.md
-        val leftRailWidth =
-            if (mapWidthPx >= 700f) {
-                208f
-            } else {
-                tokens.fixed.shellLeftRailMinWidth
-            }
-        val rightPanelWidth =
-            if (mapWidthPx >= 700f) {
-                268f
-            } else {
-                tokens.fixed.shellRightPanelMinWidth
-            }
-        val worldWidth = leftRailWidth + panelGap + mapWidthPx + panelGap + rightPanelWidth
-        val worldHeight = mapHeightPx + mapOffsetY
+        val leftRailWidth = tokens.fixed.shellLeftRailMinWidth
+        val rightPanelWidth = tokens.fixed.shellRightPanelMinWidth
+        val mapWidthPx = (worldWidth - leftRailWidth - rightPanelWidth - panelGap * 2f).coerceAtLeast(request.cellWidth)
+        val mapHeightPx = (worldHeight - mapOffsetY).coerceAtLeast(request.cellHeight)
+        val rawMapX = leftRailWidth + panelGap
+        val rawMapY = mapOffsetY
+        val alignedMapWidth = floor(mapWidthPx / cellSize.toFloat()).toInt().coerceAtLeast(1) * cellSize
+        val alignedMapHeight = floor(mapHeightPx / cellSize.toFloat()).toInt().coerceAtLeast(1) * cellSize
+        val alignedMapX = (rawMapX + floor((mapWidthPx - alignedMapWidth) / 2f)).roundToInt()
+        val alignedMapY = (rawMapY + floor((mapHeightPx - alignedMapHeight) / 2f)).roundToInt()
+        val visibleColumns = minOf(request.mapWidth, alignedMapWidth / cellSize).coerceAtLeast(1)
+        val visibleRows = minOf(request.mapHeight, alignedMapHeight / cellSize).coerceAtLeast(1)
+        val innerPaddingX = ((alignedMapWidth - visibleColumns * cellSize) / 2).coerceAtLeast(0)
+        val innerPaddingY = ((alignedMapHeight - visibleRows * cellSize) / 2).coerceAtLeast(0)
+        val cellAlignedMapBounds = RectInt(alignedMapX, alignedMapY, alignedMapWidth, alignedMapHeight)
         val bottomInset = tokens.spacing.md
         val shell =
             GameShellLayout(
@@ -63,7 +72,7 @@ internal object InfoSurfaceLayoutSolver {
                     ),
                 mapBounds =
                     GameShellBounds(
-                        x = leftRailWidth + panelGap,
+                        x = rawMapX,
                         y = mapOffsetY,
                         width = mapWidthPx,
                         height = mapHeightPx,
@@ -81,6 +90,35 @@ internal object InfoSurfaceLayoutSolver {
                         y = 0f,
                         width = worldWidth,
                         height = mapOffsetY,
+                    ),
+                shellContentBounds =
+                    GameShellBounds(
+                        x = 0f,
+                        y = mapOffsetY,
+                        width = worldWidth,
+                        height = mapHeightPx,
+                    ),
+                modalSafeBounds =
+                    ModalSafeBounds(
+                        left = bottomInset.roundToInt(),
+                        right = (worldWidth - bottomInset).roundToInt(),
+                        top = (worldHeight - tokens.spacing.md).roundToInt(),
+                        bottom = (mapOffsetY + tokens.spacing.md).roundToInt(),
+                    ),
+                bottomLogReservedBounds =
+                    GameShellBounds(
+                        x = 0f,
+                        y = tokens.spacing.lg,
+                        width = worldWidth,
+                        height = (tokens.fixed.shellBottomHudHeight * 0.42f).coerceAtLeast(84f),
+                    ),
+                cellAlignedMapBounds = cellAlignedMapBounds,
+                mapInnerPadding =
+                    InsetsInt(
+                        left = innerPaddingX,
+                        right = innerPaddingX,
+                        top = innerPaddingY,
+                        bottom = innerPaddingY,
                     ),
             )
         val hotbarX = bottomInset

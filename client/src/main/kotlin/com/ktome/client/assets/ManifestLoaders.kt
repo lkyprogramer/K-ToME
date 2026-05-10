@@ -8,12 +8,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 class ManifestLoadException(
     message: String,
@@ -22,8 +17,6 @@ class ManifestLoadException(
 
 object VisualManifestResourceLoader {
     private const val resourcePath: String = "/manifests/visual-manifest.json"
-    private const val legacyV1ManifestVersion: Int = 1
-    private val legacyV1VisualEntryFields: Set<String> = setOf("asciiGlyph", "asciiColorHex")
     private val json = Json { ignoreUnknownKeys = false }
 
     fun load(
@@ -72,7 +65,7 @@ object VisualManifestResourceLoader {
         path: String,
     ): VisualManifest =
         try {
-            json.decodeFromJsonElement<VisualManifest>(stripLegacyV1VisualEntryFields(content))
+            json.decodeFromJsonElement<VisualManifest>(json.parseToJsonElement(content))
         } catch (exception: SerializationException) {
             throw ManifestLoadException("Visual manifest is invalid: $path", exception)
         } catch (exception: IllegalArgumentException) {
@@ -81,34 +74,6 @@ object VisualManifestResourceLoader {
 
     private fun InputStream.decode(path: String): VisualManifest =
         use { input -> decode(input.readBytes().decodeToString(), path) }
-
-    private fun stripLegacyV1VisualEntryFields(content: String): JsonElement {
-        val element = json.parseToJsonElement(content)
-        val root = element as? JsonObject ?: return element
-        val version = root["manifestVersion"]?.jsonPrimitive?.intOrNull
-        val entries = root["entries"] as? JsonArray ?: return element
-        if (version != legacyV1ManifestVersion) {
-            return element
-        }
-
-        return JsonObject(
-            root.mapValues { (key, value) ->
-                if (key == "entries") {
-                    JsonArray(
-                        entries.map { entry ->
-                            if (entry is JsonObject) {
-                                JsonObject(entry.filterKeys { field -> field !in legacyV1VisualEntryFields })
-                            } else {
-                                entry
-                            }
-                        },
-                    )
-                } else {
-                    value
-                }
-            },
-        )
-    }
 }
 
 object AudioManifestResourceLoader {

@@ -58,7 +58,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 
 | Sheet ID | Owner PR | Cell Categories | Expected Key Prefix / Scope |
 | --- | --- | --- | --- |
-| `r01-ui-chrome` | PR-02 | `ui_frame` | `ui.frame.*`, screen frame alias for `ui.screen.*` |
+| `r01-ui-chrome` | PR-02 | `ui_frame` | `ui.frame.*`; standalone screens consume shared `ui.frame.panel.body` directly. Future exact `ui.screen.*` frame keys require later direct cells / manifest entries / tests. |
 | `r01-ui-controls` | PR-02 | `icon` | `ui.control.*`, `ui.combat.*`, `ui.state.*`, `ui.screen.*` marker |
 | `r01-ui-hud-icons` | PR-02 | `icon` | `ui.hud.*` |
 | `r02-tiles-ground` | PR-05 | `tile_ground` | `tileset.<tilesetId>.ground_01` for `forest_edge`, `mine`, `ruins`, `shadow_depths` |

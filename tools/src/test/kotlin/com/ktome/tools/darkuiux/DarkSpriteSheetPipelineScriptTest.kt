@@ -715,6 +715,68 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `coverage lint fails owner scope when required owner key is missing`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val ownerContract = tempDir.resolve("owner-contract.yaml")
+        val report = tempDir.resolve("missing-required-key.json")
+        val keys = listOf("ui.contract.a", "ui.contract.b", "ui.contract.c", "ui.contract.d")
+        writeText(plan, largeSheetPlan("r95-contract-owner", cellsForKeys(keys)))
+        writeText(
+            registry,
+            registry("r95-contract-owner", *keys.toTypedArray())
+                .replace("ownerPr: PR-00", "ownerPr: PR-02"),
+        )
+        writeText(
+            ownerContract,
+            ownerContract(
+                ownerPr = "PR-02",
+                sheetId = "r95-contract-owner",
+                requiredKeys = keys + "ui.contract.missing",
+                direct = 5,
+                alias = 0,
+                reserved = 11,
+                total = 16,
+            ),
+        )
+        writeText(
+            manifest,
+            manifestWithRawPaths(*keys.map { key -> key to "dark-v1/ui/${key.replace('.', '_')}.png" }.toTypedArray()),
+        )
+        writeText(runtimeManifest, Files.readString(manifest))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "owner-scope",
+                "--owner-pr",
+                "PR-02",
+                "--owner-contract",
+                ownerContract.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("owner-scope missing required owner keys for PR-02"), result.output)
+        assertTrue(result.output.contains("ui.contract.missing"), result.output)
+        assertTrue(reportText.contains("\"ownerMissingRequiredKeys\": ["), reportText)
+        assertTrue(reportText.contains("\"requiredOwnerKeys\": ["), reportText)
+    }
+
+    @Test
     fun `coverage lint fails owner scope when owner keys are pending`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val registry = tempDir.resolve("key-registry.yaml")
@@ -822,6 +884,10 @@ class DarkSpriteSheetPipelineScriptTest {
             )
         writeText(plan, largeSheetPlan(sheetKeys.map { (sheetId, keys) -> sheetId to cellsForKeys(keys) }))
         writeText(registry, registryForSheets(ownerPr = "PR-02", sheetKeys))
+        writeText(
+            tempDir.resolve("owner-contract.yaml"),
+            ownerContractForSheets(ownerPr = "PR-02", sheetKeys = sheetKeys, direct = 4, alias = 0, reserved = 12, total = 16),
+        )
         val manifestEntries =
             sheetKeys
                 .flatMap { (_, keys) -> keys }
@@ -839,6 +905,8 @@ class DarkSpriteSheetPipelineScriptTest {
                 "PR-02",
                 "--required-owner-sheet-ids",
                 "r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons",
+                "--owner-contract",
+                tempDir.resolve("owner-contract.yaml").toString(),
                 "--plan",
                 plan.toString(),
                 "--registry",
@@ -857,6 +925,8 @@ class DarkSpriteSheetPipelineScriptTest {
         assertTrue(reportText.contains("\"ownerPendingKeys\": []"), reportText)
         assertTrue(reportText.contains("\"ownerOldStyleKeys\": []"), reportText)
         assertTrue(reportText.contains("\"requiredOwnerSheetIds\": ["), reportText)
+        assertTrue(reportText.contains("\"requiredOwnerKeyCountBySheet\": {"), reportText)
+        assertTrue(reportText.contains("\"ownerExpectedKeyCountBySheet\": {"), reportText)
     }
 
     @Test
@@ -877,6 +947,86 @@ class DarkSpriteSheetPipelineScriptTest {
         assertEquals(1, result.exitCode, result.output)
         assertTrue(result.output.contains("r95-full-grid must list every grid slot"), result.output)
         assertTrue(result.output.contains("missing slots="), result.output)
+    }
+
+    @Test
+    fun `sheet plan lint can enforce owner contract cell counts`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val ownerContract = tempDir.resolve("owner-contract.yaml")
+        val keys = listOf("ui.grid.a", "ui.grid.b", "ui.grid.c", "ui.grid.d")
+        writeText(plan, largeSheetPlan("r95-count-contract", fullGridCellsForKeys(keys)))
+        writeText(
+            ownerContract,
+            ownerContract(
+                ownerPr = "PR-02",
+                sheetId = "r95-count-contract",
+                requiredKeys = keys,
+                direct = 4,
+                alias = 1,
+                reserved = 11,
+                total = 16,
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "sheet-plan",
+                "--plan",
+                plan.toString(),
+                "--require-full-grid",
+                "--owner-contract",
+                ownerContract.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("r95-count-contract cell counts mismatch for PR-02"), result.output)
+        assertTrue(result.output.contains("'alias': 1"), result.output)
+    }
+
+    @Test
+    fun `owner contract requires cell counts for every required sheet`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val ownerContract = tempDir.resolve("owner-contract.yaml")
+        val sheetKeys =
+            listOf(
+                "r95-count-a" to keysFor("count-a"),
+                "r95-count-b" to keysFor("count-b"),
+            )
+        writeText(plan, largeSheetPlan(sheetKeys.map { (sheetId, keys) -> sheetId to fullGridCellsForKeys(keys) }))
+        val contractText =
+            ownerContractForSheets(
+                ownerPr = "PR-02",
+                sheetKeys = sheetKeys,
+                direct = 4,
+                alias = 0,
+                reserved = 12,
+                total = 16,
+            )
+                .lineSequence()
+                .filterNot { line -> line.trim().startsWith("r95-count-b:") }
+                .joinToString("\n")
+        writeText(ownerContract, "$contractText\n")
+
+        val result =
+            runScript(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "sheet-plan",
+                "--plan",
+                plan.toString(),
+                "--require-full-grid",
+                "--owner-contract",
+                ownerContract.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(
+            result.output.contains("owner contract requiredCellCountsBySheet must include every requiredSheetIds entry"),
+            result.output,
+        )
+        assertTrue(result.output.contains("missing=r95-count-b"), result.output)
     }
 
     @Test
@@ -1279,6 +1429,18 @@ class DarkSpriteSheetPipelineScriptTest {
         - { row: 3, col: 3, reserved: true, note: reserved }
         """.trimIndent()
 
+    private fun fullGridCellsForKeys(keys: List<String>): String =
+        buildString {
+            keys.forEachIndexed { index, key ->
+                appendLine(
+                    "- { row: ${index / 4}, col: ${index % 4}, targetKey: $key, category: icon, outputName: debug/missing_visual.png, subject: icon $index }",
+                )
+            }
+            for (index in keys.size until 16) {
+                appendLine("- { row: ${index / 4}, col: ${index % 4}, reserved: true, note: reserved }")
+            }
+        }.trim()
+
     private fun largeSheetPlan(
         sheetId: String,
         cells: String,
@@ -1336,6 +1498,49 @@ class DarkSpriteSheetPipelineScriptTest {
                     if (index == 1) {
                         appendLine("    aliasOf: ${keys[0]}")
                     }
+                }
+            }
+        }
+
+    private fun ownerContract(
+        ownerPr: String,
+        sheetId: String,
+        requiredKeys: List<String>,
+        direct: Int,
+        alias: Int,
+        reserved: Int,
+        total: Int,
+    ): String =
+        ownerContractForSheets(
+            ownerPr = ownerPr,
+            sheetKeys = listOf(sheetId to requiredKeys),
+            direct = direct,
+            alias = alias,
+            reserved = reserved,
+            total = total,
+        )
+
+    private fun ownerContractForSheets(
+        ownerPr: String,
+        sheetKeys: List<Pair<String, List<String>>>,
+        direct: Int,
+        alias: Int,
+        reserved: Int,
+        total: Int,
+    ): String =
+        buildString {
+            appendLine("schemaVersion: dark-owner-contract-v1")
+            appendLine("ownerPr: $ownerPr")
+            appendLine("requiredSheetIds:")
+            sheetKeys.forEach { (sheetId, _) -> appendLine("  - $sheetId") }
+            appendLine("requiredCellCountsBySheet:")
+            sheetKeys.forEach { (sheetId, _) ->
+                appendLine("  $sheetId: { direct: $direct, alias: $alias, reserved: $reserved, total: $total }")
+            }
+            appendLine("requiredCells:")
+            sheetKeys.forEach { (sheetId, keys) ->
+                keys.forEach { key ->
+                    appendLine("  - { targetKey: $key, sheetId: $sheetId, category: icon }")
                 }
             }
         }

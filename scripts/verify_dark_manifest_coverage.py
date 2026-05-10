@@ -14,6 +14,7 @@ from dark_sprite_sheet_contract import (
     STYLE_TAG,
     load_key_registry,
     load_manifest_entries,
+    load_owner_contract,
     load_sheet_plan,
     print_errors,
     write_json,
@@ -42,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--coverage-mode", choices=("pr00-dry-run", "owner-scope", "final-full"), default="final-full")
     parser.add_argument("--owner-pr", default="")
     parser.add_argument("--required-owner-sheet-ids", default="")
+    parser.add_argument("--owner-contract", type=pathlib.Path, default=None)
     parser.add_argument("--plan", type=pathlib.Path, default=pathlib.Path("UI/sprite-sheets/sheet-plan.yaml"))
     parser.add_argument("--registry", type=pathlib.Path, default=pathlib.Path("UI/sprite-sheets/key-registry.yaml"))
     parser.add_argument("--manifest", type=pathlib.Path, default=pathlib.Path("assets-src/image/manifests/phase2-visual-manifest.json"))
@@ -70,6 +72,16 @@ def is_old_style_output(entry: dict[str, Any] | None) -> bool:
     return output_state(entry) == "old-style"
 
 
+def key_counts_by_sheet(keys: list[str], registry_by_key: dict[str, dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for key in keys:
+        sheet_id = str(registry_by_key.get(key, {}).get("sheetId", "")).strip()
+        if not sheet_id:
+            continue
+        counts[sheet_id] = counts.get(sheet_id, 0) + 1
+    return dict(sorted(counts.items()))
+
+
 def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]:
     _, cells, plan_errors = load_sheet_plan(args.plan)
     registry_by_key, registry_errors = load_key_registry(args.registry)
@@ -84,6 +96,24 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
     required_owner_sheet_ids = parse_required_sheet_ids(args.required_owner_sheet_ids)
     if args.coverage_mode != "owner-scope" and required_owner_sheet_ids:
         errors.append(f"{args.coverage_mode} coverage must not set --required-owner-sheet-ids.")
+    owner_contract = None
+    if args.owner_contract is not None:
+        if args.coverage_mode != "owner-scope":
+            errors.append(f"{args.coverage_mode} coverage must not set --owner-contract.")
+        owner_contract, contract_errors = load_owner_contract(args.owner_contract)
+        errors += contract_errors
+        if owner_contract is not None:
+            if args.owner_pr and owner_contract.owner_pr != args.owner_pr:
+                errors.append(
+                    f"owner contract ownerPr mismatch: contract={owner_contract.owner_pr} requested={args.owner_pr}."
+                )
+            contract_sheet_ids = owner_contract.required_sheet_ids
+            if required_owner_sheet_ids and required_owner_sheet_ids != contract_sheet_ids:
+                errors.append(
+                    "required owner sheet ids mismatch owner contract: "
+                    f"argument={', '.join(required_owner_sheet_ids)} contract={', '.join(contract_sheet_ids)}."
+                )
+            required_owner_sheet_ids = contract_sheet_ids
 
     registry_keys = sorted(registry_by_key)
     if args.coverage_mode == "owner-scope":
@@ -129,6 +159,34 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
         errors.append(f"owner-scope pending keys for {args.owner_pr}: {', '.join(pending_keys)}.")
     if args.coverage_mode == "owner-scope" and old_style_keys:
         errors.append(f"owner-scope old-style keys for {args.owner_pr}: {', '.join(old_style_keys)}.")
+
+    required_owner_keys: list[str] = []
+    owner_missing_required_keys: list[str] = []
+    owner_unexpected_keys: list[str] = []
+    required_owner_key_count_by_sheet: dict[str, int] = {}
+    owner_expected_key_count_by_sheet: dict[str, int] = {}
+    if args.coverage_mode == "owner-scope" and owner_contract is not None:
+        required_owner_keys = sorted(cell.target_key for cell in owner_contract.required_cells)
+        owner_missing_required_keys = sorted(set(required_owner_keys) - set(expected_keys))
+        owner_unexpected_keys = sorted(set(expected_keys) - set(required_owner_keys))
+        required_owner_key_count_by_sheet = dict(
+            sorted(
+                {
+                    sheet_id: len([cell for cell in owner_contract.required_cells if cell.sheet_id == sheet_id])
+                    for sheet_id in owner_contract.required_sheet_ids
+                }.items()
+            )
+        )
+        owner_expected_key_count_by_sheet = key_counts_by_sheet(expected_keys, registry_by_key)
+        if owner_missing_required_keys:
+            errors.append(
+                f"owner-scope missing required owner keys for {args.owner_pr}: "
+                f"{', '.join(owner_missing_required_keys)}."
+            )
+        if owner_unexpected_keys:
+            errors.append(
+                f"owner-scope unexpected owner keys for {args.owner_pr}: {', '.join(owner_unexpected_keys)}."
+            )
     if args.coverage_mode == "final-full":
         if missing_keys:
             errors.append(f"final-full missing keys: {', '.join(missing_keys)}.")
@@ -169,9 +227,15 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
             {
                 "ownerSheetIds": owner_sheet_ids,
                 "requiredOwnerSheetIds": required_owner_sheet_ids,
+                "requiredOwnerContractPath": args.owner_contract.as_posix() if args.owner_contract else None,
+                "requiredOwnerKeys": required_owner_keys,
                 "ownerExpectedKeys": expected_keys,
                 "ownerCoveredKeys": covered_keys,
                 "ownerMissingKeys": missing_keys,
+                "ownerMissingRequiredKeys": owner_missing_required_keys,
+                "ownerUnexpectedKeys": owner_unexpected_keys,
+                "requiredOwnerKeyCountBySheet": required_owner_key_count_by_sheet,
+                "ownerExpectedKeyCountBySheet": owner_expected_key_count_by_sheet,
                 "ownerPendingKeys": pending_keys,
                 "ownerOldStyleKeys": old_style_keys,
                 "scopeExternalPendingKeys": sorted(

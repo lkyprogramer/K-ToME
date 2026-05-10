@@ -171,6 +171,58 @@ object VerificationTaskRegistry {
             artifactPolicy = VerificationArtifactPolicy(),
         )
 
+    private val clientUiEvidenceDomain =
+        VerificationDomainSpec(
+            domainId = "client-ui-evidence",
+            phaseIds = setOf("dark-uiux"),
+            workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "client-ui-evidence.golden-smoke",
+                        description = "Runs client smoke and screenshot golden evidence for player-visible UI and renderer changes.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedTags = listOf("clientSmoke", "goldenScreenshot"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "client-ui-evidence.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "client/src/main/kotlin/com/ktome/client/render/",
+                                "client/src/main/kotlin/com/ktome/client/screen/",
+                                "client/src/main/kotlin/com/ktome/client/ui/",
+                            ),
+                        ownerRequired = true,
+                    ),
+                    InputScope(
+                        scopeId = "client-ui-evidence.tests",
+                        pathPrefixes =
+                            listOf(
+                                "client/src/test/kotlin/com/ktome/client/golden/",
+                                "client/src/test/kotlin/com/ktome/client/render/",
+                                "client/src/test/kotlin/com/ktome/client/screen/",
+                                "client/src/test/kotlin/com/ktome/client/ui/",
+                            ),
+                        ownerRequired = true,
+                    ),
+                ),
+            ownerTaskPaths = listOf(":client:clientSmoke", ":client:goldenScreenshot"),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
     private val darkUiuxPipelineDomain =
         VerificationDomainSpec(
             domainId = "dark-uiux-pipeline",
@@ -831,6 +883,7 @@ object VerificationTaskRegistry {
             contractLintDomain,
             maintainabilityDomain,
             keywordRegistryDomain,
+            clientUiEvidenceDomain,
             darkUiuxPipelineDomain,
             lootDomain,
             hiddenDomain,

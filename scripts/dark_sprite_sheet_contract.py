@@ -16,6 +16,7 @@ from asset_pipeline_common import ALLOWED_CATEGORIES, load_json, load_yaml
 STYLE_TAG = "ktome-dark-fantasy-sprite-ui-v1"
 SHEET_PLAN_SCHEMA_VERSION = "dark-sprite-sheet-plan-v1"
 KEY_REGISTRY_SCHEMA_VERSION = "dark-key-registry-v1"
+OWNER_CONTRACT_SCHEMA_VERSION = "dark-owner-contract-v1"
 OWNER_PR_PATTERN = re.compile(r"^PR-\d{2}$")
 DARK_RUNTIME_PREFIX = "dark-v1/"
 DARK_RAW_SHEET_DIR = "assets-src/image/raw/sheets/dark-v1"
@@ -86,6 +87,29 @@ class PlanCell:
     @property
     def id(self) -> str:
         return f"{self.sheet_id}:{self.row}:{self.col}"
+
+
+@dataclass(frozen=True)
+class OwnerRequiredCell:
+    target_key: str
+    sheet_id: str
+    category: str
+
+
+@dataclass(frozen=True)
+class OwnerSheetCellCounts:
+    direct: int
+    alias: int
+    reserved: int
+    total: int
+
+
+@dataclass(frozen=True)
+class OwnerContract:
+    owner_pr: str
+    required_sheet_ids: list[str]
+    required_cells: list[OwnerRequiredCell]
+    required_counts_by_sheet: dict[str, OwnerSheetCellCounts]
 
 
 def repo_relative_error(value: str, field_name: str, owner: str) -> str | None:
@@ -323,6 +347,111 @@ def load_key_registry(path: pathlib.Path) -> tuple[dict[str, dict[str, Any]], li
             errors.append(f"Duplicate key-registry targetKey '{target_key}'.")
         by_key[target_key] = entry
     return by_key, errors
+
+
+def load_owner_contract(path: pathlib.Path) -> tuple[OwnerContract | None, list[str]]:
+    payload = load_yaml(path)
+    errors: list[str] = []
+    schema_version = str(payload.get("schemaVersion", "")).strip()
+    if schema_version != OWNER_CONTRACT_SCHEMA_VERSION:
+        errors.append(
+            f"owner contract schemaVersion must be {OWNER_CONTRACT_SCHEMA_VERSION}, got {schema_version or '<missing>'}."
+        )
+
+    owner_pr = str(payload.get("ownerPr", "")).strip()
+    if not OWNER_PR_PATTERN.match(owner_pr):
+        errors.append(f"owner contract ownerPr must use PR-00 format, got '{owner_pr or '<missing>'}'.")
+
+    raw_sheet_ids = payload.get("requiredSheetIds")
+    if not isinstance(raw_sheet_ids, list) or not raw_sheet_ids:
+        errors.append("owner contract requiredSheetIds must be a non-empty list.")
+        required_sheet_ids: list[str] = []
+    else:
+        required_sheet_ids = sorted({str(sheet_id).strip() for sheet_id in raw_sheet_ids if str(sheet_id).strip()})
+        if len(required_sheet_ids) != len(raw_sheet_ids):
+            errors.append("owner contract requiredSheetIds must not contain blank or duplicate sheet ids.")
+
+    required_cells_payload = payload.get("requiredCells")
+    required_cells: list[OwnerRequiredCell] = []
+    seen_target_keys: set[str] = set()
+    if not isinstance(required_cells_payload, list) or not required_cells_payload:
+        errors.append("owner contract requiredCells must be a non-empty list.")
+    else:
+        for index, raw_cell in enumerate(required_cells_payload):
+            owner = f"owner contract requiredCells[{index}]"
+            if not isinstance(raw_cell, dict):
+                errors.append(f"{owner} must be a mapping.")
+                continue
+            target_key = str(raw_cell.get("targetKey", "")).strip()
+            sheet_id = str(raw_cell.get("sheetId", "")).strip()
+            category = str(raw_cell.get("category", "")).strip()
+            if not target_key:
+                errors.append(f"{owner} targetKey is required.")
+            elif target_key in seen_target_keys:
+                errors.append(f"Duplicate owner contract targetKey '{target_key}'.")
+            seen_target_keys.add(target_key)
+            if not sheet_id:
+                errors.append(f"{owner} sheetId is required.")
+            elif required_sheet_ids and sheet_id not in required_sheet_ids:
+                errors.append(f"{owner} sheetId {sheet_id} is not listed in requiredSheetIds.")
+            if category not in ALLOWED_CATEGORIES:
+                errors.append(f"{owner} category '{category}' is not in the asset pipeline allowlist.")
+            if target_key and sheet_id and category:
+                required_cells.append(OwnerRequiredCell(target_key=target_key, sheet_id=sheet_id, category=category))
+
+    counts_payload = payload.get("requiredCellCountsBySheet")
+    required_counts_by_sheet: dict[str, OwnerSheetCellCounts] = {}
+    if not isinstance(counts_payload, dict) or not counts_payload:
+        errors.append("owner contract requiredCellCountsBySheet must be a non-empty mapping.")
+    else:
+        for sheet_id, raw_counts in counts_payload.items():
+            sheet_id_text = str(sheet_id).strip()
+            owner = f"owner contract requiredCellCountsBySheet[{sheet_id_text}]"
+            if required_sheet_ids and sheet_id_text not in required_sheet_ids:
+                errors.append(f"{owner} sheetId is not listed in requiredSheetIds.")
+            if not isinstance(raw_counts, dict):
+                errors.append(f"{owner} must be a mapping.")
+                continue
+            counts = OwnerSheetCellCounts(
+                direct=safe_int(raw_counts.get("direct"), -1),
+                alias=safe_int(raw_counts.get("alias"), -1),
+                reserved=safe_int(raw_counts.get("reserved"), -1),
+                total=safe_int(raw_counts.get("total"), -1),
+            )
+            if min(counts.direct, counts.alias, counts.reserved, counts.total) < 0:
+                errors.append(f"{owner} direct/alias/reserved/total must be non-negative integers.")
+            if counts.direct + counts.alias + counts.reserved != counts.total:
+                errors.append(f"{owner} direct + alias + reserved must equal total.")
+            required_counts_by_sheet[sheet_id_text] = counts
+
+    missing_count_sheet_ids = sorted(set(required_sheet_ids) - set(required_counts_by_sheet))
+    if missing_count_sheet_ids:
+        errors.append(
+            "owner contract requiredCellCountsBySheet must include every requiredSheetIds entry: "
+            f"missing={', '.join(missing_count_sheet_ids)}."
+        )
+
+    required_direct_counts: dict[str, int] = {}
+    for cell in required_cells:
+        required_direct_counts[cell.sheet_id] = required_direct_counts.get(cell.sheet_id, 0) + 1
+    for sheet_id, counts in required_counts_by_sheet.items():
+        if required_direct_counts.get(sheet_id, 0) != counts.direct:
+            errors.append(
+                f"owner contract requiredCells direct count for {sheet_id} must equal requiredCellCountsBySheet.direct: "
+                f"requiredCells={required_direct_counts.get(sheet_id, 0)} direct={counts.direct}."
+            )
+
+    if errors:
+        return None, errors
+    return (
+        OwnerContract(
+            owner_pr=owner_pr,
+            required_sheet_ids=required_sheet_ids,
+            required_cells=required_cells,
+            required_counts_by_sheet=required_counts_by_sheet,
+        ),
+        [],
+    )
 
 
 def load_manifest_entries(path: pathlib.Path) -> dict[str, dict[str, Any]]:

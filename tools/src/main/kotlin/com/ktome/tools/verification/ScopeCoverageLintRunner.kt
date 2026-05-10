@@ -56,6 +56,10 @@ object ScopeCoverageLintRunner {
                     changedFiles = listOf("client/src/main/kotlin/com/ktome/client/ui/talent/DescriptionPresenter.kt"),
                 ),
                 planCase(
+                    caseId = "client_renderer_ui_evidence_scope",
+                    changedFiles = listOf("client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt"),
+                ),
+                planCase(
                     caseId = "maintainability_governance_scope",
                     changedFiles = listOf("docs/rule/ai-change-governance.md"),
                 ),
