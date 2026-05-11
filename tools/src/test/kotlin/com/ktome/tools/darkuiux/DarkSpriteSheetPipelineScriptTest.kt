@@ -1403,7 +1403,7 @@ class DarkSpriteSheetPipelineScriptTest {
         writeFakeCodex(fakeCodex)
 
         val result =
-            runScriptWithEnv(
+            runScriptWithFakePillowAndEnv(
                 mapOf(
                     "PATH" to "${fakeBin}${File.pathSeparator}${System.getenv("PATH")}",
                     "FAKE_CODEX_GENERATED_DIR" to generatedRoot.toString(),
