@@ -286,7 +286,7 @@ object VerificationTaskRegistry {
                     ":tools:darkKeyRegistryLint",
                     ":tools:darkSpriteSheetLint",
                     ":tools:spriteSheetMapLint",
-                    ":tools:darkManifestCoveragePr00DryRun",
+                    ":tools:darkManifestCoveragePr02OwnerScope",
                 ),
             baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
             cachePolicy =

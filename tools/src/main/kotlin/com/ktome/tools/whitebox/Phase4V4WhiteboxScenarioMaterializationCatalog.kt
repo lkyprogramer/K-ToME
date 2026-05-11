@@ -34,6 +34,11 @@ internal object Phase4V4WhiteboxScenarioMaterializationCatalog {
                 windowHeight = 800,
             ),
             Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("dark-uiux-pr02-ui-chrome-sprite-pilot"),
+                windowWidth = 1280,
+                windowHeight = 800,
+            ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
                 id = ValidationScenarioId("phase4-v4-pr03"),
                 windowWidth = 1280,
                 windowHeight = 800,

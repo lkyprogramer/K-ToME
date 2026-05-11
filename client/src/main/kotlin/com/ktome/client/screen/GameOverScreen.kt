@@ -8,9 +8,11 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
+import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.game.OutcomeSummary
 
@@ -55,15 +57,25 @@ class GameOverScreen(
         batch.projectionMatrix = viewport.camera.combined
 
         batch.begin()
-        requireNotNull(chrome).draw(batch, StandaloneChromeRequest(layout = layout, detailAreaMode = StandaloneDetailAreaMode.HIDDEN))
+        requireNotNull(chrome).draw(
+            batch,
+            StandaloneChromeRequest(
+                layout = layout,
+                detailAreaMode = StandaloneDetailAreaMode.HIDDEN,
+                chromeAssets = app.standaloneChromeAssetsOrNull(DarkUiChromeVisualKeys.SCREEN_OUTCOME_DEFEAT_MARKER),
+            ),
+        )
+        val headerContent = layout.header.insetForChromeFrame()
+        val bodyContent = layout.primaryActionStack.insetForChromeFrame()
+        val footerContent = layout.footerHelp.insetForChromeFrame(ChromeSurfaceKind.FooterHint)
         font.color = UiDesignTokens.color.telegraph.high.color()
-        font.draw(batch, app.text("ui.game_over.title"), layout.header.x, layout.header.top - 22f)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(app.text("ui.game_over.title"), headerContent.maxChars()), headerContent.x, headerContent.top - 4f)
         font.color = UiDesignTokens.color.text.primary.color()
         bodyLines.zip(DarkStandaloneScreenLayout.outcomeBodyLineBaselines(bodyLines.size)).forEach { (line, y) ->
-            font.draw(batch, DarkStandaloneScreenLayout.truncate(line, 80), layout.primaryActionStack.x, y)
+            font.draw(batch, DarkStandaloneScreenLayout.truncate(line, bodyContent.maxChars()), bodyContent.x, y.coerceAtLeast(bodyContent.y + 18f))
         }
         font.color = UiDesignTokens.color.text.disabled.color()
-        font.draw(batch, app.text("ui.screen.return_to_menu"), layout.footerHelp.x, MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(app.text("ui.screen.return_to_menu"), footerContent.maxChars()), footerContent.x, footerContent.top - 4f)
         batch.end()
     }
 
@@ -87,10 +99,10 @@ class GameOverScreen(
             batch = SpriteBatch()
         }
         if (font == null) {
-            font = KtomeFonts.createUiFont(size = 20)
+            font = KtomeFonts.createUiFont(size = UiDesignTokens.typography.body)
         }
         if (chrome == null) {
-            chrome = StandaloneScreenChrome()
+            chrome = StandaloneScreenChrome(app.standaloneChromeTextureRepositoryOrNull())
         }
     }
 }

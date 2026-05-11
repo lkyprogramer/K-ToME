@@ -24,13 +24,13 @@
 
 | UI 面 | 代码 / 合同入口 | 必须替换的 UX 内容 | Owner PR | 必填证据 |
 | --- | --- | --- | --- | --- |
-| 首页 / 主菜单 | `MainMenuScreen`、`MainMenuController`、`MainMenuFocusPolicy`、`MainMenuSummaryModel` | 首屏品牌/标题、主操作、继续游戏状态、新开局入口、验证模式入口、语言切换提示、紧凑帮助文案、键盘焦点状态 | PR-01 + PR-02 + PR-07 | `dark-uiux-pr01-home-main-menu` golden/manual；`MainMenuFocusPolicyTest`、`MainMenuControllerTest`、`MainMenuScreenTextTest`；PR-07 packaged app 首页截图 |
+| 首页 / 主菜单 | `MainMenuScreen`、`MainMenuController`、`MainMenuFocusPolicy`、`MainMenuSummaryModel` | 首屏品牌/标题、主操作、继续游戏状态、新开局入口、验证模式入口、语言切换提示、紧凑帮助文案、键盘焦点状态 | PR-01 + PR-02 + PR-02-1 + PR-07 | `dark-uiux-pr01-home-main-menu` golden/manual；`dark-uiux-pr02-1-demo-main-menu`；`MainMenuFocusPolicyTest`、`MainMenuControllerTest`、`MainMenuScreenTextTest`；PR-07 packaged app 首页截图 |
 | 角色创建 / 职业选择 | `PlayerCreationPanel`、profession/race/zone selection state | 职业/种族/区域选择、locked/disabled 状态、summary、开始按钮、长文本截断、locale 切换后的重绘 | PR-01 + PR-06 + PR-07 | `dark-uiux-pr01-home-new-run`；`MainMenuScreenTextTest`；PR-06 profession icon / missing visual coverage |
 | 继续游戏异常 / 复制详情 | `ContinueAvailability`、`ContinueUnavailablePayload`、`ContinueUnavailablePayloadFormatter` | 不可继续原因、复制详情动作、禁用态、焦点态、错误内容不挤压主菜单 | PR-01 + PR-07 | `dark-uiux-pr01-continue-unavailable`；`ContinueUnavailablePayloadFormatterTest`；manual record |
 | 验证模式入口 | `MainMenuAction.ValidationMode`、`GameApp.showValidationSetup` | 主菜单中验证模式入口必须与正式操作同风格，不能像 debug 链接或临时按钮 | PR-01 + PR-07 | `dark-uiux-pr01-validation-entry`；`GameAppLifecycleTest` validation entry case |
-| 验证模式 Setup 页 | `ValidationSetupScreen`、`ValidationSetupController`、`ValidationScenarioPresentationCatalog` | preset/scenario 列表、active pack summary、locale 文案、选中态、禁用态、返回/启动操作、长 scenario 描述、窗口缩放 | PR-01 + PR-02 + PR-07 | `dark-uiux-pr07-validation-setup`；`ValidationSetupControllerTest`；`ClientSmokeHarnessTest` validation setup smoke；packaged app evidence |
+| 验证模式 Setup 页 | `ValidationSetupScreen`、`ValidationSetupController`、`ValidationScenarioPresentationCatalog` | preset/scenario 列表、active pack summary、locale 文案、选中态、禁用态、返回/启动操作、长 scenario 描述、窗口缩放 | PR-01 + PR-02 + PR-02-1 + PR-07 | `dark-uiux-pr07-validation-setup`；`dark-uiux-pr02-1-demo-validation-setup`；`ValidationSetupControllerTest`；`ClientSmokeHarnessTest` validation setup smoke；packaged app evidence |
 | 验证模式运行时 overlay | validation scenario runtime、`ValidationPackSummaryText`、whitebox scenario | 验证标识、content pack summary、scenario evidence、overlay 不遮挡 HUD/日志/地图/任务 | PR-06 + PR-07 | `dark-uiux-pr07-validation-overlay`；validation overlay smoke/golden；`dark-uiux-pr07-final-ui` scenario evidence |
-| 局内主 shell | `FoundationGameScreen`、`TileRenderer`、`GameShellLayout` | 左栏、地图、右栏、底部 HUD、日志、快捷键提示、地图视口、窗口缩放 | PR-01 + PR-02 + PR-07 | `dark-uiux-pr01-shell-1280x800`、`dark-uiux-pr01-shell-min-window`、`GameShellLayoutTest`、`TileRendererCanvasTest` |
+| 局内主 shell | `FoundationGameScreen`、`TileRenderer`、`GameShellLayout`、`DemoShellLayout`、`DemoShellRenderer` | 左侧 icon rail、dominant map stage、右侧地面物品/装备/铭刻/背包 grid scaffold、底部 hero/action/command/log/stats deck、地图视口、窗口缩放 | PR-01 + PR-02 + PR-02-1 + PR-07 | `dark-uiux-pr01-shell-1280x800`、`dark-uiux-pr01-shell-min-window`、`dark-uiux-pr02-1-demo-shell-1280x800`、`dark-uiux-pr02-1-demo-shell-inventory-open`、`dark-uiux-pr02-1-demo-shell-right-panel-grid`、`DemoShellLayoutTest`、`DemoShellRendererTest`、`GameShellLayoutTest`、`TileRendererCanvasTest` |
 | Loading / runtime error state | `UiLoadingState`、`UiErrorState`、`FoundationGameScreen.renderLoadingState`、`FoundationGameScreen.renderErrorState` | loading 文案、recoverable/unrecoverable error、返回/退出动作、debug detail 折叠/复制、暗黑 token 背景 | PR-01 + PR-02 + PR-07 | `dark-uiux-pr07-runtime-loading`、`dark-uiux-pr07-runtime-error`；`UiLoadingStateTest`、`UiErrorPayloadTest` |
 | 全局错误页 | `UiErrorScreen` | asset/manifest/runtime 启动错误页、错误标题、详情、返回/退出动作、复制路径；不能保留旧红底临时页 | PR-01 + PR-02 + PR-07 | `dark-uiux-pr07-ui-error-screen`；manual record；asset failure injection record |
 | 胜利结算页 | `VictoryScreen`、`OutcomeSummaryPresenter` | 胜利标题、run summary、奖励/历史、返回主菜单、继续流程、中文/英文布局 | PR-01 + PR-07 | `dark-uiux-pr07-outcome-victory`；`OutcomeSummaryPresenterTest`；golden outcome set |
@@ -64,6 +64,11 @@
 | `dark-uiux-pr01-shell-1280x800` | PR-01 | 标准窗口局内 shell |
 | `dark-uiux-pr01-shell-min-window` | PR-01 | 最小窗口局内 shell |
 | `dark-uiux-pr02-standalone-screen-chrome` | PR-02 | 首页、验证 setup、结算、错误页共享 chrome/key 消费 |
+| `dark-uiux-pr02-1-demo-shell-1280x800` | PR-02-1 | demo-like 标准窗口局内 shell：icon rail、dominant map stage、right scaffold、bottom deck |
+| `dark-uiux-pr02-1-demo-shell-inventory-open` | PR-02-1 | inventory/modal 或 right panel grid open state 不破坏 demo shell |
+| `dark-uiux-pr02-1-demo-shell-right-panel-grid` | PR-02-1 | 右侧地面物品、装备、铭刻栏、背包 grid scaffold |
+| `dark-uiux-pr02-1-demo-main-menu` | PR-02-1 | main menu / standalone screen 与 demo shell chrome 密度对齐 |
+| `dark-uiux-pr02-1-demo-validation-setup` | PR-02-1 | validation setup list/detail/footer 与 demo shell chrome 密度对齐 |
 | `dark-uiux-pr03-equipment-slots` | PR-03 | 装备 slot、已装备/空/选中态、quality frame、tooltip、固定 hitbox |
 | `dark-uiux-pr03-inventory-empty` | PR-03 | 空背包/空装备 |
 | `dark-uiux-pr03-inventory-stacked` | PR-03 | 重复物品/未来 stack count anchor、quality；真实数量 badge 依赖 typed field |

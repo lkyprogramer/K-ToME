@@ -179,7 +179,7 @@ object Phase4V4WhiteboxScenarioCli {
                 |EXTRA_JAVA_TOOL_OPTIONS=" -D${Phase4V4Pr06WhiteboxProperties.PRIMARY_RESULT}=${'$'}PR06_PRIMARY_RESULT -D${Phase4V4Pr06WhiteboxProperties.EVIDENCE_RESULT}=${'$'}PR06_EVIDENCE_RESULT"
             """.trimMargin()
         } else {
-            """EXTRA_JAVA_TOOL_OPTIONS="""".trimMargin()
+            "EXTRA_JAVA_TOOL_OPTIONS=\"\""
         }
 
     private fun renderRunbook(

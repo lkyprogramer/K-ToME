@@ -10,6 +10,8 @@ import java.nio.file.Path
 
 private const val windowWidth = 1280
 private const val windowHeight = 800
+private const val windowX = 80
+private const val windowY = 60
 private const val contentPackRootsProperty: String = "ktome.contentPackRoots"
 
 fun main() {
@@ -17,6 +19,7 @@ fun main() {
     val configuration = Lwjgl3ApplicationConfiguration().apply {
         setTitle(DesktopLauncherTitleFormatter.format())
         setWindowedMode(windowWidth, windowHeight)
+        setWindowPosition(windowX, windowY)
         useVsync(true)
         setForegroundFPS(60)
         setResizable(true)

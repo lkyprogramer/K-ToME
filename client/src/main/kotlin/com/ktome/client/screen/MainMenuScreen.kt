@@ -12,8 +12,11 @@ import com.ktome.client.audio.AudioRouter
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.render.TileTextMetrics
+import com.ktome.client.render.TileTextStyle
 import com.ktome.client.text.LocalizedTextSeparator
 import com.ktome.client.text.joinLocalizedKeys
+import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.ui.creation.PlayerCreationPanel
 import com.ktome.client.ui.creation.PlayerCreationSectionModel
 import com.ktome.client.ui.token.UiDesignTokens
@@ -185,9 +188,6 @@ internal class MainMenuScreen(
 
         val selectedIndex = controller.selectedIndex()
         val entries = controller.entries(continueAvailability)
-        val footerLanguageY = mainMenuFooterLanguageY(entries.size)
-        val footerControlsY = mainMenuFooterControlsY(entries.size)
-        val footerNoticeY = mainMenuFooterNoticeY(entries.size)
         val playerCreationPanel =
             PlayerCreationPanel.build(
                 professionSection =
@@ -222,12 +222,34 @@ internal class MainMenuScreen(
                     } else {
                         StandaloneDetailAreaMode.VISIBLE
                     },
+                chromeAssets = app.standaloneChromeAssetsOrNull(),
             ),
         )
+        val headerContent = layout.header.insetForChromeFrame()
+        val secondaryContent = layout.secondaryPanel.insetForChromeFrame()
+        val primaryContent = layout.primaryActionStack.insetForChromeFrame()
+        val footerContent = layout.footerHelp.insetForChromeFrame(ChromeSurfaceKind.FooterHint)
+        val detailContent = layout.disabledDetailArea.insetForChromeFrame(ChromeSurfaceKind.FooterHint)
+        val footerBaselineY = footerContent.top - 4f
+        val footerIconReserveWidth = 132f
+        val footerControlsX =
+            (
+                footerContent.x +
+                    TileTextMetrics.approximateTextWidth(text.language, TileTextStyle.SMALL) +
+                    UiDesignTokens.spacing.lg
+            ).coerceAtMost(footerContent.x + footerContent.width * 0.38f)
+        val footerControlsBounds =
+            ScreenPanelBounds(
+                x = footerControlsX,
+                y = footerContent.y,
+                width = (footerContent.right - footerIconReserveWidth - footerControlsX).coerceAtLeast(1f),
+                height = footerContent.height,
+            )
+        val footerNoticeY = detailContent.top - 4f
         font.color = UiDesignTokens.color.quality.rare.color()
-        font.draw(batch, text.title, MAIN_MENU_TEXT_X, MAIN_MENU_TITLE_Y)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.title, headerContent.maxChars()), headerContent.x, headerContent.top - 4f)
         font.color = UiDesignTokens.color.text.secondary.color()
-        font.draw(batch, text.subtitle, MAIN_MENU_TEXT_X, MAIN_MENU_SUBTITLE_Y)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.subtitle, headerContent.maxChars()), headerContent.x, headerContent.top - 34f)
         text.buildSummary.forEachIndexed { index, line ->
             font.color =
                 if (line.disabled) {
@@ -235,7 +257,12 @@ internal class MainMenuScreen(
                 } else {
                     UiDesignTokens.color.text.secondary.color()
                 }
-            font.draw(batch, line.text, MAIN_MENU_BUILD_SUMMARY_X, MAIN_MENU_TITLE_Y - index * MAIN_MENU_FOOTER_LINE_HEIGHT)
+            font.draw(
+                batch,
+                DarkStandaloneScreenLayout.truncate(line.text, secondaryContent.maxChars()),
+                secondaryContent.x,
+                secondaryContent.top - 4f - index * MAIN_MENU_FOOTER_LINE_HEIGHT,
+            )
         }
         PlayerCreationPanel.render(
             batch = batch,
@@ -243,22 +270,28 @@ internal class MainMenuScreen(
             model = playerCreationPanel,
             professionStateColor = selectionStateColor(controller.currentProfessionOption().playabilityState),
             raceStateColor = selectionStateColor(controller.currentRaceOption().playabilityState),
-            x = MAIN_MENU_TEXT_X,
-            topY = MAIN_MENU_PANEL_TOP_Y,
+            x = primaryContent.x,
+            topY = minOf(primaryContent.top, secondaryContent.top) - 4f,
         )
 
-        text.helpLines.forEachIndexed { index, line ->
+        val helpStartY = secondaryContent.y + 48f
+        text.helpLines.take(2).forEachIndexed { index, line ->
             font.color = UiDesignTokens.color.text.secondary.color()
-            font.draw(batch, line, MAIN_MENU_BUILD_SUMMARY_X, mainMenuHelpLineY(index))
+            font.draw(
+                batch,
+                secondaryContent.fitText(line, TileTextStyle.SMALL),
+                secondaryContent.x,
+                helpStartY - index * MAIN_MENU_FOOTER_LINE_HEIGHT,
+            )
         }
 
         font.color = UiDesignTokens.color.quality.rare.color()
-        font.draw(batch, text.language, MAIN_MENU_TEXT_X, footerLanguageY)
+        font.draw(batch, footerContent.fitText(text.language, TileTextStyle.SMALL), footerContent.x, footerBaselineY)
         font.color = UiDesignTokens.color.text.disabled.color()
-        font.draw(batch, text.controls, MAIN_MENU_TEXT_X, footerControlsY)
+        font.draw(batch, footerControlsBounds.fitText(text.controls, TileTextStyle.SMALL), footerControlsBounds.x, footerBaselineY)
         text.footerNotice?.let { message ->
             font.color = UiDesignTokens.color.status.badge.turns.color()
-            font.draw(batch, message, MAIN_MENU_TEXT_X, footerNoticeY)
+            font.draw(batch, detailContent.fitText(message, TileTextStyle.SMALL), detailContent.x, footerNoticeY)
         }
         batch.end()
     }
@@ -283,10 +316,10 @@ internal class MainMenuScreen(
             batch = SpriteBatch()
         }
         if (font == null) {
-            font = KtomeFonts.createUiFont(size = 24)
+            font = KtomeFonts.createUiFont(size = UiDesignTokens.typography.body)
         }
         if (chrome == null) {
-            chrome = StandaloneScreenChrome()
+            chrome = StandaloneScreenChrome(app.standaloneChromeTextureRepositoryOrNull())
         }
     }
 

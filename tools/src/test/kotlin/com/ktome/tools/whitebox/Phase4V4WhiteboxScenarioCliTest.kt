@@ -25,6 +25,7 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(exception.message?.contains("phase4-v4-pr00-selftest") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr01") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr02") == true)
+        assertTrue(exception.message?.contains("dark-uiux-pr02-ui-chrome-sprite-pilot") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr03") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr04") == true)
     }
@@ -55,6 +56,7 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(launchScript.contains("APP_BUNDLE=\"${'$'}REPO_ROOT/client/build/release/K-ToME.app\""))
         assertTrue(launchScript.contains("EXPECTED_HASH=\"$(awk '{print ${'$'}1}' \"${'$'}APP_EXECUTABLE_SHA256\")\""))
         assertTrue(launchScript.contains("BEFORE_PIDS=\"$(pgrep -f \"${'$'}APP_EXECUTABLE\" || true)\""))
+        assertTrue(launchScript.contains("EXTRA_JAVA_TOOL_OPTIONS=\"\""))
         assertTrue(launchScript.contains("-Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"))
         assertTrue(launchScript.contains("env JAVA_TOOL_OPTIONS=\"${'$'}JAVA_TOOL_OPTIONS\" open -n \"${'$'}APP_BUNDLE\""))
         assertTrue(launchScript.contains("CANDIDATE_PIDS=\"$(pgrep -f \"${'$'}APP_EXECUTABLE\" || true)\""))
@@ -108,6 +110,35 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(expectedEvidence.contains("phase4-v4-pr01-app.log"))
         assertTrue(expectedEvidence.contains("log.talent.breakpoint_chosen"))
         assertTrue(expectedEvidence.contains("phase4-v4-pr01-tier3-locked-reason.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
+    fun `dark uiux pr02 scenario generates chrome fit evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr02-ui-chrome-sprite-pilot"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/dark-uiux-pr02-ui-chrome-sprite-pilot/evidence/dark-uiux-pr02-ui-chrome-sprite-pilot-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=dark-uiux-pr02-ui-chrome-sprite-pilot"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("dark-uiux-pr02-shell-hud-frame-fit.png"))
+        assertTrue(runbook.contains("dark-uiux-pr02-inventory-modal-frame-fit.png"))
+        assertTrue(runbook.contains("dark-uiux-pr02-validation-overlay-frame-fit.png"))
+        assertTrue(runbook.contains("dark-uiux-pr02-runtime-error-loading-fit.png"))
+        assertTrue(runbook.contains("UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md"))
+        assertTrue(runbook.contains("PR-02 chrome frame content bounds"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr02-ui-chrome-sprite-pilot\""))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr02-ui-chrome-sprite-pilot-app.log"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr02-shell-hud-frame-fit.png.sha256"))
         assertFalseMachinePath(expectedEvidence)
     }
 
@@ -262,6 +293,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr00-selftest
             |  - id: phase4-v4-pr01
             |  - id: phase4-v4-pr02
+            |  - id: dark-uiux-pr02-ui-chrome-sprite-pilot
             |  - id: phase4-v4-pr03
             |  - id: phase4-v4-pr04
             |  - id: phase4-v4-pr05

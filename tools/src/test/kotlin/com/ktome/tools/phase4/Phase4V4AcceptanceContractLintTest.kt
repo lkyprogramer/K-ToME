@@ -163,9 +163,19 @@ class Phase4V4AcceptanceContractLintTest {
                     minimumRows = 4,
                 ),
                 PrDoc(
+                    requirementPrefix = "UI01-1",
+                    path = "UI/pr/dark-uiux-pr01-1-client-viewport-renderer-overlay.md",
+                    minimumRows = 7,
+                ),
+                PrDoc(
                     requirementPrefix = "UI02",
                     path = "UI/pr/dark-uiux-pr02-ui-chrome-sprite-pilot.md",
                     minimumRows = 5,
+                ),
+                PrDoc(
+                    requirementPrefix = "UI02-1",
+                    path = "UI/pr/dark-uiux-pr02-1-demo-shell-foundation.md",
+                    minimumRows = 8,
                 ),
                 PrDoc(
                     requirementPrefix = "UI03",

@@ -1,0 +1,35 @@
+Prompt ID: 002-r01-ui-controls
+Sheet ID: r01-ui-controls
+Expected output file: assets-src/image/raw/sheets/dark-v1/r01-ui-controls.png
+Canvas: 1024x1024
+Grid: 8 columns x 8 rows
+Cell: 128x128
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create a 1024x1024 transparent-background sprite sheet for K-ToME.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Grid: 8 columns x 8 rows, each cell is 128x128.
+Every listed non-reserved cell contains exactly one centered subject, no text, no numbers, no labels, no watermark, no merged cells.
+Only render the cells listed below; leave every unlisted grid slot transparent and empty.
+Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
+Cell list:
+row 0 col 0 targetKey ui.screen.validation.badge: small validation crest icon with check mark shaped rune but no text.
+row 0 col 1 targetKey ui.screen.outcome.victory_marker: victory laurel marker with ember-gold torch and dark iron backing.
+row 0 col 2 targetKey ui.screen.outcome.defeat_marker: defeat marker with cracked shield silhouette and blood red ember.
+row 0 col 3 targetKey ui.screen.error.marker: error warning sigil on dark metal plate with red edge glow.
+row 0 col 4 targetKey ui.screen.loading.marker: loading hourglass rune with dim cyan circular edge.
+row 0 col 5 targetKey ui.control.back.icon: back arrow control icon as worn brass arrow on dark iron disk.
+row 0 col 6 targetKey ui.control.confirm.icon: confirm check control icon as ember-gold mark on iron disk.
+row 0 col 7 targetKey ui.control.copy.icon: copy parchment control icon on dark leather and iron disk.
+row 1 col 0 targetKey ui.control.backpack.icon: rugged adventurer backpack icon with old leather and brass clasp.
+row 1 col 1 targetKey ui.control.equipment.icon: equipment armor icon with breastplate silhouette and cyan rim.
+row 1 col 2 targetKey ui.combat.action.icon: crossed weapon and ember spark action-choice icon.
+row 1 col 3 targetKey ui.combat.method.icon: branching tactic glyph with two route strokes.
+row 1 col 4 targetKey ui.combat.target.icon: target reticle icon with iron ring and cyan center glow.
+row 1 col 5 targetKey ui.combat.lock.icon: locked combat option icon with black iron padlock and ember keyhole.
+row 1 col 6 targetKey ui.combat.invalid.icon: invalid combat option icon with cracked red warning slash no text.
+row 1 col 7 targetKey ui.state.locked.icon: locked state glyph with cold grey chain over dark iron node.
+row 2 col 0 targetKey ui.state.learnable.icon: learnable state glyph with cyan spark in open rune circle.
+row 2 col 1 targetKey ui.state.active.icon: active state glyph with green flame in dark rune circle.
+row 2 col 2 targetKey ui.state.reserve.icon: reserve state glyph with ember-gold side flame in iron rune circle.
+Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

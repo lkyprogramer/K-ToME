@@ -335,6 +335,42 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `sheet plan lint allows formal owner sheets without alias cells`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        writeText(
+            plan,
+            """
+            schemaVersion: dark-sprite-sheet-plan-v1
+            styleTag: ktome-dark-fantasy-sprite-ui-v1
+            sheets:
+              - sheetId: r97-no-alias-owner
+                round: 1
+                type: large-sheet
+                styleTag: ktome-dark-fantasy-sprite-ui-v1
+                rawSheetPath: assets-src/image/raw/sheets/dark-v1/r97-no-alias-owner.png
+                outputRoot: client/src/main/resources
+                promptBase: no alias formal owner sheet
+                grid: { columns: 4, rows: 4, cellWidth: 256, cellHeight: 256 }
+                cells:
+                  - { row: 0, col: 0, targetKey: ui.no_alias.a, category: icon, outputName: dark-v1/test/a.png, subject: direct icon a }
+                  - { row: 0, col: 1, targetKey: ui.no_alias.b, category: icon, outputName: dark-v1/test/b.png, subject: direct icon b }
+                  - { row: 0, col: 2, targetKey: ui.no_alias.c, category: icon, outputName: dark-v1/test/c.png, subject: direct icon c }
+            """.trimIndent(),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "sheet-plan",
+                "--plan",
+                plan.toString(),
+            )
+
+        assertEquals(0, result.exitCode, result.output)
+    }
+
+    @Test
     fun `sheet plan lint rejects unsupported cell fields`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         writeText(
@@ -459,15 +495,19 @@ class DarkSpriteSheetPipelineScriptTest {
 
     @Test
     fun `slice script skips pending non dark outputs without overwriting fallback resources`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
         val runtimeRoot = tempDir.resolve("runtime")
         val fallback = runtimeRoot.resolve("debug/missing_visual.png")
         Files.createDirectories(fallback.parent)
         val original = byteArrayOf(1, 2, 3, 4)
         Files.write(fallback, original)
+        writeText(plan, largeSheetPlan("r96-pending-fallback", defaultCells()))
 
         val result =
             runScript(
                 "scripts/slice_spritesheet.py",
+                "--plan",
+                plan.toString(),
                 "--runtime-root",
                 runtimeRoot.toString(),
                 "--overwrite",
@@ -563,6 +603,36 @@ class DarkSpriteSheetPipelineScriptTest {
             val reportText = Files.readString(report)
             assertTrue(reportText.contains("\"targetKey\": \"ui.slice.output\""), reportText)
             assertTrue(reportText.contains("\"outputHash\": \""), reportText)
+
+            Files.writeString(
+                report,
+                reportText
+                    .replace("\"qaStatus\": \"DRY_RUN\"", "\"qaStatus\": \"CODEX_VISUAL_CHECKED\"")
+                    .replace("\"reviewer\": null", "\"reviewer\": \"Codex\"")
+                    .replace("\"reviewedAt\": null", "\"reviewedAt\": \"2026-05-10T12:00:00+08:00\""),
+            )
+            val preserved =
+                runScriptWithFakePillow(
+                    "scripts/verify_sprite_sheet_map.py",
+                    "--check",
+                    "map",
+                    "--plan",
+                    plan.toString(),
+                    "--manifest",
+                    manifest.toString(),
+                    "--raw-root",
+                    rawRoot.toString(),
+                    "--contact-root",
+                    contactRoot.toString(),
+                    "--runtime-root",
+                    runtimeRoot.toString(),
+                    "--report",
+                    report.toString(),
+                )
+            val preservedText = Files.readString(report)
+            assertEquals(0, preserved.exitCode, preserved.output)
+            assertTrue(preservedText.contains("\"qaStatus\": \"CODEX_VISUAL_CHECKED\""), preservedText)
+            assertTrue(preservedText.contains("\"reviewer\": \"Codex\""), preservedText)
         } finally {
             Files.deleteIfExists(rawSheet)
             Files.deleteIfExists(contactSheet)
@@ -1250,6 +1320,41 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `manifest lint lets dark owner sheet plan override legacy generated plan path`() {
+        val legacyPlan = tempDir.resolve("legacy-generated-plan.yaml")
+        writeText(
+            legacyPlan,
+            """
+            styleTag: ktome-middle-fantasy-painterly-tile-v1
+            phase2AssetGates:
+              LEGACY-UI:
+                description: stale legacy path for a key now owned by dark sheet-plan.
+                assets:
+                  - id: legacy_ui_combat_action_icon
+                    category: icon
+                    visualKey: ui.combat.action.icon
+                    outputName: phase4/legacy/ui_combat_action_icon.png
+            """.trimIndent(),
+        )
+
+        val result =
+            runScript(
+                "scripts/manifest-lint.py",
+                "--extra-plan",
+                legacyPlan.toString(),
+                "--dark-key-registry",
+                "UI/sprite-sheets/key-registry.yaml",
+                "--dark-sheet-plan",
+                "UI/sprite-sheets/sheet-plan.yaml",
+            )
+
+        assertFalse(
+            result.output.contains("rawOutputPath mismatch for 'ui.combat.action.icon'"),
+            result.output,
+        )
+    }
+
+    @Test
     fun `codex image script writes smoke report from generated image`() {
         val fakeBin = tempDir.resolve("fake-bin")
         val fakeCodex = fakeBin.resolve("codex")
@@ -1259,10 +1364,12 @@ class DarkSpriteSheetPipelineScriptTest {
         writeFakeCodex(fakeCodex)
 
         val result =
-            runScriptWithEnv(
+            runScriptWithFakePillowAndEnv(
                 mapOf(
                     "PATH" to "${fakeBin}${File.pathSeparator}${System.getenv("PATH")}",
                     "FAKE_CODEX_GENERATED_DIR" to generatedRoot.toString(),
+                    "FAKE_CODEX_EXPECT_TTY" to "1",
+                    "FAKE_CODEX_EXPECT_IMAGE_ONLY_PROMPT" to "1",
                 ),
                 "scripts/codex-generate-image.py",
                 "fake dark icon prompt",
@@ -1287,11 +1394,83 @@ class DarkSpriteSheetPipelineScriptTest {
         assertTrue(smokeText.contains("\"sha256\""), smokeText)
     }
 
+    @Test
+    fun `codex image script normalizes declared canvas size`() {
+        val fakeBin = tempDir.resolve("fake-bin")
+        val fakeCodex = fakeBin.resolve("codex")
+        val generatedRoot = tempDir.resolve("generated-images")
+        val output = tempDir.resolve("out/normalized.png")
+        writeFakeCodex(fakeCodex)
+
+        val result =
+            runScriptWithFakePillowAndEnv(
+                mapOf(
+                    "PATH" to "${fakeBin}${File.pathSeparator}${System.getenv("PATH")}",
+                    "FAKE_CODEX_GENERATED_DIR" to generatedRoot.toString(),
+                ),
+                "scripts/codex-generate-image.py",
+                "Canvas: 2x2\nfake dark icon prompt",
+                "--out",
+                output.toString(),
+                "--generated-dir",
+                generatedRoot.toString(),
+                "--timeout-seconds",
+                "5",
+                "--overwrite",
+            )
+
+        assertEquals(0, result.exitCode, result.output)
+        val image = ImageIO.read(output.toFile())
+        assertEquals(2, image.width, result.output)
+        assertEquals(2, image.height, result.output)
+    }
+
+    @Test
+    fun `codex image script preserves aspect ratio when normalizing wide generated image`() {
+        val fakeBin = tempDir.resolve("fake-bin")
+        val fakeCodex = fakeBin.resolve("codex")
+        val generatedRoot = tempDir.resolve("generated-images")
+        val fakeSource = tempDir.resolve("fake-wide.png")
+        val output = tempDir.resolve("out/normalized-wide.png")
+        writeFakeCodex(fakeCodex)
+        writeWideImage(fakeSource)
+
+        val result =
+            runScriptWithFakePillowAndEnv(
+                mapOf(
+                    "PATH" to "${fakeBin}${File.pathSeparator}${System.getenv("PATH")}",
+                    "FAKE_CODEX_GENERATED_DIR" to generatedRoot.toString(),
+                    "FAKE_CODEX_IMAGE_PATH" to fakeSource.toString(),
+                ),
+                "scripts/codex-generate-image.py",
+                "Canvas: 4x4\nfake wide dark icon prompt",
+                "--out",
+                output.toString(),
+                "--generated-dir",
+                generatedRoot.toString(),
+                "--timeout-seconds",
+                "5",
+                "--overwrite",
+            )
+
+        assertEquals(0, result.exitCode, result.output)
+        val image = ImageIO.read(output.toFile())
+        assertEquals(4, image.width, result.output)
+        assertEquals(4, image.height, result.output)
+        assertEquals(0, image.getRGB(0, 0).ushr(24), result.output)
+        assertEquals(255, image.getRGB(0, 1).ushr(24), result.output)
+        assertEquals(255, image.getRGB(3, 2).ushr(24), result.output)
+        assertEquals(0, image.getRGB(0, 3).ushr(24), result.output)
+    }
+
     private fun runScript(vararg args: String): ScriptResult =
         runScriptWithEnv(emptyMap(), *args)
 
     private fun runScriptWithFakePillow(vararg args: String): ScriptResult =
         runScriptWithEnv(mapOf("PYTHONPATH" to fakePillowPythonPath().toString()), *args)
+
+    private fun runScriptWithFakePillowAndEnv(extraEnv: Map<String, String>, vararg args: String): ScriptResult =
+        runScriptWithEnv(mapOf("PYTHONPATH" to fakePillowPythonPath().toString()) + extraEnv, *args)
 
     private fun runScriptWithEnv(extraEnv: Map<String, String>, vararg args: String): ScriptResult {
         val processBuilder =
@@ -1336,13 +1515,43 @@ class DarkSpriteSheetPipelineScriptTest {
             writeText(
                 imageFile,
                 """
+                import binascii
                 import pathlib
+                import struct
+                import zlib
+
+                PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+                class Resampling:
+                    LANCZOS = 1
+
+                class PixelAccess:
+                    def __init__(self, image):
+                        self.image = image
+
+                    def __getitem__(self, key):
+                        x, y = key
+                        return self.image.pixels[y][x]
+
+                    def __setitem__(self, key, value):
+                        x, y = key
+                        self.image.pixels[y][x] = tuple(value)
 
                 class FakeImage:
-                    def __init__(self, path=None, rect=(0, 0, 1024, 1024)):
+                    def __init__(self, path=None, size=None, rect=None, color=(255, 51, 102, 255), pixels=None):
                         self.path = str(path or "")
-                        self.rect = tuple(rect)
-                        self.size = (self.rect[2] - self.rect[0], self.rect[3] - self.rect[1])
+                        source_size = size or read_png_size(path) or (1024, 1024)
+                        self.rect = tuple(rect or (0, 0, source_size[0], source_size[1]))
+                        self.width = max(1, self.rect[2] - self.rect[0])
+                        self.height = max(1, self.rect[3] - self.rect[1])
+                        self.size = (self.width, self.height)
+                        if pixels is None:
+                            self.pixels = [
+                                [tuple(color) for _ in range(self.width)]
+                                for _ in range(self.height)
+                            ]
+                        else:
+                            self.pixels = pixels
 
                     def __enter__(self):
                         return self
@@ -1354,20 +1563,78 @@ class DarkSpriteSheetPipelineScriptTest {
                         return self
 
                     def crop(self, rect):
-                        return FakeImage(self.path, rect)
+                        left, top, right, bottom = rect
+                        width = max(1, right - left)
+                        height = max(1, bottom - top)
+                        return FakeImage(self.path, size=(width, height), rect=(0, 0, width, height))
 
                     def getbbox(self):
                         return (0, 0, self.size[0], self.size[1])
 
                     def tobytes(self):
-                        payload = f"{self.path}|{self.rect}|{self.size}".encode("utf-8")
-                        return payload * 32
+                        return b"".join(
+                            bytes(channel for pixel in row for channel in pixel)
+                            for row in self.pixels
+                        )
+
+                    def load(self):
+                        return PixelAccess(self)
+
+                    def resize(self, size, resample=None):
+                        return FakeImage(self.path, size=size)
+
+                    def alpha_composite(self, image, dest):
+                        dest_x, dest_y = dest
+                        for y in range(image.height):
+                            target_y = dest_y + y
+                            if target_y < 0 or target_y >= self.height:
+                                continue
+                            for x in range(image.width):
+                                target_x = dest_x + x
+                                if target_x < 0 or target_x >= self.width:
+                                    continue
+                                if image.pixels[y][x][3] > 0:
+                                    self.pixels[target_y][target_x] = image.pixels[y][x]
 
                     def save(self, path):
-                        pathlib.Path(path).write_bytes(b"fake-png:" + self.tobytes())
+                        write_png(pathlib.Path(path), self.width, self.height, self.pixels)
 
                 def open(path):
                     return FakeImage(path)
+
+                def new(mode, size, color):
+                    return FakeImage(size=size, color=color)
+
+                def read_png_size(path):
+                    if path is None:
+                        return None
+                    data = pathlib.Path(path).read_bytes()
+                    if data[:8] != PNG_SIGNATURE or data[12:16] != b"IHDR":
+                        return None
+                    width, height = struct.unpack(">II", data[16:24])
+                    return width, height
+
+                def png_chunk(kind, payload):
+                    return (
+                        struct.pack(">I", len(payload))
+                        + kind
+                        + payload
+                        + struct.pack(">I", binascii.crc32(kind + payload) & 0xFFFFFFFF)
+                    )
+
+                def write_png(path, width, height, pixels):
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    raw_rows = []
+                    for row in pixels:
+                        raw_rows.append(b"\x00" + b"".join(bytes(pixel) for pixel in row))
+                    payload = zlib.compress(b"".join(raw_rows))
+                    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+                    path.write_bytes(
+                        PNG_SIGNATURE
+                        + png_chunk(b"IHDR", header)
+                        + png_chunk(b"IDAT", payload)
+                        + png_chunk(b"IEND", b"")
+                    )
                 """.trimIndent(),
             )
         }
@@ -1390,6 +1657,17 @@ class DarkSpriteSheetPipelineScriptTest {
         ImageIO.write(image, "png", path.toFile())
     }
 
+    private fun writeWideImage(path: Path) {
+        Files.createDirectories(path.parent)
+        val image = BufferedImage(4, 2, BufferedImage.TYPE_INT_ARGB)
+        for (x in 0 until image.width) {
+            for (y in 0 until image.height) {
+                image.setRGB(x, y, 0xFFFF3366.toInt())
+            }
+        }
+        ImageIO.write(image, "png", path.toFile())
+    }
+
     private fun writeFakeCodex(path: Path) {
         Files.createDirectories(path.parent)
         Files.writeString(
@@ -1399,12 +1677,33 @@ class DarkSpriteSheetPipelineScriptTest {
             import base64
             import os
             import pathlib
+            import sys
             import time
+
+            if os.environ.get("FAKE_CODEX_EXPECT_TTY") == "1":
+                if not sys.stdin.isatty() or not sys.stdout.isatty():
+                    raise SystemExit("fake codex expected tty-backed stdio")
+
+            if os.environ.get("FAKE_CODEX_EXPECT_IMAGE_ONLY_PROMPT") == "1":
+                args = sys.argv[1:]
+                if "--cd" not in args or "--sandbox" not in args or "read-only" not in args:
+                    raise SystemExit(f"fake codex expected isolated read-only exec args: {args}")
+                prompt = args[-1]
+                if "Generate exactly one image from the prompt below using image generation." not in prompt:
+                    raise SystemExit("fake codex expected image-only wrapper")
+                if "<image_prompt>\nfake dark icon prompt\n</image_prompt>" not in prompt:
+                    raise SystemExit("fake codex expected original prompt in wrapper")
+                if "--skip-git-repo-check" not in args:
+                    raise SystemExit("fake codex expected --skip-git-repo-check")
 
             root = pathlib.Path(os.environ["FAKE_CODEX_GENERATED_DIR"])
             folder = root / f"session-{time.time_ns()}"
             folder.mkdir(parents=True, exist_ok=True)
-            png = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=")
+            source_image = os.environ.get("FAKE_CODEX_IMAGE_PATH")
+            if source_image:
+                png = pathlib.Path(source_image).read_bytes()
+            else:
+                png = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=")
             (folder / "image.png").write_bytes(png)
             """.trimIndent() + "\n",
         )

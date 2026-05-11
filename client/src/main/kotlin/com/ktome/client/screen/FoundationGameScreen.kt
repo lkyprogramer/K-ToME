@@ -3,26 +3,28 @@ package com.ktome.client.screen
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx.ScreenAdapter
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
 import com.ktome.client.assets.ClientAssetBundle
+import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.assets.RenderSnapshotAssetAudit
 import com.ktome.client.audio.AudioRouter
 import com.ktome.client.input.AudioRouterAwareCommandSource
 import com.ktome.client.input.CommandSource
 import com.ktome.client.input.InputHandlerCommandSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.render.TileTextStyle
 import com.ktome.client.render.TileRenderer
+import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.ui.state.UiErrorState
 import com.ktome.client.ui.state.UiLoadingState
+import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameSession
-import kotlin.math.max
 
 private const val cellWidth = 32f
 private const val cellHeight = 32f
@@ -38,6 +40,7 @@ class FoundationGameScreen(
     private var batch: SpriteBatch? = null
     private var renderer: TileRenderer? = null
     private var systemFont: BitmapFont? = null
+    private var chrome: StandaloneScreenChrome? = null
     private var lastAudioSnapshot: RenderSnapshot? = null
     private val assetAudit = RenderSnapshotAssetAudit(assets)
     private var lastAuditedRevision: Long? = null
@@ -160,6 +163,8 @@ class FoundationGameScreen(
     override fun dispose() {
         renderer?.dispose()
         renderer = null
+        chrome?.dispose()
+        chrome = null
         systemFont?.dispose()
         systemFont = null
         batch?.dispose()
@@ -177,7 +182,7 @@ class FoundationGameScreen(
             batch = SpriteBatch()
         }
         if (systemFont == null) {
-            systemFont = KtomeFonts.createUiFont(size = 24)
+            systemFont = KtomeFonts.createUiFont(size = UiDesignTokens.typography.body)
         }
         if (renderer == null) {
             renderer =
@@ -189,20 +194,36 @@ class FoundationGameScreen(
                     cellHeight = cellHeight,
                 )
         }
+        if (chrome == null) {
+            chrome = StandaloneScreenChrome(assets.textureRepository)
+        }
     }
 
     private fun renderLoadingState(loadingState: UiLoadingState) {
         ensureResources()
         val batch = requireNotNull(batch)
         val font = requireNotNull(systemFont)
-        ScreenUtils.clear(0.03f, 0.03f, 0.05f, 1f)
+        val layout = DarkStandaloneScreenLayout.runtimeStatus(viewport.worldWidth, viewport.worldHeight)
+        val surfaceBase = UiDesignTokens.color.surface.base.color()
+        ScreenUtils.clear(surfaceBase.r, surfaceBase.g, surfaceBase.b, surfaceBase.a)
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
         batch.begin()
-        font.color = Color.WHITE
-        font.draw(batch, app.text(loadingState.message), 32f, max(64f, viewport.worldHeight - 48f))
+        requireNotNull(chrome).draw(
+            batch,
+            StandaloneChromeRequest(
+                layout = layout,
+                detailAreaMode = StandaloneDetailAreaMode.HIDDEN,
+                chromeAssets = runtimeChromeAssets(DarkUiChromeVisualKeys.SCREEN_LOADING_MARKER),
+            ),
+        )
+        font.color = UiDesignTokens.color.text.primary.color()
+        val headerContent = layout.header.insetForChromeFrame()
+        val footerContent = layout.footerHelp.insetForChromeFrame(ChromeSurfaceKind.FooterHint)
+        font.draw(batch, headerContent.fitText(app.text(loadingState.message), TileTextStyle.UI), headerContent.x, headerContent.top - 8f)
         if (loadingState.allowsCancel) {
-            font.draw(batch, app.text(UiLoadingState.cancelLabelToken), 32f, max(32f, viewport.worldHeight - 84f))
+            font.color = UiDesignTokens.color.text.secondary.color()
+            font.draw(batch, footerContent.fitText(app.text(UiLoadingState.cancelLabelToken), TileTextStyle.SMALL), footerContent.x, footerContent.top - 4f)
         }
         batch.end()
     }
@@ -211,22 +232,44 @@ class FoundationGameScreen(
         ensureResources()
         val batch = requireNotNull(batch)
         val font = requireNotNull(systemFont)
-        ScreenUtils.clear(0.06f, 0.02f, 0.02f, 1f)
+        val layout = DarkStandaloneScreenLayout.runtimeStatus(viewport.worldWidth, viewport.worldHeight)
+        val surfaceBase = UiDesignTokens.color.surface.base.color()
+        ScreenUtils.clear(surfaceBase.r, surfaceBase.g, surfaceBase.b, surfaceBase.a)
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
         batch.begin()
-        font.color = Color.WHITE
-        var y = max(120f, viewport.worldHeight - 48f)
-        font.draw(batch, app.text(errorState.heading), 32f, y)
-        y -= 36f
-        font.draw(batch, app.text(errorState.detail), 32f, y)
-        y -= 54f
+        requireNotNull(chrome).draw(
+            batch,
+            StandaloneChromeRequest(
+                layout = layout,
+                detailAreaMode = StandaloneDetailAreaMode.HIDDEN,
+                chromeAssets = runtimeChromeAssets(DarkUiChromeVisualKeys.SCREEN_ERROR_MARKER),
+            ),
+        )
+        font.color = UiDesignTokens.color.telegraph.high.color()
+        val headerContent = layout.header.insetForChromeFrame()
+        val bodyContent = layout.primaryActionStack.insetForChromeFrame()
+        font.draw(batch, headerContent.fitText(app.text(errorState.heading), TileTextStyle.UI), headerContent.x, headerContent.top - 8f)
+        font.color = UiDesignTokens.color.text.primary.color()
+        var y = bodyContent.top - 8f
+        bodyContent.wrapText(app.text(errorState.detail), TileTextStyle.SMALL, maxLines = 3).forEach { line ->
+            font.draw(batch, line, bodyContent.x, y)
+            y -= 30f
+        }
+        y -= 12f
         errorState.actions.forEach { action ->
-            font.draw(batch, uiErrorActionLabel(action, app::text), 32f, y)
+            val label = uiErrorActionLabel(action, app::text, errorState.copyDetailLabelKey)
+            font.draw(batch, bodyContent.fitText(label, TileTextStyle.SMALL), bodyContent.x, y)
             y -= 30f
         }
         batch.end()
     }
+
+    private fun runtimeChromeAssets(screenMarkerKey: String): StandaloneChromeAssets =
+        StandaloneChromeAssets.resolve(
+            visualResolver = assets.visualResolver,
+            screenMarkerKey = screenMarkerKey,
+        )
 
     private fun handleErrorStateInput(errorState: UiErrorState): Boolean {
         if (Gdx.input == null) {

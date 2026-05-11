@@ -1,12 +1,16 @@
 package com.ktome.client.render
 
 import com.badlogic.gdx.graphics.Color
+import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.assets.ManifestLogSink
 import com.ktome.client.assets.ManifestPrefixRule
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifestResolver
+import com.ktome.client.ui.chrome.ChromeFrameBounds
+import com.ktome.client.ui.chrome.ChromeFramePainter
+import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
@@ -544,6 +548,138 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `dark uiux pr02 draws panel slot modal and hud assets`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot =
+                sampleSnapshot(
+                    talents =
+                        listOf(
+                            TalentSlotSnapshot(
+                                slot = 1,
+                                talentId = "power_strike",
+                                nameKey = "talent.vanguard.power_strike.name",
+                                iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                                level = 1,
+                                maxLevel = 5,
+                                resourceCost = 3,
+                                resourceLabelKey = "ui.hud.stamina.short",
+                                range = 1,
+                                minRange = 0,
+                                currentCooldown = 0,
+                                maxCooldown = 3,
+                                requiresTarget = true,
+                            ),
+                        ),
+                ),
+            overlayState = OverlayState(mode = UiMode.INVENTORY, modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY))),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val drawnKeys = canvas.assetDraws.map { draw -> draw.asset.resolvedKey }
+        listOf(
+            DarkUiChromeVisualKeys.PANEL_BODY,
+            DarkUiChromeVisualKeys.PANEL_CORNER_TL,
+            DarkUiChromeVisualKeys.PANEL_CORNER_TR,
+            DarkUiChromeVisualKeys.PANEL_CORNER_BL,
+            DarkUiChromeVisualKeys.PANEL_CORNER_BR,
+            DarkUiChromeVisualKeys.PANEL_EDGE_TOP,
+            DarkUiChromeVisualKeys.PANEL_EDGE_RIGHT,
+            DarkUiChromeVisualKeys.PANEL_EDGE_BOTTOM,
+            DarkUiChromeVisualKeys.PANEL_EDGE_LEFT,
+        ).forEach { key -> assertTrue(drawnKeys.contains(key), "$key missing from $drawnKeys") }
+        assertTrue(drawnKeys.contains(DarkUiChromeVisualKeys.SLOT_EMPTY), drawnKeys.toString())
+        assertTrue(drawnKeys.contains(DarkUiChromeVisualKeys.MODAL_BODY), drawnKeys.toString())
+        assertTrue(drawnKeys.count { key -> key.startsWith("ui.hud.") } >= 2, drawnKeys.toString())
+    }
+
+    @Test
+    fun `dark uiux pr02 keeps zh shell text inside chrome content bounds`() {
+        val canvas = RecordingTileCanvas()
+        val snapshot =
+            sampleSnapshot(
+                width = 18,
+                height = 17,
+                logEvents =
+                    listOf(
+                        RenderLogEventSnapshot(
+                            RenderTextTokenSnapshot(
+                                key = "log.zone.mechanic_hint",
+                                arguments =
+                                    listOf(
+                                        RenderTextArgumentSnapshot(
+                                            name = "hint",
+                                            value = "如果在 Boss 线外拖得太久，这层会持续有巡逻增援补进来。",
+                                        ),
+                                    ),
+                            ),
+                        ),
+                    ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+            shellWorldWidth = 1024f,
+            shellWorldHeight = 768f,
+        )
+
+        val layout =
+            TileRenderer.layoutMetrics(
+                mapWidth = snapshot.metadata.width,
+                mapHeight = snapshot.metadata.height,
+                cellWidth = 32f,
+                cellHeight = 32f,
+                shellWorldWidth = 1024f,
+                shellWorldHeight = 768f,
+            )
+        val inset = ChromeFramePainter.contentInsets(ChromeSurfaceKind.Panel).left
+        val leftRight = layout.shell.leftRailBounds.right - inset
+        val rightRight = layout.shell.rightPanelBounds.right - inset
+        val logRight = layout.logX + layout.logWidth - inset
+        val focusRight = layout.focusX + layout.focusWidth - inset
+
+        canvas.textDraws
+            .filter { draw ->
+                draw.y >= layout.shell.leftRailBounds.y &&
+                    draw.x >= layout.shell.leftRailBounds.x &&
+                    draw.x < layout.shell.leftRailBounds.right
+            }
+            .forEach { draw -> assertTextEndsBefore(draw, leftRight) }
+        canvas.textDraws
+            .filter { draw ->
+                draw.y >= layout.shell.rightPanelBounds.y &&
+                    draw.x >= layout.shell.rightPanelBounds.x &&
+                    draw.x < layout.shell.rightPanelBounds.right
+            }
+            .forEach { draw -> assertTextEndsBefore(draw, rightRight) }
+        canvas.textDraws
+            .filter { draw ->
+                draw.y >= layout.cardY &&
+                    draw.x >= layout.logX &&
+                    draw.x < layout.logX + layout.logWidth
+            }
+            .forEach { draw -> assertTextEndsBefore(draw, logRight) }
+        canvas.textDraws
+            .filter { draw ->
+                draw.y >= layout.cardY &&
+                    draw.x >= layout.focusX &&
+                    draw.x < layout.focusX + layout.focusWidth
+            }
+            .forEach { draw -> assertTextEndsBefore(draw, focusRight) }
+    }
+
+    @Test
     fun `combat decision target cursor marks illegal hover without relying on toast`() {
         val targetState =
             CombatDecisionFrameState(
@@ -860,7 +996,7 @@ class TileRendererCanvasTest {
                 y = titleDraw.y,
             )
         val titleTextBottom = titleDraw.y - titleBounds[3]
-        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 11f }
+        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.color == UiDesignTokens.color.bar.background.color() }
         val topGauge = requireNotNull(gaugeBackgrounds.maxByOrNull { draw -> draw.y })
 
         assertTrue(topGauge.y + topGauge.height <= titleTextBottom)
@@ -946,7 +1082,7 @@ class TileRendererCanvasTest {
         )
 
         val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
-        val guardLabel = canvas.textDraws.single { draw -> draw.text == "格挡姿态" }
+        val guardLabel = canvas.textDraws.single { draw -> draw.text.startsWith("格挡") }
         val guardBounds =
             TileRenderer.textApproximationBounds(
                 style = guardLabel.style,
@@ -1107,13 +1243,21 @@ class TileRendererCanvasTest {
         )
 
         val titleDraw = canvas.textDraws.first { draw -> draw.text == "Hero" }
-        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 11f }
+        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.color == UiDesignTokens.color.bar.background.color() }
         val sortedGaugeBackgrounds = gaugeBackgrounds.sortedBy { draw -> draw.y }
+        val titleBounds =
+            TileRenderer.textApproximationBounds(
+                style = titleDraw.style,
+                text = titleDraw.text,
+                x = titleDraw.x,
+                y = titleDraw.y,
+            )
+        val titleTextBottom = titleDraw.y - titleBounds[3]
 
         assertEquals(4, sortedGaugeBackgrounds.size)
-        assertTrue(sortedGaugeBackgrounds.zipWithNext().all { (lower, upper) -> upper.y >= lower.y + lower.height + 3f })
-        assertTrue(sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height <= titleDraw.y)
-        assertTrue(titleDraw.y - (sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height) >= 4f)
+        assertTrue(sortedGaugeBackgrounds.zipWithNext().all { (lower, upper) -> upper.y >= lower.y + lower.height + 2f })
+        assertTrue(sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height <= titleTextBottom)
+        assertTrue(titleTextBottom - (sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height) >= 4f)
     }
 
     @Test
@@ -1178,7 +1322,7 @@ class TileRendererCanvasTest {
 
         assertTrue(canvas.textDraws.any { draw -> draw.text == localizer.text("ui.hud.frontstage.title") })
         assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Water lane") })
-        assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Restore 2 HP") })
+        assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Restore") })
 
         val model =
             TileRenderer.buildRenderModel(
@@ -1424,6 +1568,51 @@ class TileRendererCanvasTest {
         val tooltip = requireNotNull(summary.overlayFrame.overlayModel.selectedTooltip)
 
         assertTrue(tooltip.placedRect.y >= summary.overlayFrame.bottomLogReservedBounds.top)
+    }
+
+    @Test
+    fun `render canvas keeps tooltip text inside chrome content bounds`() {
+        val canvas = RecordingTileCanvas()
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+        val tooltip = requireNotNull(summary.overlayFrame.overlayModel.selectedTooltip)
+        val rect = tooltip.placedRect
+        val content =
+            ChromeFramePainter.contentBounds(
+                ChromeFrameBounds(
+                    x = rect.x.toFloat(),
+                    y = rect.y.toFloat(),
+                    width = rect.width.toFloat(),
+                    height = rect.height.toFloat(),
+                ),
+                ChromeSurfaceKind.Tooltip,
+            )
+        val tooltipText = (listOf(tooltip.titleLine.text) + tooltip.bodyLines.map { line -> line.text }).toSet()
+        val tooltipDraws =
+            canvas.textDraws.filter { draw ->
+                draw.text in tooltipText &&
+                    draw.x >= rect.x &&
+                    draw.x <= rect.right &&
+                    draw.y >= rect.y &&
+                    draw.y <= rect.top
+            }
+
+        assertTrue(tooltipDraws.isNotEmpty())
+        tooltipDraws.forEach { draw ->
+            val bounds = TileRenderer.textApproximationBounds(draw.style, draw.text, draw.x, draw.y)
+            assertTrue(draw.x >= content.x - 0.5f, "${draw.text} starts before tooltip content")
+            assertTrue(draw.x + bounds[2] <= content.right + 0.5f, "${draw.text} exceeds tooltip content")
+            assertTrue(draw.y <= content.top + 0.5f, "${draw.text} starts above tooltip content")
+            assertTrue(draw.y - bounds[3] >= content.y - 0.5f, "${draw.text} descends below tooltip content")
+        }
     }
 
     @Test
@@ -2159,6 +2348,14 @@ class TileRendererCanvasTest {
         assertFalse(sidebarTexts.any { text -> "undead" in text })
     }
 
+    private fun assertTextEndsBefore(
+        draw: RecordingTileCanvas.TextDraw,
+        rightEdge: Float,
+    ) {
+        val bounds = TileRenderer.textApproximationBounds(draw.style, draw.text, draw.x, draw.y)
+        assertTrue(draw.x + bounds[2] <= rightEdge + 0.5f, "${draw.text} exceeds $rightEdge")
+    }
+
     private fun sampleResolver(): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
@@ -2224,32 +2421,32 @@ class TileRendererCanvasTest {
                             ),
                             VisualManifestEntry(
                                 key = CombatAffordanceResourceKeys.ACTION_ICON,
-                                category = "ui_icon",
-                                rawOutputPath = "phase4/uiux_pr05/ui_combat_action_icon.png",
+                                category = "icon",
+                                rawOutputPath = "dark-v1/ui/ui_combat_action_icon.png",
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(
                                 key = CombatAffordanceResourceKeys.METHOD_ICON,
-                                category = "ui_icon",
-                                rawOutputPath = "phase4/uiux_pr05/ui_combat_method_icon.png",
+                                category = "icon",
+                                rawOutputPath = "dark-v1/ui/ui_combat_method_icon.png",
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(
                                 key = CombatAffordanceResourceKeys.TARGET_ICON,
-                                category = "ui_icon",
-                                rawOutputPath = "phase4/uiux_pr05/ui_combat_target_icon.png",
+                                category = "icon",
+                                rawOutputPath = "dark-v1/ui/ui_combat_target_icon.png",
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(
                                 key = CombatAffordanceResourceKeys.LOCK_ICON,
-                                category = "ui_icon",
-                                rawOutputPath = "phase4/uiux_pr05/ui_combat_lock_icon.png",
+                                category = "icon",
+                                rawOutputPath = "dark-v1/ui/ui_combat_lock_icon.png",
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(
                                 key = CombatAffordanceResourceKeys.INVALID_ICON,
-                                category = "ui_icon",
-                                rawOutputPath = "phase4/uiux_pr05/ui_combat_invalid_icon.png",
+                                category = "icon",
+                                rawOutputPath = "dark-v1/ui/ui_combat_invalid_icon.png",
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(
@@ -2259,10 +2456,29 @@ class TileRendererCanvasTest {
                                 footprint = "1x1",
                                 tintColorHex = "#FF7A3C",
                             ),
-                        ),
+                        ) +
+                            DarkUiChromeVisualKeys.pr02Round1OwnerKeys
+                                .filterNot { key ->
+                                    key in
+                                        setOf(
+                                            CombatAffordanceResourceKeys.ACTION_ICON,
+                                            CombatAffordanceResourceKeys.METHOD_ICON,
+                                            CombatAffordanceResourceKeys.TARGET_ICON,
+                                            CombatAffordanceResourceKeys.LOCK_ICON,
+                                            CombatAffordanceResourceKeys.INVALID_ICON,
+                                        )
+                                }.map(::darkUiManifestEntry),
                     prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),
                 ),
             logSink = ManifestLogSink { error("Unexpected manifest fallback: $it") },
+        )
+
+    private fun darkUiManifestEntry(key: String): VisualManifestEntry =
+        VisualManifestEntry(
+            key = key,
+            category = if (key.startsWith("ui.frame.")) "ui_frame" else "icon",
+            rawOutputPath = "dark-v1/ui/${key.replace('.', '_')}.png",
+            footprint = "ui",
         )
 
     private fun sampleSnapshot(

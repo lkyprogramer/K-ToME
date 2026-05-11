@@ -127,9 +127,9 @@ internal object InfoSurfaceLayoutSolver {
         val availableHotbarWidth =
             (worldWidth - bottomInset * 2 - hotbarGap * (PLAYER_ACTIVE_TALENT_SLOT_COUNT - 1)).coerceAtLeast(0f)
         val hotbarCardWidth = (availableHotbarWidth / PLAYER_ACTIVE_TALENT_SLOT_COUNT).coerceAtMost(156f)
-        val hotbarCardHeight = 72f
+        val hotbarCardHeight = 84f
         val cardY = hotbarY + hotbarCardHeight + tokens.spacing.md
-        val cardHeight = (mapOffsetY - cardY - tokens.spacing.md).coerceAtLeast(88f)
+        val cardHeight = (mapOffsetY - cardY - tokens.spacing.md).coerceAtLeast(96f)
         val panelWidth = worldWidth - bottomInset * 2
         val minLogWidth = 180f
         var infoWidth = (panelWidth * 0.28f).coerceIn(260f, 360f)
@@ -155,6 +155,25 @@ internal object InfoSurfaceLayoutSolver {
         }
         val logX = infoX + infoWidth + panelGap
         val logWidth = (focusX - panelGap - logX).coerceAtLeast(minLogWidth)
+        val hotbarTotalWidth = hotbarCardWidth * PLAYER_ACTIVE_TALENT_SLOT_COUNT + hotbarGap * (PLAYER_ACTIVE_TALENT_SLOT_COUNT - 1)
+        val footerHintX = hotbarX + hotbarTotalWidth + hotbarGap
+        val sideFooterWidth = worldWidth - bottomInset - footerHintX
+        val footerHintBounds =
+            if (sideFooterWidth >= 200f) {
+                GameShellBounds(
+                    x = footerHintX,
+                    y = hotbarY,
+                    width = sideFooterWidth,
+                    height = hotbarCardHeight,
+                )
+            } else {
+                GameShellBounds(
+                    x = bottomInset,
+                    y = cardY - tokens.spacing.sm - 28f,
+                    width = panelWidth,
+                    height = 28f,
+                )
+            }
         return TileLayoutMetrics(
             shell = shell,
             mapOffsetY = mapOffsetY,
@@ -177,6 +196,7 @@ internal object InfoSurfaceLayoutSolver {
             hotbarCardWidth = hotbarCardWidth,
             hotbarCardHeight = hotbarCardHeight,
             hotbarGap = hotbarGap,
+            footerHintBounds = footerHintBounds,
         )
     }
 }

@@ -7,6 +7,7 @@ import com.ktome.client.assets.AudioManifestResourceLoader
 import com.ktome.client.assets.ClientAssetBundle
 import com.ktome.client.assets.ClientAssetBundleLoader
 import com.ktome.client.assets.ClientAssetLoadStrategy
+import com.ktome.client.assets.ClientTextureRepository
 import com.ktome.client.assets.ManifestLoadException
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestResourceLoader
@@ -25,6 +26,7 @@ import com.ktome.client.screen.GameOverScreen
 import com.ktome.client.screen.ContinueAvailability
 import com.ktome.client.screen.ContinueUnavailableReasonCode
 import com.ktome.client.screen.MainMenuScreen
+import com.ktome.client.screen.StandaloneChromeAssets
 import com.ktome.client.screen.ValidationScenarioBootstrap
 import com.ktome.client.screen.ValidationScenarioBootstrapResult
 import com.ktome.client.screen.ValidationSetupContext
@@ -659,6 +661,17 @@ class GameApp(
         requireNotNull(assetContracts.bundleOrNull()) {
             "Client assets must be loaded before entering the game screen."
         }
+
+    internal fun standaloneChromeAssetsOrNull(screenMarkerKey: String? = null): StandaloneChromeAssets? =
+        assetContracts.bundleOrNull()?.let { bundle ->
+            StandaloneChromeAssets.resolve(
+                visualResolver = bundle.visualResolver,
+                screenMarkerKey = screenMarkerKey,
+            )
+        }
+
+    internal fun standaloneChromeTextureRepositoryOrNull(): ClientTextureRepository? =
+        assetContracts.bundleOrNull()?.textureRepository
 
     private fun prepareCommandSource(
         assets: ClientAssetBundle,

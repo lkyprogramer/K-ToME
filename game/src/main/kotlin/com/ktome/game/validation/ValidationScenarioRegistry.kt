@@ -192,6 +192,62 @@ object ValidationScenarioRegistry {
                     ),
             ),
             ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr02-ui-chrome-sprite-pilot"),
+                prId = "PR-02",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.LOOT_LAB,
+                        seed = 2026051002L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "rogue",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/dark-uiux-pr02-shell-hud-frame-fit.png",
+                                "evidence/dark-uiux-pr02-inventory-modal-frame-fit.png",
+                                "evidence/dark-uiux-pr02-validation-overlay-frame-fit.png",
+                                "evidence/dark-uiux-pr02-runtime-error-loading-fit.png",
+                                "evidence/dark-uiux-pr02-ui-chrome-sprite-pilot-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial validation session)",
+                                    input = "Capture launch window",
+                                    expectedVisibleResult = "Shell, left/right rails, log card, focus card, hotbar, and footer text are inside PR-02 chrome frame content bounds.",
+                                    evidenceFile = "evidence/dark-uiux-pr02-shell-hud-frame-fit.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "I",
+                                    expectedVisibleResult = "Inventory modal and slot chrome use PR-02 frame assets, and modal text remains inside the content inset.",
+                                    evidenceFile = "evidence/dark-uiux-pr02-inventory-modal-frame-fit.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9",
+                                    expectedVisibleResult = "Validation overlay text and action chrome remain bounded; overlay does not cover bottom HUD text.",
+                                    evidenceFile = "evidence/dark-uiux-pr02-validation-overlay-frame-fit.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (supplemental packaged run)",
+                                    input = "Launch normal app or runtime error/loading surface",
+                                    expectedVisibleResult = "Standalone loading/error or equivalent runtime surface uses PR-02 frame inset slots without text on chrome borders.",
+                                    evidenceFile = "evidence/dark-uiux-pr02-runtime-error-loading-fit.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md",
+                        scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr02-ui-chrome-sprite-pilot.evidence.summary_note",
+                    ),
+            ),
+            ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr03"),
                 prId = "PR-03",
                 runtime =

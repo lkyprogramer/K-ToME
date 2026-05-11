@@ -1,7 +1,7 @@
 {
   "prompts": [
     {
-      "cellCount": 4,
+      "cellCount": 15,
       "cellCountScope": "non-reserved-cells",
       "grid": {
         "cellHeight": 256,
@@ -10,12 +10,46 @@
         "rows": 4
       },
       "gridCapacity": 16,
-      "promptHash": "8812a5d428abab429f94df86865c8d5e4fdc9d71894bff37d63551176828bb4a",
+      "promptHash": "b1cbcfa44b7751dc4b04200871fe5667e028c7f6e8914ef0ae4f7181d887254d",
       "promptId": "001-r01-ui-chrome",
       "promptPath": "UI/sprite-sheets/prompts/dark-v1/001-r01-ui-chrome.prompt.txt",
       "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png",
       "round": 1,
       "sheetId": "r01-ui-chrome"
+    },
+    {
+      "cellCount": 19,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "8a19df9c91b8ebe14c421e20b73ed61d6069af14d20f8f98793c79431d8434dd",
+      "promptId": "002-r01-ui-controls",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/002-r01-ui-controls.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r01-ui-controls.png",
+      "round": 1,
+      "sheetId": "r01-ui-controls"
+    },
+    {
+      "cellCount": 8,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "ca590758e995ee901e420e9a0a81ac85ad5a7a1ee1fd8866147a8a1216cab1d0",
+      "promptId": "003-r01-ui-hud-icons",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/003-r01-ui-hud-icons.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r01-ui-hud-icons.png",
+      "round": 1,
+      "sheetId": "r01-ui-hud-icons"
     }
   ],
   "schemaVersion": "dark-prompt-index-v1"
