@@ -2,6 +2,7 @@ package com.ktome.client.render
 
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
+import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.bossVariantModeLabelKey
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
@@ -10,6 +11,7 @@ import com.ktome.client.telegraph.TelegraphPresentationModel
 import com.ktome.client.telegraph.TelegraphRenderer
 import com.ktome.client.telegraph.TelegraphStyle
 import com.ktome.client.ui.card.ModalCardModel
+import com.ktome.client.ui.chrome.ChromeFrameAssets
 import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
 import com.ktome.client.ui.combat.CombatDecisionFeedbackKeys
 import com.ktome.client.ui.combat.CombatDecisionFrame
@@ -190,6 +192,77 @@ internal data class TileShellModel(
     val footerHints: List<TileTextRow>,
 )
 
+internal data class TileChromeAssets(
+    val panelBody: ResolvedVisualAsset,
+    val panelFocus: ResolvedVisualAsset,
+    val panelCornerTopLeft: ResolvedVisualAsset,
+    val panelCornerTopRight: ResolvedVisualAsset,
+    val panelCornerBottomLeft: ResolvedVisualAsset,
+    val panelCornerBottomRight: ResolvedVisualAsset,
+    val panelEdgeTop: ResolvedVisualAsset,
+    val panelEdgeRight: ResolvedVisualAsset,
+    val panelEdgeBottom: ResolvedVisualAsset,
+    val panelEdgeLeft: ResolvedVisualAsset,
+    val slotEmpty: ResolvedVisualAsset,
+    val slotEquipped: ResolvedVisualAsset,
+    val slotSelected: ResolvedVisualAsset,
+    val tooltipBody: ResolvedVisualAsset,
+    val modalBody: ResolvedVisualAsset,
+    val hudHp: ResolvedVisualAsset,
+    val hudStamina: ResolvedVisualAsset,
+    val hudXp: ResolvedVisualAsset,
+) {
+    val frameAssets: ChromeFrameAssets =
+        ChromeFrameAssets(
+            body = panelBody,
+            cornerTopLeft = panelCornerTopLeft,
+            cornerTopRight = panelCornerTopRight,
+            cornerBottomLeft = panelCornerBottomLeft,
+            cornerBottomRight = panelCornerBottomRight,
+            edgeTop = panelEdgeTop,
+            edgeRight = panelEdgeRight,
+            edgeBottom = panelEdgeBottom,
+            edgeLeft = panelEdgeLeft,
+        )
+
+    fun iconForGauge(gauge: TileGaugeModel): ResolvedVisualAsset? =
+        when (gauge.resourceTypeId) {
+            "HEALTH" -> hudHp
+            "EXPERIENCE" -> hudXp
+            "STAMINA" -> hudStamina
+            else -> null
+        }
+
+    companion object {
+        fun resolve(visualResolver: VisualManifestResolver): TileChromeAssets =
+            TileChromeAssets(
+                panelBody = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_BODY),
+                panelFocus = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_FOCUS),
+                panelCornerTopLeft = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_CORNER_TL),
+                panelCornerTopRight = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_CORNER_TR),
+                panelCornerBottomLeft = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_CORNER_BL),
+                panelCornerBottomRight = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_CORNER_BR),
+                panelEdgeTop = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_EDGE_TOP),
+                panelEdgeRight = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_EDGE_RIGHT),
+                panelEdgeBottom = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_EDGE_BOTTOM),
+                panelEdgeLeft = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.PANEL_EDGE_LEFT),
+                slotEmpty = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.SLOT_EMPTY),
+                slotEquipped = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.SLOT_EQUIPPED),
+                slotSelected = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.SLOT_SELECTED),
+                tooltipBody = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.TOOLTIP_BODY),
+                modalBody = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.MODAL_BODY),
+                hudHp = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.HUD_HP),
+                hudStamina = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.HUD_STAMINA),
+                hudXp = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.HUD_XP),
+            )
+
+        private fun resolveChromeAsset(
+            visualResolver: VisualManifestResolver,
+            key: String,
+        ): ResolvedVisualAsset = visualResolver.resolve(key)
+    }
+}
+
 internal data class TileRenderModel(
     val terrainTiles: List<TileVisualPlacement>,
     val propTiles: List<TileVisualPlacement>,
@@ -209,6 +282,7 @@ internal data class TileRenderModel(
     val shell: TileShellModel,
     val playerTile: com.ktome.core.map.Point,
     val mapDimensions: TileMapDimensions,
+    val chromeAssets: TileChromeAssets? = null,
 )
 
 internal object TileRenderModelBuilder {
@@ -290,6 +364,7 @@ internal object TileRenderModelBuilder {
                     )
                 }
 
+        val chromeAssets = TileChromeAssets.resolve(visualResolver)
         val hud = buildHud(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint)
         val combatDecisionState = overlayState.modalFrames.lastOrNull()?.localState?.combatDecisionState
         val combatPanel =
@@ -401,6 +476,7 @@ internal object TileRenderModelBuilder {
             shell = buildShell(localizer, snapshot, hud, sidebar, messageLines, playerCell),
             playerTile = point(player.x, player.y),
             mapDimensions = TileMapDimensions(snapshot.metadata.width, snapshot.metadata.height),
+            chromeAssets = chromeAssets,
         )
     }
 

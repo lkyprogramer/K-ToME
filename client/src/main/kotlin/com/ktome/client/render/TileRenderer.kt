@@ -17,6 +17,14 @@ import com.ktome.client.render.layout.InfoSurfaceLayout
 import com.ktome.client.render.layout.InfoSurfaceLayoutRequest
 import com.ktome.client.render.layout.InfoSurfaceLayoutSolver
 import com.ktome.client.render.layout.RectInt
+import com.ktome.client.ui.chrome.ChromeFrameAssetDraw
+import com.ktome.client.ui.chrome.ChromeFrameAssets
+import com.ktome.client.ui.chrome.ChromeFrameBounds
+import com.ktome.client.ui.chrome.ChromeFrameDrawRequest
+import com.ktome.client.ui.chrome.ChromeFrameDrawSink
+import com.ktome.client.ui.chrome.ChromeFramePainter
+import com.ktome.client.ui.chrome.ChromeFrameRectDraw
+import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.ui.layout.PaneFocusAnchor
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.token.UiDesignTokens
@@ -131,6 +139,7 @@ internal data class OverlayRenderFrame(
     val modalSafeBounds: com.ktome.client.render.layout.ModalSafeBounds,
     val bottomLogReservedBounds: com.ktome.client.render.layout.GameShellBounds,
     val textMetrics: TileTextMetrics,
+    val chromeAssets: TileChromeAssets? = null,
 )
 
 internal data class ShellTextLayout(
@@ -192,6 +201,7 @@ internal data class TileLayoutMetrics(
     val hotbarCardWidth: Float,
     val hotbarCardHeight: Float,
     val hotbarGap: Float,
+    val footerHintBounds: GameShellBounds,
 )
 
 class TileRenderer(
@@ -201,8 +211,8 @@ class TileRenderer(
     private val cellWidth: Float = 32f,
     private val cellHeight: Float = 32f,
 ) : Disposable {
-    private val uiFont = KtomeFonts.createUiFont(size = 28)
-    private val smallFont = KtomeFonts.createUiFont(size = 24)
+    private val uiFont = KtomeFonts.createUiFont(size = UiDesignTokens.typography.ui)
+    private val smallFont = KtomeFonts.createUiFont(size = UiDesignTokens.typography.body)
     private val whitePixel = solidTexture()
     private var viewportState: TileMapViewportState? = null
 
@@ -305,6 +315,9 @@ class TileRenderer(
         const val messageRows: Int = 5
         const val uiRows: Int = 7
         const val sidebarColumns: Int = 28
+        private const val SHELL_PANEL_TITLE_OFFSET = 26f
+        private const val SHELL_PANEL_ROW_HEIGHT = 21f
+        private const val SHELL_SMALL_LINE_HEIGHT = 19f
 
         internal fun buildRenderModel(
             localizer: Localizer,
@@ -395,6 +408,7 @@ class TileRenderer(
                     modalSafeBounds = layout.shell.modalSafeBounds,
                     bottomLogReservedBounds = layout.shell.bottomLogReservedBounds,
                     textMetrics = TileTextMetrics,
+                    chromeAssets = model.chromeAssets,
                 )
 
             canvas.drawRect(
@@ -455,55 +469,61 @@ class TileRenderer(
         private fun buildShellTextLayout(
             model: TileRenderModel,
             layout: TileLayoutMetrics,
-        ): ShellTextLayout =
-            ShellTextLayout(
+        ): ShellTextLayout {
+            val leftContent = chromeContentBounds(layout.shell.leftRailBounds, ChromeSurfaceKind.Panel)
+            val rightContent = chromeContentBounds(layout.shell.rightPanelBounds, ChromeSurfaceKind.Panel)
+            val infoContent = chromeContentBounds(gameBounds(layout.infoX, layout.cardY, layout.infoWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
+            val focusContent = chromeContentBounds(gameBounds(layout.focusX, layout.cardY, layout.focusWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
+            return ShellTextLayout(
                 playerName =
                     TileTextMetrics.truncateTextToWidth(
                         model.playerCard.name.ifBlank { model.playerCard.emptyStateText },
-                        layout.infoWidth - 24f,
+                        infoContent.width,
                         TileTextStyle.UI,
                     ),
                 summaryLines =
                     packSummaryLines(
                         summaryText = model.hud.summaryText,
-                        maxChars = TileTextMetrics.maxCharsForWidth(layout.focusWidth - 24f, TileTextStyle.SMALL),
-                        maxLines = 3,
+                        maxWidth = safeTextWidth(focusContent.width),
+                        maxLines = 2,
                     ),
                 targetTitle =
                     model.targetCard.title?.let { title ->
-                        TileTextMetrics.truncateTextToWidth(title, layout.focusWidth - 66f, TileTextStyle.SMALL)
+                        TileTextMetrics.truncateTextToWidth(title, safeTextWidth(focusContent.width - 42f), TileTextStyle.SMALL)
                     },
                 targetLines =
                     model.targetCard.lines.map { line ->
-                        TileTextMetrics.truncateTextToWidth(line, layout.focusWidth - 24f, TileTextStyle.SMALL)
+                        TileTextMetrics.truncateTextToWidth(line, safeTextWidth(focusContent.width), TileTextStyle.SMALL)
                     },
                 messageLines = buildMessageTextLayout(model, layout),
                 leftRail =
                     buildPanelTextLayout(
                         panel = model.shell.leftRail,
-                        width = layout.shell.leftRailBounds.width - 24f,
-                        maxRows = ((layout.shell.leftRailBounds.height - 54f) / 30f).toInt().coerceAtLeast(0),
+                        width = safeTextWidth(leftContent.width),
+                        maxRows = ((leftContent.height - SHELL_PANEL_TITLE_OFFSET) / SHELL_PANEL_ROW_HEIGHT).toInt().coerceAtLeast(0),
                     ),
                 rightPanel =
                     buildPanelTextLayout(
                         panel = model.shell.rightPanel,
-                        width = layout.shell.rightPanelBounds.width - 24f,
-                        maxRows = ((layout.shell.rightPanelBounds.height - 54f) / 28f).toInt().coerceAtLeast(0),
+                        width = safeTextWidth(rightContent.width),
+                        maxRows = ((rightContent.height - SHELL_PANEL_TITLE_OFFSET) / SHELL_PANEL_ROW_HEIGHT).toInt().coerceAtLeast(0),
                     ),
                 footerHints =
                     TileTextMetrics.truncateTextToWidth(
                         model.shell.footerHints.joinToString("  ") { hint -> hint.text },
-                        layout.worldWidth - layout.bottomInset * 2f,
+                        safeTextWidth(layout.footerHintBounds.width),
                         TileTextStyle.SMALL,
-                    ),
+                ),
                 hotbar = buildHotbarTextLayout(model, layout),
             )
+        }
 
         private fun buildMessageTextLayout(
             model: TileRenderModel,
             layout: TileLayoutMetrics,
         ): List<TileMessageLine> {
-            val maxChars = TileTextMetrics.maxCharsForWidth(layout.logWidth - 24f, TileTextStyle.SMALL)
+            val logContent = chromeContentBounds(gameBounds(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
+            val maxRows = maxMessageRows(logContent)
             val overlayMessages =
                 if (model.messageLines.size > model.logPresentation.entries.size) {
                     model.messageLines.drop(model.logPresentation.entries.size)
@@ -511,17 +531,24 @@ class TileRenderer(
                     emptyList()
                 }
             val displayLines = model.messageLines.take(model.logPresentation.entries.size) + overlayMessages
-            return displayLines.flatMap { line -> wrapMessageLine(line, maxChars) }.takeLast(messageRows)
+            return displayLines.flatMap { line -> wrapMessageLine(line, safeTextWidth(logContent.width)) }.takeLast(maxRows)
         }
 
         private fun wrapMessageLine(
             line: TileMessageLine,
-            maxChars: Int,
+            maxWidth: Float,
         ): List<TileMessageLine> {
-            val firstLineMaxChars = (maxChars - if (line.icon == null) 0 else 3).coerceAtLeast(1)
-            return TileTextMetrics.wrapText(line.text, firstLineMaxChars, maxChars.coerceAtLeast(1)).mapIndexed { index, text ->
+            val firstLineMaxWidth = (maxWidth - if (line.icon == null) 0f else 24f).coerceAtLeast(1f)
+            return TileTextMetrics.wrapTextToWidth(line.text, firstLineMaxWidth, TileTextStyle.SMALL).flatMapIndexed { index, text ->
+                if (index == 0) {
+                    listOf(text)
+                } else {
+                    TileTextMetrics.wrapTextToWidth(text, maxWidth, TileTextStyle.SMALL)
+                }
+            }.mapIndexed { index, text ->
+                val lineWidth = if (index == 0 && line.icon != null) firstLineMaxWidth else maxWidth
                 line.copy(
-                    text = TileTextMetrics.truncateText(text, if (index == 0 && line.icon != null) firstLineMaxChars else maxChars),
+                    text = TileTextMetrics.truncateTextToWidth(text, lineWidth, TileTextStyle.SMALL),
                     icon = line.icon.takeIf { index == 0 },
                 )
             }
@@ -532,15 +559,14 @@ class TileRenderer(
             width: Float,
             maxRows: Int,
         ): ShellPanelTextLayout {
-            val titleMaxChars = TileTextMetrics.maxCharsForWidth(width, TileTextStyle.UI)
-            val bodyMaxChars = TileTextMetrics.maxCharsForWidth(width, TileTextStyle.SMALL)
             return ShellPanelTextLayout(
-                title = TileTextMetrics.truncateText(panel.title, titleMaxChars),
+                title = TileTextMetrics.truncateTextToWidth(panel.title, width, TileTextStyle.UI),
                 rows =
                     panel.rows.take(maxRows).map { row ->
                         val style = if (row.tone == TileTextTone.GOLD && row.icon == null) TileTextStyle.UI else TileTextStyle.SMALL
+                        val rowWidth = width - if (row.icon == null) 0f else 28f
                         ShellPanelRowTextLayout(
-                            text = TileTextMetrics.truncateText(row.text, bodyMaxChars - if (row.icon == null) 0 else 3),
+                            text = TileTextMetrics.truncateTextToWidth(row.text, rowWidth.coerceAtLeast(1f), style),
                             tone = row.tone,
                             icon = row.icon,
                             selected = row.selected,
@@ -550,11 +576,20 @@ class TileRenderer(
             )
         }
 
+        private fun maxMessageRows(bounds: GameShellBounds): Int =
+            ((bounds.height - 8f) / SHELL_SMALL_LINE_HEIGHT).toInt().coerceIn(1, messageRows)
+
         private fun buildHotbarTextLayout(
             model: TileRenderModel,
             layout: TileLayoutMetrics,
         ): List<ShellHotbarTextLayout> {
-            val maxWidth = layout.hotbarCardWidth - 64f
+            val maxWidth =
+                (
+                    layout.hotbarCardWidth -
+                        ChromeFramePainter.contentInsets(ChromeSurfaceKind.Slot).left -
+                        ChromeFramePainter.contentInsets(ChromeSurfaceKind.Slot).right -
+                        44f
+                ).coerceAtLeast(1f)
             return model.actionPanel.entries.mapIndexed { index, entry ->
                 val slot = model.hud.hotbar.getOrNull(index)
                 val cooldown = slot?.cooldownText
@@ -572,6 +607,8 @@ class TileRenderer(
             }
         }
 
+        private fun safeTextWidth(width: Float): Float = (width - UiDesignTokens.spacing.xs * 2f).coerceAtLeast(1f)
+
         private object TileShellRenderer {
             fun render(
                 canvas: TileCanvas,
@@ -586,6 +623,15 @@ class TileRenderer(
                     height = layout.shell.bottomHudBounds.height,
                     color = UiDesignTokens.color.surface.raised.color(),
                 )
+                model.chromeAssets?.let { chrome ->
+                    drawChromeFrame(
+                        canvas = canvas,
+                        assets = chrome.frameAssets,
+                        bounds = layout.shell.bottomHudBounds,
+                        fillColor = UiDesignTokens.color.surface.raised.color(),
+                        borderColor = UiDesignTokens.color.border.subtle.color(),
+                    )
+                }
                 canvas.drawRect(
                     x = layout.shell.leftRailBounds.x,
                     y = layout.shell.leftRailBounds.y,
@@ -593,6 +639,16 @@ class TileRenderer(
                     height = layout.shell.leftRailBounds.height,
                     color = UiDesignTokens.color.surface.overlay.color(),
                 )
+                model.chromeAssets?.let { chrome ->
+                    drawChromeFrame(
+                        canvas = canvas,
+                        assets = chrome.frameAssets,
+                        bounds = layout.shell.leftRailBounds,
+                        fillColor = UiDesignTokens.color.surface.overlay.color(),
+                        borderColor = UiDesignTokens.color.border.subtle.color(),
+                    )
+                }
+                drawContentScrim(canvas, chromeContentBounds(layout.shell.leftRailBounds, ChromeSurfaceKind.Panel), alpha = 0.72f)
                 canvas.drawRect(
                     x = layout.shell.rightPanelBounds.x,
                     y = layout.shell.rightPanelBounds.y,
@@ -600,13 +656,23 @@ class TileRenderer(
                     height = layout.shell.rightPanelBounds.height,
                     color = UiDesignTokens.color.surface.overlay.color(),
                 )
+                model.chromeAssets?.let { chrome ->
+                    drawChromeFrame(
+                        canvas = canvas,
+                        assets = chrome.frameAssets,
+                        bounds = layout.shell.rightPanelBounds,
+                        fillColor = UiDesignTokens.color.surface.overlay.color(),
+                        borderColor = UiDesignTokens.color.border.subtle.color(),
+                    )
+                }
+                drawContentScrim(canvas, chromeContentBounds(layout.shell.rightPanelBounds, ChromeSurfaceKind.Panel), alpha = 0.72f)
                 canvas.flushLayer(TileLayerFlushReason.SHELL_PANES)
-                drawPaneFocusRing(canvas, frame.paneFocusAnchor, layout)
+                drawPaneFocusRing(canvas, frame.paneFocusAnchor, layout, model.chromeAssets)
                 drawLeftRail(canvas, frame.textLayout.leftRail, layout)
                 drawHud(canvas, model, frame.textLayout, layout)
                 drawMessages(canvas, frame.textLayout.messageLines, layout)
                 drawRightPanel(canvas, frame.textLayout.rightPanel, layout)
-                drawFooterHints(canvas, frame.textLayout.footerHints, layout)
+                drawFooterHints(canvas, frame.textLayout.footerHints, layout, model.chromeAssets)
                 canvas.flushLayer(TileLayerFlushReason.BOTTOM_HUD)
             }
         }
@@ -699,7 +765,7 @@ class TileRenderer(
             ) {
                 val model = frame.overlayModel
                 if (model.activeModal == null && model.selectedTooltip != null) {
-                    drawTooltip(canvas, model.selectedTooltip)
+                    drawTooltip(canvas, model.selectedTooltip, frame.chromeAssets)
                 }
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_PASSIVE_TOOLTIP)
                 model.toast?.let { toast ->
@@ -723,10 +789,10 @@ class TileRenderer(
                     )
                 }
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_MODAL_BACKDROP)
-                model.activeModal?.let { modal -> drawModal(canvas, modal) }
+                model.activeModal?.let { modal -> drawModal(canvas, modal, frame.chromeAssets) }
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_MODAL)
                 if (model.activeModal != null && model.selectedTooltip != null) {
-                    drawTooltip(canvas, model.selectedTooltip)
+                    drawTooltip(canvas, model.selectedTooltip, frame.chromeAssets)
                 }
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_MODAL_EXPLICIT_TOOLTIP)
                 canvas.flushLayer(TileLayerFlushReason.DEBUG_HINTS)
@@ -736,29 +802,78 @@ class TileRenderer(
         private fun drawTooltip(
             canvas: TileCanvas,
             tooltip: TileTooltipModel,
+            chromeAssets: TileChromeAssets?,
         ) {
             val rect = tooltip.placedRect
-            canvas.drawRect(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat(), UiDesignTokens.color.surface.overlay.color())
+            canvas.drawRect(
+                rect.x.toFloat(),
+                rect.y.toFloat(),
+                rect.width.toFloat(),
+                rect.height.toFloat(),
+                UiDesignTokens.color.surface.overlay.color(),
+            )
+            chromeAssets?.let { chrome ->
+                drawChromeFrame(
+                    canvas = canvas,
+                    assets = chrome.frameAssets.copy(body = chrome.tooltipBody),
+                    bounds = gameBounds(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat()),
+                    fillColor = UiDesignTokens.color.surface.overlay.color(),
+                    borderColor = UiDesignTokens.color.focus.ring.color(),
+                    alpha = 0.78f,
+                )
+            }
             canvas.drawRect(rect.x.toFloat(), (rect.top - 3).toFloat(), rect.width.toFloat(), 3f, UiDesignTokens.color.focus.ring.color())
-            canvas.drawText(TileTextStyle.SMALL, tooltip.titleLine.text, rect.x + 8f, rect.top - 10f, tone(tooltip.titleLine.tone))
+            val content = chromeContentBounds(gameBounds(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat()), ChromeSurfaceKind.Tooltip)
+            drawContentScrim(canvas, content, alpha = 0.76f)
+            val lineHeight = SHELL_SMALL_LINE_HEIGHT
+            val titleBaseline = content.top - 4f
+            if (titleBaseline - lineHeight >= content.y) {
+                canvas.drawText(TileTextStyle.SMALL, tooltip.titleLine.text, content.x, titleBaseline, tone(tooltip.titleLine.tone))
+            }
             tooltip.bodyLines.take(TILE_TOOLTIP_BODY_LINE_LIMIT).forEachIndexed { index, line ->
-                canvas.drawText(TileTextStyle.SMALL, line.text, rect.x + 8f, rect.top - 36f - index * 22f, tone(line.tone))
+                val baseline = titleBaseline - lineHeight * (index + 1)
+                if (baseline - lineHeight < content.y) {
+                    return@forEachIndexed
+                }
+                val fitted = TileTextMetrics.truncateTextToWidth(line.text, content.width, TileTextStyle.SMALL)
+                canvas.drawText(TileTextStyle.SMALL, fitted, content.x, baseline, tone(line.tone))
             }
         }
 
         private fun drawModal(
             canvas: TileCanvas,
             modal: TileModalModel,
+            chromeAssets: TileChromeAssets?,
         ) {
             val bounds = modal.bounds
-            canvas.drawRect(bounds.x.toFloat(), bounds.y.toFloat(), bounds.width.toFloat(), bounds.height.toFloat(), UiDesignTokens.color.surface.raised.color())
+            canvas.drawRect(
+                bounds.x.toFloat(),
+                bounds.y.toFloat(),
+                bounds.width.toFloat(),
+                bounds.height.toFloat(),
+                UiDesignTokens.color.surface.raised.color(),
+            )
+            chromeAssets?.let { chrome ->
+                drawChromeFrame(
+                    canvas = canvas,
+                    assets = chrome.frameAssets.copy(body = chrome.modalBody),
+                    bounds = gameBounds(bounds.x.toFloat(), bounds.y.toFloat(), bounds.width.toFloat(), bounds.height.toFloat()),
+                    fillColor = UiDesignTokens.color.surface.raised.color(),
+                    borderColor = UiDesignTokens.color.quality.rare.color(),
+                    alpha = 0.82f,
+                )
+            }
             canvas.drawRect(bounds.x.toFloat(), (bounds.top - 4).toFloat(), bounds.width.toFloat(), 4f, UiDesignTokens.color.quality.rare.color())
-            canvas.drawText(TileTextStyle.UI, modal.titleLine.text, bounds.x + 18f, bounds.top - 18f, tone(modal.titleLine.tone))
+            val content = chromeContentBounds(gameBounds(bounds.x.toFloat(), bounds.y.toFloat(), bounds.width.toFloat(), bounds.height.toFloat()), ChromeSurfaceKind.Modal)
+            drawContentScrim(canvas, content, alpha = 0.76f)
+            canvas.drawText(TileTextStyle.UI, modal.titleLine.text, content.x, content.top - 4f, tone(modal.titleLine.tone))
             modal.bodyLines.take(10).forEachIndexed { index, line ->
-                canvas.drawText(TileTextStyle.SMALL, line.text, bounds.x + 18f, bounds.top - 56f - index * 24f, tone(line.tone))
+                val fitted = TileTextMetrics.truncateTextToWidth(line.text, content.width, TileTextStyle.SMALL)
+                canvas.drawText(TileTextStyle.SMALL, fitted, content.x, content.top - 42f - index * 24f, tone(line.tone))
             }
             modal.footerHintLines.take(2).forEachIndexed { index, line ->
-                canvas.drawText(TileTextStyle.SMALL, line.text, bounds.x + 18f, bounds.y + 24f + index * 22f, tone(line.tone))
+                val fitted = TileTextMetrics.truncateTextToWidth(line.text, content.width, TileTextStyle.SMALL)
+                canvas.drawText(TileTextStyle.SMALL, fitted, content.x, content.y + 12f + index * 22f, tone(line.tone))
             }
         }
 
@@ -770,80 +885,139 @@ class TileRenderer(
         ) {
             val hud = model.hud
             val actionPanel = model.actionPanel
-            val textTopY = layout.cardY + layout.cardHeight - 10f
-            val smallLineHeight = 26f
-            val focusNameY = layout.cardY + 72f
-            val focusBodyTopY = layout.cardY + 40f
+            val infoContent = chromeContentBounds(gameBounds(layout.infoX, layout.cardY, layout.infoWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
+            val logContent = chromeContentBounds(gameBounds(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
+            val focusContent = chromeContentBounds(gameBounds(layout.focusX, layout.cardY, layout.focusWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
+            val textTopY = infoContent.top - 1f
+            val focusTextTopY = focusContent.top - 4f
+            val smallLineHeight = SHELL_SMALL_LINE_HEIGHT
 
             canvas.drawRect(layout.infoX, layout.cardY, layout.infoWidth, layout.cardHeight, UiDesignTokens.color.surface.raised.color())
             canvas.drawRect(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight, UiDesignTokens.color.surface.overlay.color())
             canvas.drawRect(layout.focusX, layout.cardY, layout.focusWidth, layout.cardHeight, UiDesignTokens.color.surface.raised.color())
+            model.chromeAssets?.let { chrome ->
+                drawChromeFrame(
+                    canvas = canvas,
+                    assets = chrome.frameAssets,
+                    bounds = gameBounds(layout.infoX, layout.cardY, layout.infoWidth, layout.cardHeight),
+                    fillColor = UiDesignTokens.color.surface.raised.color(),
+                    borderColor = UiDesignTokens.color.border.subtle.color(),
+                )
+                drawChromeFrame(
+                    canvas = canvas,
+                    assets = chrome.frameAssets,
+                    bounds = gameBounds(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight),
+                    fillColor = UiDesignTokens.color.surface.overlay.color(),
+                    borderColor = UiDesignTokens.color.border.subtle.color(),
+                )
+                drawChromeFrame(
+                    canvas = canvas,
+                    assets = chrome.frameAssets,
+                    bounds = gameBounds(layout.focusX, layout.cardY, layout.focusWidth, layout.cardHeight),
+                    fillColor = UiDesignTokens.color.surface.raised.color(),
+                    borderColor = UiDesignTokens.color.border.subtle.color(),
+                )
+            }
+            drawContentScrim(canvas, infoContent, alpha = 0.78f)
+            drawContentScrim(canvas, logContent, alpha = 0.78f)
+            drawContentScrim(canvas, focusContent, alpha = 0.78f)
 
             canvas.drawText(
                 TileTextStyle.UI,
                 textLayout.playerName,
-                layout.infoX + 12f,
+                infoContent.x,
                 textTopY,
                 tone(TileTextTone.GOLD),
             )
-            val gaugeHeight = 11f
-            val gaugeGap = 3f
             val gauges = listOfNotNull(hud.experienceGauge, hud.secondaryResourceGauge, hud.resourceGauge, hud.hpGauge)
+            val gaugeCount = gauges.size.coerceAtLeast(1)
+            val gaugeAreaBottom = infoContent.y + 2f
+            val gaugeAreaTop = textTopY - TileTextMetrics.approximateLineHeight(TileTextStyle.UI) - 4f
+            val gaugeGap = if (gaugeCount >= 4) 2f else 3f
+            val gaugeHeight =
+                (
+                    (gaugeAreaTop - gaugeAreaBottom - gaugeGap * (gaugeCount - 1)) /
+                        gaugeCount
+                ).coerceIn(3f, 12f)
             gauges.forEachIndexed { index, gauge ->
-                val gaugeY = layout.cardY + 8f + index * (gaugeHeight + gaugeGap)
-                drawGauge(canvas, gauge, layout.infoX + 12f, gaugeY, layout.infoWidth - 24f, gaugeHeight)
+                val gaugeY = gaugeAreaBottom + index * (gaugeHeight + gaugeGap)
+                val icon = model.chromeAssets?.iconForGauge(gauge)
+                val gaugeX =
+                    if (icon == null) {
+                        infoContent.x
+                    } else {
+                        val iconSize = gaugeHeight.coerceIn(8f, 14f)
+                        canvas.drawAsset(icon, infoContent.x, gaugeY, iconSize, iconSize)
+                        infoContent.x + iconSize + 4f
+                    }
+                val gaugeWidth = (infoContent.right - gaugeX).coerceAtLeast(1f)
+                drawGauge(canvas, gauge, gaugeX, gaugeY, gaugeWidth, gaugeHeight)
             }
 
             textLayout.summaryLines.forEachIndexed { index, line ->
                 canvas.drawText(
                     TileTextStyle.SMALL,
                     line,
-                    layout.focusX + 12f,
-                    textTopY - index * smallLineHeight,
+                    focusContent.x,
+                    focusTextTopY - index * smallLineHeight,
                     tone(TileTextTone.LIGHT_GRAY),
                 )
             }
 
-            var statusX = layout.focusX + 12f
+            var statusX = focusContent.x
             hud.statusIcons.forEach { icon ->
+                val iconY = focusContent.y + 4f
+                if (statusX + 28f > focusContent.right || iconY < focusContent.y) {
+                    return@forEach
+                }
                 canvas.drawRect(
                     statusX - 1f,
-                    textTopY - 95f,
+                    iconY,
                     28f,
                     28f,
                     StatusHudRenderer.accentColor(icon.category),
                 )
-                canvas.drawAsset(icon.asset, statusX, textTopY - 94f, 26f, 26f)
+                canvas.drawAsset(icon.asset, statusX, iconY + 1f, 26f, 26f)
                 canvas.drawText(
                     TileTextStyle.SMALL,
                     icon.badgeText,
                     statusX,
-                    textTopY - 100f,
+                    iconY - 6f,
                     StatusHudRenderer.badgeColor(icon.category),
                 )
                 statusX += 34f
             }
 
-            hud.focusIcon?.let { icon ->
-                canvas.drawAsset(icon, layout.focusX + 12f, layout.cardY + 38f, 32f, 32f)
-            }
-            textLayout.targetTitle?.let { name ->
-                canvas.drawText(
-                    TileTextStyle.SMALL,
-                    name,
-                    layout.focusX + 54f,
-                    focusNameY,
-                    tone(TileTextTone.GOLD),
-                )
-            }
-            textLayout.targetLines.forEachIndexed { index, line ->
-                canvas.drawText(
-                    TileTextStyle.SMALL,
-                    line,
-                    layout.focusX + 12f,
-                    focusBodyTopY - index * smallLineHeight,
-                    tone(TileTextTone.LIGHT_GRAY),
-                )
+            if (textLayout.summaryLines.size <= 1) {
+                val targetTitleBaseline = focusTextTopY - textLayout.summaryLines.size * smallLineHeight - 4f
+                hud.focusIcon?.let { icon ->
+                    if (targetTitleBaseline - 32f >= focusContent.y) {
+                        canvas.drawAsset(icon, focusContent.x, targetTitleBaseline - 30f, 28f, 28f)
+                    }
+                }
+                textLayout.targetTitle?.let { name ->
+                    if (targetTitleBaseline >= focusContent.y + 16f) {
+                        canvas.drawText(
+                            TileTextStyle.SMALL,
+                            name,
+                            focusContent.x + 36f,
+                            targetTitleBaseline,
+                            tone(TileTextTone.GOLD),
+                        )
+                    }
+                }
+                textLayout.targetLines.forEachIndexed { index, line ->
+                    val baseline = targetTitleBaseline - (index + 1) * smallLineHeight
+                    if (baseline >= focusContent.y + 16f) {
+                        canvas.drawText(
+                            TileTextStyle.SMALL,
+                            line,
+                            focusContent.x,
+                            baseline,
+                            tone(TileTextTone.LIGHT_GRAY),
+                        )
+                    }
+                }
             }
 
             if (actionPanel.isEmpty) {
@@ -853,24 +1027,24 @@ class TileRenderer(
                 val slot = hud.hotbar.getOrNull(index)
                 val hotbarText = textLayout.hotbar.getOrNull(index) ?: return@forEachIndexed
                 val x = layout.hotbarX + index * (layout.hotbarCardWidth + layout.hotbarGap)
+                val slotBounds = gameBounds(x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight)
+                val slotContent = chromeContentBounds(slotBounds, ChromeSurfaceKind.Slot)
                 canvas.drawRect(x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, UiDesignTokens.color.slot.filled.color())
-                (entry.icon ?: slot?.icon)?.let { icon -> canvas.drawAsset(icon, x + 10f, layout.hotbarY + 14f, 38f, 38f) }
-                slot?.accentIcon?.let { icon -> canvas.drawAsset(icon, x + 35f, layout.hotbarY + 42f, 16f, 16f) }
-                canvas.drawText(TileTextStyle.SMALL, hotbarText.hotkey, x + 8f, layout.hotbarY + layout.hotbarCardHeight - 10f, tone(TileTextTone.GOLD))
-                canvas.drawText(
-                    TileTextStyle.SMALL,
-                    hotbarText.label,
-                    x + 62f,
-                    layout.hotbarY + layout.hotbarCardHeight - 18f,
-                    tone(TileTextTone.WHITE),
-                )
-                canvas.drawText(
-                    TileTextStyle.SMALL,
-                    hotbarText.detail,
-                    x + 62f,
-                    layout.hotbarY + 28f,
-                    tone(hotbarText.detailTone),
-                )
+                model.chromeAssets?.let { chrome ->
+                    canvas.drawAsset(chrome.slotEmpty, x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, alpha = 0.86f)
+                    if (index == 0) {
+                        canvas.drawAsset(chrome.slotSelected, x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, alpha = 0.72f)
+                    } else if (slot?.icon != null) {
+                        canvas.drawAsset(chrome.slotEquipped, x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, alpha = 0.64f)
+                    }
+                }
+                drawContentScrim(canvas, slotContent, alpha = 0.66f)
+                (entry.icon ?: slot?.icon)?.let { icon -> canvas.drawAsset(icon, slotContent.x, slotContent.y + 8f, 34f, 34f) }
+                slot?.accentIcon?.let { icon -> canvas.drawAsset(icon, slotContent.x + 25f, slotContent.y + 34f, 14f, 14f) }
+                canvas.drawText(TileTextStyle.SMALL, hotbarText.hotkey, slotContent.x, slotContent.top - 4f, tone(TileTextTone.GOLD))
+                val labelX = slotContent.x + 44f
+                canvas.drawText(TileTextStyle.SMALL, hotbarText.label, labelX, slotContent.top - 4f, tone(TileTextTone.WHITE))
+                canvas.drawText(TileTextStyle.SMALL, hotbarText.detail, labelX, slotContent.y + 13f, tone(hotbarText.detailTone))
             }
         }
 
@@ -879,18 +1053,24 @@ class TileRenderer(
             messageLines: List<TileMessageLine>,
             layout: TileLayoutMetrics,
         ) {
-            val topY = layout.cardY + layout.cardHeight - 18f
+            val logContent = chromeContentBounds(gameBounds(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
+            val topY = logContent.top - 6f
             messageLines.forEachIndexed { index, line ->
+                val baseline = topY - index * SHELL_SMALL_LINE_HEIGHT
+                if (baseline < logContent.y + 16f) {
+                    return@forEachIndexed
+                }
                 val iconOffset =
                     line.icon?.let { icon ->
-                        canvas.drawAsset(icon, layout.logX + 12f, topY - index * 26f - 16f, 18f, 18f)
+                        canvas.drawAsset(icon, logContent.x, baseline - 16f, 18f, 18f)
                         24f
                     } ?: 0f
+                val fitted = TileTextMetrics.truncateTextToWidth(line.text, logContent.width - iconOffset, TileTextStyle.SMALL)
                 canvas.drawText(
                     TileTextStyle.SMALL,
-                    line.text,
-                    layout.logX + 12f + iconOffset,
-                    topY - index * 26f,
+                    fitted,
+                    logContent.x + iconOffset,
+                    baseline,
                     tone(line.tone),
                 )
             }
@@ -908,6 +1088,7 @@ class TileRenderer(
             canvas: TileCanvas,
             paneFocusAnchor: PaneFocusAnchor?,
             layout: TileLayoutMetrics,
+            chromeAssets: TileChromeAssets?,
         ) {
             if (paneFocusAnchor == null) {
                 return
@@ -915,7 +1096,7 @@ class TileRenderer(
             val stroke = UiDesignTokens.stroke.medium
             val color = UiDesignTokens.color.focus.ring.color()
             when (paneFocusAnchor) {
-                PaneFocusAnchor.WORLD ->
+                PaneFocusAnchor.WORLD -> {
                     drawRectOutline(
                         canvas = canvas,
                         x = layout.shell.mapBounds.x,
@@ -925,8 +1106,20 @@ class TileRenderer(
                         stroke = stroke,
                         color = color,
                     )
+                }
 
-                PaneFocusAnchor.CONTEXT ->
+                PaneFocusAnchor.CONTEXT -> {
+                    chromeAssets?.let { chrome ->
+                        drawChromePanelAsset(
+                            canvas = canvas,
+                            asset = chrome.panelFocus,
+                            x = layout.logX,
+                            y = layout.cardY,
+                            width = layout.logWidth,
+                            height = layout.cardHeight,
+                            alpha = 0.36f,
+                        )
+                    }
                     drawRectOutline(
                         canvas = canvas,
                         x = layout.logX,
@@ -936,8 +1129,20 @@ class TileRenderer(
                         stroke = stroke,
                         color = color,
                     )
+                }
 
-                PaneFocusAnchor.CHARACTER_ACTION ->
+                PaneFocusAnchor.CHARACTER_ACTION -> {
+                    chromeAssets?.let { chrome ->
+                        drawChromePanelAsset(
+                            canvas = canvas,
+                            asset = chrome.panelFocus,
+                            x = layout.focusX,
+                            y = layout.cardY,
+                            width = layout.focusWidth,
+                            height = layout.cardHeight,
+                            alpha = 0.36f,
+                        )
+                    }
                     drawRectOutline(
                         canvas = canvas,
                         x = layout.focusX,
@@ -947,8 +1152,82 @@ class TileRenderer(
                         stroke = stroke,
                         color = color,
                     )
+                }
             }
         }
+
+        private fun drawChromePanelAsset(
+            canvas: TileCanvas,
+            asset: ResolvedVisualAsset,
+            x: Float,
+            y: Float,
+            width: Float,
+            height: Float,
+            alpha: Float = 0.72f,
+        ) {
+            canvas.drawAsset(asset, x, y, width, height, alpha)
+        }
+
+        private fun drawChromeFrame(
+            canvas: TileCanvas,
+            assets: ChromeFrameAssets,
+            bounds: GameShellBounds,
+            fillColor: Color,
+            borderColor: Color,
+            alpha: Float = 0.86f,
+        ) {
+            ChromeFramePainter.drawFrame(
+                sink = canvas.asChromeFrameSink(),
+                request =
+                    ChromeFrameDrawRequest(
+                        bounds = bounds.toChromeFrameBounds(),
+                        assets = assets,
+                        fillColor = fillColor,
+                        borderColor = borderColor,
+                        alpha = alpha,
+                    ),
+            )
+        }
+
+        private fun drawContentScrim(
+            canvas: TileCanvas,
+            bounds: GameShellBounds,
+            alpha: Float,
+        ) {
+            canvas.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, color("05070A", alpha))
+        }
+
+        private fun chromeContentBounds(
+            bounds: GameShellBounds,
+            kind: ChromeSurfaceKind,
+        ): GameShellBounds =
+            ChromeFramePainter.contentBounds(bounds.toChromeFrameBounds(), kind).toGameShellBounds()
+
+        private fun gameBounds(
+            x: Float,
+            y: Float,
+            width: Float,
+            height: Float,
+        ): GameShellBounds = GameShellBounds(x = x, y = y, width = width, height = height)
+
+        private fun GameShellBounds.toChromeFrameBounds(): ChromeFrameBounds =
+            ChromeFrameBounds(x = x, y = y, width = width, height = height)
+
+        private fun ChromeFrameBounds.toGameShellBounds(): GameShellBounds =
+            GameShellBounds(x = x, y = y, width = width, height = height)
+
+        private fun TileCanvas.asChromeFrameSink(): ChromeFrameDrawSink =
+            object : ChromeFrameDrawSink {
+                override fun drawRect(draw: ChromeFrameRectDraw) {
+                    val bounds = draw.bounds
+                    this@asChromeFrameSink.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, draw.color)
+                }
+
+                override fun drawAsset(draw: ChromeFrameAssetDraw) {
+                    val bounds = draw.bounds
+                    this@asChromeFrameSink.drawAsset(draw.asset, bounds.x, bounds.y, bounds.width, bounds.height, draw.alpha)
+                }
+            }
 
         private fun drawRectOutline(
             canvas: TileCanvas,
@@ -1039,13 +1318,13 @@ class TileRenderer(
             panel: ShellPanelTextLayout,
             layout: TileLayoutMetrics,
         ) {
-            val bounds = layout.shell.leftRailBounds
+            val bounds = chromeContentBounds(layout.shell.leftRailBounds, ChromeSurfaceKind.Panel)
             drawPanelRows(
                 canvas = canvas,
                 panel = panel,
-                x = bounds.x + 12f,
-                topY = bounds.top - 16f,
-                maxRows = ((bounds.height - 54f) / 30f).toInt().coerceAtLeast(0),
+                x = bounds.x,
+                topY = bounds.top - 4f,
+                maxRows = ((bounds.height - SHELL_PANEL_TITLE_OFFSET) / SHELL_PANEL_ROW_HEIGHT).toInt().coerceAtLeast(0),
             )
         }
 
@@ -1054,13 +1333,13 @@ class TileRenderer(
             panel: ShellPanelTextLayout,
             layout: TileLayoutMetrics,
         ) {
-            val bounds = layout.shell.rightPanelBounds
+            val bounds = chromeContentBounds(layout.shell.rightPanelBounds, ChromeSurfaceKind.Panel)
             drawPanelRows(
                 canvas = canvas,
                 panel = panel,
-                x = bounds.x + 12f,
-                topY = bounds.top - 16f,
-                maxRows = ((bounds.height - 54f) / 28f).toInt().coerceAtLeast(0),
+                x = bounds.x,
+                topY = bounds.top - 4f,
+                maxRows = ((bounds.height - SHELL_PANEL_TITLE_OFFSET) / SHELL_PANEL_ROW_HEIGHT).toInt().coerceAtLeast(0),
             )
         }
 
@@ -1073,7 +1352,7 @@ class TileRenderer(
         ) {
             canvas.drawText(TileTextStyle.UI, panel.title, x, topY, tone(TileTextTone.GOLD))
             panel.rows.take(maxRows).forEachIndexed { index, row ->
-                val baseline = topY - 34f - index * 28f
+                val baseline = topY - SHELL_PANEL_TITLE_OFFSET - index * SHELL_PANEL_ROW_HEIGHT
                 canvas.drawText(
                     style = row.style,
                     text = row.text,
@@ -1082,7 +1361,7 @@ class TileRenderer(
                     color = tone(if (row.selected) TileTextTone.CYAN else row.tone),
                 )
                 row.icon?.let { icon ->
-                    canvas.drawAsset(icon, x, baseline - 18f, 18f, 18f, alpha = if (row.selected) 1f else 0.95f)
+                    canvas.drawAsset(icon, x, baseline - 15f, 16f, 16f, alpha = if (row.selected) 1f else 0.95f)
                 }
             }
         }
@@ -1091,9 +1370,37 @@ class TileRenderer(
             canvas: TileCanvas,
             hints: String,
             layout: TileLayoutMetrics,
+            chromeAssets: TileChromeAssets?,
         ) {
-            val y = UiDesignTokens.spacing.lg
-            canvas.drawText(TileTextStyle.SMALL, hints, layout.bottomInset, y, tone(TileTextTone.LIGHT_GRAY))
+            val bounds = layout.footerHintBounds
+            canvas.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, UiDesignTokens.color.surface.baseDim.color())
+            chromeAssets?.let { chrome ->
+                drawChromeFrame(
+                    canvas = canvas,
+                    assets = chrome.frameAssets.copy(body = chrome.tooltipBody),
+                    bounds = bounds,
+                    fillColor = UiDesignTokens.color.surface.baseDim.color(),
+                    borderColor = UiDesignTokens.color.border.subtle.color(),
+                    alpha = 0.72f,
+                )
+            }
+            val content = chromeContentBounds(bounds, ChromeSurfaceKind.FooterHint)
+            drawContentScrim(canvas, content, alpha = 0.62f)
+            TileTextMetrics
+                .wrapTextToWidth(hints, safeTextWidth(content.width), TileTextStyle.SMALL)
+                .take(2)
+                .forEachIndexed { index, line ->
+                    val baseline = content.top - 4f - index * SHELL_SMALL_LINE_HEIGHT
+                    if (baseline >= content.y + 12f) {
+                        canvas.drawText(
+                            TileTextStyle.SMALL,
+                            TileTextMetrics.truncateTextToWidth(line, safeTextWidth(content.width), TileTextStyle.SMALL),
+                            content.x,
+                            baseline,
+                            tone(TileTextTone.LIGHT_GRAY),
+                        )
+                    }
+                }
         }
 
         private fun drawGauge(
@@ -1106,7 +1413,10 @@ class TileRenderer(
         ) {
             canvas.drawRect(x, y, width, height, UiDesignTokens.color.bar.background.color())
             canvas.drawRect(x + 2f, y + 2f, (width - 4f) * gauge.percent, height - 4f, gaugeFillColor(gauge))
-            canvas.drawText(TileTextStyle.SMALL, gauge.summary, x + 6f, y + height - 3f, tone(TileTextTone.WHITE))
+            if (height >= 12f) {
+                val summary = TileTextMetrics.truncateTextToWidth(gauge.summary, width - 8f, TileTextStyle.SMALL)
+                canvas.drawText(TileTextStyle.SMALL, summary, x + 4f, y + height - 2f, tone(TileTextTone.WHITE))
+            }
         }
 
         private fun gaugeFillColor(gauge: TileGaugeModel): Color =
@@ -1190,12 +1500,11 @@ class TileRenderer(
             x: Float,
             y: Float,
         ): IntArray {
-            val widthPerCharacter = TileTextMetrics.approximateCharWidth(style).roundToInt()
             val height = TileTextMetrics.approximateLineHeight(style).roundToInt()
             return intArrayOf(
                 x.roundToInt(),
                 y.roundToInt(),
-                maxOf(1, text.length * widthPerCharacter),
+                maxOf(1, TileTextMetrics.approximateTextWidth(text, style).roundToInt()),
                 height,
             )
         }
@@ -1225,7 +1534,7 @@ class TileRenderer(
 
         private fun packSummaryLines(
             summaryText: String,
-            maxChars: Int,
+            maxWidth: Float,
             maxLines: Int,
         ): List<String> {
             if (summaryText.isBlank()) {
@@ -1233,14 +1542,14 @@ class TileRenderer(
             }
             val segments = summaryText.split("  ").filter { it.isNotBlank() }
             if (segments.isEmpty()) {
-                return listOf(TileTextMetrics.truncateText(summaryText, maxChars))
+                return listOf(TileTextMetrics.truncateTextToWidth(summaryText, maxWidth, TileTextStyle.SMALL))
             }
             val lines = mutableListOf<String>()
             var current = ""
             segments.forEach { rawSegment ->
-                val segment = TileTextMetrics.truncateText(rawSegment, maxChars)
+                val segment = TileTextMetrics.truncateTextToWidth(rawSegment, maxWidth, TileTextStyle.SMALL)
                 val candidate = if (current.isBlank()) segment else "$current  $segment"
-                if (candidate.length <= maxChars) {
+                if (TileTextMetrics.approximateTextWidth(candidate, TileTextStyle.SMALL) <= maxWidth) {
                     current = candidate
                 } else {
                     if (current.isNotBlank()) {
@@ -1256,8 +1565,10 @@ class TileRenderer(
             }
             return when {
                 lines.size <= maxLines -> lines
-                maxLines <= 1 -> listOf(TileTextMetrics.truncateText(lines.joinToString("  "), maxChars))
-                else -> lines.take(maxLines - 1) + TileTextMetrics.truncateText(lines.drop(maxLines - 1).joinToString("  "), maxChars)
+                maxLines <= 1 -> listOf(TileTextMetrics.truncateTextToWidth(lines.joinToString("  "), maxWidth, TileTextStyle.SMALL))
+                else ->
+                    lines.take(maxLines - 1) +
+                        TileTextMetrics.truncateTextToWidth(lines.drop(maxLines - 1).joinToString("  "), maxWidth, TileTextStyle.SMALL)
             }
         }
 

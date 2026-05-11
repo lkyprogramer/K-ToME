@@ -112,6 +112,21 @@ class ManifestResolveTest {
     }
 
     @Test
+    fun `dark uiux pr02 round1 owner keys resolve through exact entries`() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        DarkUiChromeVisualKeys.pr02Round1OwnerKeys.forEach { key ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals(key, resolved.requestedKey)
+            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/ui/"), key)
+            assertFalse(resolved.fallbackUsed, key)
+            assertFalse(resolved.matchedByPrefix, key)
+        }
+    }
+
+    @Test
     fun `damage type icons resolve as exact visual family entries`() {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 

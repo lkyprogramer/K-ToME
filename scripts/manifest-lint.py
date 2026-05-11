@@ -252,12 +252,25 @@ def validate_manifest(
 
     compare_entries(source_by_key, runtime_by_key, runtime_root, errors)
 
+    dark_bridge_requested = bool(dark_key_registry_path or dark_sheet_plan_path)
+    dark_plan_errors: list[str] = []
+    dark_registry_errors: list[str] = []
+    dark_registry_by_key: dict[str, dict] = {}
+    dark_cell_by_key: dict[str, object] = {}
+    if dark_bridge_requested and dark_key_registry_path and dark_sheet_plan_path:
+        _, dark_cells, dark_plan_errors = load_sheet_plan(dark_sheet_plan_path)
+        dark_registry_by_key, dark_registry_errors = load_key_registry(dark_key_registry_path)
+        if not dark_plan_errors and not dark_registry_errors:
+            dark_cell_by_key = {cell.target_key: cell for cell in dark_cells}
+
     plan_by_key: dict[str, dict] = {}
     for candidate_plan in plans:
         for asset in collect_assets(candidate_plan):
             visual_key = str(asset.get("visualKey", "")).strip()
             output_name = str(asset.get("outputName", "")).strip()
             category = str(asset.get("category", "")).strip()
+            if visual_key in dark_cell_by_key:
+                continue
             plan_by_key[visual_key] = asset
             source_entry = source_by_key.get(visual_key)
             if source_entry is None:
@@ -289,18 +302,15 @@ def validate_manifest(
                     f"spec='{bundled_entry.get(field_name)}' source='{source_entry.get(field_name)}'."
                 )
 
-    if dark_key_registry_path or dark_sheet_plan_path:
+    if dark_bridge_requested:
         if not dark_key_registry_path or not dark_sheet_plan_path:
             errors.append("--dark-key-registry and --dark-sheet-plan must be provided together.")
         else:
-            _, dark_cells, dark_plan_errors = load_sheet_plan(dark_sheet_plan_path)
-            dark_registry_by_key, dark_registry_errors = load_key_registry(dark_key_registry_path)
             errors += [f"dark sheet plan bridge: {error}" for error in dark_plan_errors]
             errors += [f"dark key registry bridge: {error}" for error in dark_registry_errors]
             if dark_plan_errors or dark_registry_errors:
                 errors.append("dark manifest bridge skipped because dark sheet plan or key registry failed validation.")
             else:
-                dark_cell_by_key = {cell.target_key: cell for cell in dark_cells}
                 missing_dark_registry_keys = sorted(set(dark_cell_by_key) - set(dark_registry_by_key))
                 if missing_dark_registry_keys:
                     errors.append(

@@ -7866,109 +7866,591 @@
       ]
     },
     {
-      "key": "ui.combat.action.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/uiux_pr05/ui_combat_action_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase4",
-        "uiux",
-        "pr05",
-        "combat",
-        "affordance"
-      ]
-    },
-    {
-      "key": "ui.combat.method.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/uiux_pr05/ui_combat_method_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase4",
-        "uiux",
-        "pr05",
-        "combat",
-        "affordance"
-      ]
-    },
-    {
-      "key": "ui.combat.target.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/uiux_pr05/ui_combat_target_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase4",
-        "uiux",
-        "pr05",
-        "combat",
-        "affordance"
-      ]
-    },
-    {
-      "key": "ui.combat.lock.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/uiux_pr05/ui_combat_lock_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase4",
-        "uiux",
-        "pr05",
-        "combat",
-        "affordance"
-      ]
-    },
-    {
-      "key": "ui.combat.invalid.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/uiux_pr05/ui_combat_invalid_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase4",
-        "uiux",
-        "pr05",
-        "combat",
-        "affordance"
-      ]
-    },
-    {
       "key": "ui.frame.panel.body",
       "category": "ui_frame",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_body.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
         "dark-uiux",
-        "pr00",
-        "dry-run",
-        "ui",
-        "frame"
+        "pr02",
+        "round1",
+        "ui"
       ]
     },
     {
       "key": "ui.frame.panel.focus",
       "category": "ui_frame",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_focus.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
         "dark-uiux",
-        "pr00",
-        "dry-run",
-        "ui",
-        "frame",
-        "focus"
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.panel.corner_tl",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_corner_tl.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.panel.corner_tr",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_corner_tr.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.panel.corner_bl",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_corner_bl.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.panel.corner_br",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_corner_br.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.panel.edge_top",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_edge_top.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.panel.edge_right",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_edge_right.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.panel.edge_bottom",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_edge_bottom.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.panel.edge_left",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_edge_left.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.slot.empty",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_slot_empty.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.slot.equipped",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_slot_equipped.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.slot.selected",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_slot_selected.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.tooltip.body",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_tooltip_body.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.frame.modal.body",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_modal_body.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.screen.validation.badge",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_screen_validation_badge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.screen.outcome.victory_marker",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_screen_outcome_victory_marker.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.screen.outcome.defeat_marker",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_screen_outcome_defeat_marker.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.screen.error.marker",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_screen_error_marker.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.screen.loading.marker",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_screen_loading_marker.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.control.back.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_control_back_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.control.confirm.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_control_confirm_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.control.copy.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_control_copy_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.control.backpack.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_control_backpack_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.control.equipment.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_control_equipment_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.combat.action.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_combat_action_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.combat.method.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_combat_method_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.combat.target.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_combat_target_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.combat.lock.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_combat_lock_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.combat.invalid.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_combat_invalid_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.state.locked.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_state_locked_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.state.learnable.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_state_learnable_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.state.active.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_state_active_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.state.reserve.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_state_reserve_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.hud.hp.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_hud_hp_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.hud.stamina.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_hud_stamina_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.hud.xp.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_hud_xp_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.hud.gold.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_hud_gold_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.hud.key.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_hud_key_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.hud.quest_marker.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_hud_quest_marker_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.hud.log_marker.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_hud_log_marker_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.hud.warning.icon",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_hud_warning_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02",
+        "round1",
+        "ui"
       ]
     }
   ],

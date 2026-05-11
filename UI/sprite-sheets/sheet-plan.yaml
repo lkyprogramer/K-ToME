@@ -1,47 +1,706 @@
 schemaVersion: dark-sprite-sheet-plan-v1
 styleTag: ktome-dark-fantasy-sprite-ui-v1
-# PR-00 keeps selected cells on debug/missing_visual to prove the registry,
-# manifest, resolver, and dry-run coverage chain before formal runtime PNGs.
 sheets:
-  - sheetId: r01-ui-chrome
-    round: 1
-    type: large-sheet
-    styleTag: ktome-dark-fantasy-sprite-ui-v1
-    rawSheetPath: assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png
-    outputRoot: client/src/main/resources
-    promptBase: Dark fantasy roguelike UI chrome sheet, no text, transparent background
-    grid:
-      columns: 4
-      rows: 4
-      cellWidth: 256
-      cellHeight: 256
-    cells:
-      - row: 0
-        col: 0
-        targetKey: ui.frame.panel.body
-        category: ui_frame
-        outputName: debug/missing_visual.png
-        subject: forged iron and worn stone panel body with ember edge scratches
-      - row: 0
-        col: 1
-        targetKey: ui.frame.panel.focus
-        category: ui_frame
-        outputName: debug/missing_visual.png
-        subject: focused panel frame variant with restrained cyan edge glow
-        aliasOf: ui.frame.panel.body
-      - row: 0
-        col: 2
-        targetKey: ui.combat.action.icon
-        category: icon
-        outputName: phase4/uiux_pr05/ui_combat_action_icon.png
-        subject: crossed weapon and ember spark action-choice icon
-      - row: 0
-        col: 3
-        targetKey: ui.combat.method.icon
-        category: icon
-        outputName: phase4/uiux_pr05/ui_combat_method_icon.png
-        subject: branching tactic glyph with two route strokes
-      - row: 3
-        col: 3
-        reserved: true
-        note: unused PR-00 dry-run polish slot
+- sheetId: r01-ui-chrome
+  round: 1
+  type: large-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy roguelike UI chrome sheet, no text, transparent background
+  grid:
+    columns: 4
+    rows: 4
+    cellWidth: 256
+    cellHeight: 256
+  cells:
+  - row: 0
+    col: 0
+    targetKey: ui.frame.panel.body
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_body.png
+    subject: forged iron worn stone panel body with ember scratches and subtle cyan
+      edge light
+  - row: 0
+    col: 1
+    targetKey: ui.frame.panel.focus
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_focus.png
+    subject: focused panel frame with brighter cold cyan edge glow and worn brass
+      corner accents
+  - row: 0
+    col: 2
+    targetKey: ui.frame.panel.corner_tl
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_corner_tl.png
+    subject: top left forged iron panel corner with riveted worn stone inset
+  - row: 0
+    col: 3
+    targetKey: ui.frame.panel.corner_tr
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_corner_tr.png
+    subject: top right forged iron panel corner with riveted worn stone inset
+  - row: 1
+    col: 0
+    targetKey: ui.frame.panel.corner_bl
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_corner_bl.png
+    subject: bottom left forged iron panel corner with dark stone bevel
+  - row: 1
+    col: 1
+    targetKey: ui.frame.panel.corner_br
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_corner_br.png
+    subject: bottom right forged iron panel corner with dark stone bevel
+  - row: 1
+    col: 2
+    targetKey: ui.frame.panel.edge_top
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_edge_top.png
+    subject: top horizontal iron edge strip with ember worn scratches
+  - row: 1
+    col: 3
+    targetKey: ui.frame.panel.edge_right
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_edge_right.png
+    subject: right vertical iron edge strip with subtle cyan rim light
+  - row: 2
+    col: 0
+    targetKey: ui.frame.panel.edge_bottom
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_edge_bottom.png
+    subject: bottom horizontal iron edge strip with soot and brass nick marks
+  - row: 2
+    col: 1
+    targetKey: ui.frame.panel.edge_left
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_panel_edge_left.png
+    subject: left vertical iron edge strip with worn stone seam
+  - row: 2
+    col: 2
+    targetKey: ui.frame.slot.empty
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_slot_empty.png
+    subject: empty equipment slot frame with dark hollow center and iron rim
+  - row: 2
+    col: 3
+    targetKey: ui.frame.slot.equipped
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_slot_equipped.png
+    subject: equipped item slot frame with ember-gold inner accent and worn metal
+      rim
+  - row: 3
+    col: 0
+    targetKey: ui.frame.slot.selected
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_slot_selected.png
+    subject: selected item slot frame with restrained cyan focus edge and brass rivets
+  - row: 3
+    col: 1
+    targetKey: ui.frame.tooltip.body
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_tooltip_body.png
+    subject: tooltip body panel with charcoal stone center and thin iron border
+  - row: 3
+    col: 2
+    targetKey: ui.frame.modal.body
+    category: ui_frame
+    outputName: dark-v1/ui/ui_frame_modal_body.png
+    subject: modal body panel with heavy black iron frame and ember title glow
+  - row: 3
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-chrome polish slot
+- sheetId: r01-ui-controls
+  round: 1
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r01-ui-controls.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy roguelike UI control and state icon sheet, no text, transparent
+    background
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: ui.screen.validation.badge
+    category: icon
+    outputName: dark-v1/ui/ui_screen_validation_badge.png
+    subject: small validation crest icon with check mark shaped rune but no text
+  - row: 0
+    col: 1
+    targetKey: ui.screen.outcome.victory_marker
+    category: icon
+    outputName: dark-v1/ui/ui_screen_outcome_victory_marker.png
+    subject: victory laurel marker with ember-gold torch and dark iron backing
+  - row: 0
+    col: 2
+    targetKey: ui.screen.outcome.defeat_marker
+    category: icon
+    outputName: dark-v1/ui/ui_screen_outcome_defeat_marker.png
+    subject: defeat marker with cracked shield silhouette and blood red ember
+  - row: 0
+    col: 3
+    targetKey: ui.screen.error.marker
+    category: icon
+    outputName: dark-v1/ui/ui_screen_error_marker.png
+    subject: error warning sigil on dark metal plate with red edge glow
+  - row: 0
+    col: 4
+    targetKey: ui.screen.loading.marker
+    category: icon
+    outputName: dark-v1/ui/ui_screen_loading_marker.png
+    subject: loading hourglass rune with dim cyan circular edge
+  - row: 0
+    col: 5
+    targetKey: ui.control.back.icon
+    category: icon
+    outputName: dark-v1/ui/ui_control_back_icon.png
+    subject: back arrow control icon as worn brass arrow on dark iron disk
+  - row: 0
+    col: 6
+    targetKey: ui.control.confirm.icon
+    category: icon
+    outputName: dark-v1/ui/ui_control_confirm_icon.png
+    subject: confirm check control icon as ember-gold mark on iron disk
+  - row: 0
+    col: 7
+    targetKey: ui.control.copy.icon
+    category: icon
+    outputName: dark-v1/ui/ui_control_copy_icon.png
+    subject: copy parchment control icon on dark leather and iron disk
+  - row: 1
+    col: 0
+    targetKey: ui.control.backpack.icon
+    category: icon
+    outputName: dark-v1/ui/ui_control_backpack_icon.png
+    subject: rugged adventurer backpack icon with old leather and brass clasp
+  - row: 1
+    col: 1
+    targetKey: ui.control.equipment.icon
+    category: icon
+    outputName: dark-v1/ui/ui_control_equipment_icon.png
+    subject: equipment armor icon with breastplate silhouette and cyan rim
+  - row: 1
+    col: 2
+    targetKey: ui.combat.action.icon
+    category: icon
+    outputName: dark-v1/ui/ui_combat_action_icon.png
+    subject: crossed weapon and ember spark action-choice icon
+  - row: 1
+    col: 3
+    targetKey: ui.combat.method.icon
+    category: icon
+    outputName: dark-v1/ui/ui_combat_method_icon.png
+    subject: branching tactic glyph with two route strokes
+  - row: 1
+    col: 4
+    targetKey: ui.combat.target.icon
+    category: icon
+    outputName: dark-v1/ui/ui_combat_target_icon.png
+    subject: target reticle icon with iron ring and cyan center glow
+  - row: 1
+    col: 5
+    targetKey: ui.combat.lock.icon
+    category: icon
+    outputName: dark-v1/ui/ui_combat_lock_icon.png
+    subject: locked combat option icon with black iron padlock and ember keyhole
+  - row: 1
+    col: 6
+    targetKey: ui.combat.invalid.icon
+    category: icon
+    outputName: dark-v1/ui/ui_combat_invalid_icon.png
+    subject: invalid combat option icon with cracked red warning slash no text
+  - row: 1
+    col: 7
+    targetKey: ui.state.locked.icon
+    category: icon
+    outputName: dark-v1/ui/ui_state_locked_icon.png
+    subject: locked state glyph with cold grey chain over dark iron node
+  - row: 2
+    col: 0
+    targetKey: ui.state.learnable.icon
+    category: icon
+    outputName: dark-v1/ui/ui_state_learnable_icon.png
+    subject: learnable state glyph with cyan spark in open rune circle
+  - row: 2
+    col: 1
+    targetKey: ui.state.active.icon
+    category: icon
+    outputName: dark-v1/ui/ui_state_active_icon.png
+    subject: active state glyph with green flame in dark rune circle
+  - row: 2
+    col: 2
+    targetKey: ui.state.reserve.icon
+    category: icon
+    outputName: dark-v1/ui/ui_state_reserve_icon.png
+    subject: reserve state glyph with ember-gold side flame in iron rune circle
+  - row: 2
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 2
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 2
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 2
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 2
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 3
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 3
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 3
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 3
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 3
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 3
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 3
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 3
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 4
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 4
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 4
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 4
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 4
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 4
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 4
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 4
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 5
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 5
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 5
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 5
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 5
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 5
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 5
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 5
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 6
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 6
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 6
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-controls polish slot
+- sheetId: r01-ui-hud-icons
+  round: 1
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r01-ui-hud-icons.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy roguelike HUD icon sheet, no text, transparent background, eight isolated centered icons with wide transparent padding, no overlap, no cropped edge decorations
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: ui.hud.hp.icon
+    category: icon
+    outputName: dark-v1/ui/ui_hud_hp_icon.png
+    subject: blood red heart vial icon framed by black iron
+  - row: 0
+    col: 1
+    targetKey: ui.hud.stamina.icon
+    category: icon
+    outputName: dark-v1/ui/ui_hud_stamina_icon.png
+    subject: green stamina leaf flame icon in dark metal rim
+  - row: 0
+    col: 2
+    targetKey: ui.hud.xp.icon
+    category: icon
+    outputName: dark-v1/ui/ui_hud_xp_icon.png
+    subject: arcane violet star shard XP icon with dark iron rim
+  - row: 0
+    col: 3
+    targetKey: ui.hud.gold.icon
+    category: icon
+    outputName: dark-v1/ui/ui_hud_gold_icon.png
+    subject: weathered gold coin stack icon with ember gleam
+  - row: 0
+    col: 4
+    targetKey: ui.hud.key.icon
+    category: icon
+    outputName: dark-v1/ui/ui_hud_key_icon.png
+    subject: old brass dungeon key icon on charcoal background
+  - row: 0
+    col: 5
+    targetKey: ui.hud.quest_marker.icon
+    category: icon
+    outputName: dark-v1/ui/ui_hud_quest_marker_icon.png
+    subject: quest marker rune icon with ember-gold exclamation shape no text
+  - row: 0
+    col: 6
+    targetKey: ui.hud.log_marker.icon
+    category: icon
+    outputName: dark-v1/ui/ui_hud_log_marker_icon.png
+    subject: log marker parchment scroll icon with cold cyan pin
+  - row: 0
+    col: 7
+    targetKey: ui.hud.warning.icon
+    category: icon
+    outputName: dark-v1/ui/ui_hud_warning_icon.png
+    subject: warning triangle rune icon with red ember edge no text
+  - row: 1
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 1
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 1
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 1
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 1
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 1
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 1
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 1
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 2
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 2
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 2
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 2
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 2
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 2
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 2
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 2
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 3
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 3
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 3
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 3
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 3
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 3
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 3
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 3
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 4
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 4
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 4
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 4
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 4
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 4
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 4
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 4
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 5
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 5
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 5
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 5
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 5
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 5
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 5
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 5
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 6
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 6
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 6
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-02 r01-ui-hud-icons polish slot

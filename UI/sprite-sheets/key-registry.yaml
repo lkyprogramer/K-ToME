@@ -1,32 +1,305 @@
 schemaVersion: dark-key-registry-v1
 styleTag: ktome-dark-fantasy-sprite-ui-v1
 entries:
-  - targetKey: ui.frame.panel.body
-    category: ui_frame
-    ownerPr: PR-00
-    sheetId: r01-ui-chrome
-    fallbackKey: missing_visual
-    consumer: client visual manifest resolver dry-run fixture
-    consumerTest: com.ktome.client.assets.ManifestResolveTest#dark ui dry-run frame keys resolve through exact manifest entries
-  - targetKey: ui.frame.panel.focus
-    category: ui_frame
-    ownerPr: PR-00
-    sheetId: r01-ui-chrome
-    fallbackKey: ui.frame.panel.body
-    consumer: client visual manifest resolver dry-run fixture
-    consumerTest: com.ktome.client.assets.ManifestResolveTest#dark ui dry-run frame keys resolve through exact manifest entries
-    aliasOf: ui.frame.panel.body
-  - targetKey: ui.combat.action.icon
-    category: icon
-    ownerPr: PR-00
-    sheetId: r01-ui-chrome
-    fallbackKey: missing_visual
-    consumer: client combat decision affordance
-    consumerTest: com.ktome.client.assets.ManifestResolveTest
-  - targetKey: ui.combat.method.icon
-    category: icon
-    ownerPr: PR-00
-    sheetId: r01-ui-chrome
-    fallbackKey: missing_visual
-    consumer: client combat decision affordance
-    consumerTest: com.ktome.client.assets.ManifestResolveTest
+- targetKey: ui.frame.panel.body
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: missing_visual
+  consumer: TileRenderer and StandaloneScreenChrome shared panel chrome
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.focus
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer focused pane chrome
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.corner_tl
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer panel frame corner
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.corner_tr
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer panel frame corner
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.corner_bl
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer panel frame corner
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.corner_br
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer panel frame corner
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.edge_top
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer panel frame edge
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.edge_right
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer panel frame edge
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.edge_bottom
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer panel frame edge
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.panel.edge_left
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer panel frame edge
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.slot.empty
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer hotbar and equipment empty slot
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.slot.equipped
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.slot.empty
+  consumer: TileRenderer hotbar equipped slot
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.slot.selected
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.slot.empty
+  consumer: TileRenderer selected slot
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.tooltip.body
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer tooltip chrome
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.frame.modal.body
+  category: ui_frame
+  ownerPr: PR-02
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: TileRenderer modal chrome
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.screen.validation.badge
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: ui.hud.warning.icon
+  consumer: ValidationSetupScreen chrome marker
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
+    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.screen.outcome.victory_marker
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: ui.hud.quest_marker.icon
+  consumer: VictoryScreen outcome marker
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
+    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.screen.outcome.defeat_marker
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: ui.hud.warning.icon
+  consumer: GameOverScreen outcome marker
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
+    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.screen.error.marker
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: ui.hud.warning.icon
+  consumer: UiErrorScreen marker
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
+    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.screen.loading.marker
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: ui.hud.log_marker.icon
+  consumer: UiLoadingState marker
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
+    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.control.back.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: ui.hud.log_marker.icon
+  consumer: StandaloneScreenChrome action icon
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
+    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.control.confirm.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: ui.hud.quest_marker.icon
+  consumer: StandaloneScreenChrome action icon
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
+    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.control.copy.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: ui.hud.log_marker.icon
+  consumer: StandaloneScreenChrome action icon
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
+    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.control.backpack.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: TileRenderer inventory affordance
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.control.equipment.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: TileRenderer equipment affordance
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.combat.action.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: client combat decision affordance
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.combat.method.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: client combat decision affordance
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.combat.target.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: client combat decision affordance
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.combat.lock.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: client combat decision affordance
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.combat.invalid.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: client combat decision affordance
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.state.locked.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter state glyph
+  consumerTest: TalentSidebarPresenterTest, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.state.learnable.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter state glyph
+  consumerTest: TalentSidebarPresenterTest, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.state.active.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter state glyph
+  consumerTest: TalentSidebarPresenterTest, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.state.reserve.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-controls
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter state glyph
+  consumerTest: TalentSidebarPresenterTest, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.hud.hp.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-hud-icons
+  fallbackKey: missing_visual
+  consumer: TileRenderer HUD gauge icon
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.hud.stamina.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-hud-icons
+  fallbackKey: missing_visual
+  consumer: TileRenderer HUD gauge icon
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.hud.xp.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-hud-icons
+  fallbackKey: missing_visual
+  consumer: TileRenderer HUD gauge icon
+  consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
+- targetKey: ui.hud.gold.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-hud-icons
+  fallbackKey: missing_visual
+  consumer: TileRenderer HUD currency icon
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.hud.key.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-hud-icons
+  fallbackKey: missing_visual
+  consumer: TileRenderer HUD key icon
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.hud.quest_marker.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-hud-icons
+  fallbackKey: missing_visual
+  consumer: TileRenderer HUD quest marker
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.hud.log_marker.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-hud-icons
+  fallbackKey: missing_visual
+  consumer: TileRenderer message log marker
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.hud.warning.icon
+  category: icon
+  ownerPr: PR-02
+  sheetId: r01-ui-hud-icons
+  fallbackKey: missing_visual
+  consumer: TileRenderer warning marker
+  consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries

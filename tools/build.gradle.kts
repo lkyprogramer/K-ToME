@@ -587,6 +587,7 @@ fun registerDarkManifestCoverageTask(
     mode: String,
     ownerPr: String,
     reportFileName: String,
+    ownerContract: String = "",
 ): TaskProvider<Exec> =
     tasks.register<Exec>(name) {
         group = "verification"
@@ -604,6 +605,9 @@ fun registerDarkManifestCoverageTask(
         if (ownerPr.isNotBlank()) {
             command += listOf("--owner-pr", ownerPr)
         }
+        if (ownerContract.isNotBlank()) {
+            command += listOf("--owner-contract", ownerContract)
+        }
         commandLine(command)
         inputs.files(
             rootProject.files(
@@ -616,6 +620,10 @@ fun registerDarkManifestCoverageTask(
                 "client/src/main/resources/manifests/visual-manifest.json",
             ),
         ).withPathSensitivity(PathSensitivity.RELATIVE)
+        if (ownerContract.isNotBlank()) {
+            inputs.file(rootProject.file(ownerContract)).withPathSensitivity(PathSensitivity.RELATIVE)
+        }
+        inputs.property("ktome.darkUiux.fixedOwnerContract", ownerContract)
         outputs.file(darkUiuxReportDir.map { dir -> dir.file(reportFileName) })
     }
 
@@ -673,6 +681,14 @@ registerDarkManifestCoverageTask(
     mode = "pr00-dry-run",
     ownerPr = "",
     reportFileName = "dark-v1-manifest-coverage-pr00-dry-run.json",
+)
+
+registerDarkManifestCoverageTask(
+    name = "darkManifestCoveragePr02OwnerScope",
+    mode = "owner-scope",
+    ownerPr = "PR-02",
+    ownerContract = "UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml",
+    reportFileName = "dark-v1-manifest-coverage.json",
 )
 
 tasks.register<VerificationTask>("verifyContractLintPreflight") {
@@ -1178,6 +1194,7 @@ listOf(
     tasks.named("darkSpriteSheetLint"),
     tasks.named("spriteSheetMapLint"),
     tasks.named("darkManifestCoveragePr00DryRun"),
+    tasks.named("darkManifestCoveragePr02OwnerScope"),
     tasks.named("verifyContractLintPreflight"),
     tasks.named("verifyLootPreflight"),
     tasks.named("verifyHiddenPreflight"),

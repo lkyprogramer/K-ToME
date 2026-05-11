@@ -2,6 +2,7 @@ scenarios:
   - id: phase4-v4-pr00-selftest
   - id: phase4-v4-pr01
   - id: phase4-v4-pr02
+  - id: dark-uiux-pr02-ui-chrome-sprite-pilot
   - id: phase4-v4-pr03
   - id: phase4-v4-pr04
   - id: phase4-v4-pr05

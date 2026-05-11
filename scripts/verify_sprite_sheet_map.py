@@ -62,6 +62,39 @@ def raw_sheet_path(sheet, raw_root: pathlib.Path | None) -> pathlib.Path:
     return raw_root / f"{sheet.sheet_id}.png"
 
 
+def load_existing_qa_records(report_path: pathlib.Path) -> dict[tuple[str, str], dict[str, Any]]:
+    if not report_path.is_file():
+        return {}
+    records: dict[tuple[str, str], dict[str, Any]] = {}
+    for line in report_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        sheet_id = row.get("sheetId")
+        target_key = row.get("targetKey")
+        if isinstance(sheet_id, str) and isinstance(target_key, str):
+            records[(sheet_id, target_key)] = row
+    return records
+
+
+def preserve_existing_qa_fields(
+    record: dict[str, Any],
+    existing_records: dict[tuple[str, str], dict[str, Any]],
+) -> dict[str, Any]:
+    previous = existing_records.get((record["sheetId"], record["targetKey"]))
+    if previous is None or previous.get("qaStatus") in (None, "DRY_RUN"):
+        return record
+    stable_fields = ("rawSheetHash", "cellRect", "cellHash", "outputName", "outputHash")
+    if any(previous.get(field) != record.get(field) for field in stable_fields):
+        return record
+    for field in ("qaStatus", "reviewer", "reviewedAt", "rejectionReason"):
+        record[field] = previous.get(field)
+    return record
+
+
 def validate_manifest_mapping(cells, manifest_path: pathlib.Path) -> list[str]:
     errors: list[str] = []
     manifest_by_key = load_manifest_entries(manifest_path)
@@ -204,8 +237,6 @@ def validate_sheet_plan_only(
     sheets, cells, errors = load_sheet_plan(plan_path)
     if len([cell for cell in cells if not cell.reserved]) < 3:
         errors.append("sheet-plan must contain at least 3 non-reserved dry-run cells.")
-    if not require_full_grid and not any(cell.alias_of for cell in cells):
-        errors.append("sheet-plan must contain at least 1 alias cell.")
     for sheet in sheets:
         for field_name, value in (("rawSheetPath", sheet.raw_sheet_path), ("outputRoot", sheet.output_root)):
             error = repo_relative_error(value, field_name, sheet.sheet_id)
@@ -231,6 +262,7 @@ def validate_map(
     errors += validate_manifest_mapping(cells, manifest_path)
     cells_by_sheet = {sheet.sheet_id: [cell for cell in cells if cell.sheet_id == sheet.sheet_id] for sheet in sheets}
     records: list[dict[str, Any]] = []
+    existing_qa_records = load_existing_qa_records(report_path)
     image_module = None
 
     for sheet in sheets:
@@ -267,23 +299,26 @@ def validate_map(
                         output_hash = sha256_file(output_path)
                 cell_bytes = crop.tobytes()
                 records.append(
-                    {
-                        "schemaVersion": "dark-sprite-map-report-v1",
-                        "styleTag": STYLE_TAG,
-                        "qaStatus": "DRY_RUN",
-                        "sheetId": sheet.sheet_id,
-                        "targetKey": cell.target_key,
-                        "rawSheetPath": sheet.raw_sheet_path,
-                        "rawSheetHash": raw_hash,
-                        "cellRect": {"left": rect[0], "top": rect[1], "right": rect[2], "bottom": rect[3]},
-                        "cellHash": hashlib.sha256(cell_bytes).hexdigest(),
-                        "outputName": cell.output_name,
-                        "slicedOutputRequired": sliced_output_required,
-                        "outputHash": output_hash,
-                        "reviewer": None,
-                        "reviewedAt": None,
-                        "rejectionReason": None,
-                    }
+                    preserve_existing_qa_fields(
+                        {
+                            "schemaVersion": "dark-sprite-map-report-v1",
+                            "styleTag": STYLE_TAG,
+                            "qaStatus": "DRY_RUN",
+                            "sheetId": sheet.sheet_id,
+                            "targetKey": cell.target_key,
+                            "rawSheetPath": sheet.raw_sheet_path,
+                            "rawSheetHash": raw_hash,
+                            "cellRect": {"left": rect[0], "top": rect[1], "right": rect[2], "bottom": rect[3]},
+                            "cellHash": hashlib.sha256(cell_bytes).hexdigest(),
+                            "outputName": cell.output_name,
+                            "slicedOutputRequired": sliced_output_required,
+                            "outputHash": output_hash,
+                            "reviewer": None,
+                            "reviewedAt": None,
+                            "rejectionReason": None,
+                        },
+                        existing_qa_records,
+                    )
                 )
         contact_path = contact_root / f"{sheet.sheet_id}-contact.png"
         if not contact_path.is_file():

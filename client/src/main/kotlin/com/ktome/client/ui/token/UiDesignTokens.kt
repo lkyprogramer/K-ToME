@@ -301,10 +301,10 @@ internal object UiDesignTokens {
 
     val typography: UiTypographyTokens =
         UiTypographyTokens(
-            ui = 28,
-            body = 24,
-            caption = 20,
-            title = 32,
+            ui = 20,
+            body = 16,
+            caption = 14,
+            title = 26,
         )
 
     val alpha: UiAlphaTokens =

@@ -12,9 +12,9 @@
 
 Codex CLI 生图验证结论：
 
-- `codex exec "生成一个上海一日旅游海报图片" --skip-git-repo-check` 已验证会把图片写入 `/Users/luo/.codex/generated_images/<latest-session>/`。
-- 仓库固定通过 `scripts/codex-generate-image.py` 调用 Codex CLI，按目录修改时间选取 `/Users/luo/.codex/generated_images` 下最新文件夹中的最新图片，并复制到调用方指定的 repo-relative `rawSheetPath`。
-- `/Users/luo/.codex/generated_images` 只是 transient source，不进入 manifest、coverage artifact 或 PR 合同；正式合同只认 `assets-src/image/raw/sheets/dark-v1/{sheetId}.png` 这类 repo-relative 输出路径。
+- `codex exec "生成一个上海一日旅游海报图片" --skip-git-repo-check` 已验证会把图片写入 Codex CLI 的 generated-images 目录。
+- 仓库固定通过 `scripts/codex-generate-image.py` 调用 Codex CLI，按目录修改时间选取 `<codex-generated-images-dir>` 下最新文件夹中的最新图片，并复制到调用方指定的 repo-relative `rawSheetPath`。
+- `<codex-generated-images-dir>` 只是 transient source，不进入 manifest、coverage artifact 或 PR 合同；正式合同只认 `assets-src/image/raw/sheets/dark-v1/{sheetId}.png` 这类 repo-relative 输出路径。
 - 方案采用：脚本生成 prompt，`scripts/codex-generate-image.py` 调用 Codex CLI 生成并落位 raw sheet，仓库脚本负责切分、校验、处理、注册 manifest。
 
 ## Art Style Authority
@@ -72,7 +72,7 @@ Manifest 权威关系固定为 canonical-first：
 | Mode | 使用阶段 | 严格度 |
 | --- | --- | --- |
 | `pr00-dry-run` | PR-00 fixture 与脚本接线 | 允许没有正式 PNG 和生产 manifest 覆盖，但必须输出可解释的 missing/pending，不允许静默通过 |
-| `owner-scope` | PR-02、PR-03、PR-05 | 只强制当前 owner PR 的 sheetId / key family；owner scope 外允许 pending，但必须列入 artifact |
+| `owner-scope` | PR-02、PR-02-1、PR-03、PR-05 | 只强制当前 owner PR 的 sheetId / key family；owner scope 外允许 pending，但必须列入 artifact |
 | `final-full` | PR-06、PR-07 | 玩家可见主路径全量收口，`oldStylePlayerVisibleKeys=[]` 且 `pendingOrRejectedPlayerVisibleCells=[]` |
 
 `dark-v1-manifest-coverage.json` schema 以 PR-00 文档为权威。总方案只固定最低要求：必须记录 `scopeMode`、`ownerPr`、`expectedKeySetSource`、`strictOldStyleResidue`，并按 mode 输出 owner-scope 或 final-full 扩展字段，避免同名 gate 在不同 PR 里语义漂移。
@@ -186,7 +186,7 @@ sheets:
 8. `sheetId`、`targetKey` prefix、`category` 必须与 [pr/README.md](./pr/README.md) 的 SheetId Ownership 和 key registry 匹配。
 
 ### Prompt Generation Contract
-每张 sheet 的最终 prompt 由 `generate_sheet_prompt.py` 生成，结构固定。raw sheet 通过 `scripts/codex-generate-image.py` 调用 Codex CLI 生成；该脚本只从 `/Users/luo/.codex/generated_images` 读取最新输出并复制到 `rawSheetPath`，不把本机生成目录写入长期合同。
+每张 sheet 的最终 prompt 由 `generate_sheet_prompt.py` 生成，结构固定。raw sheet 通过 `scripts/codex-generate-image.py` 调用 Codex CLI 生成；该脚本只从 `<codex-generated-images-dir>` 读取最新输出并复制到 `rawSheetPath`，不把本机生成目录写入长期合同。
 
 Prompt 输出目录固定为 `UI/sprite-sheets/prompts/dark-v1/`。文件名由脚本按 `round + sheet order + sheetId` 生成，格式固定：
 
@@ -287,6 +287,7 @@ row 0 col 2: focused target reticle over a worn stone tile.
 | 1 | `r01-ui-chrome` | `large-sheet` | 16 | panel、sidebar、HUD、slot、tooltip、modal frame |
 | 1 | `r01-ui-controls` | `icon-sheet` | 64 | tab、button、empty state、combat UI、lock/invalid/target |
 | 1 | `r01-ui-hud-icons` | `icon-sheet` | 64 | hp、stamina、xp、gold、inventory、equipment、log markers |
+| 1B | `r01b-ui-shell-chrome` | `large-sheet` | 16 | PR-02-1 必须生成的 shell scaffold：outer/map/nav/bottom frames、right divider、hero placeholder、nav rail icons |
 | 2 | `r02-tiles-ground` | `tile-sheet` | 64 | `tile_ground` 与 biome ground 变体 |
 | 2 | `r02-tiles-wall` | `tile-sheet` | 64 | `tile_wall` 与 biome wall 变体 |
 | 2 | `r02-tiles-decal` | `tile-sheet` | 64 | tile decal、zone floor effect、warning sigil |
@@ -384,7 +385,7 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 1. 首页/主菜单是玩家第一屏，必须与局内 UI 使用同一暗黑 token、同一焦点态、同一禁用态和同一键盘优先交互语义；不能保留旧风格“标题 + 文本菜单”孤岛。
 2. 验证模式入口和 `ValidationSetupScreen` 必须纳入正式 UI 改造。验证模式可以标记为 validation/debug flow，但视觉、布局、locale、焦点和返回路径必须与正式 UI 统一。
 3. 中央地图保持主视图，但使用暗色框架、地图阴影和边界材质增强质感。
-4. 左侧新增导航/区域栏：当前 dungeon、楼层、任务摘要、关键提示。
+4. 左侧新增 icon-first 导航栏：compass/map、bag/equipment、scroll/log、book/talent、settings/accessibility 作为主视觉槽位；当前 dungeon、楼层、任务摘要、关键提示只能作为 compact hint 或 tooltip。
 5. 右侧改为玩家面板：角色状态、装备格、背包 grid、资源计数。
 6. 底部只保留一套 HUD：生命/耐力/经验、日志、快捷栏、键位提示。
 7. 删除重复状态栏；快捷键提示改为紧凑分组，不再挤压日志。
@@ -406,13 +407,14 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | `dark-uiux-pr01` | [Client Shell Layout](./pr/dark-uiux-pr01-client-shell-layout.md) | L | 首页/主菜单、验证入口、三栏 + 底部 HUD 框架、token、renderer 拆分 |
 | `dark-uiux-pr01-1` | [Client Viewport Renderer And Overlay Architecture](./pr/dark-uiux-pr01-1-client-viewport-renderer-overlay.md) | XL | 玩家居中 viewport、TileRenderer orchestration 拆分、tooltip/modal overlay layer |
 | `dark-uiux-pr02` | [UI Chrome Sprite Pilot](./pr/dark-uiux-pr02-ui-chrome-sprite-pilot.md) | L | 跑通 UI chrome/HUD/standalone screen chrome 第一批 sheet 到 manifest/golden |
+| `dark-uiux-pr02-1` | [Demo Shell Foundation](./pr/dark-uiux-pr02-1-demo-shell-foundation.md) | XL | 基于 PR-02 chrome 搭建 demo-like 主 shell：icon rail、dominant map stage、right grid scaffold、bottom hero/action/log deck |
 | `dark-uiux-pr03` | [Equipment Inventory Items](./pr/dark-uiux-pr03-equipment-inventory-items.md) | L | 装备/背包 grid、item icon、铭文商店、quality、空态/tooltip |
 | `dark-uiux-pr04` | [Profession Tree UI](./pr/dark-uiux-pr04-profession-tree-ui.md) | M | 职业树 dark UI、节点状态、预览、主动槽 modal |
 | `dark-uiux-pr05` | [Map Actor Portrait Replacement](./pr/dark-uiux-pr05-map-actor-portrait-replacement.md) | XL | Tile、prop、VFX、actor、portrait 统一替换 |
 | `dark-uiux-pr06` | [Skills Status Quest Full Manifest](./pr/dark-uiux-pr06-skills-status-quest-full-manifest.md) | XL | 技能、状态、任务、fallback、全 manifest 收口 |
 | `dark-uiux-pr07` | [Golden Whitebox Polish](./pr/dark-uiux-pr07-golden-whitebox-polish.md) | M | 全 UI 面 golden/白盒、验证模式、结算/错误页、性能与 atlas 决策 |
 
-执行顺序固定为：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
+执行顺序固定为：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
 
 ## Asset Pipeline Deliverables
 必须新增或更新以下文件族：
@@ -447,7 +449,7 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 - UI smoke：`./gradlew :client:clientSmoke :client:goldenScreenshot`
 - 旧资源合同：`./gradlew assetLint styleLint manifestLint`
 - 暗黑雪碧图合同：`./gradlew darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint`
-- coverage 模式：PR-00 使用 `./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=pr00-dry-run`；PR-02/03/05 使用 `owner-scope` 并显式传 `-Pktome.darkUiux.ownerPr=PR-xx`；PR-06/07 使用 `final-full`。
+- coverage 模式：PR-00 使用 `./gradlew darkManifestCoveragePr00DryRun`；PR-02 使用 `./gradlew darkManifestCoveragePr02OwnerScope`；PR-02-1 使用 `./gradlew darkManifestCoveragePr02_1OwnerScope`；PR-03/05 使用 `owner-scope` 并显式传 `-Pktome.darkUiux.ownerPr=PR-xx`；PR-06/07 使用 `final-full`。
 - 治理检查：`./gradlew maintainabilityLint`
 - 总入口：`./gradlew verifyChanged`
 - 若改 Gradle/依赖/bootstrap：`./scripts/verify-bootstrap.sh`

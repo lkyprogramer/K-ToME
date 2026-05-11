@@ -93,7 +93,7 @@ val verifyChangedTaskPaths =
         ":tools:darkKeyRegistryLint",
         ":tools:darkSpriteSheetLint",
         ":tools:spriteSheetMapLint",
-        ":tools:darkManifestCoveragePr00DryRun",
+        ":tools:darkManifestCoveragePr02OwnerScope",
         ":tools:verifyContractLintPreflight",
         ":tools:contractLint",
         ":tools:keywordRegistryLint",

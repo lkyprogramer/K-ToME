@@ -8,6 +8,7 @@ import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.contentpack.ContentPackFixtureCatalog
 import com.ktome.game.contentpack.ContentPackSelection
+import com.ktome.game.i18n.GameLocale
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -103,6 +104,37 @@ class ValidationScenarioRegistryTest {
         listOf("Select inscription offer", "buy inscription", "5-8, Enter", "retry").forEach { vagueTerm ->
             assertFalse(runbookText.contains(vagueTerm), "PR-02 runbook must use exact key sequences instead of vague term: $vagueTerm")
         }
+    }
+
+    @Test
+    fun `dark uiux pr02 chrome fit scenario maps to ui manual record`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr02-ui-chrome-sprite-pilot"))
+
+        assertEquals("PR-02", scenario.prId)
+        assertEquals(ValidationPreset.LOOT_LAB, scenario.runtime.preset)
+        assertEquals(2026051002L, scenario.runtime.seed)
+        assertEquals(GameLocale.ZH_CN, scenario.runtime.locale)
+        assertEquals("rogue", scenario.runtime.professionId)
+        assertEquals("greenwood_fringe", scenario.runtime.zoneId)
+        assertEquals(
+            listOf(
+                "evidence/dark-uiux-pr02-shell-hud-frame-fit.png",
+                "evidence/dark-uiux-pr02-inventory-modal-frame-fit.png",
+                "evidence/dark-uiux-pr02-validation-overlay-frame-fit.png",
+                "evidence/dark-uiux-pr02-runtime-error-loading-fit.png",
+                "evidence/dark-uiux-pr02-ui-chrome-sprite-pilot-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals("UI/manual-records/dark-uiux-pr02-ui-chrome-sprite-pilot.md", scenario.evidence.manualRecordPath)
+        assertEquals(
+            scenario.evidence.requiredEvidenceFiles.filter { file -> file.endsWith(".png") },
+            scenario.evidence.cuaSteps.map { step -> step.evidenceFile },
+        )
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr02-ui-chrome-sprite-pilot.evidence.summary_note",
+            scenario.evidence.scenarioNoteLabelKey,
+        )
     }
 
     @Test

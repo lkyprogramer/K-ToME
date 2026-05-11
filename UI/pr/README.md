@@ -10,6 +10,7 @@
 | 1 | [PR-01 Client Shell Layout](dark-uiux-pr01-client-shell-layout.md) | P0 | L | 首页/主菜单、验证入口、三栏 + 底部 HUD 框架、token、renderer 拆分 | 不生成正式资源 |
 | 1.1 | [PR-01-1 Client Viewport Renderer Overlay](dark-uiux-pr01-1-client-viewport-renderer-overlay.md) | P0 | XL | 玩家居中地图视口、TileRenderer orchestration 化、tooltip/modal overlay layer | 不生成正式资源 |
 | 2 | [PR-02 UI Chrome Sprite Pilot](dark-uiux-pr02-ui-chrome-sprite-pilot.md) | P0 | L | 跑通 UI chrome/HUD/standalone screen chrome 第一批 sheet 到 manifest/golden | Round 1 |
+| 2.1 | [PR-02-1 Demo Shell Foundation](dark-uiux-pr02-1-demo-shell-foundation.md) | P0 | XL | 在 PR-02 chrome 基础上搭建 demo-like 主 shell：icon rail、dominant map stage、right grid scaffold、bottom hero/action/log deck | Round 1B 必须生成 |
 | 3 | [PR-03 Equipment Inventory Items And Shop](dark-uiux-pr03-equipment-inventory-items.md) | P0 | L | 装备/背包 grid、item icon、铭文商店、quality、空态/tooltip | Round 7 部分 |
 | 4 | [PR-04 Profession Tree UI](dark-uiux-pr04-profession-tree-ui.md) | P0 | M | 职业树 dark UI、节点状态、预览、主动槽 modal | 默认复用现有资源 |
 | 5 | [PR-05 Map Actor Portrait Replacement](dark-uiux-pr05-map-actor-portrait-replacement.md) | P1 | XL | Tile、prop、VFX、actor、portrait 统一替换 | Round 2-6 |
@@ -18,16 +19,16 @@
 
 ## 依赖规则
 
-1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
+1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
 2. 每个 PR 必须先读 [UI/PLAN.md](../PLAN.md)、[UI/ART_STYLE_BIBLE.md](../ART_STYLE_BIBLE.md) 和本 PR 文档。
 3. 每个 PR 完成后必须做一次 doc-vs-implementation self-audit。
-4. 每个 PR 的 golden label 使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1` 是合法细分特例，必须使用 `dark-uiux-pr01-1-*`，不得复用 `dark-uiux-pr01-*`；如替换 PR-01 等价截图，只能在 manual record 中说明映射关系。
+4. 每个 PR 的 golden label 使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1` 和 `PR-02-1` 是合法细分特例，必须使用 `dark-uiux-pr01-1-*` / `dark-uiux-pr02-1-*`，不得复用父 PR label；如替换父 PR 等价截图，只能在 manual record 中说明映射关系。
 5. 新增图片、manifest、sheet plan、contact sheet 或 runtime PNG 的 PR 必须补跑 `assetLint styleLint manifestLint`。
 6. 新增或改中文 UI 文案、locale token、presentation token 的 PR 必须补跑 `localeLint contractLint`。
 7. 修改 Kotlin 文件数 `>= 5`、新增 public presentation model、或重排 renderer 共享组件的 PR 必须补跑 `maintainabilityLint`。
 8. 修改 Gradle、bootstrap、processResources、lint task 接线或依赖的 PR 必须补跑 `./scripts/verify-bootstrap.sh`。
 9. PR-00 关闭前必须让 `verifyChanged` impact routing 命中 dark-v1 相关变更时触发 dark gate；PR-02 以后不得只依赖人工记忆执行资源 gate。
-10. `ownerPr` 字符串固定使用 `PR-00`、`PR-02` 这种格式；禁止混用 `pr02`、`PR02`。
+10. `ownerPr` 字符串固定使用 `PR-00`、`PR-02` 或 `PR-02-1` 这种格式；禁止混用 `pr02`、`PR02`。若新增细分 PR owner，必须同步更新 dark sprite pipeline 的 ownerPr regex 和脚本回归测试。
 11. 所有 PR 必须遵守 [development-governance.md](./development-governance.md)，并包含 `## 0. 开发治理与验收矩阵`。
 12. `acceptanceContractLint` 是 dark UI/UX PR 的文档合同快路径；它只检查 PR 文档是否可执行，不替代 resource gate、golden、白盒或 `verifyChanged`。
 13. Gate ladder 固定为 `acceptanceContractLint -> fast lane -> resource gate -> client evidence -> maintainabilityLint -> verifyChanged`；PR-07 追加 packaged app 白盒。
@@ -48,8 +49,9 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 
 1. PR-01 必须先覆盖首页、验证入口、standalone screen token 和局内 shell；client ASCII fallback 不再作为验收面。
 2. PR-02 必须让首页、验证 setup、结算页、错误页和 modal 可消费统一 chrome/control key。
-3. PR-03 必须把铭文商店、buy/sell、满槽替换 modal、价格/affordability marker 和购买失败反馈纳入装备/背包同一 UX family；pre-rendered disabled reason 只有在同 PR 新增 typed source 时才是 blocking 状态。
-4. PR-07 必须输出 `dark-uiux-pr07-final-all-screens` evidence index，逐项引用矩阵中每个 Required/Conditional 面的 golden、manual record、focused test 和 packaged app evidence。
+3. PR-02-1 必须把局内主 shell 从 text-first 三栏提升为 demo-like 结构；PR-03/05/06 只在这个 shell 上替换资源和细分面板，不再重推主框架。
+4. PR-03 必须把铭文商店、buy/sell、满槽替换 modal、价格/affordability marker 和购买失败反馈纳入装备/背包同一 UX family；pre-rendered disabled reason 只有在同 PR 新增 typed source 时才是 blocking 状态。
+5. PR-07 必须输出 `dark-uiux-pr07-final-all-screens` evidence index，逐项引用矩阵中每个 Required/Conditional 面的 golden、manual record、focused test 和 packaged app evidence。
 
 ## SheetId Ownership
 
@@ -61,6 +63,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | `r01-ui-chrome` | PR-02 | `ui_frame` | `ui.frame.*`; standalone screens consume shared `ui.frame.panel.body` directly. Future exact `ui.screen.*` frame keys require later direct cells / manifest entries / tests. |
 | `r01-ui-controls` | PR-02 | `icon` | `ui.control.*`, `ui.combat.*`, `ui.state.*`, `ui.screen.*` marker |
 | `r01-ui-hud-icons` | PR-02 | `icon` | `ui.hud.*` |
+| `r01b-ui-shell-chrome` | PR-02-1 | `ui_frame`, `icon` | Mandatory Round 1B shell scaffold keys: `ui.shell.*`, including nav rail icons and shell frame components |
 | `r02-tiles-ground` | PR-05 | `tile_ground` | `tileset.<tilesetId>.ground_01` for `forest_edge`, `mine`, `ruins`, `shadow_depths` |
 | `r02-tiles-wall` | PR-05 | `tile_wall` | `tileset.<tilesetId>.wall_01` for `forest_edge`, `mine`, `ruins`, `shadow_depths` |
 | `r02-tiles-decal` | PR-05 | `tile_decal` | `vfx.terrain.interaction.*`; no new `tile.decal.*` runtime key |
@@ -97,6 +100,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | PR | 目标覆盖范围 | 目标口径 |
 | --- | --- | --- |
 | PR-02 | UI chrome / HUD / controls / standalone screen chrome | Round 1 三张 sheet 的全部非 reserved cell，含首页/验证/结算/error/loading 共享 key |
+| PR-02-1 | Demo shell foundation / mandatory shell chrome | 局内主 shell 结构、nav rail、right scaffold、bottom deck；Round 1B 必须覆盖 `ui.shell.*` owner-scope |
 | PR-03 | item / equipment / affix / material / shop | `item.*`, item quality marker, inventory-specific UI key, `ui.shop.price.*`, `ui.shop.inscription.marker`, `ui.shop.replacement.slot_marker`; `ui.shop.offer.frame` alias 到 PR-02 `ui.frame.panel.body`，`ui.shop.offer.disabled` 默认 deferred |
 | PR-05 | tile / prop / VFX / actor / portrait | Round 2-6 全部 player-visible key |
 | PR-06 | skill / talent / status / mutation / quest / profession / tree / fallback | Round 8-9、PR-03/05 rejected cell、allowed fallback/exclusion |
@@ -145,22 +149,30 @@ PR-00 的 lint 合同必须让非 reserved cell 缺少 key registry 记录或缺
 | Mode | Owner | Exit rule |
 | --- | --- | --- |
 | `pr00-dry-run` | PR-00 | dry-run fixture 可解释 missing/pending，task 不得静默成功 |
-| `owner-scope` | PR-02 / PR-03 / PR-05 | 当前 PR owner scope 必须完整，scope 外 pending 必须进入 artifact |
+| `owner-scope` | PR-02 / PR-02-1 / PR-03 / PR-05 | 当前 PR owner scope 必须完整，scope 外 pending 必须进入 artifact |
 | `final-full` | PR-06 / PR-07 | `oldStylePlayerVisibleKeys=[]` 且 `pendingOrRejectedPlayerVisibleCells=[]` |
 
-命令协议固定为：
+通用命令协议固定为：
 
 ```bash
 ./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=pr00-dry-run
-./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02
+./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-xx
 ./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=final-full
 ```
 
-`darkManifestCoverageLint` 裸 task 默认等价 `final-full`；CI、`verifyChanged` 和 PR close gate 必须显式传 mode。`owner-scope` 缺少 `ownerPr` 必须 fail fast；`final-full` 不允许 `ownerPr` 改变分母。
+PR close gate 和 `verifyChanged` 不使用裸 owner-scope 命令，必须使用固定 task 与独立 report：
+
+```bash
+./gradlew darkManifestCoveragePr00DryRun
+./gradlew darkManifestCoveragePr02OwnerScope
+./gradlew darkManifestCoveragePr02_1OwnerScope
+```
+
+`darkManifestCoverageLint` 裸 task 默认等价 `final-full`；CI、`verifyChanged` 和 PR close gate 必须显式传 mode。`owner-scope` 缺少 `ownerPr` 必须 fail fast；`final-full` 不允许 `ownerPr` 改变分母。PR-02 owner report 固定为 `dark-v1-manifest-coverage-pr02-owner-scope.json`，PR-02-1 owner report 固定为 `dark-v1-manifest-coverage-pr02-1-owner-scope.json`，不得复用裸 task 的 `dark-v1-manifest-coverage.json`。
 
 coverage artifact schema 以 PR-00 文档为权威。README 只要求 common fields：`scopeMode / ownerPr / expectedKeySetSource / strictOldStyleResidue`。
 
-PR-00 的 `verifyChanged` dark route 必须显式调用 `darkManifestCoveragePr00DryRun`。PR-00 fixture 允许 `missing_visual` 用来证明 manifest/resolver/coverage 链路；PR-02 / PR-03 / PR-05 必须用 `owner-scope` 逐步替换该 dry-run 口径，PR-06 / PR-07 必须用 `final-full` 收口。
+PR-00 的 `verifyChanged` dark route 必须显式调用 `darkManifestCoveragePr00DryRun`。PR-00 fixture 允许 `missing_visual` 用来证明 manifest/resolver/coverage 链路；PR-02 / PR-02-1 / PR-03 / PR-05 必须用 `owner-scope` 逐步替换该 dry-run 口径，PR-06 / PR-07 必须用 `final-full` 收口。
 
 HUD 与 item namespace 必须分开：
 
@@ -174,9 +186,9 @@ HUD 与 item namespace 必须分开：
 
 ## Codex CLI Raw Sheet Workflow
 
-雪碧图 raw sheet 统一由 `scripts/codex-generate-image.py` 调用 Codex CLI 生成。Codex CLI 当前会把图片写到 `/Users/luo/.codex/generated_images/<latest-session>/`；仓库脚本按修改时间选择最新文件夹里的最新图片，并复制到 `sheet-plan.yaml.rawSheetPath`。
+雪碧图 raw sheet 统一由 `scripts/codex-generate-image.py` 调用 Codex CLI 生成。Codex CLI 当前会把图片写到 `<codex-generated-images-dir>/<latest-session>/`；仓库脚本按修改时间选择最新文件夹里的最新图片，并复制到 `sheet-plan.yaml.rawSheetPath`。
 
-`/Users/luo/.codex/generated_images` 只是 transient source，不允许进入 manifest、coverage artifact 或 PR 合同。正式资源路径必须是 repo-relative，例如 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`。
+`<codex-generated-images-dir>` 只是 transient source，不允许进入 manifest、coverage artifact 或 PR 合同。正式资源路径必须是 repo-relative，例如 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`。
 
 固定流程：
 
@@ -184,7 +196,7 @@ HUD 与 item namespace 必须分开：
 2. 运行 PR-00 固定的 prompt 生成命令，输出 `UI/sprite-sheets/prompts/dark-v1/*.prompt.txt` 和 `prompt-index.json`。
 3. prompt 文件按 `001-r01-ui-chrome.prompt.txt` 这种格式编号；编号只表示执行顺序，语义仍以 `sheetId` 为准。
 4. 开发者运行 `scripts/codex-generate-image.py "$(cat <promptPath>)" --out <rawSheetPath> --smoke-report <buildReportPath> --overwrite`。
-5. 脚本执行 `codex exec "<prompt>" --skip-git-repo-check`，从本次运行创建或触碰的 `/Users/luo/.codex/generated_images` 目录取最新图片，并复制到 prompt 文件头指定的 `Expected output file`。
+5. 脚本执行 `codex exec "<prompt>" --skip-git-repo-check`，从本次运行创建或触碰的 `<codex-generated-images-dir>` 目录取最新图片，并复制到 prompt 文件头指定的 `Expected output file`。
 6. 输出文件名必须等于 `{sheetId}.png`，例如 `assets-src/image/raw/sheets/dark-v1/r01-ui-chrome.png`。
 7. 开发者运行切分、contact sheet、QA 和 manifest/coverage 校验脚本。
 8. contact sheet 被人工确认后，后续 PR 才能把切分后的 runtime PNG 和 manifest patch 作为可评审产物。
@@ -214,7 +226,7 @@ prompt 文件头必须包含：
 禁止事项：
 
 1. 不手写 prompt 文件；只能由脚本从 `sheet-plan.yaml` 生成。
-2. 不把 `/Users/luo/.codex/generated_images` 中的 session id 或文件名当合同；必须由脚本复制成 `rawSheetPath`。
+2. 不把 `<codex-generated-images-dir>` 中的 session id 或文件名当合同；必须由脚本复制成 `rawSheetPath`。
 3. 不把多个候选 raw sheet 都放在正式 raw 目录；正式目录每个 `sheetId` 只能有一个 `{sheetId}.png`。
 4. 不通过修改 `row/col` 适配生成错误；格子错位、串格、文字、水印、风格漂移时重跑 prompt。
 5. 不让 CI 依赖本机绝对路径或 Codex CLI transient 输出目录。
@@ -227,6 +239,7 @@ prompt 文件头必须包含：
 | --- | --- |
 | PR-01 | `dark-uiux-pr01-home-main-menu`、`dark-uiux-pr01-home-new-run`、`dark-uiux-pr01-continue-unavailable`、`dark-uiux-pr01-validation-entry`、`dark-uiux-pr01-shell-1280x800`、`dark-uiux-pr01-shell-min-window`、`UI/manual-records/dark-uiux-pr01-shell.md` |
 | PR-02 | `dark-uiux-pr02-round1-chrome`、`dark-uiux-pr02-hud-icons-pilot`、`dark-uiux-pr02-standalone-screen-chrome`、contact sheet QA、manifest diff |
+| PR-02-1 | main labels：`dark-uiux-pr02-1-demo-shell-1280x800`、`dark-uiux-pr02-1-demo-shell-inventory-open`、`dark-uiux-pr02-1-demo-shell-right-panel-grid`、`dark-uiux-pr02-1-demo-main-menu`、`dark-uiux-pr02-1-demo-validation-setup`；supporting crop labels：`dark-uiux-pr02-1-demo-shell-nav-rail-crop`、`dark-uiux-pr02-1-demo-shell-bottom-deck-crop`；manual：`UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`；coverage：`build/reports/verification/dark-uiux/dark-v1-manifest-coverage-pr02-1-owner-scope.json` |
 | PR-03 | `dark-uiux-pr03-equipment-slots`、`dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked`、`dark-uiux-pr03-inscription-shop`、`dark-uiux-pr03-shop-full-slot-replace`、`UI/manual-records/dark-uiux-pr03-fallback-key-injection.md` |
 | PR-04 | `dark-uiux-pr04-talent-sidebar-start`、`dark-uiux-pr04-active-slot-choice`、`dark-uiux-pr04-talent-sidebar-min-window-log-visible`、`UI/manual-records/dark-uiux-pr04-profession-tree-ui.md`、`phase4-v4-pr01` scenario evidence |
 | PR-05 | `dark-uiux-pr05-map-layer-stack`、`dark-uiux-pr05-actor-boss-telegraph`、contact sheet QA |

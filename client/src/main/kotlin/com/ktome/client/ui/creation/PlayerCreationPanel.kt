@@ -10,6 +10,10 @@ import com.ktome.client.ui.token.UiDesignTokens
 internal const val PLAYER_CREATION_SECTION_OFFSET_X = 380f
 internal const val PLAYER_CREATION_SECTION_MAX_CHARS = 34
 internal const val PLAYER_CREATION_ACTION_MAX_CHARS = 28
+private const val PLAYER_CREATION_SECTION_LINE_STEP_Y = 22f
+private const val PLAYER_CREATION_RACE_SECTION_OFFSET_Y = 70f
+private const val PLAYER_CREATION_ACTION_BASE_OFFSET_Y = 120f
+private const val PLAYER_CREATION_ACTION_STEP_Y = 22f
 
 internal data class PlayerCreationPanelEntryModel(
     val text: String,
@@ -79,7 +83,7 @@ internal object PlayerCreationPanel {
             model = model.raceSection,
             stateColor = raceStateColor,
             x = x + PLAYER_CREATION_SECTION_OFFSET_X,
-            topY = topY,
+            topY = topY - PLAYER_CREATION_RACE_SECTION_OFFSET_Y,
             focused = model.focusedAxis == PlayerCreationFocus.RACE,
         )
 
@@ -90,7 +94,12 @@ internal object PlayerCreationPanel {
                     entry.selected -> UiDesignTokens.color.menu.selection.focused.color()
                     else -> UiDesignTokens.color.menu.selection.normal.color()
                 }
-            font.draw(batch, fitText(entry.text, PLAYER_CREATION_ACTION_MAX_CHARS), x, topY - 132f - index * 32f)
+            font.draw(
+                batch,
+                fitText(entry.text, PLAYER_CREATION_ACTION_MAX_CHARS),
+                x,
+                topY - PLAYER_CREATION_ACTION_BASE_OFFSET_Y - index * PLAYER_CREATION_ACTION_STEP_Y,
+            )
         }
     }
 
@@ -106,14 +115,14 @@ internal object PlayerCreationPanel {
         font.color = if (focused) UiDesignTokens.color.focus.ring.color() else UiDesignTokens.color.text.primary.color()
         font.draw(batch, fitText(model.title, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY)
         font.color = stateColor
-        font.draw(batch, fitText(model.state, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - 28f)
+        font.draw(batch, fitText(model.state, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - PLAYER_CREATION_SECTION_LINE_STEP_Y)
         font.color = UiDesignTokens.color.text.disabled.color()
-        font.draw(batch, fitText(model.description, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - 56f)
+        font.draw(batch, fitText(model.description, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - PLAYER_CREATION_SECTION_LINE_STEP_Y * 2f)
         model.detail?.takeIf(String::isNotBlank)?.let { detail ->
-            font.draw(batch, fitText(detail, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - 84f)
+            font.draw(batch, fitText(detail, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - PLAYER_CREATION_SECTION_LINE_STEP_Y * 3f)
         }
         model.note?.takeIf(String::isNotBlank)?.let { note ->
-            font.draw(batch, fitText(note, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - 108f)
+            font.draw(batch, fitText(note, PLAYER_CREATION_SECTION_MAX_CHARS), x, topY - PLAYER_CREATION_SECTION_LINE_STEP_Y * 4f)
         }
     }
 

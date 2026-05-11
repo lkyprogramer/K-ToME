@@ -8,9 +8,11 @@ import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
 import com.ktome.client.bossVariantModeLabelKey
+import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.client.validation.ValidationScenarioPresentationCatalog
 import com.ktome.game.elites.BossVariantSelectionMode
@@ -97,18 +99,23 @@ internal class ValidationSetupScreen(
                     } else {
                         StandaloneDetailAreaMode.VISIBLE
                     },
+                chromeAssets = app.standaloneChromeAssetsOrNull(DarkUiChromeVisualKeys.SCREEN_VALIDATION_BADGE),
             ),
         )
+        val headerContent = layout.header.insetForChromeFrame()
+        val summaryContent = layout.secondaryPanel.insetForChromeFrame(ChromeSurfaceKind.FooterHint)
+        val detailContent = layout.disabledDetailArea.insetForChromeFrame(ChromeSurfaceKind.FooterHint)
+        val footerContent = layout.footerHelp.insetForChromeFrame(ChromeSurfaceKind.FooterHint)
         font.color = UiDesignTokens.color.quality.rare.color()
-        font.draw(batch, text.title, MAIN_MENU_TEXT_X, MAIN_MENU_TITLE_Y)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.title, headerContent.maxChars()), headerContent.x, headerContent.top - 4f)
         font.color = UiDesignTokens.color.text.secondary.color()
-        font.draw(batch, text.subtitle, MAIN_MENU_TEXT_X, MAIN_MENU_SUBTITLE_Y)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.subtitle, headerContent.maxChars()), headerContent.x, headerContent.top - 32f)
         font.color = UiDesignTokens.color.text.secondary.color()
-        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.presetSummary, 78), layout.secondaryPanel.x, layout.secondaryPanel.top - 12f)
-        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.activePackSummary, 78), layout.secondaryPanel.x, layout.secondaryPanel.top - 36f)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.presetSummary, summaryContent.maxChars()), summaryContent.x, summaryContent.top - 4f)
+        font.draw(batch, DarkStandaloneScreenLayout.truncate(text.activePackSummary, summaryContent.maxChars()), summaryContent.x, summaryContent.top - 28f)
         text.notice?.let { message ->
             font.color = UiDesignTokens.color.status.badge.turns.color()
-            font.draw(batch, DarkStandaloneScreenLayout.truncate(message, 78), layout.disabledDetailArea.x, layout.disabledDetailArea.top)
+            font.draw(batch, DarkStandaloneScreenLayout.truncate(message, detailContent.maxChars()), detailContent.x, detailContent.top - 2f)
         }
 
         val entryPlacements = DarkStandaloneScreenLayout.validationEntryPlacements(text.entries.size)
@@ -124,7 +131,12 @@ internal class ValidationSetupScreen(
         }
 
         font.color = UiDesignTokens.color.text.disabled.color()
-        font.draw(batch, app.text("ui.validation.controls"), layout.footerHelp.x, DarkStandaloneScreenLayout.validationFooterControlsBaselineY)
+        font.draw(
+            batch,
+            DarkStandaloneScreenLayout.truncate(app.text("ui.validation.controls"), footerContent.maxChars()),
+            footerContent.x,
+            footerContent.top - 4f,
+        )
         batch.end()
     }
 
@@ -228,10 +240,10 @@ internal class ValidationSetupScreen(
             batch = SpriteBatch()
         }
         if (font == null) {
-            font = KtomeFonts.createUiFont(size = 20)
+            font = KtomeFonts.createUiFont(size = UiDesignTokens.typography.body)
         }
         if (chrome == null) {
-            chrome = StandaloneScreenChrome()
+            chrome = StandaloneScreenChrome(app.standaloneChromeTextureRepositoryOrNull())
         }
     }
 }

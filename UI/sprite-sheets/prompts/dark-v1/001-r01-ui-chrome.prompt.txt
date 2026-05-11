@@ -13,8 +13,19 @@ Every listed non-reserved cell contains exactly one centered subject, no text, n
 Only render the cells listed below; leave every unlisted grid slot transparent and empty.
 Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
 Cell list:
-row 0 col 0 targetKey ui.frame.panel.body: forged iron and worn stone panel body with ember edge scratches.
-row 0 col 1 targetKey ui.frame.panel.focus: focused panel frame variant with restrained cyan edge glow. Alias of targetKey ui.frame.panel.body.
-row 0 col 2 targetKey ui.combat.action.icon: crossed weapon and ember spark action-choice icon.
-row 0 col 3 targetKey ui.combat.method.icon: branching tactic glyph with two route strokes.
+row 0 col 0 targetKey ui.frame.panel.body: forged iron worn stone panel body with ember scratches and subtle cyan edge light.
+row 0 col 1 targetKey ui.frame.panel.focus: focused panel frame with brighter cold cyan edge glow and worn brass corner accents.
+row 0 col 2 targetKey ui.frame.panel.corner_tl: top left forged iron panel corner with riveted worn stone inset.
+row 0 col 3 targetKey ui.frame.panel.corner_tr: top right forged iron panel corner with riveted worn stone inset.
+row 1 col 0 targetKey ui.frame.panel.corner_bl: bottom left forged iron panel corner with dark stone bevel.
+row 1 col 1 targetKey ui.frame.panel.corner_br: bottom right forged iron panel corner with dark stone bevel.
+row 1 col 2 targetKey ui.frame.panel.edge_top: top horizontal iron edge strip with ember worn scratches.
+row 1 col 3 targetKey ui.frame.panel.edge_right: right vertical iron edge strip with subtle cyan rim light.
+row 2 col 0 targetKey ui.frame.panel.edge_bottom: bottom horizontal iron edge strip with soot and brass nick marks.
+row 2 col 1 targetKey ui.frame.panel.edge_left: left vertical iron edge strip with worn stone seam.
+row 2 col 2 targetKey ui.frame.slot.empty: empty equipment slot frame with dark hollow center and iron rim.
+row 2 col 3 targetKey ui.frame.slot.equipped: equipped item slot frame with ember-gold inner accent and worn metal rim.
+row 3 col 0 targetKey ui.frame.slot.selected: selected item slot frame with restrained cyan focus edge and brass rivets.
+row 3 col 1 targetKey ui.frame.tooltip.body: tooltip body panel with charcoal stone center and thin iron border.
+row 3 col 2 targetKey ui.frame.modal.body: modal body panel with heavy black iron frame and ember title glow.
 Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

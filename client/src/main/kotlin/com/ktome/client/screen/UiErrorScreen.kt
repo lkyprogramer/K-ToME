@@ -8,7 +8,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
+import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.render.TileTextStyle
 import com.ktome.client.ui.card.ModalCardAction
 import com.ktome.client.ui.state.UiErrorState
 import com.ktome.client.ui.token.UiDesignTokens
@@ -50,17 +52,26 @@ internal class UiErrorScreen(
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
         batch.begin()
-        requireNotNull(chrome).draw(batch, StandaloneChromeRequest(layout = layout, detailAreaMode = StandaloneDetailAreaMode.HIDDEN))
+        requireNotNull(chrome).draw(
+            batch,
+            StandaloneChromeRequest(
+                layout = layout,
+                detailAreaMode = StandaloneDetailAreaMode.HIDDEN,
+                chromeAssets = app.standaloneChromeAssetsOrNull(DarkUiChromeVisualKeys.SCREEN_ERROR_MARKER),
+            ),
+        )
+        val headerContent = layout.header.insetForChromeFrame()
+        val bodyContent = layout.primaryActionStack.insetForChromeFrame()
         font.color = UiDesignTokens.color.telegraph.high.color()
-        font.draw(batch, app.text(errorState.heading), layout.header.x, layout.header.top - 22f)
+        font.draw(batch, headerContent.fitText(app.text(errorState.heading), TileTextStyle.UI), headerContent.x, headerContent.top - 4f)
         font.color = UiDesignTokens.color.text.primary.color()
         val bodyLines =
-            listOf(DarkStandaloneScreenLayout.truncate(app.text(errorState.detail), 82)) +
+            bodyContent.wrapText(app.text(errorState.detail), TileTextStyle.SMALL, maxLines = 3) +
                 errorState.actions.map { action ->
-                    DarkStandaloneScreenLayout.truncate(uiErrorActionLabel(action, app::text, errorState.copyDetailLabelKey), 82)
+                    bodyContent.fitText(uiErrorActionLabel(action, app::text, errorState.copyDetailLabelKey), TileTextStyle.SMALL)
                 }
         bodyLines.zip(DarkStandaloneScreenLayout.outcomeBodyLineBaselines(bodyLines.size)).forEach { (line, y) ->
-            font.draw(batch, line, layout.primaryActionStack.x, y)
+            font.draw(batch, line, bodyContent.x, y.coerceAtLeast(bodyContent.y + 18f))
         }
         batch.end()
     }
@@ -106,10 +117,10 @@ internal class UiErrorScreen(
             batch = SpriteBatch()
         }
         if (font == null) {
-            font = KtomeFonts.createUiFont(size = 24)
+            font = KtomeFonts.createUiFont(size = UiDesignTokens.typography.body)
         }
         if (chrome == null) {
-            chrome = StandaloneScreenChrome()
+            chrome = StandaloneScreenChrome(app.standaloneChromeTextureRepositoryOrNull())
         }
     }
 }
