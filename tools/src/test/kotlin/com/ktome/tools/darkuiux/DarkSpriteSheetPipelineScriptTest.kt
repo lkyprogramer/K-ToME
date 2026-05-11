@@ -1364,7 +1364,7 @@ class DarkSpriteSheetPipelineScriptTest {
         writeFakeCodex(fakeCodex)
 
         val result =
-            runScriptWithEnv(
+            runScriptWithFakePillowAndEnv(
                 mapOf(
                     "PATH" to "${fakeBin}${File.pathSeparator}${System.getenv("PATH")}",
                     "FAKE_CODEX_GENERATED_DIR" to generatedRoot.toString(),
@@ -1436,7 +1436,7 @@ class DarkSpriteSheetPipelineScriptTest {
         writeWideImage(fakeSource)
 
         val result =
-            runScriptWithEnv(
+            runScriptWithFakePillowAndEnv(
                 mapOf(
                     "PATH" to "${fakeBin}${File.pathSeparator}${System.getenv("PATH")}",
                     "FAKE_CODEX_GENERATED_DIR" to generatedRoot.toString(),
@@ -1468,6 +1468,9 @@ class DarkSpriteSheetPipelineScriptTest {
 
     private fun runScriptWithFakePillow(vararg args: String): ScriptResult =
         runScriptWithEnv(mapOf("PYTHONPATH" to fakePillowPythonPath().toString()), *args)
+
+    private fun runScriptWithFakePillowAndEnv(extraEnv: Map<String, String>, vararg args: String): ScriptResult =
+        runScriptWithEnv(mapOf("PYTHONPATH" to fakePillowPythonPath().toString()) + extraEnv, *args)
 
     private fun runScriptWithEnv(extraEnv: Map<String, String>, vararg args: String): ScriptResult {
         val processBuilder =
@@ -1512,13 +1515,43 @@ class DarkSpriteSheetPipelineScriptTest {
             writeText(
                 imageFile,
                 """
+                import binascii
                 import pathlib
+                import struct
+                import zlib
+
+                PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+                class Resampling:
+                    LANCZOS = 1
+
+                class PixelAccess:
+                    def __init__(self, image):
+                        self.image = image
+
+                    def __getitem__(self, key):
+                        x, y = key
+                        return self.image.pixels[y][x]
+
+                    def __setitem__(self, key, value):
+                        x, y = key
+                        self.image.pixels[y][x] = tuple(value)
 
                 class FakeImage:
-                    def __init__(self, path=None, rect=(0, 0, 1024, 1024)):
+                    def __init__(self, path=None, size=None, rect=None, color=(255, 51, 102, 255), pixels=None):
                         self.path = str(path or "")
-                        self.rect = tuple(rect)
-                        self.size = (self.rect[2] - self.rect[0], self.rect[3] - self.rect[1])
+                        source_size = size or read_png_size(path) or (1024, 1024)
+                        self.rect = tuple(rect or (0, 0, source_size[0], source_size[1]))
+                        self.width = max(1, self.rect[2] - self.rect[0])
+                        self.height = max(1, self.rect[3] - self.rect[1])
+                        self.size = (self.width, self.height)
+                        if pixels is None:
+                            self.pixels = [
+                                [tuple(color) for _ in range(self.width)]
+                                for _ in range(self.height)
+                            ]
+                        else:
+                            self.pixels = pixels
 
                     def __enter__(self):
                         return self
@@ -1530,20 +1563,78 @@ class DarkSpriteSheetPipelineScriptTest {
                         return self
 
                     def crop(self, rect):
-                        return FakeImage(self.path, rect)
+                        left, top, right, bottom = rect
+                        width = max(1, right - left)
+                        height = max(1, bottom - top)
+                        return FakeImage(self.path, size=(width, height), rect=(0, 0, width, height))
 
                     def getbbox(self):
                         return (0, 0, self.size[0], self.size[1])
 
                     def tobytes(self):
-                        payload = f"{self.path}|{self.rect}|{self.size}".encode("utf-8")
-                        return payload * 32
+                        return b"".join(
+                            bytes(channel for pixel in row for channel in pixel)
+                            for row in self.pixels
+                        )
+
+                    def load(self):
+                        return PixelAccess(self)
+
+                    def resize(self, size, resample=None):
+                        return FakeImage(self.path, size=size)
+
+                    def alpha_composite(self, image, dest):
+                        dest_x, dest_y = dest
+                        for y in range(image.height):
+                            target_y = dest_y + y
+                            if target_y < 0 or target_y >= self.height:
+                                continue
+                            for x in range(image.width):
+                                target_x = dest_x + x
+                                if target_x < 0 or target_x >= self.width:
+                                    continue
+                                if image.pixels[y][x][3] > 0:
+                                    self.pixels[target_y][target_x] = image.pixels[y][x]
 
                     def save(self, path):
-                        pathlib.Path(path).write_bytes(b"fake-png:" + self.tobytes())
+                        write_png(pathlib.Path(path), self.width, self.height, self.pixels)
 
                 def open(path):
                     return FakeImage(path)
+
+                def new(mode, size, color):
+                    return FakeImage(size=size, color=color)
+
+                def read_png_size(path):
+                    if path is None:
+                        return None
+                    data = pathlib.Path(path).read_bytes()
+                    if data[:8] != PNG_SIGNATURE or data[12:16] != b"IHDR":
+                        return None
+                    width, height = struct.unpack(">II", data[16:24])
+                    return width, height
+
+                def png_chunk(kind, payload):
+                    return (
+                        struct.pack(">I", len(payload))
+                        + kind
+                        + payload
+                        + struct.pack(">I", binascii.crc32(kind + payload) & 0xFFFFFFFF)
+                    )
+
+                def write_png(path, width, height, pixels):
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    raw_rows = []
+                    for row in pixels:
+                        raw_rows.append(b"\x00" + b"".join(bytes(pixel) for pixel in row))
+                    payload = zlib.compress(b"".join(raw_rows))
+                    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+                    path.write_bytes(
+                        PNG_SIGNATURE
+                        + png_chunk(b"IHDR", header)
+                        + png_chunk(b"IDAT", payload)
+                        + png_chunk(b"IEND", b"")
+                    )
                 """.trimIndent(),
             )
         }

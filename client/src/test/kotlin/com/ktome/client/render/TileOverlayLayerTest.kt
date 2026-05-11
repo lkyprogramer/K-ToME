@@ -109,7 +109,7 @@ class TileOverlayLayerTest {
 
         TileRenderer.renderOverlayFrame(canvas, frame)
 
-        assertEquals(2, canvas.tooltipRects.size)
+        assertEquals(3, canvas.tooltipRects.size)
         assertTrue(canvas.flushes.contains(TileLayerFlushReason.OVERLAY_MODAL_EXPLICIT_TOOLTIP))
     }
 
@@ -135,10 +135,10 @@ class TileOverlayLayerTest {
 
     @Test
     fun productionTooltipPlacementUsesRightDownLeftUpCandidateOrder() {
-        assertEquals(RectInt(136, 500, 360, 52), tooltipBackgroundRect(RectInt(100, 500, 32, 32)))
-        assertEquals(RectInt(900, 444, 360, 52), tooltipBackgroundRect(RectInt(900, 500, 32, 32)))
-        assertEquals(RectInt(536, 230, 360, 52), tooltipBackgroundRect(RectInt(900, 230, 32, 32)))
-        assertEquals(RectInt(900, 256, 360, 52), tooltipBackgroundRect(RectInt(900, 220, 32, 32)))
+        assertEquals(RectInt(136, 500, 360, 67), tooltipBackgroundRect(RectInt(100, 500, 32, 32)))
+        assertEquals(RectInt(900, 429, 360, 67), tooltipBackgroundRect(RectInt(900, 500, 32, 32)))
+        assertEquals(RectInt(536, 230, 360, 67), tooltipBackgroundRect(RectInt(900, 230, 32, 32)))
+        assertEquals(RectInt(900, 256, 360, 67), tooltipBackgroundRect(RectInt(900, 220, 32, 32)))
     }
 
     @Test
@@ -149,7 +149,7 @@ class TileOverlayLayerTest {
                 projection = projection(TileViewportFocusMode.INSPECT, Point(1, 1)),
             )
 
-        assertEquals(RectInt(68, 480, 360, 62), model.selectedTooltip?.placedRect)
+        assertEquals(RectInt(68, 480, 360, 86), model.selectedTooltip?.placedRect)
     }
 
     @Test
