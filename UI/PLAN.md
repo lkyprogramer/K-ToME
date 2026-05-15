@@ -5,7 +5,8 @@
 
 主 demo 参考：
 
-- [UI-demo.png](./UI-demo.png)
+- [UI-demo-new.png](./UI-demo-new.png)
+- 当前 PR-02-1 shell 验收只以 `UI-demo-new.png` 为准；`UI-demo.png` 仅保留为历史参考。
 - 已验证为 `1672 x 941` PNG；如果后续迁入 `docs/opt/ui-redesign/demo/`，必须继续使用 repo-relative 路径。
 - 专项美术合同：[ART_STYLE_BIBLE.md](./ART_STYLE_BIBLE.md)
 - 父级世界观美术合同：[docs/2026-03-13-art-style-bible.md](../docs/2026-03-13-art-style-bible.md)
@@ -287,7 +288,7 @@ row 0 col 2: focused target reticle over a worn stone tile.
 | 1 | `r01-ui-chrome` | `large-sheet` | 16 | panel、sidebar、HUD、slot、tooltip、modal frame |
 | 1 | `r01-ui-controls` | `icon-sheet` | 64 | tab、button、empty state、combat UI、lock/invalid/target |
 | 1 | `r01-ui-hud-icons` | `icon-sheet` | 64 | hp、stamina、xp、gold、inventory、equipment、log markers |
-| 1B | `r01b-ui-shell-chrome` | `large-sheet` | 16 | PR-02-1 必须生成的 shell scaffold：outer/map/nav/bottom frames、right divider、hero placeholder、nav rail icons |
+| 1B | `r01b-ui-shell-chrome` | `large-sheet` | 16 | PR-02-1 必须生成的 shell scaffold：outer/map/nav/bottom frames、map stage backdrop、right divider、hero placeholder、nav rail icons |
 | 2 | `r02-tiles-ground` | `tile-sheet` | 64 | `tile_ground` 与 biome ground 变体 |
 | 2 | `r02-tiles-wall` | `tile-sheet` | 64 | `tile_wall` 与 biome wall 变体 |
 | 2 | `r02-tiles-decal` | `tile-sheet` | 64 | tile decal、zone floor effect、warning sigil |

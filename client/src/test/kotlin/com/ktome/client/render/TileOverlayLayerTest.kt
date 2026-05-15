@@ -301,33 +301,19 @@ private class RecordingOverlayCanvas : TileCanvas {
     val tooltipRects = mutableListOf<RectInt>()
     val flushes = mutableListOf<TileLayerFlushReason>()
 
-    override fun drawRect(
-        x: Float,
-        y: Float,
-        width: Float,
-        height: Float,
-        color: Color,
-    ) {
-        tooltipRects += RectInt(x.toInt(), y.toInt(), width.toInt(), height.toInt())
+    override fun drawRect(draw: TileRectDraw) {
+        tooltipRects +=
+            RectInt(
+                draw.bounds.x.toInt(),
+                draw.bounds.y.toInt(),
+                draw.bounds.width.toInt(),
+                draw.bounds.height.toInt(),
+            )
     }
 
-    override fun drawAsset(
-        asset: ResolvedVisualAsset,
-        x: Float,
-        y: Float,
-        width: Float,
-        height: Float,
-        alpha: Float,
-        tintColorHex: String?,
-    ) = Unit
+    override fun drawAsset(draw: TileAssetDraw) = Unit
 
-    override fun drawText(
-        style: TileTextStyle,
-        text: String,
-        x: Float,
-        y: Float,
-        color: Color,
-    ) = Unit
+    override fun drawText(draw: TileTextDraw) = Unit
 
     override fun flushLayer(reason: TileLayerFlushReason) {
         flushes += reason

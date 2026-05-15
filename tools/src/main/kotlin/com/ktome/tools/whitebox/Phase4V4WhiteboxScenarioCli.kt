@@ -108,6 +108,7 @@ object Phase4V4WhiteboxScenarioCli {
         val manualRecord = evidence.manualRecordPath
         val appExecutableSha256 = repoRelative(repoRoot, paths.appExecutableSha256)
         val extraLaunchProperties = renderExtraLaunchProperties(repoRoot, scenario)
+        val scenarioAppLogName = scenarioAppLogName(scenario)
         return """
             |#!/usr/bin/env bash
             |set -euo pipefail
@@ -127,7 +128,7 @@ object Phase4V4WhiteboxScenarioCli {
             |
             |mkdir -p "$runtimeHome" "$evidenceDir"
             |APP_LOG="$evidenceDir/app.log"
-            |SCENARIO_APP_LOG="$evidenceDir/${scenario.id.value}-app.log"
+            |SCENARIO_APP_LOG="$evidenceDir/$scenarioAppLogName"
             |{
             |  echo "scenarioId=${scenario.id.value}"
             |  echo "preset=${runtime.preset}"
@@ -164,6 +165,12 @@ object Phase4V4WhiteboxScenarioCli {
             |
         """.trimMargin()
     }
+
+    private fun scenarioAppLogName(scenario: ValidationScenarioDef): String =
+        scenario.evidence.requiredEvidenceFiles
+            .singleOrNull { file -> file.startsWith("evidence/") && file.endsWith(".log") }
+            ?.removePrefix("evidence/")
+            ?: "${scenario.id.value}-app.log"
 
     private fun renderExtraLaunchProperties(
         repoRoot: Path,

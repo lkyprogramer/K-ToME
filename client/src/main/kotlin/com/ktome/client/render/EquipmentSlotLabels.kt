@@ -10,5 +10,6 @@ internal fun equipmentSlotLabel(
         "WEAPON" -> localizer.text("ui.sidebar.weapon")
         "OFF_HAND" -> localizer.text("ui.sidebar.off_hand")
         "ARMOR" -> localizer.text("ui.sidebar.armor")
+        "ACCESSORY" -> localizer.text("ui.reward.slot.accessory")
         else -> slotId
     }

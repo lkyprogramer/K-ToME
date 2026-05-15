@@ -23,6 +23,8 @@ class VerifyChangedBuildContractTest {
             }
 
         assertEquals(expectedTaskPaths, actualTaskPaths.toSet())
+        assertTrue(actualTaskPaths.contains(":tools:darkManifestCoveragePr02_1OwnerScope"))
+        assertTrue(actualTaskPaths.contains(":tools:darkManifestCoveragePr02_2OwnerScope"))
         assertFalse(actualTaskPaths.contains(":tools:phase4ReportOnly"))
         assertFalse(actualTaskPaths.contains(":tools:phase4LegacyReport"))
         assertFalse(actualTaskPaths.contains(":tools:phase4LegacyReportOnly"))
@@ -69,7 +71,22 @@ class VerifyChangedBuildContractTest {
         val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
 
         assertTrue(buildScript.contains("""tasks.named("whiteBoxContentPack")"""))
+        assertTrue(buildScript.contains("""tasks.named("darkManifestCoveragePr02OwnerScope")"""))
+        assertTrue(buildScript.contains("""tasks.named("darkManifestCoveragePr02_1OwnerScope")"""))
+        assertTrue(buildScript.contains("""tasks.named("darkManifestCoveragePr02_2OwnerScope")"""))
         assertTrue(buildScript.contains("""VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, "prepareVerifyChangedPlan")"""))
+    }
+
+    @Test
+    fun `dark UI UX owner scope coverage tasks use dedicated reports`() {
+        val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
+
+        assertTrue(buildScript.contains("name = \"darkManifestCoveragePr02OwnerScope\""))
+        assertTrue(buildScript.contains("reportFileName = \"dark-v1-manifest-coverage-pr02-owner-scope.json\""))
+        assertTrue(buildScript.contains("name = \"darkManifestCoveragePr02_1OwnerScope\""))
+        assertTrue(buildScript.contains("reportFileName = \"dark-v1-manifest-coverage-pr02-1-owner-scope.json\""))
+        assertTrue(buildScript.contains("name = \"darkManifestCoveragePr02_2OwnerScope\""))
+        assertTrue(buildScript.contains("reportFileName = \"dark-v1-manifest-coverage-pr02-2-owner-scope.json\""))
     }
 
     @Test

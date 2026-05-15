@@ -324,16 +324,17 @@ internal object DarkStandaloneScreenLayout {
     const val marginX: Float = 80f
     const val headerTopY: Float = 472f
     const val footerBaselineY: Float = 42f
-    const val validationEntryMinStepY: Float = 24f
+    const val validationEntryMinStepY: Float = 36f
     const val validationFooterControlsBaselineY: Float = 54f
     const val outcomeBodyTopPaddingY: Float = 18f
     const val outcomeBodyStepY: Float = 26f
 
     private const val VALIDATION_ENTRY_TOP_PADDING_Y = 10f
-    private const val VALIDATION_ENTRY_COLUMN_GAP = 32f
-    private const val VALIDATION_ENTRY_MAX_STEP_Y = 30f
+    private const val VALIDATION_ENTRY_COLUMN_GAP = 24f
+    private const val VALIDATION_ENTRY_MAX_STEP_Y = 42f
     private const val VALIDATION_ENTRY_SINGLE_COLUMN_MAX_CHARS = 72
     private const val VALIDATION_ENTRY_TWO_COLUMN_MAX_CHARS = 34
+    private const val VALIDATION_ENTRY_THREE_COLUMN_MAX_CHARS = 22
 
     fun mainMenu(): StandaloneScreenLayout {
         val tokens = UiDesignTokens.fixed
@@ -394,24 +395,20 @@ internal object DarkStandaloneScreenLayout {
         val layout = validationSetup()
         val entriesContent = layout.primaryActionStack.insetForChromeFrame()
         val columnCount =
-            if (entryCount <= validationSingleColumnCapacity()) {
-                1
-            } else {
-                2
+            when {
+                entryCount <= validationSingleColumnCapacity() -> 1
+                entryCount <= validationTwoColumnCapacity() -> 2
+                else -> 3
             }
         val rowCount = ((entryCount + columnCount - 1) / columnCount).coerceAtLeast(1)
         val columnWidth =
-            if (columnCount == 1) {
-                entriesContent.width
-            } else {
-                (entriesContent.width - VALIDATION_ENTRY_COLUMN_GAP) / columnCount
-            }
+            (entriesContent.width - VALIDATION_ENTRY_COLUMN_GAP * (columnCount - 1)) / columnCount
         val entryStepY = validationEntryRowStep(rowCount)
         val maxChars =
-            if (columnCount == 1) {
-                VALIDATION_ENTRY_SINGLE_COLUMN_MAX_CHARS
-            } else {
-                VALIDATION_ENTRY_TWO_COLUMN_MAX_CHARS
+            when (columnCount) {
+                1 -> VALIDATION_ENTRY_SINGLE_COLUMN_MAX_CHARS
+                2 -> VALIDATION_ENTRY_TWO_COLUMN_MAX_CHARS
+                else -> VALIDATION_ENTRY_THREE_COLUMN_MAX_CHARS
             }
 
         return List(entryCount) { index ->
@@ -469,6 +466,8 @@ internal object DarkStandaloneScreenLayout {
         val availableHeight = entriesContent.height - VALIDATION_ENTRY_TOP_PADDING_Y * 2f
         return (availableHeight / validationEntryMinStepY).toInt().coerceAtLeast(1)
     }
+
+    private fun validationTwoColumnCapacity(): Int = validationSingleColumnCapacity() * 2
 }
 
 internal fun ScreenPanelBounds.insetForChromeFrame(kind: ChromeSurfaceKind = ChromeSurfaceKind.Panel): ScreenPanelBounds =

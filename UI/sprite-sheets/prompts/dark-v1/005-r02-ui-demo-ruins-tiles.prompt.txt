@@ -1,0 +1,18 @@
+Prompt ID: 005-r02-ui-demo-ruins-tiles
+Sheet ID: r02-ui-demo-ruins-tiles
+Expected output file: assets-src/image/raw/sheets/dark-v1/r02-ui-demo-ruins-tiles.png
+Canvas: 1024x1024
+Grid: 8 columns x 8 rows
+Cell: 128x128
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create a 1024x1024 transparent-background sprite sheet for K-ToME.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Grid: 8 columns x 8 rows, each cell is 128x128.
+Every listed non-reserved cell contains exactly one centered subject, no text, no numbers, no labels, no watermark, no merged cells.
+Only render the cells listed below; leave every unlisted grid slot transparent and empty.
+Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
+Cell list:
+row 0 col 0 targetKey tileset.ruins.ground_01: orthographic single 128px dark dungeon floor tile, top-down square stone slab cluster, varied cracked flagstones, subtle moss and soot, warm amber grime in seams, readable at 32px, seamless edges, no grass, no modern grid, no letters.
+row 0 col 1 targetKey tileset.ruins.wall_01: orthographic single 128px raised ruined dungeon wall tile, top-down blocking wall cap with thick dark stone rim, carved chipped face, warm torch highlights on upper edge, matches floor material, readable at 32px, no horizontal brick stripe, no modern grid, no letters.
+Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

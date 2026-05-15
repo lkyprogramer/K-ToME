@@ -155,7 +155,7 @@ internal object TileTextMetrics {
         return when {
             char.isWhitespace() -> base * 0.4f
             char.code < 0x80 -> base * 0.55f
-            isWideGlyph(char) -> base * 1.1f
+            isWideGlyph(char) -> base * 1.25f
             else -> base
         }
     }

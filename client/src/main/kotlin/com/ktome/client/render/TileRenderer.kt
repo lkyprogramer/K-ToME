@@ -13,6 +13,7 @@ import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.render.layout.GameShellBounds
 import com.ktome.client.render.layout.GameShellLayout
+import com.ktome.client.render.layout.DemoShellLayout
 import com.ktome.client.render.layout.InfoSurfaceLayout
 import com.ktome.client.render.layout.InfoSurfaceLayoutRequest
 import com.ktome.client.render.layout.InfoSurfaceLayoutSolver
@@ -26,7 +27,6 @@ import com.ktome.client.ui.chrome.ChromeFramePainter
 import com.ktome.client.ui.chrome.ChromeFrameRectDraw
 import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.ui.layout.PaneFocusAnchor
-import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.RenderSnapshot
@@ -49,6 +49,15 @@ internal enum class TileLayerFlushReason {
     MAP_PLAYER_INDICATOR,
     MAP_ACTIVE_CURSOR,
     MAP_COMBAT_FEEDBACK,
+    MAP_WARM_OVERLAY,
+    SHELL_OUTER_FRAME,
+    MAP_STAGE_FRAME,
+    SHELL_NAV_RAIL,
+    SHELL_RIGHT_PANEL,
+    SHELL_BOTTOM_HERO,
+    SHELL_BOTTOM_ACTION_DECK,
+    SHELL_BOTTOM_COMMAND_HINTS,
+    SHELL_BOTTOM_LOG_DECK,
     SHELL_PANES,
     BOTTOM_HUD,
     OVERLAY_PASSIVE_TOOLTIP,
@@ -59,62 +68,125 @@ internal enum class TileLayerFlushReason {
     DEBUG_HINTS,
 }
 
+internal data class TileFloatBounds(
+    val x: Float,
+    val y: Float,
+    val width: Float,
+    val height: Float,
+) {
+    val right: Float
+        get() = x + width
+
+    val top: Float
+        get() = y + height
+}
+
+internal data class TileTextPosition(
+    val x: Float,
+    val y: Float,
+)
+
+internal data class TileRectDraw(
+    val bounds: TileFloatBounds,
+    val color: Color,
+)
+
+internal data class TileAssetDraw(
+    val asset: ResolvedVisualAsset,
+    val bounds: TileFloatBounds,
+    val alpha: Float = 1f,
+    val tintColorHex: String? = null,
+)
+
+internal data class TileTextDraw(
+    val style: TileTextStyle,
+    val text: String,
+    val position: TileTextPosition,
+    val color: Color,
+)
+
+internal fun tileBounds(
+    x: Float,
+    y: Float,
+    width: Float,
+    height: Float,
+): TileFloatBounds =
+    TileFloatBounds(
+        x = x,
+        y = y,
+        width = width,
+        height = height,
+    )
+
+internal fun tilePosition(
+    x: Float,
+    y: Float,
+): TileTextPosition =
+    TileTextPosition(
+        x = x,
+        y = y,
+    )
+
 internal interface TileCanvas {
-    fun drawRect(
-        x: Float,
-        y: Float,
-        width: Float,
-        height: Float,
-        color: Color,
-    )
+    fun drawRect(draw: TileRectDraw)
 
-    fun drawAsset(
-        asset: ResolvedVisualAsset,
-        x: Float,
-        y: Float,
-        width: Float,
-        height: Float,
-        alpha: Float = 1f,
-        tintColorHex: String? = null,
-    )
+    fun drawAsset(draw: TileAssetDraw)
 
-    fun drawText(
-        style: TileTextStyle,
-        text: String,
-        x: Float,
-        y: Float,
-        color: Color,
-    )
+    fun drawText(draw: TileTextDraw)
 
     fun flushLayer(reason: TileLayerFlushReason)
 }
 
+internal fun TileCanvas.drawRect(
+    bounds: TileFloatBounds,
+    color: Color,
+) {
+    drawRect(
+        TileRectDraw(
+            bounds = bounds,
+            color = color,
+        ),
+    )
+}
+
+internal fun TileCanvas.drawAsset(
+    asset: ResolvedVisualAsset,
+    bounds: TileFloatBounds,
+    alpha: Float = 1f,
+    tintColorHex: String? = null,
+) {
+    drawAsset(
+        TileAssetDraw(
+            asset = asset,
+            bounds = bounds,
+            alpha = alpha,
+            tintColorHex = tintColorHex,
+        ),
+    )
+}
+
+internal fun TileCanvas.drawText(
+    style: TileTextStyle,
+    text: String,
+    position: TileTextPosition,
+    color: Color,
+) {
+    drawText(
+        TileTextDraw(
+            style = style,
+            text = text,
+            position = position,
+            color = color,
+        ),
+    )
+}
+
 internal object NoOpTileCanvas : TileCanvas {
-    override fun drawRect(
-        x: Float,
-        y: Float,
-        width: Float,
-        height: Float,
-        color: Color,
-    ) = Unit
+    override fun drawRect(draw: TileRectDraw) = Unit
 
-    override fun drawAsset(
-        asset: ResolvedVisualAsset,
-        x: Float,
-        y: Float,
-        width: Float,
-        height: Float,
-        alpha: Float,
-        tintColorHex: String?,
-    ) = Unit
+    override fun drawAsset(draw: TileAssetDraw) = Unit
 
-    override fun drawText(
-        style: TileTextStyle,
-        text: String,
-        x: Float,
-        y: Float,
-        color: Color,
-    ) = Unit
+    override fun drawText(draw: TileTextDraw) = Unit
 
     override fun flushLayer(reason: TileLayerFlushReason) = Unit
 }
@@ -181,6 +253,7 @@ internal data class TileRenderDiagnostics(
 
 internal data class TileLayoutMetrics(
     val shell: GameShellLayout,
+    val demoShell: DemoShellLayout,
     val mapOffsetY: Float,
     val worldWidth: Float,
     val worldHeight: Float,
@@ -245,50 +318,30 @@ class TileRenderer(
     ) : TileCanvas {
         private var hasPendingDraw = false
 
-        override fun drawRect(
-            x: Float,
-            y: Float,
-            width: Float,
-            height: Float,
-            color: Color,
-        ) {
+        override fun drawRect(draw: TileRectDraw) {
             val previous = Color(batch.color)
-            batch.color = color
-            batch.draw(whitePixel, x, y, width, height)
+            batch.color = draw.color
+            batch.draw(whitePixel, draw.bounds.x, draw.bounds.y, draw.bounds.width, draw.bounds.height)
             batch.color = previous
             hasPendingDraw = true
         }
 
-        override fun drawAsset(
-            asset: ResolvedVisualAsset,
-            x: Float,
-            y: Float,
-            width: Float,
-            height: Float,
-            alpha: Float,
-            tintColorHex: String?,
-        ) {
-            val texture = textureRepository.textureFor(asset)
+        override fun drawAsset(draw: TileAssetDraw) {
+            val texture = textureRepository.textureFor(draw.asset)
             val previous = Color(batch.color)
             batch.color =
-                tintColorHex
-                    ?.let { tint -> Color.valueOf(tint.removePrefix("#")).also { color -> color.a = alpha } }
-                    ?: Color(1f, 1f, 1f, alpha)
-            batch.draw(texture, x, y, width, height)
+                draw.tintColorHex
+                    ?.let { tint -> Color.valueOf(tint.removePrefix("#")).also { color -> color.a = draw.alpha } }
+                    ?: Color(1f, 1f, 1f, draw.alpha)
+            batch.draw(texture, draw.bounds.x, draw.bounds.y, draw.bounds.width, draw.bounds.height)
             batch.color = previous
             hasPendingDraw = true
         }
 
-        override fun drawText(
-            style: TileTextStyle,
-            text: String,
-            x: Float,
-            y: Float,
-            color: Color,
-        ) {
-            val font = if (style == TileTextStyle.UI) uiFont else smallFont
-            font.color = color
-            font.draw(batch, text, x, y)
+        override fun drawText(draw: TileTextDraw) {
+            val font = if (draw.style == TileTextStyle.UI) uiFont else smallFont
+            font.color = draw.color
+            font.draw(batch, draw.text, draw.position.x, draw.position.y)
             hasPendingDraw = true
         }
 
@@ -411,23 +464,18 @@ class TileRenderer(
                     chromeAssets = model.chromeAssets,
                 )
 
-            canvas.drawRect(
-                x = 0f,
-                y = 0f,
-                width = layout.worldWidth,
-                height = layout.worldHeight,
-                color = UiDesignTokens.color.surface.base.color(),
-            )
+            val shellFrame = buildShellRenderFrame(model, layout, overlayState)
+            canvas.drawRect(tileBounds(0f, 0f, layout.worldWidth, layout.worldHeight), UiDesignTokens.color.surface.base.color())
             canvas.flushLayer(TileLayerFlushReason.BACKGROUND)
-            canvas.drawRect(
-                x = layout.shell.mapBounds.x,
-                y = layout.shell.mapBounds.y,
-                width = layout.shell.mapBounds.width,
-                height = layout.shell.mapBounds.height,
-                color = UiDesignTokens.color.surface.base.color(),
-            )
-            TileMapRenderer.render(canvas, MapRenderFrame(model, layerPlan, layout, viewport))
-            TileShellRenderer.render(canvas, buildShellRenderFrame(model, layout, overlayState))
+            DemoShellRenderer.renderOuterFrame(canvas, shellFrame)
+            canvas.flushLayer(TileLayerFlushReason.SHELL_OUTER_FRAME)
+            DemoShellRenderer.renderMapStageFrame(canvas, shellFrame)
+            canvas.flushLayer(TileLayerFlushReason.MAP_STAGE_FRAME)
+            val mapFrame = MapRenderFrame(model, layerPlan, layout, viewport)
+            TileMapRenderer.render(canvas, mapFrame)
+            renderWarmMapOverlay(canvas, mapFrame)
+            canvas.flushLayer(TileLayerFlushReason.MAP_WARM_OVERLAY)
+            DemoShellRenderer.renderShell(canvas, shellFrame)
             renderOverlayFrame(canvas, overlayFrame)
             return TileRenderDiagnostics(
                 viewport = viewport,
@@ -583,13 +631,7 @@ class TileRenderer(
             model: TileRenderModel,
             layout: TileLayoutMetrics,
         ): List<ShellHotbarTextLayout> {
-            val maxWidth =
-                (
-                    layout.hotbarCardWidth -
-                        ChromeFramePainter.contentInsets(ChromeSurfaceKind.Slot).left -
-                        ChromeFramePainter.contentInsets(ChromeSurfaceKind.Slot).right -
-                        44f
-                ).coerceAtLeast(1f)
+            val maxWidth = (layout.hotbarCardWidth - 16f).coerceAtLeast(1f)
             return model.actionPanel.entries.mapIndexed { index, entry ->
                 val slot = model.hud.hotbar.getOrNull(index)
                 val cooldown = slot?.cooldownText
@@ -608,74 +650,6 @@ class TileRenderer(
         }
 
         private fun safeTextWidth(width: Float): Float = (width - UiDesignTokens.spacing.xs * 2f).coerceAtLeast(1f)
-
-        private object TileShellRenderer {
-            fun render(
-                canvas: TileCanvas,
-                frame: ShellRenderFrame,
-            ) {
-                val layout = frame.layout
-                val model = frame.model
-                canvas.drawRect(
-                    x = layout.shell.bottomHudBounds.x,
-                    y = layout.shell.bottomHudBounds.y,
-                    width = layout.shell.bottomHudBounds.width,
-                    height = layout.shell.bottomHudBounds.height,
-                    color = UiDesignTokens.color.surface.raised.color(),
-                )
-                model.chromeAssets?.let { chrome ->
-                    drawChromeFrame(
-                        canvas = canvas,
-                        assets = chrome.frameAssets,
-                        bounds = layout.shell.bottomHudBounds,
-                        fillColor = UiDesignTokens.color.surface.raised.color(),
-                        borderColor = UiDesignTokens.color.border.subtle.color(),
-                    )
-                }
-                canvas.drawRect(
-                    x = layout.shell.leftRailBounds.x,
-                    y = layout.shell.leftRailBounds.y,
-                    width = layout.shell.leftRailBounds.width,
-                    height = layout.shell.leftRailBounds.height,
-                    color = UiDesignTokens.color.surface.overlay.color(),
-                )
-                model.chromeAssets?.let { chrome ->
-                    drawChromeFrame(
-                        canvas = canvas,
-                        assets = chrome.frameAssets,
-                        bounds = layout.shell.leftRailBounds,
-                        fillColor = UiDesignTokens.color.surface.overlay.color(),
-                        borderColor = UiDesignTokens.color.border.subtle.color(),
-                    )
-                }
-                drawContentScrim(canvas, chromeContentBounds(layout.shell.leftRailBounds, ChromeSurfaceKind.Panel), alpha = 0.72f)
-                canvas.drawRect(
-                    x = layout.shell.rightPanelBounds.x,
-                    y = layout.shell.rightPanelBounds.y,
-                    width = layout.shell.rightPanelBounds.width,
-                    height = layout.shell.rightPanelBounds.height,
-                    color = UiDesignTokens.color.surface.overlay.color(),
-                )
-                model.chromeAssets?.let { chrome ->
-                    drawChromeFrame(
-                        canvas = canvas,
-                        assets = chrome.frameAssets,
-                        bounds = layout.shell.rightPanelBounds,
-                        fillColor = UiDesignTokens.color.surface.overlay.color(),
-                        borderColor = UiDesignTokens.color.border.subtle.color(),
-                    )
-                }
-                drawContentScrim(canvas, chromeContentBounds(layout.shell.rightPanelBounds, ChromeSurfaceKind.Panel), alpha = 0.72f)
-                canvas.flushLayer(TileLayerFlushReason.SHELL_PANES)
-                drawPaneFocusRing(canvas, frame.paneFocusAnchor, layout, model.chromeAssets)
-                drawLeftRail(canvas, frame.textLayout.leftRail, layout)
-                drawHud(canvas, model, frame.textLayout, layout)
-                drawMessages(canvas, frame.textLayout.messageLines, layout)
-                drawRightPanel(canvas, frame.textLayout.rightPanel, layout)
-                drawFooterHints(canvas, frame.textLayout.footerHints, layout, model.chromeAssets)
-                canvas.flushLayer(TileLayerFlushReason.BOTTOM_HUD)
-            }
-        }
 
         internal fun worldWidth(
             snapshot: RenderSnapshot,
@@ -720,10 +694,6 @@ class TileRenderer(
                 canvas.flushLayer(TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS)
                 frame.layerPlan.actors.forEach { placement -> drawPlacement(canvas, placement, viewport) }
                 canvas.flushLayer(TileLayerFlushReason.MAP_ACTORS)
-                drawFogOverlays(canvas, frame.layerPlan.fogVeils, viewport)
-                canvas.flushLayer(TileLayerFlushReason.MAP_FOG_VEILS)
-                drawGroundLootMarkers(canvas, frame.layerPlan.groundLootMarkers, viewport)
-                canvas.flushLayer(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS)
                 frame.layerPlan.playerIndicators.forEach { indicator ->
                     if (viewport.containsTile(indicator.tile)) {
                         val rect = viewport.tileRect(indicator.tile)
@@ -734,11 +704,15 @@ class TileRenderer(
                             width = rect.width - 6f,
                             height = rect.height - 6f,
                             stroke = 2f,
-                            color = UiDesignTokens.color.quality.rare.color(),
+                            color = color("D99A2B", 0.94f),
                         )
                     }
                 }
                 canvas.flushLayer(TileLayerFlushReason.MAP_PLAYER_INDICATOR)
+                drawGroundLootMarkers(canvas, frame.layerPlan.groundLootMarkers, viewport)
+                canvas.flushLayer(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS)
+                drawFogOverlays(canvas, frame.layerPlan.fogVeils, viewport)
+                canvas.flushLayer(TileLayerFlushReason.MAP_FOG_VEILS)
                 frame.layerPlan.activeCursor?.let { cursor ->
                     drawCursor(
                         canvas = canvas,
@@ -770,21 +744,20 @@ class TileRenderer(
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_PASSIVE_TOOLTIP)
                 model.toast?.let { toast ->
                     canvas.drawRect(
-                        frame.shellContentBounds.x + 16f,
-                        frame.shellContentBounds.top - 48f,
-                        360f,
-                        34f,
+                        tileBounds(frame.shellContentBounds.x + 16f, frame.shellContentBounds.top - 48f, 360f, 34f),
                         UiDesignTokens.color.surface.overlay.color(),
                     )
-                    canvas.drawText(TileTextStyle.SMALL, toast.line.text, frame.shellContentBounds.x + 28f, frame.shellContentBounds.top - 26f, tone(toast.line.tone))
+                    canvas.drawText(
+                        TileTextStyle.SMALL,
+                        toast.line.text,
+                        tilePosition(frame.shellContentBounds.x + 28f, frame.shellContentBounds.top - 26f),
+                        tone(toast.line.tone),
+                    )
                 }
                 canvas.flushLayer(TileLayerFlushReason.OVERLAY_TOAST)
                 model.modalBackdrop?.let { backdrop ->
                     canvas.drawRect(
-                        backdrop.bounds.x,
-                        backdrop.bounds.y,
-                        backdrop.bounds.width,
-                        backdrop.bounds.height,
+                        tileBounds(backdrop.bounds.x, backdrop.bounds.y, backdrop.bounds.width, backdrop.bounds.height),
                         backdrop.color.color().also { color -> color.a = backdrop.alpha },
                     )
                 }
@@ -806,10 +779,7 @@ class TileRenderer(
         ) {
             val rect = tooltip.placedRect
             canvas.drawRect(
-                rect.x.toFloat(),
-                rect.y.toFloat(),
-                rect.width.toFloat(),
-                rect.height.toFloat(),
+                tileBounds(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat()),
                 UiDesignTokens.color.surface.overlay.color(),
             )
             chromeAssets?.let { chrome ->
@@ -822,13 +792,13 @@ class TileRenderer(
                     alpha = 0.78f,
                 )
             }
-            canvas.drawRect(rect.x.toFloat(), (rect.top - 3).toFloat(), rect.width.toFloat(), 3f, UiDesignTokens.color.focus.ring.color())
+            canvas.drawRect(tileBounds(rect.x.toFloat(), (rect.top - 3).toFloat(), rect.width.toFloat(), 3f), UiDesignTokens.color.focus.ring.color())
             val content = chromeContentBounds(gameBounds(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat()), ChromeSurfaceKind.Tooltip)
             drawContentScrim(canvas, content, alpha = 0.76f)
             val lineHeight = SHELL_SMALL_LINE_HEIGHT
             val titleBaseline = content.top - 4f
             if (titleBaseline - lineHeight >= content.y) {
-                canvas.drawText(TileTextStyle.SMALL, tooltip.titleLine.text, content.x, titleBaseline, tone(tooltip.titleLine.tone))
+                canvas.drawText(TileTextStyle.SMALL, tooltip.titleLine.text, tilePosition(content.x, titleBaseline), tone(tooltip.titleLine.tone))
             }
             tooltip.bodyLines.take(TILE_TOOLTIP_BODY_LINE_LIMIT).forEachIndexed { index, line ->
                 val baseline = titleBaseline - lineHeight * (index + 1)
@@ -836,7 +806,7 @@ class TileRenderer(
                     return@forEachIndexed
                 }
                 val fitted = TileTextMetrics.truncateTextToWidth(line.text, content.width, TileTextStyle.SMALL)
-                canvas.drawText(TileTextStyle.SMALL, fitted, content.x, baseline, tone(line.tone))
+                canvas.drawText(TileTextStyle.SMALL, fitted, tilePosition(content.x, baseline), tone(line.tone))
             }
         }
 
@@ -847,10 +817,7 @@ class TileRenderer(
         ) {
             val bounds = modal.bounds
             canvas.drawRect(
-                bounds.x.toFloat(),
-                bounds.y.toFloat(),
-                bounds.width.toFloat(),
-                bounds.height.toFloat(),
+                tileBounds(bounds.x.toFloat(), bounds.y.toFloat(), bounds.width.toFloat(), bounds.height.toFloat()),
                 UiDesignTokens.color.surface.raised.color(),
             )
             chromeAssets?.let { chrome ->
@@ -863,216 +830,17 @@ class TileRenderer(
                     alpha = 0.82f,
                 )
             }
-            canvas.drawRect(bounds.x.toFloat(), (bounds.top - 4).toFloat(), bounds.width.toFloat(), 4f, UiDesignTokens.color.quality.rare.color())
+            canvas.drawRect(tileBounds(bounds.x.toFloat(), (bounds.top - 4).toFloat(), bounds.width.toFloat(), 4f), UiDesignTokens.color.quality.rare.color())
             val content = chromeContentBounds(gameBounds(bounds.x.toFloat(), bounds.y.toFloat(), bounds.width.toFloat(), bounds.height.toFloat()), ChromeSurfaceKind.Modal)
             drawContentScrim(canvas, content, alpha = 0.76f)
-            canvas.drawText(TileTextStyle.UI, modal.titleLine.text, content.x, content.top - 4f, tone(modal.titleLine.tone))
+            canvas.drawText(TileTextStyle.UI, modal.titleLine.text, tilePosition(content.x, content.top - 4f), tone(modal.titleLine.tone))
             modal.bodyLines.take(10).forEachIndexed { index, line ->
                 val fitted = TileTextMetrics.truncateTextToWidth(line.text, content.width, TileTextStyle.SMALL)
-                canvas.drawText(TileTextStyle.SMALL, fitted, content.x, content.top - 42f - index * 24f, tone(line.tone))
+                canvas.drawText(TileTextStyle.SMALL, fitted, tilePosition(content.x, content.top - 42f - index * 24f), tone(line.tone))
             }
             modal.footerHintLines.take(2).forEachIndexed { index, line ->
                 val fitted = TileTextMetrics.truncateTextToWidth(line.text, content.width, TileTextStyle.SMALL)
-                canvas.drawText(TileTextStyle.SMALL, fitted, content.x, content.y + 12f + index * 22f, tone(line.tone))
-            }
-        }
-
-        private fun drawHud(
-            canvas: TileCanvas,
-            model: TileRenderModel,
-            textLayout: ShellTextLayout,
-            layout: TileLayoutMetrics,
-        ) {
-            val hud = model.hud
-            val actionPanel = model.actionPanel
-            val infoContent = chromeContentBounds(gameBounds(layout.infoX, layout.cardY, layout.infoWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
-            val logContent = chromeContentBounds(gameBounds(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
-            val focusContent = chromeContentBounds(gameBounds(layout.focusX, layout.cardY, layout.focusWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
-            val textTopY = infoContent.top - 1f
-            val focusTextTopY = focusContent.top - 4f
-            val smallLineHeight = SHELL_SMALL_LINE_HEIGHT
-
-            canvas.drawRect(layout.infoX, layout.cardY, layout.infoWidth, layout.cardHeight, UiDesignTokens.color.surface.raised.color())
-            canvas.drawRect(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight, UiDesignTokens.color.surface.overlay.color())
-            canvas.drawRect(layout.focusX, layout.cardY, layout.focusWidth, layout.cardHeight, UiDesignTokens.color.surface.raised.color())
-            model.chromeAssets?.let { chrome ->
-                drawChromeFrame(
-                    canvas = canvas,
-                    assets = chrome.frameAssets,
-                    bounds = gameBounds(layout.infoX, layout.cardY, layout.infoWidth, layout.cardHeight),
-                    fillColor = UiDesignTokens.color.surface.raised.color(),
-                    borderColor = UiDesignTokens.color.border.subtle.color(),
-                )
-                drawChromeFrame(
-                    canvas = canvas,
-                    assets = chrome.frameAssets,
-                    bounds = gameBounds(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight),
-                    fillColor = UiDesignTokens.color.surface.overlay.color(),
-                    borderColor = UiDesignTokens.color.border.subtle.color(),
-                )
-                drawChromeFrame(
-                    canvas = canvas,
-                    assets = chrome.frameAssets,
-                    bounds = gameBounds(layout.focusX, layout.cardY, layout.focusWidth, layout.cardHeight),
-                    fillColor = UiDesignTokens.color.surface.raised.color(),
-                    borderColor = UiDesignTokens.color.border.subtle.color(),
-                )
-            }
-            drawContentScrim(canvas, infoContent, alpha = 0.78f)
-            drawContentScrim(canvas, logContent, alpha = 0.78f)
-            drawContentScrim(canvas, focusContent, alpha = 0.78f)
-
-            canvas.drawText(
-                TileTextStyle.UI,
-                textLayout.playerName,
-                infoContent.x,
-                textTopY,
-                tone(TileTextTone.GOLD),
-            )
-            val gauges = listOfNotNull(hud.experienceGauge, hud.secondaryResourceGauge, hud.resourceGauge, hud.hpGauge)
-            val gaugeCount = gauges.size.coerceAtLeast(1)
-            val gaugeAreaBottom = infoContent.y + 2f
-            val gaugeAreaTop = textTopY - TileTextMetrics.approximateLineHeight(TileTextStyle.UI) - 4f
-            val gaugeGap = if (gaugeCount >= 4) 2f else 3f
-            val gaugeHeight =
-                (
-                    (gaugeAreaTop - gaugeAreaBottom - gaugeGap * (gaugeCount - 1)) /
-                        gaugeCount
-                ).coerceIn(3f, 12f)
-            gauges.forEachIndexed { index, gauge ->
-                val gaugeY = gaugeAreaBottom + index * (gaugeHeight + gaugeGap)
-                val icon = model.chromeAssets?.iconForGauge(gauge)
-                val gaugeX =
-                    if (icon == null) {
-                        infoContent.x
-                    } else {
-                        val iconSize = gaugeHeight.coerceIn(8f, 14f)
-                        canvas.drawAsset(icon, infoContent.x, gaugeY, iconSize, iconSize)
-                        infoContent.x + iconSize + 4f
-                    }
-                val gaugeWidth = (infoContent.right - gaugeX).coerceAtLeast(1f)
-                drawGauge(canvas, gauge, gaugeX, gaugeY, gaugeWidth, gaugeHeight)
-            }
-
-            textLayout.summaryLines.forEachIndexed { index, line ->
-                canvas.drawText(
-                    TileTextStyle.SMALL,
-                    line,
-                    focusContent.x,
-                    focusTextTopY - index * smallLineHeight,
-                    tone(TileTextTone.LIGHT_GRAY),
-                )
-            }
-
-            var statusX = focusContent.x
-            hud.statusIcons.forEach { icon ->
-                val iconY = focusContent.y + 4f
-                if (statusX + 28f > focusContent.right || iconY < focusContent.y) {
-                    return@forEach
-                }
-                canvas.drawRect(
-                    statusX - 1f,
-                    iconY,
-                    28f,
-                    28f,
-                    StatusHudRenderer.accentColor(icon.category),
-                )
-                canvas.drawAsset(icon.asset, statusX, iconY + 1f, 26f, 26f)
-                canvas.drawText(
-                    TileTextStyle.SMALL,
-                    icon.badgeText,
-                    statusX,
-                    iconY - 6f,
-                    StatusHudRenderer.badgeColor(icon.category),
-                )
-                statusX += 34f
-            }
-
-            if (textLayout.summaryLines.size <= 1) {
-                val targetTitleBaseline = focusTextTopY - textLayout.summaryLines.size * smallLineHeight - 4f
-                hud.focusIcon?.let { icon ->
-                    if (targetTitleBaseline - 32f >= focusContent.y) {
-                        canvas.drawAsset(icon, focusContent.x, targetTitleBaseline - 30f, 28f, 28f)
-                    }
-                }
-                textLayout.targetTitle?.let { name ->
-                    if (targetTitleBaseline >= focusContent.y + 16f) {
-                        canvas.drawText(
-                            TileTextStyle.SMALL,
-                            name,
-                            focusContent.x + 36f,
-                            targetTitleBaseline,
-                            tone(TileTextTone.GOLD),
-                        )
-                    }
-                }
-                textLayout.targetLines.forEachIndexed { index, line ->
-                    val baseline = targetTitleBaseline - (index + 1) * smallLineHeight
-                    if (baseline >= focusContent.y + 16f) {
-                        canvas.drawText(
-                            TileTextStyle.SMALL,
-                            line,
-                            focusContent.x,
-                            baseline,
-                            tone(TileTextTone.LIGHT_GRAY),
-                        )
-                    }
-                }
-            }
-
-            if (actionPanel.isEmpty) {
-                return
-            }
-            actionPanel.entries.forEachIndexed { index, entry ->
-                val slot = hud.hotbar.getOrNull(index)
-                val hotbarText = textLayout.hotbar.getOrNull(index) ?: return@forEachIndexed
-                val x = layout.hotbarX + index * (layout.hotbarCardWidth + layout.hotbarGap)
-                val slotBounds = gameBounds(x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight)
-                val slotContent = chromeContentBounds(slotBounds, ChromeSurfaceKind.Slot)
-                canvas.drawRect(x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, UiDesignTokens.color.slot.filled.color())
-                model.chromeAssets?.let { chrome ->
-                    canvas.drawAsset(chrome.slotEmpty, x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, alpha = 0.86f)
-                    if (index == 0) {
-                        canvas.drawAsset(chrome.slotSelected, x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, alpha = 0.72f)
-                    } else if (slot?.icon != null) {
-                        canvas.drawAsset(chrome.slotEquipped, x, layout.hotbarY, layout.hotbarCardWidth, layout.hotbarCardHeight, alpha = 0.64f)
-                    }
-                }
-                drawContentScrim(canvas, slotContent, alpha = 0.66f)
-                (entry.icon ?: slot?.icon)?.let { icon -> canvas.drawAsset(icon, slotContent.x, slotContent.y + 8f, 34f, 34f) }
-                slot?.accentIcon?.let { icon -> canvas.drawAsset(icon, slotContent.x + 25f, slotContent.y + 34f, 14f, 14f) }
-                canvas.drawText(TileTextStyle.SMALL, hotbarText.hotkey, slotContent.x, slotContent.top - 4f, tone(TileTextTone.GOLD))
-                val labelX = slotContent.x + 44f
-                canvas.drawText(TileTextStyle.SMALL, hotbarText.label, labelX, slotContent.top - 4f, tone(TileTextTone.WHITE))
-                canvas.drawText(TileTextStyle.SMALL, hotbarText.detail, labelX, slotContent.y + 13f, tone(hotbarText.detailTone))
-            }
-        }
-
-        private fun drawMessages(
-            canvas: TileCanvas,
-            messageLines: List<TileMessageLine>,
-            layout: TileLayoutMetrics,
-        ) {
-            val logContent = chromeContentBounds(gameBounds(layout.logX, layout.cardY, layout.logWidth, layout.cardHeight), ChromeSurfaceKind.Panel)
-            val topY = logContent.top - 6f
-            messageLines.forEachIndexed { index, line ->
-                val baseline = topY - index * SHELL_SMALL_LINE_HEIGHT
-                if (baseline < logContent.y + 16f) {
-                    return@forEachIndexed
-                }
-                val iconOffset =
-                    line.icon?.let { icon ->
-                        canvas.drawAsset(icon, logContent.x, baseline - 16f, 18f, 18f)
-                        24f
-                    } ?: 0f
-                val fitted = TileTextMetrics.truncateTextToWidth(line.text, logContent.width - iconOffset, TileTextStyle.SMALL)
-                canvas.drawText(
-                    TileTextStyle.SMALL,
-                    fitted,
-                    logContent.x + iconOffset,
-                    baseline,
-                    tone(line.tone),
-                )
+                canvas.drawText(TileTextStyle.SMALL, fitted, tilePosition(content.x, content.y + 12f + index * 22f), tone(line.tone))
             }
         }
 
@@ -1083,90 +851,6 @@ class TileRenderer(
                 null,
                 -> UiDesignTokens.color.quality.rare.color()
             }
-
-        private fun drawPaneFocusRing(
-            canvas: TileCanvas,
-            paneFocusAnchor: PaneFocusAnchor?,
-            layout: TileLayoutMetrics,
-            chromeAssets: TileChromeAssets?,
-        ) {
-            if (paneFocusAnchor == null) {
-                return
-            }
-            val stroke = UiDesignTokens.stroke.medium
-            val color = UiDesignTokens.color.focus.ring.color()
-            when (paneFocusAnchor) {
-                PaneFocusAnchor.WORLD -> {
-                    drawRectOutline(
-                        canvas = canvas,
-                        x = layout.shell.mapBounds.x,
-                        y = layout.shell.mapBounds.y,
-                        width = layout.shell.mapBounds.width,
-                        height = layout.shell.mapBounds.height,
-                        stroke = stroke,
-                        color = color,
-                    )
-                }
-
-                PaneFocusAnchor.CONTEXT -> {
-                    chromeAssets?.let { chrome ->
-                        drawChromePanelAsset(
-                            canvas = canvas,
-                            asset = chrome.panelFocus,
-                            x = layout.logX,
-                            y = layout.cardY,
-                            width = layout.logWidth,
-                            height = layout.cardHeight,
-                            alpha = 0.36f,
-                        )
-                    }
-                    drawRectOutline(
-                        canvas = canvas,
-                        x = layout.logX,
-                        y = layout.cardY,
-                        width = layout.logWidth,
-                        height = layout.cardHeight,
-                        stroke = stroke,
-                        color = color,
-                    )
-                }
-
-                PaneFocusAnchor.CHARACTER_ACTION -> {
-                    chromeAssets?.let { chrome ->
-                        drawChromePanelAsset(
-                            canvas = canvas,
-                            asset = chrome.panelFocus,
-                            x = layout.focusX,
-                            y = layout.cardY,
-                            width = layout.focusWidth,
-                            height = layout.cardHeight,
-                            alpha = 0.36f,
-                        )
-                    }
-                    drawRectOutline(
-                        canvas = canvas,
-                        x = layout.focusX,
-                        y = layout.cardY,
-                        width = layout.focusWidth,
-                        height = layout.cardHeight,
-                        stroke = stroke,
-                        color = color,
-                    )
-                }
-            }
-        }
-
-        private fun drawChromePanelAsset(
-            canvas: TileCanvas,
-            asset: ResolvedVisualAsset,
-            x: Float,
-            y: Float,
-            width: Float,
-            height: Float,
-            alpha: Float = 0.72f,
-        ) {
-            canvas.drawAsset(asset, x, y, width, height, alpha)
-        }
 
         private fun drawChromeFrame(
             canvas: TileCanvas,
@@ -1194,7 +878,7 @@ class TileRenderer(
             bounds: GameShellBounds,
             alpha: Float,
         ) {
-            canvas.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, color("05070A", alpha))
+            canvas.drawRect(tileBounds(bounds.x, bounds.y, bounds.width, bounds.height), color("1A0E04", alpha))
         }
 
         private fun chromeContentBounds(
@@ -1220,12 +904,12 @@ class TileRenderer(
             object : ChromeFrameDrawSink {
                 override fun drawRect(draw: ChromeFrameRectDraw) {
                     val bounds = draw.bounds
-                    this@asChromeFrameSink.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, draw.color)
+                    this@asChromeFrameSink.drawRect(tileBounds(bounds.x, bounds.y, bounds.width, bounds.height), draw.color)
                 }
 
                 override fun drawAsset(draw: ChromeFrameAssetDraw) {
                     val bounds = draw.bounds
-                    this@asChromeFrameSink.drawAsset(draw.asset, bounds.x, bounds.y, bounds.width, bounds.height, draw.alpha)
+                    this@asChromeFrameSink.drawAsset(draw.asset, tileBounds(bounds.x, bounds.y, bounds.width, bounds.height), draw.alpha)
                 }
             }
 
@@ -1238,10 +922,10 @@ class TileRenderer(
             stroke: Float,
             color: Color,
         ) {
-            canvas.drawRect(x, y, width, stroke, color)
-            canvas.drawRect(x, y + height - stroke, width, stroke, color)
-            canvas.drawRect(x, y, stroke, height, color)
-            canvas.drawRect(x + width - stroke, y, stroke, height, color)
+            canvas.drawRect(tileBounds(x, y, width, stroke), color)
+            canvas.drawRect(tileBounds(x, y + height - stroke, width, stroke), color)
+            canvas.drawRect(tileBounds(x, y, stroke, height), color)
+            canvas.drawRect(tileBounds(x + width - stroke, y, stroke, height), color)
         }
 
         private fun drawGroundLootMarkers(
@@ -1271,19 +955,19 @@ class TileRenderer(
                     } else {
                         cellBottom + (viewport.cellSize - iconSize) / 2f
                     }
-                canvas.drawRect(iconX - 2f, iconY - 2f, iconSize + 4f, iconSize + 4f, color("05070A", 0.72f))
-                canvas.drawRect(iconX - 2f, iconY - 2f, iconSize + 4f, 3f, tone(marker.rarityTone))
+                canvas.drawRect(tileBounds(iconX - 2f, iconY - 2f, iconSize + 4f, iconSize + 4f), color("1A0E04", 0.72f))
+                canvas.drawRect(tileBounds(iconX - 2f, iconY - 2f, iconSize + 4f, 3f), tone(marker.rarityTone))
                 marker.specialAccentTokenId?.let { accent ->
-                    canvas.drawRect(iconX - 2f, iconY + iconSize - 1f, iconSize + 4f, 3f, specialAccentColor(accent))
+                    canvas.drawRect(tileBounds(iconX - 2f, iconY + iconSize - 1f, iconSize + 4f, 3f), specialAccentColor(accent))
                 }
-                canvas.drawAsset(marker.icon, iconX, iconY, iconSize, iconSize)
+                canvas.drawAsset(marker.icon, tileBounds(iconX, iconY, iconSize, iconSize))
                 marker.cornerGlyph?.let { glyph ->
-                    canvas.drawText(TileTextStyle.SMALL, glyph, iconX - 1f, iconY + iconSize + 13f, tone(marker.rarityTone))
+                    canvas.drawText(TileTextStyle.SMALL, glyph, tilePosition(iconX - 1f, iconY + iconSize + 13f), tone(marker.rarityTone))
                 }
                 marker.countBadge?.let { badge ->
                     val badgeWidth = if (badge == "9+") 27f else 20f
-                    canvas.drawRect(iconX + iconSize - badgeWidth + 3f, iconY - 4f, badgeWidth, 18f, UiDesignTokens.color.surface.baseDim.color())
-                    canvas.drawText(TileTextStyle.SMALL, badge, iconX + iconSize - badgeWidth + 6f, iconY + 11f, tone(TileTextTone.WHITE))
+                    canvas.drawRect(tileBounds(iconX + iconSize - badgeWidth + 3f, iconY - 4f, badgeWidth, 18f), UiDesignTokens.color.surface.baseDim.color())
+                    canvas.drawText(TileTextStyle.SMALL, badge, tilePosition(iconX + iconSize - badgeWidth + 6f, iconY + 11f), tone(TileTextTone.WHITE))
                 }
             }
         }
@@ -1302,134 +986,15 @@ class TileRenderer(
                 val worldX = rect.x + 4f + feedback.horizontalOffsetCells * (viewport.cellSize + 6f)
                 val worldY = rect.y + viewport.cellSize - 2f + feedback.stackIndex * 15f
                 val backgroundWidth = (feedback.text.length * 11f).coerceAtLeast(28f)
-                canvas.drawRect(worldX - 2f, worldY - 16f, backgroundWidth, 18f, UiDesignTokens.color.surface.baseDim.color())
+                canvas.drawRect(tileBounds(worldX - 2f, worldY - 16f, backgroundWidth, 18f), UiDesignTokens.color.surface.baseDim.color())
                 canvas.drawText(
                     TileTextStyle.SMALL,
                     feedback.text,
-                    worldX,
-                    worldY - 2f,
+                    tilePosition(worldX, worldY - 2f),
                     tone(feedback.tone),
                 )
             }
         }
-
-        private fun drawLeftRail(
-            canvas: TileCanvas,
-            panel: ShellPanelTextLayout,
-            layout: TileLayoutMetrics,
-        ) {
-            val bounds = chromeContentBounds(layout.shell.leftRailBounds, ChromeSurfaceKind.Panel)
-            drawPanelRows(
-                canvas = canvas,
-                panel = panel,
-                x = bounds.x,
-                topY = bounds.top - 4f,
-                maxRows = ((bounds.height - SHELL_PANEL_TITLE_OFFSET) / SHELL_PANEL_ROW_HEIGHT).toInt().coerceAtLeast(0),
-            )
-        }
-
-        private fun drawRightPanel(
-            canvas: TileCanvas,
-            panel: ShellPanelTextLayout,
-            layout: TileLayoutMetrics,
-        ) {
-            val bounds = chromeContentBounds(layout.shell.rightPanelBounds, ChromeSurfaceKind.Panel)
-            drawPanelRows(
-                canvas = canvas,
-                panel = panel,
-                x = bounds.x,
-                topY = bounds.top - 4f,
-                maxRows = ((bounds.height - SHELL_PANEL_TITLE_OFFSET) / SHELL_PANEL_ROW_HEIGHT).toInt().coerceAtLeast(0),
-            )
-        }
-
-        private fun drawPanelRows(
-            canvas: TileCanvas,
-            panel: ShellPanelTextLayout,
-            x: Float,
-            topY: Float,
-            maxRows: Int,
-        ) {
-            canvas.drawText(TileTextStyle.UI, panel.title, x, topY, tone(TileTextTone.GOLD))
-            panel.rows.take(maxRows).forEachIndexed { index, row ->
-                val baseline = topY - SHELL_PANEL_TITLE_OFFSET - index * SHELL_PANEL_ROW_HEIGHT
-                canvas.drawText(
-                    style = row.style,
-                    text = row.text,
-                    x = x + if (row.icon == null) 0f else 28f,
-                    y = baseline,
-                    color = tone(if (row.selected) TileTextTone.CYAN else row.tone),
-                )
-                row.icon?.let { icon ->
-                    canvas.drawAsset(icon, x, baseline - 15f, 16f, 16f, alpha = if (row.selected) 1f else 0.95f)
-                }
-            }
-        }
-
-        private fun drawFooterHints(
-            canvas: TileCanvas,
-            hints: String,
-            layout: TileLayoutMetrics,
-            chromeAssets: TileChromeAssets?,
-        ) {
-            val bounds = layout.footerHintBounds
-            canvas.drawRect(bounds.x, bounds.y, bounds.width, bounds.height, UiDesignTokens.color.surface.baseDim.color())
-            chromeAssets?.let { chrome ->
-                drawChromeFrame(
-                    canvas = canvas,
-                    assets = chrome.frameAssets.copy(body = chrome.tooltipBody),
-                    bounds = bounds,
-                    fillColor = UiDesignTokens.color.surface.baseDim.color(),
-                    borderColor = UiDesignTokens.color.border.subtle.color(),
-                    alpha = 0.72f,
-                )
-            }
-            val content = chromeContentBounds(bounds, ChromeSurfaceKind.FooterHint)
-            drawContentScrim(canvas, content, alpha = 0.62f)
-            TileTextMetrics
-                .wrapTextToWidth(hints, safeTextWidth(content.width), TileTextStyle.SMALL)
-                .take(2)
-                .forEachIndexed { index, line ->
-                    val baseline = content.top - 4f - index * SHELL_SMALL_LINE_HEIGHT
-                    if (baseline >= content.y + 12f) {
-                        canvas.drawText(
-                            TileTextStyle.SMALL,
-                            TileTextMetrics.truncateTextToWidth(line, safeTextWidth(content.width), TileTextStyle.SMALL),
-                            content.x,
-                            baseline,
-                            tone(TileTextTone.LIGHT_GRAY),
-                        )
-                    }
-                }
-        }
-
-        private fun drawGauge(
-            canvas: TileCanvas,
-            gauge: TileGaugeModel,
-            x: Float,
-            y: Float,
-            width: Float,
-            height: Float,
-        ) {
-            canvas.drawRect(x, y, width, height, UiDesignTokens.color.bar.background.color())
-            canvas.drawRect(x + 2f, y + 2f, (width - 4f) * gauge.percent, height - 4f, gaugeFillColor(gauge))
-            if (height >= 12f) {
-                val summary = TileTextMetrics.truncateTextToWidth(gauge.summary, width - 8f, TileTextStyle.SMALL)
-                canvas.drawText(TileTextStyle.SMALL, summary, x + 4f, y + height - 2f, tone(TileTextTone.WHITE))
-            }
-        }
-
-        private fun gaugeFillColor(gauge: TileGaugeModel): Color =
-            when (gauge.resourceTypeId) {
-                "HEALTH" -> UiDesignTokens.color.bar.hp.color()
-                "EXPERIENCE" -> UiDesignTokens.color.bar.experience.color()
-                else ->
-                    if (gauge.stableMin != null || gauge.stableMax != null) {
-                        UiDesignTokens.color.bar.secondaryResource.color()
-                    } else {
-                        UiDesignTokens.color.bar.resource.color()
-                    }
-            }
 
         private fun drawCursor(
             canvas: TileCanvas,
@@ -1461,7 +1026,7 @@ class TileRenderer(
             val anchorY = rect.y + viewport.cellSize * placement.asset.entry.pivotY.toFloat()
             val drawX = anchorX - width * placement.asset.entry.pivotX.toFloat()
             val drawY = anchorY - height * placement.asset.entry.pivotY.toFloat()
-            canvas.drawAsset(placement.asset, drawX, drawY, width, height, placement.alpha, placement.tintColorHex)
+            canvas.drawAsset(placement.asset, tileBounds(drawX, drawY, width, height), placement.alpha, placement.tintColorHex)
         }
 
         private fun drawFogOverlays(
@@ -1475,7 +1040,100 @@ class TileRenderer(
                     return@forEach
                 }
                 val rect = viewport.tileRect(tile)
-                canvas.drawRect(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat(), color("05070A", fog.alpha))
+                canvas.drawRect(tileBounds(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat()), color("1A0E04", fog.alpha))
+            }
+        }
+
+        private fun renderWarmMapOverlay(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            drawMapStageEdgeVignette(canvas, frame.layout.demoShell.mapStage)
+            drawPlayerWarmLight(canvas, frame.model.playerTile, frame.viewport)
+            drawMapStageInnerFeather(canvas, frame.layout.demoShell.mapStage)
+        }
+
+        private fun drawMapStageEdgeVignette(
+            canvas: TileCanvas,
+            bounds: GameShellBounds,
+        ) {
+            val ringWidth = 5f
+            repeat(8) { index ->
+                val inset = index * ringWidth
+                val alpha = 0.65f * (1f - index / 8f) * 0.22f
+                val width = (bounds.width - inset * 2f).coerceAtLeast(0f)
+                val height = (bounds.height - inset * 2f).coerceAtLeast(0f)
+                if (width <= 0f || height <= 0f) {
+                    return@repeat
+                }
+                val left = bounds.x + inset
+                val bottom = bounds.y + inset
+                val right = left + width - ringWidth
+                val top = bottom + height - ringWidth
+                canvas.drawRect(tileBounds(left, bottom, ringWidth, height), color("1A0E04", alpha))
+                canvas.drawRect(tileBounds(right, bottom, ringWidth, height), color("1A0E04", alpha))
+                canvas.drawRect(tileBounds(left, bottom, width, ringWidth), color("1A0E04", alpha))
+                canvas.drawRect(tileBounds(left, top, width, ringWidth), color("1A0E04", alpha))
+            }
+        }
+
+        private fun drawPlayerWarmLight(
+            canvas: TileCanvas,
+            playerTile: Point,
+            viewport: TileMapViewport,
+        ) {
+            if (!viewport.containsTile(playerTile)) {
+                return
+            }
+            val rect = viewport.tileRect(playerTile)
+            val centerX = rect.x + rect.width / 2f
+            val centerY = rect.y + rect.height / 2f
+            val radius = viewport.cellSize * 8f
+            repeat(8) { index ->
+                val t = (8 - index) / 8f
+                val halfSide = radius * t
+                val alpha = 0.006f + 0.006f * (1f - t)
+                val bounds =
+                    clippedBounds(
+                        x = centerX - halfSide,
+                        y = centerY - halfSide,
+                        width = halfSide * 2f,
+                        height = halfSide * 2f,
+                        clip = viewport.mapBounds,
+                    ) ?: return@repeat
+                canvas.drawRect(bounds, color("D99A2B", alpha))
+            }
+        }
+
+        private fun drawMapStageInnerFeather(
+            canvas: TileCanvas,
+            bounds: GameShellBounds,
+        ) {
+            val thickness = 12f
+            val color = color("D99A2B", 0.18f)
+            canvas.drawRect(tileBounds(bounds.x, bounds.y, thickness, bounds.height), color)
+            canvas.drawRect(tileBounds(bounds.right - thickness, bounds.y, thickness, bounds.height), color)
+            canvas.drawRect(tileBounds(bounds.x, bounds.y, bounds.width, thickness), color)
+            canvas.drawRect(tileBounds(bounds.x, bounds.top - thickness, bounds.width, thickness), color)
+        }
+
+        private fun clippedBounds(
+            x: Float,
+            y: Float,
+            width: Float,
+            height: Float,
+            clip: RectInt,
+        ): TileFloatBounds? {
+            val clippedX = x.coerceAtLeast(clip.x.toFloat())
+            val clippedY = y.coerceAtLeast(clip.y.toFloat())
+            val clippedRight = (x + width).coerceAtMost(clip.right.toFloat())
+            val clippedTop = (y + height).coerceAtMost(clip.top.toFloat())
+            val clippedWidth = clippedRight - clippedX
+            val clippedHeight = clippedTop - clippedY
+            return if (clippedWidth <= 0f || clippedHeight <= 0f) {
+                null
+            } else {
+                tileBounds(clippedX, clippedY, clippedWidth, clippedHeight)
             }
         }
 

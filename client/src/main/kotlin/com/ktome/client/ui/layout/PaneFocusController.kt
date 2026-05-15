@@ -23,6 +23,12 @@ internal class PaneFocusController(
         return mapAnchor
     }
 
+    fun set(anchor: PaneFocusAnchor): PaneFocusAnchor {
+        mapAnchor = anchor
+        suspendedMapAnchor = null
+        return mapAnchor
+    }
+
     fun onModalOpened() {
         if (suspendedMapAnchor == null) {
             suspendedMapAnchor = mapAnchor

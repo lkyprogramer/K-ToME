@@ -688,7 +688,23 @@ registerDarkManifestCoverageTask(
     mode = "owner-scope",
     ownerPr = "PR-02",
     ownerContract = "UI/sprite-sheets/owner-contracts/pr02-owner-keys.yaml",
-    reportFileName = "dark-v1-manifest-coverage.json",
+    reportFileName = "dark-v1-manifest-coverage-pr02-owner-scope.json",
+)
+
+registerDarkManifestCoverageTask(
+    name = "darkManifestCoveragePr02_1OwnerScope",
+    mode = "owner-scope",
+    ownerPr = "PR-02-1",
+    ownerContract = "UI/sprite-sheets/owner-contracts/pr02-1-owner-keys.yaml",
+    reportFileName = "dark-v1-manifest-coverage-pr02-1-owner-scope.json",
+)
+
+registerDarkManifestCoverageTask(
+    name = "darkManifestCoveragePr02_2OwnerScope",
+    mode = "owner-scope",
+    ownerPr = "PR-02-2",
+    ownerContract = "UI/sprite-sheets/owner-contracts/pr02-2-owner-keys.yaml",
+    reportFileName = "dark-v1-manifest-coverage-pr02-2-owner-scope.json",
 )
 
 tasks.register<VerificationTask>("verifyContractLintPreflight") {
@@ -1195,6 +1211,8 @@ listOf(
     tasks.named("spriteSheetMapLint"),
     tasks.named("darkManifestCoveragePr00DryRun"),
     tasks.named("darkManifestCoveragePr02OwnerScope"),
+    tasks.named("darkManifestCoveragePr02_1OwnerScope"),
+    tasks.named("darkManifestCoveragePr02_2OwnerScope"),
     tasks.named("verifyContractLintPreflight"),
     tasks.named("verifyLootPreflight"),
     tasks.named("verifyHiddenPreflight"),

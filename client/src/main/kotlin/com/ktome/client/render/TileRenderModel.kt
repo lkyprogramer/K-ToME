@@ -30,6 +30,7 @@ import com.ktome.client.ui.item.QualityColorTokenId
 import com.ktome.client.ui.item.QualityPresentation
 import com.ktome.client.ui.item.SpecialAccentTokenId
 import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.layout.PaneFocusAnchor
 import com.ktome.client.ui.panel.ActionPanelEntryModel
 import com.ktome.client.ui.panel.ActionPanelModel
 import com.ktome.client.ui.panel.LogPresentationModel
@@ -190,7 +191,120 @@ internal data class TileShellModel(
     val leftRail: TilePanelModel,
     val rightPanel: TilePanelModel,
     val footerHints: List<TileTextRow>,
+    val demo: TileDemoShellModel = TileDemoShellModel.empty(),
 )
+
+internal enum class TileDemoNavItemKind {
+    COMPASS,
+    BAG,
+    SCROLL,
+    BOOK,
+    GEAR,
+}
+
+internal enum class TileDemoNavItemState {
+    SELECTED,
+    IDLE,
+}
+
+internal data class TileDemoNavItemModel(
+    val kind: TileDemoNavItemKind,
+    val label: String,
+    val state: TileDemoNavItemState,
+)
+
+internal enum class TileDemoSlotState {
+    EMPTY,
+    FILLED,
+}
+
+internal data class TileDemoSlotModel(
+    val label: String,
+    val detail: String?,
+    val icon: ResolvedVisualAsset?,
+    val state: TileDemoSlotState,
+)
+
+internal data class TileDemoShellModel(
+    val navItems: List<TileDemoNavItemModel>,
+    val rightEquipmentTitle: String,
+    val rightInscriptionsTitle: String,
+    val rightBackpackTitle: String,
+    val rightOperationHintsTitle: String,
+    val equipmentSlots: List<TileDemoSlotModel>,
+    val inscriptionSlots: List<TileDemoSlotModel>,
+    val backpackSlots: List<TileDemoSlotModel>,
+    val backpackPageLabel: String,
+    val operationHints: List<String>,
+    val heroSummaryLines: List<String>,
+) {
+    companion object {
+        fun empty(): TileDemoShellModel =
+            TileDemoShellModel(
+                navItems = emptyList(),
+                rightEquipmentTitle = "",
+                rightInscriptionsTitle = "",
+                rightBackpackTitle = "",
+                rightOperationHintsTitle = "",
+                equipmentSlots = emptyList(),
+                inscriptionSlots = emptyList(),
+                backpackSlots = emptyList(),
+                backpackPageLabel = "",
+                operationHints = emptyList(),
+                heroSummaryLines = emptyList(),
+            )
+    }
+}
+
+internal data class TileDemoShellAssets(
+    val outerFrame: ResolvedVisualAsset,
+    val mapStageFrame: ResolvedVisualAsset,
+    val mapStageBackdrop: ResolvedVisualAsset,
+    val navRailFrame: ResolvedVisualAsset,
+    val navButtonActive: ResolvedVisualAsset,
+    val heroCardFrame: ResolvedVisualAsset,
+    val actionDeckFrame: ResolvedVisualAsset,
+    val logDeckFrame: ResolvedVisualAsset,
+    val rightSectionDivider: ResolvedVisualAsset,
+    val heroCrestPlaceholder: ResolvedVisualAsset,
+    val commandHintPlate: ResolvedVisualAsset,
+    val navCompass: ResolvedVisualAsset,
+    val navBag: ResolvedVisualAsset,
+    val navScroll: ResolvedVisualAsset,
+    val navBook: ResolvedVisualAsset,
+    val navGear: ResolvedVisualAsset,
+) {
+    fun navIcon(kind: TileDemoNavItemKind): ResolvedVisualAsset =
+        when (kind) {
+            TileDemoNavItemKind.COMPASS -> navCompass
+            TileDemoNavItemKind.BAG -> navBag
+            TileDemoNavItemKind.SCROLL -> navScroll
+            TileDemoNavItemKind.BOOK -> navBook
+            TileDemoNavItemKind.GEAR -> navGear
+        }
+
+    companion object {
+        fun resolve(visualResolver: VisualManifestResolver): TileDemoShellAssets =
+            TileDemoShellAssets(
+                outerFrame = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_OUTER_FRAME),
+                mapStageFrame = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_MAP_STAGE_FRAME),
+                mapStageBackdrop = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_MAP_STAGE_BACKDROP),
+                navRailFrame = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_NAV_RAIL_FRAME),
+                navButtonActive = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_NAV_BUTTON_ACTIVE),
+                heroCardFrame = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_HERO_CARD_FRAME),
+                actionDeckFrame = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_ACTION_DECK_FRAME),
+                logDeckFrame = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_LOG_DECK_FRAME),
+                rightSectionDivider = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_RIGHT_SECTION_DIVIDER),
+                heroCrestPlaceholder = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_HERO_CREST_PLACEHOLDER),
+                commandHintPlate = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_COMMAND_HINT_PLATE),
+                navCompass = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_NAV_COMPASS),
+                navBag = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_NAV_BAG),
+                navScroll = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_NAV_SCROLL),
+                navBook = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_NAV_BOOK),
+                navGear = visualResolver.resolve(DarkUiChromeVisualKeys.SHELL_NAV_GEAR),
+            )
+    }
+}
 
 internal data class TileChromeAssets(
     val panelBody: ResolvedVisualAsset,
@@ -211,6 +325,7 @@ internal data class TileChromeAssets(
     val hudHp: ResolvedVisualAsset,
     val hudStamina: ResolvedVisualAsset,
     val hudXp: ResolvedVisualAsset,
+    val demoShell: TileDemoShellAssets,
 ) {
     val frameAssets: ChromeFrameAssets =
         ChromeFrameAssets(
@@ -254,6 +369,7 @@ internal data class TileChromeAssets(
                 hudHp = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.HUD_HP),
                 hudStamina = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.HUD_STAMINA),
                 hudXp = resolveChromeAsset(visualResolver, DarkUiChromeVisualKeys.HUD_XP),
+                demoShell = TileDemoShellAssets.resolve(visualResolver),
             )
 
         private fun resolveChromeAsset(
@@ -286,6 +402,10 @@ internal data class TileRenderModel(
 )
 
 internal object TileRenderModelBuilder {
+    private const val DEMO_BACKPACK_PAGE_SIZE = 8
+    private const val EXPLORED_FOG_ALPHA = 0.42f
+    private const val HIDDEN_STAGE_FOG_ALPHA = 0.50f
+
     fun build(
         localizer: Localizer,
         visualResolver: VisualManifestResolver,
@@ -316,8 +436,8 @@ internal object TileRenderModelBuilder {
             snapshot.mapCells.mapNotNull { cell ->
                 when (cell.visibility) {
                     CellVisibilitySnapshot.VISIBLE -> null
-                    CellVisibilitySnapshot.EXPLORED -> TileFogPlacement(x = cell.x, y = cell.y, alpha = 0.42f)
-                    CellVisibilitySnapshot.HIDDEN -> TileFogPlacement(x = cell.x, y = cell.y, alpha = 0.94f)
+                    CellVisibilitySnapshot.EXPLORED -> TileFogPlacement(x = cell.x, y = cell.y, alpha = EXPLORED_FOG_ALPHA)
+                    CellVisibilitySnapshot.HIDDEN -> TileFogPlacement(x = cell.x, y = cell.y, alpha = HIDDEN_STAGE_FOG_ALPHA)
                 }
             }
         val propTiles =
@@ -473,7 +593,7 @@ internal object TileRenderModelBuilder {
                     ),
             combatFeedback = buildCombatFeedback(localizer, snapshot.metadata.width, overlayCells, snapshot.combatFeedbackEvents),
             sidebar = sidebar,
-            shell = buildShell(localizer, snapshot, hud, sidebar, messageLines, playerCell),
+            shell = buildShell(localizer, visualResolver, snapshot, overlayState, hud, sidebar, messageLines),
             playerTile = point(player.x, player.y),
             mapDimensions = TileMapDimensions(snapshot.metadata.width, snapshot.metadata.height),
             chromeAssets = chromeAssets,
@@ -568,11 +688,12 @@ internal object TileRenderModelBuilder {
 
     private fun buildShell(
         localizer: Localizer,
+        visualResolver: VisualManifestResolver,
         snapshot: RenderSnapshot,
+        overlayState: OverlayState,
         hud: TileHudModel,
         sidebar: TileSidebarModel,
         messageLines: List<TileMessageLine>,
-        playerCell: MapCellSnapshot,
     ): TileShellModel {
         val status = snapshot.uiState.playerStatus
         val zoneDescription =
@@ -602,13 +723,6 @@ internal object TileRenderModelBuilder {
                     }
             }.take(4)
         val inventoryCount = snapshot.uiState.inventory.size
-        val groundRows =
-            playerCell.items
-                .take(3)
-                .map { item ->
-                    TileTextRow(renderItemDisplay(localizer, item), itemTone(item))
-                }
-                .ifEmpty { listOf(TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)) }
         val equipmentRows =
             snapshot.uiState.equipment.map { equipment ->
                 val itemName = equipment.item?.let { item -> renderItemDisplay(localizer, item) } ?: "-"
@@ -681,8 +795,6 @@ internal object TileRenderModelBuilder {
                             TileTextRow(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), TileTextTone.GOLD),
                         ) +
                             pointRows +
-                            listOf(TileTextRow(localizer.text("ui.sidebar.ground"), TileTextTone.GOLD)) +
-                            groundRows +
                             listOf(TileTextRow(localizer.text("ui.sidebar.equipment"), TileTextTone.GOLD)) +
                             equipmentRows +
                             listOf(TileTextRow(localizer.text("ui.sidebar.inscriptions"), TileTextTone.GOLD)) +
@@ -698,9 +810,209 @@ internal object TileRenderModelBuilder {
                     TileTextRow(localizer.text("ui.controls.map.inventory"), TileTextTone.LIGHT_GRAY),
                     TileTextRow(localizer.text("ui.controls.map.pick_up"), TileTextTone.LIGHT_GRAY),
                     TileTextRow(localizer.text("ui.controls.map.save"), TileTextTone.LIGHT_GRAY),
+                    TileTextRow(localizer.text("ui.controls.map.edit_loadout"), TileTextTone.LIGHT_GRAY),
+                    TileTextRow(localizer.text("ui.controls.map.use_talent"), TileTextTone.LIGHT_GRAY),
+                    TileTextRow(localizer.text("ui.controls.map.use_inscription"), TileTextTone.LIGHT_GRAY),
+                ),
+            demo = buildDemoShellModel(localizer, visualResolver, snapshot, overlayState, hud),
+        )
+    }
+
+    private fun buildDemoShellModel(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+        hud: TileHudModel,
+    ): TileDemoShellModel {
+        val status = snapshot.uiState.playerStatus
+        val operationHints =
+            listOf(
+                localizer.text("ui.controls.map.inventory"),
+                localizer.text("ui.controls.map.pick_up"),
+                localizer.text("ui.controls.map.save"),
+                localizer.text("ui.controls.map.edit_loadout"),
+                localizer.text("ui.controls.map.use_talent"),
+                localizer.text("ui.controls.map.use_inscription"),
+            )
+        val backpackPageSize = DEMO_BACKPACK_PAGE_SIZE
+        val sortedInventory = snapshot.uiState.inventory.sortedBy(InventoryEntrySnapshot::index)
+        val backpackPageCount = ((sortedInventory.size + backpackPageSize - 1) / backpackPageSize).coerceAtLeast(1)
+        val requestedPage = overlayState.inventorySelection / backpackPageSize
+        val backpackPageIndex = requestedPage.coerceIn(0, backpackPageCount - 1)
+        val pageItems =
+            sortedInventory
+                .drop(backpackPageIndex * backpackPageSize)
+                .take(backpackPageSize)
+        return TileDemoShellModel(
+            navItems =
+                listOf(
+                    TileDemoNavItemModel(TileDemoNavItemKind.COMPASS, localizer.text("ui.sidebar.map"), navItemState(TileDemoNavItemKind.COMPASS, overlayState)),
+                    TileDemoNavItemModel(TileDemoNavItemKind.BAG, localizer.text("ui.sidebar.inventory"), navItemState(TileDemoNavItemKind.BAG, overlayState)),
+                    TileDemoNavItemModel(TileDemoNavItemKind.SCROLL, localizer.text("ui.sidebar.recent_rewards"), navItemState(TileDemoNavItemKind.SCROLL, overlayState)),
+                    TileDemoNavItemModel(TileDemoNavItemKind.BOOK, localizer.text("ui.sidebar.improve_talents"), navItemState(TileDemoNavItemKind.BOOK, overlayState)),
+                    TileDemoNavItemModel(TileDemoNavItemKind.GEAR, localizer.text("ui.menu.action.validation"), navItemState(TileDemoNavItemKind.GEAR, overlayState)),
+                ),
+            rightEquipmentTitle = localizer.text("ui.sidebar.equipment"),
+            rightInscriptionsTitle = localizer.text("ui.sidebar.inscriptions"),
+            rightBackpackTitle = localizer.text("ui.sidebar.inventory"),
+            rightOperationHintsTitle = localizer.text("ui.shell.operation_hints"),
+            equipmentSlots = equipmentSlotModels(localizer, visualResolver, snapshot),
+            inscriptionSlots = inscriptionSlotModels(localizer, visualResolver, snapshot),
+            backpackSlots =
+                fixedSlots(
+                    pageItems.map { entry ->
+                        itemSlot(localizer, visualResolver, entry.item, labelPrefix = (entry.index + 1).toString())
+                    },
+                    count = backpackPageSize,
+                    emptyPrefix = "",
+                ),
+            backpackPageLabel =
+                if (backpackPageCount > 1) {
+                    "${backpackPageIndex + 1}/$backpackPageCount  PgUp/PgDn"
+                } else {
+                    ""
+                },
+            operationHints = operationHints,
+            heroSummaryLines =
+                listOf(
+                    hud.floorText,
+                    hud.hpGauge.summary,
+                    hud.resourceGauge.summary,
+                    "${localizer.text("ui.hud.attack.short")} ${status.attack}",
+                    "${localizer.text("ui.hud.defense.short")} ${status.defense}",
                 ),
         )
     }
+
+    private fun navItemState(
+        kind: TileDemoNavItemKind,
+        overlayState: OverlayState,
+    ): TileDemoNavItemState {
+        val selected =
+            when (kind) {
+                TileDemoNavItemKind.COMPASS ->
+                    overlayState.mode in
+                        setOf(
+                            UiMode.MAP,
+                            UiMode.WORLD_MAP,
+                            UiMode.SHOP,
+                            UiMode.TARGETING,
+                            UiMode.INSPECT,
+                            UiMode.STAT_ASSIGN,
+                        ) &&
+                        overlayState.paneFocusAnchor == PaneFocusAnchor.WORLD
+
+                TileDemoNavItemKind.BAG -> overlayState.mode == UiMode.INVENTORY
+                TileDemoNavItemKind.SCROLL -> overlayState.mode == UiMode.MAP && overlayState.paneFocusAnchor == PaneFocusAnchor.CONTEXT
+                TileDemoNavItemKind.BOOK -> overlayState.mode in setOf(UiMode.LOADOUT_EDIT, UiMode.TALENT_ASSIGN)
+                TileDemoNavItemKind.GEAR -> overlayState.mode == UiMode.VALIDATION
+            }
+        return if (selected) TileDemoNavItemState.SELECTED else TileDemoNavItemState.IDLE
+    }
+
+    private fun equipmentSlotModels(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+    ): List<TileDemoSlotModel> {
+        val bySlot = snapshot.uiState.equipment.associateBy { slot -> slot.slotId }
+        val slotOrder =
+            listOf(
+                "WEAPON",
+                "OFF_HAND",
+                "HELMET",
+                "ARMOR",
+                "CAPE",
+                "GLOVES",
+                "ACCESSORY",
+                "RING",
+                "BOOTS",
+            )
+        return slotOrder.map { slotId ->
+            val item = bySlot[slotId]?.item
+            if (item == null) {
+                emptySlot("")
+            } else {
+                itemSlot(localizer, visualResolver, item, labelPrefix = "")
+            }
+        }
+    }
+
+    private fun equipmentSummaryRows(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+    ): List<String> {
+        val bySlot = snapshot.uiState.equipment.associateBy { slot -> slot.slotId }
+        return listOf("WEAPON", "OFF_HAND", "ARMOR").map { slotId ->
+            val itemName = bySlot[slotId]?.item?.let { item -> renderItemDisplay(localizer, item) } ?: "-"
+            "${equipmentSlotLabel(localizer, slotId)}: $itemName"
+        }
+    }
+
+    private fun inscriptionSlotModels(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+    ): List<TileDemoSlotModel> {
+        val byHotkey = snapshot.uiState.inscriptions.associateBy { inscription -> inscription.hotkey }
+        return (5..12).map { hotkey ->
+            val inscription = byHotkey[hotkey]
+            when {
+                inscription != null ->
+                    TileDemoSlotModel(
+                        label = hotkey.toString(),
+                        detail = localizer.text(inscription.nameKey),
+                        icon = resolveVisual(visualResolver, inscription.iconKey),
+                        state = TileDemoSlotState.FILLED,
+                    )
+
+                hotkey <= 8 ->
+                    TileDemoSlotModel(
+                        label = hotkey.toString(),
+                        detail = localizer.text("ui.shell.inscription.empty"),
+                        icon = null,
+                        state = TileDemoSlotState.EMPTY,
+                    )
+
+                else ->
+                    TileDemoSlotModel(
+                        label = hotkey.toString(),
+                        detail = null,
+                        icon = null,
+                        state = TileDemoSlotState.EMPTY,
+                    )
+            }
+        }
+    }
+
+    private fun fixedSlots(
+        slots: List<TileDemoSlotModel>,
+        count: Int,
+        emptyPrefix: String,
+    ): List<TileDemoSlotModel> =
+        slots.take(count) + List((count - slots.size).coerceAtLeast(0)) { index -> emptySlot("$emptyPrefix${slots.size + index + 1}") }
+
+    private fun itemSlot(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        item: ItemRenderSnapshot,
+        labelPrefix: String? = null,
+    ): TileDemoSlotModel =
+        TileDemoSlotModel(
+            label = labelPrefix ?: renderItemDisplay(localizer, item),
+            detail = renderItemDisplay(localizer, item),
+            icon = item.iconKey?.let { iconKey -> resolveVisual(visualResolver, iconKey) },
+            state = TileDemoSlotState.FILLED,
+        )
+
+    private fun emptySlot(label: String): TileDemoSlotModel =
+        TileDemoSlotModel(
+            label = label,
+            detail = null,
+            icon = null,
+            state = TileDemoSlotState.EMPTY,
+        )
 
     private fun questSummaryText(
         localizer: Localizer,

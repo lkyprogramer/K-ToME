@@ -35,7 +35,7 @@ class StandaloneScreenLayoutTest {
         val columnCount = placements.map { placement -> placement.x }.distinct().size
 
         assertEquals(entryCount, placements.size)
-        assertEquals(2, columnCount)
+        assertEquals(3, columnCount)
         assertTrue(layout.primaryActionStack.y >= layout.footerHelp.top)
         assertTrue(layout.primaryActionStack.top <= layout.disabledDetailArea.y)
         assertTrue(layout.disabledDetailArea.top <= layout.secondaryPanel.y)
@@ -58,6 +58,27 @@ class StandaloneScreenLayoutTest {
         assertDoesNotOverlap(layout.primaryActionStack, layout.disabledDetailArea)
         assertDoesNotOverlap(layout.disabledDetailArea, layout.secondaryPanel)
         assertDoesNotOverlap(layout.primaryActionStack, layout.footerHelp)
+    }
+
+    @Test
+    fun `dark uiux pr02 1 standalone shell keeps required scaled density`() {
+        val standardScale = standaloneScale(worldWidth = 1280f, worldHeight = 800f)
+        val mainMenu = DarkStandaloneScreenLayout.mainMenu()
+        val validationRowStep = DarkStandaloneScreenLayout.validationEntryRowStep(rowCount = 5)
+        val logicalTextLineHeight = 18f
+
+        assertTrue(mainMenu.header.height * standardScale >= 96f)
+        assertTrue(validationRowStep * standardScale >= 48f)
+        assertTrue((validationRowStep - logicalTextLineHeight) * standardScale >= 8f)
+    }
+
+    @Test
+    fun `dark uiux pr02 1 outcome and runtime cards satisfy minimum widths`() {
+        val standardScale = standaloneScale(worldWidth = 1280f, worldHeight = 800f)
+        val minimumRuntime = DarkStandaloneScreenLayout.runtimeStatus(worldWidth = 1024f, worldHeight = 768f)
+
+        assertTrue(DarkStandaloneScreenLayout.outcome().primaryActionStack.width * standardScale >= 480f)
+        assertTrue(minimumRuntime.primaryActionStack.width >= 420f)
     }
 
     @Test
@@ -207,6 +228,15 @@ class StandaloneScreenLayoutTest {
             "Expected $first not to overlap $second.",
         )
     }
+
+    private fun standaloneScale(
+        worldWidth: Float,
+        worldHeight: Float,
+    ): Float =
+        minOf(
+            worldWidth / DarkStandaloneScreenLayout.width,
+            worldHeight / DarkStandaloneScreenLayout.height,
+        )
 
     private fun standaloneChromeResolver(excludedKeys: Set<String> = emptySet()): VisualManifestResolver =
         VisualManifestResolver(

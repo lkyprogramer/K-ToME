@@ -17,7 +17,8 @@ STYLE_TAG = "ktome-dark-fantasy-sprite-ui-v1"
 SHEET_PLAN_SCHEMA_VERSION = "dark-sprite-sheet-plan-v1"
 KEY_REGISTRY_SCHEMA_VERSION = "dark-key-registry-v1"
 OWNER_CONTRACT_SCHEMA_VERSION = "dark-owner-contract-v1"
-OWNER_PR_PATTERN = re.compile(r"^PR-\d{2}$")
+OWNER_PR_PATTERN = re.compile(r"^PR-\d{2}(?:-\d+)?$")
+OWNER_PR_PATTERN_TEXT = r"^PR-\d{2}(?:-\d+)?$"
 DARK_RUNTIME_PREFIX = "dark-v1/"
 DARK_RAW_SHEET_DIR = "assets-src/image/raw/sheets/dark-v1"
 DARK_CONTACT_SHEET_DIR = "assets-src/image/contact-sheets/dark-v1"
@@ -360,7 +361,7 @@ def load_owner_contract(path: pathlib.Path) -> tuple[OwnerContract | None, list[
 
     owner_pr = str(payload.get("ownerPr", "")).strip()
     if not OWNER_PR_PATTERN.match(owner_pr):
-        errors.append(f"owner contract ownerPr must use PR-00 format, got '{owner_pr or '<missing>'}'.")
+        errors.append(f"owner contract ownerPr must match {OWNER_PR_PATTERN_TEXT}, got '{owner_pr or '<missing>'}'.")
 
     raw_sheet_ids = payload.get("requiredSheetIds")
     if not isinstance(raw_sheet_ids, list) or not raw_sheet_ids:

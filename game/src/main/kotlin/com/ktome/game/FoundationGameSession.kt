@@ -824,6 +824,7 @@ class FoundationGameSession internal constructor(
         refreshActorDerivedStats(playerId)
         ensurePlayerResourcePools()
         ensurePlayerInscriptions()
+        prepareDarkUiuxPr02_2LaunchSceneIfNeeded()
         restorePendingZoneAdvanceIfNeeded()
         restorePendingZoneRuntimeHookEffects()
         refreshFov()
@@ -2251,6 +2252,53 @@ class FoundationGameSession internal constructor(
                 InscriptionManager.equip(loadout, equippedDefinitions, definition)
             }
         startingInscriptionCount = minOf(startingInscriptionCount.takeIf { count -> count > 0 } ?: loadout.slots.size, loadout.slots.size)
+    }
+
+    private fun prepareDarkUiuxPr02_2LaunchSceneIfNeeded() {
+        if (validationSessionOptions?.scenarioId?.value != "dark-uiux-pr02-1-demo-shell-foundation") {
+            return
+        }
+        resetPlayerInscriptionsForValidation(
+            listOf(
+                "healing_light",
+                "iron_shield",
+                "phase_door",
+                "purge",
+            ),
+        )
+        val inventory = requireNotNull(world.get<Inventory>(playerId)) { "Missing Inventory for $playerId" }
+        val itemFactory = ItemFactory()
+        val existingBaseIds =
+            inventory.itemIds
+                .mapNotNull { itemId -> world.get<ItemInstance>(itemId)?.baseId }
+                .toMutableSet()
+        val demoItems =
+            listOf(
+                "long_sword",
+                "basic_shield",
+                "chain_mail",
+                "healing_potion",
+                "scroll_teleport",
+                "mana_potion",
+                "war_maul",
+                "forgebreaker_pick",
+                "bandit_trophy",
+                "emerald_charm",
+                "sanctified_seal",
+                "abyssal_heartstone",
+            )
+        val demoBackpackFirstPageSize = 8
+        demoItems.forEach { baseItemId ->
+            if (inventory.itemIds.size >= demoBackpackFirstPageSize || inventory.itemIds.size >= inventory.capacity) {
+                return@forEach
+            }
+            if (!existingBaseIds.add(baseItemId)) {
+                return@forEach
+            }
+            validationShowcaseItem(ValidationShowcaseItemSpec(baseItemId = baseItemId))
+                ?.let { item -> inventory.itemIds += itemFactory.createCarriedItem(world, item) }
+        }
+        invalidateRenderSnapshot()
     }
 
     private fun openConfiguredValidationShop() {

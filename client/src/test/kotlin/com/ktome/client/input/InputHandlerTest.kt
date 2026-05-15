@@ -1,6 +1,9 @@
 package com.ktome.client.input
 
 import com.badlogic.gdx.Input.Keys
+import com.ktome.client.render.DemoNavRailButtonLayout
+import com.ktome.client.render.layout.DemoShellLayoutRequest
+import com.ktome.client.render.layout.DemoShellLayoutSolver
 import com.ktome.client.replay.ReplayInputSource
 import com.ktome.client.ui.layout.ModalFrame
 import com.ktome.client.ui.layout.ModalFrameKind
@@ -47,6 +50,7 @@ import com.ktome.game.validation.ValidationScenarioRegistry
 import com.ktome.game.validation.ValidationSessionRequest
 import com.ktome.game.validation.validationSessionOptionsForPreset
 import java.nio.file.Path
+import kotlin.math.roundToInt
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -188,6 +192,52 @@ class InputHandlerTest {
         )
         assertTrue(handler.overlayState().validationCursor != null)
         assertFalse(handler.isMapMode())
+    }
+
+    @Test
+    fun `demo nav rail clicks open inventory context focus talent and validation panels`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 1,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes = listOf(talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name")),
+                        ),
+                    ),
+            )
+
+        input.clickNavRailButton(index = 1)
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.INVENTORY, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.clickNavRailButton(index = 2)
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertEquals(PaneFocusAnchor.CONTEXT, handler.overlayState().paneFocusAnchor)
+        input.clear()
+
+        input.clickNavRailButton(index = 3)
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TALENT_ASSIGN, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.TALENT_ASSIGN, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.clickNavRailButton(index = 4)
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+        input.clear()
+
+        input.clickNavRailButton(index = 0)
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertEquals(PaneFocusAnchor.WORLD, handler.overlayState().paneFocusAnchor)
     }
 
     @Test
@@ -1257,6 +1307,63 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `inventory page up and page down jump to page first slots while map mode keeps diagonal movement`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    List(17) { index ->
+                        InventoryEntrySnapshot(
+                            index = index,
+                            item =
+                                ItemRenderSnapshot(
+                                    baseItemId = "test_item_$index",
+                                    nameKey = "item.healing_potion.name",
+                                    typeId = "CONSUMABLE",
+                                ),
+                        )
+                    },
+            )
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        assertEquals(0, handler.overlayState().inventorySelection)
+        input.clear()
+
+        repeat(3) {
+            input.frame(justPressed = setOf(Keys.DOWN))
+            assertNull(handler.pollCommand(snapshot))
+            input.clear()
+        }
+        assertEquals(3, handler.overlayState().inventorySelection)
+
+        input.frame(justPressed = setOf(Keys.PAGE_DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(8, handler.overlayState().inventorySelection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.PAGE_DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(16, handler.overlayState().inventorySelection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.PAGE_UP))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(8, handler.overlayState().inventorySelection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.PAGE_DOWN))
+        assertEquals(PlayerCommand.Move(Point(1, 1)), handler.pollCommand(snapshot))
+    }
+
+    @Test
     fun `talent assign respec follows focused tree owner`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
@@ -1589,6 +1696,22 @@ class InputHandlerTest {
         val field = com.ktome.game.FoundationGameSession::class.java.getDeclaredField("world")
         field.isAccessible = true
         return field.get(session) as World
+    }
+
+    private fun ReplayInputSource.clickNavRailButton(index: Int) {
+        val layout =
+            DemoShellLayoutSolver.resolve(
+                DemoShellLayoutRequest(
+                    viewportWidth = 1280,
+                    viewportHeight = 800,
+                    cellSize = 32,
+                ),
+            )
+        val bounds = DemoNavRailButtonLayout.resolve(layout.navRail, itemCount = 5)[index]
+        click(
+            x = (bounds.x + bounds.width / 2f).roundToInt(),
+            y = (bounds.y + bounds.height / 2f).roundToInt(),
+        )
     }
 
     private fun snapshotWithLoadout(

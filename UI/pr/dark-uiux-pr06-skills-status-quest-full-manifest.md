@@ -3,7 +3,7 @@
 **阶段**: `dark-uiux-pr06-skills-status-quest-full-manifest`
 **优先级**: `P1`
 **工作量**: `XL`
-**前置条件**: PR-03、PR-04、PR-05 完成。
+**前置条件**: PR-02-1 / PR-02-2 owner evidence、PR-03、PR-04、PR-05 完成。
 **资源生成结论**: 生成 Round 8-9 与返修资源，完成玩家可见 manifest 收口。
 
 ## 0. 开发治理与验收矩阵
@@ -30,7 +30,7 @@ PR-06 close gate 固定为 `final-full`，不得带 `ownerPr` 缩小分母。`ow
 | --- | --- | --- | --- |
 | `UI06-M01` | PR-00 sheet/key registry contract, PR-03/05 rejected QA artifacts | PR-06 owns Round 8-9 and `r09-rejected-polish` resource replacement; PR-07 may only polish non-player-visible leftovers explicitly recorded by PR-06 | contact sheet QA path and raw sheet hash in PR description |
 | `UI06-M02` | PR-04 `TalentSidebarPresenter` state and PR-02 `ui.state.*` glyphs | PR-06 removes old painterly talent/tree icon usage from player-visible talent rows; PR-07 only rechecks final all-screen evidence | `dark-uiux-pr06-talent-icon-rebaseline` |
-| `UI06-M03` | PR-00 `darkManifestCoverageLint` schema and canonical/runtime manifest sync | PR-06 owns final-full denominator freeze and frozen profession exclusions | final-full coverage report path copied into PR description, not committed unless schema is made stable |
+| `UI06-M03` | PR-00 `darkManifestCoverageLint` schema, PR-02-1 / PR-02-2 `ui-demo-new` owner evidence, and canonical/runtime manifest sync | PR-06 owns final-full denominator freeze and frozen profession exclusions | final-full coverage report path copied into PR description, not committed unless schema is made stable |
 | `UI06-M04` | current `TileRenderModel.buildShell` quest summary path and status resolver tests | PR-06 owns quest icon consumer closure; PR-07 may only perform final packaged visual audit | `dark-uiux-pr06-status-quest-skill-overview` screenshot must show status, skill/talent, and quest marker/icon together |
 | `UI06-M05` | PR-03/05 rejected/polish reports listed in §3 | PR-06 decides fixed vs allowed exclusion vs PR-07 polish handoff per row | `r09-rejected-polish` contact sheet QA |
 | `UI06-M06` | `development-governance.md` / `README.md` gate ladder | N/A | N/A |
@@ -62,7 +62,7 @@ canonical artifact 固定为：
 
 ### Implementation Order
 
-1. **Inventory freeze**：生成并提交 `UI/sprite-sheets/dark-v1-final-full-inventory.json`，记录每个 player-visible family 的 `expectedCount`、`sourcePaths`、`ownerPr`、`sheetId`、`consumer`、`consumerTest` 和 `coverageExclusion`。
+1. **Inventory freeze**：生成并提交 `UI/sprite-sheets/dark-v1-final-full-inventory.json`，记录每个 player-visible family 的 `expectedCount`、`sourcePaths`、`ownerPr`、`sheetId`、`consumer`、`consumerTest` 和 `coverageExclusion`；必须包含仍在玩家主路径中的 PR-02、PR-02-1、PR-02-2、PR-03、PR-04、PR-05 owner keys，不能只统计 PR-06 新增 keys。
 2. **Registry and sheet plan**：先补齐 `key-registry.yaml` 与 `sheet-plan.yaml`，再生成 prompt/raw/contact sheet；禁止先切 runtime PNG 再倒填 registry。
 3. **Canonical manifest**：所有 `targetKey -> rawOutputPath` 先改 `assets-src/image/manifests/phase2-visual-manifest.json`，再跑 `syncPhase2Manifests` 更新 runtime manifest。
 4. **Client consumers**：status、talent/tree、quest summary、validation overlay 必须各有实际 consumer 和 focused test；resolver-only 通过不能算 player-visible 完成。
@@ -124,6 +124,7 @@ Cross-PR handoff input：
 
 | Input path | Required fields | PR-06 decision |
 | --- | --- | --- |
+| `UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md` and `UI/manual-records/ui-demo-new-visual-parity.md` | `ui-demo-new-*` golden labels, no right-panel ground loot, no bottom command hints, PR-02-1 / PR-02-2 coverage report paths | final-full inventory 必须把仍被 runtime 消费的 `ui.shell.*` 与 PR-02-2 demo map/actor/prop keys 作为 upstream-covered entries 纳入分母 |
 | `assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl` | `targetKey`, `sheetId`, `qaStatus`, `rejectionReason`, `playerVisible`, `ownerPr`, `evidencePath` | `playerVisible=true` 必须进入 `r09-rejected-polish` 或原 owner sheet 返修；`playerVisible=false` 只能登记为 PR-07 polish handoff |
 | `UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md` | checked contact sheet paths, rejected/pending rows, reviewer, residual risk | 缺记录时先补 PR-06 handoff inventory，不能按记忆决定 item/equipment 返修范围 |
 | `UI/manual-records/dark-uiux-pr03-fallback-key-injection.md` | injected key, fallback key, source/runtime manifest path, result, residual risk | fallback 仍玩家可见时必须进入 PR06 final inventory；纯 injection evidence 不算缺资源 |
@@ -162,7 +163,7 @@ Frozen profession exclusion schema：
 4. 职业树相关 icon 必须覆盖 learned、learnable、locked、active 四态下的可读性。
 5. `icon.tree.*` 是职业树 section/header 小图标，`tree.*` 是 portrait/large visual；两套 key 保留，不在本 PR 合并。PR-06 必须分别列出切换表。
 6. Node row 结构固定为：skill icon = `TalentSidebarLine.iconKey`；state badge = PR-02 `ui.state.locked/learnable/active/reserve.icon`；label/rank/cost/reason = text lines；selection marker = row `selected` / tone。不得把 skill icon、state badge、selected marker 混进同一个 manifest key。
-7. PR-06 可以保留 `[x]`、`[+]`、`[r]`、`[*]` 文本前缀作为 accessibility/debug 辅助，但 primary dark visual cue 必须来自 state badge 与 tone；golden 必须证明 locked、learnable、reserve、active 四态同屏可读。
+7. PR-06 可以在 debug trace 或 accessibility metadata 中保留 `[x]`、`[+]`、`[r]`、`[*]`，但这些 ASCII 前缀不得出现在正式 talent row 可见文本里；primary dark visual cue 必须来自 state badge 与 tone；golden 必须证明 locked、learnable、reserve、active 四态同屏可读。
 
 ## 5. 非目标
 
@@ -174,7 +175,7 @@ Frozen profession exclusion schema：
 ## 6. 验收标准
 
 1. `visual-manifest.json` 玩家可见主路径不再指向旧风格资源，允许仅保留历史/debug resource fallback。
-2. `darkManifestCoverageLint + ManifestResolveTest` 证明 §6.1 中所有 key family 全部可解析并已进入 dark-v1 玩家主路径；未登记 key 不能通过 omission 缩小 final-full 分母。
+2. `darkManifestCoverageLint + ManifestResolveTest` 证明 §6.1 中所有 key family 全部可解析并已进入 dark-v1 玩家主路径；PR-02-1 shell keys 与 PR-02-2 `ui-demo-new` map/actor/prop keys 若仍被 runtime 消费，也必须进入 final-full 分母；未登记 key 不能通过 omission 缩小 final-full 分母。
 3. contact sheet QA report 没有 `pending` 或 `rejected` 的玩家可见资源。
 4. 职业树、HUD、背包、状态栏同时出现时，图标风格一致，不出现明显跨时代资源。
 5. 产出 `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json`。该 report 默认不提交；PR 描述必须记录 repo-relative path、status、expected/covered/missing count 和 errors 摘要。

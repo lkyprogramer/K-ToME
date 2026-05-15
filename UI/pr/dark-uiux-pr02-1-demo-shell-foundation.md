@@ -4,13 +4,13 @@
 **优先级**: `P0`
 **工作量**: `XL`
 **前置条件**: PR-00、PR-01、PR-01-1、PR-02 完成。
-**资源生成结论**: 本 PR 必须新增 Round 1B 最小 shell chrome / nav icon sheet：`r01b-ui-shell-chrome`，只用于 demo 级主界面结构；不生成 PR-03 item、PR-05 map/actor、PR-06 skill/status 资源。
+**资源生成结论**: 本 PR 必须新增 Round 1B 最小 shell chrome / nav icon sheet：`r01b-ui-shell-chrome`，只用于 demo 级主界面结构；`UI-demo-new` 首屏视觉一致性复用并刷新既有 PR-02-2 `r02-ui-demo-ruins-tiles` / `r03-ui-demo-actor-props` cell，不生成 PR-03 item 或 PR-06 skill/status 资源，也不把这些 demo cell 升级为 PR-05 最终 terrain / actor / prop authority。
 
 ## 0. 开发治理与验收矩阵
 
 本 PR 继承 [development-governance.md](./development-governance.md)。执行前先跑 `acceptanceContractLint`，再按 Round 1B resource gate、shell layout、client renderer、golden/manual 和最终 `verifyChanged` 串行闭环；依赖 manifest freshness 的 client 测试必须放在 `syncPhase2Manifests` 之后。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
 
-本 PR 的存在原因：PR-02 已把 UI chrome / HUD / standalone chrome 资源接入主路径，但当前界面仍是旧 text-first shell。`UI/UI-demo.png` 的目标是 icon rail + dominant map stage + right equipment/inventory panels + bottom hero/action/log deck。这个结构必须在 PR-03/05/06 继续填资源前先搭起来，不能等 PR-07 最终 audit 才发现主框架错位。
+本 PR 的存在原因：PR-02 已把 UI chrome / HUD / standalone chrome 资源接入主路径，但当前界面仍是旧 text-first shell。`UI/UI-demo-new.png` 是新的唯一验收图，目标是 icon rail + dominant map stage + right equipment/inscription/backpack/operation panels + bottom hero/action/log deck。这个结构必须在 PR-03/05/06 继续填资源前先搭起来，不能等 PR-07 最终 audit 才发现主框架错位。
 
 ### Acceptance Matrix
 
@@ -18,8 +18,8 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `UI02-1-M01` | §1 demo shell foundation goal | `docs` / `client` | `acceptanceContractLint` | `verifyChanged` | `UI/pr/dark-uiux-pr02-1-demo-shell-foundation.md` | `N/A` |
 | `UI02-1-M02` | §3 shell layout contract | `client` | `DemoShellLayoutTest`, `GameShellLayoutTest`, `InfoSurfaceLayoutTest` | `:client:clientSmoke` | `client/src/main/kotlin/com/ktome/client/render/layout/`, `client/build/reports/tests/` | `required` |
-| `UI02-1-M03` | §4 renderer / layer order contract | `client` | `DemoShellRendererTest`, `TileRendererCanvasTest` | `:client:clientSmoke`, `:client:goldenScreenshot` | `client/build/reports/golden/` labels `dark-uiux-pr02-1-demo-shell-1280x800`, `dark-uiux-pr02-1-demo-shell-inventory-open` | `required` |
-| `UI02-1-M04` | §5 right panel grid scaffold | `client` | `TileRendererCanvasTest`, `ManifestResolveTest` | `:client:clientSmoke`, `:client:goldenScreenshot` | `client/build/reports/golden/` label `dark-uiux-pr02-1-demo-shell-right-panel-grid` | `required` |
+| `UI02-1-M03` | §4 renderer / layer order contract | `client` | `DemoShellRendererTest`, `TileRendererCanvasTest` | `:client:clientSmoke`, `:client:goldenScreenshot` | `client/build/reports/golden/dark-uiux-pr02-1/` labels `ui-demo-new-parity-1672x941`, `ui-demo-new-parity-1280x800` | `required` |
+| `UI02-1-M04` | §5 right panel grid scaffold | `client` | `TileRendererCanvasTest`, `ManifestResolveTest` | `:client:clientSmoke`, `:client:goldenScreenshot` | `client/build/reports/golden/dark-uiux-pr02-1/` label `ui-demo-new-right-panel-grid` | `required` |
 | `UI02-1-M05` | §6 Round 1B shell chrome keys | `assets` / `tools` | `DarkSpriteSheetPipelineScriptTest`, `darkKeyRegistryLint`, `darkSpriteSheetLint`, `spriteSheetMapLint -Pktome.darkUiux.requireFullGrid=true -Pktome.darkUiux.ownerContract=UI/sprite-sheets/owner-contracts/pr02-1-owner-keys.yaml -Pktome.darkUiux.spriteMapReport=assets-src/image/manifests/dark-v1-pr02-1-sprite-map-report.jsonl`, `darkManifestCoveragePr02_1OwnerScope` | `assetLint`, `styleLint`, `manifestLint`, `darkManifestCoveragePr02_1OwnerScope`, `verifyChanged` | `UI/sprite-sheets/owner-contracts/pr02-1-owner-keys.yaml`, `assets-src/image/manifests/dark-v1-pr02-1-sprite-map-report.jsonl`, `build/reports/verification/dark-uiux/dark-v1-manifest-coverage-pr02-1-owner-scope.json` | `required` |
 | `UI02-1-M06` | §7 standalone/menu shell alignment | `client` | `MainMenuScreenTextTest`, `StandaloneScreenLayoutTest` | `:client:clientSmoke`, `:client:goldenScreenshot` | `client/build/reports/golden/` labels `dark-uiux-pr02-1-demo-main-menu`, `dark-uiux-pr02-1-demo-validation-setup` | `required` |
 | `UI02-1-M07` | §8 demo parity evidence | `docs` / `client` / `tools` / `game` | `Phase4V4WhiteboxScenarioCliTest`, `ValidationScenarioRegistryTest`, `ValidationCommandSourceTest`, manual demo-delta checklist | packaged app whitebox | `UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`, `client/build/reports/golden/`, `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/` | `required` |
@@ -40,7 +40,7 @@ freshness 要求：
 
 1. `r01b-ui-shell-chrome` 的 `raw sheet hash`、切分 PNG、`sprite map report`、contact sheet QA、canonical manifest、runtime manifest、owner-scope coverage、golden output 必须来自同一批 `sheet-plan.yaml` / `key-registry.yaml`。
 2. `syncPhase2Manifests` 必须在 `ManifestResolveTest`、client focused evidence、`darkManifestCoveragePr02_1OwnerScope`、`:client:goldenScreenshot` 和最终 `verifyChanged` 之前完成。
-3. `UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md` 必须列出 demo-delta checklist：哪些 demo 要素已达成、哪些剩余差异交给 PR-03/05/06/07。
+3. `UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md` 必须列出 demo-delta checklist：哪些 demo 要素已达成、哪些剩余差异交给 PR-03/05/06/07；不得再把 `map backdrop/art quality deferred` 作为 PR-02-1 可接受差异。
 4. PR close 前读取 `build/verification/verify-changed/full-task-duration-summary.{json,md}`。若该文件不存在，PR 描述写明“本轮未产生 verifyChanged duration summary”，不得伪造耗时基线。
 5. 若本轮 `verifyChanged` 耗时超过最近 dark UI/UX PR 基线 `1.5x`，先执行 doc-vs-implementation self-audit，确认没有把 golden / packaged app 当调试循环，再继续重跑。
 6. 若同一 golden / packaged app 白盒连续失败超过 2 次，先补 `DemoShellLayoutTest` / `TileRendererCanvasTest` 中缺失的数值或 owner-bounds 断言，再重跑 screenshot；不得把 screenshot 当布局调试循环。
@@ -49,7 +49,7 @@ freshness 要求：
 
 canonical artifact 固定为以下 repo-relative 路径族：
 
-1. `UI/UI-demo.png`
+1. `UI/UI-demo-new.png`
 2. `UI/pr/dark-uiux-pr02-1-demo-shell-foundation.md`
 3. `UI/PLAN.md`
 4. `UI/pr/README.md`
@@ -106,13 +106,13 @@ Demo parity 的人工判定主体固定为 PR owner + 至少 1 位非 owner revi
 
 ## 1. 阶段目标
 
-1. 在 PR-02 chrome 已接入的基础上，建立 `UI/UI-demo.png` 对齐的主界面框架。
+1. 在 PR-02 chrome 已接入的基础上，建立 `UI/UI-demo-new.png` 对齐的主界面框架。
 2. 局内主 shell 必须从旧三栏文字布局，升级为 demo-like 结构：
    - 左侧垂直 icon rail。
    - 中央 dominant map stage。
-   - 右侧地面物品、装备、铭刻栏、背包 grid 分区。
-   - 底部英雄卡、快捷技能卡、命令提示、日志 deck。
-3. 当前资源不足的区域使用明确 placeholder / fallback，但空间、层级、交互 hitbox 必须先搭好。
+   - 右侧装备、铭刻栏、背包、操作提示分区；不再展示地面物品区域。
+   - 底部英雄卡、4 个快捷技能卡、命令提示、日志 deck。
+3. 地图舞台空区必须使用 `ui.shell.map_stage.backdrop` 暗色地砖/雾感 shell 背景；最终 terrain/actor/prop 质量仍归 PR-05，但 PR-02-1 不能再用程序化黑底 grid 作为可接受差异。
 4. PR-03/05/06 后续资源进入时，不需要再次推翻 shell 布局。
 5. 输出 demo parity manual record，明确剩余差异归属，避免 PR-07 才发现主结构不对。
 
@@ -123,7 +123,7 @@ Demo parity 的人工判定主体固定为 PR owner + 至少 1 位非 owner revi
 | Added | `client/src/main/kotlin/com/ktome/client/render/layout/DemoShellLayout.kt` | 定义 demo shell typed bounds，不把主界面区域散落在 `TileRenderer` 魔术坐标中 |
 | Modified | `client/src/main/kotlin/com/ktome/client/render/layout/GameShellLayout.kt` | 保留现有非重叠约束，并将 PR-02-1 demo shell 区域接入 layout test |
 | Modified | `client/src/main/kotlin/com/ktome/client/render/layout/InfoSurfaceLayout.kt` | 底部 hero/action/log deck 重新按 demo 分区 |
-| Modified | `client/src/main/kotlin/com/ktome/client/render/TileRenderModel.kt` | 增加 shell scaffold presentation model：nav rail、right panel zones、grid placeholder、hero summary、command hints |
+| Modified | `client/src/main/kotlin/com/ktome/client/render/TileRenderModel.kt` | 增加 shell scaffold presentation model：nav rail、right panel zones、grid placeholder、hero summary、right operation hints |
 | Modified | `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt` | 按 demo shell draw order 重排：backdrop -> map stage -> map layers -> shell chrome -> nav/right/bottom decks -> overlays |
 | Added | `client/src/main/kotlin/com/ktome/client/render/DemoShellRenderer.kt` | 承载 PR-02-1 shell chrome/nav/right/bottom deck 绘制；`TileRenderer` 只负责 orchestration、map layer 调度和 overlay 调度 |
 | Modified | `client/src/main/kotlin/com/ktome/client/screen/FoundationGameScreen.kt` | 使用 demo shell viewport/layout；modal/inventory/talent overlay 通过 `modalSafeBounds` 锚定，保持输入和 session 生命周期不变 |
@@ -170,7 +170,7 @@ Deleted / replaced 清单：
 
 1. **preflight**：读取本文件、[README.md](./README.md)、[development-governance.md](./development-governance.md)、[screen-coverage-matrix.md](./screen-coverage-matrix.md)、[UI/PLAN.md](../PLAN.md)、[UI/ART_STYLE_BIBLE.md](../ART_STYLE_BIBLE.md)，执行 `acceptanceContractLint`。
 2. **migration audit**：执行 `rg 'ui\\.shell\\.' client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt` 与 `rg 'private fun draw[A-Z].*Shell' client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt`。任一命令返回非空时，先迁移到 `DemoShellRenderer.kt` / `DemoShellLayout.kt`；迁移完成标准是两条命令均无输出。
-3. **demo decomposition**：以 `UI/UI-demo.png` 拆分 shell 区域，写入 §3 的 typed region，不允许直接在 `TileRenderer` 写坐标试错。
+3. **demo decomposition**：以 `UI/UI-demo-new.png` 拆分 shell 区域，写入 §3 的 typed region，不允许直接在 `TileRenderer` 写坐标试错。
 4. **layout tests**：新增 `DemoShellLayoutTest`，先证明目标尺寸下 nav/map/right/bottom deck 的 bounds 成立。
 5. **render model**：扩展 `TileRenderModel` / presenter，把现有 snapshot 数据投影到 nav rail、right panel zones、bottom deck；不得在 client 新增规则状态副本。
 6. **renderer integration**：按 §4 draw order 接入 demo shell。所有 text/icon 都必须绘制在对应 content bounds 内。
@@ -190,27 +190,24 @@ PR-02-1 必须新增 `client/src/main/kotlin/com/ktome/client/render/layout/Demo
 | Region | Purpose | Demo 对齐要求 | Content rule |
 | --- | --- | --- | --- |
 | `outerFrame` | 全屏暗黑 UI 框架 | `navRail` 与 `outerFrame` 是 typed regions 中的并列 region；`outerFrame` 提供整屏背景与外缘装饰，但不得绘制覆盖 `navRail.bounds` 的装饰层 | 只放 frame/background，不放文本 |
-| `navRail` | 左侧垂直 icon rail | 类似 demo 左侧窄栏，icon 垂直排列 | icon button + selected state；不放整段任务说明 |
-| `mapStage` | 中央地图主舞台 | 最大视觉面积，地图被暗区包围 | map layer / fog / cursor / loot marker 均在 stage 内 |
-| `rightPanel` | 右侧总面板 | 类似 demo 右侧整列 | 分成 ground loot、equipment、inscriptions、backpack、help |
-| `rightGroundLoot` | 地面物品区 | 顶部小 grid | 可用 PR-02/placeholder icon，不做 PR-03 item icon |
-| `rightEquipment` | 装备区 | 文本 + slot 混合 | slot/hitbox 先稳定，final icon 归 PR-03 |
-| `rightInscriptions` | 铭刻栏区 | 列表/slot 化 | 只做 shell 容器，真实铭文资源归 PR-03/06 |
-| `rightBackpack` | 背包 grid | standard 为 `4x3`，minimum 为 `4x2` | 空、占位和已有物品均有固定 slot |
-| `rightHelpHints` | 右栏短帮助区 | demo 右侧底部的短行键位提示 | 只放 compact hint；完整命令列表仍归 `commandHints` |
-| `heroCard` | 底部英雄信息 | portrait/crest + 名称 + gauges | 使用 `ui.shell.hero_crest.placeholder`；gauge 不压文字 |
-| `actionDeck` | 底部技能快捷栏 | 大卡片技能槽 | 使用现有 active talent slots；final skill icon 归 PR-06 |
-| `commandHints` | 操作提示 | demo 中命令提示区 | `i/g/Ctrl+S/L` 等只作为 text overlay，不烘焙进图 |
+| `navRail` | 左侧垂直 icon rail | 类似 demo 左侧窄栏，icon 垂直排列，且只占地图舞台高度 | icon button + selected state；不放整段任务说明，不贯穿底栏 |
+| `mapStage` | 中央地图主舞台 | 最大视觉面积，地图被暗区包围 | 先绘制 `ui.shell.map_stage.backdrop`，再绘制真实 terrain / props / actors / loot / fog |
+| `rightPanel` | 右侧总面板 | 类似 demo 右侧整列 | 分成 equipment、inscriptions、backpack、operation hints；不再包含 ground loot |
+| `rightEquipment` | 装备区 | icon-first socket 区 | 真实 `WEAPON/OFF_HAND/ARMOR/ACCESSORY` 映射到对应 socket；helmet/cape/gloves/ring/boots 等仅 display-only empty socket，不新增规则层装备槽，不画假装备图标 |
+| `rightInscriptions` | 铭刻栏区 | 双列 8 行 framed rows | `5..8` 为真实可操作铭刻，`9..12` 为空 framed row + 弱热键；文字必须在 row plate 内 |
+| `rightBackpack` | 背包 grid | 当前页 `4x2` | page size 固定 8；超过 8 件显示 `1/N` 与 PgUp/PgDn 提示 |
+| `rightOperationHints` | 右栏短帮助区 | demo 右侧底部操作提示 | 唯一可见快捷键提示区；presentation 文案源可复用，但底部不再绘制独立 command hints 区 |
+| `heroCard` | 底部英雄信息 | crest + 名称 + 层数/HP/resource/attack/defense | 使用 `ui.shell.hero_crest.placeholder`；替代独立 bottom stats 卡 |
+| `actionDeck` | 底部技能快捷栏 | 大卡片技能槽 | 固定支持 `PLAYER_ACTIVE_TALENT_SLOT_COUNT = 4`；minimum profile 可 `2x2` |
 | `logDeck` | 日志区 | 独立可读 message area | 中文长句 wrap，不覆盖 hotbar/hero card |
-| `bottomStatsSummary` | 底部右侧紧凑摘要 | 层数、HP、resource、attack、defense 这类 demo 右下信息块 | 与 `logDeck` 同高，不重叠 `actionDeck` / `commandHints` |
 | `modalSafeBounds` | overlay/modal 安全区 | modal 不遮挡关键 HUD 时仍可读 | 几何中心固定为 `mapStage.center`；bounds 必须被 clamp 到 nav/right/bottom chrome 之外 |
 
 ### 3.1.1 Layout Ownership Matrix
 
 | Typed region | Layout owner | Test owner | Boundary rule |
 | --- | --- | --- | --- |
-| `outerFrame`, `navRail`, `mapStage`, `rightPanel`, `rightGroundLoot`, `rightEquipment`, `rightInscriptions`, `rightBackpack`, `rightHelpHints`, `modalSafeBounds` | `DemoShellLayout` | `DemoShellLayoutTest` | demo shell 几何权威只在 `DemoShellLayout`，不得回落到 `TileRenderer` 私有坐标 |
-| `heroCard`, `actionDeck`, `commandHints`, `logDeck`, `bottomStatsSummary` | `InfoSurfaceLayout` | `InfoSurfaceLayoutTest` | bottom deck 五分区由 `InfoSurfaceLayout` 计算，`DemoShellLayout` 只消费其外层 bounds |
+| `outerFrame`, `navRail`, `mapStage`, `rightPanel`, `rightEquipment`, `rightInscriptions`, `rightBackpack`, `rightOperationHints`, `modalSafeBounds` | `DemoShellLayout` | `DemoShellLayoutTest` | demo shell 几何权威只在 `DemoShellLayout`，不得回落到 `TileRenderer` 私有坐标 |
+| `heroCard`, `actionDeck`, `logDeck` | `InfoSurfaceLayout` | `InfoSurfaceLayoutTest` | bottom deck 三分区由 `InfoSurfaceLayout` 计算，`DemoShellLayout` 只消费其外层 bounds；footer hint 兼容 bounds 必须保持零宽 |
 | `viewportSafeBounds`, PR-01 / PR-01-1 legacy non-demo shell compatibility | `GameShellLayout` | `GameShellLayoutTest` | `GameShellLayout` 只保留兼容与安全边界断言，不拥有 PR-02-1 demo typed regions |
 
 ### 3.2 Required Size Profiles
@@ -219,7 +216,7 @@ PR-02-1 必须新增 `client/src/main/kotlin/com/ktome/client/render/layout/Demo
 | --- | ---: | --- |
 | standard | `1280x800` | 所有 demo shell regions 同屏可见，rightPanel 不压 mapStage，bottom deck 不压 map |
 | minimum | `1024x768` | rightPanel 可收窄，log/command 可减行，但 nav/map/right/bottom 结构不消失 |
-| demo-aspect | `1672x941` equivalent | golden/headless layout 可验证 demo aspect 下结构比例接近 `UI/UI-demo.png` |
+| demo-aspect | `1672x941` equivalent | golden/headless layout 可验证 demo aspect 下结构比例接近 `UI/UI-demo-new.png` |
 
 硬约束：
 
@@ -232,20 +229,22 @@ PR-02-1 必须新增 `client/src/main/kotlin/com/ktome/client/render/layout/Demo
 | `rightPanel.width / viewport.width` | `0.25..0.32` | `0.27..0.35` | `0.24..0.30` | `DemoShellLayoutTest` |
 | `bottomDeck.height` | `>= 180 px` | `>= 164 px` | `>= 208 px` | `InfoSurfaceLayoutTest` |
 | `bottomDeck.height / viewport.height` | `>= 0.22` | `>= 0.20` | `>= 0.22` | `InfoSurfaceLayoutTest` |
-| `heroCard.width` | `>= 240 px` | `>= 200 px` | `>= 280 px` | `InfoSurfaceLayoutTest` |
+| `heroCard.width` | `>= 300 px` | `>= 260 px` | `>= 420 px` | `InfoSurfaceLayoutTest` |
 | `hero portrait / crest bounds` | `>= 96x96 px` | `>= 80x80 px` | `>= 108x108 px` | `TileRendererCanvasTest` |
 | `right slot side` | `>= 48 px` | `>= 40 px` | `>= 56 px` | `TileRendererCanvasTest` |
-| `rightBackpack grid` | `>= 4 cols x 3 rows` | `>= 4 cols x 2 rows` | `>= 4 cols x 3 rows` | `TileRendererCanvasTest` |
+| `rightEquipment grid` | `2 cols x 4 rows + boots centered, 9 socket bounds` | same | same | `DemoShellLayoutTest`, `TileRendererCanvasTest` |
+| `rightInscriptions grid` | `2 cols x 4 rows` | same | same | `DemoShellLayoutTest`, `TileRendererCanvasTest` |
+| `rightBackpack grid` | `4 cols x 2 rows` | same | same | `TileRendererCanvasTest` |
 | `modalSafeBounds.width / viewport.width` | `0.55..0.80` | `0.55..0.85` | `0.50..0.78` | `DemoShellLayoutTest` |
 | `modalSafeBounds.height / viewport.height` | `0.55..0.78` | `0.55..0.85` | `0.55..0.78` | `DemoShellLayoutTest` |
 
 附加硬约束：
 
-1. `bottomDeck.height` 必须能容纳 hero card、action deck、command hints、log deck、bottom stats 五类内容，不能用裸 footer 代替。
-2. `rightBackpack`、`rightGroundLoot`、`rightEquipment`、`rightInscriptions` 必须以 slot/grid bounds 表达，不能只返回 text baseline。
+1. `bottomDeck` 必须从窗口左边开始、到右栏左边结束，并能容纳 hero card、action deck、log deck 三类内容，不能用裸 footer 代替；可见快捷键说明只能出现在右栏 `operation hints`。
+2. `rightBackpack`、`rightEquipment`、`rightInscriptions` 必须以 slot/grid bounds 表达，不能只返回 text baseline。
 3. 所有 region 都必须有 content bounds；text/icon 不允许压到 frame edge。
 4. `modalSafeBounds` 必须与 `mapStage`、`rightPanel`、`bottomDeck` 同源计算；不得在 `FoundationGameScreen` 里单独维护第二套 modal 坐标。
-5. `modalSafeBounds.center == mapStage.center`；`modalSafeBounds.left >= navRail.right`，`modalSafeBounds.right <= rightPanel.left`，`modalSafeBounds.bottom <= bottomDeck.top`，且不得与 `navRail`、`rightPanel`、`bottomDeck` 任一区域相交。
+5. `modalSafeBounds.center == mapStage.center`；`modalSafeBounds.left >= navRail.right`，`modalSafeBounds.right <= rightPanel.left`，`modalSafeBounds.bottom >= bottomDeck.top`，且不得与 `navRail`、`rightPanel`、`bottomDeck` 任一区域相交。
 
 ## 4. Renderer And Layer Order Contract
 
@@ -259,23 +258,23 @@ PR-02-1 必须新增 `client/src/main/kotlin/com/ktome/client/render/layout/Demo
 | ---: | --- |
 | 1 | clear / dark backdrop |
 | 2 | `outerFrame` / shell background |
-| 3 | `mapStage` frame and map-stage scrim |
+| 3 | `mapStage` frame and manifest-backed map-stage backdrop / scrim |
 | 4 | terrain base |
 | 5 | props / decals |
 | 6 | actors / player indicator |
 | 7 | ground loot markers |
 | 8 | fog / light masks recording marker; no-op until PR-05 implements lighting/fog art |
+| 8a | active cursor / combat feedback; still bounded to `mapStage` and must remain before shell chrome |
 | 9 | nav rail chrome + nav icons |
 | 10 | right panel chrome + zones + grid placeholders |
 | 11a | bottom hero card |
 | 11b | bottom action deck |
-| 11c | bottom command hints |
-| 11d | bottom log deck + bottom stats summary |
+| 11c | bottom log deck |
 | 12 | tooltip / modal backdrop |
 | 13 | modal / explicit tooltip |
 | 14 | validation overlay / debug-only evidence markers |
 
-PR-02-1 不要求实现复杂动态光照，但必须预留 `mapStage` 内的 fog/light 层，不得把后续 PR-05 lighting/fog 只能塞进 UI panel 背后。
+PR-02-1 不要求实现复杂动态光照，但必须先用 `ui.shell.map_stage.backdrop` 承担 UI-demo-new 首屏暗场质感，并预留 `mapStage` 内的 fog/light 层，不得把后续 PR-05 lighting/fog 只能塞进 UI panel 背后。
 
 ### 4.2 Rendering Rules
 
@@ -297,35 +296,30 @@ PR-02-1 不要求实现复杂动态光照，但必须预留 `mapStage` 内的 fo
 
 右侧面板必须从上到下稳定分区：
 
-1. 地面物品：标题、当前区域/楼层摘要、至少 3 个 compact slots。
-2. 装备：武器、副手、护甲三行摘要 + 右侧装备 slot grid。
-3. 铭刻栏：至少 4 行 slot，对应铭刻槽位编号 `5..8`；编号 `1..4` 保留给 bottom `actionDeck` 的 active talent slots。
-4. 背包：固定 grid，空格、占位和已有物品都有 slot bounds。
-5. 帮助：右栏短行 command hints，可换行但不压 backpack grid；完整 command list 仍在 bottom `commandHints`。
+1. 装备：icon-first sockets；真实 `WEAPON/OFF_HAND/ARMOR/ACCESSORY` 只映射到 client presentation socket，helmet/cape/gloves/ring/boots 等为 display-only empty socket，不新增规则层装备槽，也不画假装备 icon。
+2. 铭刻栏：`5..12` 双列 framed rows；`5..8` 是当前可操作铭刻，`9..12` 为空 framed row + 弱热键，禁止用假图标、假名称或 `预留` 文案撑满。
+3. 背包：固定当前页 `4x2` page grid，空格和已有物品都有 slot bounds；首屏真实有 8 件时不显示页码，翻页 fixture 另证第 9 件以后可达。
+4. 操作提示：右栏短行 operation hints，可换行但不压 backpack grid；底部不得再绘制独立 `commandHints` 区。
 
 Slot 几何合同：
 
 | rightPanel section | Minimum structure | slot side @1280 | slot side @1024 | Required assertion |
 | --- | --- | ---: | ---: | --- |
-| `rightGroundLoot` | `3` compact slots in one row | `>= 48 px` | `>= 40 px` | `TileRendererCanvasTest` |
-| `rightEquipment` | `weapon/offhand/armor` text rows + `4` visual slots | `>= 48 px` | `>= 40 px` | `TileRendererCanvasTest` |
-| `rightInscriptions` | `4 rows x 1 col`, labels `5..8` remain visible | `>= 48 px` | `>= 40 px` | `TileRendererCanvasTest` |
-| `rightBackpack` | `4 cols x 3 rows` standard, `4 cols x 2 rows` minimum | `>= 48 px` | `>= 40 px` | `TileRendererCanvasTest` |
-| `rightHelpHints` | compact text lines inside section bounds | `N/A` | `N/A` | `TileRendererCanvasTest` text bounds |
+| `rightEquipment` | `2 cols x 4 rows + boots centered` visual arrangement, `9` socket bounds | `>= 42 px` | `>= 38 px` | `DemoShellLayoutTest`, `TileRendererCanvasTest` |
+| `rightInscriptions` | `2 cols x 4 rows`, row backing + icon/slot + `5..12` labels remain visible | `>= 48 px` | `>= 40 px` | `DemoShellLayoutTest`, `TileRendererCanvasTest` |
+| `rightBackpack` | `4 cols x 2 rows` current page, plus pager footer | `>= 42 px` | `>= 38 px` | `TileRendererCanvasTest` |
+| `rightOperationHints` | compact text lines inside section bounds | `N/A` | `N/A` | `TileRendererCanvasTest` text bounds |
 
-PR-02-1 的 right panel grid 只允许使用 PR-02 `ui.frame.slot.*` slot chrome、空槽 scrim/fill、已有文本 count 和本 PR 定义的 `ui.shell.right_section.divider`。所有 `ui.shell.*` key 都只能用于 §6.2 表格 `consumer` 列声明的 typed region；任何跨 region 使用 `ui.shell.*` key 的行为均为失败。`ui.shell.hero_crest.placeholder` 只能用于 `heroCard`，`ui.shell.nav.*` 只能用于 `navRail`，不得作为地面物品、装备、铭刻、背包 slot 的 placeholder。PR-03 必须在这个 scaffold 上替换 item-specific icon、quality、stack count、shop affordance。
+PR-02-1 的 right panel grid 只允许使用 PR-02 `ui.frame.slot.*` slot chrome、空槽 scrim/fill、已有文本 count 和本 PR 定义的 `ui.shell.right_section.divider`。所有 `ui.shell.*` key 都只能用于 §6.2 表格 `consumer` 列声明的 typed region；任何跨 region 使用 `ui.shell.*` key 的行为均为失败。`ui.shell.hero_crest.placeholder` 只能用于 `heroCard`，`ui.shell.nav.*` 只能用于 `navRail`，不得作为装备、铭刻、背包 slot 的 placeholder。PR-03 必须在这个 scaffold 上替换 item-specific icon、quality、stack count、shop affordance。
 
 ### 5.2 Bottom Deck Scaffold
 
 底部必须从左到右稳定分区：
 
 1. hero card：职业/名称、层数、HP/resource gauges、attack/defense summary、portrait/crest placeholder；portrait/crest 不得小于 §3.2 的尺寸下限。
-2. action deck：`PLAYER_ACTIVE_TALENT_SLOT_COUNT` 对应的 card slots；当前合同为 `4`。`cardCount in 1..4` 时，单卡宽度固定且 `>= 96 px`，slot 间距固定且 `>= 12 px`，整组在 `actionDeck` 内水平居中；`cardCount` 超出 `1..4` 时 fail layout test。
-3. command hints：背包、拾取、保存、装备调整等操作提示，位于 `actionDeck` 右侧 / `logDeck` 左侧，作为 text overlay。
-4. log deck：近期日志，多行 wrap，和 command hints 分区明确。
-5. bottom stats summary：层数、生命、资源、耐力、攻击/防御紧凑摘要，位于底部右侧，不侵占 `logDeck` 正文。
-
-禁止把 HP bar 绘在 text baseline 上；禁止把 command hints 裸贴窗口底边；禁止 action card 文字超出 slot frame。
+2. action deck：`PLAYER_ACTIVE_TALENT_SLOT_COUNT` 对应的 card slots；当前合同为 `4`，不得再按旧 demo 只画 3 个技能。standard 与 demo-aspect 断点使用一行 4 slots；minimum 断点允许用 `2 x 2` 保持 log/command 可读；slot side 下限分别为 minimum `72 px`、standard `68 px`、demo-aspect `96 px`。
+3. log deck：近期日志，多行 wrap，直接接在 action deck 右侧；底部不得再保留独立 command hints 区。
+层数、生命、资源、攻击/防御紧凑摘要统一归 `heroCard`，禁止再新增独立 `bottomStatsSummary` 卡挤压日志区。禁止把 HP bar 绘在 text baseline 上；禁止把 command hints 裸贴窗口底边；禁止 action card 文字超出 slot frame。
 
 ### 5.3 Left Navigation Rail Scaffold
 
@@ -385,7 +379,7 @@ PR-02-1 实施时必须同步修改 coverage routing：
 | 3 | 0 | `ui.shell.nav.scroll` | `icon` | `dark-v1/ui/ui_shell_nav_scroll.png` | `rolled parchment scroll nav icon with dark wax seal and no letters` | `ui.hud.log_marker.icon` | `N/A` | nav rail log/scroll button | `TileRendererCanvasTest` |
 | 3 | 1 | `ui.shell.nav.book` | `icon` | `dark-v1/ui/ui_shell_nav_book.png` | `closed spellbook nav icon with black cover, brass clasp, and cyan edge glint` | `ui.control.copy.icon` | `N/A` | nav rail talent/book button | `TileRendererCanvasTest` |
 | 3 | 2 | `ui.shell.nav.gear` | `icon` | `dark-v1/ui/ui_shell_nav_gear.png` | `forged gear nav icon in dark iron with worn teeth and ember center` | `ui.hud.warning.icon` | `N/A` | nav rail settings/accessibility button | `TileRendererCanvasTest` |
-| 3 | 3 | `reserved` | `N/A` | `N/A` | `N/A` | `N/A` | `N/A` | `N/A` | `N/A` |
+| 3 | 3 | `ui.shell.map_stage.backdrop` | `ui_frame` | `dark-v1/ui/ui_shell_map_stage_backdrop.png` | `near-black radial dungeon fog backdrop for map-stage empty space, soft smoky vignette, subtle soot scratches, no visible tile grid, no brick wall, no actor, no item, no readable text, shell presentation only` | `ui.frame.panel.body` | `N/A` | map stage dark fog backdrop | `TileRendererCanvasTest`, `DemoShellRendererTest` |
 
 Column ownership:
 
@@ -403,11 +397,11 @@ Column ownership:
 
 | sheetId | grid | direct cells | alias cells | reserved cells | total slots |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `r01b-ui-shell-chrome` | `4x4` | `15` | `0` | `1` | `16` |
+| `r01b-ui-shell-chrome` | `4x4` | `16` | `0` | `0` | `16` |
 
 `r01b-ui-shell-chrome` 是 PR-02-1 的 mandatory sheet。未生成、未切分、未进入 canonical/runtime manifest、未通过 owner-scope coverage 时，本 PR 不能进入 client evidence 阶段。禁止只登记 owner keys 而不生成/slice/cover sheet。
 
-reserved cell 固定留给后续 `ui.shell.quest_tracker.placeholder`。PR-02-1 不消费该 cell；下一个 dark UI/UX PR 引入该 key 时必须优先填入此 reserved cell，再考虑新增 sheet。
+`ui.shell.map_stage.backdrop` 只解决 PR-02-1 新 DEMO 所需的 shell 舞台暗场质感，不是 `tileset.*`，也不承担 PR-05 terrain / actor / prop / VFX 的最终美术质量。renderer 只能通过 manifest key 消费它，禁止写 raw path 或把它作为地图规则资源。
 
 `fallbackKey` 只用于 manifest/resolver 降级安全，不构成 PR-02-1 视觉完成证据。manual record 中 `leftIconRail` 只有在五个 `ui.shell.nav.*` runtime PNG 都被实际消费且视觉可区分时才能写 `pass`；使用 fallback 渲染 nav icon 时必须写 `fail`，并返回 §6 resource gate 修复。
 
@@ -431,19 +425,20 @@ Standalone minimum geometry:
 
 ## 8. Demo Parity Manual Record
 
-新增 `UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`。它不是普通测试日志，必须以 `UI/UI-demo.png` 为参照输出 demo-delta checklist。
+新增 `UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`。它不是普通测试日志，必须以 `UI/UI-demo-new.png` 为参照输出 demo-delta checklist。
 
 ### 8.1 Required Screenshots
 
 | label | required surface | golden artifact | packaged/manual artifact |
 | --- | --- | --- | --- |
-| `dark-uiux-pr02-1-demo-shell-1280x800` | 标准局内 shell | `client/build/reports/golden/dark-uiux-pr02-1-demo-shell-1280x800.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-1280x800.png` |
-| `dark-uiux-pr02-1-demo-shell-inventory-open` | inventory modal open state | `client/build/reports/golden/dark-uiux-pr02-1-demo-shell-inventory-open.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-inventory-open.png` |
-| `dark-uiux-pr02-1-demo-shell-right-panel-grid` | 右侧装备/背包/地面物品 scaffold | `client/build/reports/golden/dark-uiux-pr02-1-demo-shell-right-panel-grid.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-right-panel-grid.png` |
-| `dark-uiux-pr02-1-demo-main-menu` | main menu / standalone shell alignment | `client/build/reports/golden/dark-uiux-pr02-1-demo-main-menu.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-main-menu.png` |
-| `dark-uiux-pr02-1-demo-validation-setup` | validation setup list/detail/footer alignment | `client/build/reports/golden/dark-uiux-pr02-1-demo-validation-setup.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-validation-setup.png` |
+| `ui-demo-new-parity-1672x941` | demo-aspect 局内 shell | `client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1672x941.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-parity-1672x941.png` |
+| `ui-demo-new-parity-1280x800` | 标准局内 shell | `client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1280x800.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-parity-1280x800.png` |
+| `ui-demo-new-right-panel-grid` | 右侧装备/铭刻/背包/操作提示 scaffold | `client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-right-panel-grid.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-right-panel-grid.png` |
+| `ui-demo-new-bottom-deck-no-command-hints` | 底部 hero/action/log deck | `client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-bottom-deck-no-command-hints.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-bottom-deck-no-command-hints.png` |
+| `ui-demo-new-inventory-page-1` | inventory pagination page 1 | `client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-inventory-page-1.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-inventory-page-1.png` |
+| `ui-demo-new-inventory-page-2` | inventory pagination page 2 | `client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-inventory-page-2.*` | `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-inventory-page-2.png` |
 
-以上 5 个 label 是 golden/manual 的主截图标签。`dark-uiux-pr02-1-demo-shell-nav-rail-crop` 与 `dark-uiux-pr02-1-demo-shell-bottom-deck-crop` 是 packaged manual supporting evidence，只用于放大核验 nav icon 差异和 bottom deck 排版，不进入 golden label 分母。
+以上 label 是 golden/manual 的主截图标签。`ui-demo-new-nav-rail-crop` 与 `ui-demo-new-map-stage-crop` 允许复用同一帧作为 crop evidence，只用于放大核验 nav icon 和 map-stage 细节，不需要重复生成独立内容帧。
 
 ### 8.1.1 Packaged Whitebox Scenario Contract
 
@@ -468,14 +463,15 @@ Standalone minimum geometry:
 
 必须生成的 evidence 文件名：
 
-1. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-1280x800.png`
-2. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-inventory-open.png`
-3. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-right-panel-grid.png`
-4. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-main-menu.png`
-5. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-validation-setup.png`
-6. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-nav-rail-crop.png`
-7. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-bottom-deck-crop.png`
-8. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-foundation-app.log`
+1. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-parity-1672x941.png`
+2. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-parity-1280x800.png`
+3. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-right-panel-grid.png`
+4. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-bottom-deck-no-command-hints.png`
+5. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-inventory-page-1.png`
+6. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-inventory-page-2.png`
+7. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-nav-rail-crop.png`
+8. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-map-stage-crop.png`
+9. `build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-foundation-app.log`
 
 实现文件与测试：
 
@@ -495,16 +491,16 @@ manual record 必须逐项记录：
 | --- | --- | --- | --- |
 | left icon rail | must be structurally present and must use `ui.shell.nav.*` keys | machine + manual | `DemoShellLayoutTest`, screenshot |
 | dominant center map stage | must be structurally present and satisfy §3.2 map ratios | machine + manual | `DemoShellLayoutTest`, screenshot |
-| right ground loot slots | must be structurally present; final item art may defer to PR-03 | machine | `TileRendererCanvasTest` |
-| right equipment slots | must be structurally present; final item art may defer to PR-03 | machine | `TileRendererCanvasTest` |
-| right inscription rows/slots | must be structurally present; final inscription art may defer to PR-03/06 | machine | `TileRendererCanvasTest` |
+| right equipment sockets | must be structurally present; final item art may defer to PR-03 | machine | `DemoShellLayoutTest`, `TileRendererCanvasTest` |
+| right inscription rows/slots | must be structurally present as `5..12` framed rows; final inscription art may defer to PR-03/06 | machine | `DemoShellLayoutTest`, `TileRendererCanvasTest` |
 | backpack grid | must be structurally present and satisfy §5.1 slot geometry | machine | `TileRendererCanvasTest` |
+| right operation hints | must be inside a shell section and share command presentation text | machine + manual | `TileRendererCanvasTest`, screenshot |
 | bottom hero card | must be structurally present; `ui.shell.hero_crest.placeholder` must meet §3.2 minimum size | machine + manual | `InfoSurfaceLayoutTest`, screenshot |
 | bottom action deck | must be structurally present; final skill art may defer to PR-06 | machine | `InfoSurfaceLayoutTest` |
-| command hints | must be inside a shell plate, not naked footer text | machine + manual | `TileRendererCanvasTest`, screenshot |
+| bottom command hints | must not render as a visible bottom region; shortcuts live only in right operation hints | machine + manual | `DemoShellRendererTest`, `TileRendererCanvasTest`, screenshot |
 | log deck | must be inside its own deck and readable in zh-CN | machine + manual | `TileRendererCanvasTest`, screenshot |
-| bottom stats summary | must be structurally present and not overlap `logDeck` | machine | `InfoSurfaceLayoutTest` |
-| map tile/actor/fog art quality | allowed remaining gap for PR-05 | manual | `remaining gap` table |
+| map stage backdrop | `ui.shell.map_stage.backdrop` must render inside mapStage before terrain | machine + manual | `DemoShellRendererTest`, `TileRendererCanvasTest`, screenshot |
+| UI-demo-new first-screen terrain/actor/prop readability | must be acceptable through PR-02-2 demo keys; broader content art remains PR-05 | machine + manual | `ManifestResolveTest`, `TileRendererCanvasTest`, screenshot |
 | item/icon art quality | allowed remaining gap for PR-03 | manual | `remaining gap` table |
 | final all-screen polish | allowed remaining gap for PR-07 | manual | `remaining gap` table |
 
@@ -523,12 +519,12 @@ Blocking finding examples:
 1. `DemoShellLayoutTest` proves `1280x800`、`1024x768`、demo aspect ratio 下 nav/map/right/bottom regions 不重叠。
 2. `TileRendererCanvasTest` proves left icon rail、right panel zones、backpack grid、hero card、action deck、log deck all draw inside owner bounds.
 3. `TileRendererCanvasTest` proves right panel no longer relies on pure text list as the only equipment/backpack representation.
-4. `InfoSurfaceLayoutTest` proves bottom hero/action/log/command decks do not overlap and remain readable in zh-CN.
+4. `InfoSurfaceLayoutTest` proves bottom hero/action/log decks do not overlap and remain readable in zh-CN; footer hint compatibility bounds stay zero-width.
 5. `MainMenuScreenTextTest` / `StandaloneScreenLayoutTest` prove main menu and standalone shared chrome did not regress.
 6. `darkManifestCoveragePr02_1OwnerScope` reports non-empty `ownerExpectedKeys`, `ownerCoveredKeys == ownerExpectedKeys`, `ownerMissingKeys=[]`, `ownerUnexpectedKeys=[]`, `ownerOldStyleKeys=[]`.
 7. `goldenScreenshot` contains PR-02-1 labels and stable hashes.
 8. Packaged app whitebox captures standard shell and inventory/right-panel grid evidence.
-9. Manual record states the shell is demo-like in structure and lists remaining PR-03/05/06/07 gaps.
+9. Manual record states the shell is demo-like in structure, confirms there is no duplicate bottom command hint region, and does not carry UI-demo-new first-screen map backdrop / actor / stairs quality as PR-05 deferred.
 10. `DemoShellLayoutTest` must assert §3.2 中由 `DemoShellLayout` 拥有的数值约束：mapStage ratios、navRail max width/ratio、rightPanel width band、modalSafeBounds width/height bands、`modalSafeBounds.center == mapStage.center`、且 `modalSafeBounds` 不与 nav/right/bottom regions 相交。
 11. `InfoSurfaceLayoutTest` must assert §3.2 / §5.2 中由 `InfoSurfaceLayout` 拥有的 bottomDeck height/ratio、hero card width、actionDeck card width `>= 96 px`、fixed slot gap `>= 12 px`、centered group alignment for `cardCount in 1..4`。
 12. `DemoShellRendererTest` must assert `shellKeysBindToConsumerRegionOnly`: every `ui.shell.*` key is drawn only in the §6.2 `consumer` region and in the expected draw step; it must fail if any shell key is reused as an unrelated item/grid placeholder.
@@ -610,8 +606,8 @@ Manual whitebox must capture:
 1. Standard in-game shell at `1280x800`.
 2. Inventory modal open state.
 3. Right panel grid open state.
-4. Right panel focused evidence for ground loot, equipment, inscriptions, backpack, and right help hints.
-5. Bottom deck focused evidence for hero card, action deck, command hints, log deck, and bottom stats summary.
+4. Right panel focused evidence for equipment sockets, `5..12` inscription rows, `4x2` backpack page, and operation hints.
+5. Bottom deck focused evidence for hero card, action deck, log deck, and absence of a duplicate bottom command-hints block.
 6. Main menu / standalone shell alignment.
 7. Validation setup list/detail/footer alignment.
 8. Screenshot metadata with repo-relative evidence paths in manual record.
@@ -620,12 +616,12 @@ Manual whitebox detailed checklist:
 
 | Step | Surface | Required capture | Pass condition | Fail condition |
 | ---: | --- | --- | --- | --- |
-| 1 | standard shell | `dark-uiux-pr02-1-demo-shell-1280x800.png` | `navRail` is icon-first, `mapStage` is visually dominant, right and bottom decks match §3.2 ratios | left rail shows task paragraph as primary UI; map looks secondary; side/bottom text overlaps chrome |
-| 2 | map stage | same screenshot plus bounds overlay metadata | map terrain, actor, cursor, loot marker remain inside `mapStage`; fog/light no-op layer does not reorder shell | map tiles draw behind right/bottom chrome; cursor exits stage; loot marker exits stage |
-| 3 | nav rail | `dark-uiux-pr02-1-demo-shell-nav-rail-crop.png` | five nav icons are visible: compass, bag, scroll, book, gear; selected state uses `ui.shell.nav_button.active` | any icon missing, text substitutes icon, selected state depends only on color |
-| 4 | right panel | `dark-uiux-pr02-1-demo-shell-right-panel-grid.png` | ground loot has 3 slots; equipment has 3 text rows plus 4 visual slots; inscriptions show `5..8` rows; backpack grid meets §5.1 | equipment/backpack is only a long text list; slot size below §5.1; right help overlaps backpack |
-| 5 | bottom deck | `dark-uiux-pr02-1-demo-shell-bottom-deck-crop.png` | hero crest meets §3.2; action cards align to `PLAYER_ACTIVE_TALENT_SLOT_COUNT`; command hints sit between action deck and log; bottom stats does not overlap log | gauges sit on text baseline; command hints touch window edge; log covers hotbar/stats |
-| 6 | inventory/modal | `dark-uiux-pr02-1-demo-shell-inventory-open.png` | modal is clamped to `modalSafeBounds`; right panel grid remains readable; footer/log not occluded | modal uses window-center magic coordinate; modal covers nav rail and bottom log without clamp |
+| 1 | standard shell | `ui-demo-new-parity-1280x800.png` | `navRail` is icon-first, `mapStage` is visually dominant, right and bottom decks match §3.2 ratios | left rail shows task paragraph as primary UI; map looks secondary; side/bottom text overlaps chrome |
+| 2 | map stage | same screenshot plus bounds overlay metadata | `ui.shell.map_stage.backdrop` fills map-stage empty space before terrain; map terrain, actor, cursor, loot marker remain inside `mapStage` | map empty space is black procedural grid; map tiles draw behind right/bottom chrome; cursor exits stage; loot marker exits stage |
+| 3 | nav rail | `ui-demo-new-nav-rail-crop.png` | five nav icons are visible: compass, bag, scroll, book, gear; selected state uses `ui.shell.nav_button.active` | any icon missing, text substitutes icon, selected state depends only on color |
+| 4 | right panel | `ui-demo-new-right-panel-grid.png` | no ground loot section; equipment sockets are icon-first; inscriptions show `5..12` framed rows; backpack grid is `4x2` current page; operation hints stay in their section | ground loot section still appears; equipment/backpack is only a long text list; inscription text floats without row backing; operation hints overlap backpack |
+| 5 | bottom deck | `ui-demo-new-bottom-deck-no-command-hints.png` | hero crest meets §3.2; hero card contains floor/HP/resource/attack/defense; action cards align to `PLAYER_ACTIVE_TALENT_SLOT_COUNT`; log starts directly after action deck with no duplicate command hint region | gauges sit on text baseline; command hints appear as a separate bottom region; log covers hotbar; independent stats card squeezes log |
+| 6 | inventory/modal | `ui-demo-new-inventory-page-1.png`, `ui-demo-new-inventory-page-2.png` | modal/page evidence is clamped to `modalSafeBounds`; right panel grid remains readable; footer/log not occluded; pagination does not truncate item 9+ | modal uses window-center magic coordinate; modal covers nav rail and bottom log without clamp; pagination hides item 9+ |
 | 7 | main menu | `dark-uiux-pr02-1-demo-main-menu.png` | title zone, primary actions, footer help and focus state fit §7 geometry | page still looks like debug text menu; footer/help text exits chrome content |
 | 8 | validation setup | `dark-uiux-pr02-1-demo-validation-setup.png` | list row height/gap and detail panel match §7; footer help stays inside content slot | scenario description overlaps footer; selection/focus state unclear |
 
@@ -644,20 +640,22 @@ demoParityVerdict: "pass | fail"
 blockingFindings: []
 screenshotLabelCoverage:
   required:
-    - label: "dark-uiux-pr02-1-demo-shell-1280x800"
+    - label: "ui-demo-new-parity-1672x941"
       sources: ["golden", "packaged"]
-    - label: "dark-uiux-pr02-1-demo-shell-inventory-open"
+    - label: "ui-demo-new-parity-1280x800"
       sources: ["golden", "packaged"]
-    - label: "dark-uiux-pr02-1-demo-shell-right-panel-grid"
+    - label: "ui-demo-new-right-panel-grid"
       sources: ["golden", "packaged"]
-    - label: "dark-uiux-pr02-1-demo-main-menu"
+    - label: "ui-demo-new-bottom-deck-no-command-hints"
       sources: ["golden", "packaged"]
-    - label: "dark-uiux-pr02-1-demo-validation-setup"
+    - label: "ui-demo-new-inventory-page-1"
       sources: ["golden", "packaged"]
-    - label: "dark-uiux-pr02-1-demo-shell-nav-rail-crop"
-      sources: ["packaged"]
-    - label: "dark-uiux-pr02-1-demo-shell-bottom-deck-crop"
-      sources: ["packaged"]
+    - label: "ui-demo-new-inventory-page-2"
+      sources: ["golden", "packaged"]
+    - label: "ui-demo-new-nav-rail-crop"
+      sources: ["golden", "packaged"]
+    - label: "ui-demo-new-map-stage-crop"
+      sources: ["golden", "packaged"]
   missing: [] # if non-empty, each entry must be {label, source, reason}
 r01b:
   status: "USED"
@@ -667,80 +665,84 @@ r01b:
   rawSheetHash: "<sha256-from-sprite-map-report>"
   coverageReport: "build/reports/verification/dark-uiux/dark-v1-manifest-coverage-pr02-1-owner-scope.json"
 goldenLabels:
-  - label: "dark-uiux-pr02-1-demo-shell-1280x800"
-    hashDriftReason: "dark-uiux-pr02-1-demo-shell-foundation"
-  - label: "dark-uiux-pr02-1-demo-shell-inventory-open"
-    hashDriftReason: "dark-uiux-pr02-1-demo-shell-foundation"
-  - label: "dark-uiux-pr02-1-demo-shell-right-panel-grid"
-    hashDriftReason: "dark-uiux-pr02-1-demo-shell-foundation"
-  - label: "dark-uiux-pr02-1-demo-main-menu"
-    hashDriftReason: "dark-uiux-pr02-1-demo-shell-foundation"
-  - label: "dark-uiux-pr02-1-demo-validation-setup"
-    hashDriftReason: "dark-uiux-pr02-1-demo-shell-foundation"
+  - label: "ui-demo-new-parity-1672x941"
+    hashDriftReason: "ui-demo-new-visual-parity"
+  - label: "ui-demo-new-parity-1280x800"
+    hashDriftReason: "ui-demo-new-visual-parity"
+  - label: "ui-demo-new-right-panel-grid"
+    hashDriftReason: "ui-demo-new-visual-parity"
+  - label: "ui-demo-new-bottom-deck-no-command-hints"
+    hashDriftReason: "ui-demo-new-visual-parity"
+  - label: "ui-demo-new-inventory-page-1"
+    hashDriftReason: "ui-demo-new-pagination"
+  - label: "ui-demo-new-inventory-page-2"
+    hashDriftReason: "ui-demo-new-pagination"
 screenshots:
-  - label: "dark-uiux-pr02-1-demo-shell-1280x800"
+  - label: "ui-demo-new-parity-1672x941"
     source: "golden"
-    path: "client/build/reports/golden/dark-uiux-pr02-1-demo-shell-1280x800.png"
+    path: "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1672x941.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-shell-1280x800"
+  - label: "ui-demo-new-parity-1672x941"
     source: "packaged"
-    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-1280x800.png"
+    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-parity-1672x941.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-shell-inventory-open"
+  - label: "ui-demo-new-parity-1280x800"
     source: "golden"
-    path: "client/build/reports/golden/dark-uiux-pr02-1-demo-shell-inventory-open.png"
+    path: "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1280x800.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-shell-inventory-open"
+  - label: "ui-demo-new-parity-1280x800"
     source: "packaged"
-    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-inventory-open.png"
+    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-parity-1280x800.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-shell-right-panel-grid"
+  - label: "ui-demo-new-right-panel-grid"
     source: "golden"
-    path: "client/build/reports/golden/dark-uiux-pr02-1-demo-shell-right-panel-grid.png"
+    path: "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-right-panel-grid.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-shell-right-panel-grid"
+  - label: "ui-demo-new-right-panel-grid"
     source: "packaged"
-    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-right-panel-grid.png"
+    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-right-panel-grid.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-main-menu"
+  - label: "ui-demo-new-bottom-deck-no-command-hints"
     source: "golden"
-    path: "client/build/reports/golden/dark-uiux-pr02-1-demo-main-menu.png"
+    path: "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-bottom-deck-no-command-hints.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-main-menu"
+  - label: "ui-demo-new-bottom-deck-no-command-hints"
     source: "packaged"
-    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-main-menu.png"
+    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-bottom-deck-no-command-hints.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-validation-setup"
+  - label: "ui-demo-new-inventory-page-1"
     source: "golden"
-    path: "client/build/reports/golden/dark-uiux-pr02-1-demo-validation-setup.png"
+    path: "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-inventory-page-1.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-validation-setup"
-    source: "packaged"
-    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-validation-setup.png"
+  - label: "ui-demo-new-inventory-page-2"
+    source: "golden"
+    path: "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-inventory-page-2.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-shell-nav-rail-crop"
+  - label: "ui-demo-new-nav-rail-crop"
     source: "packaged"
-    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-nav-rail-crop.png"
+    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-nav-rail-crop.png"
     sha256: "<sha256>"
-  - label: "dark-uiux-pr02-1-demo-shell-bottom-deck-crop"
+  - label: "ui-demo-new-map-stage-crop"
     source: "packaged"
-    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/dark-uiux-pr02-1-demo-shell-bottom-deck-crop.png"
+    path: "build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-map-stage-crop.png"
     sha256: "<sha256>"
 demoDeltaChecklist:
   leftIconRail: "pass | fail"
   dominantCenterMapStage: "pass | fail"
-  rightGroundLootSlots: "pass | fail"
-  rightEquipmentSlots: "pass | fail"
-  rightInscriptionRows: "pass | fail"
+  mapStageBackdrop: "pass | fail"
+  noRightGroundLootSection: "pass | fail"
+  rightEquipmentSockets: "pass | fail"
+  rightInscriptionRows5To12: "pass | fail"
   backpackGrid: "pass | fail"
+  backpackPagination: "pass | fail"
+  rightOperationHints: "pass | fail"
   bottomHeroCard: "pass | fail"
   bottomActionDeck: "pass | fail"
-  commandHints: "pass | fail"
+  bottomCommandHintsRemoved: "pass | fail"
   logDeck: "pass | fail"
-  bottomStatsSummary: "pass | fail"
 remainingGaps:
   pr03: "final item/equipment/shop icon quality"
-  pr05: "final map tile/actor/fog/light art quality"
+  pr05: "broader final terrain/actor/prop/fog/light art quality beyond UI-demo-new first screen"
   pr06: "final skill/status/quest icon quality"
   pr07: "full packaged all-screen audit and final polish"
 outOfScopeReductions: []
@@ -751,11 +753,11 @@ outOfScopeReductions: []
 ## 11. 非目标
 
 1. 不生成 PR-03 item/equipment/material/affix 资源。
-2. 不生成 PR-05 tile/prop/actor/portrait/VFX 资源。
+2. 不生成 PR-05 全量 tile/prop/actor/portrait/VFX 资源；本轮只刷新既有 PR-02-2 `tileset.ruins.*`、`actor.vanguard`、`prop.stairs.down` demo cell 用于 UI-demo-new 首屏验收。
 3. 不生成 PR-06 skill/status/quest/profession/tree/fallback 资源。
 4. 不修改 item stats、loot budget、shop price、drop rules、combat rules、AI、save/replay/profile schema。
 5. 不引入 atlas / region manifest schema。
-6. 不把 demo image 当 runtime asset；`UI/UI-demo.png` 只作为人工和文档验收参照。
+6. 不把 demo image 当 runtime asset；`UI/UI-demo-new.png` 只作为人工和文档验收参照。
 7. 不删除 accessibility text；辅助文本必须保留在 tooltip 与 compact help slot 中，玩家主视觉不能继续是 text-first shell。screen reader hint 留给 PR-07 final polish 实施，PR-02-1 不引入新的 accessibility API。
 
 ## 12. PR 描述要求
@@ -773,7 +775,7 @@ PR 描述必须明确剩余差异：
 | remaining gap | owner |
 | --- | --- |
 | final item/equipment/shop icon quality | PR-03 |
-| final map tile/actor/fog/light art quality | PR-05 |
+| broader final map tile/actor/fog/light art quality beyond UI-demo-new first screen | PR-05 |
 | final skill/status/quest icon quality | PR-06 |
 | full packaged all-screen audit and final polish | PR-07 |
 

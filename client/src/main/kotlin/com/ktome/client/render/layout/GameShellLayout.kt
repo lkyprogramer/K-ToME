@@ -53,6 +53,11 @@ internal data class GameShellBounds(
     val right: Float get() = x + width
     val top: Float get() = y + height
 
+    fun contains(
+        px: Float,
+        py: Float,
+    ): Boolean = px >= x && px < right && py >= y && py < top
+
     fun overlaps(other: GameShellBounds): Boolean =
         x < other.right &&
             right > other.x &&
