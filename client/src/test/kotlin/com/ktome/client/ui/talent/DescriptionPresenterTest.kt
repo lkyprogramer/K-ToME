@@ -1,7 +1,10 @@
 package com.ktome.client.ui.talent
 
+import com.ktome.client.assets.ShopOfferTagTokens
+import com.ktome.client.ui.card.ModalCardModel
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
+import com.ktome.core.snapshot.ShopOfferSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.talent.DescriptionContext
@@ -23,6 +26,31 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 
 class DescriptionPresenterTest {
+    @Test
+    fun `presenter keeps shop offer text sourced from modal card tokens`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val card =
+            ModalCardModel.shopOffer(
+                shopId = "reliquary",
+                offer =
+                    ShopOfferSnapshot(
+                        index = 0,
+                        labelKey = "item.energy_tonic.name",
+                        price = 18,
+                        offerFingerprint = "offer-energy",
+                        tagLabelKeys = listOf(ShopOfferTagTokens.INSCRIPTION, "ui.shop.tag.once"),
+                    ),
+                shardBalance = 20,
+            )
+
+        val lines = DescriptionPresenter.presentModalCardLines(localizer, card, DescriptionSurface.SHOP_ITEM)
+
+        assertTrue(lines.any { line -> line.text == "Inscription" })
+        assertTrue(lines.any { line -> line.text == "Once" })
+        assertTrue(lines.any { line -> line.text == "Shards 18" })
+        assertTrue(lines.none { line -> line.text.contains("Unaffordable") })
+    }
+
     @Test
     fun `presenter renders localized description keyword tooltip and breakpoint preview`() {
         val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)

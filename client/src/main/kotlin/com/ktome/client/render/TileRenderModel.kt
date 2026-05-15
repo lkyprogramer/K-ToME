@@ -1,8 +1,8 @@
 package com.ktome.client.render
 
+import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
-import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.bossVariantModeLabelKey
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
@@ -53,7 +53,6 @@ import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
-import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.ItemStatModifierSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
@@ -80,6 +79,13 @@ internal enum class TileTextTone {
     BLUE,
     MAGENTA,
 }
+
+internal enum class TileTextRowKind {
+    DEFAULT,
+    SHOP_REPLACEMENT_SLOT,
+}
+
+private const val MAX_REPLACEMENT_SLOT_HINT_ROWS = 4
 
 internal data class TileVisualPlacement(
     val x: Int,
@@ -111,7 +117,34 @@ internal data class TileTextRow(
     val tone: TileTextTone,
     val icon: ResolvedVisualAsset? = null,
     val selected: Boolean = false,
+    val extraIcons: List<ResolvedVisualAsset> = emptyList(),
+    val frame: ResolvedVisualAsset? = null,
+    val kind: TileTextRowKind = TileTextRowKind.DEFAULT,
 )
+
+internal fun TileTextRow.hasVisualIcons(): Boolean = icon != null || extraIcons.isNotEmpty()
+
+internal fun TileTextRow.visualIconCount(): Int = (if (icon == null) 0 else 1) + extraIcons.size
+
+internal inline fun TileTextRow.forEachVisualIcon(
+    limit: Int = Int.MAX_VALUE,
+    action: (ResolvedVisualAsset) -> Unit,
+) {
+    var emitted = 0
+    icon?.let { firstIcon ->
+        if (emitted < limit) {
+            action(firstIcon)
+            emitted += 1
+        }
+    }
+    for (extraIcon in extraIcons) {
+        if (emitted >= limit) {
+            return
+        }
+        action(extraIcon)
+        emitted += 1
+    }
+}
 
 internal enum class TileTargetCursorState {
     LEGAL,
@@ -223,6 +256,14 @@ internal data class TileDemoSlotModel(
     val detail: String?,
     val icon: ResolvedVisualAsset?,
     val state: TileDemoSlotState,
+    val stableId: String? = null,
+    val frame: ResolvedVisualAsset? = null,
+    val selected: Boolean = false,
+    val qualityTierId: String? = null,
+    val quantityText: String? = null,
+    val tooltipAnchorId: String? = null,
+    val visualOnly: Boolean = false,
+    val showBadge: Boolean = false,
 )
 
 internal data class TileDemoShellModel(
@@ -237,6 +278,8 @@ internal data class TileDemoShellModel(
     val backpackPageLabel: String,
     val operationHints: List<String>,
     val heroSummaryLines: List<String>,
+    val equipmentInventory: EquipmentInventoryPresentation = EquipmentInventoryPresentation.empty(),
+    val operationRows: List<TileTextRow> = operationHints.map { hint -> TileTextRow(hint, TileTextTone.LIGHT_GRAY) },
 ) {
     companion object {
         fun empty(): TileDemoShellModel =
@@ -250,9 +293,11 @@ internal data class TileDemoShellModel(
                 inscriptionSlots = emptyList(),
                 backpackSlots = emptyList(),
                 backpackPageLabel = "",
-                operationHints = emptyList(),
-                heroSummaryLines = emptyList(),
-            )
+            operationHints = emptyList(),
+            heroSummaryLines = emptyList(),
+            equipmentInventory = EquipmentInventoryPresentation.empty(),
+            operationRows = emptyList(),
+        )
     }
 }
 
@@ -826,24 +871,18 @@ internal object TileRenderModelBuilder {
         hud: TileHudModel,
     ): TileDemoShellModel {
         val status = snapshot.uiState.playerStatus
-        val operationHints =
-            listOf(
-                localizer.text("ui.controls.map.inventory"),
-                localizer.text("ui.controls.map.pick_up"),
-                localizer.text("ui.controls.map.save"),
-                localizer.text("ui.controls.map.edit_loadout"),
-                localizer.text("ui.controls.map.use_talent"),
-                localizer.text("ui.controls.map.use_inscription"),
+        val operationHints = demoOperationHints(localizer, overlayState)
+        val equipmentInventory =
+            EquipmentInventoryPresenter.present(
+                EquipmentInventoryPresenterRequest(
+                    localizer = localizer,
+                    visualResolver = visualResolver,
+                    equipment = snapshot.uiState.equipment,
+                    inventory = snapshot.uiState.inventory,
+                    inventorySelection = overlayState.inventorySelection,
+                ),
             )
-        val backpackPageSize = DEMO_BACKPACK_PAGE_SIZE
-        val sortedInventory = snapshot.uiState.inventory.sortedBy(InventoryEntrySnapshot::index)
-        val backpackPageCount = ((sortedInventory.size + backpackPageSize - 1) / backpackPageSize).coerceAtLeast(1)
-        val requestedPage = overlayState.inventorySelection / backpackPageSize
-        val backpackPageIndex = requestedPage.coerceIn(0, backpackPageCount - 1)
-        val pageItems =
-            sortedInventory
-                .drop(backpackPageIndex * backpackPageSize)
-                .take(backpackPageSize)
+        val operationRows = demoOperationRows(localizer, visualResolver, snapshot, overlayState, operationHints)
         return TileDemoShellModel(
             navItems =
                 listOf(
@@ -856,24 +895,19 @@ internal object TileRenderModelBuilder {
             rightEquipmentTitle = localizer.text("ui.sidebar.equipment"),
             rightInscriptionsTitle = localizer.text("ui.sidebar.inscriptions"),
             rightBackpackTitle = localizer.text("ui.sidebar.inventory"),
-            rightOperationHintsTitle = localizer.text("ui.shell.operation_hints"),
-            equipmentSlots = equipmentSlotModels(localizer, visualResolver, snapshot),
-            inscriptionSlots = inscriptionSlotModels(localizer, visualResolver, snapshot),
-            backpackSlots =
-                fixedSlots(
-                    pageItems.map { entry ->
-                        itemSlot(localizer, visualResolver, entry.item, labelPrefix = (entry.index + 1).toString())
-                    },
-                    count = backpackPageSize,
-                    emptyPrefix = "",
-                ),
-            backpackPageLabel =
-                if (backpackPageCount > 1) {
-                    "${backpackPageIndex + 1}/$backpackPageCount  PgUp/PgDn"
+            rightOperationHintsTitle =
+                if (snapshot.uiState.activeShop != null && overlayState.mode == UiMode.SHOP) {
+                    localizer.text("ui.sidebar.shop")
                 } else {
-                    ""
+                    localizer.text("ui.shell.operation_hints")
                 },
+            equipmentSlots = equipmentInventory.equipmentSlots.map(::equipmentSlot),
+            inscriptionSlots = inscriptionSlotModels(localizer, visualResolver, snapshot),
+            backpackSlots = equipmentInventory.inventoryGrid.cells.map(::inventorySlot),
+            backpackPageLabel = equipmentInventory.inventoryGrid.pageLabel,
             operationHints = operationHints,
+            operationRows = operationRows,
+            equipmentInventory = equipmentInventory,
             heroSummaryLines =
                 listOf(
                     hud.floorText,
@@ -883,6 +917,61 @@ internal object TileRenderModelBuilder {
                     "${localizer.text("ui.hud.defense.short")} ${status.defense}",
                 ),
         )
+    }
+
+    private fun demoOperationRows(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+        fallbackHints: List<String>,
+    ): List<TileTextRow> {
+        val shop = snapshot.uiState.activeShop
+        if (shop == null || overlayState.mode != UiMode.SHOP) {
+            return fallbackHints.map { hint -> TileTextRow(hint, TileTextTone.LIGHT_GRAY) }
+        }
+        val prompt = shop.inscriptionReplacementPrompt
+        if (prompt != null) {
+            val promptRows =
+                inscriptionReplacementPromptLines(
+                    localizer = localizer,
+                    prompt = prompt,
+                    selectedHotkey = overlayState.inscriptionReplacementHotkeySelection,
+                ).map { line ->
+                    inscriptionReplacementPromptTileRow(visualResolver, line)
+                }
+            val title = promptRows.firstOrNull()
+            val slotRows = promptRows.filter { row -> row.kind == TileTextRowKind.SHOP_REPLACEMENT_SLOT }
+            val supportRows = promptRows.drop(1).filter { row -> row.icon == null }
+            return listOfNotNull(title) + slotRows.take(MAX_REPLACEMENT_SLOT_HINT_ROWS) + supportRows.take(2)
+        }
+        val selectedOffer = shop.offers.getOrNull(overlayState.shopOfferSelection) ?: shop.offers.firstOrNull()
+        val selectedOfferRow =
+            selectedOffer?.let { offer ->
+                modalCardHeaderRow(
+                    localizer = localizer,
+                    visualResolver = visualResolver,
+                    card = ModalCardModel.shopOffer(shop.shopId, offer, shardBalance = snapshot.uiState.shardBalance),
+                    prefix = "${offer.index + 1}.",
+                    tone = TileTextTone.CYAN,
+                    selected = true,
+                )
+            }
+        val nextOfferRow =
+            shop.offers
+                .firstOrNull { offer -> selectedOffer == null || offer.index != selectedOffer.index }
+                ?.let { offer ->
+                    modalCardHeaderRow(
+                        localizer = localizer,
+                        visualResolver = visualResolver,
+                        card = ModalCardModel.shopOffer(shop.shopId, offer, shardBalance = snapshot.uiState.shardBalance),
+                        prefix = "${offer.index + 1}.",
+                        tone = TileTextTone.WHITE,
+                    )
+                }
+        return listOf(TileTextRow(localizer.text(shop.shopNameKey), TileTextTone.GOLD)) +
+            listOfNotNull(selectedOfferRow, nextOfferRow) +
+            listOf(TileTextRow(localizer.text("ui.controls.shop"), TileTextTone.LIGHT_GRAY))
     }
 
     private fun navItemState(
@@ -909,34 +998,6 @@ internal object TileRenderModelBuilder {
                 TileDemoNavItemKind.GEAR -> overlayState.mode == UiMode.VALIDATION
             }
         return if (selected) TileDemoNavItemState.SELECTED else TileDemoNavItemState.IDLE
-    }
-
-    private fun equipmentSlotModels(
-        localizer: Localizer,
-        visualResolver: VisualManifestResolver,
-        snapshot: RenderSnapshot,
-    ): List<TileDemoSlotModel> {
-        val bySlot = snapshot.uiState.equipment.associateBy { slot -> slot.slotId }
-        val slotOrder =
-            listOf(
-                "WEAPON",
-                "OFF_HAND",
-                "HELMET",
-                "ARMOR",
-                "CAPE",
-                "GLOVES",
-                "ACCESSORY",
-                "RING",
-                "BOOTS",
-            )
-        return slotOrder.map { slotId ->
-            val item = bySlot[slotId]?.item
-            if (item == null) {
-                emptySlot("")
-            } else {
-                itemSlot(localizer, visualResolver, item, labelPrefix = "")
-            }
-        }
     }
 
     private fun equipmentSummaryRows(
@@ -986,32 +1047,33 @@ internal object TileRenderModelBuilder {
         }
     }
 
-    private fun fixedSlots(
-        slots: List<TileDemoSlotModel>,
-        count: Int,
-        emptyPrefix: String,
-    ): List<TileDemoSlotModel> =
-        slots.take(count) + List((count - slots.size).coerceAtLeast(0)) { index -> emptySlot("$emptyPrefix${slots.size + index + 1}") }
-
-    private fun itemSlot(
-        localizer: Localizer,
-        visualResolver: VisualManifestResolver,
-        item: ItemRenderSnapshot,
-        labelPrefix: String? = null,
-    ): TileDemoSlotModel =
+    private fun equipmentSlot(slot: EquipmentSlotCellModel): TileDemoSlotModel =
         TileDemoSlotModel(
-            label = labelPrefix ?: renderItemDisplay(localizer, item),
-            detail = renderItemDisplay(localizer, item),
-            icon = item.iconKey?.let { iconKey -> resolveVisual(visualResolver, iconKey) },
-            state = TileDemoSlotState.FILLED,
+            label = if (slot.visualOnly) "" else slot.label,
+            detail = slot.label.takeIf { label -> label.isNotBlank() },
+            icon = slot.itemIcon,
+            state = if (slot.itemIcon == null) TileDemoSlotState.EMPTY else TileDemoSlotState.FILLED,
+            stableId = slot.slotId,
+            frame = slot.frame,
+            selected = slot.selected,
+            qualityTierId = slot.qualityTierId,
+            tooltipAnchorId = slot.tooltipAnchorId,
+            visualOnly = slot.visualOnly,
         )
 
-    private fun emptySlot(label: String): TileDemoSlotModel =
+    private fun inventorySlot(slot: InventoryGridCellModel): TileDemoSlotModel =
         TileDemoSlotModel(
-            label = label,
+            label = slot.identityIndex?.plus(1)?.toString().orEmpty(),
             detail = null,
-            icon = null,
-            state = TileDemoSlotState.EMPTY,
+            icon = slot.itemIcon,
+            state = if (slot.itemIcon == null) TileDemoSlotState.EMPTY else TileDemoSlotState.FILLED,
+            stableId = slot.identityIndex?.let { index -> "inventory:$index" },
+            frame = slot.frame,
+            selected = slot.selected,
+            qualityTierId = slot.qualityTierId,
+            quantityText = slot.quantityText,
+            tooltipAnchorId = slot.tooltipAnchorId,
+            showBadge = slot.identityIndex != null,
         )
 
     private fun questSummaryText(
@@ -1088,6 +1150,39 @@ internal object TileRenderModelBuilder {
         )
     }
 
+    private fun demoOperationHints(
+        localizer: Localizer,
+        overlayState: OverlayState,
+    ): List<String> =
+        when (overlayState.mode) {
+            UiMode.INVENTORY ->
+                when (overlayState.activeModalKind) {
+                    ModalFrameKind.ITEM_DETAIL -> listOf(localizer.text("ui.controls.item_detail"))
+                    ModalFrameKind.ITEM_COMPARE -> listOf(localizer.text("ui.controls.deferred_modal"))
+                    else ->
+                        listOf(
+                            localizer.text("ui.controls.inventory.close_hint"),
+                            localizer.text("ui.controls.inventory"),
+                        )
+                }
+
+            UiMode.SHOP ->
+                listOf(
+                    localizer.text("ui.controls.shop.close_hint"),
+                    localizer.text("ui.controls.shop"),
+                )
+
+            else ->
+                listOf(
+                    localizer.text("ui.controls.map.inventory"),
+                    localizer.text("ui.controls.map.pick_up"),
+                    localizer.text("ui.controls.map.save"),
+                    localizer.text("ui.controls.map.edit_loadout"),
+                    localizer.text("ui.controls.map.use_talent"),
+                    localizer.text("ui.controls.map.use_inscription"),
+                )
+        }
+
     private fun buildSidebar(
         localizer: Localizer,
         visualResolver: VisualManifestResolver,
@@ -1127,7 +1222,7 @@ internal object TileRenderModelBuilder {
                         TileTextRow(
                             text = "${equipmentSlotLabel(localizer, equipment.slotId)}: $itemName",
                             tone = presentation?.let(::itemTone) ?: TileTextTone.WHITE,
-                            icon = item?.iconKey?.let { resolveVisual(visualResolver, it) },
+                            icon = item?.let { resolveItemIconVisual(visualResolver, it) },
                         )
                 }
                 if (snapshot.uiState.inscriptions.isNotEmpty()) {
@@ -1157,7 +1252,7 @@ internal object TileRenderModelBuilder {
                             TileTextRow(
                                 text = renderItemDisplay(localizer, item, presentation),
                                 tone = itemTone(presentation),
-                                icon = item.iconKey?.let { resolveVisual(visualResolver, it) },
+                                icon = resolveItemIconVisual(visualResolver, item),
                         )
                     }
                 }
@@ -1207,7 +1302,9 @@ internal object TileRenderModelBuilder {
                                 localizer = localizer,
                                 prompt = prompt,
                                 selectedHotkey = overlayState.inscriptionReplacementHotkeySelection,
-                            ).map(::inscriptionReplacementPromptTileRow)
+                            ).map { line ->
+                                inscriptionReplacementPromptTileRow(visualResolver, line)
+                            }
                     }
                 }
                 if (shop?.inscriptionReplacementPrompt == null) {
@@ -1219,7 +1316,7 @@ internal object TileRenderModelBuilder {
                         rows += emptyStateRows(localizer, visualResolver, UiEmptyState.shop())
                     } else {
                         shop.offers.forEach { offer ->
-                            val card = ModalCardModel.shopOffer(shop.shopId, offer)
+                            val card = ModalCardModel.shopOffer(shop.shopId, offer, shardBalance = snapshot.uiState.shardBalance)
                             rows +=
                                 modalCardHeaderRow(
                                     localizer = localizer,
@@ -1312,7 +1409,7 @@ internal object TileRenderModelBuilder {
                             TileTextRow(
                                 text = renderItemDisplay(localizer, selectedItem, presentation),
                                 tone = itemTone(presentation),
-                                icon = selectedItem.iconKey?.let { resolveVisual(visualResolver, it) },
+                                icon = resolveItemIconVisual(visualResolver, selectedItem),
                             )
                         DescriptionPresenter.presentInventoryItemLines(localizer, selectedItem).forEach { line ->
                             rows += TileTextRow(line.text, descriptionTone(line))
@@ -1333,7 +1430,7 @@ internal object TileRenderModelBuilder {
                         TileTextRow(
                             text = label + equipped,
                             tone = if (entry.index == overlayState.inventorySelection) TileTextTone.CYAN else itemTone(presentation),
-                            icon = entry.item.iconKey?.let { resolveVisual(visualResolver, it) },
+                            icon = resolveItemIconVisual(visualResolver, entry.item),
                             selected = entry.index == overlayState.inventorySelection,
                         )
                 }
@@ -1516,7 +1613,7 @@ internal object TileRenderModelBuilder {
                             TileTextRow(
                                 text = renderItemDisplay(localizer, item, presentation),
                                 tone = itemTone(presentation),
-                                icon = item.iconKey?.let { resolveVisual(visualResolver, it) },
+                                icon = resolveItemIconVisual(visualResolver, item),
                             )
                         DescriptionPresenter.presentInspectItemLines(localizer, item).forEach { line ->
                             rows += TileTextRow(line.text, descriptionTone(line))
@@ -1700,11 +1797,14 @@ internal object TileRenderModelBuilder {
                 .orEmpty()
         val summarySuffix = card.summary?.let { summary -> " - ${renderTextToken(localizer, summary)}" }.orEmpty()
         val disabledSuffix = card.disabledReason?.let { reason -> " - ${renderTextToken(localizer, reason)}" }.orEmpty()
+        val iconKeys = listOfNotNull(card.iconKey, card.stateIconKey, card.typeIconKey).distinct()
         return TileTextRow(
             text = "$prefix $title$detailSuffix$summarySuffix$disabledSuffix",
             tone = tone,
-            icon = card.iconKey?.let { iconKey -> resolveVisual(visualResolver, iconKey) },
+            icon = iconKeys.firstOrNull()?.let { iconKey -> resolveVisual(visualResolver, iconKey) },
             selected = selected,
+            extraIcons = iconKeys.drop(1).map { iconKey -> resolveVisual(visualResolver, iconKey) },
+            frame = card.frameKey?.let { frameKey -> resolveVisual(visualResolver, frameKey) },
         )
     }
 
@@ -2347,7 +2447,7 @@ internal object TileRenderModelBuilder {
             com.ktome.client.input.ShopFocus.BUY -> {
                 val offer = shop.offers.firstOrNull { candidate -> candidate.index == overlayState.shopOfferSelection }
                 offer?.let { selected ->
-                    val card = ModalCardModel.shopOffer(shop.shopId, selected)
+                    val card = ModalCardModel.shopOffer(shop.shopId, selected, shardBalance = snapshot.uiState.shardBalance)
                     DescriptionPresenter.presentModalCardLines(localizer, card, DescriptionSurface.SHOP_ITEM)
                 }.orEmpty()
             }
@@ -2359,7 +2459,10 @@ internal object TileRenderModelBuilder {
             }
         }
 
-    private fun inscriptionReplacementPromptTileRow(line: InscriptionReplacementPromptLine): TileTextRow =
+    private fun inscriptionReplacementPromptTileRow(
+        visualResolver: VisualManifestResolver,
+        line: InscriptionReplacementPromptLine,
+    ): TileTextRow =
         TileTextRow(
             text = line.text,
             tone =
@@ -2374,6 +2477,13 @@ internal object TileRenderModelBuilder {
                     }
                 },
             selected = line.selected,
+            icon = line.iconKey?.let { iconKey -> resolveVisual(visualResolver, iconKey) },
+            kind =
+                if (line.iconKey == DarkUiChromeVisualKeys.SHOP_REPLACEMENT_SLOT_MARKER) {
+                    TileTextRowKind.SHOP_REPLACEMENT_SLOT
+                } else {
+                    TileTextRowKind.DEFAULT
+                },
         )
 
     private fun statModifierLines(

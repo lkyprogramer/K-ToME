@@ -863,3 +863,894 @@ sheets:
     category: prop_interactable
     outputName: dark-v1/props/prop_stairs_down.png
     subject: painterly downward dungeon stairs map prop, compact 32px-readable orthographic three-quarter game token, cracked black stone steps descending into deep shadow, subtle ember glow from below, transparent background, no white outline, no drop shadow, not flat vector icon art
+- sheetId: r07-items-base
+  round: 7
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r07-items-base.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy roguelike base item icon sheet, no text, transparent background
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: item.short_sword.icon
+    category: icon_item
+    outputName: dark-v1/items/item_short_sword_icon.png
+    subject: short iron sword, worn leather grip, no text
+  - row: 0
+    col: 1
+    targetKey: item.long_sword.icon
+    category: icon_item
+    outputName: dark-v1/items/item_long_sword_icon.png
+    subject: long steel sword, straight blade, no text
+  - row: 0
+    col: 2
+    targetKey: item.arcane_staff.icon
+    category: icon_item
+    outputName: dark-v1/items/item_arcane_staff_icon.png
+    subject: dark wooden staff with small arcane crystal, no text
+  - row: 0
+    col: 3
+    targetKey: item.hunter_bow.icon
+    category: icon_item
+    outputName: dark-v1/items/item_hunter_bow_icon.png
+    subject: compact hunter bow, wrapped limbs, no text
+  - row: 0
+    col: 4
+    targetKey: item.war_maul.icon
+    category: icon_item
+    outputName: dark-v1/items/item_war_maul_icon.png
+    subject: heavy iron maul with ember wear, no text
+  - row: 0
+    col: 5
+    targetKey: item.forgebreaker_pick.icon
+    category: icon_item
+    outputName: dark-v1/items/item_forgebreaker_pick_icon.png
+    subject: mining war pick with dark forge metal, no text
+  - row: 0
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 0
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 1
+    col: 0
+    targetKey: item.basic_shield.icon
+    category: icon_item
+    outputName: dark-v1/items/item_basic_shield_icon.png
+    subject: battered round shield, iron rim, no text
+  - row: 1
+    col: 1
+    targetKey: item.chain_mail.icon
+    category: icon_item
+    outputName: dark-v1/items/item_chain_mail_icon.png
+    subject: folded chain mail armor, no text
+  - row: 1
+    col: 2
+    targetKey: item.leather_armor.icon
+    category: icon_item
+    outputName: dark-v1/items/item_leather_armor_icon.png
+    subject: dark leather armor vest, no text
+  - row: 1
+    col: 3
+    targetKey: item.apprentice_robe.icon
+    category: icon_item
+    outputName: dark-v1/items/item_apprentice_robe_icon.png
+    subject: folded apprentice robe with muted arcane trim, no text
+  - row: 1
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 1
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 1
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 1
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 2
+    col: 0
+    targetKey: item.healing_potion.icon
+    category: icon_item
+    outputName: dark-v1/items/item_healing_potion_icon.png
+    subject: red healing vial, wax seal, no text
+  - row: 2
+    col: 1
+    targetKey: item.mana_potion.icon
+    category: icon_item
+    outputName: dark-v1/items/item_mana_potion_icon.png
+    subject: blue mana vial, dim glow, no text
+  - row: 2
+    col: 2
+    targetKey: item.energy_tonic.icon
+    category: icon_item
+    outputName: dark-v1/items/item_energy_tonic_icon.png
+    subject: teal tonic bottle, no text
+  - row: 2
+    col: 3
+    targetKey: item.scroll_teleport.icon
+    category: icon_item
+    outputName: dark-v1/items/item_scroll_teleport_icon.png
+    subject: sealed teleport scroll with dark rune band, no text
+  - row: 2
+    col: 4
+    targetKey: item.consecrated_oil.icon
+    category: icon_item
+    outputName: dark-v1/items/item_consecrated_oil_icon.png
+    subject: small golden oil flask, no text
+  - row: 2
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 2
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 2
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 3
+    col: 0
+    targetKey: item.bandit_trophy.icon
+    category: icon_item
+    outputName: dark-v1/items/item_bandit_trophy_icon.png
+    subject: rough trophy charm and knife notch, no text
+  - row: 3
+    col: 1
+    targetKey: item.emerald_charm.icon
+    category: icon_item
+    outputName: dark-v1/items/item_emerald_charm_icon.png
+    subject: emerald charm pendant, no text
+  - row: 3
+    col: 2
+    targetKey: item.seal_reliquary.icon
+    category: icon_item
+    outputName: dark-v1/items/item_seal_reliquary_icon.png
+    subject: small reliquary seal box, no text
+  - row: 3
+    col: 3
+    targetKey: item.sanctified_seal.icon
+    category: icon_item
+    outputName: dark-v1/items/item_sanctified_seal_icon.png
+    subject: sanctified brass seal, no text
+  - row: 3
+    col: 4
+    targetKey: item.abyssal_heartstone.icon
+    category: icon_item
+    outputName: dark-v1/items/item_abyssal_heartstone_icon.png
+    subject: dark heartstone talisman, violet core, no text
+  - row: 3
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 3
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 3
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 4
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 4
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 4
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 4
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 4
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 4
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 4
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 4
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 5
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 5
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 5
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 5
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 5
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 5
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 5
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 5
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 6
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 6
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 6
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-base future slot
+- sheetId: r07-items-unique-artifact
+  round: 7
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r07-items-unique-artifact.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy roguelike unique and artifact item icon sheet, no text, transparent background
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: item.unique.greenwood_watcher_blade.icon
+    category: icon_item
+    outputName: dark-v1/items/item_unique_greenwood_watcher_blade_icon.png
+    subject: unique greenwood sword with thorn guard, no text
+  - row: 0
+    col: 1
+    targetKey: item.unique.briarbound_bow.icon
+    category: icon_item
+    outputName: dark-v1/items/item_unique_briarbound_bow_icon.png
+    subject: briarbound bow, thorn string, no text
+  - row: 0
+    col: 2
+    targetKey: item.unique.furnace_plate.icon
+    category: icon_item
+    outputName: dark-v1/items/item_unique_furnace_plate_icon.png
+    subject: furnace-worn chest plate, no text
+  - row: 0
+    col: 3
+    targetKey: item.unique.voidlit_seal.icon
+    category: icon_item
+    outputName: dark-v1/items/item_unique_voidlit_seal_icon.png
+    subject: voidlit seal relic, purple edge glow, no text
+  - row: 0
+    col: 4
+    targetKey: item.unique.cinderveil_plate.icon
+    category: icon_item
+    outputName: dark-v1/items/item_unique_cinderveil_plate_icon.png
+    subject: cinderveil plate armor, ashen trim, no text
+  - row: 0
+    col: 5
+    targetKey: item.unique.deepcurrent_lens.icon
+    category: icon_item
+    outputName: dark-v1/items/item_unique_deepcurrent_lens_icon.png
+    subject: deepcurrent lens, dark water glass, no text
+  - row: 0
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 0
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 1
+    col: 0
+    targetKey: item.artifact.briar_heart.icon
+    category: icon_item
+    outputName: dark-v1/items/item_artifact_briar_heart_icon.png
+    subject: artifact thorn heart, no text
+  - row: 1
+    col: 1
+    targetKey: item.artifact.forge_oath.icon
+    category: icon_item
+    outputName: dark-v1/items/item_artifact_forge_oath_icon.png
+    subject: artifact forge oath weapon seal, no text
+  - row: 1
+    col: 2
+    targetKey: item.artifact.river_echo.icon
+    category: icon_item
+    outputName: dark-v1/items/item_artifact_river_echo_icon.png
+    subject: artifact river echo charm, no text
+  - row: 1
+    col: 3
+    targetKey: item.artifact.eclipsed_relic.icon
+    category: icon_item
+    outputName: dark-v1/items/item_artifact_eclipsed_relic_icon.png
+    subject: eclipsed relic medallion, no text
+  - row: 1
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 1
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 1
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 1
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 2
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 2
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 2
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 2
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 2
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 2
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 2
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 2
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 3
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 3
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 3
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 3
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 3
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 3
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 3
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 3
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 4
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 4
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 4
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 4
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 4
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 4
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 4
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 4
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 5
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 5
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 5
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 5
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 5
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 5
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 5
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 5
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 6
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 6
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 6
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-unique-artifact future slot
+- sheetId: r07-items-affix-material
+  round: 7
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r07-items-affix-material.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy roguelike affix material and shop marker icon sheet, no text, transparent background
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: material.iron.icon
+    category: icon
+    outputName: dark-v1/items/material_iron_icon.png
+    subject: dark iron ingot material, no text
+  - row: 0
+    col: 1
+    targetKey: material.steel.icon
+    category: icon
+    outputName: dark-v1/items/material_steel_icon.png
+    subject: polished steel ingot material, no text
+  - row: 0
+    col: 2
+    targetKey: material.mithril.icon
+    category: icon
+    outputName: dark-v1/items/material_mithril_icon.png
+    subject: pale mithril shard material, no text
+  - row: 0
+    col: 3
+    targetKey: material.adamantite.icon
+    category: icon
+    outputName: dark-v1/items/material_adamantite_icon.png
+    subject: black adamantite bar material, no text
+  - row: 0
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 0
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 0
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 0
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 1
+    col: 0
+    targetKey: affix.sharp.icon
+    category: icon
+    outputName: dark-v1/items/affix_sharp_icon.png
+    subject: sharp edge affix marker, no text
+  - row: 1
+    col: 1
+    targetKey: affix.sturdy.icon
+    category: icon
+    outputName: dark-v1/items/affix_sturdy_icon.png
+    subject: sturdy armor rivet affix marker, no text
+  - row: 1
+    col: 2
+    targetKey: affix.of_strength.icon
+    category: icon
+    outputName: dark-v1/items/affix_of_strength_icon.png
+    subject: strength sigil affix marker, no text
+  - row: 1
+    col: 3
+    targetKey: affix.of_life.icon
+    category: icon
+    outputName: dark-v1/items/affix_of_life_icon.png
+    subject: life drop affix marker, no text
+  - row: 1
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 1
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 1
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 1
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 2
+    col: 0
+    targetKey: ui.shop.price.affordable
+    category: icon
+    outputName: dark-v1/ui/ui_shop_price_affordable.png
+    subject: coin marker with readable silhouette, no text
+  - row: 2
+    col: 1
+    targetKey: ui.shop.price.unaffordable
+    category: icon
+    outputName: dark-v1/ui/ui_shop_price_unaffordable.png
+    subject: cracked coin marker, no text
+  - row: 2
+    col: 2
+    targetKey: ui.shop.inscription.marker
+    category: icon
+    outputName: dark-v1/ui/ui_shop_inscription_marker.png
+    subject: small inscription rune marker, no text
+  - row: 2
+    col: 3
+    targetKey: ui.shop.replacement.slot_marker
+    category: icon
+    outputName: dark-v1/ui/ui_shop_replacement_slot_marker.png
+    subject: replacement slot marker, no text or digits
+  - row: 2
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 2
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 2
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 2
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 3
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 3
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 3
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 3
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 3
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 3
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 3
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 3
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 4
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 4
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 4
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 4
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 4
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 4
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 4
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 4
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 5
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 5
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 5
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 5
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 5
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 5
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 5
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 5
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 6
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 6
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 6
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-03 r07-items-affix-material future slot

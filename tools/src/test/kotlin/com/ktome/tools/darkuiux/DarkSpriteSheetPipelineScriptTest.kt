@@ -43,7 +43,7 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
-    fun `key registry accepts same sheet and cross sheet aliases but rejects cycles`() {
+    fun `key registry accepts sheet aliases and registry-only aliases but rejects cycles`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val registry = tempDir.resolve("key-registry.yaml")
         val manifest = tempDir.resolve("manifest.json")
@@ -85,9 +85,10 @@ class DarkSpriteSheetPipelineScriptTest {
               - { targetKey: ui.test.a, category: icon, ownerPr: PR-00, sheetId: r98-base, fallbackKey: missing_visual, consumer: test, consumerTest: test }
               - { targetKey: ui.test.b, category: icon, ownerPr: PR-00, sheetId: r98-base, fallbackKey: missing_visual, consumer: test, consumerTest: test, aliasOf: ui.test.a }
               - { targetKey: ui.test.c, category: icon, ownerPr: PR-00, sheetId: r98-cross, fallbackKey: missing_visual, consumer: test, consumerTest: test, aliasOf: ui.test.a }
+              - { targetKey: ui.test.d, category: icon, ownerPr: PR-00, sheetId: r98-base, fallbackKey: missing_visual, consumer: test, consumerTest: test, aliasOf: ui.test.a }
             """.trimIndent(),
         )
-        writeText(manifest, manifest("ui.test.a", "ui.test.b", "ui.test.c"))
+        writeText(manifest, manifest("ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
 
         val pass =
             runScript(
@@ -640,6 +641,223 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `sprite map lint rejects duplicate output hash for non alias outputs`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val rawRoot = tempDir.resolve("raw")
+        val contactRoot = tempDir.resolve("contact")
+        val runtimeRoot = tempDir.resolve("runtime")
+        val sheetId = "tmp-duplicate-hash-${System.nanoTime()}"
+        writeText(
+            plan,
+            """
+            schemaVersion: dark-sprite-sheet-plan-v1
+            styleTag: ktome-dark-fantasy-sprite-ui-v1
+            sheets:
+              - sheetId: $sheetId
+                round: 1
+                type: large-sheet
+                styleTag: ktome-dark-fantasy-sprite-ui-v1
+                rawSheetPath: assets-src/image/raw/sheets/dark-v1/$sheetId.png
+                outputRoot: client/src/main/resources
+                promptBase: duplicate hash sheet
+                grid: { columns: 4, rows: 4, cellWidth: 256, cellHeight: 256 }
+                cells:
+                  - { row: 0, col: 0, targetKey: ui.hash.a, category: icon, outputName: dark-v1/test/hash_a.png, subject: hash icon a }
+                  - { row: 0, col: 1, targetKey: ui.hash.b, category: icon, outputName: dark-v1/test/hash_b.png, subject: hash icon b }
+            """.trimIndent(),
+        )
+        writeText(
+            manifest,
+            manifestWithRawPaths(
+                "ui.hash.a" to "dark-v1/test/hash_a.png",
+                "ui.hash.b" to "dark-v1/test/hash_b.png",
+            ),
+        )
+        writeImage(rawRoot.resolve("$sheetId.png"))
+        writeImage(contactRoot.resolve("$sheetId-contact.png"))
+        writeImage(runtimeRoot.resolve("dark-v1/test/hash_a.png"))
+        writeImage(runtimeRoot.resolve("dark-v1/test/hash_b.png"))
+
+        val result =
+            runScriptWithFakePillow(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "map",
+                "--plan",
+                plan.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--raw-root",
+                rawRoot.toString(),
+                "--contact-root",
+                contactRoot.toString(),
+                "--runtime-root",
+                runtimeRoot.toString(),
+                "--report",
+                tempDir.resolve("duplicate-hash.jsonl").toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("duplicate outputHash"), result.output)
+        assertTrue(result.output.contains("ui.hash.a"), result.output)
+        assertTrue(result.output.contains("ui.hash.b"), result.output)
+    }
+
+    @Test
+    fun `sprite map lint close mode rejects dry run qa status`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val rawRoot = tempDir.resolve("raw")
+        val contactRoot = tempDir.resolve("contact")
+        val runtimeRoot = tempDir.resolve("runtime")
+        val sheetId = "tmp-dry-run-qa-${System.nanoTime()}"
+        writeText(
+            plan,
+            """
+            schemaVersion: dark-sprite-sheet-plan-v1
+            styleTag: ktome-dark-fantasy-sprite-ui-v1
+            sheets:
+              - sheetId: $sheetId
+                round: 1
+                type: large-sheet
+                styleTag: ktome-dark-fantasy-sprite-ui-v1
+                rawSheetPath: assets-src/image/raw/sheets/dark-v1/$sheetId.png
+                outputRoot: client/src/main/resources
+                promptBase: dry run close sheet
+                grid: { columns: 4, rows: 4, cellWidth: 256, cellHeight: 256 }
+                cells:
+                  - { row: 0, col: 0, targetKey: ui.close.dry_run, category: icon, outputName: dark-v1/test/close_dry_run.png, subject: close dry run icon }
+            """.trimIndent(),
+        )
+        writeText(manifest, manifestWithRawPaths("ui.close.dry_run" to "dark-v1/test/close_dry_run.png"))
+        writeImage(rawRoot.resolve("$sheetId.png"))
+        writeImage(contactRoot.resolve("$sheetId-contact.png"))
+        writeImage(runtimeRoot.resolve("dark-v1/test/close_dry_run.png"))
+
+        val result =
+            runScriptWithFakePillow(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "map",
+                "--plan",
+                plan.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--raw-root",
+                rawRoot.toString(),
+                "--contact-root",
+                contactRoot.toString(),
+                "--runtime-root",
+                runtimeRoot.toString(),
+                "--report",
+                tempDir.resolve("dry-run.jsonl").toString(),
+                "--require-reviewed-qa",
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("qaStatus is DRY_RUN"), result.output)
+    }
+
+    @Test
+    fun `sprite map lint can close a filtered owner report without historical dry run rows`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val rawRoot = tempDir.resolve("raw")
+        val contactRoot = tempDir.resolve("contact")
+        val runtimeRoot = tempDir.resolve("runtime")
+        val report = tempDir.resolve("filtered-owner.jsonl")
+        val selectedSheetId = "tmp-owner-selected-${System.nanoTime()}"
+        val historicalSheetId = "tmp-owner-historical-${System.nanoTime()}"
+        writeText(
+            plan,
+            largeSheetPlan(
+                listOf(
+                    selectedSheetId to
+                        "- { row: 0, col: 0, targetKey: ui.report.selected, category: icon, outputName: dark-v1/test/report_selected.png, subject: selected owner icon }",
+                    historicalSheetId to
+                        "- { row: 0, col: 0, targetKey: ui.report.historical, category: icon, outputName: debug/missing_visual.png, subject: historical pending icon }",
+                ),
+            ),
+        )
+        writeText(
+            manifest,
+            manifestWithRawPaths(
+                "ui.report.selected" to "dark-v1/test/report_selected.png",
+                "ui.report.historical" to "debug/missing_visual.png",
+            ),
+        )
+        writeImage(rawRoot.resolve("$selectedSheetId.png"))
+        writeImage(rawRoot.resolve("$historicalSheetId.png"))
+        writeImage(contactRoot.resolve("$selectedSheetId-contact.png"))
+        writeImage(contactRoot.resolve("$historicalSheetId-contact.png"))
+        writeImage(runtimeRoot.resolve("dark-v1/test/report_selected.png"))
+
+        val initial =
+            runScriptWithFakePillow(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "map",
+                "--plan",
+                plan.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--raw-root",
+                rawRoot.toString(),
+                "--contact-root",
+                contactRoot.toString(),
+                "--runtime-root",
+                runtimeRoot.toString(),
+                "--report",
+                report.toString(),
+            )
+        assertEquals(0, initial.exitCode, initial.output)
+
+        val reviewedLines =
+            Files.readAllLines(report).map { line ->
+                if (line.contains("\"targetKey\": \"ui.report.selected\"")) {
+                    line
+                        .replace("\"qaStatus\": \"DRY_RUN\"", "\"qaStatus\": \"CODEX_VISUAL_CHECKED\"")
+                        .replace("\"reviewer\": null", "\"reviewer\": \"Codex\"")
+                        .replace("\"reviewedAt\": null", "\"reviewedAt\": \"2026-05-15T12:00:00+08:00\"")
+                } else {
+                    line
+                }
+            }
+        Files.writeString(report, reviewedLines.joinToString("\n", postfix = "\n"))
+        Files.delete(rawRoot.resolve("$historicalSheetId.png"))
+        Files.delete(contactRoot.resolve("$historicalSheetId-contact.png"))
+
+        val filtered =
+            runScriptWithFakePillow(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "map",
+                "--plan",
+                plan.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--raw-root",
+                rawRoot.toString(),
+                "--contact-root",
+                contactRoot.toString(),
+                "--runtime-root",
+                runtimeRoot.toString(),
+                "--report",
+                report.toString(),
+                "--report-sheet-ids",
+                selectedSheetId,
+                "--require-reviewed-qa",
+            )
+        val filteredText = Files.readString(report)
+
+        assertEquals(0, filtered.exitCode, filtered.output)
+        assertTrue(filteredText.contains("\"targetKey\": \"ui.report.selected\""), filteredText)
+        assertFalse(filteredText.contains("\"targetKey\": \"ui.report.historical\""), filteredText)
+        assertEquals(1, filteredText.lineSequence().filter(String::isNotBlank).count())
+    }
+
+    @Test
     fun `coverage lint requires owner for owner scope and rejects pending fallback in final full`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val registry = tempDir.resolve("key-registry.yaml")
@@ -847,6 +1065,40 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `resource pipeline lint rejects typed inferred and delegated production inventory mirrors`() {
+        val productionRoot = tempDir.resolve("production-kotlin")
+        val sourceFile = productionRoot.resolve("com/ktome/client/assets/MirroredKeys.kt")
+        writeText(
+            sourceFile,
+            """
+            package com.ktome.client.assets
+
+            internal object MirroredKeys {
+                val typedOwnerKeys: List<String> = listOf("ui.test.a")
+                val inferredOwnerKeys = listOf("ui.test.b")
+                val itemIconKeys = setOf("item.test.icon")
+                val requiredInventoryKeys by lazy { listOf("ui.test.c") }
+            }
+            """,
+        )
+
+        val result =
+            runScript(
+                "scripts/resource_pipeline_authority_lint.py",
+                "--production-kotlin-root",
+                productionRoot.toString(),
+                "--report",
+                tempDir.resolve("resource-pipeline-authority.json").toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("typedOwnerKeys"), result.output)
+        assertTrue(result.output.contains("inferredOwnerKeys"), result.output)
+        assertTrue(result.output.contains("itemIconKeys"), result.output)
+        assertTrue(result.output.contains("requiredInventoryKeys"), result.output)
+    }
+
+    @Test
     fun `coverage lint fails owner scope when owner keys are pending`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val registry = tempDir.resolve("key-registry.yaml")
@@ -997,6 +1249,81 @@ class DarkSpriteSheetPipelineScriptTest {
         assertTrue(reportText.contains("\"requiredOwnerSheetIds\": ["), reportText)
         assertTrue(reportText.contains("\"requiredOwnerKeyCountBySheet\": {"), reportText)
         assertTrue(reportText.contains("\"ownerExpectedKeyCountBySheet\": {"), reportText)
+    }
+
+    @Test
+    fun `coverage lint reports registry only aliases without treating them as unexpected owner keys`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val ownerContract = tempDir.resolve("owner-contract.yaml")
+        val report = tempDir.resolve("registry-only-alias-owner.json")
+        val sheetId = "r01-ui-chrome"
+        val keys = keysFor("chrome")
+        val aliasOnlyKey = "ui.chrome.registry_only_alias"
+        writeText(plan, largeSheetPlan(sheetId, cellsForKeys(keys)))
+        writeText(
+            registry,
+            buildString {
+                append(registryForSheets(ownerPr = "PR-02", listOf(sheetId to keys)))
+                appendLine("  - targetKey: $aliasOnlyKey")
+                appendLine("    category: icon")
+                appendLine("    ownerPr: PR-02")
+                appendLine("    sheetId: $sheetId")
+                appendLine("    fallbackKey: missing_visual")
+                appendLine("    consumer: test")
+                appendLine("    consumerTest: test")
+                appendLine("    aliasOf: ${keys[0]}")
+            },
+        )
+        writeText(
+            ownerContract,
+            ownerContract(
+                ownerPr = "PR-02",
+                sheetId = sheetId,
+                requiredKeys = keys,
+                direct = 4,
+                alias = 0,
+                reserved = 12,
+                total = 16,
+            ),
+        )
+        val manifestEntries =
+            (keys + aliasOnlyKey)
+                .map { key -> key to "dark-v1/ui/${key.replace('.', '_')}.png" }
+                .toTypedArray()
+        writeText(manifest, manifestWithRawPaths(*manifestEntries))
+        writeText(runtimeManifest, Files.readString(manifest))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "owner-scope",
+                "--owner-pr",
+                "PR-02",
+                "--owner-contract",
+                ownerContract.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(0, result.exitCode, result.output)
+        assertTrue(reportText.contains("\"ownerAliasOnlyKeys\": ["), reportText)
+        assertTrue(reportText.contains("\"$aliasOnlyKey\""), reportText)
+        assertTrue(reportText.contains("\"ownerUnexpectedKeys\": []"), reportText)
+        assertTrue(reportText.contains("\"ownerSheetIds\": ["), reportText)
+        assertTrue(reportText.contains("\"$sheetId\""), reportText)
     }
 
     @Test

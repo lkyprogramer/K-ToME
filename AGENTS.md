@@ -200,6 +200,7 @@ sdk env
 12. 共享 PR CI 的默认 preflight 是 `./gradlew verifyChanged`；新增 verification/report/gate/governance 接线时，优先复用既有 `VerifyChangedPlanGate` / impact routing，不要在 workflow 或脚本里再造第二套变更判定逻辑
 13. 共享 nightly automation 的默认入口是 `./gradlew nightlyGovernanceGate`；需要增加 governance、freshness 或 aggregate smoke 时，优先扩这个 root task，而不是再手写一份并行 nightly inventory
 14. task perf monitor 的目标、边界与产物位置以 [docs/verification/README.md](docs/verification/README.md) 为准；不得把 `.gradle/test-perf/` 的 lane、baseline 或 report-only 目录升级成 unified verification registry 或 `reportPhase5` 的 canonical 输入
+15. 项目级图片、音频与 Dark UI sheet 的资源生成权威以 [docs/rule/ai-change-governance.md](docs/rule/ai-change-governance.md#10-resource-generation-authority) 为准；新增正式资源必须通过 `resourcePipelineLint`，不得只提交 runtime 文件或在生产 Kotlin 中维护 owner/inventory key 镜像清单
 
 ### 5.3 白盒验证与结果汇报
 

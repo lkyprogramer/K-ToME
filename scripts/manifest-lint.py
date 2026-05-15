@@ -257,11 +257,18 @@ def validate_manifest(
     dark_registry_errors: list[str] = []
     dark_registry_by_key: dict[str, dict] = {}
     dark_cell_by_key: dict[str, object] = {}
+    dark_registry_only_alias_keys: set[str] = set()
     if dark_bridge_requested and dark_key_registry_path and dark_sheet_plan_path:
         _, dark_cells, dark_plan_errors = load_sheet_plan(dark_sheet_plan_path)
         dark_registry_by_key, dark_registry_errors = load_key_registry(dark_key_registry_path)
         if not dark_plan_errors and not dark_registry_errors:
             dark_cell_by_key = {cell.target_key: cell for cell in dark_cells}
+            dark_registry_only_alias_keys = {
+                key
+                for key, entry in dark_registry_by_key.items()
+                if key not in dark_cell_by_key and str(entry.get("aliasOf", "")).strip()
+            }
+    dark_bridge_keys = set(dark_cell_by_key) | dark_registry_only_alias_keys
 
     plan_by_key: dict[str, dict] = {}
     for candidate_plan in plans:
@@ -292,7 +299,7 @@ def validate_manifest(
                     errors.append(f"generated raw file not found for plan visualKey '{visual_key}': {candidate}.")
 
     expected_spec_keys = set(plan_by_key) | set(bundled_by_key)
-    for key in sorted(set(source_by_key) & set(bundled_by_key)):
+    for key in sorted((set(source_by_key) & set(bundled_by_key)) - dark_bridge_keys):
         source_entry = source_by_key[key]
         bundled_entry = bundled_by_key[key]
         for field_name in ("category", "rawOutputPath", "footprint", "pivotX", "pivotY", "tags", "tintColorHex"):
@@ -334,6 +341,26 @@ def validate_manifest(
                             f"sheet-plan='{cell.output_name}' source='{source_entry.get('rawOutputPath')}'."
                         )
                 expected_spec_keys |= set(dark_cell_by_key)
+                registry_only_aliases = {
+                    key: dark_registry_by_key[key]
+                    for key in sorted(dark_registry_only_alias_keys)
+                }
+                for key, registry_entry in sorted(registry_only_aliases.items()):
+                    source_entry = source_by_key.get(key)
+                    if source_entry is None:
+                        errors.append(f"canonical visual manifest is missing dark registry-only alias key '{key}'.")
+                        continue
+                    alias_of = str(registry_entry.get("aliasOf", "")).strip()
+                    alias_source_entry = source_by_key.get(alias_of)
+                    if alias_source_entry is None:
+                        errors.append(f"dark registry-only alias '{key}' points to missing canonical key '{alias_of}'.")
+                        continue
+                    if str(source_entry.get("rawOutputPath", "")).strip() != str(alias_source_entry.get("rawOutputPath", "")).strip():
+                        errors.append(
+                            f"canonical visual manifest rawOutputPath mismatch for registry-only alias '{key}': "
+                            f"alias='{source_entry.get('rawOutputPath')}' target='{alias_source_entry.get('rawOutputPath')}'."
+                        )
+                expected_spec_keys |= set(registry_only_aliases)
 
     missing_spec_keys = sorted(source_by_key.keys() - expected_spec_keys)
     extra_spec_keys = sorted(expected_spec_keys - source_by_key.keys())

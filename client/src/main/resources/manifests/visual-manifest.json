@@ -1047,15 +1047,15 @@
     {
       "key": "affix.of_life.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_minor_healing_potion.png",
+      "rawOutputPath": "dark-v1/items/affix_of_life_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "affix",
-        "life"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "affix"
       ]
     },
     {
@@ -1103,15 +1103,15 @@
     {
       "key": "affix.of_strength.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_power_strike.png",
+      "rawOutputPath": "dark-v1/items/affix_of_strength_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "affix",
-        "offense"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "affix"
       ]
     },
     {
@@ -1131,15 +1131,15 @@
     {
       "key": "affix.sharp.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
+      "rawOutputPath": "dark-v1/items/affix_sharp_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "affix",
-        "offense"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "affix"
       ]
     },
     {
@@ -1227,15 +1227,15 @@
     {
       "key": "affix.sturdy.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_basic_shield.png",
+      "rawOutputPath": "dark-v1/items/affix_sturdy_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "affix",
-        "defense"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "affix"
       ]
     },
     {
@@ -3603,35 +3603,29 @@
     {
       "key": "item.abyssal_heartstone.icon",
       "category": "icon_item",
-      "rawOutputPath": "phase4/uiux_pr03/item_abyssal_heartstone_icon.png",
+      "rawOutputPath": "dark-v1/items/item_abyssal_heartstone_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
         "uiux",
         "pr03",
-        "item",
-        "equipment",
-        "high_value",
-        "abyssal",
-        "reward",
-        "off_hand",
-        "accessory"
+        "item"
       ]
     },
     {
       "key": "item.apprentice_robe.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_apprentice_robe.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_apprentice_robe_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -3650,16 +3644,16 @@
     },
     {
       "key": "item.arcane_staff.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_arcane_staff.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_arcane_staff_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -3678,20 +3672,16 @@
     },
     {
       "key": "item.artifact.briar_heart.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/pr05/icon_item_artifact_briar_heart.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_artifact_briar_heart_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr05",
-        "item",
-        "special",
-        "artifact",
-        "greenwood_fringe",
-        "rogue",
-        "artifact"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -3748,20 +3738,16 @@
     },
     {
       "key": "item.artifact.eclipsed_relic.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/pr05/icon_item_artifact_eclipsed_relic.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_artifact_eclipsed_relic_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr05",
-        "item",
-        "special",
-        "artifact",
-        "abyssal_temple",
-        "templar",
-        "artifact"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -3784,20 +3770,16 @@
     },
     {
       "key": "item.artifact.forge_oath.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/pr05/icon_item_artifact_forge_oath.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_artifact_forge_oath_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr05",
-        "item",
-        "special",
-        "artifact",
-        "deep_iron_pit",
-        "vanguard",
-        "artifact"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -3854,20 +3836,16 @@
     },
     {
       "key": "item.artifact.river_echo.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/pr05/icon_item_artifact_river_echo.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_artifact_river_echo_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr05",
-        "item",
-        "special",
-        "artifact",
-        "underground_river",
-        "arcanist",
-        "artifact"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4178,16 +4156,16 @@
     },
     {
       "key": "item.basic_shield.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_basic_shield.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_basic_shield_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4234,16 +4212,16 @@
     },
     {
       "key": "item.chain_mail.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_chain_mail.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_chain_mail_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4262,16 +4240,16 @@
     },
     {
       "key": "item.healing_potion.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_minor_healing_potion.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_healing_potion_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4290,16 +4268,16 @@
     },
     {
       "key": "item.leather_armor.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_item_leather_armor.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_leather_armor_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "loot",
-        "sprint1"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4318,16 +4296,16 @@
     },
     {
       "key": "item.long_sword.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_item_long_sword.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_long_sword_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "loot",
-        "sprint1"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4346,16 +4324,16 @@
     },
     {
       "key": "item.mana_potion.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_item_mana_potion.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_mana_potion_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4402,16 +4380,16 @@
     },
     {
       "key": "item.scroll_teleport.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_item_scroll_teleport.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_scroll_teleport_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "reward",
-        "sprint1"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4430,16 +4408,16 @@
     },
     {
       "key": "item.short_sword.icon",
-      "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_short_sword_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4458,20 +4436,16 @@
     },
     {
       "key": "item.unique.briarbound_bow.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/pr05/icon_item_unique_briarbound_bow.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_unique_briarbound_bow_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr05",
-        "item",
-        "special",
-        "unique",
-        "greenwood_fringe",
-        "rogue",
-        "precision"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4494,19 +4468,16 @@
     },
     {
       "key": "item.unique.cinderveil_plate.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_cinderveil_plate.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_unique_cinderveil_plate_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
+        "dark-v1",
+        "uiux",
         "pr03",
-        "unique",
-        "deep_iron_pit",
-        "arcanist",
-        "survival"
+        "item"
       ]
     },
     {
@@ -4600,19 +4571,16 @@
     },
     {
       "key": "item.unique.deepcurrent_lens.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/opt_pr03/icon_item_unique_deepcurrent_lens.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_unique_deepcurrent_lens_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
+        "dark-v1",
+        "uiux",
         "pr03",
-        "unique",
-        "underground_river",
-        "arcanist",
-        "mana"
+        "item"
       ]
     },
     {
@@ -4740,20 +4708,16 @@
     },
     {
       "key": "item.unique.furnace_plate.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/pr05/icon_item_unique_furnace_plate.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_unique_furnace_plate_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr05",
-        "item",
-        "special",
-        "unique",
-        "deep_iron_pit",
-        "vanguard",
-        "fire"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -4776,20 +4740,16 @@
     },
     {
       "key": "item.unique.greenwood_watcher_blade.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/pr05/icon_item_unique_greenwood_watcher_blade.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_unique_greenwood_watcher_blade_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr05",
-        "item",
-        "special",
-        "unique",
-        "greenwood_fringe",
-        "holy",
-        "vanguard"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -5090,20 +5050,16 @@
     },
     {
       "key": "item.unique.voidlit_seal.icon",
-      "category": "icon",
-      "rawOutputPath": "phase4/pr05/icon_item_unique_voidlit_seal.png",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_unique_voidlit_seal_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr05",
-        "item",
-        "special",
-        "unique",
-        "abyssal_temple",
-        "templar",
-        "holy"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
       ]
     },
     {
@@ -5163,15 +5119,15 @@
     {
       "key": "material.adamantite.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_item_battle_axe.png",
+      "rawOutputPath": "dark-v1/items/material_adamantite_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "material",
-        "adamantite"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "material"
       ]
     },
     {
@@ -5191,15 +5147,15 @@
     {
       "key": "material.iron.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
+      "rawOutputPath": "dark-v1/items/material_iron_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "material",
-        "iron"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "material"
       ]
     },
     {
@@ -5219,15 +5175,15 @@
     {
       "key": "material.mithril.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_item_arcane_staff.png",
+      "rawOutputPath": "dark-v1/items/material_mithril_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "material",
-        "mithril"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "material"
       ]
     },
     {
@@ -5247,15 +5203,15 @@
     {
       "key": "material.steel.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_item_long_sword.png",
+      "rawOutputPath": "dark-v1/items/material_steel_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "material",
-        "steel"
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "material"
       ]
     },
     {
@@ -8687,6 +8643,208 @@
         "pr02-1",
         "round1b",
         "ui"
+      ]
+    },
+    {
+      "key": "item.hunter_bow.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_hunter_bow_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "item.war_maul.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_war_maul_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "item.forgebreaker_pick.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_forgebreaker_pick_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "item.energy_tonic.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_energy_tonic_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "item.consecrated_oil.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_consecrated_oil_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "item.bandit_trophy.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_bandit_trophy_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "item.emerald_charm.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_emerald_charm_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "item.seal_reliquary.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_seal_reliquary_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "item.sanctified_seal.icon",
+      "category": "icon_item",
+      "rawOutputPath": "dark-v1/items/item_sanctified_seal_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "item"
+      ]
+    },
+    {
+      "key": "ui.shop.price.affordable",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shop_price_affordable.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "ui",
+        "shop"
+      ]
+    },
+    {
+      "key": "ui.shop.price.unaffordable",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shop_price_unaffordable.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "ui",
+        "shop"
+      ]
+    },
+    {
+      "key": "ui.shop.inscription.marker",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shop_inscription_marker.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "ui",
+        "shop"
+      ]
+    },
+    {
+      "key": "ui.shop.replacement.slot_marker",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shop_replacement_slot_marker.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "ui",
+        "shop"
+      ]
+    },
+    {
+      "key": "ui.shop.offer.frame",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_frame_panel_body.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr03",
+        "ui",
+        "shop",
+        "alias"
       ]
     }
   ],

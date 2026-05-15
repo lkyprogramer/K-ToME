@@ -277,10 +277,10 @@ class FoundationGameSessionTest {
         val snapshot = session.renderSnapshot()
         assertEquals("greenwood_fringe", snapshot.metadata.zoneId)
         val inventoryByBase = snapshot.uiState.inventory.associateBy { entry -> entry.item.baseItemId }
-        assertEquals("item.base.rogue.weapon.icon", inventoryByBase.getValue("hunter_bow").item.iconKey)
-        assertEquals("item.base.vanguard.weapon.icon", inventoryByBase.getValue("war_maul").item.iconKey)
-        assertEquals("item.base.arcanist.off_hand.icon", inventoryByBase.getValue("emerald_charm").item.iconKey)
-        assertEquals("item.base.templar.off_hand.icon", inventoryByBase.getValue("sanctified_seal").item.iconKey)
+        assertEquals("item.hunter_bow.icon", inventoryByBase.getValue("hunter_bow").item.iconKey)
+        assertEquals("item.war_maul.icon", inventoryByBase.getValue("war_maul").item.iconKey)
+        assertEquals("item.emerald_charm.icon", inventoryByBase.getValue("emerald_charm").item.iconKey)
+        assertEquals("item.sanctified_seal.icon", inventoryByBase.getValue("sanctified_seal").item.iconKey)
         val playerCell =
             requireNotNull(
                 snapshot.mapCells.singleOrNull { cell ->
@@ -311,6 +311,67 @@ class FoundationGameSessionTest {
         assertTrue(inventoryBaseIds.size > 8, "PR-02-2 evidence requires a real backpack page 2.")
         assertEquals(inventoryBaseIds.size, snapshotInventory.size)
         assertNotNull(snapshotInventory.getOrNull(8), "Backpack index 8 must exist for ui-demo-new-inventory-page-2.")
+    }
+
+    @Test
+    fun `dark uiux pr03 launch scene seeds equipment inventory evidence`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr03-equipment-inventory-items"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr03-launch")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        val inventoryBaseIds = inventoryBaseIds(session)
+        val snapshot = session.renderSnapshot()
+
+        assertTrue("hunter_bow" in inventoryBaseIds)
+        assertTrue("emerald_charm" in inventoryBaseIds)
+        assertEquals("item.hunter_bow.icon", snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "hunter_bow" }.item.iconKey)
+        assertNotNull(logEventByKey(session, "log.validation.item.pr03_showcase"))
+    }
+
+    @Test
+    fun `dark uiux pr03 scenario actions materialize empty and stacked inventory evidence`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr03-equipment-inventory-items"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr03-scenario-actions")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertTrue(session.renderSnapshot().uiState.inventory.isEmpty())
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertEquals(listOf("healing_potion", "healing_potion", "emerald_charm"), inventoryBaseIds(session))
+        assertTrue(
+            session.renderSnapshot().logEvents.any { event ->
+                event.message.arguments.any { argument -> argument.name == "result" && argument.value == "stacked_inventory_surface_ready" }
+            },
+        )
     }
 
     @Test

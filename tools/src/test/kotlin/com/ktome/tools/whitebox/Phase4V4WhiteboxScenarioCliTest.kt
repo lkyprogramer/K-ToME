@@ -26,6 +26,7 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(exception.message?.contains("phase4-v4-pr01") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr02") == true)
         assertTrue(exception.message?.contains("dark-uiux-pr02-ui-chrome-sprite-pilot") == true)
+        assertTrue(exception.message?.contains("dark-uiux-pr03-equipment-inventory-items") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr03") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr04") == true)
     }
@@ -215,6 +216,38 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `dark uiux pr03 scenario generates equipment inventory evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr03-equipment-inventory-items"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/dark-uiux-pr03-equipment-inventory-items/evidence/dark-uiux-pr03-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=dark-uiux-pr03-equipment-inventory-items"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("- window: `1280x800`"))
+        assertTrue(runbook.contains("dark-uiux-pr03-equipment-slots.png"))
+        assertTrue(runbook.contains("dark-uiux-pr03-inventory-empty.png"))
+        assertTrue(runbook.contains("dark-uiux-pr03-inventory-stacked.png"))
+        assertTrue(runbook.contains("dark-uiux-pr03-inscription-shop.png"))
+        assertTrue(runbook.contains("dark-uiux-pr03-shop-full-slot-replace.png"))
+        assertTrue(runbook.contains("hotkeys 5-8"))
+        assertTrue(runbook.contains("UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr03-equipment-inventory-items\""))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr03-app.log"))
+        assertTrue(expectedEvidence.contains("log.validation.item.pr03_showcase"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr03-shop-full-slot-replace.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `pr04 scenario generates hidden search hook evidence names from the typed registry`() {
         val result =
             Phase4V4WhiteboxScenarioCli.run(
@@ -337,6 +370,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr02
             |  - id: dark-uiux-pr02-ui-chrome-sprite-pilot
             |  - id: dark-uiux-pr02-1-demo-shell-foundation
+            |  - id: dark-uiux-pr03-equipment-inventory-items
             |  - id: phase4-v4-pr03
             |  - id: phase4-v4-pr04
             |  - id: phase4-v4-pr05

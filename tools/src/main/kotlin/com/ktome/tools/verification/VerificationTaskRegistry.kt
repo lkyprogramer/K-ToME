@@ -300,6 +300,100 @@ object VerificationTaskRegistry {
             artifactPolicy = VerificationArtifactPolicy(),
         )
 
+    private val resourcePipelineDomain =
+        VerificationDomainSpec(
+            domainId = "resource-pipeline",
+            phaseIds = setOf("phase4", "phase5", "dark-uiux"),
+            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+            defaultTier = VerificationTier.PREFLIGHT,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "resource-pipeline.authority",
+                        description = "Validates project-wide image, sprite-sheet, audio, manifest, and resource inventory authority.",
+                        workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                        tier = VerificationTier.PREFLIGHT,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedTags = listOf("resourcePipelineLint"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "resource-pipeline.image",
+                        pathPrefixes =
+                            listOf(
+                                "assets-src/image/specs/",
+                                "assets-src/image/raw/",
+                                "assets-src/image/processed/",
+                                "assets-src/image/contact-sheets/",
+                                "assets-src/image/manifests/",
+                                "client/src/main/resources/dark-v1/",
+                                "client/src/main/resources/phase2/",
+                                "client/src/main/resources/phase3/",
+                                "client/src/main/resources/phase4/",
+                            ),
+                    ),
+                    InputScope(
+                        scopeId = "resource-pipeline.dark-sheet",
+                        pathPrefixes =
+                            listOf(
+                                "UI/sprite-sheets/",
+                                "scripts/dark_sprite_sheet_contract.py",
+                                "scripts/generate_sheet_prompt.py",
+                                "scripts/slice_spritesheet.py",
+                                "scripts/render_contact_sheet.py",
+                                "scripts/verify_dark_key_registry.py",
+                                "scripts/verify_dark_manifest_coverage.py",
+                                "scripts/verify_sprite_sheet_map.py",
+                            ),
+                    ),
+                    InputScope(
+                        scopeId = "resource-pipeline.audio",
+                        pathPrefixes =
+                            listOf(
+                                "assets-src/audio/specs/",
+                                "assets-src/audio/raw/",
+                                "assets-src/audio/cleaned/",
+                                "assets-src/audio/manifests/",
+                                "client/src/main/resources/audio/",
+                                "scripts/audio-lint.py",
+                                "scripts/process_audio.py",
+                            ),
+                    ),
+                    InputScope(
+                        scopeId = "resource-pipeline.manifest-sync",
+                        pathPrefixes =
+                            listOf(
+                                "client/src/main/resources/manifests/",
+                                "scripts/asset-lint.py",
+                                "scripts/asset_pipeline_common.py",
+                                "scripts/codex-generate-image.py",
+                                "scripts/manifest-lint.py",
+                                "scripts/resource_pipeline_authority_lint.py",
+                                "scripts/style-lint.py",
+                                "scripts/sync_phase2_manifests.py",
+                            ),
+                    ),
+                    InputScope(
+                        scopeId = "resource-pipeline.production-inventory",
+                        pathPrefixes =
+                            listOf(
+                                "client/src/main/kotlin/com/ktome/client/assets/",
+                            ),
+                    ),
+                ),
+            preflightTaskPaths = listOf(":tools:resourcePipelineLint"),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
     private val lootDomain =
         VerificationDomainSpec(
             domainId = "loot",
@@ -887,6 +981,7 @@ object VerificationTaskRegistry {
             keywordRegistryDomain,
             clientUiEvidenceDomain,
             darkUiuxPipelineDomain,
+            resourcePipelineDomain,
             lootDomain,
             hiddenDomain,
             organicHiddenDomain,

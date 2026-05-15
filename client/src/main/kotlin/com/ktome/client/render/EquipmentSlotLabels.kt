@@ -6,10 +6,16 @@ internal fun equipmentSlotLabel(
     localizer: Localizer,
     slotId: String,
 ): String =
+    equipmentSlotLabelKey(slotId)
+        .takeIf { key -> key != slotId }
+        ?.let(localizer::text)
+        ?: slotId
+
+internal fun equipmentSlotLabelKey(slotId: String): String =
     when (slotId) {
-        "WEAPON" -> localizer.text("ui.sidebar.weapon")
-        "OFF_HAND" -> localizer.text("ui.sidebar.off_hand")
-        "ARMOR" -> localizer.text("ui.sidebar.armor")
-        "ACCESSORY" -> localizer.text("ui.reward.slot.accessory")
+        "WEAPON" -> "ui.sidebar.weapon"
+        "OFF_HAND" -> "ui.sidebar.off_hand"
+        "ARMOR" -> "ui.sidebar.armor"
+        "ACCESSORY" -> "ui.reward.slot.accessory"
         else -> slotId
     }

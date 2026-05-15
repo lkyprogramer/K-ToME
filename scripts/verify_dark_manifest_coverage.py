@@ -82,12 +82,25 @@ def key_counts_by_sheet(keys: list[str], registry_by_key: dict[str, dict[str, An
     return dict(sorted(counts.items()))
 
 
+def registry_only_alias_keys(
+    keys: list[str],
+    registry_by_key: dict[str, dict[str, Any]],
+    cells_by_key: dict[str, Any],
+) -> list[str]:
+    return sorted(
+        key
+        for key in keys
+        if key not in cells_by_key and str(registry_by_key.get(key, {}).get("aliasOf", "")).strip()
+    )
+
+
 def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]:
     _, cells, plan_errors = load_sheet_plan(args.plan)
     registry_by_key, registry_errors = load_key_registry(args.registry)
     manifest_by_key = load_manifest_entries(args.manifest)
     runtime_by_key = load_manifest_entries(args.runtime_manifest)
     errors = plan_errors + registry_errors
+    cells_by_key = {cell.target_key: cell for cell in cells}
 
     if args.coverage_mode == "owner-scope" and not args.owner_pr:
         errors.append("owner-scope coverage requires --owner-pr.")
@@ -165,10 +178,11 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
     owner_unexpected_keys: list[str] = []
     required_owner_key_count_by_sheet: dict[str, int] = {}
     owner_expected_key_count_by_sheet: dict[str, int] = {}
+    alias_only_keys = registry_only_alias_keys(expected_keys, registry_by_key, cells_by_key)
     if args.coverage_mode == "owner-scope" and owner_contract is not None:
         required_owner_keys = sorted(cell.target_key for cell in owner_contract.required_cells)
         owner_missing_required_keys = sorted(set(required_owner_keys) - set(expected_keys))
-        owner_unexpected_keys = sorted(set(expected_keys) - set(required_owner_keys))
+        owner_unexpected_keys = sorted(set(expected_keys) - set(required_owner_keys) - set(alias_only_keys))
         required_owner_key_count_by_sheet = dict(
             sorted(
                 {
@@ -213,6 +227,7 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
             {
                 str(registry_by_key[key].get("sheetId", "")).strip()
                 for key in expected_keys
+                if key not in alias_only_keys
             }
         )
         missing_required_sheet_ids = sorted(set(required_owner_sheet_ids) - set(owner_sheet_ids))
@@ -234,6 +249,7 @@ def build_coverage(args: argparse.Namespace) -> tuple[dict[str, Any], list[str]]
                 "ownerMissingKeys": missing_keys,
                 "ownerMissingRequiredKeys": owner_missing_required_keys,
                 "ownerUnexpectedKeys": owner_unexpected_keys,
+                "ownerAliasOnlyKeys": alias_only_keys,
                 "requiredOwnerKeyCountBySheet": required_owner_key_count_by_sheet,
                 "ownerExpectedKeyCountBySheet": owner_expected_key_count_by_sheet,
                 "ownerPendingKeys": pending_keys,

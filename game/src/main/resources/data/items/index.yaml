@@ -2015,8 +2015,8 @@ items:
   - id: hunter_bow
     nameKey: item.hunter_bow.name
     descKey: item.hunter_bow.desc
-    visualKey: item.base.rogue.weapon.icon
-    iconKey: item.base.rogue.weapon.icon
+    visualKey: item.hunter_bow.icon
+    iconKey: item.hunter_bow.icon
     audioProfile: audio.item.long_sword
     schemaVersion: 2
     tags: [item, weapon, rogue, energy, ranged, precision, mobility, kite]
@@ -2033,8 +2033,8 @@ items:
   - id: war_maul
     nameKey: item.war_maul.name
     descKey: item.war_maul.desc
-    visualKey: item.base.vanguard.weapon.icon
-    iconKey: item.base.vanguard.weapon.icon
+    visualKey: item.war_maul.icon
+    iconKey: item.war_maul.icon
     audioProfile: audio.item.battle_axe
     schemaVersion: 2
     tags: [item, weapon, melee, hate, cleave, bruise, stagger]
@@ -2050,8 +2050,8 @@ items:
   - id: forgebreaker_pick
     nameKey: item.forgebreaker_pick.name
     descKey: item.forgebreaker_pick.desc
-    visualKey: item.base.vanguard.weapon.icon
-    iconKey: item.base.vanguard.weapon.icon
+    visualKey: item.forgebreaker_pick.icon
+    iconKey: item.forgebreaker_pick.icon
     audioProfile: audio.item.battle_axe
     schemaVersion: 2
     tags: [item, weapon, melee, frontline, stamina, sunder, forge]
@@ -2084,8 +2084,8 @@ items:
   - id: bandit_trophy
     nameKey: item.bandit_trophy.name
     descKey: item.bandit_trophy.desc
-    visualKey: item.base.rogue.off_hand.icon
-    iconKey: item.base.rogue.off_hand.icon
+    visualKey: item.bandit_trophy.icon
+    iconKey: item.bandit_trophy.icon
     audioProfile: audio.item.basic_shield
     schemaVersion: 2
     tags: [item, armor, accessory, rogue, precision]
@@ -2101,8 +2101,8 @@ items:
   - id: emerald_charm
     nameKey: item.emerald_charm.name
     descKey: item.emerald_charm.desc
-    visualKey: item.base.arcanist.off_hand.icon
-    iconKey: item.base.arcanist.off_hand.icon
+    visualKey: item.emerald_charm.icon
+    iconKey: item.emerald_charm.icon
     audioProfile: audio.item.mana_potion
     schemaVersion: 2
     tags: [item, armor, accessory, arcanist, arcane, sustain]
@@ -2135,8 +2135,8 @@ items:
   - id: seal_reliquary
     nameKey: item.seal_reliquary.name
     descKey: item.seal_reliquary.desc
-    visualKey: item.base.arcanist.off_hand.icon
-    iconKey: item.base.arcanist.off_hand.icon
+    visualKey: item.seal_reliquary.icon
+    iconKey: item.seal_reliquary.icon
     audioProfile: audio.item.scroll_teleport
     schemaVersion: 2
     tags: [item, armor, accessory, arcanist, shadow, protection, spell, seal]
@@ -2152,8 +2152,8 @@ items:
   - id: sanctified_seal
     nameKey: item.sanctified_seal.name
     descKey: item.sanctified_seal.desc
-    visualKey: item.base.templar.off_hand.icon
-    iconKey: item.base.templar.off_hand.icon
+    visualKey: item.sanctified_seal.icon
+    iconKey: item.sanctified_seal.icon
     audioProfile: audio.item.basic_shield
     schemaVersion: 2
     tags: [item, armor, accessory, reward, templar, holy, protection, seal]
@@ -2201,8 +2201,8 @@ items:
   - id: energy_tonic
     nameKey: item.energy_tonic.name
     descKey: item.energy_tonic.desc
-    visualKey: item.mana_potion.visual
-    iconKey: item.mana_potion.icon
+    visualKey: item.energy_tonic.icon
+    iconKey: item.energy_tonic.icon
     audioProfile: audio.item.mana_potion
     schemaVersion: 2
     tags: [item, consumable, rescue, recovery]
@@ -2217,8 +2217,8 @@ items:
   - id: consecrated_oil
     nameKey: item.consecrated_oil.name
     descKey: item.consecrated_oil.desc
-    visualKey: item.healing_potion.visual
-    iconKey: item.healing_potion.icon
+    visualKey: item.consecrated_oil.icon
+    iconKey: item.consecrated_oil.icon
     audioProfile: audio.item.healing_potion
     schemaVersion: 2
     tags: [item, consumable, rescue, cleansing]

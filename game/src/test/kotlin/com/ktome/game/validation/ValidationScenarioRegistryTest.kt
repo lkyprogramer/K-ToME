@@ -173,6 +173,32 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `dark uiux pr03 equipment inventory scenario maps to evidence contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr03-equipment-inventory-items"))
+
+        assertEquals("PR-03", scenario.prId)
+        assertEquals(ValidationPreset.LOOT_LAB, scenario.runtime.preset)
+        assertEquals(2026050903L, scenario.runtime.seed)
+        assertEquals(GameLocale.ZH_CN, scenario.runtime.locale)
+        assertEquals("rogue", scenario.runtime.professionId)
+        assertEquals("greenwood_fringe", scenario.runtime.zoneId)
+        assertEquals(
+            listOf(
+                "evidence/dark-uiux-pr03-equipment-slots.png",
+                "evidence/dark-uiux-pr03-inventory-empty.png",
+                "evidence/dark-uiux-pr03-inventory-stacked.png",
+                "evidence/dark-uiux-pr03-inscription-shop.png",
+                "evidence/dark-uiux-pr03-shop-full-slot-replace.png",
+                "evidence/dark-uiux-pr03-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals("UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md", scenario.evidence.manualRecordPath)
+        assertEquals(listOf("log.validation.item.pr03_showcase"), scenario.evidence.requiredLogEventKeys)
+        assertTrue(scenario.evidence.cuaSteps.any { step -> step.expectedVisibleResult.contains("hotkeys 5-8") })
+    }
+
+    @Test
     fun `pr03 build identity reward scenario matches fixed phase4 v4 contract`() {
         val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr03"))
 

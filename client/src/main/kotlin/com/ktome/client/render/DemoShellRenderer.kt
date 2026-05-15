@@ -1,6 +1,7 @@
 package com.ktome.client.render
 
 import com.badlogic.gdx.graphics.Color
+import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.render.layout.DemoSlotGridLayout
 import com.ktome.client.render.layout.GameShellBounds
 import com.ktome.client.ui.chrome.ChromeFrameAssetDraw
@@ -155,7 +156,7 @@ internal object DemoShellRenderer {
         )
         drawSection(canvas, chrome, layout.backpack, demo.rightBackpackTitle, layout.backpackSlots, demo.backpackSlots)
         drawBackpackPager(canvas, layout.backpackPager, demo.backpackPageLabel)
-        drawOperationHintsSection(canvas, chrome, layout.operationHints, demo.rightOperationHintsTitle, demo.operationHints)
+        drawOperationHintsSection(canvas, chrome, layout.operationHints, demo.rightOperationHintsTitle, demo.operationRows)
     }
 
     private fun drawSection(
@@ -227,7 +228,7 @@ internal object DemoShellRenderer {
         chrome: TileChromeAssets,
         bounds: GameShellBounds,
         title: String,
-        lines: List<String>,
+        rows: List<TileTextRow>,
     ) {
         drawSectionTitle(canvas, chrome, bounds, title)
         val plateBounds =
@@ -252,40 +253,87 @@ internal object DemoShellRenderer {
                 width = plateBounds.width - 16f,
                 height = plateBounds.height - 12f,
         )
-        val displayRows = operationHintRows(lines)
         val rowCount = ((content.height - 4f) / OPERATION_LINE_HEIGHT).toInt().coerceAtLeast(1)
-        displayRows.take(rowCount).forEachIndexed { index, line ->
+        val displayRows = compactVisualOperationRows(operationHintRows(rows), rowCount)
+        displayRows.take(rowCount).forEachIndexed { index, row ->
             val baselineY = content.top - 5f - index * OPERATION_LINE_HEIGHT
-            drawRowPlate(canvas, GameShellBounds(content.x, baselineY - 12f, content.width, 15f))
+            val rowBounds = GameShellBounds(content.x, baselineY - 12f, content.width, 15f)
+            drawRowPlate(canvas, rowBounds)
+            row.frame?.let { frame ->
+                canvas.drawAsset(frame, rowBounds.toTileBounds(), alpha = 0.72f)
+            }
+            var textX = content.x + 4f
+            row.forEachVisualIcon(limit = 3) { icon ->
+                val iconSide = 13f
+                canvas.drawAsset(icon, tileBounds(textX, baselineY - 11f, iconSide, iconSide), alpha = 0.94f)
+                textX += iconSide + 3f
+            }
             drawBoundedText(
                 canvas = canvas,
-                text = line,
-                x = content.x + 4f,
+                text = row.text,
+                x = textX,
                 baselineY = baselineY,
-                maxWidth = content.width - 8f,
-                tone = TileTextTone.LIGHT_GRAY,
+                maxWidth = (content.right - textX - 4f).coerceAtLeast(1f),
+                tone = row.tone,
             )
         }
     }
 
-    private fun operationHintRows(lines: List<String>): List<String> =
-        lines
-            .filter(String::isNotBlank)
-            .let { rows ->
-                if (rows.size >= 6) {
+    private fun compactVisualOperationRows(
+        rows: List<TileTextRow>,
+        maxRows: Int,
+    ): List<TileTextRow> {
+        if (rows.size <= maxRows) {
+            return rows
+        }
+        val visualRows = rows.filter(TileTextRow::hasVisualIcons)
+        if (visualRows.size <= 1) {
+            return rows
+        }
+        val leadingRows = rows.takeWhile { row -> !row.hasVisualIcons() }.take(1)
+        val availableVisualRows = (maxRows - leadingRows.size).coerceAtLeast(1)
+        if (visualRows.size <= availableVisualRows) {
+            return rows.take(maxRows)
+        }
+        val groupSize = ((visualRows.size + availableVisualRows - 1) / availableVisualRows).coerceAtLeast(1)
+        return leadingRows + visualRows.chunked(groupSize).map(::compactVisualOperationGroup)
+    }
+
+    private fun compactVisualOperationGroup(rows: List<TileTextRow>): TileTextRow {
+        val icons = mutableListOf<ResolvedVisualAsset>()
+        rows.forEach { row -> row.forEachVisualIcon { icon -> icons += icon } }
+        return TileTextRow(
+            text = rows.joinToString("  ") { row -> row.text.substringBefore("[").trim() },
+            tone = rows.first().tone,
+            icon = icons.firstOrNull(),
+            selected = rows.any(TileTextRow::selected),
+            extraIcons = icons.drop(1),
+            frame = rows.firstOrNull { row -> row.frame != null }?.frame,
+        )
+    }
+
+    private fun operationHintRows(rows: List<TileTextRow>): List<TileTextRow> =
+        rows
+            .filter { row -> row.text.isNotBlank() }
+            .let { filteredRows ->
+                if (filteredRows.any { row -> row.hasVisualIcons() || row.frame != null }) {
+                    filteredRows
+                } else if (filteredRows.size >= 6) {
                     listOf(
-                        "${rows[0]}    ${rows[1]}",
-                        "${rows[2]}    ${rows[3]}",
-                        "${rows[4]}    ${rows[5]}",
+                        TileTextRow("${filteredRows[0].text}    ${filteredRows[1].text}", TileTextTone.LIGHT_GRAY),
+                        TileTextRow("${filteredRows[2].text}    ${filteredRows[3].text}", TileTextTone.LIGHT_GRAY),
+                        TileTextRow("${filteredRows[4].text}    ${filteredRows[5].text}", TileTextTone.LIGHT_GRAY),
                     )
-                } else if (rows.size >= 5) {
+                } else if (filteredRows.size >= 5) {
                     listOf(
-                        "${rows[0]}    ${rows[1]}",
-                        "${rows[2]}    ${rows[3]}",
-                        rows[4],
+                        TileTextRow("${filteredRows[0].text}    ${filteredRows[1].text}", TileTextTone.LIGHT_GRAY),
+                        TileTextRow("${filteredRows[2].text}    ${filteredRows[3].text}", TileTextTone.LIGHT_GRAY),
+                        filteredRows[4],
                     )
                 } else {
-                    rows.chunked(2).map { pair -> pair.joinToString("    ") }
+                    filteredRows.chunked(2).map { pair ->
+                        TileTextRow(pair.joinToString("    ") { row -> row.text }, TileTextTone.LIGHT_GRAY)
+                    }
                 }
             }
 
@@ -303,14 +351,29 @@ internal object DemoShellRenderer {
         slot: TileDemoSlotModel,
     ) {
         val slotAsset =
-            when (slot.state) {
-                TileDemoSlotState.EMPTY -> chrome.slotEmpty
-                TileDemoSlotState.FILLED -> chrome.slotEquipped
-            }
+            slot.frame
+                ?: when {
+                    slot.selected -> chrome.slotSelected
+                    slot.state == TileDemoSlotState.EMPTY -> chrome.slotEmpty
+                    else -> chrome.slotEquipped
+                }
         canvas.drawAsset(slotAsset, slotBounds.toTileBounds(), alpha = 0.82f)
+        slot.qualityTierId?.let { qualityTierId ->
+            drawQualityMarker(canvas, slotBounds, qualityTierId)
+        }
         slot.icon?.let { icon ->
             val iconInset = slotBounds.width * 0.18f
             canvas.drawAsset(icon, tileBounds(slotBounds.x + iconInset, slotBounds.y + iconInset, slotBounds.width - iconInset * 2f, slotBounds.height - iconInset * 2f))
+        }
+        slot.quantityText?.takeIf(String::isNotBlank)?.let { quantity ->
+            drawBoundedText(
+                canvas = canvas,
+                text = quantity,
+                x = slotBounds.x + slotBounds.width * 0.52f,
+                baselineY = slotBounds.y + 12f,
+                maxWidth = slotBounds.width * 0.42f,
+                tone = TileTextTone.GOLD,
+            )
         }
     }
 
@@ -459,6 +522,7 @@ internal object DemoShellRenderer {
             borderColor = demoSubtleBorder(),
             alpha = 0.86f,
         )
+        drawLogDeckSurface(canvas, log)
         val logContent = contentBounds(log, ChromeSurfaceKind.Panel)
         val rowCount = maxRows(logContent.height - 8f)
         frame.textLayout.messageLines
@@ -469,9 +533,31 @@ internal object DemoShellRenderer {
             .take(rowCount)
             .forEachIndexed { index, line ->
                 val baselineY = logContent.top - 6f - index * SMALL_LINE_HEIGHT
-                drawRowPlate(canvas, GameShellBounds(logContent.x, baselineY - 14f, logContent.width, 18f))
-                drawBoundedText(canvas, line.text, logContent.x + 4f, baselineY, logContent.width - 8f, line.tone)
+                var textX = logContent.x + 8f
+                line.icon?.let { icon ->
+                    val iconSide = 14f
+                    canvas.drawAsset(icon, tileBounds(textX, baselineY - 12f, iconSide, iconSide), alpha = 0.86f)
+                    textX += iconSide + 5f
+                }
+                drawBoundedText(canvas, line.text, textX, baselineY, logContent.right - textX - 8f, line.tone)
             }
+    }
+
+    private fun drawLogDeckSurface(
+        canvas: TileCanvas,
+        bounds: GameShellBounds,
+    ) {
+        val edge = ChromeFramePainter.frameEdgeSize
+        val body =
+            GameShellBounds(
+                x = bounds.x + edge,
+                y = bounds.y + edge,
+                width = (bounds.width - edge * 2f).coerceAtLeast(1f),
+                height = (bounds.height - edge * 2f).coerceAtLeast(1f),
+            )
+        canvas.drawRect(body.toTileBounds(), color("070605", 0.9f))
+        canvas.drawRect(tileBounds(body.x, body.top - 2f, body.width, 2f), color("1CB7C8", 0.24f))
+        canvas.drawRect(tileBounds(body.x, body.y, 2f, body.height), color("B8873E", 0.18f))
     }
 
     private fun drawDivider(
@@ -512,14 +598,40 @@ internal object DemoShellRenderer {
         if (slot.state == TileDemoSlotState.EMPTY || slot.label.isBlank()) {
             return
         }
+        if (slot.icon != null && !slot.showBadge) {
+            return
+        }
+        val badgeWidth = minOf(slotBounds.width - 6f, 22f + slot.label.length * 7f).coerceAtLeast(18f)
+        val badgeBounds =
+            GameShellBounds(
+                x = slotBounds.x + 3f,
+                y = slotBounds.y + 3f,
+                width = badgeWidth,
+                height = 14f,
+            )
+        drawRowPlate(canvas, badgeBounds)
         drawBoundedText(
             canvas = canvas,
             text = slot.label,
-            x = slotBounds.x + 5f,
-            baselineY = slotBounds.top - 7f,
-            maxWidth = slotBounds.width - 10f,
+            x = badgeBounds.x + 4f,
+            baselineY = badgeBounds.y + 11f,
+            maxWidth = badgeBounds.width - 8f,
             tone = TileTextTone.GOLD,
         )
+    }
+
+    private fun drawQualityMarker(
+        canvas: TileCanvas,
+        slotBounds: GameShellBounds,
+        qualityTierId: String,
+    ) {
+        val markerColor =
+            when (qualityTierId.uppercase()) {
+                "RARE" -> color("D8A73F", 0.82f)
+                "MAGIC" -> color("446ED8", 0.72f)
+                else -> color("C5C9C4", 0.42f)
+            }
+        canvas.drawRect(tileBounds(slotBounds.x + 3f, slotBounds.y + 3f, 3f, slotBounds.height - 6f), markerColor)
     }
 
     private fun drawGauge(

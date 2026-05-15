@@ -93,6 +93,7 @@ val verifyChangedTaskPaths =
         ":tools:darkKeyRegistryLint",
         ":tools:darkSpriteSheetLint",
         ":tools:spriteSheetMapLint",
+        ":tools:resourcePipelineLint",
         ":tools:darkManifestCoveragePr02OwnerScope",
         ":tools:darkManifestCoveragePr02_1OwnerScope",
         ":tools:darkManifestCoveragePr02_2OwnerScope",
@@ -120,6 +121,7 @@ val verifyChangedPreflightTaskPaths =
         ":tools:prepareVerifyChangedPlan",
         ":tools:scopeCoverageLint",
         ":tools:maintainabilityLint",
+        ":tools:resourcePipelineLint",
         ":tools:verifyContractLintPreflight",
         ":tools:verifyLootPreflight",
         ":tools:verifyHiddenPreflight",
@@ -361,6 +363,7 @@ val clientAndAssetsGate = tasks.register("clientAndAssetsGate") {
     dependsOn("styleLint")
     dependsOn("audioLint")
     dependsOn("manifestLint")
+    dependsOn("resourcePipelineLint")
 }
 
 val verificationGate = tasks.register("verificationGate") {
@@ -468,6 +471,12 @@ tasks.register("darkManifestCoverageLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates dark-v1 manifest coverage using ktome.darkUiux.coverageMode."
     dependsOn(":tools:darkManifestCoverageLint")
+}
+
+tasks.register("resourcePipelineLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates project-wide resource generation authority across image, sheet, and audio plans."
+    dependsOn(":tools:resourcePipelineLint")
 }
 
 tasks.register("verifyContractLintPreflight") {
@@ -958,6 +967,7 @@ tasks.register("preReleaseAcceptance") {
     dependsOn("styleLint")
     dependsOn("audioLint")
     dependsOn("manifestLint")
+    dependsOn("resourcePipelineLint")
     dependsOn("goldenScreenshot")
     dependsOn("headlessSmoke")
     dependsOn("soloClearLab")
@@ -980,6 +990,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("styleLint")
     dependsOn("audioLint")
     dependsOn("manifestLint")
+    dependsOn("resourcePipelineLint")
     dependsOn("goldenScreenshot")
     dependsOn("headlessSmoke")
     dependsOn("soloClearLab")

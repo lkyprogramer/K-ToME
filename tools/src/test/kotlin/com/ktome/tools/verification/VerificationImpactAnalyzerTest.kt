@@ -325,19 +325,46 @@ class VerificationImpactAnalyzerTest {
             val plan = VerificationImpactAnalyzer.analyze(listOf(changedFile))
 
             assertEquals(
-                setOf("dark-uiux-pipeline"),
+                setOf("dark-uiux-pipeline", "resource-pipeline"),
                 plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet(),
                 "changedFile=$changedFile plan=$plan",
             )
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkKeyRegistryLint"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkSpriteSheetLint"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:spriteSheetMapLint"), "changedFile=$changedFile plan=$plan")
+            assertTrue(plan.requestedTaskPaths.contains(":tools:resourcePipelineLint"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02OwnerScope"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02_1OwnerScope"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02_2OwnerScope"), "changedFile=$changedFile plan=$plan")
             assertFalse(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr00DryRun"), "changedFile=$changedFile plan=$plan")
             assertFalse(plan.requestedTaskPaths.contains(":tools:darkManifestCoverageLint"), "changedFile=$changedFile plan=$plan")
-            assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedPreflightTaskPaths, "changedFile=$changedFile plan=$plan")
+            assertEquals(
+                listOf(":tools:scopeCoverageLint", ":tools:resourcePipelineLint"),
+                plan.requestedPreflightTaskPaths,
+                "changedFile=$changedFile plan=$plan",
+            )
+        }
+    }
+
+    @Test
+    fun `image audio and client asset authority changes route to resource pipeline lint`() {
+        val changedFiles =
+            listOf(
+                "assets-src/image/specs/phase4-uiux-pr03-gemini-plan.yaml",
+                "assets-src/audio/specs/phase4-uiux-pr03-audio-plan.yaml",
+                "client/src/main/kotlin/com/ktome/client/assets/DarkUiChromeVisualKeys.kt",
+                "scripts/resource_pipeline_authority_lint.py",
+            )
+
+        changedFiles.forEach { changedFile ->
+            val plan = VerificationImpactAnalyzer.analyze(listOf(changedFile))
+
+            assertTrue(
+                plan.impactedDomains.any { impact -> impact.domainId == "resource-pipeline" },
+                "changedFile=$changedFile plan=$plan",
+            )
+            assertTrue(plan.requestedTaskPaths.contains(":tools:resourcePipelineLint"), "changedFile=$changedFile plan=$plan")
+            assertTrue(plan.requestedPreflightTaskPaths.contains(":tools:resourcePipelineLint"), "changedFile=$changedFile plan=$plan")
         }
     }
 
