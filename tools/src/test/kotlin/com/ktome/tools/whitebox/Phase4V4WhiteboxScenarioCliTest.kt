@@ -143,6 +143,48 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `dark uiux pr02 2 scenario generates ui demo new evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr02-1-demo-shell-foundation"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=dark-uiux-pr02-1-demo-shell-foundation"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.root=build/whitebox/dark-uiux-pr02-1-demo-shell-foundation"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.evidenceDir=build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/ui-demo-new-visual-parity.md"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("- locale: `zh-CN`"))
+        assertTrue(runbook.contains("- window: `1672x941`"))
+        listOf(
+            "ui-demo-new-parity-1672x941.png",
+            "ui-demo-new-parity-1280x800.png",
+            "ui-demo-new-right-panel-grid.png",
+            "ui-demo-new-bottom-deck-no-command-hints.png",
+            "ui-demo-new-inventory-page-1.png",
+            "ui-demo-new-inventory-page-2.png",
+            "ui-demo-new-nav-rail-crop.png",
+            "ui-demo-new-map-stage-crop.png",
+        ).forEach { evidenceName ->
+            assertTrue(runbook.contains(evidenceName), evidenceName)
+            assertTrue(runbook.contains("scripts/capture-macos-app-window.sh --bundle-id com.ktome.client --app-name K-ToME --out build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/$evidenceName"), evidenceName)
+        }
+        assertTrue(runbook.contains("UI/manual-records/ui-demo-new-visual-parity.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr02-1-demo-shell-foundation\""))
+        assertTrue(expectedEvidence.contains("ui-demo-new-app.log"))
+        assertTrue(expectedEvidence.contains("ui-demo-new-parity-1672x941.png.sha256"))
+        assertTrue(expectedEvidence.contains("ui-demo-new-map-stage-crop.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `pr03 scenario generates build identity reward evidence names from the typed registry`() {
         val result =
             Phase4V4WhiteboxScenarioCli.run(
@@ -294,6 +336,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr01
             |  - id: phase4-v4-pr02
             |  - id: dark-uiux-pr02-ui-chrome-sprite-pilot
+            |  - id: dark-uiux-pr02-1-demo-shell-foundation
             |  - id: phase4-v4-pr03
             |  - id: phase4-v4-pr04
             |  - id: phase4-v4-pr05

@@ -1,6 +1,10 @@
 package com.ktome.client.input
 
+import com.badlogic.gdx.Input.Buttons
 import com.badlogic.gdx.Input.Keys
+import com.ktome.client.render.DemoNavRailButtonLayout
+import com.ktome.client.render.layout.DemoShellLayoutRequest
+import com.ktome.client.render.layout.DemoShellLayoutSolver
 import com.ktome.client.ui.combat.CombatDecisionFeedbackKeys
 import com.ktome.client.ui.combat.CombatDecisionFrame
 import com.ktome.client.ui.combat.CombatDecisionFrameState
@@ -55,6 +59,14 @@ enum class ShopFocus {
     SELL,
 }
 
+private enum class DemoNavRailAction {
+    MAP,
+    INVENTORY,
+    CONTEXT,
+    TALENT,
+    VALIDATION,
+}
+
 data class OverlayState(
     val mode: UiMode,
     val modalFrames: List<ModalFrame> = emptyList(),
@@ -92,9 +104,18 @@ class InputHandler(
     private val validationScenarioId: ValidationScenarioId? = null,
 ) {
     private val uiMessageDisplayFrames = 90
+    private val inventoryPageSize = 8
     private val overlayCloseBindings = listOf(Keys.F)
     private val repeatInitialDelayFrames = 12
     private val repeatIntervalFrames = 3
+    private val demoNavRailActions =
+        listOf(
+            DemoNavRailAction.MAP,
+            DemoNavRailAction.INVENTORY,
+            DemoNavRailAction.CONTEXT,
+            DemoNavRailAction.TALENT,
+            DemoNavRailAction.VALIDATION,
+        )
     private val movementBindings =
         linkedMapOf(
             Keys.Q to Point(-1, -1),
@@ -185,6 +206,9 @@ class InputHandler(
         debugMessageKey = null
         reconcileMode(snapshot)
         if (toggleValidationModeIfRequested(snapshot)) {
+            return null
+        }
+        if (pollDemoNavRailClick(snapshot)) {
             return null
         }
         if (mode != UiMode.MAP) {
@@ -406,14 +430,7 @@ class InputHandler(
         }
 
         if (input.isKeyJustPressed(Keys.I)) {
-            inventorySelection = inventorySelection.coerceAtMost((snapshot.uiState.inventory.size - 1).coerceAtLeast(0))
-            openModalFrame(
-                ModalFrame(
-                    kind = ModalFrameKind.INVENTORY,
-                    localState = ModalFrameLocalState(inventorySelection = inventorySelection),
-                ),
-            )
-            resetMovementRepeat()
+            enterInventory(snapshot)
             return null
         }
 
@@ -815,6 +832,18 @@ class InputHandler(
             return null
         }
 
+        if (input.isKeyJustPressed(Keys.PAGE_UP)) {
+            inventorySelection = previousInventoryPageStart(inventorySelection)
+            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.PAGE_DOWN)) {
+            inventorySelection = nextInventoryPageStart(inventorySelection, inventorySize)
+            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+            return null
+        }
+
         if (
             input.isKeyJustPressed(Keys.ENTER) ||
             input.isKeyJustPressed(Keys.SPACE)
@@ -832,6 +861,17 @@ class InputHandler(
         }
 
         return null
+    }
+
+    private fun previousInventoryPageStart(selection: Int): Int =
+        (((selection / inventoryPageSize) - 1).coerceAtLeast(0)) * inventoryPageSize
+
+    private fun nextInventoryPageStart(
+        selection: Int,
+        inventorySize: Int,
+    ): Int {
+        val nextPageStart = ((selection / inventoryPageSize) + 1) * inventoryPageSize
+        return nextPageStart.coerceAtMost(inventorySize - 1)
     }
 
     private fun pollItemDetailCommand(snapshot: RenderSnapshot): PlayerCommand? {
@@ -1428,6 +1468,90 @@ class InputHandler(
         }
     }
 
+    private fun pollDemoNavRailClick(snapshot: RenderSnapshot): Boolean {
+        if (!input.isButtonJustPressed(Buttons.LEFT)) {
+            return false
+        }
+        val layout =
+            DemoShellLayoutSolver.resolve(
+                DemoShellLayoutRequest(
+                    viewportWidth = input.viewportWidth(),
+                    viewportHeight = input.viewportHeight(),
+                    cellSize = 32,
+                ),
+            )
+        val hitIndex =
+            DemoNavRailButtonLayout
+                .resolve(layout.navRail, demoNavRailActions.size)
+                .indexOfFirst { bounds -> bounds.contains(input.pointerX().toFloat(), input.pointerY().toFloat()) }
+        if (hitIndex < 0) {
+            return false
+        }
+        handleDemoNavRailAction(demoNavRailActions[hitIndex], snapshot)
+        return true
+    }
+
+    private fun handleDemoNavRailAction(
+        action: DemoNavRailAction,
+        snapshot: RenderSnapshot,
+    ) {
+        when (action) {
+            DemoNavRailAction.MAP -> {
+                closeTransientNavPanels()
+                paneFocusController.set(PaneFocusAnchor.WORLD)
+            }
+
+            DemoNavRailAction.INVENTORY -> {
+                closeTransientNavPanels()
+                enterInventory(snapshot)
+            }
+
+            DemoNavRailAction.CONTEXT -> {
+                closeTransientNavPanels()
+                paneFocusController.set(PaneFocusAnchor.CONTEXT)
+                resetMovementRepeat()
+            }
+
+            DemoNavRailAction.TALENT -> {
+                if (!canOpenTalentAllocation(snapshot)) {
+                    showUiMessage("ui.message.nav.talent-unavailable")
+                    return
+                }
+                closeTransientNavPanels()
+                enterTalentAssign(snapshot)
+            }
+
+            DemoNavRailAction.VALIDATION -> {
+                if (mode == UiMode.VALIDATION) {
+                    clearValidation()
+                    return
+                }
+                if (!enterValidationMode(snapshot)) {
+                    showUiMessage("ui.message.nav.validation-unavailable")
+                }
+            }
+        }
+    }
+
+    private fun closeTransientNavPanels() {
+        if (mode == UiMode.VALIDATION) {
+            clearValidation()
+        } else {
+            closeAllModalFrames()
+        }
+    }
+
+    private fun enterInventory(snapshot: RenderSnapshot) {
+        inventorySelection = inventorySelection.coerceAtMost((snapshot.uiState.inventory.size - 1).coerceAtLeast(0))
+        openModalFrame(
+            ModalFrame(
+                kind = ModalFrameKind.INVENTORY,
+                localState = ModalFrameLocalState(inventorySelection = inventorySelection),
+            ),
+        )
+        resetMovementRepeat()
+    }
+
     private fun enterTalentAssign(snapshot: RenderSnapshot) {
         loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
         loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
@@ -1836,16 +1960,7 @@ class InputHandler(
         when (mode) {
             UiMode.MAP,
             UiMode.INSPECT,
-            -> {
-                modalStack.clear()
-                paneFocusController.onPassiveTakeover()
-                mode = UiMode.VALIDATION
-                validationCursor = defaultValidationCursor()
-                inspectCursor = inspectCursor ?: defaultInspectCursor(snapshot)
-                explainPaneOpen = false
-                resetMovementRepeat()
-                return true
-            }
+            -> return enterValidationMode(snapshot)
 
             UiMode.VALIDATION -> {
                 clearValidation()
@@ -1861,6 +1976,20 @@ class InputHandler(
             UiMode.TALENT_ASSIGN,
             -> return false
         }
+    }
+
+    private fun enterValidationMode(snapshot: RenderSnapshot): Boolean {
+        if (validationOverlayAvailability != ValidationOverlayAvailability.ENABLED) {
+            return false
+        }
+        modalStack.clear()
+        paneFocusController.onPassiveTakeover()
+        mode = UiMode.VALIDATION
+        validationCursor = defaultValidationCursor()
+        inspectCursor = inspectCursor ?: defaultInspectCursor(snapshot)
+        explainPaneOpen = false
+        resetMovementRepeat()
+        return true
     }
 
     private fun isSaveBinding(): Boolean = controlPressed() && input.isKeyJustPressed(Keys.S)

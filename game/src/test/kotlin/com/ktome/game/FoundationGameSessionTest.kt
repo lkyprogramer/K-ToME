@@ -295,6 +295,25 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `dark uiux pr02 2 launch scene seeds second backpack page evidence`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr02-1-demo-shell-foundation"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr02-2-pagination")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        val inventoryBaseIds = inventoryBaseIds(session)
+        val snapshotInventory = session.renderSnapshot().uiState.inventory
+
+        assertTrue(inventoryBaseIds.size > 8, "PR-02-2 evidence requires a real backpack page 2.")
+        assertEquals(inventoryBaseIds.size, snapshotInventory.size)
+        assertNotNull(snapshotInventory.getOrNull(8), "Backpack index 8 must exist for ui-demo-new-inventory-page-2.")
+    }
+
+    @Test
     fun `validation boss telegraph action materializes an active runtime overlay`() {
         val session =
             GameModule.newValidationSession(

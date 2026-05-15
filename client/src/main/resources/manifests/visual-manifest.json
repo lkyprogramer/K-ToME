@@ -663,14 +663,17 @@
     {
       "key": "actor.vanguard",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_vanguard.png",
+      "rawOutputPath": "dark-v1/actors/actor_vanguard.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
         "phase2",
         "profession",
-        "vanguard"
+        "vanguard",
+        "dark-v1",
+        "ui-demo-new",
+        "pr02-2"
       ]
     },
     {
@@ -5466,7 +5469,7 @@
     {
       "key": "prop.stairs.down",
       "category": "prop_interactable",
-      "rawOutputPath": "phase2/p2-b/prop_stairs_down.png",
+      "rawOutputPath": "dark-v1/props/prop_stairs_down.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
@@ -5474,7 +5477,10 @@
         "phase2",
         "p2-b",
         "ruins",
-        "stairs"
+        "stairs",
+        "dark-v1",
+        "ui-demo-new",
+        "pr02-2"
       ]
     },
     {
@@ -6969,7 +6975,7 @@
     {
       "key": "tileset.ruins.ground_01",
       "category": "tile_ground",
-      "rawOutputPath": "phase2/p2-b/tileset_ruins_ground_01.png",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_ground_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
@@ -6977,13 +6983,16 @@
         "phase2",
         "p2-b",
         "ruins",
-        "tile_ground"
+        "tile_ground",
+        "dark-v1",
+        "ui-demo-new",
+        "pr02-2"
       ]
     },
     {
       "key": "tileset.ruins.wall_01",
       "category": "tile_wall",
-      "rawOutputPath": "phase2/p2-b/tileset_ruins_wall_01.png",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_wall_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
@@ -6991,7 +7000,10 @@
         "phase2",
         "p2-b",
         "ruins",
-        "tile_wall"
+        "tile_wall",
+        "dark-v1",
+        "ui-demo-new",
+        "pr02-2"
       ]
     },
     {
@@ -8450,6 +8462,230 @@
         "dark-uiux",
         "pr02",
         "round1",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.outer_frame",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_outer_frame.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.map_stage.frame",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_map_stage_frame.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.map_stage.backdrop",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_map_stage_backdrop.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.nav_rail.frame",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_nav_rail_frame.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.nav_button.active",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_nav_button_active.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.hero_card.frame",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_hero_card_frame.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.action_deck.frame",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_action_deck_frame.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.log_deck.frame",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_log_deck_frame.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.right_section.divider",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_right_section_divider.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.hero_crest.placeholder",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shell_hero_crest_placeholder.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.command_hint.plate",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_shell_command_hint_plate.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.nav.compass",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shell_nav_compass.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.nav.bag",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shell_nav_bag.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.nav.scroll",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shell_nav_scroll.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.nav.book",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shell_nav_book.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
+        "ui"
+      ]
+    },
+    {
+      "key": "ui.shell.nav.gear",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/ui/ui_shell_nav_gear.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-uiux",
+        "pr02-1",
+        "round1b",
         "ui"
       ]
     }

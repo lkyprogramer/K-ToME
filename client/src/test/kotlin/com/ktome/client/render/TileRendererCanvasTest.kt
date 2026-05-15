@@ -14,6 +14,8 @@ import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
+import com.ktome.client.render.layout.DemoSlotGridLayout
+import com.ktome.client.render.layout.GameShellBounds
 import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
 import com.ktome.client.ui.combat.CombatDecisionFrame
 import com.ktome.client.ui.combat.CombatDecisionFrameState
@@ -22,6 +24,7 @@ import com.ktome.client.ui.layout.ModalFrame
 import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.client.ui.layout.ModalFrameLocalState
 import com.ktome.client.ui.layout.PaneFocusAnchor
+import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
@@ -31,6 +34,7 @@ import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
+import com.ktome.core.snapshot.EquipmentSlotSnapshot
 import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
 import com.ktome.core.snapshot.FrontstageActionCueSnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
@@ -108,12 +112,12 @@ class TileRendererCanvasTest {
             cellHeight = 32f,
         )
 
-        val leftTitle = canvas.textDraws.first { draw -> draw.text.startsWith("Shatter") }
-        val rightTitle = canvas.textDraws.first { draw -> draw.text == "Hero" && draw.x >= layout.shell.rightPanelBounds.x }
-        assertTrue(leftTitle.x >= layout.shell.leftRailBounds.x)
-        assertTrue(leftTitle.x < layout.shell.leftRailBounds.right)
-        assertTrue(rightTitle.x >= layout.shell.rightPanelBounds.x)
-        assertTrue(rightTitle.x < layout.shell.rightPanelBounds.right)
+        val navIcon = canvas.assetDraws.first { draw -> draw.asset.resolvedKey == DarkUiChromeVisualKeys.SHELL_NAV_COMPASS }
+        val rightDivider = canvas.assetDraws.first { draw -> draw.asset.resolvedKey == DarkUiChromeVisualKeys.SHELL_RIGHT_SECTION_DIVIDER }
+        assertTrue(navIcon.x >= layout.shell.leftRailBounds.x)
+        assertTrue(navIcon.x + navIcon.width <= layout.shell.leftRailBounds.right)
+        assertTrue(rightDivider.x >= layout.shell.rightPanelBounds.x)
+        assertTrue(rightDivider.x + rightDivider.width <= layout.shell.rightPanelBounds.right)
     }
 
     @Test
@@ -132,11 +136,12 @@ class TileRendererCanvasTest {
             cellHeight = 32f,
         )
 
-        val focusColor = UiDesignTokens.color.focus.ring.color()
+        val focusColor = Color.valueOf("1CB7C8")
+        val focusBounds = layout.demoShell.bottomDeck.logDeck
         assertTrue(
             canvas.rectDraws.any { rect ->
-                rect.x == layout.logX &&
-                    rect.y == layout.cardY &&
+                rect.x == focusBounds.x &&
+                    rect.y == focusBounds.y &&
                     rect.color == focusColor
             },
         )
@@ -666,6 +671,7 @@ class TileRendererCanvasTest {
         canvas.textDraws
             .filter { draw ->
                 draw.y >= layout.cardY &&
+                    draw.y < layout.cardY + layout.cardHeight &&
                     draw.x >= layout.logX &&
                     draw.x < layout.logX + layout.logWidth
             }
@@ -673,10 +679,128 @@ class TileRendererCanvasTest {
         canvas.textDraws
             .filter { draw ->
                 draw.y >= layout.cardY &&
+                    draw.y < layout.cardY + layout.cardHeight &&
                     draw.x >= layout.focusX &&
                     draw.x < layout.focusX + layout.focusWidth
             }
             .forEach { draw -> assertTextEndsBefore(draw, focusRight) }
+    }
+
+    @Test
+    fun `dark uiux pr02-1 draws shell owner keys inside their consumer regions`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val layout = TileRenderer.layoutMetrics(mapWidth = 1, mapHeight = 1, cellWidth = 32f, cellHeight = 32f)
+        DarkUiChromeVisualKeys.pr02_1DemoShellOwnerKeys.forEach { key ->
+            assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == key }, "$key missing")
+        }
+        assertAssetOrder(
+            canvas,
+            DarkUiChromeVisualKeys.SHELL_MAP_STAGE_FRAME,
+            DarkUiChromeVisualKeys.SHELL_MAP_STAGE_BACKDROP,
+            "tileset.test.ground_01",
+            "actor.vanguard",
+        )
+        canvas.assetDraws
+            .filter { draw -> draw.asset.resolvedKey.startsWith("ui.shell.") }
+            .forEach { draw ->
+                val expected = expectedShellRegion(layout, draw.asset.resolvedKey)
+                assertAssetInside(draw, expected)
+            }
+    }
+
+    @Test
+    fun `dark uiux pr02-1 draws right panel slots and hero crest scaffold`() {
+        val canvas = RecordingTileCanvas()
+        val weapon =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+            )
+        val snapshot =
+            sampleSnapshot(
+                equipment = listOf(EquipmentSlotSnapshot(slotId = "WEAPON", item = weapon)),
+                inscriptions =
+                    listOf(
+                        InscriptionSlotSnapshot(
+                            hotkey = 5,
+                            inscriptionId = "phase_door",
+                            nameKey = "inscription.phase_door.name",
+                            descKey = "inscription.phase_door.desc",
+                            iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                            categoryId = "MOVEMENT",
+                            cooldownRemaining = 0,
+                            maxCooldown = 10,
+                        ),
+                    ),
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val layout = TileRenderer.layoutMetrics(mapWidth = 1, mapHeight = 1, cellWidth = 32f, cellHeight = 32f)
+        val right = layout.demoShell.rightPanelLayout
+        listOf(right.equipmentSlots, right.backpackSlots).forEach { grid ->
+            assertTrue(grid.slotSide >= 42f)
+            grid.slotBounds.forEach { slotBounds ->
+                assertRightPanelSlotDraw(canvas, slotBounds)
+            }
+        }
+        assertTrue(right.inscriptionSlots.slotSide >= 42f)
+        right.inscriptionSlots.slotBounds.forEachIndexed { index, slotBounds ->
+            assertRightPanelSlotDraw(canvas, inscriptionRowSlotBounds(right.inscriptions, right.inscriptionSlots, index, slotBounds))
+        }
+        assertTrue(right.equipment.y >= right.inscriptions.top)
+        assertTrue(right.inscriptions.y >= right.backpack.top)
+        assertTrue(right.backpack.y >= right.operationHints.top)
+        assertEquals(2, right.equipmentSlots.columns)
+        assertEquals(5, right.equipmentSlots.rows)
+        assertEquals(9, right.equipmentSlots.slotBounds.size)
+        assertEquals(2, right.inscriptionSlots.columns)
+        assertEquals(4, right.inscriptionSlots.rows)
+        assertEquals(8, right.inscriptionSlots.slotBounds.size)
+        assertEquals(4, right.backpackSlots.columns)
+        assertEquals(2, right.backpackSlots.rows)
+        assertEquals(8, model.shell.demo.backpackSlots.size)
+        assertEquals(9, model.shell.demo.equipmentSlots.size)
+        assertEquals((5..12).map { hotkey -> hotkey.toString() }, model.shell.demo.inscriptionSlots.map { slot -> slot.label })
+        assertTrue(model.shell.demo.inscriptionSlots.drop(4).all { slot -> slot.detail == null })
+        assertTrue(model.shell.demo.heroSummaryLines.any { line -> line.contains("ATK") })
+        assertTrue(model.shell.demo.heroSummaryLines.any { line -> line.contains("DEF") })
+        assertTrue(canvas.textDraws.none { draw -> draw.text == "Ground" || draw.text == "Ground Items" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text.startsWith("5.") && draw.text.contains("Phase") && draw.x >= right.inscriptions.x && draw.x <= right.inscriptions.right })
+        assertTrue(model.shell.demo.operationHints.any { hint -> hint.contains("5-8") })
+
+        val crest = canvas.assetDraws.single { draw -> draw.asset.resolvedKey == DarkUiChromeVisualKeys.SHELL_HERO_CREST_PLACEHOLDER }
+        assertTrue(crest.width >= 96f)
+        assertTrue(crest.height >= 96f)
+        assertAssetInside(crest, layout.demoShell.bottomDeck.heroCard)
     }
 
     @Test
@@ -926,7 +1050,7 @@ class TileRendererCanvasTest {
             }
 
         assertTrue(cellRects.any { draw -> draw.x == explored.x.toFloat() && draw.y == explored.y.toFloat() && draw.color.a == 0.42f })
-        assertTrue(cellRects.any { draw -> draw.x == hidden.x.toFloat() && draw.y == hidden.y.toFloat() && draw.color.a == 0.94f })
+        assertTrue(cellRects.any { draw -> draw.x == hidden.x.toFloat() && draw.y == hidden.y.toFloat() && draw.color.a == 0.50f })
     }
 
     @Test
@@ -1090,9 +1214,9 @@ class TileRendererCanvasTest {
                 x = guardLabel.x,
                 y = guardLabel.y,
             )
-        val slotFourX = layout.hotbarX + 3 * (layout.hotbarCardWidth + layout.hotbarGap)
+        val guardSlot = layout.demoShell.bottomDeck.actionSlotBounds[2]
 
-        assertTrue(guardLabel.x + guardBounds[2] <= slotFourX - 4f)
+        assertTrue(guardLabel.x + guardBounds[2] <= guardSlot.right - 4f)
     }
 
     @Test
@@ -1132,14 +1256,13 @@ class TileRendererCanvasTest {
         val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
         val routeHintDraws =
             canvas.textDraws.filter { draw ->
-                draw.text.contains("路线提示") ||
-                    draw.text.contains("Boss") ||
-                    draw.text.contains("持续") ||
-                    draw.text.contains("增援") ||
-                    draw.text.contains("补进来")
+                draw.x >= layout.logX &&
+                    draw.x < layout.logX + layout.logWidth &&
+                    draw.y >= layout.cardY &&
+                    draw.y < layout.cardY + layout.cardHeight
             }
 
-        assertTrue(routeHintDraws.isNotEmpty())
+        assertTrue(routeHintDraws.any { draw -> draw.text.contains("路线提示") })
         assertTrue(routeHintDraws.none { draw -> draw.text.contains("…") })
         val routeHintText = routeHintDraws.joinToString(separator = "") { draw -> draw.text }
         assertTrue(routeHintText.contains("持续有巡逻增援补进来"), routeHintText)
@@ -1254,7 +1377,7 @@ class TileRendererCanvasTest {
             )
         val titleTextBottom = titleDraw.y - titleBounds[3]
 
-        assertEquals(4, sortedGaugeBackgrounds.size)
+        assertEquals(2, sortedGaugeBackgrounds.size)
         assertTrue(sortedGaugeBackgrounds.zipWithNext().all { (lower, upper) -> upper.y >= lower.y + lower.height + 2f })
         assertTrue(sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height <= titleTextBottom)
         assertTrue(titleTextBottom - (sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height) >= 4f)
@@ -1320,10 +1443,6 @@ class TileRendererCanvasTest {
             cellHeight = 32f,
         )
 
-        assertTrue(canvas.textDraws.any { draw -> draw.text == localizer.text("ui.hud.frontstage.title") })
-        assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Water lane") })
-        assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Restore") })
-
         val model =
             TileRenderer.buildRenderModel(
                 localizer = localizer,
@@ -1359,7 +1478,7 @@ class TileRendererCanvasTest {
         val metrics = TileRenderer.layoutMetrics(mapWidth = 9, mapHeight = 10, cellWidth = 32f, cellHeight = 32f)
 
         assertTrue(metrics.logWidth >= 180f)
-        assertTrue(metrics.focusX + metrics.focusWidth <= metrics.worldWidth - metrics.bottomInset + 0.5f)
+        assertTrue(metrics.focusX + metrics.focusWidth <= metrics.demoShell.bottomDeck.bounds.right + 0.5f)
     }
 
     @Test
@@ -1390,8 +1509,9 @@ class TileRendererCanvasTest {
         assertTrue(metrics.worldWidth <= 1024f)
         assertTrue(metrics.worldHeight <= 768f)
         assertTrue(metrics.cardY + metrics.cardHeight <= metrics.mapOffsetY)
-        assertTrue(metrics.infoX + metrics.infoWidth <= metrics.logX)
-        assertTrue(metrics.logX + metrics.logWidth + metrics.panelGap <= metrics.focusX)
+        assertTrue(metrics.infoX + metrics.infoWidth <= metrics.focusX)
+        assertEquals(0f, metrics.footerHintBounds.width)
+        assertTrue(metrics.focusX + metrics.focusWidth <= metrics.logX)
         assertTrue(metrics.sidebarX >= metrics.shell.mapBounds.right + metrics.panelGap)
         val focusRingRects =
             canvas.rectDraws.filter { draw ->
@@ -1408,8 +1528,11 @@ class TileRendererCanvasTest {
     fun `responsive layout expands log panel across available center space`() {
         val metrics = TileRenderer.layoutMetrics(mapWidth = 24, mapHeight = 10, cellWidth = 32f, cellHeight = 32f)
 
-        assertEquals(metrics.infoX + metrics.infoWidth + metrics.panelGap, metrics.logX)
-        assertTrue(metrics.logWidth >= 520f)
+        assertEquals(metrics.demoShell.bottomDeck.logDeck.x, metrics.logX)
+        assertEquals(metrics.demoShell.bottomDeck.logDeck.width, metrics.logWidth)
+        assertTrue(metrics.focusX + metrics.focusWidth <= metrics.logX)
+        assertTrue(metrics.logX + metrics.logWidth <= metrics.demoShell.bottomDeck.bounds.right + 0.5f)
+        assertTrue(metrics.logWidth >= 180f)
     }
 
     @Test
@@ -1429,17 +1552,23 @@ class TileRendererCanvasTest {
         assertEquals(
             listOf(
                 TileLayerFlushReason.BACKGROUND,
+                TileLayerFlushReason.SHELL_OUTER_FRAME,
+                TileLayerFlushReason.MAP_STAGE_FRAME,
                 TileLayerFlushReason.MAP_TERRAIN_BASE,
                 TileLayerFlushReason.MAP_PROPS_AND_DECALS,
                 TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS,
                 TileLayerFlushReason.MAP_ACTORS,
-                TileLayerFlushReason.MAP_FOG_VEILS,
-                TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS,
                 TileLayerFlushReason.MAP_PLAYER_INDICATOR,
+                TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS,
+                TileLayerFlushReason.MAP_FOG_VEILS,
                 TileLayerFlushReason.MAP_ACTIVE_CURSOR,
                 TileLayerFlushReason.MAP_COMBAT_FEEDBACK,
-                TileLayerFlushReason.SHELL_PANES,
-                TileLayerFlushReason.BOTTOM_HUD,
+                TileLayerFlushReason.MAP_WARM_OVERLAY,
+                TileLayerFlushReason.SHELL_NAV_RAIL,
+                TileLayerFlushReason.SHELL_RIGHT_PANEL,
+                TileLayerFlushReason.SHELL_BOTTOM_HERO,
+                TileLayerFlushReason.SHELL_BOTTOM_ACTION_DECK,
+                TileLayerFlushReason.SHELL_BOTTOM_LOG_DECK,
                 TileLayerFlushReason.OVERLAY_PASSIVE_TOOLTIP,
                 TileLayerFlushReason.OVERLAY_TOAST,
                 TileLayerFlushReason.OVERLAY_MODAL_BACKDROP,
@@ -1530,7 +1659,7 @@ class TileRendererCanvasTest {
             cellHeight = 32f,
         )
 
-        assertTrue(canvas.flushes.indexOf(TileLayerFlushReason.BOTTOM_HUD) < canvas.flushes.indexOf(TileLayerFlushReason.OVERLAY_PASSIVE_TOOLTIP))
+        assertTrue(canvas.flushes.indexOf(TileLayerFlushReason.SHELL_BOTTOM_LOG_DECK) < canvas.flushes.indexOf(TileLayerFlushReason.OVERLAY_PASSIVE_TOOLTIP))
     }
 
     @Test
@@ -1752,22 +1881,22 @@ class TileRendererCanvasTest {
                                     maxCooldown = 10,
                                 ),
                             ),
+                        equipment = listOf(EquipmentSlotSnapshot(slotId = "WEAPON", item = item)),
                         inventory = listOf(InventoryEntrySnapshot(index = 0, item = item)),
                     ),
                 overlayState = OverlayState(mode = UiMode.MAP),
             )
 
         val rowTexts = model.shell.rightPanel.rows.map(TileTextRow::text)
-        val groundIndex = rowTexts.indexOf("Ground")
         val equipmentIndex = rowTexts.indexOf("Equipment")
         val inscriptionIndex = rowTexts.indexOf("Inscriptions")
         val backpackIndex = rowTexts.indexOf("Backpack: 1 items")
 
-        assertTrue(groundIndex >= 0)
-        assertTrue(equipmentIndex > groundIndex)
+        assertTrue(rowTexts.none { row -> row == "Ground" })
+        assertTrue(equipmentIndex >= 0)
         assertTrue(inscriptionIndex > equipmentIndex)
         assertTrue(backpackIndex > inscriptionIndex)
-        assertTrue(rowTexts.any { row -> row == "Short Sword" })
+        assertTrue(rowTexts.any { row -> row.contains("Short Sword") })
         assertTrue(rowTexts.any { row -> row == "5. Phase Door" })
     }
 
@@ -1986,45 +2115,9 @@ class TileRendererCanvasTest {
     }
 
     @Test
-    fun `render canvas uses distinct status tones for buffs and debuffs`() {
-        val canvas = RecordingTileCanvas()
-
-        TileRenderer.renderToCanvas(
-            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
-            visualResolver = sampleResolver(),
-            snapshot =
-                sampleSnapshot(
-                    playerStatusEffects =
-                        listOf(
-                            StatusEffectRenderSnapshot(
-                                typeId = "HASTE",
-                                remainingTurns = 2,
-                                nameKey = "status.haste",
-                                iconKey = "missing_visual",
-                                category = StatusEffectCategorySnapshot.BUFF,
-                            ),
-                            StatusEffectRenderSnapshot(
-                                typeId = "ARMOR_BREAK",
-                                remainingTurns = 3,
-                                nameKey = "status.armor_break",
-                                iconKey = "missing_visual",
-                                stackCount = 2,
-                                stackCap = 3,
-                                category = StatusEffectCategorySnapshot.DEBUFF,
-                            ),
-                        ),
-                ),
-            overlayState = OverlayState(mode = UiMode.MAP),
-            canvas = canvas,
-            cellWidth = 32f,
-            cellHeight = 32f,
-        )
-
-        val buffBadge = canvas.textDraws.first { draw -> draw.text == "2t" }
-        val debuffBadge = canvas.textDraws.first { draw -> draw.text == "2/3 3t" }
-
-        assertEquals(Color.valueOf("7FE0A0"), buffBadge.color)
-        assertEquals(Color.valueOf("FF9A8D"), debuffBadge.color)
+    fun `status badge colors remain distinct for buffs and debuffs`() {
+        assertEquals(Color.valueOf("7FE0A0"), StatusHudRenderer.badgeColor(StatusEffectCategorySnapshot.BUFF))
+        assertEquals(Color.valueOf("FF9A8D"), StatusHudRenderer.badgeColor(StatusEffectCategorySnapshot.DEBUFF))
     }
 
     @Test
@@ -2356,6 +2449,84 @@ class TileRendererCanvasTest {
         assertTrue(draw.x + bounds[2] <= rightEdge + 0.5f, "${draw.text} exceeds $rightEdge")
     }
 
+    private fun assertAssetInside(
+        draw: RecordingTileCanvas.AssetDraw,
+        bounds: GameShellBounds,
+    ) {
+        assertTrue(draw.x >= bounds.x - 0.5f, "${draw.asset.resolvedKey} x=${draw.x} escapes $bounds")
+        assertTrue(draw.y >= bounds.y - 0.5f, "${draw.asset.resolvedKey} y=${draw.y} escapes $bounds")
+        assertTrue(draw.x + draw.width <= bounds.right + 0.5f, "${draw.asset.resolvedKey} right=${draw.x + draw.width} escapes $bounds")
+        assertTrue(draw.y + draw.height <= bounds.top + 0.5f, "${draw.asset.resolvedKey} top=${draw.y + draw.height} escapes $bounds")
+    }
+
+    private fun assertRightPanelSlotDraw(
+        canvas: RecordingTileCanvas,
+        slotBounds: GameShellBounds,
+    ) {
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.asset.resolvedKey in setOf(DarkUiChromeVisualKeys.SLOT_EMPTY, DarkUiChromeVisualKeys.SLOT_EQUIPPED) &&
+                    draw.x == slotBounds.x &&
+                    draw.y == slotBounds.y &&
+                    draw.width == slotBounds.width &&
+                    draw.height == slotBounds.height
+            },
+            "missing right-panel slot draw at $slotBounds",
+        )
+    }
+
+    private fun inscriptionRowSlotBounds(
+        sectionBounds: GameShellBounds,
+        grid: DemoSlotGridLayout,
+        index: Int,
+        slotBounds: GameShellBounds,
+    ): GameShellBounds {
+        val columnGap = 10f
+        val rowWidth = ((sectionBounds.width - 24f - columnGap) / 2f).coerceAtLeast(grid.slotSide + 48f)
+        val leftX = sectionBounds.x + 12f
+        val rightX = sectionBounds.right - 12f - rowWidth
+        val rowX = if (index % 2 == 0) leftX else rightX
+        return GameShellBounds(
+            x = rowX + 6f,
+            y = slotBounds.y,
+            width = slotBounds.width,
+            height = slotBounds.height,
+        )
+    }
+
+    private fun assertAssetOrder(
+        canvas: RecordingTileCanvas,
+        vararg keys: String,
+    ) {
+        val indices = keys.map { key -> canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == key } }
+        assertTrue(indices.all { index -> index >= 0 }, "Missing draw in order check: ${keys.toList()} -> $indices")
+        assertEquals(indices.sorted(), indices, "Unexpected draw order for ${keys.toList()}")
+    }
+
+    private fun expectedShellRegion(
+        layout: TileLayoutMetrics,
+        key: String,
+    ): GameShellBounds =
+        when (key) {
+            DarkUiChromeVisualKeys.SHELL_OUTER_FRAME -> layout.demoShell.outerFrame
+            DarkUiChromeVisualKeys.SHELL_MAP_STAGE_FRAME -> layout.demoShell.mapStage
+            DarkUiChromeVisualKeys.SHELL_MAP_STAGE_BACKDROP -> layout.demoShell.mapStage
+            DarkUiChromeVisualKeys.SHELL_NAV_RAIL_FRAME,
+            DarkUiChromeVisualKeys.SHELL_NAV_BUTTON_ACTIVE,
+            DarkUiChromeVisualKeys.SHELL_NAV_COMPASS,
+            DarkUiChromeVisualKeys.SHELL_NAV_BAG,
+            DarkUiChromeVisualKeys.SHELL_NAV_SCROLL,
+            DarkUiChromeVisualKeys.SHELL_NAV_BOOK,
+            DarkUiChromeVisualKeys.SHELL_NAV_GEAR -> layout.demoShell.navRail
+            DarkUiChromeVisualKeys.SHELL_RIGHT_SECTION_DIVIDER -> layout.demoShell.rightPanel
+            DarkUiChromeVisualKeys.SHELL_HERO_CARD_FRAME,
+            DarkUiChromeVisualKeys.SHELL_HERO_CREST_PLACEHOLDER -> layout.demoShell.bottomDeck.heroCard
+            DarkUiChromeVisualKeys.SHELL_ACTION_DECK_FRAME -> layout.demoShell.bottomDeck.actionDeck
+            DarkUiChromeVisualKeys.SHELL_COMMAND_HINT_PLATE -> layout.demoShell.rightPanelLayout.operationHints
+            DarkUiChromeVisualKeys.SHELL_LOG_DECK_FRAME -> layout.demoShell.bottomDeck.logDeck
+            else -> error("Unexpected shell key $key")
+        }
+
     private fun sampleResolver(): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
@@ -2458,6 +2629,7 @@ class TileRendererCanvasTest {
                             ),
                         ) +
                             DarkUiChromeVisualKeys.pr02Round1OwnerKeys
+                                .plus(DarkUiChromeVisualKeys.pr02_1DemoShellOwnerKeys)
                                 .filterNot { key ->
                                     key in
                                         setOf(
@@ -2476,7 +2648,12 @@ class TileRendererCanvasTest {
     private fun darkUiManifestEntry(key: String): VisualManifestEntry =
         VisualManifestEntry(
             key = key,
-            category = if (key.startsWith("ui.frame.")) "ui_frame" else "icon",
+            category =
+                if (key.startsWith("ui.frame.") || key.contains(".frame") || key.contains(".plate") || key.contains(".divider")) {
+                    "ui_frame"
+                } else {
+                    "icon"
+                },
             rawOutputPath = "dark-v1/ui/${key.replace('.', '_')}.png",
             footprint = "ui",
         )
@@ -2489,6 +2666,7 @@ class TileRendererCanvasTest {
         playerStatusEffects: List<StatusEffectRenderSnapshot> = emptyList(),
         talents: List<TalentSlotSnapshot> = emptyList(),
         inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
+        equipment: List<EquipmentSlotSnapshot> = emptyList(),
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         talentTrees: List<TalentTreeSnapshot> = emptyList(),
         inventory: List<InventoryEntrySnapshot> = emptyList(),
@@ -2573,7 +2751,7 @@ class TileRendererCanvasTest {
                             evasion = 4,
                             speed = 100,
                     ),
-                    equipment = emptyList(),
+                    equipment = equipment,
                     talents = talents,
                     inscriptions = inscriptions,
                     reserveTalents = reserveTalents,
@@ -2644,36 +2822,39 @@ private class RecordingTileCanvas : TileCanvas {
     val textDraws = mutableListOf<TextDraw>()
     val flushes = mutableListOf<TileLayerFlushReason>()
 
-    override fun drawRect(
-        x: Float,
-        y: Float,
-        width: Float,
-        height: Float,
-        color: Color,
-    ) {
-        rectDraws += RectDraw(x, y, width, height, Color(color))
+    override fun drawRect(draw: TileRectDraw) {
+        rectDraws +=
+            RectDraw(
+                draw.bounds.x,
+                draw.bounds.y,
+                draw.bounds.width,
+                draw.bounds.height,
+                Color(draw.color),
+            )
     }
 
-    override fun drawAsset(
-        asset: ResolvedVisualAsset,
-        x: Float,
-        y: Float,
-        width: Float,
-        height: Float,
-        alpha: Float,
-        tintColorHex: String?,
-    ) {
-        assetDraws += AssetDraw(asset, x, y, width, height, alpha, tintColorHex)
+    override fun drawAsset(draw: TileAssetDraw) {
+        assetDraws +=
+            AssetDraw(
+                draw.asset,
+                draw.bounds.x,
+                draw.bounds.y,
+                draw.bounds.width,
+                draw.bounds.height,
+                draw.alpha,
+                draw.tintColorHex,
+            )
     }
 
-    override fun drawText(
-        style: TileTextStyle,
-        text: String,
-        x: Float,
-        y: Float,
-        color: Color,
-    ) {
-        textDraws += TextDraw(style, text, x, y, Color(color))
+    override fun drawText(draw: TileTextDraw) {
+        textDraws +=
+            TextDraw(
+                draw.style,
+                draw.text,
+                draw.position.x,
+                draw.position.y,
+                Color(draw.color),
+            )
     }
 
     override fun flushLayer(reason: TileLayerFlushReason) {

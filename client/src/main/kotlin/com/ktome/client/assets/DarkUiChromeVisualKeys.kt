@@ -43,6 +43,22 @@ internal object DarkUiChromeVisualKeys {
     const val HUD_QUEST_MARKER: String = "ui.hud.quest_marker.icon"
     const val HUD_LOG_MARKER: String = "ui.hud.log_marker.icon"
     const val HUD_WARNING: String = "ui.hud.warning.icon"
+    const val SHELL_OUTER_FRAME: String = "ui.shell.outer_frame"
+    const val SHELL_MAP_STAGE_FRAME: String = "ui.shell.map_stage.frame"
+    const val SHELL_MAP_STAGE_BACKDROP: String = "ui.shell.map_stage.backdrop"
+    const val SHELL_NAV_RAIL_FRAME: String = "ui.shell.nav_rail.frame"
+    const val SHELL_NAV_BUTTON_ACTIVE: String = "ui.shell.nav_button.active"
+    const val SHELL_HERO_CARD_FRAME: String = "ui.shell.hero_card.frame"
+    const val SHELL_ACTION_DECK_FRAME: String = "ui.shell.action_deck.frame"
+    const val SHELL_LOG_DECK_FRAME: String = "ui.shell.log_deck.frame"
+    const val SHELL_RIGHT_SECTION_DIVIDER: String = "ui.shell.right_section.divider"
+    const val SHELL_HERO_CREST_PLACEHOLDER: String = "ui.shell.hero_crest.placeholder"
+    const val SHELL_COMMAND_HINT_PLATE: String = "ui.shell.command_hint.plate"
+    const val SHELL_NAV_COMPASS: String = "ui.shell.nav.compass"
+    const val SHELL_NAV_BAG: String = "ui.shell.nav.bag"
+    const val SHELL_NAV_SCROLL: String = "ui.shell.nav.scroll"
+    const val SHELL_NAV_BOOK: String = "ui.shell.nav.book"
+    const val SHELL_NAV_GEAR: String = "ui.shell.nav.gear"
 
     val pr02Round1OwnerKeys: List<String> =
         listOf(
@@ -88,5 +104,25 @@ internal object DarkUiChromeVisualKeys {
             HUD_QUEST_MARKER,
             HUD_LOG_MARKER,
             HUD_WARNING,
+        )
+
+    val pr02_1DemoShellOwnerKeys: List<String> =
+        listOf(
+            SHELL_OUTER_FRAME,
+            SHELL_MAP_STAGE_FRAME,
+            SHELL_MAP_STAGE_BACKDROP,
+            SHELL_NAV_RAIL_FRAME,
+            SHELL_NAV_BUTTON_ACTIVE,
+            SHELL_HERO_CARD_FRAME,
+            SHELL_ACTION_DECK_FRAME,
+            SHELL_LOG_DECK_FRAME,
+            SHELL_RIGHT_SECTION_DIVIDER,
+            SHELL_HERO_CREST_PLACEHOLDER,
+            SHELL_COMMAND_HINT_PLATE,
+            SHELL_NAV_COMPASS,
+            SHELL_NAV_BAG,
+            SHELL_NAV_SCROLL,
+            SHELL_NAV_BOOK,
+            SHELL_NAV_GEAR,
         )
 }

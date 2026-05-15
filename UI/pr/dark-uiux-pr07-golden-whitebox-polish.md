@@ -56,9 +56,9 @@ canonical artifact 固定为 final-full coverage artifact、client golden、`dar
 ## 3. 范围
 
 1. 不再大批量生成新资源，只允许修复 PR-06 coverage artifact 已记录的 `rejected` cell。
-2. 补齐 `dark-uiux-prNN-*` golden label owner。
+2. 补齐 `dark-uiux-prNN-*` golden label owner，并保留 PR-02-1 `ui-demo-new-*` demo parity label 的特殊 owner 映射。
 3. 补齐首页/主菜单、角色创建、continue unavailable、验证模式 setup、验证 overlay、职业树、装备背包、铭文商店、地图、战斗 HUD、Look/Inspect、world route、stat assign、reward/frontstage、settings/accessibility、loading/error、胜利/失败结算、modal 的人工验收。
-4. 输出 `dark-uiux-pr07-final-all-screens` evidence index，逐项引用 [screen-coverage-matrix.md](./screen-coverage-matrix.md) 每个 Required/Conditional 面的 golden、manual record、focused test、coverage artifact 和 packaged app evidence。
+4. 输出 `dark-uiux-pr07-final-all-screens` evidence index，逐项引用 [screen-coverage-matrix.md](./screen-coverage-matrix.md) 每个 Required/Conditional 面的 golden、manual record、focused test、coverage artifact 和 packaged app evidence；首页/局内 shell 必须显式引用 `ui-demo-new-*` labels，不能回退到旧 `dark-uiux-pr02-1-demo-*` label。
 5. 只产出 `UI/review/dark-uiux-final-doc-implementation-audit.md` 对照清单；如发现实际实现与 PLAN/ART_STYLE_BIBLE 矛盾，记入 audit 并开后续修订 PR，不在 PR-07 夹带改上游合同。
 
 Rejected cell 处理规则：
@@ -106,7 +106,7 @@ Packaged runbook：
 1. 运行 `:client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr07-final-ui`。
 2. 确认生成 `build/whitebox/dark-uiux-pr07-final-ui/launch-packaged-app.sh`、`cua-runbook.md`、`manual-record-template.md`、`expected-evidence.json`、`app-executable.sha256`。
 3. 执行 `build/whitebox/dark-uiux-pr07-final-ui/launch-packaged-app.sh`，它必须使用隔离 runtime home：`build/whitebox/dark-uiux-pr07-final-ui/runtime-home`。
-4. 按 `cua-runbook.md` 至少覆盖以下 screen/surface：首页/主菜单、角色创建、continue unavailable、验证 setup、验证 overlay、局内 shell、背包/装备、铭文商店、满槽替换 modal、职业树、主动槽 modal、状态/任务/技能、战斗 HUD、Look/Inspect、world route、stat assign、reward/frontstage、地图/telegraph、胜利结算、失败结算、runtime loading/error、独立 `UiErrorScreen`、设置/无障碍。
+4. 按 `cua-runbook.md` 至少覆盖以下 screen/surface：首页/主菜单、角色创建、continue unavailable、验证 setup、验证 overlay、`ui-demo-new` 局内 shell、背包/装备、铭文商店、满槽替换 modal、职业树、主动槽 modal、状态/任务/技能、战斗 HUD、Look/Inspect、world route、stat assign、reward/frontstage、地图/telegraph、胜利结算、失败结算、runtime loading/error、独立 `UiErrorScreen`、设置/无障碍。
 5. 使用 `scripts/capture-macos-app-window.sh --bundle-id com.ktome.client --app-name K-ToME --out build/whitebox/dark-uiux-pr07-final-ui/evidence/<step>.png` 或等价 Computer Use 截图保存证据。
 6. 对比 packaged app 证据与 debug client golden/manual evidence，不允许 packaged app 出现资源缺失、旧风格 residue 或布局重叠。
 7. 关闭 packaged app，保留 `app.log`、`app.pid`、截图、metadata、sha256 和 manual record。
@@ -150,7 +150,7 @@ PR-07 全 screen focused lane：
 
 1. 首页：主菜单、角色创建、continue available/absent/unavailable、复制详情、验证入口、语言/帮助/footer 均为统一暗黑风格。
 2. 验证模式：setup 页 scenario/preset、active pack summary、start/back、运行时 overlay、pack evidence 均清楚，不遮挡 HUD/地图/日志。
-3. 主界面：左栏、地图、右栏、底部 HUD、快捷键提示无重叠。
+3. 主界面：左栏、地图、右栏、底部 HUD 无重叠；底部不出现重复 command hints，操作提示只允许在右栏 operation hints 区域可见。
 4. 背包装备：空态、满格、品质、数量 badge、tooltip 均可读。
 5. 铭文商店：buy/sell 双列、价格/禁用态、offer card、tooltip、空态、满槽替换 modal、取消路径和结果反馈正确。
 6. 职业树：三树、四态、预览、主动槽 modal、数字键边界正确。

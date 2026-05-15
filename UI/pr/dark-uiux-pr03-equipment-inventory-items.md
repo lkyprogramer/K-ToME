@@ -3,7 +3,7 @@
 **阶段**: `dark-uiux-pr03-equipment-inventory-items`
 **优先级**: `P0`
 **工作量**: `L`
-**前置条件**: PR-02 完成。
+**前置条件**: PR-02-1 完成，并保留 PR-02-2 `ui-demo-new` 首屏视觉 owner evidence。
 **资源生成结论**: 生成 Round 7 的 item/equipment/material/affix 资源子集。
 
 ## 0. 开发治理与验收矩阵
@@ -55,8 +55,8 @@ inventory/shop golden 或 coverage 失败时先修 presenter、resource key 或 
 
 ## 1. 阶段目标
 
-1. 右侧玩家面板正式展示装备格、背包 grid、资源计数。
-2. 装备、物品、材料、affix 图标化，替换第一张截图里纯文字装备列表。
+1. 在 PR-02-1 right panel 顺序和 bounds 上正式接入装备格、背包 grid、资源计数的真实 item presentation。
+2. 装备、物品、材料、affix 图标化，替换 PR-02-1 shell 中仍然偏临时的 item/equipment 表达；不得恢复右栏 ground loot 区块或 fake item 占位。
 3. 空背包、空装备、不可用物品、tooltip 与选中态有统一表现。
 4. 铭文商店 / shop 进入同一装备物品 UX family：buy/sell 双列、offer card、价格、affordability、空态、tooltip、满槽替换 modal 必须统一暗黑化。
 5. Round 7 分批生成 item/equipment/material/affix sheet，但不修改掉落、商店经济或铭文规则。
@@ -102,7 +102,7 @@ Deleted / replaced 清单：
 
 | Path / Contract | Action | removalOwner | Regression Scan |
 | --- | --- | --- | --- |
-| 右栏纯文字装备/背包列表作为唯一 player-facing 表达 | replace with grid / presentation model；可保留 accessibility text，但不能作为唯一主路径 | PR-03 | `TileRendererCanvasTest` 确认 equipment/inventory grid bounds 存在 |
+| PR-02-1 right panel 中任何仍以纯文字或 fake placeholder 承担主视觉的装备/背包表达 | replace with real grid / presentation model；可保留 accessibility text，但不能作为唯一主路径 | PR-03 | `TileRendererCanvasTest` 确认 equipment/inventory grid bounds 存在，且 right-panel ground loot 未恢复 |
 | `missing_visual` 玩家主路径 fallback | forbidden except explicit injection test | PR-03 | owner-scope coverage + fallback injection record |
 | optional `EquipmentInventoryPresenterTest` fallback 路线 | delete optional branch；本 PR 必须新增该 focused test | PR-03 | validation command contains real `EquipmentInventoryPresenterTest` class |
 
@@ -245,7 +245,7 @@ Existing key migration 固定如下：
 
 | Contract | Fixed Value |
 | --- | --- |
-| equipment slot order | `WEAPON`, `OFF_HAND`, `ARMOR` |
+| equipment slot order | typed equipment slots: `WEAPON`, `OFF_HAND`, `ARMOR`, `ACCESSORY`; PR-02-1 display-only extra sockets may remain visual-only but must not create fake item identity |
 | equipment cell identity | `slotId`; visual asset key 不参与 identity |
 | equipment cell model | `slotId`, `labelKey`, `frameKey`, `itemIconKey?`, `qualityTierId?`, `selected`, `emptyStateToken`, `tooltipAnchorId` |
 | inventory cell identity | `InventoryEntrySnapshot.index`; item visual key、quality、名称和排序变化不能改 identity |
@@ -288,7 +288,7 @@ Existing key migration 固定如下：
 4. 生成 Round 7 prompt 和 `prompt-index.json`，再用 `scripts/codex-generate-image.py` 生成三张 raw sheet。
 5. 运行切分、contact sheet 和 sprite map 校验；PR-03 sprite map report path 必须等于 `assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl`；人工只在 contact sheet 上验收语义和风格，不通过改 `row/col` 修错图。
 6. 先更新 `assets-src/image/manifests/phase2-visual-manifest.json`，再运行 `syncPhase2Manifests` 生成 runtime manifest。
-7. 新增 `EquipmentInventoryPresenter` / model 和 `EquipmentInventoryPresenterTest`，先锁 layout、identity、quantity absence、quality frame、tooltip anchor。
+7. 新增 `EquipmentInventoryPresenter` / model 和 `EquipmentInventoryPresenterTest`，先锁 layout、identity、quantity absence、quality frame、tooltip anchor，并保留 PR-02-1 right panel no-ground-loot / operation-hints-only-right-side 合同。
 8. 改 `TileRenderer` 和 `TileRendererCanvasTest`，证明 grid bounds、fallback、minimum window 和 hitbox 稳定。
 9. 改 shop card / description / input modal，补 `ModalCardModelTest`、`DescriptionPresenterTest`、`InputHandlerTest`。
 10. 跑 clientSmoke/golden/manual；最后跑 `maintainabilityLint` 和 `verifyChanged`。
@@ -345,7 +345,7 @@ PR close 前 owner gates：
 
 | label | scenario / setup | input sequence | expected visible result | expected artifact | skip rule | residual risk |
 | --- | --- | --- | --- | --- | --- | --- |
-| `dark-uiux-pr03-equipment-slots` | primary scenario `dark-uiux-pr03-equipment-inventory-items`, seed `2026050903`, validation registry setup has weapon/off-hand/armor plus one intentionally empty slot pass | `./gradlew preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr03-equipment-inventory-items`, then open equipment/inventory surface | `WEAPON` / `OFF_HAND` / `ARMOR` visible; at least one equipped item and one empty slot; selected slot frame differs from quality frame; tooltip anchor points to selected slot; hitbox unchanged by frame/badge | `UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md` + golden/manual screenshot path; record fields: `scenarioId`, `inputSequence`, `evidenceLabel`, `screenshotPath`, `logPath`, `cleanupStatus` | Only skipped on headless CI; must keep `EquipmentInventoryPresenterTest` and `TileRendererCanvasTest` evidence | Manual cannot prove every locale/window; focused tests cover bounds |
+| `dark-uiux-pr03-equipment-slots` | primary scenario `dark-uiux-pr03-equipment-inventory-items`, seed `2026050903`, validation registry setup has weapon/off-hand/armor/accessory plus at least one intentionally empty visual socket | `./gradlew preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr03-equipment-inventory-items`, then open equipment/inventory surface | `WEAPON` / `OFF_HAND` / `ARMOR` / `ACCESSORY` visible; at least one equipped item and one empty socket; selected slot frame differs from quality frame; tooltip anchor points to selected slot; hitbox unchanged by frame/badge; no right-panel ground loot section | `UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md` + golden/manual screenshot path; record fields: `scenarioId`, `inputSequence`, `evidenceLabel`, `screenshotPath`, `logPath`, `cleanupStatus` | Only skipped on headless CI; must keep `EquipmentInventoryPresenterTest` and `TileRendererCanvasTest` evidence | Manual cannot prove every locale/window; focused tests cover bounds |
 | `dark-uiux-pr03-inventory-empty` | same scenario, explicit empty-inventory evidence step produced by validation action `emptyInventorySurface` | Open inventory after the empty-inventory step | empty grid uses dark empty state; no placeholder item; tooltip/log/HUD do not overlap | same manual record + `client/build/reports/golden/` label | Only skipped on headless CI; golden required | Does not prove full inventory overflow |
 | `dark-uiux-pr03-inventory-stacked` | same scenario, explicit repeated-item evidence step using two repeated `healing_potion` entries and one rare or unique item | Open inventory, move selection across repeated entries | repeated entries remain separate stable cells; quality frame visible; quantity badge anchor remains reserved/absent unless typed quantity exists | same manual record + golden/manual screenshot path | Only skipped on headless CI; focused presenter test required | True stack count remains out of scope until typed field exists |
 | `dark-uiux-pr03-inscription-shop` | reuse `phase4-v4-pr02` shop setup for inscription replacement plus PR-03 visual manifest loaded | `F9, Enter`, then navigate buy/sell columns | buy/sell columns, offer card, price marker, affordability marker, inscription marker, tooltip and empty shop/sell states share dark style; non-color marker exists | same manual record + `client/build/reports/golden/` label | Only skipped if `phase4-v4-pr02` scenario unavailable; must record missing scenario and keep `InputHandlerTest` / `ModalCardModelTest` | Manual does not prove every offer type |

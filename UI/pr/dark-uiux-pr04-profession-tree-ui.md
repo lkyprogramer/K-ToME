@@ -3,7 +3,7 @@
 **阶段**: `dark-uiux-pr04-profession-tree-ui`
 **优先级**: `P0`
 **工作量**: `M`
-**前置条件**: PR-01、PR-01-1、PR-02、PR-03 串行完成；`docs/review/phase4/v4-pr/2026-04-24-phase4-v4-pr01-profession-tree-run-choice.md` 的职业树语义已落地，且目标分支能找到 `phase4-v4-pr01` scenario、`TalentSidebarPresenter` 和 `ACTIVE_TALENT_SLOT_CHOICE`。
+**前置条件**: PR-01、PR-01-1、PR-02、PR-02-1、PR-03 串行完成；`docs/review/phase4/v4-pr/2026-04-24-phase4-v4-pr01-profession-tree-run-choice.md` 的职业树语义已落地，且目标分支能找到 `phase4-v4-pr01` scenario、`TalentSidebarPresenter` 和 `ACTIVE_TALENT_SLOT_CHOICE`。
 **资源生成结论**: 默认复用现有资源，不批量生图；职业树 skill / tree / portrait icon 正式重绘和 rebaseline 放到 PR-06。
 
 ## 0. 开发治理与验收矩阵

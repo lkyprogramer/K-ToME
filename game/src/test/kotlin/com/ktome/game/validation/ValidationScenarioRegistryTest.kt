@@ -138,6 +138,41 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `dark uiux pr02 2 ui demo new scenario maps to parity evidence contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr02-1-demo-shell-foundation"))
+
+        assertEquals("PR-02-2", scenario.prId)
+        assertEquals(ValidationPreset.LOOT_LAB, scenario.runtime.preset)
+        assertEquals(2026051102L, scenario.runtime.seed)
+        assertEquals(GameLocale.ZH_CN, scenario.runtime.locale)
+        assertEquals("vanguard", scenario.runtime.professionId)
+        assertEquals("shattered_outpost", scenario.runtime.zoneId)
+        assertEquals(
+            listOf(
+                "evidence/ui-demo-new-parity-1672x941.png",
+                "evidence/ui-demo-new-parity-1280x800.png",
+                "evidence/ui-demo-new-right-panel-grid.png",
+                "evidence/ui-demo-new-bottom-deck-no-command-hints.png",
+                "evidence/ui-demo-new-inventory-page-1.png",
+                "evidence/ui-demo-new-inventory-page-2.png",
+                "evidence/ui-demo-new-nav-rail-crop.png",
+                "evidence/ui-demo-new-map-stage-crop.png",
+                "evidence/ui-demo-new-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals("UI/manual-records/ui-demo-new-visual-parity.md", scenario.evidence.manualRecordPath)
+        assertEquals(
+            scenario.evidence.requiredEvidenceFiles.filter { file -> file.endsWith(".png") },
+            scenario.evidence.cuaSteps.map { step -> step.evidenceFile },
+        )
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr02-2-ui-demo-new-visual-parity.evidence.summary_note",
+            scenario.evidence.scenarioNoteLabelKey,
+        )
+    }
+
+    @Test
     fun `pr03 build identity reward scenario matches fixed phase4 v4 contract`() {
         val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr03"))
 

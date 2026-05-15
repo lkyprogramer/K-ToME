@@ -35,10 +35,10 @@ class GameShellLayoutTest {
 
         assertTrue(metrics.worldWidth <= 1024f)
         assertTrue(metrics.worldHeight <= 768f)
-        assertTrue(shell.leftRailBounds.width >= 184f)
-        assertTrue(shell.rightPanelBounds.width >= 240f)
+        assertTrue(shell.leftRailBounds.width <= 64f)
+        assertTrue(shell.rightPanelBounds.width >= 288f)
         assertTrue(shell.mapBounds.x + shell.mapBounds.width <= shell.rightPanelBounds.x)
-        assertTrue(shell.bottomHudBounds.height >= 224f)
+        assertTrue(shell.bottomHudBounds.height >= 164f)
     }
 
     @Test

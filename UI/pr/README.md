@@ -11,7 +11,7 @@
 | 1.1 | [PR-01-1 Client Viewport Renderer Overlay](dark-uiux-pr01-1-client-viewport-renderer-overlay.md) | P0 | XL | 玩家居中地图视口、TileRenderer orchestration 化、tooltip/modal overlay layer | 不生成正式资源 |
 | 2 | [PR-02 UI Chrome Sprite Pilot](dark-uiux-pr02-ui-chrome-sprite-pilot.md) | P0 | L | 跑通 UI chrome/HUD/standalone screen chrome 第一批 sheet 到 manifest/golden | Round 1 |
 | 2.1 | [PR-02-1 Demo Shell Foundation](dark-uiux-pr02-1-demo-shell-foundation.md) | P0 | XL | 在 PR-02 chrome 基础上搭建 demo-like 主 shell：icon rail、dominant map stage、right grid scaffold、bottom hero/action/log deck | Round 1B 必须生成 |
-| 3 | [PR-03 Equipment Inventory Items And Shop](dark-uiux-pr03-equipment-inventory-items.md) | P0 | L | 装备/背包 grid、item icon、铭文商店、quality、空态/tooltip | Round 7 部分 |
+| 3 | [PR-03 Equipment Inventory Items And Shop](dark-uiux-pr03-equipment-inventory-items.md) | P0 | L | 在 PR-02-1 right panel 合同上接入真实装备/背包 item icon、铭文商店、quality、空态/tooltip；不得恢复 right-panel ground loot 或 fake placeholder | Round 7 部分 |
 | 4 | [PR-04 Profession Tree UI](dark-uiux-pr04-profession-tree-ui.md) | P0 | M | 职业树 dark UI、节点状态、预览、主动槽 modal | 默认复用现有资源 |
 | 5 | [PR-05 Map Actor Portrait Replacement](dark-uiux-pr05-map-actor-portrait-replacement.md) | P1 | XL | Tile、prop、VFX、actor、portrait 统一替换 | Round 2-6 |
 | 6 | [PR-06 Skills Status Quest Full Manifest](dark-uiux-pr06-skills-status-quest-full-manifest.md) | P1 | XL | 技能、状态、任务、fallback、全 manifest 收口 | Round 8-9 + 返修 |
@@ -22,7 +22,7 @@
 1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
 2. 每个 PR 必须先读 [UI/PLAN.md](../PLAN.md)、[UI/ART_STYLE_BIBLE.md](../ART_STYLE_BIBLE.md) 和本 PR 文档。
 3. 每个 PR 完成后必须做一次 doc-vs-implementation self-audit。
-4. 每个 PR 的 golden label 使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1` 和 `PR-02-1` 是合法细分特例，必须使用 `dark-uiux-pr01-1-*` / `dark-uiux-pr02-1-*`，不得复用父 PR label；如替换父 PR 等价截图，只能在 manual record 中说明映射关系。
+4. 每个 PR 的 golden label 默认使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1` 是合法细分特例，必须使用 `dark-uiux-pr01-1-*`。`PR-02-1` 的 demo parity 主证据已经固定为 `ui-demo-new-*` label，路径和 manual record 仍归 `dark-uiux-pr02-1` owner；后续 PR 不得再引用旧 `dark-uiux-pr02-1-demo-*` label 作为必填 evidence。
 5. 新增图片、manifest、sheet plan、contact sheet 或 runtime PNG 的 PR 必须补跑 `assetLint styleLint manifestLint`。
 6. 新增或改中文 UI 文案、locale token、presentation token 的 PR 必须补跑 `localeLint contractLint`。
 7. 修改 Kotlin 文件数 `>= 5`、新增 public presentation model、或重排 renderer 共享组件的 PR 必须补跑 `maintainabilityLint`。
@@ -63,7 +63,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | `r01-ui-chrome` | PR-02 | `ui_frame` | `ui.frame.*`; standalone screens consume shared `ui.frame.panel.body` directly. Future exact `ui.screen.*` frame keys require later direct cells / manifest entries / tests. |
 | `r01-ui-controls` | PR-02 | `icon` | `ui.control.*`, `ui.combat.*`, `ui.state.*`, `ui.screen.*` marker |
 | `r01-ui-hud-icons` | PR-02 | `icon` | `ui.hud.*` |
-| `r01b-ui-shell-chrome` | PR-02-1 | `ui_frame`, `icon` | Mandatory Round 1B shell scaffold keys: `ui.shell.*`, including nav rail icons and shell frame components |
+| `r01b-ui-shell-chrome` | PR-02-1 | `ui_frame`, `icon` | Mandatory Round 1B shell scaffold keys: `ui.shell.*`, including nav rail icons, shell frame components, and map-stage backdrop |
 | `r02-tiles-ground` | PR-05 | `tile_ground` | `tileset.<tilesetId>.ground_01` for `forest_edge`, `mine`, `ruins`, `shadow_depths` |
 | `r02-tiles-wall` | PR-05 | `tile_wall` | `tileset.<tilesetId>.wall_01` for `forest_edge`, `mine`, `ruins`, `shadow_depths` |
 | `r02-tiles-decal` | PR-05 | `tile_decal` | `vfx.terrain.interaction.*`; no new `tile.decal.*` runtime key |
@@ -239,7 +239,7 @@ prompt 文件头必须包含：
 | --- | --- |
 | PR-01 | `dark-uiux-pr01-home-main-menu`、`dark-uiux-pr01-home-new-run`、`dark-uiux-pr01-continue-unavailable`、`dark-uiux-pr01-validation-entry`、`dark-uiux-pr01-shell-1280x800`、`dark-uiux-pr01-shell-min-window`、`UI/manual-records/dark-uiux-pr01-shell.md` |
 | PR-02 | `dark-uiux-pr02-round1-chrome`、`dark-uiux-pr02-hud-icons-pilot`、`dark-uiux-pr02-standalone-screen-chrome`、contact sheet QA、manifest diff |
-| PR-02-1 | main labels：`dark-uiux-pr02-1-demo-shell-1280x800`、`dark-uiux-pr02-1-demo-shell-inventory-open`、`dark-uiux-pr02-1-demo-shell-right-panel-grid`、`dark-uiux-pr02-1-demo-main-menu`、`dark-uiux-pr02-1-demo-validation-setup`；supporting crop labels：`dark-uiux-pr02-1-demo-shell-nav-rail-crop`、`dark-uiux-pr02-1-demo-shell-bottom-deck-crop`；manual：`UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`；coverage：`build/reports/verification/dark-uiux/dark-v1-manifest-coverage-pr02-1-owner-scope.json` |
+| PR-02-1 | main labels：`ui-demo-new-parity-1672x941`、`ui-demo-new-parity-1280x800`、`ui-demo-new-right-panel-grid`、`ui-demo-new-bottom-deck-no-command-hints`、`ui-demo-new-inventory-page-1`、`ui-demo-new-inventory-page-2`；supporting crop labels：`ui-demo-new-nav-rail-crop`、`ui-demo-new-map-stage-crop`；manual：`UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`、`UI/manual-records/ui-demo-new-visual-parity.md`；coverage：`build/reports/verification/dark-uiux/dark-v1-manifest-coverage-pr02-1-owner-scope.json`、`build/reports/verification/dark-uiux/dark-v1-manifest-coverage-pr02-2-owner-scope.json` |
 | PR-03 | `dark-uiux-pr03-equipment-slots`、`dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked`、`dark-uiux-pr03-inscription-shop`、`dark-uiux-pr03-shop-full-slot-replace`、`UI/manual-records/dark-uiux-pr03-fallback-key-injection.md` |
 | PR-04 | `dark-uiux-pr04-talent-sidebar-start`、`dark-uiux-pr04-active-slot-choice`、`dark-uiux-pr04-talent-sidebar-min-window-log-visible`、`UI/manual-records/dark-uiux-pr04-profession-tree-ui.md`、`phase4-v4-pr01` scenario evidence |
 | PR-05 | `dark-uiux-pr05-map-layer-stack`、`dark-uiux-pr05-actor-boss-telegraph`、contact sheet QA |

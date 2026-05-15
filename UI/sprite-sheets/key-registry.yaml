@@ -303,3 +303,143 @@ entries:
   fallbackKey: missing_visual
   consumer: TileRenderer warning marker
   consumerTest: ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+- targetKey: ui.shell.outer_frame
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: demo shell outer frame
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.map_stage.frame
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: map stage frame
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.map_stage.backdrop
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: map stage dark floor and fog backdrop, shell presentation only
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.nav_rail.frame
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: left icon rail
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.nav_button.active
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.slot.selected
+  consumer: selected nav icon button
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.hero_card.frame
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: bottom hero card
+  consumerTest: InfoSurfaceLayoutTest, TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions
+- targetKey: ui.shell.action_deck.frame
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: bottom action deck
+  consumerTest: InfoSurfaceLayoutTest, TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions
+- targetKey: ui.shell.log_deck.frame
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.tooltip.body
+  consumer: bottom log deck
+  consumerTest: InfoSurfaceLayoutTest, TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions
+- targetKey: ui.shell.right_section.divider
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: right panel section divider
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.hero_crest.placeholder
+  category: icon
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.control.equipment.icon
+  consumer: hero card crest placeholder
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.command_hint.plate
+  category: ui_frame
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.frame.tooltip.body
+  consumer: command hint plate
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.nav.compass
+  category: icon
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.hud.quest_marker.icon
+  consumer: nav rail map compass button
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.nav.bag
+  category: icon
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.control.backpack.icon
+  consumer: nav rail backpack button
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.nav.scroll
+  category: icon
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.hud.log_marker.icon
+  consumer: nav rail log scroll button
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.nav.book
+  category: icon
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.control.copy.icon
+  consumer: nav rail talent book button
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: ui.shell.nav.gear
+  category: icon
+  ownerPr: PR-02-1
+  sheetId: r01b-ui-shell-chrome
+  fallbackKey: ui.hud.warning.icon
+  consumer: nav rail settings accessibility button
+  consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
+- targetKey: tileset.ruins.ground_01
+  category: tile_ground
+  ownerPr: PR-02-2
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: missing_visual
+  consumer: UI-demo-new shattered outpost terrain floor
+  consumerTest: ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
+- targetKey: tileset.ruins.wall_01
+  category: tile_wall
+  ownerPr: PR-02-2
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: missing_visual
+  consumer: UI-demo-new shattered outpost terrain wall
+  consumerTest: ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
+- targetKey: actor.vanguard
+  category: actor_sprite
+  ownerPr: PR-02-2
+  sheetId: r03-ui-demo-actor-props
+  fallbackKey: missing_visual
+  consumer: UI-demo-new vanguard player actor
+  consumerTest: ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, ValidationScenarioRegistryTest.darkUiuxPr021ScenarioUsesVanguardOutpost
+- targetKey: prop.stairs.down
+  category: prop_interactable
+  ownerPr: PR-02-2
+  sheetId: r03-ui-demo-actor-props
+  fallbackKey: missing_visual
+  consumer: UI-demo-new dungeon descent prop
+  consumerTest: ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, ValidationScenarioRegistryTest.darkUiuxPr021ScenarioUsesVanguardOutpost

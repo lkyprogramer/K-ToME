@@ -95,6 +95,16 @@ class ValidationCommandSourceTest {
     }
 
     @Test
+    fun `dark uiux pr02 1 scenario exposes presentation title key`() {
+        val scenarioId = ValidationScenarioId("dark-uiux-pr02-1-demo-shell-foundation")
+
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr02-1-demo-shell-foundation.title",
+            ValidationScenarioPresentationCatalog.require(scenarioId).titleKey,
+        )
+    }
+
+    @Test
     fun `phase4 v4 fast section emits typed scenario actions`() {
         val scenarioId = ValidationScenarioId("phase4-v4-pr00-selftest")
         val action =

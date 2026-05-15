@@ -248,6 +248,90 @@ object ValidationScenarioRegistry {
                     ),
             ),
             ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr02-1-demo-shell-foundation"),
+                prId = "PR-02-2",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.LOOT_LAB,
+                        seed = 2026051102L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "vanguard",
+                        raceId = "human",
+                        zoneId = "shattered_outpost",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/ui-demo-new-parity-1672x941.png",
+                                "evidence/ui-demo-new-parity-1280x800.png",
+                                "evidence/ui-demo-new-right-panel-grid.png",
+                                "evidence/ui-demo-new-bottom-deck-no-command-hints.png",
+                                "evidence/ui-demo-new-inventory-page-1.png",
+                                "evidence/ui-demo-new-inventory-page-2.png",
+                                "evidence/ui-demo-new-nav-rail-crop.png",
+                                "evidence/ui-demo-new-map-stage-crop.png",
+                                "evidence/ui-demo-new-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial validation session)",
+                                    input = "Capture launch window at 1672x941",
+                                    expectedVisibleResult = "UI-demo-new parity shell shows warm dungeon map stage, vanguard actor, ruin tiles, right panel, and bottom hero/action/log deck.",
+                                    evidenceFile = "evidence/ui-demo-new-parity-1672x941.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (responsive validation session)",
+                                    input = "Capture launch window at 1280x800",
+                                    expectedVisibleResult = "Responsive shell keeps the same visual hierarchy, warm palette, and no bottom command hint plate.",
+                                    evidenceFile = "evidence/ui-demo-new-parity-1280x800.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "Capture right panel crop",
+                                    expectedVisibleResult = "Right panel is ordered equipment, inscriptions, backpack, operation hints with 9 equipment sockets, 5-12 inscription rows, and 4x2 backpack grid.",
+                                    evidenceFile = "evidence/ui-demo-new-right-panel-grid.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (supporting crop)",
+                                    input = "Capture bottom deck crop",
+                                    expectedVisibleResult = "Bottom deck contains hero card, four-slot action deck, and log deck only; command hints are not visible in the bottom region.",
+                                    evidenceFile = "evidence/ui-demo-new-bottom-deck-no-command-hints.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "I",
+                                    expectedVisibleResult = "Pagination fixture page 1 shows eight fixed slots and a 1/N pager without moving command hints into the bottom deck; the launch parity screenshot remains single-page.",
+                                    evidenceFile = "evidence/ui-demo-new-inventory-page-1.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (inventory UI mode)",
+                                    input = "PgDn",
+                                    expectedVisibleResult = "Backpack page 2 starts at the next page first slot and the modal state remains inside modalSafeBounds.",
+                                    evidenceFile = "evidence/ui-demo-new-inventory-page-2.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (supporting crop)",
+                                    input = "Capture nav rail crop",
+                                    expectedVisibleResult = "Five ui.shell.nav.* icons are visually distinct and the selected state remains bounded in the rail.",
+                                    evidenceFile = "evidence/ui-demo-new-nav-rail-crop.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (supporting crop)",
+                                    input = "Capture map stage crop",
+                                    expectedVisibleResult = "Map stage uses dark-v1 ruin floor/wall, vanguard actor, down-stairs prop, warm fog, and restrained amber edge feather.",
+                                    evidenceFile = "evidence/ui-demo-new-map-stage-crop.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/ui-demo-new-visual-parity.md",
+                        scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr02-2-ui-demo-new-visual-parity.evidence.summary_note",
+                    ),
+            ),
+            ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr03"),
                 prId = "PR-03",
                 runtime =

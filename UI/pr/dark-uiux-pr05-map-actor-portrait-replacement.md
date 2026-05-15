@@ -3,7 +3,7 @@
 **阶段**: `dark-uiux-pr05-map-actor-portrait-replacement`
 **优先级**: `P1`
 **工作量**: `XL`
-**前置条件**: PR-01、PR-01-1、PR-02、PR-03、PR-04 已按各自 close gate 完成。
+**前置条件**: PR-01、PR-01-1、PR-02、PR-02-1、PR-02-2 owner evidence、PR-03、PR-04 已按各自 close gate 完成。
 **资源生成结论**: 生成 Round 2-6 资源，替换 `tileset / prop / VFX / actor / bestiary icon / portrait` 视觉族。标题中的 portrait replacement 包含 bestiary icon、profession portrait、talent tree portrait 和 zone visual。
 
 ## 0. 开发治理与验收矩阵
@@ -20,10 +20,7 @@ sdk env
 ./gradlew acceptanceContractLint
 ./gradlew darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint \
   -Pktome.darkUiux.spriteMapReport=assets-src/image/manifests/dark-v1-pr05-sprite-map-report.jsonl
-./gradlew darkManifestCoverageLint \
-  -Pktome.darkUiux.coverageMode=owner-scope \
-  -Pktome.darkUiux.ownerPr=PR-02 \
-  -Pktome.darkUiux.requiredOwnerSheetIds=r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons
+./gradlew :tools:darkManifestCoveragePr02OwnerScope :tools:darkManifestCoveragePr02_1OwnerScope :tools:darkManifestCoveragePr02_2OwnerScope
 ```
 
 开发者还必须确认以下 upstream stop conditions。任一 artifact 缺失、字段为空或与当前文档不一致时，PR-05 不得开始 raw sheet 生成。
@@ -31,9 +28,10 @@ sdk env
 | Upstream dependency | Required gate or artifact | Stop condition |
 | --- | --- | --- |
 | PR-01-1 map sublayer owner | `./gradlew :client:test --tests com.ktome.client.render.TileLayerComposerTest --tests com.ktome.client.render.TileRendererCanvasTest` and `UI/manual-records/dark-uiux-pr01-1-viewport-renderer-overlay.md` `Frame Ownership Self-Audit` | test class / method 不存在、manual record 缺少 map sublayer order 或 frame ownership self-audit |
-| PR-03 ground loot marker and inventory evidence | `dark-uiux-pr03-equipment-slots`, `dark-uiux-pr03-inventory-empty`, `dark-uiux-pr03-inventory-stacked`, `UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md`, `UI/manual-records/dark-uiux-pr03-fallback-key-injection.md` | golden/manual label 不存在、fallback injection record 缺 `coverageReportPath` 或 ground loot marker 仍没有 focused/canvas evidence |
+| PR-02-1 / PR-02-2 demo shell and first-screen visual evidence | `ui-demo-new-parity-1672x941`, `ui-demo-new-parity-1280x800`, `ui-demo-new-map-stage-crop`, `UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`, `UI/manual-records/ui-demo-new-visual-parity.md`, `:tools:darkManifestCoveragePr02_1OwnerScope`, `:tools:darkManifestCoveragePr02_2OwnerScope` | `ui-demo-new-*` evidence 缺失、right panel ground loot 回归、bottom command hints 回归、`tileset.ruins.*` / `actor.vanguard` / `prop.stairs.down` 的 PR-02-2 owner evidence 缺失 |
+| PR-03 map ground loot marker and inventory evidence | `dark-uiux-pr03-equipment-slots`, `dark-uiux-pr03-inventory-empty`, `dark-uiux-pr03-inventory-stacked`, `UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md`, `UI/manual-records/dark-uiux-pr03-fallback-key-injection.md` | golden/manual label 不存在、fallback injection record 缺 `coverageReportPath`、right-panel ground loot 回归，或 map ground loot marker 仍没有 focused/canvas evidence |
 | PR-04 profession tree / modal evidence | `dark-uiux-pr04-talent-sidebar-start`, `dark-uiux-pr04-active-slot-choice`, `dark-uiux-pr04-talent-sidebar-min-window-log-visible`, `UI/manual-records/dark-uiux-pr04-profession-tree-ui.md` | modal / talent sidebar evidence 缺失，或 min-window log overlap 仍未关闭 |
-| PR-02 resource pipeline | `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-02 -Pktome.darkUiux.requiredOwnerSheetIds=r01-ui-chrome,r01-ui-controls,r01-ui-hud-icons` | owner-scope artifact 不含 PR-02 required sheet ids，或 PR-02 tooling diff 尚未收口 |
+| PR-02 resource pipeline | `:tools:darkManifestCoveragePr02OwnerScope` | owner-scope artifact 不含 PR-02 required sheet ids，或 PR-02 tooling diff 尚未收口 |
 
 ### Acceptance Matrix
 
@@ -84,7 +82,7 @@ contact sheet 未确认前不得把 runtime PNG 视为稳定合同。任何 comm
 1. 替换地图核心视觉：ground、wall、terrain decal、prop、interactable、VFX、telegraph。
 2. 替换 player、职业、怪物、Boss actor sprite。
 3. 替换 bestiary monster icon、boss icon、职业 portrait、天赋树 portrait、区域 visual。
-4. 让主截图从“黑底小 tile”变成有暗黑地牢质感的正式游戏画面。
+4. 在 PR-02-1 `UI-demo-new` 首屏基础上，把正式地图、actor、portrait、bestiary、VFX 家族扩展到全局暗黑地牢视觉；不得退回黑底程序网格。
 5. 保持 PR-05 只改资源、manifest 和 client presentation；不改变地图生成、战斗、AI、Boss 或掉落规则。
 
 ## 2. 影响范围
@@ -142,6 +140,8 @@ Per-round checkpoint：
 ### Owner Key Inventory
 
 PR-05 正式生成资源前必须先 materialize exact owner inventory。该 inventory 是开发输入，不是 reviewer 临场推测；后续 `key-registry.yaml`、`sheet-plan.yaml`、canonical manifest、resolver test 和 coverage artifact 必须与它一致。
+
+PR-02-2 已拥有 `tileset.ruins.ground_01`、`tileset.ruins.wall_01`、`actor.vanguard`、`prop.stairs.down` 这 4 个 `ui-demo-new` 首屏 key。PR-05 不能在 owner inventory 中再次声明它们为 `ownerPr=PR-05`；如确实需要迁移 owner，必须先更新 PR-02-2 owner contract、PR-02-1/PR-02-2 coverage task、`ui-demo-new-*` golden/manual evidence 和本节 source rules，不能只改 registry 一处。
 
 Inventory 必须是 per-key flat entries，而不是 sheet-level `targetKeys` 聚合。这样同一份 JSON 可以直接映射到 `key-registry.yaml` 和 `sheet-plan.yaml` cell 输入字段。
 
@@ -213,13 +213,13 @@ Inventory source rules：
 
 | sheetId | required targetKey set source | category | consumer | owner test / evidence |
 | --- | --- | --- | --- | --- |
-| `r02-tiles-ground` | exact keys: `tileset.forest_edge.ground_01`, `tileset.mine.ground_01`, `tileset.ruins.ground_01`, `tileset.shadow_depths.ground_01` | `tile_ground` | `FoundationGameSession.terrainVisualKey`, `TileRenderModelBuilder` | `ManifestResolveTest.darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries`, `dark-uiux-pr05-map-layer-stack` |
-| `r02-tiles-wall` | exact keys: `tileset.forest_edge.wall_01`, `tileset.mine.wall_01`, `tileset.ruins.wall_01`, `tileset.shadow_depths.wall_01` | `tile_wall` | same as above | same as above |
+| `r02-tiles-ground` | exact PR-05 owner keys: `tileset.forest_edge.ground_01`, `tileset.mine.ground_01`, `tileset.shadow_depths.ground_01`; `tileset.ruins.ground_01` remains upstream PR-02-2 unless the migration rule above is executed | `tile_ground` | `FoundationGameSession.terrainVisualKey`, `TileRenderModelBuilder` | `ManifestResolveTest.darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries`, `dark-uiux-pr05-map-layer-stack` |
+| `r02-tiles-wall` | exact PR-05 owner keys: `tileset.forest_edge.wall_01`, `tileset.mine.wall_01`, `tileset.shadow_depths.wall_01`; `tileset.ruins.wall_01` remains upstream PR-02-2 unless the migration rule above is executed | `tile_wall` | same as above | same as above |
 | `r02-tiles-decal` | exact keys: `vfx.terrain.interaction.ice`, `vfx.terrain.interaction.oil`, `vfx.terrain.interaction.oil_burning`, `vfx.terrain.interaction.water` | `tile_decal` | `FoundationGameSession.terrainVisualKey`, overlay/terrain renderer | `TileLayerComposerTest.composesTerrainPropsVfxTelegraphBeforeActors` |
-| `r03-props-interactable` | exact keys: `prop.alarm_bonfire`, `prop.armory_gate`, `prop.crystal_resonance_node`, `prop.heart_ward_focus`, `prop.hidden_entrance.return_bridge`, `prop.hidden_entrance.revealed`, `prop.ritual_altar`, `prop.river_ferry_anchor`, `prop.stairs.down`, `prop.stairs.up`, `prop.supply_crate`, `prop.temple_ward_reliquary` | `prop_interactable` | map prop visual placements | `TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries` |
+| `r03-props-interactable` | exact PR-05 owner keys: `prop.alarm_bonfire`, `prop.armory_gate`, `prop.crystal_resonance_node`, `prop.heart_ward_focus`, `prop.hidden_entrance.return_bridge`, `prop.hidden_entrance.revealed`, `prop.ritual_altar`, `prop.river_ferry_anchor`, `prop.stairs.up`, `prop.supply_crate`, `prop.temple_ward_reliquary`; `prop.stairs.down` remains upstream PR-02-2 unless the migration rule above is executed | `prop_interactable` | map prop visual placements | `TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries` |
 | `r03-props-environment` | exact keys: `prop.mine_furnace` | `prop_environment` | map prop visual placements | same as above |
 | `r03-vfx-telegraph` | `vfx_plate` exact keys: `vfx.boss.warning.sigil_01`, `vfx.telegraph.warning.sigil_01`, `vfx.boss.variant.abyssal_eclipse`, `vfx.boss.variant.grey_crown`, `vfx.boss.variant.molten_glass`; `tile_decal` exact keys: `vfx.zone.effect.crystal_shard_01`, `vfx.zone.effect.current_lane_01`, `vfx.zone.effect.void_pressure_01`, `vfx.zone.effect.ward_seal_01` | per-entry category must match this split; no mixed-category ambiguity in inventory entries | overlay visual placements / zone effect placements | `TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx`, `dark-uiux-pr05-actor-boss-telegraph` |
-| `r04-actors-player` | exact keys currently in manifest: `actor.player`, `actor.vanguard`, `actor.arcanist`, `actor.rogue`, `actor.templar`; add `actor.berserker` / `actor.spellblade` only if PR-05 first adds canonical manifest entries for dev playable actors | `actor_sprite` | `snapshot.actors[].visualKey` | `TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap` |
+| `r04-actors-player` | exact PR-05 owner keys currently in manifest: `actor.player`, `actor.arcanist`, `actor.rogue`, `actor.templar`; `actor.vanguard` remains upstream PR-02-2 unless the migration rule above is executed；add `actor.berserker` / `actor.spellblade` only if PR-05 first adds canonical manifest entries for dev playable actors | `actor_sprite` | `snapshot.actors[].visualKey` | `TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap` |
 | `r04-actors-humanoid` | exact family prefixes: `actor.bandit.*`, `actor.cultist.*`, `actor.orc.*`, `actor.warded_ruin.*`; inventory must expand these prefixes into explicit `entries[]` before resource generation | `actor_sprite` | actor visual placements | same as above |
 | `r04-actors-monster` | exact family prefixes: `actor.beast.*`, `actor.undead.*`, `actor.abyssal.*`, `actor.crystal.*`, `actor.forge.*`, `actor.river.*`; inventory must expand these prefixes into explicit `entries[]` before resource generation | `actor_sprite` | actor visual placements | same as above |
 | `r04-actors-boss` | exact keys: `actor.boss.*`, `boss.abyssal.guardian.visual`, `boss.cultist.dungeon_lord.visual`, `boss.orc.molten_giant.visual` | `actor_sprite` | boss actor visual placements and `game/src/main/resources/data/bosses/index.yaml` `visualKey` | `TileRendererCanvasTest.keepsBossTelegraphReadableWhenActorOccupiesCell` |

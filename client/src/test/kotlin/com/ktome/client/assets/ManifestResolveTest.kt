@@ -127,6 +127,43 @@ class ManifestResolveTest {
     }
 
     @Test
+    fun `dark uiux pr02 1 demo shell owner keys resolve through exact entries`() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        DarkUiChromeVisualKeys.pr02_1DemoShellOwnerKeys.forEach { key ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals(key, resolved.requestedKey)
+            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/ui/"), key)
+            assertFalse(resolved.fallbackUsed, key)
+            assertFalse(resolved.matchedByPrefix, key)
+        }
+    }
+
+    @Test
+    fun `dark uiux pr02 2 ui demo new owner keys resolve through exact entries`() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        mapOf(
+            "tileset.ruins.ground_01" to "dark-v1/tiles/tileset_ruins_ground_01.png",
+            "tileset.ruins.wall_01" to "dark-v1/tiles/tileset_ruins_wall_01.png",
+            "actor.vanguard" to "dark-v1/actors/actor_vanguard.png",
+            "prop.stairs.down" to "dark-v1/props/prop_stairs_down.png",
+        ).forEach { (key, expectedPath) ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals(key, resolved.requestedKey)
+            assertEquals(expectedPath, resolved.entry.rawOutputPath)
+            assertTrue(resolved.entry.tags.contains("dark-v1"), key)
+            assertTrue(resolved.entry.tags.contains("ui-demo-new"), key)
+            assertFalse(resolved.fallbackUsed, key)
+            assertFalse(resolved.matchedByPrefix, key)
+        }
+    }
+
+    @Test
     fun `damage type icons resolve as exact visual family entries`() {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 

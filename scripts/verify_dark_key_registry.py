@@ -12,6 +12,7 @@ from dark_sprite_sheet_contract import (
     load_manifest_entries,
     load_sheet_plan,
     OWNER_PR_PATTERN,
+    OWNER_PR_PATTERN_TEXT,
     print_errors,
     write_json,
 )
@@ -88,7 +89,7 @@ def validate_registry(
         if not owner_pr:
             errors.append(f"{target_key} ownerPr is required.")
         elif not OWNER_PR_PATTERN.fullmatch(owner_pr):
-            errors.append(f"{target_key} ownerPr must use PR-00 format, got '{owner_pr}'.")
+            errors.append(f"{target_key} ownerPr must match {OWNER_PR_PATTERN_TEXT}, got '{owner_pr}'.")
         if sheet_id != cell.sheet_id:
             errors.append(f"{target_key} sheetId mismatch: registry={sheet_id} sheet-plan={cell.sheet_id}.")
         if category != cell.category:

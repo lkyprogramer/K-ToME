@@ -1273,7 +1273,43 @@ class DarkSpriteSheetPipelineScriptTest {
 
         assertEquals(1, result.exitCode, result.output)
         assertTrue(result.output.contains("schemaVersion"), result.output)
-        assertTrue(result.output.contains("PR-00 format"), result.output)
+        assertTrue(result.output.contains("^PR-\\d{2}(?:-\\d+)?$"), result.output)
+    }
+
+    @Test
+    fun `key registry lint accepts pr sub owners and rejects extra or lowercase owner segments`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        writeText(plan, largeSheetPlan("r92-owner-sub", cellsFor("owner-sub")))
+        writeText(manifest, manifest("ui.owner-sub.a", "ui.owner-sub.b", "ui.owner-sub.c", "ui.owner-sub.d"))
+
+        fun runFor(ownerPr: String): ScriptResult {
+            writeText(
+                registry,
+                registry("r92-owner-sub", "ui.owner-sub.a", "ui.owner-sub.b", "ui.owner-sub.c", "ui.owner-sub.d")
+                    .replace("ownerPr: PR-00", "ownerPr: $ownerPr"),
+            )
+            return runScript(
+                "scripts/verify_dark_key_registry.py",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+            )
+        }
+
+        assertEquals(0, runFor("PR-02-1").exitCode)
+
+        val extraSegment = runFor("PR-02-1-1")
+        assertEquals(1, extraSegment.exitCode, extraSegment.output)
+        assertTrue(extraSegment.output.contains("^PR-\\d{2}(?:-\\d+)?$"), extraSegment.output)
+
+        val lowerCase = runFor("pr-02-1")
+        assertEquals(1, lowerCase.exitCode, lowerCase.output)
+        assertTrue(lowerCase.output.contains("^PR-\\d{2}(?:-\\d+)?$"), lowerCase.output)
     }
 
     @Test

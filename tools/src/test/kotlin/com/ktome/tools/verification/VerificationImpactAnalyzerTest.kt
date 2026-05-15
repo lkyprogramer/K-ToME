@@ -333,6 +333,8 @@ class VerificationImpactAnalyzerTest {
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkSpriteSheetLint"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:spriteSheetMapLint"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02OwnerScope"), "changedFile=$changedFile plan=$plan")
+            assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02_1OwnerScope"), "changedFile=$changedFile plan=$plan")
+            assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02_2OwnerScope"), "changedFile=$changedFile plan=$plan")
             assertFalse(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr00DryRun"), "changedFile=$changedFile plan=$plan")
             assertFalse(plan.requestedTaskPaths.contains(":tools:darkManifestCoverageLint"), "changedFile=$changedFile plan=$plan")
             assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedPreflightTaskPaths, "changedFile=$changedFile plan=$plan")
