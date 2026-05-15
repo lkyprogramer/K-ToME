@@ -12,7 +12,7 @@ manualReviewers:
     basis: dark-v1 ruins terrain, vanguard actor, stairs prop, and subdued map-stage backdrop now read as a warm dark dungeon first screen without the previous over-bright brick backdrop.
   - role: Game Design Director
     verdict: pass
-    basis: right panel keeps real equipment, inscriptions 5-8 with content, inscriptions 9-12 as empty framed rows, a single-page 4x2 launch backpack, separate pagination evidence, and compact operation hints in one consistent command surface.
+    basis: right panel keeps real equipment, inscriptions 5-8 with content, inscriptions 9-12 as empty framed rows, a 4x2 launch backpack with real page-2 pagination evidence, and compact operation hints in one consistent command surface.
 demoParityVerdict: pass
 blockingFindings: []
 evidenceMode: upright-full-frame-plus-dedicated-crops

@@ -2287,9 +2287,9 @@ class FoundationGameSession internal constructor(
                 "sanctified_seal",
                 "abyssal_heartstone",
             )
-        val demoBackpackFirstPageSize = 8
+        val demoBackpackPageTwoMinimumSize = 9
         demoItems.forEach { baseItemId ->
-            if (inventory.itemIds.size >= demoBackpackFirstPageSize || inventory.itemIds.size >= inventory.capacity) {
+            if (inventory.itemIds.size >= demoBackpackPageTwoMinimumSize || inventory.itemIds.size >= inventory.capacity) {
                 return@forEach
             }
             if (!existingBaseIds.add(baseItemId)) {

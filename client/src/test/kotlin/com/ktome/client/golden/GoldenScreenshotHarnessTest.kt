@@ -244,12 +244,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "ui-demo-new-parity-1672x941" to "0290f40cad40bc45683a2800833153fa0bcb197e288e97a3af7d61ffafb0e588",
-                "ui-demo-new-parity-1280x800" to "dd1e4ce70310bc56ae0ca859db51b1d17b1679b4e27dbb3f38ea6e956bbf4a92",
-                "ui-demo-new-right-panel-grid" to "90b5f1c8513bcc3ac5e08fbea9017ed28a807eee17bd1b0a7f86a9befbfd4286",
+                "ui-demo-new-parity-1672x941" to "026443479c35bbd0eafd4c6b3fd5c00e0360d7133f4e949888f419aa8d0651fe",
+                "ui-demo-new-parity-1280x800" to "439664a75cffe1d541174d6a59759766d79845e9cd41fb6a6b6ce60c35aaaaf1",
+                "ui-demo-new-right-panel-grid" to "5e7422f278285fd3eca80aa4dbc8273307fc61dfc70dd503c243e0f3d139cf8b",
                 "ui-demo-new-bottom-deck-no-command-hints" to "ebb829c62a5830ec2d53d9f348b8d60f8edd57df9b6ca189aacc098f2e03ad78",
                 "ui-demo-new-inventory-page-1" to "5e7422f278285fd3eca80aa4dbc8273307fc61dfc70dd503c243e0f3d139cf8b",
-                "ui-demo-new-inventory-page-2" to "a741a91f4a3d2a1630ed979c57c15f306d157a19ac277291fac1790358656997",
+                "ui-demo-new-inventory-page-2" to "f6ccd83f5e2f3052b5caa5d6578d55912983434fe12af3b760b25b905bbf4be3",
                 "ui-demo-new-nav-rail-crop" to "c52f8db795b5e932c91fb5d5084fc113ea134f685f416ce08e7e8e89947d4f03",
                 "ui-demo-new-map-stage-crop" to "551b3baf3d5751d5fa311164254deb81b2e5c0b7005cdbbaa6cb55cb98ade212",
             ),

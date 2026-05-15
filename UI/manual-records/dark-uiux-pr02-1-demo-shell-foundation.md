@@ -30,12 +30,12 @@ sameFrameReason: `ui-demo-new-parity-shell-includes-right-panel-bottom-and-map-s
 
 | label | source | sha256 | status | note |
 | --- | --- | --- | --- | --- |
-| `ui-demo-new-parity-1672x941` | golden | `0290f40cad40bc45683a2800833153fa0bcb197e288e97a3af7d61ffafb0e588` | pass | Full demo-aspect evidence: left rail, dominant map stage, right equipment/inscription/backpack/operation regions, bottom hero/action/log deck. |
-| `ui-demo-new-parity-1280x800` | golden | `dd1e4ce70310bc56ae0ca859db51b1d17b1679b4e27dbb3f38ea6e956bbf4a92` | pass | Standard viewport evidence uses the same shell hierarchy and no right-panel ground loot. |
-| `ui-demo-new-right-panel-grid` | golden | `90b5f1c8513bcc3ac5e08fbea9017ed28a807eee17bd1b0a7f86a9befbfd4286` | pass | Equipment sockets, inscriptions 5-8 real rows, inscriptions 9-12 empty rows, backpack 4x2, and operation hints are bounded. |
+| `ui-demo-new-parity-1672x941` | golden | `026443479c35bbd0eafd4c6b3fd5c00e0360d7133f4e949888f419aa8d0651fe` | pass | Full demo-aspect evidence: left rail, dominant map stage, right equipment/inscription/backpack/operation regions, bottom hero/action/log deck. |
+| `ui-demo-new-parity-1280x800` | golden | `439664a75cffe1d541174d6a59759766d79845e9cd41fb6a6b6ce60c35aaaaf1` | pass | Standard viewport evidence uses the same shell hierarchy and no right-panel ground loot. |
+| `ui-demo-new-right-panel-grid` | golden | `5e7422f278285fd3eca80aa4dbc8273307fc61dfc70dd503c243e0f3d139cf8b` | pass | Equipment sockets, inscriptions 5-8 real rows, inscriptions 9-12 empty rows, backpack 4x2 page 1 of 2, and operation hints are bounded. |
 | `ui-demo-new-bottom-deck-no-command-hints` | golden | `ebb829c62a5830ec2d53d9f348b8d60f8edd57df9b6ca189aacc098f2e03ad78` | pass | Bottom deck contains hero/action/log only; visible shortcut help is confined to right operation hints. |
 | `ui-demo-new-inventory-page-1` | golden | `5e7422f278285fd3eca80aa4dbc8273307fc61dfc70dd503c243e0f3d139cf8b` | pass | Inventory pagination fixture first page. |
-| `ui-demo-new-inventory-page-2` | golden | `a741a91f4a3d2a1630ed979c57c15f306d157a19ac277291fac1790358656997` | pass | Inventory pagination fixture second page. |
+| `ui-demo-new-inventory-page-2` | golden | `f6ccd83f5e2f3052b5caa5d6578d55912983434fe12af3b760b25b905bbf4be3` | pass | Inventory pagination fixture second page. |
 | `ui-demo-new-nav-rail-crop` | golden | `c52f8db795b5e932c91fb5d5084fc113ea134f685f416ce08e7e8e89947d4f03` | pass | Dedicated crop evidence contains the nav rail at inspection quality. |
 | `ui-demo-new-map-stage-crop` | golden | `551b3baf3d5751d5fa311164254deb81b2e5c0b7005cdbbaa6cb55cb98ade212` | pass | Dedicated crop evidence contains the map stage at inspection quality. |
 | `ui-demo-new-side-by-side-current` | visual review artifact | `N/A` | pass | Side-by-side comparison against `UI/UI-demo-new.png`; used for director-level manual review. |
