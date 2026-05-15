@@ -1,12 +1,14 @@
 package com.ktome.client.render
 
 import com.badlogic.gdx.graphics.Color
+import com.ktome.client.assets.DarkUiChromeTestKeys
 import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.render.layout.GameShellBounds
+import com.ktome.client.ui.chrome.ChromeFramePainter
 import com.ktome.client.ui.panel.ActionPanelEntryModel
 import com.ktome.client.ui.panel.ActionPanelModel
 import com.ktome.client.ui.panel.LogPresentationModel
@@ -14,6 +16,7 @@ import com.ktome.client.ui.panel.PlayerCardModel
 import com.ktome.client.ui.panel.TargetCardModel
 import com.ktome.core.map.Point
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -27,7 +30,7 @@ class DemoShellRendererTest {
         DemoShellRenderer.renderMapStageFrame(canvas, frame)
         DemoShellRenderer.renderShell(canvas, frame)
 
-        DarkUiChromeVisualKeys.pr02_1DemoShellOwnerKeys.forEach { key ->
+        DarkUiChromeTestKeys.pr02_1DemoShellOwnerKeys.forEach { key ->
             assertTrue(canvas.assetDraws.any { draw -> draw.key == key }, "$key was not drawn")
         }
         canvas.assetDraws
@@ -63,6 +66,12 @@ class DemoShellRendererTest {
         assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Ctrl+S Save") && operationBounds.contains(draw) }, "Right operation hints must keep action labels.")
         assertTrue(canvas.textDraws.any { draw -> draw.text.contains("5-8 Use rune") && operationBounds.contains(draw) }, "Right operation hints must keep inscription labels.")
         assertTrue(canvas.textDraws.none { draw -> draw.text.contains("Ctrl+S") && bottomBounds.contains(draw) }, "Bottom deck must not render command hints.")
+        val logBody = logBodyRegion(frame.layout.demoShell.bottomDeck.logDeck)
+        assertTrue(canvas.rectDraws.any { draw -> logBody.covers(draw) }, "Log deck must cover the decorative body with one continuous surface.")
+        assertFalse(
+            canvas.rectDraws.any { draw -> logBody.contains(draw) && draw.height in 17f..19f && draw.width >= logBody.width - 8f },
+            "Log deck must not split content into stacked row plates.",
+        )
     }
 
     private fun sampleFrame(): ShellRenderFrame {
@@ -175,7 +184,10 @@ class DemoShellRendererTest {
         }
 
     private fun sampleResolver(): VisualManifestResolver {
-        val keys = listOf("missing_visual", SHELL_MAP_STAGE_BACKDROP) + DarkUiChromeVisualKeys.pr02Round1OwnerKeys + DarkUiChromeVisualKeys.pr02_1DemoShellOwnerKeys
+        val keys =
+            listOf("missing_visual", SHELL_MAP_STAGE_BACKDROP) +
+                DarkUiChromeTestKeys.pr02Round1OwnerKeys +
+                DarkUiChromeTestKeys.pr02_1DemoShellOwnerKeys
         return VisualManifestResolver(
             VisualManifest(
                 manifestVersion = 1,
@@ -239,8 +251,37 @@ class DemoShellRendererTest {
             draw.x <= right + 0.5f &&
             draw.y <= top + 0.5f
 
+    private fun GameShellBounds.contains(draw: RectDraw): Boolean =
+        draw.x >= x - 0.5f &&
+            draw.y >= y - 0.5f &&
+            draw.x + draw.width <= right + 0.5f &&
+            draw.y + draw.height <= top + 0.5f
+
+    private fun GameShellBounds.covers(draw: RectDraw): Boolean =
+        draw.x <= x + 0.5f &&
+            draw.y <= y + 0.5f &&
+            draw.x + draw.width >= right - 0.5f &&
+            draw.y + draw.height >= top - 0.5f
+
+    private fun logBodyRegion(bounds: GameShellBounds): GameShellBounds {
+        val edge = ChromeFramePainter.frameEdgeSize
+        return GameShellBounds(
+            x = bounds.x + edge,
+            y = bounds.y + edge,
+            width = bounds.width - edge * 2f,
+            height = bounds.height - edge * 2f,
+        )
+    }
+
     private data class AssetDraw(
         val key: String,
+        val x: Float,
+        val y: Float,
+        val width: Float,
+        val height: Float,
+    )
+
+    private data class RectDraw(
         val x: Float,
         val y: Float,
         val width: Float,
@@ -255,9 +296,12 @@ class DemoShellRendererTest {
 
     private class RecordingCanvas : TileCanvas {
         val assetDraws = mutableListOf<AssetDraw>()
+        val rectDraws = mutableListOf<RectDraw>()
         val textDraws = mutableListOf<TextDraw>()
 
-        override fun drawRect(draw: TileRectDraw) = Unit
+        override fun drawRect(draw: TileRectDraw) {
+            rectDraws += RectDraw(draw.bounds.x, draw.bounds.y, draw.bounds.width, draw.bounds.height)
+        }
 
         override fun drawAsset(draw: TileAssetDraw) {
             assetDraws += AssetDraw(draw.asset.resolvedKey, draw.bounds.x, draw.bounds.y, draw.bounds.width, draw.bounds.height)

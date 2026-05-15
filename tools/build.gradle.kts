@@ -550,19 +550,33 @@ tasks.register<Exec>("darkSpriteSheetLint") {
 val darkSpriteMapReportPath =
     rootProject.providers.gradleProperty("ktome.darkUiux.spriteMapReport")
         .orElse("assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl")
+val darkSpriteMapRequireReviewedQa =
+    rootProject.providers.gradleProperty("ktome.darkUiux.requireReviewedQa")
+        .orElse("false")
+val darkSpriteMapReportSheetIds =
+    rootProject.providers.gradleProperty("ktome.darkUiux.spriteMapReportSheetIds")
+        .orElse("")
 
 tasks.register<Exec>("spriteSheetMapLint") {
     group = "verification"
     description = "Validates dark-v1 raw sheet dimensions, contact sheet, hash report, and manifest rawOutputPath mapping."
     workingDir = rootProject.projectDir
-    commandLine(
-        "python3",
-        "scripts/verify_sprite_sheet_map.py",
-        "--check",
-        "map",
-        "--report",
-        darkSpriteMapReportPath.get(),
-    )
+    val command =
+        mutableListOf(
+            "python3",
+            "scripts/verify_sprite_sheet_map.py",
+            "--check",
+            "map",
+            "--report",
+            darkSpriteMapReportPath.get(),
+        )
+    if (darkSpriteMapRequireReviewedQa.get().toBooleanStrictOrNull() == true) {
+        command += "--require-reviewed-qa"
+    }
+    if (darkSpriteMapReportSheetIds.get().isNotBlank()) {
+        command += listOf("--report-sheet-ids", darkSpriteMapReportSheetIds.get())
+    }
+    commandLine(command)
     inputs.files(
         rootProject.files(
             "scripts/verify_sprite_sheet_map.py",
@@ -579,6 +593,8 @@ tasks.register<Exec>("spriteSheetMapLint") {
         },
     ).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.property("ktome.darkUiux.spriteMapReport", darkSpriteMapReportPath)
+    inputs.property("ktome.darkUiux.requireReviewedQa", darkSpriteMapRequireReviewedQa)
+    inputs.property("ktome.darkUiux.spriteMapReportSheetIds", darkSpriteMapReportSheetIds)
     outputs.file(rootProject.layout.projectDirectory.file(darkSpriteMapReportPath.get()))
 }
 
@@ -674,6 +690,45 @@ tasks.register<Exec>("darkManifestCoverageLint") {
     inputs.property("ktome.darkUiux.requiredOwnerSheetIds", darkCoverageRequiredOwnerSheetIds)
     inputs.property("ktome.darkUiux.ownerContract", darkUiuxOwnerContract)
     outputs.file(darkUiuxReportDir.map { dir -> dir.file("dark-v1-manifest-coverage.json") })
+}
+
+tasks.register<Exec>("resourcePipelineLint") {
+    group = "verification"
+    description = "Validates the project-wide resource generation authority inventory across image, sheet, and audio plans."
+    dependsOn(rootProject.tasks.named("syncPhase2Manifests"))
+    commandLine(
+        "python3",
+        "scripts/resource_pipeline_authority_lint.py",
+        "--report",
+        layout.buildDirectory.file("reports/resource-pipeline/resource-pipeline-authority.json").get().asFile.path,
+    )
+    workingDir = rootProject.projectDir
+    inputs.files(
+        rootProject.files(
+            "scripts/resource_pipeline_authority_lint.py",
+            "scripts/asset_pipeline_common.py",
+            "scripts/dark_sprite_sheet_contract.py",
+            "UI/sprite-sheets/key-registry.yaml",
+            "UI/sprite-sheets/sheet-plan.yaml",
+            "assets-src/image/manifests/phase2-visual-manifest.json",
+            "assets-src/audio/manifests/phase2-audio-manifest.json",
+            "client/src/main/resources/manifests/visual-manifest.json",
+            "client/src/main/resources/manifests/audio-manifest.json",
+        ),
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(rootProject.fileTree("assets-src/image/specs") { include("*.yaml") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(rootProject.fileTree("assets-src/audio/specs") { include("*.yaml") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(rootProject.fileTree("core/src/main/kotlin") { include("**/*.kt") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(rootProject.fileTree("game/src/main/kotlin") { include("**/*.kt") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(rootProject.fileTree("client/src/main/kotlin") { include("**/*.kt") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(rootProject.fileTree("tools/src/main/kotlin") { include("**/*.kt") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.file(layout.buildDirectory.file("reports/resource-pipeline/resource-pipeline-authority.json"))
 }
 
 registerDarkManifestCoverageTask(
@@ -1209,6 +1264,7 @@ listOf(
     tasks.named("darkKeyRegistryLint"),
     tasks.named("darkSpriteSheetLint"),
     tasks.named("spriteSheetMapLint"),
+    tasks.named("resourcePipelineLint"),
     tasks.named("darkManifestCoveragePr00DryRun"),
     tasks.named("darkManifestCoveragePr02OwnerScope"),
     tasks.named("darkManifestCoveragePr02_1OwnerScope"),

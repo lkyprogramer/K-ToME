@@ -1,5 +1,7 @@
 package com.ktome.client.ui.card
 
+import com.ktome.client.assets.DarkUiChromeVisualKeys
+import com.ktome.client.assets.ShopOfferTagTokens
 import com.ktome.client.ui.UiCompanionVisualKeys
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
@@ -44,6 +46,9 @@ internal data class ModalCardModel(
     val costLines: List<RenderTextTokenSnapshot> = emptyList(),
     val rewardLines: List<RenderTextTokenSnapshot> = emptyList(),
     val disabledReason: RenderTextTokenSnapshot? = null,
+    val frameKey: String? = null,
+    val stateIconKey: String? = null,
+    val typeIconKey: String? = null,
     val primaryAction: ModalCardAction,
     val secondaryAction: ModalCardAction,
     val returnPolicy: ModalCardReturnPolicy = ModalCardReturnPolicy.REQUIRES_PROGRESS_ACTION,
@@ -98,6 +103,7 @@ internal data class ModalCardModel(
         fun shopOffer(
             shopId: String,
             offer: ShopOfferSnapshot,
+            shardBalance: Int? = null,
         ): ModalCardModel =
             ModalCardModel(
                 stableKey = "shop:$shopId:offer:${offer.index}",
@@ -106,6 +112,9 @@ internal data class ModalCardModel(
                 summary = null,
                 detailLines = offer.tagLabelKeys.map(::RenderTextTokenSnapshot),
                 costLines = listOf(shardCostToken(offer.price)),
+                frameKey = DarkUiChromeVisualKeys.SHOP_OFFER_FRAME,
+                stateIconKey = shopAffordabilityIconKey(offer = offer, shardBalance = shardBalance),
+                typeIconKey = shopTypeIconKey(offer),
                 primaryAction = ModalCardAction.BUY,
                 secondaryAction = ModalCardAction.CANCEL,
             )
@@ -170,6 +179,22 @@ internal data class ModalCardModel(
                 key = "ui.modal.card.cost.shards",
                 arguments = listOf(RenderTextArgumentSnapshot(name = "amount", value = amount.toString())),
             )
+
+        private fun shopAffordabilityIconKey(
+            offer: ShopOfferSnapshot,
+            shardBalance: Int?,
+        ): String? =
+            shardBalance?.let { balance ->
+                if (offer.price <= balance) {
+                    DarkUiChromeVisualKeys.SHOP_PRICE_AFFORDABLE
+                } else {
+                    DarkUiChromeVisualKeys.SHOP_PRICE_UNAFFORDABLE
+                }
+            }
+
+        private fun shopTypeIconKey(offer: ShopOfferSnapshot): String? =
+            DarkUiChromeVisualKeys.SHOP_INSCRIPTION_MARKER
+                .takeIf { offer.tagLabelKeys.any { labelKey -> labelKey == ShopOfferTagTokens.INSCRIPTION } }
     }
 }
 

@@ -825,6 +825,7 @@ class FoundationGameSession internal constructor(
         ensurePlayerResourcePools()
         ensurePlayerInscriptions()
         prepareDarkUiuxPr02_2LaunchSceneIfNeeded()
+        prepareDarkUiuxPr03LaunchSceneIfNeeded()
         restorePendingZoneAdvanceIfNeeded()
         restorePendingZoneRuntimeHookEffects()
         refreshFov()
@@ -1888,6 +1889,10 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr02PrimaryScene()
                 "inscription_shop_primary_ready"
             }
+            "dark-uiux-pr03-equipment-inventory-items" -> {
+                prepareDarkUiuxPr03EmptyInventorySurface()
+                "empty_inventory_surface_ready"
+            }
             "phase4-v4-pr03" -> {
                 preparePhase4V4Pr03PrimaryScene()
                 "build_identity_reward_showcase_ready"
@@ -1914,6 +1919,10 @@ class FoundationGameSession internal constructor(
             "phase4-v4-pr02" -> {
                 preparePhase4V4Pr02ReplacementScene()
                 "inscription_shop_replacement_ready"
+            }
+            "dark-uiux-pr03-equipment-inventory-items" -> {
+                prepareDarkUiuxPr03StackedInventorySurface()
+                "stacked_inventory_surface_ready"
             }
             "phase4-v4-pr03" -> {
                 preparePhase4V4Pr03SecondaryScene()
@@ -2297,6 +2306,39 @@ class FoundationGameSession internal constructor(
             }
             validationShowcaseItem(ValidationShowcaseItemSpec(baseItemId = baseItemId))
                 ?.let { item -> inventory.itemIds += itemFactory.createCarriedItem(world, item) }
+        }
+        invalidateRenderSnapshot()
+    }
+
+    private fun prepareDarkUiuxPr03LaunchSceneIfNeeded() {
+        if (validationSessionOptions?.scenarioId?.value != "dark-uiux-pr03-equipment-inventory-items") {
+            return
+        }
+        spawnPr03ItemShowcase()
+    }
+
+    private fun prepareDarkUiuxPr03EmptyInventorySurface() {
+        activeShopId = null
+        pendingInscriptionReplacementPurchase = null
+        requireNotNull(world.get<Inventory>(playerId)) { "Missing Inventory for $playerId" }.itemIds.clear()
+        invalidateRenderSnapshot()
+    }
+
+    private fun prepareDarkUiuxPr03StackedInventorySurface() {
+        activeShopId = null
+        pendingInscriptionReplacementPurchase = null
+        val inventory = requireNotNull(world.get<Inventory>(playerId)) { "Missing Inventory for $playerId" }
+        val itemFactory = ItemFactory()
+        inventory.itemIds.clear()
+        listOf(
+            ValidationShowcaseItemSpec(baseItemId = "healing_potion"),
+            ValidationShowcaseItemSpec(baseItemId = "healing_potion"),
+            ValidationShowcaseItemSpec(baseItemId = "emerald_charm", quality = RarityTier.RARE),
+        ).forEach { spec ->
+            val item =
+                validationShowcaseItem(spec)
+                    ?: error("PR03 inventory fixture item '${spec.baseItemId}' is not present in official content.")
+            inventory.itemIds += itemFactory.createCarriedItem(world, item)
         }
         invalidateRenderSnapshot()
     }

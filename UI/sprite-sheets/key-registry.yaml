@@ -443,3 +443,305 @@ entries:
   fallbackKey: missing_visual
   consumer: UI-demo-new dungeon descent prop
   consumerTest: ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, ValidationScenarioRegistryTest.darkUiuxPr021ScenarioUsesVanguardOutpost
+- targetKey: item.short_sword.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: inventory/equipment item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.long_sword.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: inventory/equipment item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.arcane_staff.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: inventory/equipment item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.hunter_bow.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: inventory/equipment item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.war_maul.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: inventory/equipment item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.forgebreaker_pick.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: inventory/equipment item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.basic_shield.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: equipment off-hand icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.chain_mail.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: equipment armor icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.leather_armor.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: equipment armor icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.apprentice_robe.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: equipment armor icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.healing_potion.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: consumable inventory icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.mana_potion.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: consumable inventory icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.energy_tonic.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: consumable inventory icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.scroll_teleport.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: consumable inventory icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.consecrated_oil.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: consumable inventory icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.bandit_trophy.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: off-hand item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.emerald_charm.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: off-hand item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.seal_reliquary.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: off-hand item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.sanctified_seal.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: off-hand item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.abyssal_heartstone.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-base
+  fallbackKey: ui.empty.inventory.icon
+  consumer: off-hand item icon
+  consumerTest: EquipmentInventoryPresenterTest
+- targetKey: item.unique.greenwood_watcher_blade.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: unique item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.unique.briarbound_bow.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: unique item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.unique.furnace_plate.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: unique item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.unique.voidlit_seal.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: unique item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.unique.cinderveil_plate.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: unique item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.unique.deepcurrent_lens.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: unique item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.artifact.briar_heart.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: artifact item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.artifact.forge_oath.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: artifact item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.artifact.river_echo.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: artifact item icon
+  consumerTest: ManifestResolveTest
+- targetKey: item.artifact.eclipsed_relic.icon
+  category: icon_item
+  ownerPr: PR-03
+  sheetId: r07-items-unique-artifact
+  fallbackKey: ui.empty.inventory.icon
+  consumer: artifact item icon
+  consumerTest: ManifestResolveTest
+- targetKey: material.iron.icon
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.empty.inventory.icon
+  consumer: material marker
+  consumerTest: ManifestResolveTest
+- targetKey: material.steel.icon
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.empty.inventory.icon
+  consumer: material marker
+  consumerTest: ManifestResolveTest
+- targetKey: material.mithril.icon
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.empty.inventory.icon
+  consumer: material marker
+  consumerTest: ManifestResolveTest
+- targetKey: material.adamantite.icon
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.empty.inventory.icon
+  consumer: material marker
+  consumerTest: ManifestResolveTest
+- targetKey: affix.sharp.icon
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.empty.inventory.icon
+  consumer: affix marker
+  consumerTest: ManifestResolveTest
+- targetKey: affix.sturdy.icon
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.empty.inventory.icon
+  consumer: affix marker
+  consumerTest: ManifestResolveTest
+- targetKey: affix.of_strength.icon
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.empty.inventory.icon
+  consumer: affix marker
+  consumerTest: ManifestResolveTest
+- targetKey: affix.of_life.icon
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.empty.inventory.icon
+  consumer: affix marker
+  consumerTest: ManifestResolveTest
+- targetKey: ui.shop.price.affordable
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.hud.gold.icon
+  consumer: shop price marker
+  consumerTest: ModalCardModelTest
+- targetKey: ui.shop.price.unaffordable
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.hud.warning.icon
+  consumer: shop price marker
+  consumerTest: ModalCardModelTest
+- targetKey: ui.shop.inscription.marker
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.hud.quest_marker.icon
+  consumer: inscription offer marker
+  consumerTest: DescriptionPresenterTest
+- targetKey: ui.shop.replacement.slot_marker
+  category: icon
+  ownerPr: PR-03
+  sheetId: r07-items-affix-material
+  fallbackKey: ui.frame.slot.selected
+  consumer: full-slot replacement modal
+  consumerTest: InputHandlerTest
+- targetKey: ui.shop.offer.frame
+  category: ui_frame
+  ownerPr: PR-03
+  sheetId: r01-ui-chrome
+  fallbackKey: ui.frame.panel.body
+  consumer: ModalCardModel shop offer frame
+  consumerTest: ModalCardModelTest
+  aliasOf: ui.frame.panel.body

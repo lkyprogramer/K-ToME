@@ -105,6 +105,16 @@ class ValidationCommandSourceTest {
     }
 
     @Test
+    fun `dark uiux pr03 scenario exposes presentation title key`() {
+        val scenarioId = ValidationScenarioId("dark-uiux-pr03-equipment-inventory-items")
+
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr03-equipment-inventory-items.title",
+            ValidationScenarioPresentationCatalog.require(scenarioId).titleKey,
+        )
+    }
+
+    @Test
     fun `phase4 v4 fast section emits typed scenario actions`() {
         val scenarioId = ValidationScenarioId("phase4-v4-pr00-selftest")
         val action =

@@ -718,6 +718,16 @@ class InputHandlerTest {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
 
+        input.frame(justPressed = setOf(Keys.NUM_1))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(5, handler.overlayState().inscriptionReplacementHotkeySelection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.NUM_4))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(5, handler.overlayState().inscriptionReplacementHotkeySelection)
+        input.clear()
+
         input.frame(justPressed = setOf(Keys.NUM_6))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.SHOP, handler.overlayState().mode)

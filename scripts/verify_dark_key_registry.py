@@ -70,14 +70,16 @@ def validate_registry(
     missing_registry_keys = sorted(set(cells_by_key) - set(registry_by_key))
     if missing_registry_keys:
         errors.append(f"sheet-plan targetKeys missing from key registry: {', '.join(missing_registry_keys)}.")
-    extra_registry_keys = sorted(set(registry_by_key) - set(cells_by_key))
+    extra_registry_keys = sorted(
+        target_key
+        for target_key in set(registry_by_key) - set(cells_by_key)
+        if not str(registry_by_key[target_key].get("aliasOf", "")).strip()
+    )
     if extra_registry_keys:
         errors.append(f"key registry targetKeys absent from sheet plan: {', '.join(extra_registry_keys)}.")
 
     for target_key, entry in sorted(registry_by_key.items()):
         cell = cells_by_key.get(target_key)
-        if cell is None:
-            continue
         owner_pr = str(entry.get("ownerPr", "")).strip()
         sheet_id = str(entry.get("sheetId", "")).strip()
         category = str(entry.get("category", "")).strip()
@@ -90,10 +92,6 @@ def validate_registry(
             errors.append(f"{target_key} ownerPr is required.")
         elif not OWNER_PR_PATTERN.fullmatch(owner_pr):
             errors.append(f"{target_key} ownerPr must match {OWNER_PR_PATTERN_TEXT}, got '{owner_pr}'.")
-        if sheet_id != cell.sheet_id:
-            errors.append(f"{target_key} sheetId mismatch: registry={sheet_id} sheet-plan={cell.sheet_id}.")
-        if category != cell.category:
-            errors.append(f"{target_key} category mismatch: registry={category} sheet-plan={cell.category}.")
         if not fallback_key:
             errors.append(f"{target_key} fallbackKey is required.")
         elif fallback_key not in manifest_by_key:
@@ -102,10 +100,31 @@ def validate_registry(
             errors.append(f"{target_key} consumer is required.")
         if not consumer_test:
             errors.append(f"{target_key} consumerTest is required.")
-        if cell.alias_of and alias_of != cell.alias_of:
-            errors.append(f"{target_key} aliasOf mismatch: registry={alias_of or '<none>'} sheet-plan={cell.alias_of}.")
         if alias_of and alias_of not in registry_by_key:
             errors.append(f"{target_key} aliasOf target '{alias_of}' is missing from key registry.")
+        if cell is None:
+            if alias_of:
+                alias_target = registry_by_key.get(alias_of)
+                if alias_target is not None:
+                    alias_sheet_id = str(alias_target.get("sheetId", "")).strip()
+                    alias_category = str(alias_target.get("category", "")).strip()
+                    if sheet_id != alias_sheet_id:
+                        errors.append(
+                            f"{target_key} registry-only alias sheetId mismatch: "
+                            f"registry={sheet_id} aliasOf={alias_of} sheetId={alias_target.get('sheetId')}."
+                        )
+                    if category != alias_category:
+                        errors.append(
+                            f"{target_key} registry-only alias category mismatch: "
+                            f"registry={category} aliasOf={alias_of} category={alias_target.get('category')}."
+                        )
+            continue
+        if sheet_id != cell.sheet_id:
+            errors.append(f"{target_key} sheetId mismatch: registry={sheet_id} sheet-plan={cell.sheet_id}.")
+        if category != cell.category:
+            errors.append(f"{target_key} category mismatch: registry={category} sheet-plan={cell.category}.")
+        if cell.alias_of and alias_of != cell.alias_of:
+            errors.append(f"{target_key} aliasOf mismatch: registry={alias_of or '<none>'} sheet-plan={cell.alias_of}.")
 
     errors += detect_alias_cycles(registry_by_key)
     report = {

@@ -20,6 +20,7 @@ import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import java.lang.reflect.Proxy
 import java.nio.file.Path
+import javax.imageio.ImageIO
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -112,36 +113,6 @@ class ManifestResolveTest {
     }
 
     @Test
-    fun `dark uiux pr02 round1 owner keys resolve through exact entries`() {
-        val resolver = ClientAssetBundleLoader.load().visualResolver
-
-        DarkUiChromeVisualKeys.pr02Round1OwnerKeys.forEach { key ->
-            val resolved = resolver.resolve(key)
-
-            assertEquals(key, resolved.resolvedKey)
-            assertEquals(key, resolved.requestedKey)
-            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/ui/"), key)
-            assertFalse(resolved.fallbackUsed, key)
-            assertFalse(resolved.matchedByPrefix, key)
-        }
-    }
-
-    @Test
-    fun `dark uiux pr02 1 demo shell owner keys resolve through exact entries`() {
-        val resolver = ClientAssetBundleLoader.load().visualResolver
-
-        DarkUiChromeVisualKeys.pr02_1DemoShellOwnerKeys.forEach { key ->
-            val resolved = resolver.resolve(key)
-
-            assertEquals(key, resolved.resolvedKey)
-            assertEquals(key, resolved.requestedKey)
-            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/ui/"), key)
-            assertFalse(resolved.fallbackUsed, key)
-            assertFalse(resolved.matchedByPrefix, key)
-        }
-    }
-
-    @Test
     fun `dark uiux pr02 2 ui demo new owner keys resolve through exact entries`() {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 
@@ -160,6 +131,32 @@ class ManifestResolveTest {
             assertTrue(resolved.entry.tags.contains("ui-demo-new"), key)
             assertFalse(resolved.fallbackUsed, key)
             assertFalse(resolved.matchedByPrefix, key)
+        }
+    }
+
+    @Test
+    fun `vanguard starter hotbar icons keep transparent socket background`() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        listOf(
+            "talent.vanguard.power_strike.icon",
+            "talent.vanguard.shield_bash.icon",
+            "talent.vanguard.guard_stance.icon",
+            "talent.vanguard.charge.icon",
+            "talent.vanguard.war_cry.icon",
+        ).forEach { key ->
+            val resolved = resolver.resolve(key)
+            val resourceUrl = requireNotNull(javaClass.classLoader.getResource(resolved.entry.rawOutputPath)) { resolved.entry.rawOutputPath }
+            val image = ImageIO.read(resourceUrl)
+            val cornerAlpha =
+                listOf(
+                    image.getRGB(0, 0),
+                    image.getRGB(image.width - 1, 0),
+                    image.getRGB(0, image.height - 1),
+                    image.getRGB(image.width - 1, image.height - 1),
+                ).map { argb -> argb ushr 24 }
+
+            assertTrue(cornerAlpha.all { alpha -> alpha <= 8 }, "$key corners must stay transparent: $cornerAlpha")
         }
     }
 

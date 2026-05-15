@@ -235,3 +235,50 @@ Phase4 v4 PR 的流程规范以 [development-governance.md](../review/phase4/v4-
 2. 再检查 fast check 是否足以在重型 gate 前发现核心需求偏差。
 3. 最后检查 owner producer、report gate 与 `verifyChanged` 是否保持现有权威链路。
 4. 任何“为了让 report 变绿”而复制 runtime selector、reward legality、owner metric 逻辑到 `tools` 的做法，按 `second-authority` 阻塞。
+
+---
+
+## 10. Resource Generation Authority
+
+图片、音频和 UI sheet 都属于稳定资源合同。后续新增或替换正式资源时，必须先声明资源权威，再进入 manifest / runtime / client 消费链。
+
+### 10.1 图片资源
+
+项目级图片入口统一为 resource generation authority，而不是某个 PR 临时表格或本机生成目录。
+
+固定规则：
+
+1. `assets-src/image/specs/*.yaml` 是单图、app icon、旧 Gemini 计划的 authoring 入口。
+2. `UI/sprite-sheets/sheet-plan.yaml` 是 Dark UI sprite sheet 的 cell -> visualKey -> outputName 映射入口。
+3. `UI/sprite-sheets/key-registry.yaml` 是 Dark UI owner、fallback、consumer、consumerTest 元数据入口。
+4. `assets-src/image/manifests/phase2-visual-manifest.json` 是 canonical visual manifest；`client/src/main/resources/manifests/visual-manifest.json` 只能由 `syncPhase2Manifests` 同步生成。
+5. 新图片不能只把 PNG 放进 `client/src/main/resources`，也不能只改 runtime manifest；必须从计划、raw / processed output、canonical manifest、runtime manifest、lint report 全链路可追溯。
+6. Dark UI sheet 是图片管线的一种 `sprite-sheet` source type，不是独立于项目资源体系之外的第二套权威。
+
+### 10.2 音频资源
+
+音频现有主链保持不重构：
+
+```text
+assets-src/audio/specs/*audio-plan.yaml
+ -> assets-src/audio/manifests/phase2-audio-manifest.json
+ -> client/src/main/resources/manifests/audio-manifest.json
+ -> audioLint / process_audio.py
+```
+
+固定规则：
+
+1. 新音频必须先进 audio plan 与 canonical audio manifest。
+2. `cueFamily / eventId / sourcePath / tags` 必须在 plan、canonical manifest 与 runtime manifest 中保持一致。
+3. 不能只提交 `.wav` / `.ogg` 文件或只改 runtime manifest。
+4. content pack 的私有 visual/audio key 可以是 pack-local，但必须通过 pack manifest / pack lint 证明命名空间和 runtime resolve 合法。
+
+### 10.3 Gate
+
+`resourcePipelineLint` 是项目级资源权威聚合门禁：
+
+1. 从 image specs、Dark UI sheet/key registry、audio specs 和 canonical/runtime manifest 派生统一 report。
+2. 校验 canonical/runtime manifest 同步状态。
+3. 允许旧图片计划被当前 manifest 显式 supersede，但必须在 report 中可见。
+4. 阻止生产 Kotlin 代码新增 `ownerKeys / itemIconKeys / *ExpectedKeys / *RequiredKeys / *InventoryKeys` 这类资源 inventory 镜像；测试 fixture 不纳入该阻断。
+5. `resourcePipelineLint` 必须进入资源相关开发的默认验证链路，与 `assetLint / styleLint / manifestLint / audioLint / dark*Lint` 互补。

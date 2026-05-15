@@ -14,7 +14,7 @@
 
 | requirementId | source | owner | fastCheck | ownerGate | artifact | whitebox |
 | --- | --- | --- | --- | --- | --- | --- |
-| `UI03-M01` | §3 Round 7 sheet cell inventory | `assets` | `darkSpriteSheetLint`, `spriteSheetMapLint -Pktome.darkUiux.spriteMapReport=assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl` | `assetLint`, `styleLint` | `UI/sprite-sheets/sheet-plan.yaml`, `assets-src/image/contact-sheets/dark-v1/`, `assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl` | `required` |
+| `UI03-M01` | §3 Round 7 sheet cell inventory | `assets` | `darkSpriteSheetLint`, `spriteSheetMapLint -Pktome.darkUiux.spriteMapReport=assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl -Pktome.darkUiux.spriteMapReportSheetIds=r07-items-base,r07-items-unique-artifact,r07-items-affix-material -Pktome.darkUiux.requireReviewedQa=true` | `assetLint`, `styleLint` | `UI/sprite-sheets/sheet-plan.yaml`, `assets-src/image/contact-sheets/dark-v1/`, `assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl` | `required` |
 | `UI03-M02` | §4 key registry / manifest coverage | `tools` | `darkKeyRegistryLint`, `ManifestResolveTest` | `syncPhase2Manifests`, `manifestLint`, `darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-03 -Pktome.darkUiux.requiredOwnerSheetIds=r07-items-base,r07-items-unique-artifact,r07-items-affix-material` | `build/reports/verification/dark-uiux/dark-v1-manifest-coverage.json` | `N/A` |
 | `UI03-M03` | §6.1 equipment slots layout / identity | `client` | `EquipmentInventoryPresenterTest`, `TileRendererCanvasTest` | `:client:clientSmoke`, `:client:goldenScreenshot` | `client/build/reports/golden/` label `dark-uiux-pr03-equipment-slots`; golden index entry required | `required` |
 | `UI03-M04` | §6.2 inventory grid / tooltip / fallback | `client` | `EquipmentInventoryPresenterTest`, `DescriptionPresenterTest`, `ManifestResolveTest` | `:client:clientSmoke`, `:client:goldenScreenshot` | `client/build/reports/golden/` labels `dark-uiux-pr03-inventory-empty`, `dark-uiux-pr03-inventory-stacked`; golden index entries required | `required` |
@@ -72,7 +72,7 @@ inventory/shop golden 或 coverage 失败时先修 presenter、resource key 或 
 | Modified | `client/src/main/kotlin/com/ktome/client/render/EquipmentSlotLabels.kt` | 只维护 `slotId -> labelKey/localized label`，不维护 icon key 或 frame key |
 | Added | `client/src/main/kotlin/com/ktome/client/render/EquipmentInventoryPresenter.kt` 或等价现有 presenter | 负责 slot frame key、selected/empty/equipped 状态、tooltip anchor、grid cell model |
 | Modified | `client/src/main/kotlin/com/ktome/client/input/InputHandler.kt` | 保持 shop buy/sell、replacement prompt、`5-8` hotkey/cancel 语义 |
-| Modified | `client/src/main/kotlin/com/ktome/client/ui/talent/DescriptionPresenter.kt` | 复用 shop item lines，不在 renderer 拼业务文案 |
+| Existing / tests only | `client/src/main/kotlin/com/ktome/client/ui/talent/DescriptionPresenter.kt` | 复用现有 shop item lines；本 PR 只补 `DescriptionPresenterTest` 覆盖 |
 | Modified | `client/src/main/kotlin/com/ktome/client/ui/card/ModalCardModel.kt` | shop offer 与 replacement modal 卡片化时复用已有 modal/card 模型 |
 | Modified | `game/src/main/resources/data/items/index.yaml` | 只迁移 PR-03 列出的 official item `iconKey` / 必要 `visualKey`，不改规则、掉落权重、数值或 item model |
 | Modified | `game/src/main/resources/data/visuals/index.yaml` | 登记 PR-03 item-specific visual keys，确保 `DataLoader` 能解析 official content key |
@@ -286,7 +286,7 @@ Existing key migration 固定如下：
 2. 按 §3 的 cell inventory 更新 `UI/sprite-sheets/sheet-plan.yaml`；未列 cell 写 `reserved: true`。
 3. 更新 `UI/sprite-sheets/key-registry.yaml`，为每个 targetKey 写 `ownerPr=PR-03`、`fallbackKey`、`consumer`、`consumerTest`，为真实复用图写 `aliasOf`。
 4. 生成 Round 7 prompt 和 `prompt-index.json`，再用 `scripts/codex-generate-image.py` 生成三张 raw sheet。
-5. 运行切分、contact sheet 和 sprite map 校验；PR-03 sprite map report path 必须等于 `assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl`；人工只在 contact sheet 上验收语义和风格，不通过改 `row/col` 修错图。
+5. 运行切分、contact sheet 和 sprite map 校验；PR-03 sprite map report path 必须等于 `assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl`，且 report 只包含 `r07-items-base,r07-items-unique-artifact,r07-items-affix-material` 三张 owner sheet 的 reviewed QA 行；人工只在 contact sheet 上验收语义和风格，不通过改 `row/col` 修错图。
 6. 先更新 `assets-src/image/manifests/phase2-visual-manifest.json`，再运行 `syncPhase2Manifests` 生成 runtime manifest。
 7. 新增 `EquipmentInventoryPresenter` / model 和 `EquipmentInventoryPresenterTest`，先锁 layout、identity、quantity absence、quality frame、tooltip anchor，并保留 PR-02-1 right panel no-ground-loot / operation-hints-only-right-side 合同。
 8. 改 `TileRenderer` 和 `TileRendererCanvasTest`，证明 grid bounds、fallback、minimum window 和 hitbox 稳定。
@@ -308,7 +308,10 @@ sdk env
 ```bash
 ./gradlew acceptanceContractLint
 ./gradlew darkKeyRegistryLint darkSpriteSheetLint
-./gradlew spriteSheetMapLint -Pktome.darkUiux.spriteMapReport=assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl
+./gradlew spriteSheetMapLint \
+  -Pktome.darkUiux.spriteMapReport=assets-src/image/manifests/dark-v1-pr03-sprite-map-report.jsonl \
+  -Pktome.darkUiux.spriteMapReportSheetIds=r07-items-base,r07-items-unique-artifact,r07-items-affix-material \
+  -Pktome.darkUiux.requireReviewedQa=true
 ```
 
 canonical -> runtime manifest 必须先同步，再进入 resolver、golden 和最终 gate：

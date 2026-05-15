@@ -1,5 +1,6 @@
 package com.ktome.client.render
 
+import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.InscriptionReplacementCategoryChangeSnapshot
 import com.ktome.core.snapshot.InscriptionReplacementEntrySnapshot
@@ -42,6 +43,7 @@ internal data class InscriptionReplacementPromptLine(
     val text: String,
     val tone: InscriptionReplacementPromptTone,
     val selected: Boolean = false,
+    val iconKey: String? = null,
 )
 
 internal fun inscriptionReplacementPromptLines(
@@ -106,6 +108,7 @@ internal fun inscriptionReplacementPromptLines(
                 ),
                 InscriptionReplacementPromptTone.PRIMARY,
                 selected = selected,
+                iconKey = DarkUiChromeVisualKeys.SHOP_REPLACEMENT_SLOT_MARKER,
             )
         lines += InscriptionReplacementPromptLine(localizer.text("ui.inscription.replace.tags", "tags" to inscriptionTagText(localizer, slot)), InscriptionReplacementPromptTone.SECONDARY)
         lines += InscriptionReplacementPromptLine(localizer.text("ui.inscription.replace.effect", "effect" to localizer.text(slot.descKey)), InscriptionReplacementPromptTone.SECONDARY)

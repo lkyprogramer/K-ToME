@@ -4,6 +4,7 @@ scenarios:
   - id: phase4-v4-pr02
   - id: dark-uiux-pr02-ui-chrome-sprite-pilot
   - id: dark-uiux-pr02-1-demo-shell-foundation
+  - id: dark-uiux-pr03-equipment-inventory-items
   - id: phase4-v4-pr03
   - id: phase4-v4-pr04
   - id: phase4-v4-pr05

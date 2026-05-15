@@ -1,10 +1,12 @@
 package com.ktome.client.render
 
 import com.badlogic.gdx.graphics.Color
+import com.ktome.client.assets.DarkUiChromeTestKeys
 import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.assets.ManifestLogSink
 import com.ktome.client.assets.ManifestPrefixRule
 import com.ktome.client.assets.ResolvedVisualAsset
+import com.ktome.client.assets.ShopOfferTagTokens
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifestResolver
@@ -12,6 +14,7 @@ import com.ktome.client.ui.chrome.ChromeFrameBounds
 import com.ktome.client.ui.chrome.ChromeFramePainter
 import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.input.OverlayState
+import com.ktome.client.input.ShopFocus
 import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.client.render.layout.DemoSlotGridLayout
@@ -20,6 +23,7 @@ import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
 import com.ktome.client.ui.combat.CombatDecisionFrame
 import com.ktome.client.ui.combat.CombatDecisionFrameState
 import com.ktome.client.ui.combat.CombatDecisionPhase
+import com.ktome.client.ui.UiCompanionVisualKeys
 import com.ktome.client.ui.layout.ModalFrame
 import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.client.ui.layout.ModalFrameLocalState
@@ -40,6 +44,9 @@ import com.ktome.core.snapshot.FrontstageActionCueSnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.InscriptionReplacementCategoryChangeSnapshot
+import com.ktome.core.snapshot.InscriptionReplacementEntrySnapshot
+import com.ktome.core.snapshot.InscriptionReplacementPromptSnapshot
 import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
@@ -55,6 +62,8 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.snapshot.ShopOfferSnapshot
+import com.ktome.core.snapshot.ShopPanelSnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
@@ -309,6 +318,40 @@ class TileRendererCanvasTest {
         assertEquals("Item Detail", model.sidebar.title)
         assertTrue(model.sidebar.rows.any { row -> row.text.contains("Long Sword") })
         assertTrue(model.sidebar.rows.any { row -> row.text == "E use, X/C compare stub, Backspace back, Esc close all." })
+    }
+
+    @Test
+    fun `demo shell inventory operations show drop shortcut`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        inventory =
+                            listOf(
+                                InventoryEntrySnapshot(
+                                    index = 0,
+                                    item =
+                                        ItemRenderSnapshot(
+                                            baseItemId = "long_sword",
+                                            nameKey = "item.long_sword.name",
+                                            typeId = "WEAPON",
+                                        ),
+                                ),
+                            ),
+                    ),
+                overlayState =
+                    OverlayState(
+                        mode = UiMode.INVENTORY,
+                        modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY)),
+                        inventorySelection = 0,
+                    ),
+            )
+
+        assertTrue(model.shell.demo.operationHints.any { hint -> hint == localizer.text("ui.controls.inventory") })
+        assertTrue(model.shell.demo.operationRows.any { row -> row.text.contains("D drop") })
     }
 
     @Test
@@ -701,7 +744,7 @@ class TileRendererCanvasTest {
         )
 
         val layout = TileRenderer.layoutMetrics(mapWidth = 1, mapHeight = 1, cellWidth = 32f, cellHeight = 32f)
-        DarkUiChromeVisualKeys.pr02_1DemoShellOwnerKeys.forEach { key ->
+        DarkUiChromeTestKeys.pr02_1DemoShellOwnerKeys.forEach { key ->
             assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == key }, "$key missing")
         }
         assertAssetOrder(
@@ -801,6 +844,153 @@ class TileRendererCanvasTest {
         assertTrue(crest.width >= 96f)
         assertTrue(crest.height >= 96f)
         assertAssetInside(crest, layout.demoShell.bottomDeck.heroCard)
+    }
+
+    @Test
+    fun `dark uiux pr03 presents typed equipment inventory identity and fallback icons`() {
+        val canvas = RecordingTileCanvas()
+        val weapon =
+            ItemRenderSnapshot(
+                baseItemId = "hunter_bow",
+                nameKey = "item.hunter_bow.name",
+                typeId = "WEAPON",
+                slotId = "WEAPON",
+                iconKey = "item.hunter_bow.icon",
+                qualityTierId = "MAGIC",
+            )
+        val accessory =
+            ItemRenderSnapshot(
+                baseItemId = "emerald_charm",
+                nameKey = "item.emerald_charm.name",
+                typeId = "ARMOR",
+                slotId = "ACCESSORY",
+                iconKey = "item.emerald_charm.icon",
+                qualityTierId = "RARE",
+            )
+        val missingIcon =
+            ItemRenderSnapshot(
+                baseItemId = "debug_missing",
+                nameKey = "item.debug_missing.name",
+                typeId = "CONSUMABLE",
+                visualKey = "item.missing.debug.visual",
+                iconKey = "item.missing.debug.icon",
+                qualityTierId = "RARE",
+            )
+        val snapshot =
+            sampleSnapshot(
+                equipment =
+                    listOf(
+                        EquipmentSlotSnapshot(slotId = "WEAPON", item = weapon),
+                        EquipmentSlotSnapshot(slotId = "ACCESSORY", item = accessory),
+                    ),
+                inventory =
+                    listOf(
+                        InventoryEntrySnapshot(index = 3, item = weapon),
+                        InventoryEntrySnapshot(index = 7, item = missingIcon),
+                    ),
+            )
+
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(ManifestLogSink { }),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = 7),
+            )
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(ManifestLogSink { }),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = 7),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val equipment = model.shell.demo.equipmentInventory.equipmentSlots
+        assertEquals(listOf("WEAPON", "OFF_HAND", "ARMOR", "ACCESSORY"), equipment.take(4).map(EquipmentSlotCellModel::slotId))
+        assertTrue(equipment.drop(4).all(EquipmentSlotCellModel::visualOnly))
+        val inventory = model.shell.demo.equipmentInventory.inventoryGrid
+        assertEquals(7, inventory.selectedInventoryIndex)
+        assertEquals(listOf(3, 7), inventory.cells.take(2).map(InventoryGridCellModel::identityIndex))
+        assertEquals(UiCompanionVisualKeys.EMPTY_INVENTORY, inventory.cells[1].itemIcon?.resolvedKey)
+        assertEquals("inventory:7", inventory.cells[1].tooltipAnchorId)
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == DarkUiChromeVisualKeys.SLOT_SELECTED })
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == UiCompanionVisualKeys.EMPTY_INVENTORY })
+        assertTrue(canvas.textDraws.none { draw -> draw.text == "Weapon" || draw.text == "Accessory" })
+    }
+
+    @Test
+    fun `dark uiux pr03 draws shop offer frame price and type markers`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot =
+                sampleSnapshot(
+                    width = 24,
+                    height = 18,
+                    shardBalance = 25,
+                    activeShop = sampleShop(),
+                ),
+            overlayState = OverlayState(mode = UiMode.SHOP, shopFocus = ShopFocus.BUY, shopOfferSelection = 0),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val drawnKeys = canvas.assetDraws.map { draw -> draw.asset.resolvedKey }
+        assertTrue(DarkUiChromeVisualKeys.SHOP_OFFER_FRAME in drawnKeys, drawnKeys.toString())
+        assertTrue(DarkUiChromeVisualKeys.SHOP_PRICE_AFFORDABLE in drawnKeys, drawnKeys.toString())
+        assertTrue(DarkUiChromeVisualKeys.SHOP_INSCRIPTION_MARKER in drawnKeys, drawnKeys.toString())
+    }
+
+    @Test
+    fun `dark uiux pr03 draws replacement slot marker in shop prompt`() {
+        val canvas = RecordingTileCanvas()
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val snapshot =
+            sampleSnapshot(
+                width = 24,
+                height = 18,
+                shardBalance = 25,
+                activeShop = sampleShop(inscriptionReplacementPrompt = sampleReplacementPrompt(currentSlotCount = 4)),
+            )
+        val overlayState =
+            OverlayState(
+                mode = UiMode.SHOP,
+                shopFocus = ShopFocus.BUY,
+                shopOfferSelection = 0,
+                inscriptionReplacementHotkeySelection = 5,
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = overlayState,
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = localizer,
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = overlayState,
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val slotRows =
+            model.shell.demo.operationRows.filter { row ->
+                row.kind == TileTextRowKind.SHOP_REPLACEMENT_SLOT
+            }
+        assertEquals(4, slotRows.size)
+        assertTrue(
+            canvas.assetDraws.count { draw -> draw.asset.resolvedKey == DarkUiChromeVisualKeys.SHOP_REPLACEMENT_SLOT_MARKER } >= 4,
+            canvas.assetDraws.map { draw -> draw.asset.resolvedKey }.toString(),
+        )
     }
 
     @Test
@@ -2527,7 +2717,7 @@ class TileRendererCanvasTest {
             else -> error("Unexpected shell key $key")
         }
 
-    private fun sampleResolver(): VisualManifestResolver =
+    private fun sampleResolver(logSink: ManifestLogSink = ManifestLogSink { error("Unexpected manifest fallback: $it") }): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
                 VisualManifest(
@@ -2558,6 +2748,18 @@ class TileRendererCanvasTest {
                                 key = "item.short_sword.icon",
                                 category = "item_icon",
                                 rawOutputPath = "phase2/p2-b/icon_item_short_sword.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "item.hunter_bow.icon",
+                                category = "icon_item",
+                                rawOutputPath = "dark-v1/items/item_hunter_bow_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "item.emerald_charm.icon",
+                                category = "icon_item",
+                                rawOutputPath = "dark-v1/items/item_emerald_charm_icon.png",
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(
@@ -2628,8 +2830,17 @@ class TileRendererCanvasTest {
                                 tintColorHex = "#FF7A3C",
                             ),
                         ) +
-                            DarkUiChromeVisualKeys.pr02Round1OwnerKeys
-                                .plus(DarkUiChromeVisualKeys.pr02_1DemoShellOwnerKeys)
+                            DarkUiChromeTestKeys.pr02Round1OwnerKeys
+                                .plus(DarkUiChromeTestKeys.pr02_1DemoShellOwnerKeys)
+                                .plus(
+                                    listOf(
+                                        DarkUiChromeVisualKeys.SHOP_PRICE_AFFORDABLE,
+                                        DarkUiChromeVisualKeys.SHOP_PRICE_UNAFFORDABLE,
+                                        DarkUiChromeVisualKeys.SHOP_INSCRIPTION_MARKER,
+                                        DarkUiChromeVisualKeys.SHOP_REPLACEMENT_SLOT_MARKER,
+                                        DarkUiChromeVisualKeys.SHOP_OFFER_FRAME,
+                                    ),
+                                )
                                 .filterNot { key ->
                                     key in
                                         setOf(
@@ -2642,7 +2853,7 @@ class TileRendererCanvasTest {
                                 }.map(::darkUiManifestEntry),
                     prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),
                 ),
-            logSink = ManifestLogSink { error("Unexpected manifest fallback: $it") },
+            logSink = logSink,
         )
 
     private fun darkUiManifestEntry(key: String): VisualManifestEntry =
@@ -2658,6 +2869,84 @@ class TileRendererCanvasTest {
             footprint = "ui",
         )
 
+    private fun sampleShop(inscriptionReplacementPrompt: InscriptionReplacementPromptSnapshot? = null): ShopPanelSnapshot =
+        ShopPanelSnapshot(
+            shopId = "test_shop",
+            shopNameKey = "shop.greenwood_supply_post.name",
+            offers =
+                listOf(
+                    ShopOfferSnapshot(
+                        index = 0,
+                        labelKey = "inscription.phase_door.name",
+                        price = 12,
+                        offerFingerprint = "offer-inscription",
+                        tags = listOf("INSCRIPTION"),
+                        tagLabelKeys = listOf(ShopOfferTagTokens.INSCRIPTION),
+                    ),
+                    ShopOfferSnapshot(
+                        index = 1,
+                        labelKey = "item.short_sword.name",
+                        price = 40,
+                        offerFingerprint = "offer-sword",
+                    ),
+                ),
+            inscriptionReplacementPrompt = inscriptionReplacementPrompt,
+        )
+
+    private fun sampleReplacementPrompt(currentSlotCount: Int = 1): InscriptionReplacementPromptSnapshot =
+        InscriptionReplacementPromptSnapshot(
+            offerIndex = 0,
+            offerFingerprint = "offer-inscription",
+            candidate =
+                InscriptionReplacementEntrySnapshot(
+                    hotkey = null,
+                    inscriptionId = "phase_door_plus",
+                    nameKey = "inscription.phase_door.name",
+                    descKey = "inscription.phase_door.desc",
+                    iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                    categoryId = "MOVEMENT",
+                    cooldownRemaining = 0,
+                    maxCooldown = 8,
+                    upgradeFromInscriptionId = "phase_door",
+                ),
+            currentSlots = sampleCurrentReplacementSlots().take(currentSlotCount),
+            categoryChanges =
+                listOf(
+                    InscriptionReplacementCategoryChangeSnapshot(
+                        targetHotkey = 5,
+                        categoryId = "MOVEMENT",
+                        beforeCount = 1,
+                        afterCount = 1,
+                        limit = 2,
+                    ),
+                ),
+            price = 12,
+        )
+
+    private fun sampleCurrentReplacementSlots(): List<InscriptionReplacementEntrySnapshot> =
+        listOf(
+            sampleCurrentReplacementSlot(hotkey = 5, inscriptionId = "phase_door", nameKey = "inscription.phase_door.name"),
+            sampleCurrentReplacementSlot(hotkey = 6, inscriptionId = "healing_light", nameKey = "inscription.healing_light.name"),
+            sampleCurrentReplacementSlot(hotkey = 7, inscriptionId = "iron_shield", nameKey = "inscription.iron_shield.name"),
+            sampleCurrentReplacementSlot(hotkey = 8, inscriptionId = "purge", nameKey = "inscription.purge.name"),
+        )
+
+    private fun sampleCurrentReplacementSlot(
+        hotkey: Int,
+        inscriptionId: String,
+        nameKey: String,
+    ): InscriptionReplacementEntrySnapshot =
+        InscriptionReplacementEntrySnapshot(
+            hotkey = hotkey,
+            inscriptionId = inscriptionId,
+            nameKey = nameKey,
+            descKey = "inscription.phase_door.desc",
+            iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+            categoryId = "MOVEMENT",
+            cooldownRemaining = 0,
+            maxCooldown = 10,
+        )
+
     private fun sampleSnapshot(
         width: Int = 1,
         height: Int = 1,
@@ -2670,6 +2959,8 @@ class TileRendererCanvasTest {
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         talentTrees: List<TalentTreeSnapshot> = emptyList(),
         inventory: List<InventoryEntrySnapshot> = emptyList(),
+        shardBalance: Int = 0,
+        activeShop: ShopPanelSnapshot? = null,
         targetablePositions: List<GridPointSnapshot> = listOf(GridPointSnapshot(0, 0)),
         logEvents: List<RenderLogEventSnapshot> = emptyList(),
         combatFeedbackEvents: List<CombatFeedbackSnapshot> = emptyList(),
@@ -2757,6 +3048,8 @@ class TileRendererCanvasTest {
                     reserveTalents = reserveTalents,
                     talentTrees = talentTrees,
                     inventory = inventory,
+                    shardBalance = shardBalance,
+                    activeShop = activeShop,
                     targetablePositions = targetablePositions,
                 ),
             logEvents = logEvents,

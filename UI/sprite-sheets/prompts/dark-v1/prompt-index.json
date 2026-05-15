@@ -101,6 +101,57 @@
       "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r03-ui-demo-actor-props.png",
       "round": 3,
       "sheetId": "r03-ui-demo-actor-props"
+    },
+    {
+      "cellCount": 12,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "f85d10eea48b7d46366b32ada9bee239297142ae49c057faba598efea0326878",
+      "promptId": "007-r07-items-affix-material",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/007-r07-items-affix-material.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-affix-material.png",
+      "round": 7,
+      "sheetId": "r07-items-affix-material"
+    },
+    {
+      "cellCount": 20,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "f415e446b5d34046e4447df275a25352eaf94ab7b152dc2704f631126094caee",
+      "promptId": "008-r07-items-base",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/008-r07-items-base.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-base.png",
+      "round": 7,
+      "sheetId": "r07-items-base"
+    },
+    {
+      "cellCount": 10,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "1ed25f75250bea070d598c84e7828d64c983db2bc2233fc742005966d952565f",
+      "promptId": "009-r07-items-unique-artifact",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/009-r07-items-unique-artifact.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-unique-artifact.png",
+      "round": 7,
+      "sheetId": "r07-items-unique-artifact"
     }
   ],
   "schemaVersion": "dark-prompt-index-v1"

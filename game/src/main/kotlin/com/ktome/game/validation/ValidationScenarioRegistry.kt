@@ -332,6 +332,73 @@ object ValidationScenarioRegistry {
                     ),
             ),
             ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr03-equipment-inventory-items"),
+                prId = "PR-03",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.LOOT_LAB,
+                        seed = 2026050903L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "rogue",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/dark-uiux-pr03-equipment-slots.png",
+                                "evidence/dark-uiux-pr03-inventory-empty.png",
+                                "evidence/dark-uiux-pr03-inventory-stacked.png",
+                                "evidence/dark-uiux-pr03-inscription-shop.png",
+                                "evidence/dark-uiux-pr03-shop-full-slot-replace.png",
+                                "evidence/dark-uiux-pr03-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "Capture right equipment panel",
+                                    expectedVisibleResult = "WEAPON, OFF_HAND, ARMOR, and ACCESSORY are real typed cells; remaining sockets are visual-only and no ground loot section appears in the right panel.",
+                                    evidenceFile = "evidence/dark-uiux-pr03-equipment-slots.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (validation action: emptyInventorySurface)",
+                                    input = "Open inventory after empty-inventory setup",
+                                    expectedVisibleResult = "Inventory grid shows the dark empty state and does not render placeholder items.",
+                                    evidenceFile = "evidence/dark-uiux-pr03-inventory-empty.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (inventory UI mode)",
+                                    input = "Move selection across repeated item cells",
+                                    expectedVisibleResult = "Repeated healing_potion entries remain separate stable cells; quality frame and badge anchor do not change hitbox identity.",
+                                    evidenceFile = "evidence/dark-uiux-pr03-inventory-stacked.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (shop UI mode)",
+                                    input = "Navigate buy and sell columns",
+                                    expectedVisibleResult = "Shop offers show dark price/affordability markers and inscription marker without encoding purchase rules in the image.",
+                                    evidenceFile = "evidence/dark-uiux-pr03-inscription-shop.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (shop replacement prompt)",
+                                    input = "Try 1-4, then 5-8, Enter, and Esc",
+                                    expectedVisibleResult = "Only hotkeys 5-8 select replacement slots; Enter submits selected hotkey and Esc/Backspace cancel without pre-confirm shard loss.",
+                                    evidenceFile = "evidence/dark-uiux-pr03-shop-full-slot-replace.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.validation.item.pr03_showcase",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr03-equipment-inventory-items.evidence.summary_note",
+                    ),
+            ),
+            ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr03"),
                 prId = "PR-03",
                 runtime =

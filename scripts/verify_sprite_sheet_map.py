@@ -47,7 +47,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("assets-src/image/manifests/dark-v1-pr00-sprite-map-report.jsonl"))
     parser.add_argument("--require-full-grid", action="store_true")
     parser.add_argument("--owner-contract", type=pathlib.Path, default=None)
+    parser.add_argument("--require-reviewed-qa", action="store_true")
+    parser.add_argument("--report-sheet-ids", default="", help="Comma-separated sheet ids to include in the written report.")
     return parser.parse_args()
+
+
+def parse_csv_set(value: str) -> set[str]:
+    return {item.strip() for item in value.split(",") if item.strip()}
 
 
 def cell_rect(sheet, cell) -> tuple[int, int, int, int]:
@@ -111,6 +117,40 @@ def validate_manifest_mapping(cells, manifest_path: pathlib.Path) -> list[str]:
             errors.append(
                 f"{cell.target_key} manifest rawOutputPath mismatch: manifest={entry.get('rawOutputPath')} sheet-plan={cell.output_name}."
             )
+    return errors
+
+
+def validate_output_hash_uniqueness(cells, records: list[dict[str, Any]]) -> list[str]:
+    cells_by_key = {cell.target_key: cell for cell in cells}
+    owners_by_hash: dict[str, list[str]] = {}
+    for record in records:
+        output_hash = record.get("outputHash")
+        if not isinstance(output_hash, str) or not output_hash:
+            continue
+        if record.get("slicedOutputRequired") is not True:
+            continue
+        target_key = str(record.get("targetKey", "")).strip()
+        cell = cells_by_key.get(target_key)
+        if cell is None or cell.alias_of:
+            continue
+        owners_by_hash.setdefault(output_hash, []).append(f"{target_key} -> {record.get('outputName')}")
+    errors: list[str] = []
+    for output_hash, owners in sorted(owners_by_hash.items()):
+        if len(owners) > 1:
+            errors.append(
+                f"duplicate outputHash {output_hash} across non-alias sliced outputs: "
+                f"{'; '.join(owners)}. Use aliasOf for intentional aliases or generate distinct art."
+            )
+    return errors
+
+
+def validate_reviewed_qa(records: list[dict[str, Any]]) -> list[str]:
+    errors: list[str] = []
+    for record in records:
+        if record.get("slicedOutputRequired") is not True:
+            continue
+        if record.get("qaStatus") == "DRY_RUN":
+            errors.append(f"{record.get('targetKey')} qaStatus is DRY_RUN; close mode requires reviewed QA status.")
     return errors
 
 
@@ -255,10 +295,19 @@ def validate_map(
     contact_root: pathlib.Path,
     runtime_root: pathlib.Path,
     report_path: pathlib.Path,
+    require_reviewed_qa: bool,
+    report_sheet_ids: set[str],
 ) -> list[str]:
     sheets, cells, errors = load_sheet_plan(plan_path)
     if errors:
         return errors
+    if report_sheet_ids:
+        known_sheet_ids = {sheet.sheet_id for sheet in sheets}
+        unknown_sheet_ids = sorted(report_sheet_ids - known_sheet_ids)
+        if unknown_sheet_ids:
+            errors.append(f"--report-sheet-ids matched no sheet ids: {', '.join(unknown_sheet_ids)}.")
+        sheets = [sheet for sheet in sheets if sheet.sheet_id in report_sheet_ids]
+        cells = [cell for cell in cells if cell.sheet_id in report_sheet_ids]
     errors += validate_manifest_mapping(cells, manifest_path)
     cells_by_sheet = {sheet.sheet_id: [cell for cell in cells if cell.sheet_id == sheet.sheet_id] for sheet in sheets}
     records: list[dict[str, Any]] = []
@@ -325,9 +374,18 @@ def validate_map(
             errors.append(f"{sheet.sheet_id} contact sheet is missing: {contact_path.as_posix()}.")
 
     if not errors:
+        errors += validate_output_hash_uniqueness(cells, records)
+
+    report_records = records
+    if report_sheet_ids and not report_records:
+        errors.append(f"--report-sheet-ids matched no records: {', '.join(sorted(report_sheet_ids))}.")
+    if require_reviewed_qa and not errors:
+        errors += validate_reviewed_qa(report_records)
+
+    if not errors:
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(
-            "".join(json.dumps(record, sort_keys=True) + "\n" for record in records),
+            "".join(json.dumps(record, sort_keys=True) + "\n" for record in report_records),
             encoding="utf-8",
         )
     return errors
@@ -341,7 +399,16 @@ def main() -> int:
     else:
         if args.owner_contract is not None:
             return print_errors("sprite-sheet-map-lint", ["--owner-contract is only supported with --check sheet-plan."])
-        errors = validate_map(args.plan, args.manifest, args.raw_root, args.contact_root, args.runtime_root, args.report)
+        errors = validate_map(
+            args.plan,
+            args.manifest,
+            args.raw_root,
+            args.contact_root,
+            args.runtime_root,
+            args.report,
+            args.require_reviewed_qa,
+            parse_csv_set(args.report_sheet_ids),
+        )
         label = "sprite-sheet-map-lint"
     if errors:
         return print_errors(label, errors)

@@ -235,6 +235,8 @@ internal data class ShellPanelRowTextLayout(
     val text: String,
     val tone: TileTextTone,
     val icon: ResolvedVisualAsset?,
+    val extraIcons: List<ResolvedVisualAsset>,
+    val frame: ResolvedVisualAsset?,
     val selected: Boolean,
     val style: TileTextStyle,
 )
@@ -611,12 +613,15 @@ class TileRenderer(
                 title = TileTextMetrics.truncateTextToWidth(panel.title, width, TileTextStyle.UI),
                 rows =
                     panel.rows.take(maxRows).map { row ->
-                        val style = if (row.tone == TileTextTone.GOLD && row.icon == null) TileTextStyle.UI else TileTextStyle.SMALL
-                        val rowWidth = width - if (row.icon == null) 0f else 28f
+                        val iconCount = row.visualIconCount()
+                        val style = if (row.tone == TileTextTone.GOLD && iconCount == 0) TileTextStyle.UI else TileTextStyle.SMALL
+                        val rowWidth = width - if (iconCount == 0) 0f else 20f * iconCount.coerceAtMost(3)
                         ShellPanelRowTextLayout(
                             text = TileTextMetrics.truncateTextToWidth(row.text, rowWidth.coerceAtLeast(1f), style),
                             tone = row.tone,
                             icon = row.icon,
+                            extraIcons = row.extraIcons,
+                            frame = row.frame,
                             selected = row.selected,
                             style = style,
                         )

@@ -467,3 +467,32 @@ visuals:
   - id: talent.templar.ritual_break.visual
   - id: talent.templar.ritual_break.icon
   - id: icon.skill.templar.ritual_break
+  - id: item.hunter_bow.icon
+  - id: item.war_maul.icon
+  - id: item.forgebreaker_pick.icon
+  - id: item.energy_tonic.icon
+  - id: item.consecrated_oil.icon
+  - id: item.bandit_trophy.icon
+  - id: item.emerald_charm.icon
+  - id: item.seal_reliquary.icon
+  - id: item.sanctified_seal.icon
+  - id: item.unique.greenwood_watcher_blade.icon
+  - id: item.unique.greenwood_watcher_blade.visual
+  - id: item.unique.briarbound_bow.icon
+  - id: item.unique.briarbound_bow.visual
+  - id: item.unique.furnace_plate.icon
+  - id: item.unique.furnace_plate.visual
+  - id: item.unique.voidlit_seal.icon
+  - id: item.unique.voidlit_seal.visual
+  - id: item.artifact.briar_heart.icon
+  - id: item.artifact.briar_heart.visual
+  - id: item.artifact.forge_oath.icon
+  - id: item.artifact.forge_oath.visual
+  - id: item.artifact.river_echo.icon
+  - id: item.artifact.river_echo.visual
+  - id: item.artifact.eclipsed_relic.icon
+  - id: item.artifact.eclipsed_relic.visual
+  - id: ui.shop.price.affordable
+  - id: ui.shop.price.unaffordable
+  - id: ui.shop.inscription.marker
+  - id: ui.shop.replacement.slot_marker

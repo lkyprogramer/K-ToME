@@ -54,75 +54,14 @@ internal object DarkUiChromeVisualKeys {
     const val SHELL_RIGHT_SECTION_DIVIDER: String = "ui.shell.right_section.divider"
     const val SHELL_HERO_CREST_PLACEHOLDER: String = "ui.shell.hero_crest.placeholder"
     const val SHELL_COMMAND_HINT_PLATE: String = "ui.shell.command_hint.plate"
+    const val SHOP_PRICE_AFFORDABLE: String = "ui.shop.price.affordable"
+    const val SHOP_PRICE_UNAFFORDABLE: String = "ui.shop.price.unaffordable"
+    const val SHOP_INSCRIPTION_MARKER: String = "ui.shop.inscription.marker"
+    const val SHOP_REPLACEMENT_SLOT_MARKER: String = "ui.shop.replacement.slot_marker"
+    const val SHOP_OFFER_FRAME: String = "ui.shop.offer.frame"
     const val SHELL_NAV_COMPASS: String = "ui.shell.nav.compass"
     const val SHELL_NAV_BAG: String = "ui.shell.nav.bag"
     const val SHELL_NAV_SCROLL: String = "ui.shell.nav.scroll"
     const val SHELL_NAV_BOOK: String = "ui.shell.nav.book"
     const val SHELL_NAV_GEAR: String = "ui.shell.nav.gear"
-
-    val pr02Round1OwnerKeys: List<String> =
-        listOf(
-            PANEL_BODY,
-            PANEL_FOCUS,
-            PANEL_CORNER_TL,
-            PANEL_CORNER_TR,
-            PANEL_CORNER_BL,
-            PANEL_CORNER_BR,
-            PANEL_EDGE_TOP,
-            PANEL_EDGE_RIGHT,
-            PANEL_EDGE_BOTTOM,
-            PANEL_EDGE_LEFT,
-            SLOT_EMPTY,
-            SLOT_EQUIPPED,
-            SLOT_SELECTED,
-            TOOLTIP_BODY,
-            MODAL_BODY,
-            SCREEN_VALIDATION_BADGE,
-            SCREEN_OUTCOME_VICTORY_MARKER,
-            SCREEN_OUTCOME_DEFEAT_MARKER,
-            SCREEN_ERROR_MARKER,
-            SCREEN_LOADING_MARKER,
-            CONTROL_BACK,
-            CONTROL_CONFIRM,
-            CONTROL_COPY,
-            CONTROL_BACKPACK,
-            CONTROL_EQUIPMENT,
-            COMBAT_ACTION,
-            COMBAT_METHOD,
-            COMBAT_TARGET,
-            COMBAT_LOCK,
-            COMBAT_INVALID,
-            STATE_LOCKED,
-            STATE_LEARNABLE,
-            STATE_ACTIVE,
-            STATE_RESERVE,
-            HUD_HP,
-            HUD_STAMINA,
-            HUD_XP,
-            HUD_GOLD,
-            HUD_KEY,
-            HUD_QUEST_MARKER,
-            HUD_LOG_MARKER,
-            HUD_WARNING,
-        )
-
-    val pr02_1DemoShellOwnerKeys: List<String> =
-        listOf(
-            SHELL_OUTER_FRAME,
-            SHELL_MAP_STAGE_FRAME,
-            SHELL_MAP_STAGE_BACKDROP,
-            SHELL_NAV_RAIL_FRAME,
-            SHELL_NAV_BUTTON_ACTIVE,
-            SHELL_HERO_CARD_FRAME,
-            SHELL_ACTION_DECK_FRAME,
-            SHELL_LOG_DECK_FRAME,
-            SHELL_RIGHT_SECTION_DIVIDER,
-            SHELL_HERO_CREST_PLACEHOLDER,
-            SHELL_COMMAND_HINT_PLATE,
-            SHELL_NAV_COMPASS,
-            SHELL_NAV_BAG,
-            SHELL_NAV_SCROLL,
-            SHELL_NAV_BOOK,
-            SHELL_NAV_GEAR,
-        )
 }

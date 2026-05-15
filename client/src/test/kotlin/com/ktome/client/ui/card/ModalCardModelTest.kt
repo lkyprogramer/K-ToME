@@ -1,5 +1,7 @@
 package com.ktome.client.ui.card
 
+import com.ktome.client.assets.DarkUiChromeVisualKeys
+import com.ktome.client.assets.ShopOfferTagTokens
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
@@ -85,8 +87,9 @@ class ModalCardModelTest {
                         labelKey = "item.healing_potion.name",
                         price = 12,
                         offerFingerprint = "offer-1",
-                        tagLabelKeys = listOf("ui.shop.tag.once"),
+                        tagLabelKeys = listOf(ShopOfferTagTokens.INSCRIPTION, "ui.shop.tag.once"),
                     ),
+                shardBalance = 20,
             )
         val sell =
             ModalCardModel.shopSellEntry(
@@ -115,12 +118,37 @@ class ModalCardModelTest {
         assertEquals("shop:reliquary:offer:1", offer.stableKey)
         assertEquals(ModalCardAction.BUY, offer.primaryAction)
         assertEquals("ui.card.shop.header.icon", offer.iconKey)
+        assertEquals(DarkUiChromeVisualKeys.SHOP_OFFER_FRAME, offer.frameKey)
+        assertEquals(DarkUiChromeVisualKeys.SHOP_PRICE_AFFORDABLE, offer.stateIconKey)
+        assertEquals(DarkUiChromeVisualKeys.SHOP_INSCRIPTION_MARKER, offer.typeIconKey)
         assertEquals("ui.modal.card.cost.shards", offer.costLines.single().key)
         assertEquals(ModalCardAction.SELL, sell.primaryAction)
         assertEquals("item.short_sword.icon", sell.iconKey)
         assertEquals("ui.card.reward.header.icon", reward.iconKey)
         assertEquals(ModalCardReturnPolicy.READ_ONLY_POPPABLE, reward.returnPolicy)
         assertEquals(ModalCardAction.CLOSE, reward.actionFor(ModalCardInput.ESCAPE))
+    }
+
+    @Test
+    fun `shop offer affordability marker is presenter only and does not add disabled reason`() {
+        val offer =
+            ModalCardModel.shopOffer(
+                shopId = "reliquary",
+                offer =
+                    ShopOfferSnapshot(
+                        index = 2,
+                        labelKey = "item.consecrated_oil.name",
+                        price = 40,
+                        offerFingerprint = "offer-2",
+                    ),
+                shardBalance = 12,
+            )
+
+        assertEquals(DarkUiChromeVisualKeys.SHOP_PRICE_UNAFFORDABLE, offer.stateIconKey)
+        assertEquals(DarkUiChromeVisualKeys.SHOP_OFFER_FRAME, offer.frameKey)
+        assertEquals("ui.card.shop.header.icon", offer.iconKey)
+        assertEquals(null, offer.typeIconKey)
+        assertEquals(null, offer.disabledReason)
     }
 
     @Test

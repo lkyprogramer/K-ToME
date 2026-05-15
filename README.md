@@ -205,6 +205,7 @@ sdk env
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew assetLint styleLint manifestLint
+./gradlew audioLint resourcePipelineLint
 ./gradlew darkKeyRegistryLint darkSpriteSheetLint spriteSheetMapLint
 ./gradlew darkManifestCoverageLint -Pktome.darkUiux.coverageMode=owner-scope -Pktome.darkUiux.ownerPr=PR-xx
 ```
@@ -220,6 +221,7 @@ sdk env
 ./gradlew styleLint
 ./gradlew audioLint
 ./gradlew manifestLint
+./gradlew resourcePipelineLint
 ./scripts/generate_macos_app_icon.sh
 ```
 
