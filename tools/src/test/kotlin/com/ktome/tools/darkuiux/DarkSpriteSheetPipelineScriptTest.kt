@@ -1065,6 +1065,40 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `resource pipeline lint rejects typed inferred and delegated production inventory mirrors`() {
+        val productionRoot = tempDir.resolve("production-kotlin")
+        val sourceFile = productionRoot.resolve("com/ktome/client/assets/MirroredKeys.kt")
+        writeText(
+            sourceFile,
+            """
+            package com.ktome.client.assets
+
+            internal object MirroredKeys {
+                val typedOwnerKeys: List<String> = listOf("ui.test.a")
+                val inferredOwnerKeys = listOf("ui.test.b")
+                val itemIconKeys = setOf("item.test.icon")
+                val requiredInventoryKeys by lazy { listOf("ui.test.c") }
+            }
+            """,
+        )
+
+        val result =
+            runScript(
+                "scripts/resource_pipeline_authority_lint.py",
+                "--production-kotlin-root",
+                productionRoot.toString(),
+                "--report",
+                tempDir.resolve("resource-pipeline-authority.json").toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("typedOwnerKeys"), result.output)
+        assertTrue(result.output.contains("inferredOwnerKeys"), result.output)
+        assertTrue(result.output.contains("itemIconKeys"), result.output)
+        assertTrue(result.output.contains("requiredInventoryKeys"), result.output)
+    }
+
+    @Test
     fun `coverage lint fails owner scope when owner keys are pending`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val registry = tempDir.resolve("key-registry.yaml")

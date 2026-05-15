@@ -16,14 +16,14 @@ from dark_sprite_sheet_contract import load_key_registry, load_sheet_plan, repo_
 
 SCHEMA_VERSION = "resource-pipeline-authority-v1"
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-PRODUCTION_KOTLIN_ROOTS = (
+DEFAULT_PRODUCTION_KOTLIN_ROOTS = (
     "core/src/main/kotlin",
     "game/src/main/kotlin",
     "client/src/main/kotlin",
     "tools/src/main/kotlin",
 )
 RESOURCE_MIRROR_DECLARATION_PATTERN = re.compile(
-    r"\bval[ \t]+(?P<name>[A-Za-z0-9_]*(?:OwnerKeys|ExpectedKeys|RequiredKeys|InventoryKeys)|itemIconKeys)[ \t]*:",
+    r"\bval[ \t]+(?P<name>[A-Za-z0-9_]*(?:OwnerKeys|ExpectedKeys|RequiredKeys|InventoryKeys)|itemIconKeys)\b[ \t]*(?::|=|by\b)",
 )
 
 
@@ -37,6 +37,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runtime-visual-manifest", default="client/src/main/resources/manifests/visual-manifest.json")
     parser.add_argument("--audio-manifest", default="assets-src/audio/manifests/phase2-audio-manifest.json")
     parser.add_argument("--runtime-audio-manifest", default="client/src/main/resources/manifests/audio-manifest.json")
+    parser.add_argument(
+        "--production-kotlin-root",
+        action="append",
+        dest="production_kotlin_roots",
+        default=None,
+        help="Production Kotlin root to scan for resource inventory mirrors. May be repeated.",
+    )
     parser.add_argument("--report", default="build/reports/resource-pipeline/resource-pipeline-authority.json")
     return parser.parse_args()
 
@@ -289,8 +296,11 @@ def audio_plan_records(
     return records
 
 
-def validate_no_resource_inventory_mirrors(errors: list[str]) -> None:
-    for root in PRODUCTION_KOTLIN_ROOTS:
+def validate_no_resource_inventory_mirrors(
+    production_kotlin_roots: list[str],
+    errors: list[str],
+) -> None:
+    for root in production_kotlin_roots:
         root_path = REPO_ROOT / root
         if not root_path.is_dir():
             continue
@@ -318,6 +328,7 @@ def main() -> int:
     runtime_visual_manifest_path = REPO_ROOT / args.runtime_visual_manifest
     audio_manifest_path = REPO_ROOT / args.audio_manifest
     runtime_audio_manifest_path = REPO_ROOT / args.runtime_audio_manifest
+    production_kotlin_roots = args.production_kotlin_roots or list(DEFAULT_PRODUCTION_KOTLIN_ROOTS)
     errors: list[str] = []
 
     visual_by_key = load_entries_by_key(visual_manifest_path, "canonical visual manifest")
@@ -335,7 +346,7 @@ def main() -> int:
         ),
     )
     audio_records = audio_plan_records(audio_spec_dir, audio_by_key, errors)
-    validate_no_resource_inventory_mirrors(errors)
+    validate_no_resource_inventory_mirrors(production_kotlin_roots, errors)
 
     report = {
         "schemaVersion": SCHEMA_VERSION,
@@ -346,6 +357,7 @@ def main() -> int:
             "darkKeyRegistry": args.dark_key_registry,
             "visualManifest": args.visual_manifest,
             "audioManifest": args.audio_manifest,
+            "productionKotlinRoots": production_kotlin_roots,
         },
         "totals": {
             "visualAssets": len(visual_records),
