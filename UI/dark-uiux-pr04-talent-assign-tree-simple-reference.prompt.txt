@@ -1,0 +1,104 @@
+Prompt ID: dark-uiux-pr04-talent-assign-tree-simple-reference
+Expected output file: UI/dark-uiux-pr04-talent-assign-tree-simple-reference.png
+Canvas: 1280x840
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create one simple K-ToME Talent Assign UI mockup at 1280x840.
+Use case: ui-mockup.
+Asset type: one-off development reference image, not a sprite sheet, not a manifest asset.
+Goal: practical PR04 talent allocation reference, close to classic Tales of Maj'Eyal / ToME talent assignment UI, but with visible tree structure. It must be simple enough to implement with text rows, indentation, connector marks, two columns, and a detail pane.
+
+Critical scope:
+Only show the Talent Assign panel.
+Do not show full game window, map, equipment, inventory, companion panel, bottom HUD, action cards, character portrait, or navigation rail.
+
+Project facts to reflect:
+- Current K-ToME professions expose 3 profession talent trees / systems.
+- Vanguard example trees: 武器系, 护卫系, 战吼系.
+- The header must show both "职业天赋点: 3" and "种族天赋点: 1".
+- Race talent points exist, but this screen may show race points only in the header; race trees are not the focus of this mockup.
+
+Visual style:
+Classic roguelike menu upgraded with K-ToME dark fantasy chrome. Near-black outer background, large dark brown-black panel, thin iron border, minimal corner ornament, ember-gold title and section headers, cyan selected row, gray locked rows, green learned active rows, ember reserve rows. No flashy effects.
+
+Overall panel layout:
+- One large centered modal panel occupying about 90% width and height.
+- Top left title: "天赋分配".
+- Directly below: "职业天赋点: 3     种族天赋点: 1".
+- Main area split into two columns:
+  - Left column 58% width: tree-structured talent list.
+  - Right column 42% width: selected talent details.
+- Bottom line: keyboard help and state legend.
+
+Left column: visible tree structure, not just a flat list.
+Use section headers for exactly three systems:
+1. 武器系 6/6
+2. 护卫系 5/5
+3. 战吼系 5/5
+
+Within each system, show a classic lightweight prerequisite tree using indentation and simple connector marks. Keep it text-based and implementable:
+- roots have no indent.
+- child rows are indented with "├─" or "└─".
+- deeper child rows use one more indent.
+- Do not draw a large node graph. This is still a menu list.
+
+Use this approximate Vanguard tree structure:
+
+武器系 6/6
+[*] 猛击 1/5
+  └─ [+] 横扫 0/5
+      └─ [x] 破阵 0/5
+          └─ [x] 震地猛击 0/5
+[*] 冲锋 1/5
+  └─ [x] 碎甲 0/5
+
+护卫系 5/5
+[*] 盾击 1/5
+  └─ [+] 嘲讽 0/5
+[*] 格挡姿态 1/5
+  ├─ [r] 铁壁 1/5
+  └─ [x] 壁垒推进 0/5
+
+战吼系 5/5
+[*] 战吼 1/5
+  ├─ [+] 集结战旗 0/5
+  │   └─ [x] 战场号令 0/5
+[*] 威压 1/5
+  └─ [x] 不屈 0/5
+
+Selected row:
+Select "[+] 横扫 0/5". Use a single cyan horizontal highlight bar or cyan text line. Do not turn it into a big card. Keep the row height stable.
+
+State markers:
+[*] 已激活 / learned active, green text
+[+] 可学习 / learnable, cyan text
+[r] 预留 / learned reserve, ember-gold text
+[x] 锁定 / locked, muted gray text
+The markers should be visible in rows and repeated in the bottom legend.
+
+Right detail pane:
+Show selected talent "横扫".
+Simple text-first blocks:
+- Header: "横扫" with a small "可学习" chip.
+- "等级 0 -> 1 / 5"
+- "消耗 1 职业天赋点"
+- "前置: 猛击 2/5"
+- "等级需求: 3"
+- "下一等级预览"
+- "范围: 邻近"
+- "半径: 1"
+- "武器伤害 +20%"
+- "主动技能: 可加入快捷槽"
+- "1-4 选择槽位 / R 预留"
+Bottom of detail pane: simple text buttons "Enter 学习", "R 预留", "Esc 返回".
+
+Bottom help:
+Left side: "↑↓ 选择   ←→ 切换系   Enter 学习   R 预留   Esc 关闭"
+Right side legend: "[+] 可学习   [x] 锁定   [*] 已激活   [r] 预留"
+
+Implementation constraints:
+This mockup must look feasible for a Kotlin/libGDX renderer using existing primitives: panel rectangles, text lines, section headers, row highlight, indentation strings, simple vertical scroll bar, and a right detail pane.
+Avoid any feature requiring complex custom graph layout, drag nodes, hover tooltips, animated modal, large icon grids, or full shell integration.
+
+Avoid:
+No full game shell, no inventory, no equipment, no map, no hotbar, no character portrait, no complex web dashboard, no ornate node graph, no huge skill icon cards, no sci-fi HUD, no neon cyberpunk, no glassmorphism, no glossy plastic, no anime/chibi, no watermark.

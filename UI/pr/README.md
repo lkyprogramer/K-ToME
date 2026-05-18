@@ -12,14 +12,15 @@
 | 2 | [PR-02 UI Chrome Sprite Pilot](dark-uiux-pr02-ui-chrome-sprite-pilot.md) | P0 | L | 跑通 UI chrome/HUD/standalone screen chrome 第一批 sheet 到 manifest/golden | Round 1 |
 | 2.1 | [PR-02-1 Demo Shell Foundation](dark-uiux-pr02-1-demo-shell-foundation.md) | P0 | XL | 在 PR-02 chrome 基础上搭建 demo-like 主 shell：icon rail、dominant map stage、right grid scaffold、bottom hero/action/log deck | Round 1B 必须生成 |
 | 3 | [PR-03 Equipment Inventory Items And Shop](dark-uiux-pr03-equipment-inventory-items.md) | P0 | L | 在 PR-02-1 right panel 合同上接入真实装备/背包 item icon、铭文商店、quality、空态/tooltip；不得恢复 right-panel ground loot 或 fake placeholder | Round 7 部分 |
-| 4 | [PR-04 Profession Tree UI](dark-uiux-pr04-profession-tree-ui.md) | P0 | M | 职业树 dark UI、节点状态、预览、主动槽 modal | 默认复用现有资源 |
+| 4 | [PR-04 Profession Tree UI](dark-uiux-pr04-profession-tree-ui.md) | P0 | L | ToME 式天赋分配面板、树状列表、技能图标、当前等级详情、主动槽 modal | 仅为唯一参考图新增 PR04 reference-crop 证据资源；正式全量 rebaseline 归 PR-06 |
+| 4.1 | [PR-04-01 Playable Profession Passive Talents](dark-uiux-pr04-01-playable-profession-passive-talents.md) | P0 | XL | 6 个可玩职业每职业至少 2 个明确被动；被动不占主动槽，右侧详情展示当前/下一级收益，统一装备/天赋 passive resolver | 不生成正式资源 |
 | 5 | [PR-05 Map Actor Portrait Replacement](dark-uiux-pr05-map-actor-portrait-replacement.md) | P1 | XL | Tile、prop、VFX、actor、portrait 统一替换 | Round 2-6 |
 | 6 | [PR-06 Skills Status Quest Full Manifest](dark-uiux-pr06-skills-status-quest-full-manifest.md) | P1 | XL | 技能、状态、任务、fallback、全 manifest 收口 | Round 8-9 + 返修 |
 | 7 | [PR-07 Golden Whitebox Polish](dark-uiux-pr07-golden-whitebox-polish.md) | P1 | M | 全 UI 面 golden/白盒、验证模式、结算/错误页、性能与 atlas 决策 | 不新增资源，允许返修 |
 
 ## 依赖规则
 
-1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
+1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-04-01 -> PR-05 -> PR-06 -> PR-07`。
 2. 每个 PR 必须先读 [UI/PLAN.md](../PLAN.md)、[UI/ART_STYLE_BIBLE.md](../ART_STYLE_BIBLE.md) 和本 PR 文档。
 3. 每个 PR 完成后必须做一次 doc-vs-implementation self-audit。
 4. 每个 PR 的 golden label 默认使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1` 是合法细分特例，必须使用 `dark-uiux-pr01-1-*`。`PR-02-1` 的 demo parity 主证据已经固定为 `ui-demo-new-*` label，路径和 manual record 仍归 `dark-uiux-pr02-1` owner；后续 PR 不得再引用旧 `dark-uiux-pr02-1-demo-*` label 作为必填 evidence。
@@ -241,7 +242,8 @@ prompt 文件头必须包含：
 | PR-02 | `dark-uiux-pr02-round1-chrome`、`dark-uiux-pr02-hud-icons-pilot`、`dark-uiux-pr02-standalone-screen-chrome`、contact sheet QA、manifest diff |
 | PR-02-1 | main labels：`ui-demo-new-parity-1672x941`、`ui-demo-new-parity-1280x800`、`ui-demo-new-right-panel-grid`、`ui-demo-new-bottom-deck-no-command-hints`、`ui-demo-new-inventory-page-1`、`ui-demo-new-inventory-page-2`；supporting crop labels：`ui-demo-new-nav-rail-crop`、`ui-demo-new-map-stage-crop`；manual：`UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`、`UI/manual-records/ui-demo-new-visual-parity.md`；coverage：`build/reports/verification/dark-uiux/dark-v1-manifest-coverage-pr02-1-owner-scope.json`、`build/reports/verification/dark-uiux/dark-v1-manifest-coverage-pr02-2-owner-scope.json` |
 | PR-03 | `dark-uiux-pr03-equipment-slots`、`dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked`、`dark-uiux-pr03-inscription-shop`、`dark-uiux-pr03-shop-full-slot-replace`、`UI/manual-records/dark-uiux-pr03-fallback-key-injection.md` |
-| PR-04 | `dark-uiux-pr04-talent-sidebar-start`、`dark-uiux-pr04-active-slot-choice`、`dark-uiux-pr04-talent-sidebar-min-window-log-visible`、`UI/manual-records/dark-uiux-pr04-profession-tree-ui.md`、`phase4-v4-pr01` scenario evidence |
+| PR-04 | `UI/dark-uiux-pr04-talent-assign-tree-icons-detail-reference.png`、`dark-uiux-pr04-talent-assign-panel-start`、`dark-uiux-pr04-active-slot-choice`、`dark-uiux-pr04-talent-assign-min-window-log-visible`、`dark-uiux-pr04-right-companion-coexistence`、`UI/manual-records/dark-uiux-pr04-profession-tree-ui.md`、`phase4-v4-pr01` scenario evidence |
+| PR-04-01 | `dark-uiux-pr04-01-static-passive-detail`、`dark-uiux-pr04-01-trigger-passive-detail`、`dark-uiux-pr04-01-passive-action-suppression`、`UI/manual-records/dark-uiux-pr04-01-playable-profession-passive-talents.md`、`build/whitebox/dark-uiux-pr04-01-static-passive-detail/cua-runbook.md`、`build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/cua-runbook.md`、`build/whitebox/dark-uiux-pr04-01-passive-action-suppression/cua-runbook.md` |
 | PR-05 | `dark-uiux-pr05-map-layer-stack`、`dark-uiux-pr05-actor-boss-telegraph`、contact sheet QA |
 | PR-06 | `dark-uiux-pr06-status-quest-skill-overview`、`dark-uiux-pr06-talent-icon-rebaseline`、validation overlay coverage reference、manifest coverage artifact |
 | PR-07 | packaged app command, runtime home, evidence dir, manual record, final doc-vs-implementation checklist, `dark-uiux-pr07-final-all-screens` evidence index |
@@ -254,7 +256,8 @@ prompt 文件头必须包含：
 2. 不改 `TalentProgression.learnableTalentIds`、starter 数、Tier 门槛、owner metric、long-run 分母。
 3. 不把 `TalentTreeNodeSnapshot.category` 当字符串解析。
 4. 数字键 `1-4` 只在 `ACTIVE_TALENT_SLOT_CHOICE` modal 内消费。
-5. 职业树图标正式重绘默认放到 PR-06；PR-04 只在现有 key 上完成暗黑 UI 表达。
+5. PR-04 必须按 `UI/dark-uiux-pr04-talent-assign-tree-icons-detail-reference.png` 尽量一比一还原 Talent Assign 面板；不得回退到 tier/branch grid 或完整装备/背包同屏参考。
+6. 职业树图标正式全量重绘默认放到 PR-06；PR-04 只允许为 canonical Vanguard Talent Assign 首屏新增 reference-crop 证据 key，不能扩展成全职业资源重绘。
 
 ## 通用验证入口
 

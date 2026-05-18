@@ -1,6 +1,7 @@
 package com.ktome.client.ui.layout
 
 import com.ktome.client.ui.combat.CombatDecisionFrameState
+import com.ktome.client.ui.talent.TalentTreeSelectionIdentity
 import com.ktome.core.map.Point
 
 const val MODAL_STACK_MAX_DEPTH = 3
@@ -23,6 +24,7 @@ data class ModalFrameLocalState(
     val loadoutSlotSelection: Int = 1,
     val loadoutReserveSelection: Int = 0,
     val talentTreeSelection: Int = 0,
+    val talentTreeSelectionIdentity: TalentTreeSelectionIdentity? = null,
     val talentTreePreviewExpanded: Boolean = true,
     val targetingSlot: Int? = null,
     val targetingInscriptionHotkey: Int? = null,

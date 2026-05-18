@@ -23,9 +23,9 @@ dark UI/UX PR 不再依赖人工记忆执行资源 gate、golden 和白盒流程
 | --- | --- | --- |
 | `requirementId` | yes | 稳定需求编号，例如 `UI03-M01` |
 | `source` | yes | PR 文档章节、完成定义、资源范围或 evidence matrix |
-| `owner` | yes | `client` / `assets` / `tools` / `docs` |
-| `fastCheck` | yes for blocking behavior | focused client test、resource lint 或静态检查 |
-| `ownerGate` | yes for owner behavior | `clientSmoke`、`goldenScreenshot`、dark resource lint、packaged app 白盒或 `N/A` |
+| `owner` | yes | `client` / `assets` / `tools` / `docs`；明确声明为 gameplay/content bridge 的 PR 还可使用 `core` / `game` |
+| `fastCheck` | yes for blocking behavior | focused client test、resource lint、schema/runtime focused test 或静态检查 |
+| `ownerGate` | yes for owner behavior | `clientSmoke`、`goldenScreenshot`、dark resource lint、schema/runtime owner suite、packaged app 白盒或 `N/A` |
 | `artifact` | yes for evidence | repo-relative canonical artifact path |
 | `whitebox` | yes | `required` / `skipped` / `N/A` |
 
@@ -107,3 +107,15 @@ dark UI/UX canonical artifact 包括：
 2. PR-01 到 PR-04 以 client presentation 和 golden 为主，不改变 gameplay rule。
 3. PR-05 是资源与 manifest 主体的 owner-scope 收口；PR-06 是 full manifest 主体收口，必须严格执行 final-full coverage；PR-07 继续使用 final-full 做最终 packaged / golden / whitebox polish。
 4. PR-07 是最终 packaged app、golden、whitebox polish 收口，不新增大范围资源合同。
+
+## 8. Gameplay / Content Bridge PR Exception
+
+`UI/pr` 下允许少量 bridge PR 承接 UI 发现的 gameplay/content 合同缺口，但必须显式声明为 `gameplay/content bridge`，且不能放宽本文件的 evidence 纪律。
+
+Bridge PR 固定附加规则：
+
+1. `core` / `game` owner 合法，但必须把 schema/runtime owner suite 放入 blocking gate，不能只跑 `clientSmoke` 或 `goldenScreenshot`。
+2. `client` 只能消费 typed snapshot、description model 或 presentation DTO；不得在 renderer/presenter 中计算 gameplay rule。
+3. 涉及 official data、schema、resolver、snapshot、content pack 或 lint 的改动，必须在 Acceptance Matrix 中分别列 owner、fastCheck、ownerGate 和 artifact。
+4. 若 bridge PR 同时触碰 `core/game/client/tools`，必须在文档内拆成可独立验收的顺序 slice，并写清每个 slice 的 stop rule 与 rollback invariant。
+5. Bridge PR 不改变 PR-01 到 PR-04 的通用性质；它是显式例外，不能作为后续 UI PR 任意改 gameplay rule 的先例。

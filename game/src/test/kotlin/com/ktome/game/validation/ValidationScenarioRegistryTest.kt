@@ -518,6 +518,76 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `dark uiux pr04 scenario materializes reference talent assign state`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr04-profession-tree-ui"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr04-scenario-actions")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertEquals("PR-04", scenario.prId)
+        assertEquals("UI/manual-records/dark-uiux-pr04-profession-tree-ui.md", scenario.evidence.manualRecordPath)
+        assertFalse("evidence/dark-uiux-pr04-active-slot-choice.png" in scenario.evidence.requiredEvidenceFiles)
+        assertEquals(
+            listOf("client/build/reports/golden/dark-uiux-pr04/dark-uiux-pr04-active-slot-choice.png"),
+            scenario.evidence.requiredExternalEvidenceFiles,
+        )
+        assertTrue(
+            scenario.evidence.cuaSteps.any { step ->
+                step.evidenceFile == "client/build/reports/golden/dark-uiux-pr04/dark-uiux-pr04-active-slot-choice.png"
+            },
+        )
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(3, session.playerStatus().talentPoints)
+        assertEquals(1, session.playerStatus().raceTalentPoints)
+        assertEquals(listOf(1, 2, 3, 4), session.talentSlots().map { slot -> slot.slot })
+        assertEquals(
+            listOf("power_strike", "charge", "shield_bash", "guard_stance"),
+            session.talentSlots().map { slot -> slot.talentId },
+        )
+        assertEquals(TalentNodeStateSnapshot.LEARNED_ACTIVE, talentTreeNode(session, "power_strike").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "sweeping_strike").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNED_ACTIVE, talentTreeNode(session, "charge").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNED_ACTIVE, talentTreeNode(session, "shield_bash").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNED_ACTIVE, talentTreeNode(session, "guard_stance").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNED_RESERVE, talentTreeNode(session, "iron_wall").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNED_ACTIVE, talentTreeNode(session, "war_cry").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNABLE, talentTreeNode(session, "rallying_banner").state)
+        assertEquals(TalentNodeStateSnapshot.LEARNED_ACTIVE, talentTreeNode(session, "intimidation").state)
+        assertEquals(2, talentTreeNode(session, "power_strike").rank)
+        assertEquals(1, talentTreeNode(session, "power_strike").committedRank)
+        assertTrue(talentTreeNode(session, "power_strike").hasPendingAllocation)
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        val slotChoiceRequirement = requireNotNull(session.renderSnapshot().uiState.activeTalentSlotChoiceRequirement)
+        assertEquals("sunder_armor", slotChoiceRequirement.candidateTalentId)
+        assertEquals("PROFESSION", slotChoiceRequirement.ownerType)
+        assertEquals("vanguard", slotChoiceRequirement.treeOwnerId)
+    }
+
+    @Test
     fun `pr03 scenario actions materialize build identity reward payoff scenes`() {
         val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr03"))
         val session =

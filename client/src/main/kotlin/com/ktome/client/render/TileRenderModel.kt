@@ -41,13 +41,18 @@ import com.ktome.client.ui.state.UiEmptyState
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.status.StatusHudIconModel
 import com.ktome.client.ui.status.StatusIconResolver
+import com.ktome.client.ui.talent.ActiveSlotChoiceModalItem
 import com.ktome.client.ui.talent.DescriptionLine
 import com.ktome.client.ui.talent.DescriptionLineKind
 import com.ktome.client.ui.talent.DescriptionPresenter
 import com.ktome.client.ui.talent.DescriptionSurface
+import com.ktome.client.ui.talent.TalentAssignPanelModel
+import com.ktome.client.ui.talent.TalentAssignTreeRowModel
 import com.ktome.client.ui.talent.TalentSidebarLine
 import com.ktome.client.ui.talent.TalentSidebarLineRole
 import com.ktome.client.ui.talent.TalentSidebarPresenter
+import com.ktome.client.ui.talent.TalentTreeSelectionIdentity
+import com.ktome.client.ui.talent.toTalentTreeSelectionIdentity
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -146,6 +151,22 @@ internal inline fun TileTextRow.forEachVisualIcon(
     }
 }
 
+private fun ActiveSlotChoiceModalItem.renderKey(): String = slot?.toString() ?: hotkeyText
+
+internal enum class TileTalentAssignReferenceChromeSlot(
+    val visualKey: String,
+) {
+    SURFACE_TEXTURE("dark.uiux.pr04.talent_assign.chrome.surface_texture"),
+    TOP_EDGE("dark.uiux.pr04.talent_assign.chrome.top_edge"),
+    BOTTOM_EDGE("dark.uiux.pr04.talent_assign.chrome.bottom_edge"),
+    LEFT_EDGE("dark.uiux.pr04.talent_assign.chrome.left_edge"),
+    RIGHT_EDGE("dark.uiux.pr04.talent_assign.chrome.right_edge"),
+    CORNER_TOP_LEFT("dark.uiux.pr04.talent_assign.chrome.corner_top_left"),
+    CORNER_TOP_RIGHT("dark.uiux.pr04.talent_assign.chrome.corner_top_right"),
+    CORNER_BOTTOM_LEFT("dark.uiux.pr04.talent_assign.chrome.corner_bottom_left"),
+    CORNER_BOTTOM_RIGHT("dark.uiux.pr04.talent_assign.chrome.corner_bottom_right"),
+}
+
 internal enum class TileTargetCursorState {
     LEGAL,
     ILLEGAL,
@@ -214,6 +235,47 @@ internal data class TileSidebarModel(
     val title: String,
     val rows: List<TileTextRow>,
 )
+
+internal data class TileTalentAssignPanelRenderModel(
+    val panel: TalentAssignPanelModel,
+    val sectionIcons: Map<String, ResolvedVisualAsset>,
+    val rowIcons: Map<TalentTreeSelectionIdentity, ResolvedVisualAsset>,
+    val detailBlockIcons: Map<Int, ResolvedVisualAsset>,
+    val activeSlotChoiceItemIcons: Map<String, ResolvedVisualAsset>,
+    val referenceChromeAssets: Map<TileTalentAssignReferenceChromeSlot, ResolvedVisualAsset>,
+) {
+    companion object {
+        fun from(
+            panel: TalentAssignPanelModel,
+            visualResolver: VisualManifestResolver,
+        ): TileTalentAssignPanelRenderModel =
+            TileTalentAssignPanelRenderModel(
+                panel = panel,
+                sectionIcons =
+                    panel.sections.mapNotNull { section ->
+                        section.iconKey?.let { iconKey -> section.treeId to visualResolver.resolve(iconKey) }
+                    }.toMap(),
+                rowIcons =
+                    panel.sections
+                        .flatMap { section -> section.rows }
+                        .mapNotNull { row ->
+                            row.skillIconKey?.let { iconKey -> row.toTalentTreeSelectionIdentity() to visualResolver.resolve(iconKey) }
+                        }.toMap(),
+                detailBlockIcons =
+                    panel.detail?.blocks.orEmpty().mapIndexedNotNull { index, block ->
+                        block.iconKey?.let { iconKey -> index to visualResolver.resolve(iconKey) }
+                    }.toMap(),
+                activeSlotChoiceItemIcons =
+                    panel.activeSlotChoiceModal?.items.orEmpty().mapNotNull { item ->
+                        item.iconKey?.let { iconKey -> item.renderKey() to visualResolver.resolve(iconKey) }
+                    }.toMap(),
+                referenceChromeAssets =
+                    TileTalentAssignReferenceChromeSlot.entries.associateWith { slot ->
+                        visualResolver.resolve(slot.visualKey)
+                    },
+            )
+    }
+}
 
 internal data class TilePanelModel(
     val title: String,
@@ -440,6 +502,7 @@ internal data class TileRenderModel(
     val actionPanel: ActionPanelModel,
     val combatFeedback: List<TileCombatFeedbackModel>,
     val sidebar: TileSidebarModel,
+    val talentAssignPanel: TileTalentAssignPanelRenderModel? = null,
     val shell: TileShellModel,
     val playerTile: com.ktome.core.map.Point,
     val mapDimensions: TileMapDimensions,
@@ -588,7 +651,26 @@ internal object TileRenderModelBuilder {
             }
         val messageLines = baseMessageLines + listOfNotNull(uiMessageLine)
 
-        val sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint, propByPoint, playerCell, combatPanel)
+        val talentAssignPanelModel =
+            if (overlayState.mode == UiMode.TALENT_ASSIGN) {
+                TalentSidebarPresenter.presentPanel(localizer, snapshot.uiState, overlayState)
+            } else {
+                null
+            }
+        val sidebar =
+            buildSidebar(
+                localizer,
+                visualResolver,
+                snapshot,
+                overlayState,
+                player,
+                actorById,
+                cellByPoint,
+                propByPoint,
+                playerCell,
+                combatPanel,
+                talentAssignPanelModel,
+            )
         return TileRenderModel(
             terrainTiles = terrainTiles,
             propTiles = propTiles,
@@ -638,6 +720,7 @@ internal object TileRenderModelBuilder {
                     ),
             combatFeedback = buildCombatFeedback(localizer, snapshot.metadata.width, overlayCells, snapshot.combatFeedbackEvents),
             sidebar = sidebar,
+            talentAssignPanel = talentAssignPanelModel?.let { panel -> TileTalentAssignPanelRenderModel.from(panel, visualResolver) },
             shell = buildShell(localizer, visualResolver, snapshot, overlayState, hud, sidebar, messageLines),
             playerTile = point(player.x, player.y),
             mapDimensions = TileMapDimensions(snapshot.metadata.width, snapshot.metadata.height),
@@ -1194,6 +1277,7 @@ internal object TileRenderModelBuilder {
         propByPoint: Map<com.ktome.core.map.Point, PropRenderSnapshot>,
         playerCell: MapCellSnapshot,
         combatPanel: CombatDecisionPanelModel?,
+        talentAssignPanel: TalentAssignPanelModel?,
     ): TileSidebarModel {
         val rows = mutableListOf<TileTextRow>()
         val title = TileRenderer.sidebarTitle(localizer, overlayState.mode)
@@ -1695,12 +1779,13 @@ internal object TileRenderModelBuilder {
             }
 
             UiMode.TALENT_ASSIGN -> {
-                TalentSidebarPresenter.present(localizer, snapshot.uiState, overlayState).forEach { line ->
+                val panel = talentAssignPanel ?: TalentSidebarPresenter.presentPanel(localizer, snapshot.uiState, overlayState)
+                TalentSidebarPresenter.presentFromPanel(panel).forEach { line ->
                     rows +=
                         TileTextRow(
                             text = line.text,
                             tone = talentSidebarTone(line),
-                            icon = line.iconKey?.let { resolveVisual(visualResolver, it) },
+                            icon = line.iconKey?.let(visualResolver::resolve),
                             selected = line.selected,
                         )
                 }

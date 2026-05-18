@@ -1,0 +1,75 @@
+Prompt ID: dark-uiux-pr04-profession-tree-workbench-actual-reference
+Expected output file: UI/dark-uiux-pr04-profession-tree-workbench-actual-reference.png
+Canvas: 1672x941
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create one full-screen K-ToME profession tree UI/UX mockup at 1672x941.
+Use case: ui-mockup.
+Asset type: one-off development reference image, not a sprite sheet, not a manifest asset.
+Purpose: closest practical implementation reference for PR04 Profession Tree UI. The image should be usable by a developer as a near one-to-one layout guide.
+
+Style:
+Dark fantasy roguelike tactical UI. Charcoal black panels, forged iron frames, worn stone slabs, weathered brass trim, old leather, ember-gold section titles, small restrained cold-cyan focus edges, stamina-green active accents, muted gray locked accents, subtle dungeon grit. Match K-ToME dark UI direction, not a modern web dashboard.
+
+Global shell composition:
+- Mac-style dark window frame at top, title "K-ToME".
+- Left vertical icon navigation rail, five icon buttons. The book/profession-tree icon is selected with a thin cyan edge. Other icons are dim.
+- Main game shell still exists behind the talent UI: bottom hero/action/log deck remains visible, and right companion equipment/inventory/status panel remains visible but dimmer than the active workbench.
+- Do not make this a full-screen modal that covers everything. It must prove PR04 coexists with PR03 right companion panel and the bottom log.
+
+Main profession tree workbench:
+- Large dark iron workbench occupying center-left and center, leaving the right companion panel visible.
+- Header at top of workbench: "职业树", "先锋", compact chips for "职业点 3" and "种族点 1".
+- Directly below header: active slot strip with four fixed slots labeled 1, 2, 3, 4. Slot 1 and 2 are filled, slot 3 is empty, slot 4 is a pending replacement target with ember-gold edge. Include a small reserve affordance marked "R 预留".
+- Workbench left side is the tree section stack. Show exactly three profession trees for Vanguard:
+  1. "武器系" with 6 nodes.
+  2. "护卫系" with 5 nodes.
+  3. "战吼系" with 5 nodes.
+- Each section has a small tree icon, localized tree name, stable header height, and a tier axis. Show tier bands I / II / III or compact numeric tier labels. The renderer should feel like it could consume presenter-provided tier labels.
+- Draw node cells in a bounded grid, not a vertical text list. Nodes use fixed-size cells with primary skill icon, state icon, rank chip, and short label. Use stable columns so the tree is scannable.
+- Draw prerequisite edges behind nodes. Edges must look typed and deliberate: satisfied muted green/iron, unsatisfied muted gray, selected path low-alpha cyan. Do not infer edges from text; visually communicate explicit tree graph links.
+- State grammar:
+  LOCKED: muted gray node with iron lock icon.
+  LEARNABLE: cyan edge with plus/rune icon.
+  LEARNED_RESERVE: ember-gold state icon and trim.
+  LEARNED_ACTIVE: stamina-green state icon and trim.
+  Pending allocation: small ember-gold overlay only, not a fifth rule state.
+- Selected node has a thin cyan focus ring around the cell plus a subtle tier-row focus band. The selected focus must not change the node's underlying state color.
+- Add a compact legend pinned near the bottom of the workbench: locked, learnable, active, reserve, selected, pending.
+
+Preview pane:
+- Right side inside the workbench is a preview pane for the selected talent, not a text sidebar.
+- Preview hierarchy: large hero skill icon, talent name "坚盾步伐", rank chip "2 -> 3 / 5", cost line "消耗 1 点", lock/prerequisite lines, next breakpoint preview, short flavor/effect block.
+- Use compact block layout with clear headings; do not use long paragraphs.
+- Include a small action block at the bottom of the preview pane showing "学习", "预留", and "替换槽位" affordances as restrained dark buttons/chips.
+
+Active slot choice modal:
+- A compact modal anchored inside the workbench, over the preview/tree boundary but not over the right companion inventory panel.
+- Modal title: "选择激活槽位".
+- Modal list is typed and visible:
+  1. slot 1 current skill
+  2. slot 2 current skill
+  3. slot 3 empty
+  4. slot 4 replacement target, highlighted ember-gold
+  R. reserve action "预留（不激活）"
+  Esc cancel hint
+- Modal uses same black iron / stone chrome, not a separate style.
+
+Right companion panel:
+- Keep a compact equipment/backpack/status scaffold visible at far right. It may show a silhouette, equipment slots, inventory grid, and status values, all dimmer than the talent workbench.
+- The profession tree workbench must not cover it.
+
+Bottom HUD:
+- Keep hero crest, health/stamina bars, four action cards, and a short log panel visible.
+- The latest log line must remain visible and unobstructed.
+- Bottom HUD must be visually secondary to the active workbench but still readable.
+
+Text rules:
+Use sparse, crisp UI text only. Short Chinese UI labels are okay: "职业树", "先锋", "职业点", "种族点", "武器系", "护卫系", "战吼系", "可学习", "锁定", "已激活", "预留", "选择激活槽位", "消耗 1 点".
+Do not render marketing copy, tutorials, paragraphs, logos, watermarks, or decorative large hero typography.
+
+Avoid:
+No landing page, no web dashboard, no sci-fi HUD, no neon cyberpunk, no anime/chibi, no bright glassmorphism, no glossy plastic, no giant hero type, no blurred stock photo, no full-screen inventory takeover, no fake fourth profession tree, no frozen empty trees, no minimap-focused layout, no text-only side list.
+
+Quality target:
+Dense but organized game UI reference quality. At full resolution, a developer should be able to copy the information architecture, region sizes, hierarchy, spacing, state grammar, modal placement, active slot strip, and tree graph shape into implementation.

@@ -159,20 +159,30 @@ data class ValidationScenarioRuntimeSpec(
 
 data class ValidationScenarioEvidenceSpec(
     val requiredEvidenceFiles: List<String>,
+    val requiredExternalEvidenceFiles: List<String> = emptyList(),
     val cuaSteps: List<ValidationScenarioEvidenceStep>,
     val manualRecordPath: String,
     val requiredLogEventKeys: List<String> = emptyList(),
     val scenarioNoteLabelKey: String? = null,
 ) {
+    val allRequiredEvidenceFiles: List<String>
+        get() = requiredEvidenceFiles + requiredExternalEvidenceFiles
+
     init {
-        require(requiredEvidenceFiles.count { evidenceFile -> evidenceFile.endsWith(".png") } >= 4) {
+        require(allRequiredEvidenceFiles.count { evidenceFile -> evidenceFile.endsWith(".png") } >= 4) {
             "Validation scenario evidence must require at least four screenshot evidence files."
         }
         require(requiredEvidenceFiles.distinct().size == requiredEvidenceFiles.size) {
             "Validation scenario evidence must not repeat evidence file names."
         }
+        require(requiredExternalEvidenceFiles.distinct().size == requiredExternalEvidenceFiles.size) {
+            "Validation scenario evidence must not repeat external evidence file names."
+        }
+        require(allRequiredEvidenceFiles.distinct().size == allRequiredEvidenceFiles.size) {
+            "Validation scenario evidence must not repeat evidence file names across packaged and external evidence."
+        }
         require(cuaSteps.isNotEmpty()) { "Validation scenario evidence must declare CUA steps." }
-        require(cuaSteps.all { step -> step.evidenceFile in requiredEvidenceFiles }) {
+        require(cuaSteps.all { step -> step.evidenceFile in allRequiredEvidenceFiles }) {
             "Validation scenario evidence CUA steps must reference required evidence files."
         }
         require(manualRecordPath.isNotBlank()) { "Validation scenario evidence must declare manualRecordPath." }

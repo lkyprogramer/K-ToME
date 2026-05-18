@@ -1,6 +1,7 @@
 scenarios:
   - id: phase4-v4-pr00-selftest
   - id: phase4-v4-pr01
+  - id: dark-uiux-pr04-profession-tree-ui
   - id: phase4-v4-pr02
   - id: dark-uiux-pr02-ui-chrome-sprite-pilot
   - id: dark-uiux-pr02-1-demo-shell-foundation

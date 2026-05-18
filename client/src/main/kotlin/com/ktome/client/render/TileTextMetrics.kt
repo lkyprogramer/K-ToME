@@ -8,12 +8,14 @@ internal data class TileTextLine(
 internal object TileTextMetrics {
     fun approximateCharWidth(style: TileTextStyle): Float =
         when (style) {
+            TileTextStyle.TITLE -> 22f
             TileTextStyle.UI -> 15f
             TileTextStyle.SMALL -> 12f
         }
 
     fun approximateLineHeight(style: TileTextStyle): Float =
         when (style) {
+            TileTextStyle.TITLE -> 38f
             TileTextStyle.UI -> 24f
             TileTextStyle.SMALL -> 19f
         }

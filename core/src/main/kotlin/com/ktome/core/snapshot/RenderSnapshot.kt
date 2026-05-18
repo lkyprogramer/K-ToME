@@ -206,6 +206,7 @@ data class RenderUiStateSnapshot(
     val talents: List<TalentSlotSnapshot>,
     val reserveTalents: List<TalentReserveSnapshot> = emptyList(),
     val talentTrees: List<TalentTreeSnapshot> = emptyList(),
+    val activeTalentSlotChoiceRequirement: TalentActiveSlotChoiceRequirementSnapshot? = null,
     val inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
     val inventory: List<InventoryEntrySnapshot>,
     val recentRewards: List<RewardPresentationEntrySnapshot> = emptyList(),
@@ -215,6 +216,13 @@ data class RenderUiStateSnapshot(
     val shardBalance: Int = 0,
     val activeShop: ShopPanelSnapshot? = null,
     val activeRouteSelection: RouteSelectionSnapshot? = null,
+)
+
+@Serializable
+data class TalentActiveSlotChoiceRequirementSnapshot(
+    val candidateTalentId: String,
+    val ownerType: String = TalentTreeOwnerType.PROFESSION.name,
+    val treeOwnerId: String = "",
 )
 
 @Serializable
@@ -405,6 +413,17 @@ data class TalentTreeSnapshot(
 )
 
 @Serializable
+data class TalentNodePrerequisiteSnapshot(
+    val talentId: String,
+    val talentNameKey: String? = null,
+    val treeId: String? = null,
+    val requiredRank: Int,
+    val requiredMaxRank: Int? = null,
+    val currentRank: Int,
+    val satisfied: Boolean,
+)
+
+@Serializable
 data class TalentTreeNodeSnapshot(
     val talentId: String,
     val treeId: String,
@@ -431,7 +450,9 @@ data class TalentTreeNodeSnapshot(
     val maxCooldown: Int,
     val requiresTarget: Boolean,
     val descriptionModel: DescriptionModelSnapshot? = null,
+    val nextRankDescriptionModel: DescriptionModelSnapshot? = null,
     val nextBreakpointPreview: TalentBreakpointPreviewSnapshot? = null,
+    val prerequisites: List<TalentNodePrerequisiteSnapshot> = emptyList(),
     val lockReasons: List<TalentNodeLockReasonSnapshot> = emptyList(),
     val isMaxRank: Boolean = false,
     val hasPendingAllocation: Boolean = false,

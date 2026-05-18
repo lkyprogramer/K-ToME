@@ -2442,7 +2442,7 @@ class TileRendererCanvasTest {
                 overlayState = OverlayState(mode = UiMode.TALENT_ASSIGN, talentTreeSelection = 0, talentTreePreviewExpanded = false),
             )
 
-        val treeRow = model.sidebar.rows.first { row -> row.text == "Arms" }
+        val treeRow = model.sidebar.rows.first { row -> row.text == "Arms  2/2" }
         val selectedNodeRow = model.sidebar.rows.first { row -> row.text == "[+] Charge 0/5" }
         val lockedNodeRow = model.sidebar.rows.first { row -> row.text == "[x] War Cry 0/5" }
 
@@ -2452,6 +2452,178 @@ class TileRendererCanvasTest {
         assertTrue(selectedNodeRow.selected)
         assertNotNull(selectedNodeRow.icon)
         assertEquals(TileTextTone.GRAY, lockedNodeRow.tone)
+    }
+
+    @Test
+    fun darkUiuxPr04TalentAssignPanelMatchesReferenceStructure() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(talentTrees = listOf(pr04TalentTree())),
+            overlayState = pr04TalentAssignOverlay(),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Talent Assignment" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Profession Talent Points: 0" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Arms" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "2/2" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "[+]" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Charge" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "0/5" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text.startsWith("Current Rank Detail") })
+        assertTrue(
+            canvas.textDraws.any { draw -> draw.text.startsWith("Next Rank") },
+            canvas.textDraws.joinToString(" | ") { draw -> draw.text },
+        )
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Up/Down" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "select" })
+    }
+
+    @Test
+    fun darkUiuxPr04DrawsStateMarkerSkillIconNameRankAndSelectedRow() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(talentTrees = listOf(pr04TalentTree())),
+            overlayState = pr04TalentAssignOverlay(),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "[+]" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Charge" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "0/5" })
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == "item.short_sword.icon" })
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.color.r > 0.10f &&
+                    draw.color.g > 0.65f &&
+                    draw.color.b > 0.70f &&
+                    draw.color.a in 0.17f..0.19f
+            },
+        )
+    }
+
+    @Test
+    fun darkUiuxPr04KeepsRightDetailAboveNextPreview() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(talentTrees = listOf(pr04TalentTree())),
+            overlayState = pr04TalentAssignOverlay(),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val current = canvas.textDraws.first { draw -> draw.text.startsWith("Current Rank Detail") }
+        val next = canvas.textDraws.firstOrNull { draw -> draw.text.startsWith("Next Rank") }
+        assertNotNull(next, canvas.textDraws.joinToString(" | ") { draw -> draw.text })
+        assertTrue(current.y > requireNotNull(next).y)
+    }
+
+    @Test
+    fun darkUiuxPr04SkillIconFallbackRendersWithoutCrashing() {
+        val fallbackMessages = mutableListOf<String>()
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(ManifestLogSink { message -> fallbackMessages += message }),
+            snapshot =
+                sampleSnapshot(
+                    talentTrees =
+                        listOf(
+                            pr04TalentTree(
+                                primaryTalentId = "custom_missing_pr04",
+                                nodeIconKey = "icon.skill.missing_pr04",
+                            ),
+                        ),
+                ),
+            overlayState = pr04TalentAssignOverlay(),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.requestedKey == "icon.skill.missing_pr04" && draw.asset.fallbackUsed })
+        assertTrue(fallbackMessages.any { message -> message.contains("icon.skill.missing_pr04") })
+    }
+
+    @Test
+    fun darkUiuxPr04TalentAssignPanelDoesNotCoverRightCompanionOrBottomLog() {
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(talentTrees = listOf(pr04TalentTree())),
+                overlayState = pr04TalentAssignOverlay(),
+            )
+
+        assertNotNull(model.talentAssignPanel)
+        assertTrue(model.shell.rightPanel.rows.isNotEmpty())
+        assertEquals("No log entries.", model.logPresentation.emptyStateText)
+    }
+
+    @Test
+    fun darkUiuxPr04OverflowsListWithoutLayoutShift() {
+        val panel =
+            TileRenderer
+                .buildRenderModel(
+                    localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                    visualResolver = sampleResolver(),
+                    snapshot =
+                        sampleSnapshot(
+                            talentTrees =
+                                listOf(
+                                    pr04TalentTree(treeId = "vanguard_arms"),
+                                    pr04TalentTree(treeId = "vanguard_guard"),
+                                    pr04TalentTree(treeId = "vanguard_warcry"),
+                                ),
+                        ),
+                    overlayState = pr04TalentAssignOverlay(),
+                ).talentAssignPanel
+                ?.panel
+
+        assertEquals(listOf("2/2", "2/2", "2/2"), requireNotNull(panel).sections.map { section -> section.nodeCountText })
+        assertTrue(panel.sections.all { section -> section.scroll.verticalOffset == 0 })
+    }
+
+    @Test
+    fun darkUiuxPr04ScrollsFocusedTalentRowIntoVisibleList() {
+        val canvas = RecordingTileCanvas()
+        val trees =
+            (0 until 12).map { index ->
+                pr04TalentTree(
+                    treeId = "vanguard_tree_$index",
+                    primaryTalentId = if (index == 11) "unyielding" else "charge",
+                )
+            }
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(talentTrees = trees),
+            overlayState = pr04TalentAssignOverlay(talentTreeSelection = 22),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(
+            canvas.textDraws.any { draw -> draw.text == "Unyielding" },
+            canvas.textDraws.joinToString(" | ") { draw -> draw.text },
+        )
     }
 
     @Test
@@ -2829,7 +3001,23 @@ class TileRendererCanvasTest {
                                 footprint = "1x1",
                                 tintColorHex = "#FF7A3C",
                             ),
-                        ) +
+                        ) + pr04ReferenceIconKeys().map { key ->
+                            VisualManifestEntry(
+                                key = key,
+                                category = "icon",
+                                rawOutputPath = "phase4/uiux_pr04/${key.replace('.', '_')}.png",
+                                footprint = "ui",
+                                tags = listOf("reference-crop"),
+                            )
+                        } + pr04ReferenceChromeKeys().map { key ->
+                            VisualManifestEntry(
+                                key = key,
+                                category = "ui_frame",
+                                rawOutputPath = "phase4/uiux_pr04/${key.replace('.', '_')}.png",
+                                footprint = "ui",
+                                tags = listOf("reference-crop", "chrome"),
+                            )
+                        } +
                             DarkUiChromeTestKeys.pr02Round1OwnerKeys
                                 .plus(DarkUiChromeTestKeys.pr02_1DemoShellOwnerKeys)
                                 .plus(
@@ -2868,6 +3056,30 @@ class TileRendererCanvasTest {
             rawOutputPath = "dark-v1/ui/${key.replace('.', '_')}.png",
             footprint = "ui",
         )
+
+    private fun pr04ReferenceIconKeys(): List<String> =
+        listOf(
+            "power_strike",
+            "sweeping_strike",
+            "linebreaker",
+            "earthshaker",
+            "charge",
+            "sunder_armor",
+            "shield_bash",
+            "taunt",
+            "guard_stance",
+            "iron_wall",
+            "bulwark_march",
+            "war_cry",
+            "rallying_banner",
+            "battlefield_command",
+            "intimidation",
+            "unyielding",
+        ).map { talentId -> "dark.uiux.pr04.talent.vanguard.$talentId.icon" } +
+            "dark.uiux.pr04.talent.vanguard.sweeping_strike.hero"
+
+    private fun pr04ReferenceChromeKeys(): List<String> =
+        TileTalentAssignReferenceChromeSlot.entries.map(TileTalentAssignReferenceChromeSlot::visualKey)
 
     private fun sampleShop(inscriptionReplacementPrompt: InscriptionReplacementPromptSnapshot? = null): ShopPanelSnapshot =
         ShopPanelSnapshot(
@@ -2945,6 +3157,68 @@ class TileRendererCanvasTest {
             categoryId = "MOVEMENT",
             cooldownRemaining = 0,
             maxCooldown = 10,
+        )
+
+    private fun pr04TalentAssignOverlay(talentTreeSelection: Int = 0): OverlayState =
+        OverlayState(
+            mode = UiMode.TALENT_ASSIGN,
+            talentTreeSelection = talentTreeSelection,
+            modalFrames = listOf(ModalFrame(ModalFrameKind.TALENT_ASSIGN)),
+        )
+
+    private fun pr04TalentTree(
+        treeId: String = "vanguard_arms",
+        primaryTalentId: String = "charge",
+        nodeIconKey: String = "item.short_sword.icon",
+        treeIconKey: String = "item.short_sword.icon",
+    ): TalentTreeSnapshot =
+        TalentTreeSnapshot(
+            treeId = treeId,
+            treeOwnerId = "vanguard",
+            nameKey = "talent_tree.vanguard_arms.name",
+            descKey = "talent_tree.vanguard_arms.desc",
+            iconKey = treeIconKey,
+            nodes =
+                listOf(
+                    TalentTreeNodeSnapshot(
+                        talentId = primaryTalentId,
+                        treeId = treeId,
+                        treeOwnerId = "vanguard",
+                        nameKey = "talent.vanguard.$primaryTalentId.name",
+                        descKey = "talent.vanguard.charge.desc",
+                        iconKey = nodeIconKey,
+                        state = TalentNodeStateSnapshot.LEARNABLE,
+                        rank = 0,
+                        maxRank = 5,
+                        unlockLevel = 1,
+                        resourceCost = 8,
+                        resourceLabelKey = "ui.hud.stamina.short",
+                        range = 3,
+                        minRange = 1,
+                        currentCooldown = 0,
+                        maxCooldown = 4,
+                        requiresTarget = true,
+                    ),
+                    TalentTreeNodeSnapshot(
+                        talentId = "war_cry",
+                        treeId = treeId,
+                        treeOwnerId = "vanguard",
+                        nameKey = "talent.vanguard.war_cry.name",
+                        descKey = "talent.vanguard.war_cry.desc",
+                        iconKey = nodeIconKey,
+                        state = TalentNodeStateSnapshot.LOCKED,
+                        rank = 0,
+                        maxRank = 5,
+                        unlockLevel = 2,
+                        resourceCost = 12,
+                        resourceLabelKey = "ui.hud.stamina.short",
+                        range = 0,
+                        minRange = 0,
+                        currentCooldown = 0,
+                        maxCooldown = 6,
+                        requiresTarget = false,
+                    ),
+                ),
         )
 
     private fun sampleSnapshot(

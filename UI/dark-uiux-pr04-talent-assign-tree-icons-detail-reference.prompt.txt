@@ -1,0 +1,145 @@
+Prompt ID: dark-uiux-pr04-talent-assign-tree-icons-detail-reference
+Expected output file: UI/dark-uiux-pr04-talent-assign-tree-icons-detail-reference.png
+Canvas: 1280x840
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create one simple K-ToME Talent Assign UI mockup at 1280x840.
+Use case: ui-mockup.
+Asset type: one-off development reference image, not a sprite sheet, not a manifest asset.
+Goal: practical PR04 talent allocation reference, close to classic Tales of Maj'Eyal / ToME talent assignment UI, but with visible prerequisite tree indentation, per-talent icons, and an implementable right-side current-rank detail pane.
+
+Critical scope:
+Only show the Talent Assign panel.
+Do not show full game window, map, equipment, inventory, companion panel, bottom HUD, action cards, character portrait, or navigation rail.
+Do not draw a big node graph. This is a menu/list UI with indentation and connector text.
+
+Project facts to reflect:
+- Current K-ToME professions expose 3 profession talent trees / systems.
+- Vanguard example trees: 武器系, 护卫系, 战吼系.
+- The header must show both "职业天赋点: 3" and "种族天赋点: 1".
+- Race talent points exist, but this screen may show race points only in the header; race trees are not the focus of this mockup.
+- Each talent row has a primary skill icon. These are small existing-style fantasy pictograms, not new large art cards.
+
+Visual style:
+Classic roguelike menu upgraded with K-ToME dark fantasy chrome. Near-black outer background, large dark brown-black panel, thin iron border, minimal corner ornament, ember-gold title and section headers, cyan selected row, gray locked rows, green learned active rows, ember reserve rows. No flashy effects.
+
+Overall panel layout:
+- One large centered modal panel occupying about 90% width and height.
+- Top left title: "天赋分配".
+- Directly below: "职业天赋点: 3     种族天赋点: 1".
+- Main area split into two columns:
+  - Left column 58% width: tree-structured talent list.
+  - Right column 42% width: selected talent details.
+- Bottom line: keyboard help and state legend.
+
+Left column: visible tree structure with icons.
+Use section headers for exactly three systems:
+1. 武器系 6/6
+2. 护卫系 5/5
+3. 战吼系 5/5
+
+Within each system, show a classic lightweight prerequisite tree using indentation and simple connector marks. Each row layout is:
+state marker, 24x24 skill icon, localized talent name, rank text.
+The icon should be immediately before the talent name, after the marker and connector. Keep row height stable.
+Use distinct simple pictograms:
+- 猛击: axe / weapon slash icon
+- 横扫: sweeping blade arc icon
+- 破阵: broken shield icon
+- 震地猛击: hammer shockwave icon
+- 冲锋: boot / forward rush icon
+- 碎甲: cracked armor icon
+- 盾击: shield impact icon
+- 嘲讽: shout / mask icon
+- 格挡姿态: raised shield icon
+- 铁壁: wall shield icon
+- 壁垒推进: tower shield advance icon
+- 战吼: roar icon
+- 集结战旗: banner icon
+- 战场号令: command horn icon
+- 威压: menacing eye icon
+- 不屈: clenched fist icon
+
+Use this exact approximate Vanguard tree structure:
+
+武器系 6/6
+[*] [icon] 猛击 1/5
+  └─ [+] [icon] 横扫 0/5
+      └─ [x] [icon] 破阵 0/5
+          └─ [x] [icon] 震地猛击 0/5
+[*] [icon] 冲锋 1/5
+  └─ [x] [icon] 碎甲 0/5
+
+护卫系 5/5
+[*] [icon] 盾击 1/5
+  └─ [+] [icon] 嘲讽 0/5
+[*] [icon] 格挡姿态 1/5
+  ├─ [r] [icon] 铁壁 1/5
+  └─ [x] [icon] 壁垒推进 0/5
+
+战吼系 5/5
+[*] [icon] 战吼 1/5
+  ├─ [+] [icon] 集结战旗 0/5
+  │   └─ [x] [icon] 战场号令 0/5
+[*] [icon] 威压 1/5
+  └─ [x] [icon] 不屈 0/5
+
+Selected row:
+Select "[+] 横扫 0/5". Use a single cyan horizontal highlight bar or cyan text line. Do not turn it into a big card. Keep the row height stable and keep its icon visible.
+
+State markers:
+[*] 已激活 / learned active, green text
+[+] 可学习 / learnable, cyan text
+[r] 预留 / learned reserve, ember-gold text
+[x] 锁定 / locked, muted gray text
+The markers should be visible in rows and repeated in the bottom legend.
+
+Right detail pane:
+Show selected talent "横扫" with a larger 48x48 version of the same sweeping blade arc icon.
+The right pane must contain these blocks in this order:
+
+1. Header block
+- icon, "横扫", small "可学习" chip
+- "等级 0 -> 1 / 5"
+- "消耗 1 职业天赋点"
+- "前置: 猛击 2/5"
+- "等级需求: 3"
+
+2. Current rank detail block. This is mandatory and must be above the next-level preview.
+For an unlearned talent, the current detail block describes level 1 because selecting learnable 0/5 means the player is previewing the first learned rank.
+Title: "当前等级详情（预览 1级）"
+Rows:
+- "类型: 主动"
+- "范围: 邻近"
+- "半径: 1"
+- "消耗: 10 耐力"
+- "冷却: 4 回合"
+- "效果: 对前方扇形敌人造成 120% 武器伤害"
+- "说明: 可加入快捷槽"
+
+3. Next level preview block. This is below current rank detail.
+Title: "下一等级预览"
+Rows:
+- "2级: 武器伤害提升至 135%"
+- "断点: 5级 半径 +1"
+- "升级后仍消耗 10 耐力"
+
+4. Action block
+- "Enter 学习"
+- "R 预留"
+- "Esc 返回"
+
+Do not replace the current-rank detail block with only next-level text. The player must be able to read the exact current effect, damage coefficient, range, resource cost, cooldown, and action category before choosing.
+
+Bottom help:
+Left side: "↑↓ 选择   ←→ 切换系   Enter 学习   R 预留   Esc 关闭"
+Right side legend: "[+] 可学习   [x] 锁定   [*] 已激活   [r] 预留"
+
+Implementation constraints:
+This mockup must look feasible for a Kotlin/libGDX renderer using existing primitives: panel rectangles, text lines, small icon sprites, section headers, row highlight, indentation strings, simple vertical scroll bar, and a right detail pane.
+Avoid any feature requiring complex custom graph layout, drag nodes, hover tooltips, animated modal, large icon grids, generated per-skill paintings, or full shell integration.
+
+Text legibility:
+Use large enough Chinese text for the labels to be readable. Avoid dense microtext. Do not use placeholder gibberish where explicit Chinese labels are requested.
+
+Avoid:
+No full game shell, no inventory, no equipment, no map, no hotbar, no character portrait, no complex web dashboard, no ornate node graph, no huge skill icon cards, no sci-fi HUD, no neon cyberpunk, no glassmorphism, no glossy plastic, no anime/chibi, no watermark.

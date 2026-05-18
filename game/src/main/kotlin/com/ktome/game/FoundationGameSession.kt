@@ -220,9 +220,11 @@ import com.ktome.core.snapshot.ShopPanelSnapshot
 import com.ktome.core.snapshot.ShopSellEntrySnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
+import com.ktome.core.snapshot.TalentActiveSlotChoiceRequirementSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
 import com.ktome.core.snapshot.TalentNodeLockReasonSnapshot
 import com.ktome.core.snapshot.TalentNodeLockReasonTypeSnapshot
+import com.ktome.core.snapshot.TalentNodePrerequisiteSnapshot
 import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
@@ -277,6 +279,7 @@ import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaLevelRange
 import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
+import com.ktome.game.data.schema.TalentPrerequisiteSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
 import com.ktome.game.data.schema.TalentTreeSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
@@ -501,6 +504,7 @@ class FoundationGameSession internal constructor(
         val maxCooldown: Int,
         val requiresTarget: Boolean,
         val descriptionModel: DescriptionModel,
+        val nextRankDescriptionModel: DescriptionModel?,
         val nextBreakpointPreview: TalentBreakpointPreviewSnapshot?,
         val hasPendingAllocation: Boolean,
     )
@@ -513,6 +517,8 @@ class FoundationGameSession internal constructor(
         val progressionRequest: TalentProgressionRequest,
         val progressionContext: TalentProgressionEvaluationContext,
     )
+
+    private var validationTalentTreeActiveStateIds: Set<String> = emptySet()
 
     data class TalentChoiceRunSummary(
         val starterProfessionTalentCount: Int,
@@ -1744,6 +1750,17 @@ class FoundationGameSession internal constructor(
                 )
             }
 
+            is ValidationAction.GrantRaceTalentPoints -> {
+                val bank = world.get<RaceTalentPointBank>(playerId) ?: RaceTalentPointBank().also { bank ->
+                    world.add(playerId, bank)
+                }
+                bank.unspentPoints += action.amount
+                acceptValidationAction(
+                    "log.validation.recovery.grant_race_talent_points",
+                    literalArg("amount", action.amount),
+                )
+            }
+
             ValidationAction.SpawnEliteNearPlayer -> {
                 val spawned = spawnEliteMonsterNearPlayer()
                 if (spawned == null) {
@@ -1885,6 +1902,10 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr01TalentTreeStart()
                 "profession_tree_start_ready"
             }
+            "dark-uiux-pr04-profession-tree-ui" -> {
+                prepareDarkUiuxPr04TalentAssignReference()
+                "dark_uiux_pr04_reference_talent_assign_ready"
+            }
             "phase4-v4-pr02" -> {
                 preparePhase4V4Pr02PrimaryScene()
                 "inscription_shop_primary_ready"
@@ -1916,6 +1937,10 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr01ReserveChoiceTarget()
                 "profession_tree_reserve_choice_ready"
             }
+            "dark-uiux-pr04-profession-tree-ui" -> {
+                preparePhase4V4Pr01ReserveChoiceTarget()
+                "dark_uiux_pr04_active_slot_choice_ready"
+            }
             "phase4-v4-pr02" -> {
                 preparePhase4V4Pr02ReplacementScene()
                 "inscription_shop_replacement_ready"
@@ -1939,6 +1964,7 @@ class FoundationGameSession internal constructor(
         }
 
     private fun preparePhase4V4Pr01TalentTreeStart() {
+        clearValidationTalentTreePresentationOverrides()
         val experience = requireNotNull(world.get<Experience>(playerId))
         experience.level = maxOf(experience.level, 3)
         experience.unspentTalentPoints = maxOf(experience.unspentTalentPoints, 1)
@@ -1947,6 +1973,51 @@ class FoundationGameSession internal constructor(
         loadout.slotToTalentId.clear()
         setTalentDraft(null)
         syncPlayerStarterTalents()
+        invalidateRenderSnapshot()
+    }
+
+    private fun prepareDarkUiuxPr04TalentAssignReference() {
+        preparePhase4V4Pr01TalentTreeStart()
+        val experience = requireNotNull(world.get<Experience>(playerId))
+        experience.level = maxOf(experience.level, 4)
+        experience.unspentTalentPoints = 6
+        val raceBank = world.get<RaceTalentPointBank>(playerId) ?: RaceTalentPointBank().also { bank ->
+            world.add(playerId, bank)
+        }
+        raceBank.unspentPoints = 1
+
+        val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+        loadout.talentLevels.clear()
+        listOf(
+            "power_strike",
+            "charge",
+            "shield_bash",
+            "guard_stance",
+            "iron_wall",
+            "war_cry",
+            "intimidation",
+        ).forEach { talentId ->
+            loadout.talentLevels[talentId] = 1
+        }
+        loadout.slotToTalentId.clear()
+        listOf("power_strike", "charge", "shield_bash", "guard_stance").forEachIndexed { index, talentId ->
+            loadout.slotToTalentId[index + 1] = talentId
+        }
+        storeNormalizedTalentDraft(
+            loadout,
+            TalentAllocationDraft(
+                ownerType = TalentTreeOwnerType.PROFESSION,
+                treeOwnerId = "vanguard",
+                pendingRanks =
+                    linkedMapOf(
+                        "power_strike" to 2,
+                        "shield_bash" to 2,
+                        "war_cry" to 2,
+                    ),
+                previousPendingRanks = emptyMap(),
+            ),
+        )
+        validationTalentTreeActiveStateIds = setOf("war_cry", "intimidation")
         invalidateRenderSnapshot()
     }
 
@@ -1968,6 +2039,10 @@ class FoundationGameSession internal constructor(
             ),
         )
         invalidateRenderSnapshot()
+    }
+
+    private fun clearValidationTalentTreePresentationOverrides() {
+        validationTalentTreeActiveStateIds = emptySet()
     }
 
     private fun preparePhase4V4Pr02PrimaryScene() {
@@ -2984,8 +3059,15 @@ class FoundationGameSession internal constructor(
         }
 
     private fun reserveTalentIds(loadout: TalentLoadout): List<String> {
+        return orderedLearnedTalentIds(loadout).filterNot(activeTalentStateIds(loadout)::contains)
+    }
+
+    private fun activeTalentStateIds(loadout: TalentLoadout): Set<String> {
         val activeTalentIds = activeTalentMappings(loadout).mapTo(linkedSetOf()) { (_, talentId) -> talentId }
-        return orderedLearnedTalentIds(loadout).filterNot(activeTalentIds::contains)
+        validationTalentTreeActiveStateIds
+            .filter { talentId -> (loadout.talentLevels[talentId] ?: 0) > 0 && isActiveSlotTalent(talentId) }
+            .forEach(activeTalentIds::add)
+        return activeTalentIds
     }
 
     private fun orderedLearnedTalentIds(loadout: TalentLoadout): List<String> {
@@ -3030,6 +3112,18 @@ class FoundationGameSession internal constructor(
                     previewRank = descriptionLevel,
                 ),
             )
+        val nextRankDescriptionModel =
+            if (descriptionLevel < definition.maxLevel) {
+                DynamicDescriptionResolver.resolve(
+                    definition,
+                    com.ktome.core.talent.DescriptionContext(
+                        currentRank = committedLevel.coerceAtLeast(1),
+                        previewRank = (descriptionLevel + 1).coerceAtMost(definition.maxLevel),
+                    ),
+                )
+            } else {
+                null
+            }
         return TalentUiDetails(
             talentId = talentId,
             name = tr(definition.nameKey),
@@ -3046,6 +3140,7 @@ class FoundationGameSession internal constructor(
             maxCooldown = definition.cooldown,
             requiresTarget = effectiveRange > 0,
             descriptionModel = descriptionModel,
+            nextRankDescriptionModel = nextRankDescriptionModel,
             nextBreakpointPreview = DynamicDescriptionResolver.nextBreakpointPreview(definition, level)?.toSnapshot(),
             hasPendingAllocation = level != committedLevel,
         )
@@ -4612,13 +4707,46 @@ class FoundationGameSession internal constructor(
             .sortedWith(compareBy<Map.Entry<String, Int>> { entry -> talentTreeIdForTalent(entry.key) }.thenBy { entry -> entry.key })
             .map { entry -> entry.key }
 
+    private fun activeSlotChoiceRequiredTalentIds(
+        loadout: TalentLoadout,
+        beforeRanks: Map<String, Int>,
+        afterRanks: Map<String, Int>,
+    ): List<String> {
+        val newlyLearned = newlyLearnedActiveTalentIds(beforeRanks, afterRanks)
+        if (newlyLearned.isEmpty()) {
+            return emptyList()
+        }
+        val hasFreeSlot = (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).any { slot -> loadout.talentIdAt(slot) == null }
+        return if (hasFreeSlot) emptyList() else newlyLearned
+    }
+
     private fun requiresActiveSlotChoice(
         loadout: TalentLoadout,
         beforeRanks: Map<String, Int>,
         afterRanks: Map<String, Int>,
     ): Boolean =
-        newlyLearnedActiveTalentIds(beforeRanks, afterRanks).isNotEmpty() &&
-            (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).none { slot -> loadout.talentIdAt(slot) == null }
+        activeSlotChoiceRequiredTalentIds(loadout, beforeRanks, afterRanks).isNotEmpty()
+
+    private fun buildActiveTalentSlotChoiceRequirementSnapshot(): TalentActiveSlotChoiceRequirementSnapshot? {
+        val draft = talentDraft() ?: return null
+        val loadout = world.get<TalentLoadout>(playerId) ?: return null
+        if ((1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).any { slot -> loadout.talentIdAt(slot) == null }) {
+            return null
+        }
+        val beforeRanks = loadout.talentLevels.toMap(linkedMapOf())
+        val afterRanks = TalentAllocationPlanner.effectiveRanks(loadout.talentLevels, draft)
+        val candidateTalentId =
+            activeSlotChoiceRequiredTalentIds(
+                loadout = loadout,
+                beforeRanks = beforeRanks,
+                afterRanks = afterRanks,
+            ).firstOrNull() ?: return null
+        return TalentActiveSlotChoiceRequirementSnapshot(
+            candidateTalentId = candidateTalentId,
+            ownerType = draft.ownerType.name,
+            treeOwnerId = draft.treeOwnerId,
+        )
+    }
 
     private fun commitTalentDraft(
         commitMode: TalentDraftActiveSlotCommitMode,
@@ -4866,6 +4994,7 @@ class FoundationGameSession internal constructor(
             talents = buildTalentSnapshots(),
             reserveTalents = buildReserveTalentSnapshots(),
             talentTrees = buildTalentTreeSnapshots(),
+            activeTalentSlotChoiceRequirement = buildActiveTalentSlotChoiceRequirementSnapshot(),
             inscriptions = buildInscriptionSnapshots(),
             inventory = buildInventoryEntries(),
             recentRewards = buildRecentRewardSnapshots(),
@@ -5276,7 +5405,7 @@ class FoundationGameSession internal constructor(
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
         val effectiveRanks = effectiveTalentRanks(loadout)
-        val activeTalentIds = activeTalentMappings(loadout).mapTo(linkedSetOf()) { (_, talentId) -> talentId }
+        val activeTalentIds = activeTalentStateIds(loadout)
         val progressionRequest =
             TalentProgressionRequest(
                 schemaCatalog = content.schemaCatalog,
@@ -5308,7 +5437,7 @@ class FoundationGameSession internal constructor(
                 iconKey = tree.iconKey,
                 audioProfile = tree.audioProfile,
                 nodes =
-                    tree.nodes.mapNotNull { talentId ->
+                    talentTreePresentationOrder(tree, context.progressionContext.talentById).mapNotNull { talentId ->
                         buildTalentTreeNodeSnapshot(
                             tree = tree,
                             talentId = talentId,
@@ -5319,6 +5448,72 @@ class FoundationGameSession internal constructor(
         }
         recordTalentBreakpointPreviewExposure(snapshots)
         return snapshots
+    }
+
+    private fun talentTreePresentationOrder(
+        tree: TalentTreeSchemaV2,
+        talentById: Map<String, TalentSchemaV2>,
+    ): List<String> {
+        val nodeIds = tree.nodes.toSet()
+        val schemaOrder = tree.nodes.withIndex().associate { (index, talentId) -> talentId to index }
+        val parentById =
+            tree.nodes.mapNotNull { talentId ->
+                val parent =
+                    talentById[talentId]
+                        ?.requirements
+                        ?.talentPrereqs
+                        .orEmpty()
+                        .filter { prerequisite -> prerequisite.talentId in nodeIds }
+                        .maxWithOrNull(
+                            compareBy<TalentPrerequisiteSchemaV2> { prerequisite -> presentationDepth(prerequisite.talentId, talentById, nodeIds) }
+                                .thenBy { prerequisite -> schemaOrder[prerequisite.talentId] ?: Int.MAX_VALUE },
+                        )
+                parent?.let { talentId to it.talentId }
+            }.toMap()
+        val childrenByParent =
+            parentById.entries
+                .groupBy({ entry -> entry.value }, { entry -> entry.key })
+                .mapValues { (_, children) -> children.sortedBy { childId -> schemaOrder[childId] ?: Int.MAX_VALUE } }
+        val ordered = mutableListOf<String>()
+        val visited = mutableSetOf<String>()
+
+        fun visit(talentId: String) {
+            if (!visited.add(talentId)) {
+                return
+            }
+            ordered += talentId
+            childrenByParent[talentId].orEmpty().forEach(::visit)
+        }
+
+        tree.nodes
+            .filter { talentId -> talentId !in parentById }
+            .forEach(::visit)
+        tree.nodes
+            .filterNot(visited::contains)
+            .forEach(::visit)
+        return ordered
+    }
+
+    private fun presentationDepth(
+        talentId: String,
+        talentById: Map<String, TalentSchemaV2>,
+        nodeIds: Set<String>,
+    ): Int {
+        var depth = 0
+        val seen = mutableSetOf<String>()
+        var currentId = talentId
+        while (seen.add(currentId)) {
+            val parent =
+                talentById[currentId]
+                    ?.requirements
+                    ?.talentPrereqs
+                    .orEmpty()
+                    .firstOrNull { prerequisite -> prerequisite.talentId in nodeIds }
+                    ?: break
+            depth += 1
+            currentId = parent.talentId
+        }
+        return depth
     }
 
     private fun recordTalentBreakpointPreviewExposure(snapshots: List<TalentTreeSnapshot>) {
@@ -5383,7 +5578,7 @@ class FoundationGameSession internal constructor(
             rank = rank,
             committedRank = committedRank,
             maxRank = details.maxLevel,
-            unlockLevel = schema.unlockLevel,
+            unlockLevel = TalentProgression.requiredUnlockLevel(tree, schema),
             resourceCost = schema.resourceCosts.firstOrNull { cost -> cost.axis == resourceTypeId }?.amount ?: details.resourceCost,
             resourceLabelKey = resourceLabelKey(resourceTypeId),
             resourceTypeId = resourceTypeId,
@@ -5393,10 +5588,28 @@ class FoundationGameSession internal constructor(
             maxCooldown = details.maxCooldown,
             requiresTarget = details.requiresTarget,
             descriptionModel = details.descriptionModel.toSnapshot(),
+            nextRankDescriptionModel = details.nextRankDescriptionModel?.toSnapshot(),
             nextBreakpointPreview = details.nextBreakpointPreview,
+            prerequisites = schema.requirements.talentPrereqs.map { prerequisite -> toTalentNodePrerequisiteSnapshot(prerequisite, context) },
             lockReasons = lockReasons.map(::toTalentNodeLockReasonSnapshot),
             isMaxRank = rank >= details.maxLevel,
             hasPendingAllocation = details.hasPendingAllocation,
+        )
+    }
+
+    private fun toTalentNodePrerequisiteSnapshot(
+        prerequisite: TalentPrerequisiteSchemaV2,
+        context: TalentTreeSnapshotBuildContext,
+    ): TalentNodePrerequisiteSnapshot {
+        val currentRank = context.effectiveRanks[prerequisite.talentId] ?: 0
+        return TalentNodePrerequisiteSnapshot(
+            talentId = prerequisite.talentId,
+            talentNameKey = talentNameKey(prerequisite.talentId),
+            treeId = context.progressionContext.talentById[prerequisite.talentId]?.treeId,
+            requiredRank = prerequisite.minRank,
+            requiredMaxRank = context.progressionContext.talentById[prerequisite.talentId]?.maxPoints,
+            currentRank = currentRank,
+            satisfied = currentRank >= prerequisite.minRank,
         )
     }
 

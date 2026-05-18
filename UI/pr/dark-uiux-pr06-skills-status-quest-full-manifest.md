@@ -6,6 +6,15 @@
 **前置条件**: PR-02-1 / PR-02-2 owner evidence、PR-03、PR-04、PR-05 完成。
 **资源生成结论**: 生成 Round 8-9 与返修资源，完成玩家可见 manifest 收口。
 
+## Open Design 辅助参考
+
+开发 PR06 时可在完成本 PR 预检后读取以下辅助设计输入：
+
+1. [K-ToME Dark UI Design Reference For Open Design](../review/open-design/ktome-dark-ui-design.md)：统一 color roles、spacing、component states 与 anti-pattern 语言。
+2. [Dark UI/UX PR06 Skills Status Quest Manifest Design Notes](../review/open-design/dark-uiux-pr06-skills-status-quest-manifest-design.md)：辅助 status + skill + talent/tree + quest marker + fallback/missing/debug + validation warning 的同屏统一样张、icon taxonomy、state badge、contact-sheet QA 和 coverage-green-but-visual-inconsistent 风险检查。
+
+这些文档只用于设计理解、review、prompt 草案和 contact-sheet QA 讨论，不能覆盖本 PR 的 final-full close gate、expected inventory、sheet-plan、manifest、coverage、golden/manual evidence、fallback resolver 或 validation overlay 实现合同。
+
 ## 0. 开发治理与验收矩阵
 
 本 PR 继承 [development-governance.md](./development-governance.md)，并承担 dark manifest final-full 主体收口。执行前先跑 `acceptanceContractLint`，再跑 resource gate、status / quest / talent focused tests、final coverage 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。

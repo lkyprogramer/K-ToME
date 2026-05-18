@@ -6,6 +6,15 @@
 **前置条件**: PR-06 完成。
 **资源生成结论**: 不新增大批量资源，只允许修复 rejected cell 或明显破坏一致性的单点资源。
 
+## Open Design 辅助参考
+
+开发 PR07 时可在完成本 PR 预检后读取以下辅助设计输入：
+
+1. [K-ToME Dark UI Design Reference For Open Design](../review/open-design/ktome-dark-ui-design.md)：统一 color roles、spacing、component states 与 anti-pattern 语言。
+2. [Dark UI/UX PR07 Golden Whitebox Polish Design Review Notes](../review/open-design/dark-uiux-pr07-golden-whitebox-polish-design-review.md)：辅助最终设计审查，覆盖 hierarchy、detail、functionality、consistency、AI-slop signals、screen coverage evidence index 和 packaged-vs-debug parity critique。
+
+这些文档只用于 merge 前设计质量审查，不能覆盖本 PR 的 `goldenScreenshot`、`clientSmoke`、final-full coverage、packaged app 白盒、manual records、screen coverage matrix 或 `verifyChanged`。
+
 ## 0. 开发治理与验收矩阵
 
 本 PR 继承 [development-governance.md](./development-governance.md)，是 dark UI/UX 的最终 golden / packaged app 白盒收口。执行前先跑 `acceptanceContractLint`，再跑 final coverage、client evidence、packaged app 白盒和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。

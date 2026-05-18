@@ -304,7 +304,7 @@ internal object UiDesignTokens {
             ui = 20,
             body = 16,
             caption = 14,
-            title = 26,
+            title = 32,
         )
 
     val alpha: UiAlphaTokens =

@@ -6,6 +6,8 @@ import com.ktome.client.render.layout.GameShellBounds
 import com.ktome.client.render.layout.ModalSafeBounds
 import com.ktome.client.render.layout.RectInt
 import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.talent.TalentAssignPanelLayoutSolver
+import com.ktome.client.ui.talent.TalentAssignPanelModalBoundsRequest
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.map.Point
 import kotlin.math.roundToInt
@@ -179,9 +181,11 @@ internal data class TileModalBackdropModel(
 internal data class TileModalModel(
     val frameKind: ModalFrameKind,
     val bounds: RectInt,
+    val visualBounds: RectInt? = null,
     val titleLine: TileTextLine,
     val bodyLines: List<TileTextLine>,
     val footerHintLines: List<TileTextLine>,
+    val talentAssignPanel: TileTalentAssignPanelRenderModel? = null,
 )
 
 internal data class TileToastModel(
@@ -208,6 +212,7 @@ internal data class TileOverlayModelRequest(
     val projection: TileViewportFocusProjectionResult,
     val anchorResolver: TileOverlayAnchorResolver,
     val shellContentBounds: GameShellBounds,
+    val viewportBounds: GameShellBounds = shellContentBounds,
     val modalSafeBounds: ModalSafeBounds,
     val bottomLogReservedBounds: GameShellBounds,
     val explicitModalTooltip: TileTooltipModel? = null,
@@ -218,10 +223,16 @@ internal object TileOverlayModelBuilder {
         val topModal = request.overlayState.modalFrames.lastOrNull()
         val activeModal =
             topModal?.let { frame ->
-                val bounds = modalBounds(request.modalSafeBounds)
+                val bounds = modalBounds(frame.kind, request)
                 TileModalModel(
                     frameKind = frame.kind,
                     bounds = bounds,
+                    visualBounds =
+                        if (frame.kind == ModalFrameKind.TALENT_ASSIGN || frame.kind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE) {
+                            talentAssignVisualBounds(request)
+                        } else {
+                            null
+                        },
                     titleLine = TileTextLine(modalTitle(frame.kind), TileTextTone.GOLD),
                     bodyLines =
                         request.renderModel.sidebar.rows
@@ -231,6 +242,9 @@ internal object TileOverlayModelBuilder {
                         request.renderModel.shell.footerHints
                             .take(2)
                             .map { row -> TileTextLine(row.text, row.tone) },
+                    talentAssignPanel =
+                        request.renderModel.talentAssignPanel
+                            ?.takeIf { frame.kind == ModalFrameKind.TALENT_ASSIGN || frame.kind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE },
                 )
             }
         val passiveTooltip = passiveTooltip(request)
@@ -338,7 +352,19 @@ internal object TileOverlayModelBuilder {
             TileViewportFocusMode.PLAYER -> TileTooltipSource.FOCUSED_ENTITY
         }
 
-    private fun modalBounds(modalSafeBounds: ModalSafeBounds): RectInt {
+    private fun modalBounds(
+        kind: ModalFrameKind,
+        request: TileOverlayModelRequest,
+    ): RectInt =
+        when (kind) {
+            ModalFrameKind.TALENT_ASSIGN,
+            ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE,
+            -> talentAssignModalBounds(request)
+
+            else -> defaultModalBounds(request.modalSafeBounds)
+        }
+
+    private fun defaultModalBounds(modalSafeBounds: ModalSafeBounds): RectInt {
         val padding = UiDesignTokens.fixed.modalPadding.roundToInt()
         val width = minOf(UiDesignTokens.fixed.modalMaxWidthCap.roundToInt(), modalSafeBounds.width - padding * 2).coerceAtLeast(160)
         val height = (modalSafeBounds.height - padding * 2).coerceIn(120, 420)
@@ -347,6 +373,35 @@ internal object TileOverlayModelBuilder {
             y = modalSafeBounds.bottom + (modalSafeBounds.height - height) / 2,
             width = width,
             height = height,
+        )
+    }
+
+    private fun talentAssignModalBounds(request: TileOverlayModelRequest): RectInt {
+        val bounds =
+            TalentAssignPanelLayoutSolver.modalBounds(
+                TalentAssignPanelModalBoundsRequest(
+                    viewportWidth = request.shellContentBounds.right,
+                    viewportHeight = request.shellContentBounds.top,
+                ),
+            )
+        return RectInt(
+            x = bounds.x.roundToInt(),
+            y = bounds.y.roundToInt(),
+            width = bounds.width.roundToInt(),
+            height = bounds.height.roundToInt(),
+        )
+    }
+
+    private fun talentAssignVisualBounds(request: TileOverlayModelRequest): RectInt {
+        val viewportRight = request.viewportBounds.right.roundToInt()
+        val viewportTop = request.viewportBounds.top.roundToInt()
+        val horizontalPadding = 0
+        val verticalPadding = 0
+        return RectInt(
+            x = horizontalPadding,
+            y = verticalPadding,
+            width = (viewportRight - horizontalPadding * 2).coerceAtLeast(720),
+            height = (viewportTop - verticalPadding * 2).coerceAtLeast(520),
         )
     }
 

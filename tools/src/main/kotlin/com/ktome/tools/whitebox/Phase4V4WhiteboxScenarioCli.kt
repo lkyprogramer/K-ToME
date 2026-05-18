@@ -303,7 +303,7 @@ object Phase4V4WhiteboxScenarioCli {
         |
         |## Evidence
         |
-        |${scenario.evidence.requiredEvidenceFiles.joinToString("\n") { file -> "- `$file`" }}
+        |${scenario.evidence.allRequiredEvidenceFiles.joinToString("\n") { file -> "- `$file`" }}
         |
         |## Notes
         |
@@ -351,6 +351,7 @@ object Phase4V4WhiteboxScenarioCli {
                     "runtimeHome" to JsonPrimitive(repoRelative(repoRoot, paths.runtimeHome)),
                     "evidenceDir" to JsonPrimitive(repoRelative(repoRoot, paths.evidenceDir)),
                     "requiredLogEventKeys" to JsonArray(scenario.evidence.requiredLogEventKeys.map(::JsonPrimitive)),
+                    "externalEvidence" to JsonArray(scenario.evidence.requiredExternalEvidenceFiles.map(::JsonPrimitive)),
                     "evidence" to JsonArray(evidenceItems),
                 ),
             )

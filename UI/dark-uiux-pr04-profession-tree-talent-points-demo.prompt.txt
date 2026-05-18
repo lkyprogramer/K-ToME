@@ -1,0 +1,38 @@
+Prompt ID: demo-dark-uiux-pr04-profession-tree-talent-points
+Expected output file: UI/dark-uiux-pr04-profession-tree-talent-points-demo.png
+Canvas: 1672x941
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create one full-screen K-ToME UI demo mockup at 1672x941 for later profession tree development reference.
+Use case: ui-mockup.
+Asset type: one-off design reference image, not a sprite sheet, not a manifest asset.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+
+Visual direction:
+Dark fantasy roguelike tactical UI, charcoal black panels, forged iron, worn stone, weathered brass, old leather, ember-gold section titles, small restrained cyan focus edges, faint torchlit dungeon grit. Match the current K-ToME demo direction: left icon rail, dominant dark central stage, dense right-side information area, bottom hero/action/log deck, thin black-iron borders, stone texture, minimal high-saturation glow.
+
+Primary screen:
+The player has opened the profession tree / talent allocation UI from the book icon in the left navigation rail. The main map stage is dimmed behind a large dark iron profession-tree panel, still preserving the same K-ToME shell composition.
+
+Layout:
+- macOS-style window frame with title K-ToME at the top.
+- Left vertical navigation rail with five icon buttons; the book/talent icon is selected with a small cyan focus edge.
+- Center-left large profession tree panel titled "职业树" with a compact header showing "先锋", "职业点 3", "种族点 1".
+- Inside the tree panel, show three stacked tree sections like Arms / Shield / Warcry, but rendered with short Chinese labels and dark fantasy iconography. Each section has 5-6 node rows, visible connector strokes, rank chips, and compact state glyphs.
+- State language must be visually clear:
+  locked nodes are muted gray with iron lock glyphs;
+  learnable nodes are cyan edged with a plus/rune glyph;
+  learned reserve nodes are ember-gold;
+  learned active nodes are stamina green;
+  selected row has a thin cyan focus ring without changing its state color.
+- Center-right preview pane for the selected talent: large icon, rank before/after chip, cost "消耗 1 点", lock reason lines, breakpoint preview, and a compact action block.
+- Below the preview pane, draw an active slot strip with four numbered slots, two filled, one empty, one pending replacement highlight. Include reserve affordance as a small ember-gold plate.
+- Add a small modal overlay in the upper right of the profession tree panel showing active slot choice: four slot options, reserve option, Esc cancel. It should look like the same dark modal chrome used by the rest of the UI.
+- Right side of the app shell may keep a compact equipment/backpack/status scaffold in the same style, dimmer than the active profession tree panel.
+- Bottom HUD remains visible: hero crest, health/stamina bars, four action cards, and a short cyan/amber log area. It must not fight with the profession tree panel.
+
+Text guidance:
+Use sparse, crisp UI text only. Prefer short Chinese labels such as "职业树", "先锋", "职业点", "可学习", "锁定", "已激活", "预留", "替换槽位", "消耗 1 点". Avoid long paragraphs. Do not render marketing copy.
+
+Composition and readability:
+Dense but organized, game UI reference quality, readable hierarchy at full resolution. No landing page, no modern web dashboard, no glossy plastic, no sci-fi HUD, no neon cyberpunk, no anime/chibi, no bright glassmorphism, no giant hero typography, no blurred stock-photo background, no watermark.

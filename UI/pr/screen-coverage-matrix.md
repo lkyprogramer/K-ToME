@@ -39,7 +39,7 @@
 | 背包 grid | inventory snapshot / renderer | 空态、满格、quality、tooltip、scroll/overflow 策略；stack count / disabled 只有在 typed snapshot 或 presentation field 存在时才作为 blocking 状态 | PR-03 + PR-07 | `dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked` |
 | 铭文商店 / Shop buy-sell | `UiMode.SHOP`、`ShopPanelSnapshot`、`ShopOfferSnapshot`、`DescriptionPresenter.presentShopItemLines` | shop header、buy/sell 双列、offer card、price/affordability、inscription tag、购买失败/金币不足反馈、空商店、tooltip；pre-rendered disabled reason 仅在 typed source 存在时要求 | PR-03 + PR-07 | `dark-uiux-pr03-inscription-shop`；`InputHandlerTest` shop cases；`DescriptionPresenterTest` shop item lines；manual record |
 | 铭文满槽替换 modal | `inscriptionReplacementPrompt`、`ShopFocus`、`PlayerCommand.BuyShopOffer` replacement hotkey | 满槽提示、候选槽位、`5-8`/取消、购买前确认、不会吞金币/碎片、焦点和返回路径 | PR-03 + PR-07 | `dark-uiux-pr03-shop-full-slot-replace`；`InputHandlerTest` replacement prompt cases；manual record |
-| 职业树侧栏 | `TalentSidebarPresenter`、`TalentTreeNodeSnapshot` | 三树、四态、节点连线、预览、locked/learnable/reserve/active、active slot strip、长描述截断、最小窗口不遮挡最新日志反馈 | PR-04 + PR-06 + PR-07 | `dark-uiux-pr04-talent-sidebar-start`、`dark-uiux-pr04-talent-sidebar-min-window-log-visible`、`dark-uiux-pr06-talent-icon-rebaseline` |
+| 天赋分配面板 | `TalentSidebarPresenter`、`TalentTreeNodeSnapshot`、`TalentAssignPanelModel` | 唯一参考图 `UI/dark-uiux-pr04-talent-assign-tree-icons-detail-reference.png`；三系树状列表、四态 marker、PR04 reference-crop 技能图标、前置 connector、当前等级详情、下一等级预览、PASSIVE 当前/下级收益、PASSIVE action suppression、active slot modal、长描述截断、最小窗口不遮挡最新日志反馈 | PR-04 + PR-04-01 + PR-06 + PR-07 | `dark-uiux-pr04-talent-assign-panel-start`、`dark-uiux-pr04-talent-assign-min-window-log-visible`、`dark-uiux-pr04-right-companion-coexistence`、`dark-uiux-pr04-01-static-passive-detail`、`dark-uiux-pr04-01-trigger-passive-detail`、`dark-uiux-pr04-01-passive-action-suppression`、`dark-uiux-pr06-talent-icon-rebaseline` |
 | 主动槽选择 modal | `ACTIVE_TALENT_SLOT_CHOICE`、`InputHandler` | `1-4` 替换、`R` reserve、`Esc` 取消、数字键边界、modal chrome、焦点态、四槽 replacement strip 与 reserve hint | PR-04 + PR-07 | `dark-uiux-pr04-active-slot-choice`；`InputHandlerTest` |
 | 技能 / 状态 / 任务面板 | status/quest/skill presentation models | skill icon、status icon、duration/stack、quest marker、manifest fallback / missing visual、tooltip/readability | PR-06 + PR-07 | `dark-uiux-pr06-status-quest-skill-overview`；`StatusPresentationModelTest`、`StatusIconResolverTest` |
 | 战斗选择 / 行动提示 | `CombatDecisionPanel`、`ActionHintModel`、frontstage cue | action/method/target、locked/invalid、资源不足、free-cursor targeting、telegraph linkage | PR-02 + PR-05 + PR-06 + PR-07 | combat focused tests；`dark-uiux-pr07-combat-decision` manual/golden |
@@ -74,9 +74,13 @@
 | `dark-uiux-pr03-inventory-stacked` | PR-03 | 重复物品/未来 stack count anchor、quality；真实数量 badge 依赖 typed field |
 | `dark-uiux-pr03-inscription-shop` | PR-03 | shop buy/sell、铭文 offer、价格/禁用态 |
 | `dark-uiux-pr03-shop-full-slot-replace` | PR-03 | 铭文满槽替换 modal |
-| `dark-uiux-pr04-talent-sidebar-start` | PR-04 | 职业树初始态 |
+| `dark-uiux-pr04-talent-assign-panel-start` | PR-04 | 天赋分配面板初始态，按唯一参考图验证 title、点数、树状列表、技能图标、右侧当前等级详情和底部 legend |
 | `dark-uiux-pr04-active-slot-choice` | PR-04 | 主动槽 modal、四槽 replacement strip、reserve hint |
-| `dark-uiux-pr04-talent-sidebar-min-window-log-visible` | PR-04 | 最小窗口下职业树侧栏不遮挡底部最新关键日志反馈 |
+| `dark-uiux-pr04-talent-assign-min-window-log-visible` | PR-04 | 最小窗口下天赋分配面板不遮挡底部最新关键日志反馈 |
+| `dark-uiux-pr04-right-companion-coexistence` | PR-04 | 天赋分配面板不覆盖 PR-03 right companion equipment / inventory / status 区 |
+| `dark-uiux-pr04-01-static-passive-detail` | PR-04-01 | PASSIVE Task A 当前等级静态属性收益和下一级增量 |
+| `dark-uiux-pr04-01-trigger-passive-detail` | PR-04-01 | PASSIVE Task B trigger/resource 收益和下一级增量 |
+| `dark-uiux-pr04-01-passive-action-suppression` | PR-04-01 | 条件被动详情和下一级增量可读；PASSIVE 选中态按 `R` 不发出 reserve / slot command 且不打开 active slot modal |
 | `dark-uiux-pr05-map-layer-stack` | PR-05 | 地图层级、prop、actor |
 | `dark-uiux-pr05-actor-boss-telegraph` | PR-05 | boss/telegraph 遮挡与可读性 |
 | `dark-uiux-pr06-status-quest-skill-overview` | PR-06 | 状态、任务、技能 icon/readability |

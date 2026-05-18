@@ -29,6 +29,11 @@ internal object Phase4V4WhiteboxScenarioMaterializationCatalog {
                 windowHeight = 800,
             ),
             Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-profession-tree-ui"),
+                windowWidth = 1280,
+                windowHeight = 840,
+            ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
                 id = ValidationScenarioId("phase4-v4-pr02"),
                 windowWidth = 1280,
                 windowHeight = 800,

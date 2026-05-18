@@ -8846,6 +8846,424 @@
         "shop",
         "alias"
       ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.power_strike.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_power_strike_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.sweeping_strike.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_sweeping_strike_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.sweeping_strike.hero",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_sweeping_strike_hero.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop",
+        "hero"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.linebreaker.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_linebreaker_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.earthshaker.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_earthshaker_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.charge.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_charge_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.sunder_armor.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_sunder_armor_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.shield_bash.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_shield_bash_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.taunt.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_taunt_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.guard_stance.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_guard_stance_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.iron_wall.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_iron_wall_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.bulwark_march.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_bulwark_march_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.war_cry.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_war_cry_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.rallying_banner.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_rallying_banner_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.battlefield_command.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_battlefield_command_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.intimidation.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_intimidation_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent.vanguard.unyielding.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_unyielding_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.top_edge",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_top_edge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.surface_texture",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_surface_texture.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "texture",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.bottom_edge",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_bottom_edge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.left_edge",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_left_edge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.right_edge",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_right_edge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.corner_top_left",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_corner_top_left.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.corner_top_right",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_corner_top_right.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.corner_bottom_left",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_corner_bottom_left.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
+    },
+    {
+      "key": "dark.uiux.pr04.talent_assign.chrome.corner_bottom_right",
+      "category": "ui_frame",
+      "rawOutputPath": "phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_corner_bottom_right.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     }
   ],
   "prefixRules": [
