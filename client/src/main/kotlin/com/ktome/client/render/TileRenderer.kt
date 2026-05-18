@@ -1,5 +1,6 @@
 package com.ktome.client.render
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
@@ -27,6 +28,22 @@ import com.ktome.client.ui.chrome.ChromeFramePainter
 import com.ktome.client.ui.chrome.ChromeFrameRectDraw
 import com.ktome.client.ui.chrome.ChromeSurfaceKind
 import com.ktome.client.ui.layout.PaneFocusAnchor
+import com.ktome.client.ui.talent.ActiveSlotChoiceModalItem
+import com.ktome.client.ui.talent.ActiveSlotChoiceModalItemKind
+import com.ktome.client.ui.talent.TalentAssignFooterHintModel
+import com.ktome.client.ui.talent.TalentAssignListViewportModel
+import com.ktome.client.ui.talent.TalentAssignListViewportRequest
+import com.ktome.client.ui.talent.TalentAssignPanelModel
+import com.ktome.client.ui.talent.TalentAssignPanelLayoutRequest
+import com.ktome.client.ui.talent.TalentAssignPanelLayoutSolver
+import com.ktome.client.ui.talent.TalentAssignSectionModel
+import com.ktome.client.ui.talent.TalentAssignTreeRowModel
+import com.ktome.client.ui.talent.TalentDetailBlock
+import com.ktome.client.ui.talent.TalentDetailBlockKind
+import com.ktome.client.ui.talent.TalentLegendItemKind
+import com.ktome.client.ui.talent.TalentPreviewToneToken
+import com.ktome.client.ui.talent.TalentTreeNodeToneToken
+import com.ktome.client.ui.talent.toTalentTreeSelectionIdentity
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.RenderSnapshot
@@ -34,6 +51,7 @@ import com.ktome.game.i18n.Localizer
 import kotlin.math.roundToInt
 
 internal enum class TileTextStyle {
+    TITLE,
     UI,
     SMALL,
 }
@@ -288,6 +306,7 @@ class TileRenderer(
 ) : Disposable {
     private val uiFont = KtomeFonts.createUiFont(size = UiDesignTokens.typography.ui)
     private val smallFont = KtomeFonts.createUiFont(size = UiDesignTokens.typography.body)
+    private val titleFont = KtomeFonts.createUiFont(size = UiDesignTokens.typography.title)
     private val whitePixel = solidTexture()
     private var viewportState: TileMapViewportState? = null
 
@@ -306,10 +325,13 @@ class TileRenderer(
             cellWidth = cellWidth,
             cellHeight = cellHeight,
             previousViewportState = viewportState,
+            shellWorldWidth = Companion.worldWidth(snapshot, cellWidth, cellHeight),
+            shellWorldHeight = Companion.worldHeight(snapshot, cellWidth, cellHeight),
         ).viewport.state
     }
 
     override fun dispose() {
+        titleFont.dispose()
         uiFont.dispose()
         smallFont.dispose()
         whitePixel.dispose()
@@ -341,7 +363,12 @@ class TileRenderer(
         }
 
         override fun drawText(draw: TileTextDraw) {
-            val font = if (draw.style == TileTextStyle.UI) uiFont else smallFont
+            val font =
+                when (draw.style) {
+                    TileTextStyle.TITLE -> titleFont
+                    TileTextStyle.UI -> uiFont
+                    TileTextStyle.SMALL -> smallFont
+                }
             font.color = draw.color
             font.draw(batch, draw.text, draw.position.x, draw.position.y)
             hasPendingDraw = true
@@ -373,6 +400,7 @@ class TileRenderer(
         private const val SHELL_PANEL_TITLE_OFFSET = 26f
         private const val SHELL_PANEL_ROW_HEIGHT = 21f
         private const val SHELL_SMALL_LINE_HEIGHT = 19f
+        private val TALENT_ASSIGN_BODY_STYLE = TileTextStyle.SMALL
 
         internal fun buildRenderModel(
             localizer: Localizer,
@@ -452,6 +480,7 @@ class TileRenderer(
                         projection = projection,
                         anchorResolver = FrameTileOverlayAnchorResolver(viewport),
                         shellContentBounds = layout.shell.shellContentBounds,
+                        viewportBounds = gameBounds(0f, 0f, layout.worldWidth, layout.worldHeight),
                         modalSafeBounds = layout.shell.modalSafeBounds,
                         bottomLogReservedBounds = layout.shell.bottomLogReservedBounds,
                     ),
@@ -666,7 +695,15 @@ class TileRenderer(
             snapshot: RenderSnapshot,
             cellWidth: Float = 32f,
             cellHeight: Float = 32f,
-        ): Float = UiDesignTokens.fixed.shellPreferredWorldHeight
+        ): Float {
+            val preferredWidth = UiDesignTokens.fixed.shellPreferredWorldWidth
+            val preferredHeight = UiDesignTokens.fixed.shellPreferredWorldHeight
+            val graphics = Gdx.graphics ?: return preferredHeight
+            val screenWidth = graphics.width.takeIf { width -> width > 0 } ?: return preferredHeight
+            val screenHeight = graphics.height.takeIf { height -> height > 0 } ?: return preferredHeight
+            val aspectMatchedHeight = preferredWidth * screenHeight.toFloat() / screenWidth.toFloat()
+            return maxOf(preferredHeight, aspectMatchedHeight)
+        }
 
         internal fun sidebarTitle(
             localizer: Localizer,
@@ -820,6 +857,10 @@ class TileRenderer(
             modal: TileModalModel,
             chromeAssets: TileChromeAssets?,
         ) {
+            modal.talentAssignPanel?.let { panel ->
+                drawTalentAssignModal(canvas, modal, panel, chromeAssets)
+                return
+            }
             val bounds = modal.bounds
             canvas.drawRect(
                 tileBounds(bounds.x.toFloat(), bounds.y.toFloat(), bounds.width.toFloat(), bounds.height.toFloat()),
@@ -848,6 +889,648 @@ class TileRenderer(
                 canvas.drawText(TileTextStyle.SMALL, fitted, tilePosition(content.x, content.y + 12f + index * 22f), tone(line.tone))
             }
         }
+
+        private fun drawTalentAssignModal(
+            canvas: TileCanvas,
+            modal: TileModalModel,
+            renderModel: TileTalentAssignPanelRenderModel,
+            chromeAssets: TileChromeAssets?,
+        ) {
+            val bounds = modal.bounds
+            val visualBounds = modal.visualBounds ?: bounds
+            val panel = renderModel.panel
+            canvas.drawRect(
+                tileBounds(
+                    visualBounds.x.toFloat(),
+                    visualBounds.y.toFloat(),
+                    visualBounds.width.toFloat(),
+                    visualBounds.height.toFloat(),
+                ),
+                talentAssignPanelFill(),
+            )
+            chromeAssets?.let { chrome ->
+                drawChromeFrame(
+                    canvas = canvas,
+                    assets = chrome.frameAssets.copy(body = chrome.modalBody),
+                    bounds =
+                        gameBounds(
+                            visualBounds.x.toFloat(),
+                            visualBounds.y.toFloat(),
+                            visualBounds.width.toFloat(),
+                            visualBounds.height.toFloat(),
+                        ),
+                    fillColor = talentAssignPanelFill(),
+                    borderColor = talentAssignFrameGold(),
+                    alpha = 0.92f,
+                )
+            }
+            val layout =
+                TalentAssignPanelLayoutSolver.resolve(
+                    TalentAssignPanelLayoutRequest(
+                        ChromeFrameBounds(
+                            x = bounds.x.toFloat(),
+                            y = bounds.y.toFloat(),
+                            width = bounds.width.toFloat(),
+                            height = bounds.height.toFloat(),
+                        ),
+                    ),
+                )
+            val content = layout.modal.contentBounds.toGameShellBounds()
+            drawContentScrim(canvas, content, alpha = 0.93f)
+            drawTalentAssignReferenceChrome(
+                canvas = canvas,
+                bounds =
+                    gameBounds(
+                        visualBounds.x.toFloat(),
+                        visualBounds.y.toFloat(),
+                        visualBounds.width.toFloat(),
+                        visualBounds.height.toFloat(),
+                    ),
+                content = content,
+                referenceChromeAssets = renderModel.referenceChromeAssets,
+            )
+
+            canvas.drawText(
+                TileTextStyle.TITLE,
+                panel.header.title,
+                tilePosition(layout.header.textX, layout.header.titleBaseline),
+                talentAssignEmberGold(),
+            )
+            val pointLine = listOfNotNull(panel.header.professionPointText, panel.header.racePointText).joinToString("     ")
+            drawFittedText(
+                canvas,
+                pointLine,
+                layout.header.textX,
+                layout.header.pointsBaseline,
+                layout.header.pointsWidth,
+                TileTextStyle.UI,
+                talentAssignBodyText(),
+            )
+
+            val hasReferenceSurface = renderModel.referenceChromeAssets.containsKey(TileTalentAssignReferenceChromeSlot.SURFACE_TEXTURE)
+            val leftBodyAlpha = if (hasReferenceSurface) 0.66f else 0.58f
+            val rightBodyAlpha = if (hasReferenceSurface) 0.12f else 0.52f
+            canvas.drawRect(layout.body.list.bounds.toTileBounds(), color("050607", leftBodyAlpha))
+            canvas.drawRect(layout.body.right.columnBounds.toTileBounds(), color("050607", rightBodyAlpha))
+            if (hasReferenceSurface) {
+                canvas.drawRect(tileBounds(content.x, content.y, content.width, 34f), color("3B322A", 0.12f))
+            }
+            val listEntries = talentAssignListEntries(panel)
+            val listViewport = talentAssignListViewport(listEntries, layout.body.list.visibleSlots)
+            drawTalentAssignScrollBar(
+                canvas = canvas,
+                x = layout.body.scrollbar.bounds.x,
+                top = layout.body.scrollbar.bounds.top,
+                bottom = layout.body.scrollbar.bounds.y,
+                viewport = listViewport,
+            )
+            canvas.drawRect(tileBounds(layout.body.dividerX, layout.body.list.bounds.y, 1f, layout.body.list.bounds.height), color("4E3D29", 0.62f))
+
+            drawTalentAssignList(
+                canvas = canvas,
+                renderModel = renderModel,
+                entries = listEntries,
+                viewport = listViewport,
+                x = layout.body.list.bounds.x,
+                top = layout.body.list.bounds.top,
+                width = layout.body.list.bounds.width,
+                bottom = layout.body.list.bounds.y,
+            )
+            drawTalentAssignDetail(
+                canvas = canvas,
+                renderModel = renderModel,
+                x = layout.body.right.detailBounds.x,
+                top = layout.body.right.detailBounds.top,
+                width = layout.body.right.detailBounds.width,
+                bottom = layout.body.right.detailBounds.y,
+            )
+            drawTalentAssignFooter(canvas, renderModel, layout.footer.bounds.x, layout.footer.baseline, layout.footer.bounds.width)
+            panel.activeSlotChoiceModal?.let {
+                drawActiveSlotChoiceModal(
+                    canvas = canvas,
+                    renderModel = renderModel,
+                    x = layout.body.right.activeSlotChoiceBounds.x,
+                    y = layout.body.right.activeSlotChoiceBounds.y,
+                    width = layout.body.right.activeSlotChoiceBounds.width,
+                )
+            }
+        }
+
+        private fun drawTalentAssignReferenceChrome(
+            canvas: TileCanvas,
+            bounds: GameShellBounds,
+            content: GameShellBounds,
+            referenceChromeAssets: Map<TileTalentAssignReferenceChromeSlot, ResolvedVisualAsset>,
+        ) {
+            val hasReferenceChrome =
+                TileTalentAssignReferenceChromeSlot.entries.all { slot -> referenceChromeAssets.containsKey(slot) }
+            val outerAlpha = if (hasReferenceChrome) 0.22f else 0.48f
+            val verticalAlpha = if (hasReferenceChrome) 0.18f else 0.40f
+            val separatorAlpha = if (hasReferenceChrome) 0.20f else 0.42f
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.SURFACE_TEXTURE]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.x, bounds.y, bounds.width, bounds.height), 1f)
+            }
+            canvas.drawRect(tileBounds(bounds.x + 4f, bounds.top - 6f, bounds.width - 8f, 1f), color("C0A36C", outerAlpha))
+            canvas.drawRect(tileBounds(bounds.x + 4f, bounds.y + 5f, bounds.width - 8f, 1f), color("C0A36C", outerAlpha))
+            canvas.drawRect(tileBounds(bounds.x + 5f, bounds.y + 6f, 1f, bounds.height - 12f), color("A58B61", verticalAlpha))
+            canvas.drawRect(tileBounds(bounds.right - 6f, bounds.y + 6f, 1f, bounds.height - 12f), color("A58B61", verticalAlpha))
+            canvas.drawRect(tileBounds(content.x - 4f, content.top - 50f, content.width + 8f, 1f), color("6D4520", separatorAlpha))
+            if (hasReferenceChrome) {
+                drawTalentAssignReferenceChromeAssets(canvas, bounds, referenceChromeAssets)
+            } else {
+                drawTalentAssignCornerOrnament(canvas, bounds.x + 11f, bounds.top - 11f, 1f, -1f)
+                drawTalentAssignCornerOrnament(canvas, bounds.right - 11f, bounds.top - 11f, -1f, -1f)
+                drawTalentAssignCornerOrnament(canvas, bounds.x + 11f, bounds.y + 11f, 1f, 1f)
+                drawTalentAssignCornerOrnament(canvas, bounds.right - 11f, bounds.y + 11f, -1f, 1f)
+            }
+        }
+
+        private fun drawTalentAssignReferenceChromeAssets(
+            canvas: TileCanvas,
+            bounds: GameShellBounds,
+            referenceChromeAssets: Map<TileTalentAssignReferenceChromeSlot, ResolvedVisualAsset>,
+        ) {
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.TOP_EDGE]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.x, bounds.top - 16f, bounds.width, 16f), 0.96f)
+            }
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.BOTTOM_EDGE]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.x, bounds.y, bounds.width, 16f), 0.96f)
+            }
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.LEFT_EDGE]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.x, bounds.y, 18f, bounds.height), 0.96f)
+            }
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.RIGHT_EDGE]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.right - 18f, bounds.y, 18f, bounds.height), 0.96f)
+            }
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.CORNER_TOP_LEFT]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.x, bounds.top - 72f, 54f, 72f), 0.98f)
+            }
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.CORNER_TOP_RIGHT]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.right - 72f, bounds.top - 72f, 72f, 72f), 0.98f)
+            }
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.CORNER_BOTTOM_LEFT]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.x, bounds.y, 44f, 64f), 0.98f)
+            }
+            referenceChromeAssets[TileTalentAssignReferenceChromeSlot.CORNER_BOTTOM_RIGHT]?.let { asset ->
+                canvas.drawAsset(asset, tileBounds(bounds.right - 72f, bounds.y, 72f, 64f), 0.98f)
+            }
+        }
+
+        private fun drawTalentAssignCornerOrnament(
+            canvas: TileCanvas,
+            anchorX: Float,
+            anchorY: Float,
+            xDirection: Float,
+            yDirection: Float,
+        ) {
+            val bright = color("BFA77A", 0.64f)
+            val shadow = color("4E3B2B", 0.64f)
+            val horizontalY = anchorY + yDirection * 8f
+            val verticalX = anchorX + xDirection * 8f
+            canvas.drawRect(tileBounds(minOf(anchorX, anchorX + xDirection * 30f), horizontalY, 30f, 1f), bright)
+            canvas.drawRect(tileBounds(verticalX, minOf(anchorY, anchorY + yDirection * 30f), 1f, 30f), bright)
+            canvas.drawRect(tileBounds(minOf(anchorX + xDirection * 8f, anchorX + xDirection * 42f), anchorY, 34f, 1f), shadow)
+            canvas.drawRect(tileBounds(anchorX, minOf(anchorY + yDirection * 8f, anchorY + yDirection * 42f), 1f, 34f), shadow)
+            canvas.drawRect(tileBounds(minOf(anchorX + xDirection * 18f, anchorX + xDirection * 44f), anchorY + yDirection * 18f, 26f, 1f), bright)
+            canvas.drawRect(tileBounds(anchorX + xDirection * 18f, minOf(anchorY + yDirection * 18f, anchorY + yDirection * 44f), 1f, 26f), bright)
+        }
+
+        private sealed interface TalentAssignListEntry {
+            data class SectionHeader(val section: TalentAssignSectionModel) : TalentAssignListEntry
+
+            data class Row(val row: TalentAssignTreeRowModel) : TalentAssignListEntry
+        }
+
+        private fun talentAssignListViewport(
+            entries: List<TalentAssignListEntry>,
+            visibleSlots: Int,
+        ): TalentAssignListViewportModel {
+            val focusedIndex =
+                entries.indexOfFirst { entry ->
+                    entry is TalentAssignListEntry.Row && entry.row.focused
+                }
+            return TalentAssignPanelLayoutSolver.resolveListViewport(
+                TalentAssignListViewportRequest(
+                    totalSlots = entries.size,
+                    focusedIndex = focusedIndex.takeIf { index -> index >= 0 },
+                    visibleSlots = visibleSlots,
+                ),
+            )
+        }
+
+        private fun talentAssignListEntries(panel: TalentAssignPanelModel): List<TalentAssignListEntry> =
+            buildList {
+                panel.sections.forEach { section ->
+                    add(TalentAssignListEntry.SectionHeader(section))
+                    section.rows.forEach { row -> add(TalentAssignListEntry.Row(row)) }
+                }
+            }
+
+        private fun drawTalentAssignList(
+            canvas: TileCanvas,
+            renderModel: TileTalentAssignPanelRenderModel,
+            entries: List<TalentAssignListEntry>,
+            viewport: TalentAssignListViewportModel,
+            x: Float,
+            top: Float,
+            width: Float,
+            bottom: Float,
+        ) {
+            var baseline = top
+            val headerHeight = 30f
+            entries.subList(viewport.firstVisibleIndex, viewport.endExclusiveIndex).forEach { entry ->
+                if (baseline < bottom + TalentAssignPanelLayoutSolver.rowStep) {
+                    return
+                }
+                when (entry) {
+                    is TalentAssignListEntry.SectionHeader -> {
+                        val section = entry.section
+                        canvas.drawRect(tileBounds(x, baseline - 24f, width - 6f, headerHeight), color("2C1A0D", 0.74f))
+                        canvas.drawRect(tileBounds(x, baseline - 24f, width - 6f, 1f), color("8A5A24", 0.42f))
+                        canvas.drawRect(tileBounds(x, baseline + 6f, width - 6f, 1f), color("8A5A24", 0.38f))
+                        drawFittedText(
+                            canvas = canvas,
+                            text = section.displayName,
+                            x = x + 28f,
+                            baseline = baseline,
+                            maxWidth = width - 92f,
+                            style = TALENT_ASSIGN_BODY_STYLE,
+                            color = talentAssignEmberGold(),
+                        )
+                        drawFittedText(
+                            canvas = canvas,
+                            text = section.nodeCountText,
+                            x = x + width - 86f,
+                            baseline = baseline,
+                            maxWidth = 58f,
+                            style = TALENT_ASSIGN_BODY_STYLE,
+                            color = talentAssignEmberGold(),
+                        )
+                    }
+
+                    is TalentAssignListEntry.Row -> {
+                        val row = entry.row
+                        if (row.focused) {
+                            canvas.drawRect(tileBounds(x, baseline - 21f, width - 6f, 28f), color("1CB7C8", 0.18f))
+                            canvas.drawRect(tileBounds(x, baseline - 21f, 3f, 28f), color("1CB7C8", 0.88f))
+                        }
+                        val markerColor = talentTone(row.toneToken)
+                        val markerX = x + 50f
+                        val connectorX = x + 96f
+                        val iconX = x + 140f
+                        val rowTextX = iconX + 54f
+                        drawFittedText(canvas, row.stateMarkerText, markerX, baseline, 42f, TALENT_ASSIGN_BODY_STYLE, markerColor)
+                        if (row.connectorPrefix.isNotBlank()) {
+                            val connectorColor = color("8A8173", 0.86f)
+                            canvas.drawRect(tileBounds(connectorX + 7f, baseline - 20f, 1f, 28f), connectorColor)
+                            canvas.drawRect(tileBounds(connectorX + 7f, baseline - 5f, 29f, 1f), connectorColor)
+                            drawFittedText(canvas, row.connectorPrefix, connectorX, baseline, 40f, TALENT_ASSIGN_BODY_STYLE, talentAssignBodyText())
+                        }
+                        renderModel.rowIcons[row.toTalentTreeSelectionIdentity()]?.let { icon ->
+                            if (icon.isPr04ReferenceCrop()) {
+                                canvas.drawAsset(icon, tileBounds(iconX - 3f, baseline - 24f, 31f, 31f))
+                            } else {
+                                canvas.drawRect(tileBounds(iconX - 3f, baseline - 24f, 31f, 31f), color("07090B", 0.90f))
+                                canvas.drawRect(tileBounds(iconX - 3f, baseline - 24f, 31f, 1f), color("B9A77E", 0.62f))
+                                canvas.drawRect(tileBounds(iconX - 3f, baseline + 6f, 31f, 1f), color("B9A77E", 0.52f))
+                                canvas.drawRect(tileBounds(iconX - 3f, baseline - 24f, 1f, 31f), color("B9A77E", 0.48f))
+                                canvas.drawRect(tileBounds(iconX + 27f, baseline - 24f, 1f, 31f), color("B9A77E", 0.48f))
+                                canvas.drawAsset(icon, tileBounds(iconX + 1f, baseline - 20f, 23f, 23f))
+                            }
+                        }
+                        drawFittedText(
+                            canvas = canvas,
+                            text = row.displayName,
+                            x = rowTextX,
+                            baseline = baseline,
+                            maxWidth = (width - (rowTextX - x) - 116f).coerceAtLeast(40f),
+                            style = TALENT_ASSIGN_BODY_STYLE,
+                            color = talentAssignRowNameColor(row.toneToken, row.focused),
+                        )
+                        drawFittedText(
+                            canvas = canvas,
+                            text = row.rankText,
+                            x = x + width - 84f,
+                            baseline = baseline,
+                            maxWidth = 64f,
+                            style = TALENT_ASSIGN_BODY_STYLE,
+                            color = talentAssignBodyText(),
+                        )
+                        if (row.pendingOverlay && row.focused) {
+                            canvas.drawRect(tileBounds(x + width - 9f, baseline - 14f, 5f, 14f), UiDesignTokens.color.quality.rare.color())
+                        }
+                    }
+                }
+                baseline -= TalentAssignPanelLayoutSolver.rowStep
+            }
+        }
+
+        private fun drawTalentAssignScrollBar(
+            canvas: TileCanvas,
+            x: Float,
+            top: Float,
+            bottom: Float,
+            viewport: TalentAssignListViewportModel,
+        ) {
+            val height = top - bottom
+            val railWidth = 14f
+            val arrowHeight = 20f
+            val trackTop = top - arrowHeight
+            val trackBottom = bottom + arrowHeight
+            val trackHeight = (trackTop - trackBottom).coerceAtLeast(1f)
+            val activeAlpha = if (viewport.hasOverflow) 1f else 0.46f
+            canvas.drawRect(tileBounds(x, bottom, railWidth, height), color("080604", 0.86f))
+            canvas.drawRect(tileBounds(x, top - 1f, railWidth, 1f), color("B89B68", 0.48f * activeAlpha))
+            canvas.drawRect(tileBounds(x, bottom, railWidth, 1f), color("B89B68", 0.44f * activeAlpha))
+            canvas.drawRect(tileBounds(x, bottom, 1f, height), color("8A6B42", 0.52f * activeAlpha))
+            canvas.drawRect(tileBounds(x + railWidth - 1f, bottom, 1f, height), color("8A6B42", 0.48f * activeAlpha))
+            canvas.drawRect(tileBounds(x + 2f, trackBottom, railWidth - 4f, trackHeight), color("6D5435", 0.26f * activeAlpha))
+            canvas.drawRect(tileBounds(x + 4f, top - 8f, 6f, 1f), color("D0B585", 0.58f * activeAlpha))
+            canvas.drawRect(tileBounds(x + 5f, top - 9f, 4f, 1f), color("D0B585", 0.58f * activeAlpha))
+            canvas.drawRect(tileBounds(x + 6f, top - 10f, 2f, 1f), color("D0B585", 0.58f * activeAlpha))
+            canvas.drawRect(tileBounds(x + 4f, bottom + 7f, 6f, 1f), color("D0B585", 0.54f * activeAlpha))
+            canvas.drawRect(tileBounds(x + 5f, bottom + 8f, 4f, 1f), color("D0B585", 0.54f * activeAlpha))
+            canvas.drawRect(tileBounds(x + 6f, bottom + 9f, 2f, 1f), color("D0B585", 0.54f * activeAlpha))
+            val visibleFraction = viewport.visibleSlots.toFloat() / viewport.totalSlots.toFloat().coerceAtLeast(1f)
+            val thumbHeight =
+                if (viewport.hasOverflow) {
+                    (trackHeight * visibleFraction).coerceIn(42f, trackHeight)
+                } else {
+                    (trackHeight * 0.84f).coerceAtMost(trackHeight)
+                }
+            val scrollFraction =
+                if (viewport.maxFirstVisibleIndex == 0) {
+                    0f
+                } else {
+                    viewport.firstVisibleIndex.toFloat() / viewport.maxFirstVisibleIndex.toFloat()
+                }
+            val thumbTop = trackTop - thumbHeight - (trackHeight - thumbHeight) * scrollFraction
+            canvas.drawRect(tileBounds(x + 3f, thumbTop, railWidth - 6f, thumbHeight), color("A98D67", 0.56f * activeAlpha))
+            canvas.drawRect(tileBounds(x + 4f, thumbTop + 3f, railWidth - 8f, thumbHeight - 6f), color("D3B37A", 0.12f * activeAlpha))
+        }
+
+        private fun drawTalentAssignDetail(
+            canvas: TileCanvas,
+            renderModel: TileTalentAssignPanelRenderModel,
+            x: Float,
+            top: Float,
+            width: Float,
+            bottom: Float,
+        ) {
+            val blocks = renderModel.panel.detail?.blocks.orEmpty()
+            val heroIndex = blocks.indexOfFirst { block -> block.kind == TalentDetailBlockKind.HERO_ICON }
+            val header = blocks.firstOrNull { block -> block.kind == TalentDetailBlockKind.HEADER }
+            val rankAndCost = blocks.firstOrNull { block -> block.kind == TalentDetailBlockKind.RANK_AND_COST }
+            val prerequisites =
+                blocks.filter { block ->
+                    block.kind == TalentDetailBlockKind.PREREQUISITE || block.kind == TalentDetailBlockKind.PREREQUISITE_FAILED
+            }
+            var baseline = top
+            val heroFrameSize = 114f
+            val heroIconSize = 94f
+            val heroInset = (heroFrameSize - heroIconSize) / 2f
+            val detailTextX = x + heroFrameSize + 26f
+            if (heroIndex >= 0) {
+                renderModel.detailBlockIcons[heroIndex]?.let { icon ->
+                    if (icon.isPr04ReferenceCrop()) {
+                        canvas.drawAsset(icon, tileBounds(x, baseline - heroFrameSize + 4f, heroFrameSize, heroFrameSize))
+                    } else {
+                        canvas.drawRect(tileBounds(x, baseline - heroFrameSize + 4f, heroFrameSize, heroFrameSize), color("07090B", 0.86f))
+                        canvas.drawRect(tileBounds(x, baseline + 3f, heroFrameSize, 1f), color("9B7A4A", 0.70f))
+                        canvas.drawRect(tileBounds(x, baseline - heroFrameSize + 4f, heroFrameSize, 1f), color("B9A77E", 0.58f))
+                        canvas.drawRect(tileBounds(x, baseline - heroFrameSize + 4f, 1f, heroFrameSize), color("B9A77E", 0.52f))
+                        canvas.drawRect(tileBounds(x + heroFrameSize - 1f, baseline - heroFrameSize + 4f, 1f, heroFrameSize), color("B9A77E", 0.52f))
+                        canvas.drawRect(tileBounds(x + 8f, baseline - heroFrameSize + 12f, heroFrameSize - 16f, 1f), color("D1C29A", 0.36f))
+                        canvas.drawRect(tileBounds(x + 8f, baseline - 4f, heroFrameSize - 16f, 1f), color("D1C29A", 0.32f))
+                        canvas.drawAsset(icon, tileBounds(x + heroInset, baseline - heroFrameSize + 4f + heroInset, heroIconSize, heroIconSize))
+                    }
+                }
+            }
+            header?.let { block ->
+                drawFittedText(canvas, block.primaryText, detailTextX, baseline - 2f, width - (detailTextX - x), TileTextStyle.TITLE, talentAssignEmberGold())
+                block.secondaryText?.let { text ->
+                    val chipX = detailTextX + TileTextMetrics.approximateTextWidth(block.primaryText, TileTextStyle.TITLE) + 36f
+                    canvas.drawRect(tileBounds(chipX, baseline - 24f, 56f, 24f), color("092D35", 0.38f))
+                    canvas.drawRect(tileBounds(chipX, baseline - 24f, 56f, 1f), color("1CB7C8", 0.68f))
+                    canvas.drawRect(tileBounds(chipX, baseline - 1f, 56f, 1f), color("1CB7C8", 0.58f))
+                    canvas.drawRect(tileBounds(chipX, baseline - 24f, 1f, 24f), color("1CB7C8", 0.58f))
+                    canvas.drawRect(tileBounds(chipX + 55f, baseline - 24f, 1f, 24f), color("1CB7C8", 0.58f))
+                    drawFittedText(canvas, text, chipX + 8f, baseline - 7f, 44f, TileTextStyle.SMALL, UiDesignTokens.color.focus.ring.color())
+                }
+            }
+            baseline -= 30f
+            rankAndCost?.let { block ->
+                drawFittedText(canvas, block.primaryText, detailTextX, baseline, width - (detailTextX - x), TALENT_ASSIGN_BODY_STYLE, talentAssignBodyText())
+                baseline -= 22f
+                block.secondaryText?.let { text ->
+                    drawFittedText(canvas, text, detailTextX, baseline, width - (detailTextX - x), TALENT_ASSIGN_BODY_STYLE, talentAssignBodyText())
+                    baseline -= 22f
+                }
+                block.bodyLines.forEach { line ->
+                    val text = line.label?.let { label -> "$label:  ${line.value}" } ?: line.value
+                    drawFittedText(canvas, text, detailTextX, baseline, width - (detailTextX - x), TALENT_ASSIGN_BODY_STYLE, previewTone(line.toneToken))
+                    baseline -= 20f
+                }
+            }
+            prerequisites.forEach { block ->
+                drawFittedText(canvas, block.primaryText, detailTextX, baseline, width - (detailTextX - x), TALENT_ASSIGN_BODY_STYLE, previewTone(block.toneToken))
+                baseline -= 20f
+                block.bodyLines.take(2).forEach { line ->
+                    val text = line.label?.let { label -> "$label:  ${line.value}" } ?: line.value
+                    drawFittedText(canvas, text, detailTextX, baseline, width - (detailTextX - x), TALENT_ASSIGN_BODY_STYLE, previewTone(line.toneToken))
+                    baseline -= 18f
+                }
+            }
+            val headerReservedHeight = ((top - bottom) * 0.27f).coerceIn(132f, 178f)
+            baseline = minOf(baseline - 12f, top - headerReservedHeight)
+            drawTalentAssignDivider(canvas, x, baseline + 8f, width)
+            blocks
+                .filter { block ->
+                    block.kind == TalentDetailBlockKind.CURRENT_RANK_DETAIL ||
+                        block.kind == TalentDetailBlockKind.NEXT_RANK_PREVIEW
+                }.forEach { block ->
+                if (baseline < bottom) {
+                    return
+                }
+                if (block.primaryText.isNotBlank()) {
+                    drawFittedText(canvas, block.primaryText, x, baseline, width, TALENT_ASSIGN_BODY_STYLE, talentAssignEmberGold())
+                    baseline -= 24f
+                }
+                block.secondaryText?.let { text ->
+                    drawFittedText(canvas, text, x, baseline, width, TALENT_ASSIGN_BODY_STYLE, talentAssignBodyText())
+                    baseline -= 22f
+                }
+                block.bodyLines.forEach { line ->
+                    if (baseline < bottom) {
+                        return
+                    }
+                    val text = line.label?.let { label -> "$label:  ${line.value}" } ?: line.value
+                    drawFittedText(canvas, text, x + 10f, baseline, width - 10f, TALENT_ASSIGN_BODY_STYLE, previewTone(line.toneToken))
+                    baseline -=
+                        if (block.kind == TalentDetailBlockKind.CURRENT_RANK_DETAIL) {
+                            21f
+                        } else {
+                            20f
+                        }
+                }
+                baseline -=
+                    if (block.kind == TalentDetailBlockKind.CURRENT_RANK_DETAIL) {
+                        18f
+                    } else {
+                        12f
+                    }
+                drawTalentAssignDivider(canvas, x, baseline + 7f, width)
+                baseline -= 8f
+            }
+            blocks.firstOrNull { block -> block.kind == TalentDetailBlockKind.ACTIONS }?.let { block ->
+                drawTalentAssignActions(canvas, block, x, minOf(baseline, bottom + 50f), width)
+            }
+        }
+
+        private fun ResolvedVisualAsset.isPr04ReferenceCrop(): Boolean =
+            entry.tags.contains("reference-crop")
+
+        private fun drawTalentAssignDivider(
+            canvas: TileCanvas,
+            x: Float,
+            y: Float,
+            width: Float,
+        ) {
+            canvas.drawRect(tileBounds(x, y, width, 1f), color("8A5A24", 0.48f))
+        }
+
+        private fun drawTalentAssignActions(
+            canvas: TileCanvas,
+            block: TalentDetailBlock,
+            x: Float,
+            y: Float,
+            width: Float,
+        ) {
+            var cursorX = x
+            for (line in block.bodyLines) {
+                val key = line.label ?: continue
+                val label = line.value
+                val keyWidth = (TileTextMetrics.approximateTextWidth(key, TALENT_ASSIGN_BODY_STYLE) + 16f).coerceIn(46f, 76f)
+                val labelWidth = TileTextMetrics.approximateTextWidth(label, TALENT_ASSIGN_BODY_STYLE).coerceAtMost(112f)
+                canvas.drawRect(tileBounds(cursorX, y - 18f, keyWidth, 26f), color("17100A", 0.88f))
+                canvas.drawRect(tileBounds(cursorX, y + 7f, keyWidth, 1f), color("9B7A4A", 0.72f))
+                drawFittedText(canvas, key, cursorX + 8f, y, keyWidth - 16f, TALENT_ASSIGN_BODY_STYLE, tone(TileTextTone.WHITE))
+                drawFittedText(canvas, label, cursorX + keyWidth + 10f, y, labelWidth, TALENT_ASSIGN_BODY_STYLE, talentAssignBodyText())
+                cursorX += keyWidth + labelWidth + 42f
+                if (cursorX > x + width - 90f) {
+                    return
+                }
+            }
+        }
+
+        private fun drawTalentAssignFooter(
+            canvas: TileCanvas,
+            renderModel: TileTalentAssignPanelRenderModel,
+            x: Float,
+            baseline: Float,
+            width: Float,
+        ) {
+            drawTalentAssignFooterHelp(canvas, renderModel.panel.footerHints, x, baseline, width * 0.50f)
+            var cursorX = x + width * 0.60f
+            val maxX = x + width
+            renderModel.panel.legend.items
+                .filter { item -> item.kind == TalentLegendItemKind.STATE_TONE }
+                .forEach { item ->
+                    val marker = item.markerText.orEmpty()
+                    val markerColor = item.toneToken?.let(::talentTone) ?: tone(TileTextTone.LIGHT_GRAY)
+                    val markerWidth = TileTextMetrics.approximateTextWidth(marker, TALENT_ASSIGN_BODY_STYLE)
+                    val labelWidth = TileTextMetrics.approximateTextWidth(item.label, TALENT_ASSIGN_BODY_STYLE).coerceAtMost(92f)
+                    if (cursorX + markerWidth + labelWidth > maxX) {
+                        return
+                    }
+                    drawFittedText(canvas, marker, cursorX, baseline, markerWidth + 2f, TALENT_ASSIGN_BODY_STYLE, markerColor)
+                    cursorX += markerWidth + 8f
+                    drawFittedText(canvas, item.label, cursorX, baseline, labelWidth, TALENT_ASSIGN_BODY_STYLE, markerColor)
+                    cursorX += labelWidth + 44f
+                }
+        }
+
+        private fun drawTalentAssignFooterHelp(
+            canvas: TileCanvas,
+            footerHints: List<TalentAssignFooterHintModel>,
+            x: Float,
+            baseline: Float,
+            width: Float,
+        ) {
+            if (footerHints.isEmpty()) {
+                return
+            }
+            var cursorX = x
+            val maxX = x + width
+            for (hint in footerHints) {
+                val key = hint.keyText
+                val label = hint.labelText
+                val keyWidth = (TileTextMetrics.approximateTextWidth(key, TALENT_ASSIGN_BODY_STYLE) + 16f).coerceIn(38f, 76f)
+                val labelWidth = TileTextMetrics.approximateTextWidth(label, TALENT_ASSIGN_BODY_STYLE).coerceAtMost(118f)
+                val totalWidth = keyWidth + if (label.isBlank()) 0f else 9f + labelWidth
+                if (cursorX + totalWidth > maxX) {
+                    return
+                }
+                canvas.drawRect(tileBounds(cursorX, baseline - 18f, keyWidth, 26f), color("17100A", 0.88f))
+                canvas.drawRect(tileBounds(cursorX, baseline + 7f, keyWidth, 1f), color("9B7A4A", 0.72f))
+                drawFittedText(canvas, key, cursorX + 8f, baseline, keyWidth - 16f, TALENT_ASSIGN_BODY_STYLE, tone(TileTextTone.WHITE))
+                if (label.isNotBlank()) {
+                    drawFittedText(canvas, label, cursorX + keyWidth + 9f, baseline, labelWidth, TALENT_ASSIGN_BODY_STYLE, talentAssignBodyText())
+                }
+                cursorX += totalWidth + 42f
+            }
+        }
+
+        private fun drawActiveSlotChoiceModal(
+            canvas: TileCanvas,
+            renderModel: TileTalentAssignPanelRenderModel,
+            x: Float,
+            y: Float,
+            width: Float,
+        ) {
+            val modalModel = renderModel.panel.activeSlotChoiceModal ?: return
+            val modalHeight = 190f
+            canvas.drawRect(tileBounds(x, y, width, modalHeight), color("05070A", 0.94f))
+            canvas.drawRect(tileBounds(x, y + modalHeight - 3f, width, 3f), UiDesignTokens.color.quality.rare.color())
+            drawFittedText(canvas, modalModel.title, x + 12f, y + modalHeight - 20f, width - 24f, TileTextStyle.SMALL, UiDesignTokens.color.quality.rare.color())
+            var baseline = y + modalHeight - 48f
+            modalModel.items.forEach { item ->
+                val focused = item.focused
+                if (focused) {
+                    canvas.drawRect(tileBounds(x + 8f, baseline - 16f, width - 16f, 22f), color("1CB7C8", 0.18f))
+                }
+                val tone =
+                    when (item.kind) {
+                        ActiveSlotChoiceModalItemKind.RESERVE_ACTION -> UiDesignTokens.color.quality.rare.color()
+                        ActiveSlotChoiceModalItemKind.SLOT_REPLACE_TARGET -> UiDesignTokens.color.focus.ring.color()
+                        ActiveSlotChoiceModalItemKind.SLOT_FILLED -> tone(TileTextTone.WHITE)
+                        ActiveSlotChoiceModalItemKind.SLOT_EMPTY -> tone(TileTextTone.GRAY)
+                    }
+                drawFittedText(canvas, item.hotkeyText, x + 14f, baseline, 24f, TileTextStyle.SMALL, tone)
+                renderModel.activeSlotChoiceItemIcons[item.renderKey()]?.let { icon ->
+                    canvas.drawAsset(icon, tileBounds(x + 42f, baseline - 17f, 20f, 20f))
+                }
+                val text = "${item.primaryLabel}${item.secondaryLabel?.let { secondary -> "  $secondary" }.orEmpty()}"
+                drawFittedText(canvas, text, x + 68f, baseline, width - 80f, TileTextStyle.SMALL, tone)
+                baseline -= 23f
+            }
+            drawFittedText(canvas, modalModel.cancelHintText, x + 12f, y + 16f, width - 24f, TileTextStyle.SMALL, tone(TileTextTone.LIGHT_GRAY))
+        }
+
+        private fun drawFittedText(
+            canvas: TileCanvas,
+            text: String,
+            x: Float,
+            baseline: Float,
+            maxWidth: Float,
+            style: TileTextStyle,
+            color: Color,
+        ) {
+            val fitted = TileTextMetrics.truncateTextToWidth(text, maxWidth.coerceAtLeast(1f), style)
+            canvas.drawText(style, fitted, tilePosition(x, baseline), color)
+        }
+
+        private fun ActiveSlotChoiceModalItem.renderKey(): String = slot?.toString() ?: hotkeyText
 
         private fun targetCursorColor(state: TileTargetCursorState?): Color =
             when (state) {
@@ -904,6 +1587,9 @@ class TileRenderer(
 
         private fun ChromeFrameBounds.toGameShellBounds(): GameShellBounds =
             GameShellBounds(x = x, y = y, width = width, height = height)
+
+        private fun ChromeFrameBounds.toTileBounds(): TileFloatBounds =
+            tileBounds(x, y, width, height)
 
         private fun TileCanvas.asChromeFrameSink(): ChromeFrameDrawSink =
             object : ChromeFrameDrawSink {
@@ -1246,6 +1932,42 @@ class TileRenderer(
                 TileTextTone.RED -> UiDesignTokens.color.status.badge.turns.color()
                 TileTextTone.BLUE -> UiDesignTokens.color.quality.magic.color()
                 TileTextTone.MAGENTA -> UiDesignTokens.color.telegraph.lethal.color()
+            }
+
+        private fun talentTone(token: TalentTreeNodeToneToken): Color =
+            when (token) {
+                TalentTreeNodeToneToken.TALENT_LOCKED -> UiDesignTokens.color.talent.locked.color()
+                TalentTreeNodeToneToken.TALENT_LEARNABLE -> UiDesignTokens.color.talent.learnable.color()
+                TalentTreeNodeToneToken.TALENT_RESERVE -> UiDesignTokens.color.talent.reserve.color()
+                TalentTreeNodeToneToken.TALENT_ACTIVE -> UiDesignTokens.color.talent.active.color()
+            }
+
+        private fun talentAssignRowNameColor(
+            token: TalentTreeNodeToneToken,
+            focused: Boolean,
+        ): Color =
+            when {
+                focused -> talentTone(token)
+                token == TalentTreeNodeToneToken.TALENT_LOCKED -> tone(TileTextTone.GRAY)
+                token == TalentTreeNodeToneToken.TALENT_LEARNABLE -> talentTone(token)
+                else -> talentAssignBodyText()
+            }
+
+        private fun talentAssignPanelFill(): Color = color("090604", 0.98f)
+
+        private fun talentAssignFrameGold(): Color = color("9F7B3C", 0.86f)
+
+        private fun talentAssignEmberGold(): Color = color("F0A34A")
+
+        private fun talentAssignBodyText(): Color = color("C9C2B4")
+
+        private fun previewTone(token: TalentPreviewToneToken): Color =
+            when (token) {
+                TalentPreviewToneToken.PRIMARY -> tone(TileTextTone.WHITE)
+                TalentPreviewToneToken.SECONDARY -> talentAssignBodyText()
+                TalentPreviewToneToken.POSITIVE -> color("48BFE3")
+                TalentPreviewToneToken.WARNING -> color("D99A2B")
+                TalentPreviewToneToken.LOCKED -> color("59616C")
             }
 
         private fun specialAccentColor(accent: com.ktome.client.ui.item.SpecialAccentTokenId): Color =

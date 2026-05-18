@@ -115,6 +115,36 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `dark uiux pr04 scenario keeps active slot evidence on golden path`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr04-profession-tree-ui"),
+            )
+        val paths = result.paths
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("client/build/reports/golden/dark-uiux-pr04/dark-uiux-pr04-active-slot-choice.png"))
+        assertTrue(!runbook.contains("--out build/whitebox/dark-uiux-pr04-profession-tree-ui/evidence/dark-uiux-pr04-active-slot-choice.png"))
+        assertTrue(runbook.contains("dark-uiux-pr04-talent-assign-panel-start.png"))
+        assertTrue(runbook.contains("dark-uiux-pr04-talent-assign-min-window-log-visible.png"))
+        assertTrue(runbook.contains("dark-uiux-pr04-right-companion-coexistence.png"))
+        assertFalseMachinePath(runbook)
+
+        val manualTemplate = paths.manualRecordTemplate.readText()
+        assertTrue(manualTemplate.contains("client/build/reports/golden/dark-uiux-pr04/dark-uiux-pr04-active-slot-choice.png"))
+        assertFalseMachinePath(manualTemplate)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr04-profession-tree-ui\""))
+        assertTrue(expectedEvidence.contains("\"externalEvidence\": ["))
+        assertTrue(expectedEvidence.contains("client/build/reports/golden/dark-uiux-pr04/dark-uiux-pr04-active-slot-choice.png"))
+        assertTrue(!expectedEvidence.contains("dark-uiux-pr04-active-slot-choice.png.metadata.txt"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr04-talent-assign-panel-start.png.sha256"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr04-right-companion-coexistence.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `dark uiux pr02 scenario generates chrome fit evidence names from the typed registry`() {
         val result =
             Phase4V4WhiteboxScenarioCli.run(
@@ -367,6 +397,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |scenarios:
             |  - id: phase4-v4-pr00-selftest
             |  - id: phase4-v4-pr01
+            |  - id: dark-uiux-pr04-profession-tree-ui
             |  - id: phase4-v4-pr02
             |  - id: dark-uiux-pr02-ui-chrome-sprite-pilot
             |  - id: dark-uiux-pr02-1-demo-shell-foundation

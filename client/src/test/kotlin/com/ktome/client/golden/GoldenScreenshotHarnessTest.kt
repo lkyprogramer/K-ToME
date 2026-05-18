@@ -148,6 +148,11 @@ class GoldenScreenshotHarnessTest {
             "dark-uiux-pr03-inscription-shop",
             "dark-uiux-pr03-shop-full-slot-replace",
         )
+    private val darkUiuxPr04GoldenEvidenceLabels =
+        listOf(
+            "dark-uiux-pr04-talent-assign-panel-start",
+            "dark-uiux-pr04-active-slot-choice",
+        )
 
     @Test
     fun `dark uiux pr01 1 golden evidence labels remain registered`() {
@@ -220,6 +225,17 @@ class GoldenScreenshotHarnessTest {
     }
 
     @Test
+    fun `dark uiux pr04 golden evidence labels remain registered`() {
+        assertEquals(
+            listOf(
+                "dark-uiux-pr04-talent-assign-panel-start",
+                "dark-uiux-pr04-active-slot-choice",
+            ),
+            darkUiuxPr04GoldenEvidenceLabels,
+        )
+    }
+
+    @Test
     fun `dark uiux pr01 1 golden evidence hashes remain stable and writes canonical artifacts`() {
         val hashes = captureDarkUiuxPr011GoldenEvidence()
 
@@ -242,7 +258,7 @@ class GoldenScreenshotHarnessTest {
                 "dark-uiux-pr01-1-item-tooltip-vs-modal-parity" to "65e435c12d77261665feb5480f5a429ef75245a1f569ae969f38ef6f276017fb",
                 "dark-uiux-pr01-1-ascii-deletion-scan" to "77657a7aa0c4b9a7b4e99cfbfbc30e1062742decef7723121a355255c19fcf7e",
                 "dark-uiux-pr01-1-tome-layout-reference" to "77657a7aa0c4b9a7b4e99cfbfbc30e1062742decef7723121a355255c19fcf7e",
-                "dark-uiux-pr01-1-shell-min-window" to "5ee5a79dd008341df58941687ee86d0c1941141c8b97535034d58b0e14a353ce",
+                "dark-uiux-pr01-1-shell-min-window" to "6af892e26d89dd3476a094a27eee8bbfc28195ca78af48636552b76e3651f922",
             ),
             hashes,
         )
@@ -436,6 +452,18 @@ class GoldenScreenshotHarnessTest {
                 "dark-uiux-pr03-shop-full-slot-replace" to "972ee90eef8f84aa36df468743421dafb6c04d9bf65402c5ff538eaec39d7eca",
             ),
             hashes,
+        )
+    }
+
+    @Test
+    fun `dark uiux pr04 talent assign golden evidence writes canonical artifacts`() {
+        val hashes = captureDarkUiuxPr04GoldenEvidence()
+
+        assertEquals(darkUiuxPr04GoldenEvidenceLabels, hashes.keys.toList())
+        assertTrue(hashes.values.all { hash -> hash.matches(Regex("[a-f0-9]{64}")) })
+        assertTrue(
+            hashes["dark-uiux-pr04-talent-assign-panel-start"] != hashes["dark-uiux-pr04-active-slot-choice"],
+            "PR04 active slot choice evidence must render the slot-choice modal, not duplicate the panel-start capture.",
         )
     }
 
@@ -828,6 +856,92 @@ class GoldenScreenshotHarnessTest {
                         repeat(2) { app.render() }
                     }
                 writeDarkUiuxPr03EvidenceIndex(hashes)
+                hashes
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureDarkUiuxPr04GoldenEvidence(): Map<String, String> =
+        withLwjgl3Context(width = 1280, height = 840) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr04-golden")),
+                    validationSaveManager = SaveManager(tempDir.resolve("dark-uiux-pr04-validation-golden")),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+            val hashes = linkedMapOf<String, String>()
+
+            try {
+                app.create()
+                val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr04-profession-tree-ui"))
+                app.startValidationSession(scenario.toSessionOptions(ContentPackSelection.EMPTY))
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active PR04 validation session." }
+                check(
+                    session.perform(
+                        PlayerCommand.Validation(
+                            ValidationAction.Phase4V4ScenarioAction(
+                                scenarioId = scenario.id,
+                                actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                            ),
+                        ),
+                    ),
+                ) {
+                    "Failed to prepare PR04 reference talent-assign scene."
+                }
+                hashes["dark-uiux-pr04-talent-assign-panel-start"] =
+                    captureGoldenArtifact(
+                        label = "dark-uiux-pr04-talent-assign-panel-start",
+                        evidenceDir = darkUiuxPr04GoldenDir(),
+                        flipY = true,
+                    ) {
+                        overlaySource.overlayState =
+                            OverlayState(
+                                mode = UiMode.TALENT_ASSIGN,
+                                talentTreeSelection = 1,
+                                modalFrames = listOf(ModalFrame(ModalFrameKind.TALENT_ASSIGN)),
+                            )
+                        repeat(2) { app.render() }
+                    }
+                check(
+                    session.perform(
+                        PlayerCommand.Validation(
+                            ValidationAction.Phase4V4ScenarioAction(
+                                scenarioId = scenario.id,
+                                actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                            ),
+                        ),
+                    ),
+                ) {
+                    "Failed to prepare PR04 active-slot-choice scene."
+                }
+                requireNotNull(session.renderSnapshot().uiState.activeTalentSlotChoiceRequirement) {
+                    "Expected upstream active talent slot choice requirement for PR04 golden evidence."
+                }
+                hashes["dark-uiux-pr04-active-slot-choice"] =
+                    captureGoldenArtifact(
+                        label = "dark-uiux-pr04-active-slot-choice",
+                        evidenceDir = darkUiuxPr04GoldenDir(),
+                        flipY = true,
+                    ) {
+                        overlaySource.overlayState =
+                            OverlayState(
+                                mode = UiMode.TALENT_ASSIGN,
+                                talentTreeSelection = 1,
+                                modalFrames =
+                                    listOf(
+                                        ModalFrame(ModalFrameKind.TALENT_ASSIGN),
+                                        ModalFrame(ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE),
+                                    ),
+                            )
+                        repeat(2) { app.render() }
+                    }
+                writeDarkUiuxPr04EvidenceIndex(hashes)
                 hashes
             } finally {
                 app.dispose()
@@ -1728,6 +1842,19 @@ class GoldenScreenshotHarnessTest {
         Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
     }
 
+    private fun writeDarkUiuxPr04EvidenceIndex(hashes: Map<String, String>) {
+        val evidenceDir = darkUiuxPr04GoldenDir()
+        Files.createDirectories(evidenceDir)
+        val rows =
+            buildString {
+                appendLine("label\thash\tartifact")
+                hashes.forEach { (label, hash) ->
+                    appendLine("$label\t$hash\tclient/build/reports/golden/dark-uiux-pr04/$label.png")
+                }
+            }
+        Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
+    }
+
     private fun darkUiuxPr011GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr01-1")
 
@@ -1739,6 +1866,9 @@ class GoldenScreenshotHarnessTest {
 
     private fun darkUiuxPr03GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr03")
+
+    private fun darkUiuxPr04GoldenDir(): Path =
+        repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr04")
 
     private fun repoRootPath(): Path =
         Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()

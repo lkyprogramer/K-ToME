@@ -36,6 +36,12 @@ internal object ValidationScenarioPresentationCatalog {
                 initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
             ),
             ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-profession-tree-ui"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr04-profession-tree-ui.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
                 id = ValidationScenarioId("phase4-v4-pr02"),
                 titleKey = "validation.phase4.v4.phase4-v4-pr02.title",
                 startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
@@ -121,5 +127,5 @@ internal data class ValidationScenarioPresentationParity(
 
 internal fun validationScenarioRequiredEvidenceKeys(scenarioId: ValidationScenarioId?): List<String> {
     scenarioId ?: return emptyList()
-    return ValidationScenarioRegistry.find(scenarioId)?.evidence?.requiredEvidenceFiles.orEmpty()
+    return ValidationScenarioRegistry.find(scenarioId)?.evidence?.allRequiredEvidenceFiles.orEmpty()
 }

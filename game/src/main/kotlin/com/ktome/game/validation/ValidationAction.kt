@@ -96,6 +96,12 @@ sealed interface ValidationAction {
         override val family: ValidationActionFamily = ValidationActionFamily.RECOVERY
     }
 
+    data class GrantRaceTalentPoints(
+        val amount: Int,
+    ) : ValidationAction {
+        override val family: ValidationActionFamily = ValidationActionFamily.RECOVERY
+    }
+
     data object SpawnEliteNearPlayer : ValidationAction {
         override val family: ValidationActionFamily = ValidationActionFamily.ENCOUNTER
     }

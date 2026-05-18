@@ -1973,6 +1973,10 @@ class FoundationGameSessionTest {
         assertEquals(2, loadout.levelOf("charge"))
 
         assertTrue(session.perform(PlayerCommand.AssignTalent("sunder_armor")))
+        val slotChoiceRequirement = requireNotNull(session.renderSnapshot().uiState.activeTalentSlotChoiceRequirement)
+        assertEquals("sunder_armor", slotChoiceRequirement.candidateTalentId)
+        assertEquals("PROFESSION", slotChoiceRequirement.ownerType)
+        assertEquals("vanguard", slotChoiceRequirement.treeOwnerId)
         assertFalse(session.perform(PlayerCommand.ConfirmTalentDraft))
         assertEquals(0, loadout.levelOf("sunder_armor"))
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.talent.active_slot_choice_required" })
@@ -1981,6 +1985,7 @@ class FoundationGameSessionTest {
         assertEquals(1, loadout.levelOf("sunder_armor"))
         assertEquals("charge", session.talentSlots().first { slot -> slot.slot == 4 }.talentId)
         assertTrue(session.renderSnapshot().uiState.reserveTalents.any { talent -> talent.talentId == "sunder_armor" })
+        assertNull(session.renderSnapshot().uiState.activeTalentSlotChoiceRequirement)
         assertEquals(0, experience.unspentTalentPoints)
     }
 

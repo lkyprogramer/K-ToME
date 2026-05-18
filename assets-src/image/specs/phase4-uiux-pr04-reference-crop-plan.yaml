@@ -1,0 +1,122 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  PR04 reference-crop evidence assets for the canonical Talent Assign panel.
+  These assets are cropped from UI/dark-uiux-pr04-talent-assign-tree-icons-detail-reference.png
+  to preserve visual fidelity for the PR04 golden scenario only. PR06 owns the
+  formal full talent icon and tree icon rebaseline.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "reference-crop"
+  negativeConstraints:
+    - no generated replacement
+    - no alternate style
+    - no readable text
+phase2AssetGates:
+  P4-UIUX-PR04:
+    description: PR04 canonical Talent Assign reference-crop evidence assets for Vanguard rows, selected hero icon, and scoped modal chrome/corner fidelity.
+    assets:
+      - id: phase4_uiux_pr04_talent_vanguard_power_strike_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.power_strike.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_power_strike_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_sweeping_strike_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.sweeping_strike.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_sweeping_strike_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_sweeping_strike_hero
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.sweeping_strike.hero
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_sweeping_strike_hero.png
+      - id: phase4_uiux_pr04_talent_vanguard_linebreaker_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.linebreaker.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_linebreaker_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_earthshaker_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.earthshaker.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_earthshaker_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_charge_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.charge.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_charge_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_sunder_armor_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.sunder_armor.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_sunder_armor_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_shield_bash_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.shield_bash.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_shield_bash_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_taunt_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.taunt.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_taunt_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_guard_stance_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.guard_stance.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_guard_stance_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_iron_wall_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.iron_wall.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_iron_wall_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_bulwark_march_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.bulwark_march.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_bulwark_march_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_war_cry_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.war_cry.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_war_cry_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_rallying_banner_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.rallying_banner.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_rallying_banner_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_battlefield_command_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.battlefield_command.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_battlefield_command_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_intimidation_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.intimidation.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_intimidation_icon.png
+      - id: phase4_uiux_pr04_talent_vanguard_unyielding_icon
+        category: icon
+        visualKey: dark.uiux.pr04.talent.vanguard.unyielding.icon
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_vanguard_unyielding_icon.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_top_edge
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.top_edge
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_top_edge.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_surface_texture
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.surface_texture
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_surface_texture.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_bottom_edge
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.bottom_edge
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_bottom_edge.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_left_edge
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.left_edge
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_left_edge.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_right_edge
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.right_edge
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_right_edge.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_corner_top_left
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.corner_top_left
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_corner_top_left.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_corner_top_right
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.corner_top_right
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_corner_top_right.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_corner_bottom_left
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.corner_bottom_left
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_corner_bottom_left.png
+      - id: phase4_uiux_pr04_talent_assign_chrome_corner_bottom_right
+        category: ui_frame
+        visualKey: dark.uiux.pr04.talent_assign.chrome.corner_bottom_right
+        outputName: phase4/uiux_pr04/dark_uiux_pr04_talent_assign_chrome_corner_bottom_right.png

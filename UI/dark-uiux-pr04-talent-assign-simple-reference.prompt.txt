@@ -1,0 +1,101 @@
+Prompt ID: dark-uiux-pr04-talent-assign-simple-reference
+Expected output file: UI/dark-uiux-pr04-talent-assign-simple-reference.png
+Canvas: 1280x840
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create one simple K-ToME Talent Assign UI mockup at 1280x840.
+Use case: ui-mockup.
+Asset type: one-off development reference image, not a sprite sheet, not a manifest asset.
+Goal: a practical, implementable PR04 talent point allocation panel that can be copied into development. Keep it close to classic Tales of Maj'Eyal / ToME talent assignment UI, not a complex modern RPG dashboard.
+
+Critical simplification:
+Only show the talent allocation panel itself.
+Do not show the full game window, map, equipment, inventory, companion panel, bottom HUD, action cards, character portrait, or navigation rail.
+This is a focused modal/panel for assigning talent points.
+
+Visual style:
+Dark fantasy roguelike UI, restrained and readable. Deep brown-black parchment panel over a near-black background, thin iron border, small ember-gold title text, cyan selected row, muted gray locked text, stamina-green learned/active text, ember-gold reserve/pending text. Minimal ornament. No flashy effects.
+
+Overall layout:
+- One large centered modal panel, about 90% of canvas width and height.
+- Top left title: "Talent Assign" or "天赋分配".
+- Under the title: compact point line: "职业天赋点: 3" and "种族天赋点: 1".
+- Main content split into two columns:
+  - Left column: scrollable talent tree list, about 58% width.
+  - Right column: selected talent detail pane, about 42% width.
+- Bottom line spans the panel with keyboard help and legend.
+
+Left talent tree list:
+Use a classic list/tree structure, not a large node graph.
+Show exactly three Vanguard profession trees with section headers:
+1. "武器系"
+2. "护卫系"
+3. "战吼系"
+Each section shows 5-6 talent rows. Use indentation and thin connector marks only if useful, but no complex graph.
+
+Row format:
+Each row is one stable-height text row:
+"[state] talent name rank/max"
+Use compact state markers:
+[*] learned active
+[+] learnable
+[r] learned reserve
+[x] locked
+[?] unavailable/future only if needed
+Selected row uses cyan text or a thin cyan row highlight. Do not change its underlying state marker.
+
+Example visible rows:
+武器系
+[*] 裂地冲锋 1/5
+[+] 重击专精 0/5
+[x] 穿透打击 0/5
+[x] 致命一击 0/5
+[x] 破阵 0/5
+[x] 震地猛击 0/5
+
+护卫系
+[*] 盾牌壁垒 1/5
+[r] 守护姿态 1/5
+[+] 嘲讽 0/5
+[x] 钢铁意志 0/5
+[x] 坚盾步伐 0/5
+
+战吼系
+[*] 战吼 1/5
+[+] 振奋号令 0/5
+[x] 不屈怒吼 0/5
+[x] 战场指挥 0/5
+
+Right detail pane:
+Show details for the currently selected row, preferably "重击专精".
+Keep it text-first and simple:
+- Header with talent name and state chip: "重击专精" "可学习".
+- Rank transition: "等级 0 -> 1 / 5".
+- Cost: "消耗 1 职业天赋点".
+- Requirements block:
+  "前置: 裂地冲锋 1/5"
+  "等级: 1"
+- Next rank preview:
+  "下一等级预览"
+  "武器伤害 +15%"
+  "冷却 6 回合"
+- Active slot behavior:
+  "主动技能: 可加入快捷槽"
+  "1-4 选择槽位 / R 预留"
+- Action buttons as simple text chips:
+  "Enter 学习" "R 预留" "Esc 返回"
+
+Bottom help and legend:
+Bottom left help: "↑↓ 选择   Tab 切换树   Enter 学习   R 预留   Esc 关闭"
+Bottom right legend: "[+] 可学习   [x] 锁定   [*] 已激活   [r] 预留"
+
+Implementation constraints:
+The mockup must look implementable with existing renderer primitives: text rows, section headers, state markers, selected row highlight, two-column layout, detail pane, bottom help line.
+No icon-heavy grid, no prerequisite edge network, no animated modal, no large hero icon, no 3D art, no equipment/backpack/stat panels.
+It should look like a classic roguelike menu upgraded with K-ToME dark UI chrome.
+
+Text rules:
+Use sparse, readable UI text. Short Chinese labels are preferred. Text does not have to be pixel-perfect, but the hierarchy and row structure must be obvious.
+
+Avoid:
+No full game shell, no right inventory, no hotbar, no map, no portrait, no action cards, no ornate tree graph, no large skill cards, no marketing copy, no sci-fi HUD, no neon cyberpunk, no glassmorphism, no glossy plastic, no anime/chibi, no watermark.

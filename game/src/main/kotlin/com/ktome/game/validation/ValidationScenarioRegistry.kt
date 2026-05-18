@@ -125,6 +125,64 @@ object ValidationScenarioRegistry {
                     ),
             ),
             ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr04-profession-tree-ui"),
+                prId = "PR-04",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.MAPGEN_DIFF,
+                        seed = 2026051604L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "vanguard",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 2,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/dark-uiux-pr04-talent-assign-panel-start.png",
+                                "evidence/dark-uiux-pr04-talent-assign-min-window-log-visible.png",
+                                "evidence/dark-uiux-pr04-right-companion-coexistence.png",
+                                "evidence/dark-uiux-pr04-profession-tree-ui-app.log",
+                            ),
+                        requiredExternalEvidenceFiles =
+                            listOf(
+                                "client/build/reports/golden/dark-uiux-pr04/dark-uiux-pr04-active-slot-choice.png",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter, Esc, T",
+                                    expectedVisibleResult = "Talent Assign panel matches the PR04 reference structure with three expanded vanguard sections, reference state markers, skill icons, current detail, next preview, and bottom legend.",
+                                    evidenceFile = "evidence/dark-uiux-pr04-talent-assign-panel-start.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Automated golden or packaged keyboard",
+                                    input = "Golden PR04 active-slot fixture; packaged F9, Right, Enter, Esc, T, Enter when local key routing is reliable",
+                                    expectedVisibleResult = "ACTIVE_TALENT_SLOT_CHOICE uses the same dark PR04 panel chrome and shows four replacement slots, one reserve row, and Esc cancel; active-slot evidence must not duplicate the panel-start capture.",
+                                    evidenceFile = "client/build/reports/golden/dark-uiux-pr04/dark-uiux-pr04-active-slot-choice.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (manual resize from Talent Assign state)",
+                                    input = "Resize to minimum supported viewport",
+                                    expectedVisibleResult = "Talent Assign compact viewport keeps the selected row, current detail, footer actions, and bottom legend readable without internal overlap.",
+                                    evidenceFile = "evidence/dark-uiux-pr04-talent-assign-min-window-log-visible.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (after leaving Talent Assign)",
+                                    input = "Esc from Talent Assign, capture shell",
+                                    expectedVisibleResult = "PR03 right companion equipment, inventory, status surface, shell hotbar, and bottom log are restored after leaving Talent Assign.",
+                                    evidenceFile = "evidence/dark-uiux-pr04-right-companion-coexistence.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/dark-uiux-pr04-profession-tree-ui.md",
+                    ),
+            ),
+            ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr02"),
                 prId = "PR-02",
                 runtime =

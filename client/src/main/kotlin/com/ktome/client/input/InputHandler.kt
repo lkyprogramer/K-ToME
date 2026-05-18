@@ -5,6 +5,7 @@ import com.badlogic.gdx.Input.Keys
 import com.ktome.client.render.DemoNavRailButtonLayout
 import com.ktome.client.render.layout.DemoShellLayoutRequest
 import com.ktome.client.render.layout.DemoShellLayoutSolver
+import com.ktome.client.ui.chrome.ChromeFrameBounds
 import com.ktome.client.ui.combat.CombatDecisionFeedbackKeys
 import com.ktome.client.ui.combat.CombatDecisionFrame
 import com.ktome.client.ui.combat.CombatDecisionFrameState
@@ -17,6 +18,11 @@ import com.ktome.client.ui.layout.ModalFrameLocalState
 import com.ktome.client.ui.layout.ModalStack
 import com.ktome.client.ui.layout.PaneFocusAnchor
 import com.ktome.client.ui.layout.PaneFocusController
+import com.ktome.client.ui.talent.TalentAssignListViewportRequest
+import com.ktome.client.ui.talent.TalentAssignPanelLayoutSolver
+import com.ktome.client.ui.talent.TalentAssignPanelModalBoundsRequest
+import com.ktome.client.ui.talent.TalentTreeSelectionIdentity
+import com.ktome.client.ui.talent.toTalentTreeSelectionIdentity
 import com.ktome.client.validation.ValidationScenarioPresentationCatalog
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.GridPointSnapshot
@@ -26,7 +32,6 @@ import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.snapshot.TalentTreeNodeSnapshot
-import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.PrimaryStat
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
@@ -79,6 +84,7 @@ data class OverlayState(
     val loadoutSlotSelection: Int = 1,
     val loadoutReserveSelection: Int = 0,
     val talentTreeSelection: Int = 0,
+    val talentTreeSelectionIdentity: TalentTreeSelectionIdentity? = null,
     val talentTreePreviewExpanded: Boolean = true,
     val talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE,
     val targetingSlot: Int? = null,
@@ -105,6 +111,7 @@ class InputHandler(
 ) {
     private val uiMessageDisplayFrames = 90
     private val inventoryPageSize = 8
+    private val talentTreePageStep = 6
     private val overlayCloseBindings = listOf(Keys.F)
     private val repeatInitialDelayFrames = 12
     private val repeatIntervalFrames = 3
@@ -154,6 +161,7 @@ class InputHandler(
     private var loadoutSlotSelection: Int = 1
     private var loadoutReserveSelection: Int = 0
     private var talentTreeSelection: Int = 0
+    private var talentTreeSelectionIdentity: TalentTreeSelectionIdentity? = null
     private var talentTreePreviewExpanded: Boolean = true
     private var talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE
     private var targetingSlot: Int? = null
@@ -187,6 +195,7 @@ class InputHandler(
             loadoutSlotSelection = loadoutSlotSelection,
             loadoutReserveSelection = loadoutReserveSelection,
             talentTreeSelection = talentTreeSelection,
+            talentTreeSelectionIdentity = talentTreeSelectionIdentity,
             talentTreePreviewExpanded = talentTreePreviewExpanded,
             talentAssignFocus = talentAssignFocus,
             targetingSlot = targetingSlot,
@@ -1314,7 +1323,10 @@ class InputHandler(
             return null
         }
         val treeNodes = talentTreeNodes(snapshot)
-        talentTreeSelection = talentTreeSelection.coerceIn(0, (treeNodes.size - 1).coerceAtLeast(0))
+        restoreTalentTreeSelection(treeNodes)
+        if (handleTalentAssignPointer(snapshot, treeNodes)) {
+            return null
+        }
         if (input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)) {
             if (hasPendingTalentAllocation(snapshot)) {
                 if (requiresActiveTalentSlotChoice(snapshot)) {
@@ -1348,8 +1360,7 @@ class InputHandler(
             val nextSelection = (talentTreeSelection - 1).coerceAtLeast(0)
             talentAssignFocus = TalentAssignFocus.TREE
             if (nextSelection != talentTreeSelection) {
-                talentTreeSelection = nextSelection
-                updateTopModalState { state -> state.copy(talentTreeSelection = talentTreeSelection) }
+                setTalentTreeSelection(nextSelection, treeNodes)
             }
             return null
         }
@@ -1357,8 +1368,23 @@ class InputHandler(
             val nextSelection = (talentTreeSelection + 1).coerceAtMost(treeNodes.lastIndex.coerceAtLeast(0))
             talentAssignFocus = TalentAssignFocus.TREE
             if (nextSelection != talentTreeSelection) {
-                talentTreeSelection = nextSelection
-                updateTopModalState { state -> state.copy(talentTreeSelection = talentTreeSelection) }
+                setTalentTreeSelection(nextSelection, treeNodes)
+            }
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.PAGE_UP)) {
+            val nextSelection = (talentTreeSelection - talentTreePageStep).coerceAtLeast(0)
+            talentAssignFocus = TalentAssignFocus.TREE
+            if (nextSelection != talentTreeSelection) {
+                setTalentTreeSelection(nextSelection, treeNodes)
+            }
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.PAGE_DOWN)) {
+            val nextSelection = (talentTreeSelection + talentTreePageStep).coerceAtMost(treeNodes.lastIndex.coerceAtLeast(0))
+            talentAssignFocus = TalentAssignFocus.TREE
+            if (nextSelection != talentTreeSelection) {
+                setTalentTreeSelection(nextSelection, treeNodes)
             }
             return null
         }
@@ -1375,6 +1401,101 @@ class InputHandler(
 
         return null
     }
+
+    private fun handleTalentAssignPointer(
+        snapshot: RenderSnapshot,
+        treeNodes: List<TalentTreeNodeSnapshot>,
+    ): Boolean {
+        if (!input.isButtonJustPressed(Buttons.LEFT) || treeNodes.isEmpty()) {
+            return false
+        }
+        val layout =
+            TalentAssignPanelLayoutSolver.resolveForViewport(
+                TalentAssignPanelModalBoundsRequest(
+                    viewportWidth = input.viewportWidth().toFloat(),
+                    viewportHeight = input.viewportHeight().toFloat(),
+                ),
+            )
+        val pointerX = input.pointerX().toFloat()
+        val pointerY = input.pointerY().toFloat()
+        val entries = talentAssignPointerEntries(snapshot)
+        val viewport = talentAssignPointerViewport(entries, layout.body.list.visibleSlots)
+        if (layout.body.scrollbar.bounds.containsPointer(pointerX, pointerY)) {
+            val nextSelection =
+                when {
+                    !viewport.hasOverflow -> talentTreeSelection
+                    pointerY >= layout.body.scrollbar.bounds.top - TalentAssignPanelLayoutSolver.scrollbarArrowHeight ->
+                        (talentTreeSelection - 1).coerceAtLeast(0)
+                    pointerY <= layout.body.scrollbar.bounds.y + TalentAssignPanelLayoutSolver.scrollbarArrowHeight ->
+                        (talentTreeSelection + 1).coerceAtMost(treeNodes.lastIndex)
+                    pointerY > layout.body.scrollbar.bounds.y + layout.body.scrollbar.bounds.height / 2f ->
+                        (talentTreeSelection - talentTreePageStep).coerceAtLeast(0)
+                    else ->
+                        (talentTreeSelection + talentTreePageStep).coerceAtMost(treeNodes.lastIndex)
+                }
+            talentAssignFocus = TalentAssignFocus.TREE
+            if (nextSelection != talentTreeSelection) {
+                setTalentTreeSelection(nextSelection, treeNodes)
+            }
+            return true
+        }
+        if (!layout.body.list.bounds.containsPointer(pointerX, pointerY)) {
+            return false
+        }
+        val slotOffset = ((layout.body.list.bounds.top - pointerY) / TalentAssignPanelLayoutSolver.rowStep).toInt()
+        val entry = entries.getOrNull(viewport.firstVisibleIndex + slotOffset)
+        if (entry is TalentAssignPointerEntry.Node) {
+            talentAssignFocus = TalentAssignFocus.TREE
+            setTalentTreeSelection(entry.selectionIndex, treeNodes)
+        }
+        return true
+    }
+
+    private fun talentAssignPointerEntries(snapshot: RenderSnapshot): List<TalentAssignPointerEntry> =
+        buildList {
+            var selectionIndex = 0
+            snapshot.uiState.talentTrees.forEach { tree ->
+                add(TalentAssignPointerEntry.SectionHeader)
+                tree.nodes.forEach {
+                    add(TalentAssignPointerEntry.Node(selectionIndex))
+                    selectionIndex += 1
+                }
+            }
+        }
+
+    private fun talentAssignPointerViewport(
+        entries: List<TalentAssignPointerEntry>,
+        visibleSlots: Int,
+    ) =
+        TalentAssignPanelLayoutSolver.resolveListViewport(
+            TalentAssignListViewportRequest(
+                totalSlots = entries.size,
+                focusedIndex = talentAssignFocusedEntryIndex(entries),
+                visibleSlots = visibleSlots,
+            ),
+        )
+
+    private fun talentAssignFocusedEntryIndex(entries: List<TalentAssignPointerEntry>): Int? {
+        val focusedIndex =
+            entries.indexOfFirst { entry ->
+                entry is TalentAssignPointerEntry.Node && entry.selectionIndex == talentTreeSelection
+            }
+        return focusedIndex.takeIf { index -> index >= 0 }
+    }
+
+    private sealed interface TalentAssignPointerEntry {
+        data object SectionHeader : TalentAssignPointerEntry
+
+        data class Node(
+            val selectionIndex: Int,
+        ) : TalentAssignPointerEntry
+    }
+
+    private fun ChromeFrameBounds.containsPointer(
+        pointerX: Float,
+        pointerY: Float,
+    ): Boolean =
+        pointerX >= x && pointerX < right && pointerY >= y && pointerY < top
 
     private fun pollActiveTalentSlotChoiceCommand(): PlayerCommand? {
         if (input.isKeyJustPressed(Keys.ESCAPE)) {
@@ -1555,7 +1676,7 @@ class InputHandler(
     private fun enterTalentAssign(snapshot: RenderSnapshot) {
         loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
         loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
-        talentTreeSelection = talentTreeSelection.coerceIn(0, (talentTreeNodes(snapshot).size - 1).coerceAtLeast(0))
+        restoreTalentTreeSelection(talentTreeNodes(snapshot))
         talentAssignFocus = TalentAssignFocus.TREE
         openModalFrame(
             ModalFrame(
@@ -1565,6 +1686,7 @@ class InputHandler(
                         loadoutSlotSelection = loadoutSlotSelection,
                         loadoutReserveSelection = loadoutReserveSelection,
                         talentTreeSelection = talentTreeSelection,
+                        talentTreeSelectionIdentity = talentTreeSelectionIdentity,
                         talentTreePreviewExpanded = talentTreePreviewExpanded,
                     ),
             ),
@@ -1782,6 +1904,7 @@ class InputHandler(
     }
 
     private fun closeCurrentModalFrame() {
+        flushTalentTreeSelectionIdentityFromTopFrame()
         val popped = modalStack.pop()
         val targetingFrameStillActive = modalStack.frames().any { frame -> frame.kind == ModalFrameKind.TARGETING }
         if (
@@ -1806,6 +1929,7 @@ class InputHandler(
     }
 
     private fun closeAllModalFrames() {
+        flushTalentTreeSelectionIdentityFromTopFrame()
         modalStack.clear()
         targetingSlot = null
         targetingInscriptionHotkey = null
@@ -1821,6 +1945,7 @@ class InputHandler(
 
     private fun resetActiveModalForPassiveTakeover(messageKey: String) {
         showUiMessage(messageKey)
+        flushTalentTreeSelectionIdentityFromTopFrame()
         modalStack.clear()
         targetingSlot = null
         targetingInscriptionHotkey = null
@@ -1839,6 +1964,7 @@ class InputHandler(
             resetMovementRepeat()
             return
         }
+        flushTalentTreeSelectionIdentityFromTopFrame()
         val removedKinds = kinds.toSet()
         val retained = modalStack.frames().filterNot { frame -> frame.kind in removedKinds }
         if (ModalFrameKind.COMBAT_DECISION in removedKinds) {
@@ -1897,10 +2023,18 @@ class InputHandler(
     }
 
     private fun updateTopModalState(transform: (ModalFrameLocalState) -> ModalFrameLocalState) {
-        if (modalStack.isEmpty) {
+        val frame = modalStack.top() ?: return
+        val nextLocalState = transform(frame.localState)
+        if (nextLocalState == frame.localState) {
             return
         }
-        modalStack.replaceTop { frame -> frame.copy(localState = transform(frame.localState)) }
+        modalStack.replaceTop { it.copy(localState = nextLocalState) }
+    }
+
+    private fun flushTalentTreeSelectionIdentityFromTopFrame() {
+        modalStack.top()?.localState?.talentTreeSelectionIdentity?.let { identity ->
+            talentTreeSelectionIdentity = identity
+        }
     }
 
     private fun setExplainPaneOpen(open: Boolean) {
@@ -2037,14 +2171,7 @@ class InputHandler(
             snapshot.uiState.talentTrees.any { tree -> tree.nodes.any { node -> node.hasPendingAllocation } }
 
     private fun requiresActiveTalentSlotChoice(snapshot: RenderSnapshot): Boolean =
-        pendingNewActiveTalentNodes(snapshot).isNotEmpty() &&
-            snapshot.uiState.talents.size >= PLAYER_ACTIVE_TALENT_SLOT_COUNT
-
-    private fun pendingNewActiveTalentNodes(snapshot: RenderSnapshot): List<TalentTreeNodeSnapshot> =
-        snapshot.uiState.talentTrees
-            .flatMap { tree -> tree.nodes }
-            .filter { node -> node.hasPendingAllocation && node.committedRank <= 0 && node.rank > 0 }
-            .filter { node -> node.requiresActiveTalentSlot() }
+        snapshot.uiState.activeTalentSlotChoiceRequirement != null
 
     private fun openActiveTalentSlotChoiceFrame() {
         if (modalStack.top()?.kind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE) {
@@ -2056,6 +2183,7 @@ class InputHandler(
                 localState =
                     ModalFrameLocalState(
                         talentTreeSelection = talentTreeSelection,
+                        talentTreeSelectionIdentity = talentTreeSelectionIdentity,
                         talentTreePreviewExpanded = talentTreePreviewExpanded,
                     ),
             ),
@@ -2064,6 +2192,58 @@ class InputHandler(
 
     private fun talentTreeNodes(snapshot: RenderSnapshot): List<TalentTreeNodeSnapshot> =
         snapshot.uiState.talentTrees.flatMap { tree -> tree.nodes }
+
+    private fun restoreTalentTreeSelection(treeNodes: List<TalentTreeNodeSnapshot>) {
+        if (treeNodes.isEmpty()) {
+            talentTreeSelection = 0
+            talentTreeSelectionIdentity = null
+            updateTopModalState { state -> state.copy(talentTreeSelection = 0, talentTreeSelectionIdentity = null) }
+            return
+        }
+        val localIdentity = modalStack.top()?.localState?.talentTreeSelectionIdentity
+        val preferredIdentity = localIdentity ?: talentTreeSelectionIdentity
+        val restoredIndex =
+            preferredIdentity?.let { identity ->
+                treeNodes.indexOfFirst { node -> node.toTalentTreeSelectionIdentity() == identity }.takeIf { index -> index >= 0 }
+            }
+        val nextSelection =
+            when {
+                restoredIndex != null -> restoredIndex
+                preferredIdentity != null -> 0
+                else -> talentTreeSelection.coerceIn(0, treeNodes.lastIndex)
+            }
+        setTalentTreeSelection(nextSelection, treeNodes)
+    }
+
+    private fun setTalentTreeSelection(
+        selection: Int,
+        treeNodes: List<TalentTreeNodeSnapshot>,
+    ) {
+        val nextSelection = selection.coerceIn(0, treeNodes.lastIndex.coerceAtLeast(0))
+        val nextIdentity = treeNodes.getOrNull(nextSelection)?.toTalentTreeSelectionIdentity()
+        val currentLocalState = modalStack.top()?.localState
+        if (
+            talentTreeSelection == nextSelection &&
+            talentTreeSelectionIdentity == nextIdentity &&
+            (
+                currentLocalState == null ||
+                    (
+                        currentLocalState.talentTreeSelection == nextSelection &&
+                            currentLocalState.talentTreeSelectionIdentity == nextIdentity
+                    )
+            )
+        ) {
+            return
+        }
+        talentTreeSelection = nextSelection
+        talentTreeSelectionIdentity = nextIdentity
+        updateTopModalState { state ->
+            state.copy(
+                talentTreeSelection = talentTreeSelection,
+                talentTreeSelectionIdentity = talentTreeSelectionIdentity,
+            )
+        }
+    }
 
     private fun selectedTalentTreeNode(snapshot: RenderSnapshot): TalentTreeNodeSnapshot? =
         talentTreeNodes(snapshot).getOrNull(talentTreeSelection)
@@ -2075,7 +2255,13 @@ class InputHandler(
     ) {
         val trees = snapshot.uiState.talentTrees.filter { tree -> tree.nodes.isNotEmpty() }
         val selected = treeNodes.getOrNull(talentTreeSelection) ?: return
-        val currentTreeIndex = trees.indexOfFirst { tree -> tree.treeId == selected.treeId }
+        val selectedOwnerType = parseOwnerType(selected.ownerType)
+        val currentTreeIndex =
+            trees.indexOfFirst { tree ->
+                tree.treeId == selected.treeId &&
+                    parseOwnerType(tree.ownerType) == selectedOwnerType &&
+                    tree.treeOwnerId == selected.treeOwnerId
+            }
         if (currentTreeIndex < 0) {
             return
         }
@@ -2086,11 +2272,11 @@ class InputHandler(
         }
         val rowIndex = trees[currentTreeIndex].nodes.indexOfFirst { node -> node.talentId == selected.talentId }.coerceAtLeast(0)
         val targetNode = targetTree.nodes.getOrNull(rowIndex.coerceAtMost(targetTree.nodes.lastIndex)) ?: return
-        val nextSelection = treeNodes.indexOfFirst { node -> node.talentId == targetNode.talentId }.coerceAtLeast(0)
+        val targetIdentity = targetNode.toTalentTreeSelectionIdentity()
+        val nextSelection = treeNodes.indexOfFirst { node -> node.toTalentTreeSelectionIdentity() == targetIdentity }.coerceAtLeast(0)
         talentAssignFocus = TalentAssignFocus.TREE
         if (nextSelection != talentTreeSelection) {
-            talentTreeSelection = nextSelection
-            updateTopModalState { state -> state.copy(talentTreeSelection = talentTreeSelection) }
+            setTalentTreeSelection(nextSelection, treeNodes)
         }
     }
 
@@ -2132,9 +2318,6 @@ class InputHandler(
             ownerType = parseOwnerType(ownerType),
             treeOwnerId = treeOwnerId,
         )
-
-    private fun TalentTreeNodeSnapshot.requiresActiveTalentSlot(): Boolean =
-        category in activeTalentCategories
 
     private fun parseOwnerType(ownerType: String): TalentTreeOwnerType =
         enumValueOf<TalentTreeOwnerType>(ownerType)
@@ -2207,6 +2390,3 @@ class InputHandler(
 
     private fun isOverlayCloseBinding(): Boolean = overlayCloseBindings.any(input::isKeyJustPressed)
 }
-
-private val activeTalentCategories: Set<TalentCategory> =
-    setOf(TalentCategory.ACTIVE, TalentCategory.SUSTAINED)

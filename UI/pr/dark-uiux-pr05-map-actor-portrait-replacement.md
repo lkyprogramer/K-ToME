@@ -6,6 +6,15 @@
 **前置条件**: PR-01、PR-01-1、PR-02、PR-02-1、PR-02-2 owner evidence、PR-03、PR-04 已按各自 close gate 完成。
 **资源生成结论**: 生成 Round 2-6 资源，替换 `tileset / prop / VFX / actor / bestiary icon / portrait` 视觉族。标题中的 portrait replacement 包含 bestiary icon、profession portrait、talent tree portrait 和 zone visual。
 
+## Open Design 辅助参考
+
+开发 PR05 时可在完成本 PR 预检后读取以下辅助设计输入：
+
+1. [K-ToME Dark UI Design Reference For Open Design](../review/open-design/ktome-dark-ui-design.md)：统一 color roles、spacing、component states 与 anti-pattern 语言。
+2. [Dark UI/UX PR05 Map Actor Portrait Design Notes](../review/open-design/dark-uiux-pr05-map-actor-portrait-design.md)：辅助 art direction、prompt 变体、contact-sheet QA rubric、silhouette、32px 可读性、telegraph/actor 叠加与 tile/prop/portrait 同时代一致性检查。
+
+这些文档只用于设计理解、review、prompt 草案和 contact-sheet QA 讨论，不能覆盖本 PR 的 sheet-plan、owner inventory、sprite map report、manifest、coverage、golden/manual evidence 或资源生成管线。
+
 ## 0. 开发治理与验收矩阵
 
 本 PR 继承 [development-governance.md](./development-governance.md)。执行前先跑 `acceptanceContractLint`，再跑 tile / actor resource gate、client layer tests、client evidence 和最终 `verifyChanged`。通用验证阶梯见 [docs/verification/README.md](../../docs/verification/README.md)，AI / agent 红线见 [docs/rule/ai-change-governance.md](../../docs/rule/ai-change-governance.md)。
@@ -30,7 +39,7 @@ sdk env
 | PR-01-1 map sublayer owner | `./gradlew :client:test --tests com.ktome.client.render.TileLayerComposerTest --tests com.ktome.client.render.TileRendererCanvasTest` and `UI/manual-records/dark-uiux-pr01-1-viewport-renderer-overlay.md` `Frame Ownership Self-Audit` | test class / method 不存在、manual record 缺少 map sublayer order 或 frame ownership self-audit |
 | PR-02-1 / PR-02-2 demo shell and first-screen visual evidence | `ui-demo-new-parity-1672x941`, `ui-demo-new-parity-1280x800`, `ui-demo-new-map-stage-crop`, `UI/manual-records/dark-uiux-pr02-1-demo-shell-foundation.md`, `UI/manual-records/ui-demo-new-visual-parity.md`, `:tools:darkManifestCoveragePr02_1OwnerScope`, `:tools:darkManifestCoveragePr02_2OwnerScope` | `ui-demo-new-*` evidence 缺失、right panel ground loot 回归、bottom command hints 回归、`tileset.ruins.*` / `actor.vanguard` / `prop.stairs.down` 的 PR-02-2 owner evidence 缺失 |
 | PR-03 map ground loot marker and inventory evidence | `dark-uiux-pr03-equipment-slots`, `dark-uiux-pr03-inventory-empty`, `dark-uiux-pr03-inventory-stacked`, `UI/manual-records/dark-uiux-pr03-equipment-inventory-items.md`, `UI/manual-records/dark-uiux-pr03-fallback-key-injection.md` | golden/manual label 不存在、fallback injection record 缺 `coverageReportPath`、right-panel ground loot 回归，或 map ground loot marker 仍没有 focused/canvas evidence |
-| PR-04 profession tree / modal evidence | `dark-uiux-pr04-talent-sidebar-start`, `dark-uiux-pr04-active-slot-choice`, `dark-uiux-pr04-talent-sidebar-min-window-log-visible`, `UI/manual-records/dark-uiux-pr04-profession-tree-ui.md` | modal / talent sidebar evidence 缺失，或 min-window log overlap 仍未关闭 |
+| PR-04 talent assign / modal evidence | `dark-uiux-pr04-talent-assign-panel-start`, `dark-uiux-pr04-active-slot-choice`, `dark-uiux-pr04-talent-assign-min-window-log-visible`, `dark-uiux-pr04-right-companion-coexistence`, `UI/manual-records/dark-uiux-pr04-profession-tree-ui.md` | modal / talent assign evidence 缺失，或 min-window log overlap 仍未关闭 |
 | PR-02 resource pipeline | `:tools:darkManifestCoveragePr02OwnerScope` | owner-scope artifact 不含 PR-02 required sheet ids，或 PR-02 tooling diff 尚未收口 |
 
 ### Acceptance Matrix

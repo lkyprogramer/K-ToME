@@ -33,6 +33,7 @@ import com.ktome.core.snapshot.RouteSelectionSnapshot
 import com.ktome.core.snapshot.ShopOfferSnapshot
 import com.ktome.core.snapshot.ShopPanelSnapshot
 import com.ktome.core.snapshot.ShopSellEntrySnapshot
+import com.ktome.core.snapshot.TalentActiveSlotChoiceRequirementSnapshot
 import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
@@ -1454,11 +1455,306 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `pending active or sustained tree talent opens active slot choice when loadout is full`() {
+    fun talentTreeSelectionRestoresByIdentityWhenSnapshotOrderChanges() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val initialSnapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                listOf(
+                                    talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name"),
+                                    talentTreeNode("sweeping_strike", "vanguard_arms", "talent.vanguard.sweeping_strike.name"),
+                                ),
+                        ),
+                    ),
+            )
+        val reorderedSnapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                listOf(
+                                    talentTreeNode("sweeping_strike", "vanguard_arms", "talent.vanguard.sweeping_strike.name"),
+                                    talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name"),
+                                ),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(initialSnapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(initialSnapshot))
+        assertEquals(1, handler.overlayState().talentTreeSelection)
+        assertEquals("sweeping_strike", handler.overlayState().talentTreeSelectionIdentity?.talentId)
+        input.clear()
+
+        input.frame()
+        assertNull(handler.pollCommand(reorderedSnapshot))
+        assertEquals(0, handler.overlayState().talentTreeSelection)
+        assertEquals("sweeping_strike", handler.overlayState().talentTreeSelectionIdentity?.talentId)
+    }
+
+    @Test
+    fun talentTreeSelectionFallsBackToFirstVisibleNodeWhenIdentityDisappears() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val initialSnapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                listOf(
+                                    talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name"),
+                                    talentTreeNode("sweeping_strike", "vanguard_arms", "talent.vanguard.sweeping_strike.name"),
+                                ),
+                        ),
+                    ),
+            )
+        val changedSnapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes = listOf(talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name")),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(initialSnapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(initialSnapshot))
+        assertEquals("sweeping_strike", handler.overlayState().talentTreeSelectionIdentity?.talentId)
+        input.clear()
+
+        input.frame()
+        assertNull(handler.pollCommand(changedSnapshot))
+        assertEquals(0, handler.overlayState().talentTreeSelection)
+        assertEquals("charge", handler.overlayState().talentTreeSelectionIdentity?.talentId)
+    }
+
+    @Test
+    fun modalCloseFlushesTalentSelectionIdentityToOverlayState() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                listOf(
+                                    talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name"),
+                                    talentTreeNode("sweeping_strike", "vanguard_arms", "talent.vanguard.sweeping_strike.name"),
+                                ),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+        assertEquals("sweeping_strike", handler.overlayState().talentTreeSelectionIdentity?.talentId)
+    }
+
+    @Test
+    fun talentTreeSidebarIgnoresNumberHotkeysOutsideActiveSlotChoice() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                listOf(
+                                    talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name"),
+                                    talentTreeNode("sweeping_strike", "vanguard_arms", "talent.vanguard.sweeping_strike.name"),
+                                ),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.NUM_4))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TALENT_ASSIGN, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.TALENT_ASSIGN, handler.overlayState().activeModalKind)
+        assertEquals(0, handler.overlayState().talentTreeSelection)
+    }
+
+    @Test
+    fun activeSlotChoiceModalOpensWithSlotOneFocused() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithPendingTreeTalent(TalentCategory.ACTIVE, activeTalentSlotChoiceRequired = true)
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+
+        assertEquals(ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE, handler.overlayState().activeModalKind)
+        assertEquals(0, handler.overlayState().modalFrames.last().localState.focusIndex)
+    }
+
+    @Test
+    fun activeSlotChoiceNumbersReplaceSlotsAndCloseModal() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithPendingTreeTalent(TalentCategory.ACTIVE, activeTalentSlotChoiceRequired = true)
+
+        openActiveSlotChoice(input, handler, snapshot)
+
+        input.frame(justPressed = setOf(Keys.NUM_3))
+        assertEquals(PlayerCommand.ConfirmTalentDraftReplacingSlot(3), handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+    }
+
+    @Test
+    fun activeSlotChoiceReserveConfirmsToReserve() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithPendingTreeTalent(TalentCategory.ACTIVE, activeTalentSlotChoiceRequired = true)
+
+        openActiveSlotChoice(input, handler, snapshot)
+
+        input.frame(justPressed = setOf(Keys.R))
+        assertEquals(PlayerCommand.ConfirmTalentDraftToReserve, handler.pollCommand(snapshot))
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+    }
+
+    @Test
+    fun activeSlotChoiceEscRollsBackDraft() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithPendingTreeTalent(TalentCategory.ACTIVE, activeTalentSlotChoiceRequired = true)
+
+        openActiveSlotChoice(input, handler, snapshot)
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertEquals(PlayerCommand.RollbackTalentDraft, handler.pollCommand(snapshot))
+        assertTrue(handler.overlayState().modalFrames.isEmpty())
+    }
+
+    @Test
+    fun talentSlotChoiceIgnoresNonContractKeys() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithPendingTreeTalent(TalentCategory.ACTIVE, activeTalentSlotChoiceRequired = true)
+
+        openActiveSlotChoice(input, handler, snapshot)
+
+        listOf(Keys.BACKSPACE, Keys.T, Keys.TAB, Keys.DOWN).forEach { key ->
+            input.frame(justPressed = setOf(key))
+            assertNull(handler.pollCommand(snapshot))
+            assertEquals(ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE, handler.overlayState().activeModalKind)
+            input.clear()
+        }
+    }
+
+    @Test
+    fun talentTreeMouseClickSelectsVisibleNode() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                listOf(
+                                    talentTreeNode("charge", "vanguard_arms", "talent.vanguard.charge.name"),
+                                    talentTreeNode("sweeping_strike", "vanguard_arms", "talent.vanguard.sweeping_strike.name"),
+                                ),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.click(x = 250, y = 624)
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(1, handler.overlayState().talentTreeSelection)
+        assertEquals(ModalFrameKind.TALENT_ASSIGN, handler.overlayState().activeModalKind)
+    }
+
+    @Test
+    fun talentTreeScrollbarClickMovesSelectionByPage() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "vanguard_arms",
+                            nodes =
+                                List(24) { index ->
+                                    talentTreeNode("talent_$index", "vanguard_arms", "talent.vanguard.charge.name")
+                                },
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.click(x = 704, y = 120)
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(6, handler.overlayState().talentTreeSelection)
+        assertEquals(ModalFrameKind.TALENT_ASSIGN, handler.overlayState().activeModalKind)
+    }
+
+    @Test
+    fun `snapshot slot choice signal opens active slot choice when loadout is full`() {
         listOf(TalentCategory.ACTIVE, TalentCategory.SUSTAINED).forEach { category ->
             val input = ReplayInputSource()
             val handler = InputHandler(input)
-            val snapshot = snapshotWithPendingTreeTalent(category)
+            val snapshot = snapshotWithPendingTreeTalent(category, activeTalentSlotChoiceRequired = true)
 
             input.frame(justPressed = setOf(Keys.T))
             assertNull(handler.pollCommand(snapshot))
@@ -1468,6 +1764,21 @@ class InputHandlerTest {
             assertNull(handler.pollCommand(snapshot))
             assertEquals(ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE, handler.overlayState().activeModalKind)
         }
+    }
+
+    @Test
+    fun `pending active tree talent without snapshot slot choice signal confirms draft`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithPendingTreeTalent(TalentCategory.ACTIVE, activeTalentSlotChoiceRequired = false)
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.ConfirmTalentDraft, handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.TALENT_ASSIGN, handler.overlayState().activeModalKind)
     }
 
     @Test
@@ -1708,6 +2019,21 @@ class InputHandlerTest {
         return field.get(session) as World
     }
 
+    private fun openActiveSlotChoice(
+        input: ReplayInputSource,
+        handler: InputHandler,
+        snapshot: RenderSnapshot,
+    ) {
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE, handler.overlayState().activeModalKind)
+        input.clear()
+    }
+
     private fun ReplayInputSource.clickNavRailButton(index: Int) {
         val layout =
             DemoShellLayoutSolver.resolve(
@@ -1734,6 +2060,7 @@ class InputHandlerTest {
         activeRouteSelection: RouteSelectionSnapshot? = null,
         targetablePositions: List<com.ktome.core.snapshot.GridPointSnapshot> = emptyList(),
         talentTrees: List<TalentTreeSnapshot> = emptyList(),
+        activeTalentSlotChoiceRequirement: TalentActiveSlotChoiceRequirementSnapshot? = null,
         talents: List<TalentSlotSnapshot> =
             listOf(
                 activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
@@ -1794,6 +2121,7 @@ class InputHandlerTest {
                     talents = talents,
                     reserveTalents = reserveTalents,
                     talentTrees = talentTrees,
+                    activeTalentSlotChoiceRequirement = activeTalentSlotChoiceRequirement,
                     inscriptions = inscriptions,
                     inventory = inventory,
                     activeShop = activeShop,
@@ -1852,7 +2180,10 @@ class InputHandlerTest {
             hasPendingAllocation = hasPendingAllocation,
         )
 
-    private fun snapshotWithPendingTreeTalent(category: TalentCategory): RenderSnapshot =
+    private fun snapshotWithPendingTreeTalent(
+        category: TalentCategory,
+        activeTalentSlotChoiceRequired: Boolean = false,
+    ): RenderSnapshot =
         snapshotWithLoadout(
             talents =
                 (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).map { slot ->
@@ -1878,9 +2209,19 @@ class InputHandlerTest {
                                     committedRank = 0,
                                     hasPendingAllocation = true,
                                 ),
-                            ),
+                        ),
                     ),
                 ),
+            activeTalentSlotChoiceRequirement =
+                if (activeTalentSlotChoiceRequired) {
+                    TalentActiveSlotChoiceRequirementSnapshot(
+                        candidateTalentId = "charge",
+                        ownerType = TalentTreeOwnerType.PROFESSION.name,
+                        treeOwnerId = "vanguard",
+                    )
+                } else {
+                    null
+                },
         )
 
     private fun activeTalent(

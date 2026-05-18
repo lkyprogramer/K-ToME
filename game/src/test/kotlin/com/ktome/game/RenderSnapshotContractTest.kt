@@ -197,6 +197,31 @@ class RenderSnapshotContractTest {
     }
 
     @Test
+    fun `talent tree snapshots use prerequisite chain presentation order`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("talent-tree-presentation-order")),
+            )
+
+        val trees = session.renderSnapshot().uiState.talentTrees.associateBy { tree -> tree.treeId }
+
+        assertEquals(
+            listOf("power_strike", "sweeping_strike", "linebreaker", "earthshaker", "charge", "sunder_armor"),
+            requireNotNull(trees["vanguard_arms"]).nodes.map { node -> node.talentId },
+        )
+        assertEquals(3, requireNotNull(trees["vanguard_arms"]).nodes.first { node -> node.talentId == "sweeping_strike" }.unlockLevel)
+        assertEquals(
+            listOf("shield_bash", "taunt", "guard_stance", "iron_wall", "bulwark_march"),
+            requireNotNull(trees["vanguard_shield"]).nodes.map { node -> node.talentId },
+        )
+        assertEquals(
+            listOf("war_cry", "rallying_banner", "battlefield_command", "intimidation", "unyielding"),
+            requireNotNull(trees["vanguard_warcry"]).nodes.map { node -> node.talentId },
+        )
+    }
+
+    @Test
     fun `render snapshot exposes formal cast speed status fields`() {
         val session =
             GameModule.newFoundationSession(

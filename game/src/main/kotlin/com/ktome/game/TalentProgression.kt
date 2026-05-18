@@ -52,8 +52,8 @@ internal object TalentProgression {
         }.filter { talentId ->
             val talent = talentById[talentId] ?: return@filter true
             val tree = treeById[talent.treeId]
-            val nodeTier = tree?.let { candidate -> talentNodeTier(candidate, talentId) } ?: 1
-            request.level >= maxOf(talent.unlockLevel, tierUnlockLevelRequirement(nodeTier))
+            val requiredUnlockLevel = tree?.let { candidate -> requiredUnlockLevel(candidate, talent) } ?: talent.unlockLevel
+            request.level >= requiredUnlockLevel
         }
     }
 
@@ -95,7 +95,7 @@ internal object TalentProgression {
         }
 
         val nodeTier = talentNodeTier(tree, talentId)
-        val requiredUnlockLevel = maxOf(talent.unlockLevel, tierUnlockLevelRequirement(nodeTier))
+        val requiredUnlockLevel = requiredUnlockLevel(tree, talent)
         val reasons = mutableListOf<TalentLockReason>()
         if (request.level < requiredUnlockLevel) {
             reasons +=
@@ -161,6 +161,11 @@ internal object TalentProgression {
             else -> 3
         }
     }
+
+    fun requiredUnlockLevel(
+        tree: TalentTreeSchemaV2,
+        talent: TalentSchemaV2,
+    ): Int = maxOf(talent.unlockLevel, tierUnlockLevelRequirement(talentNodeTier(tree, talent.id)))
 
     fun treeInvestmentByTree(
         schemaCatalog: SchemaCatalog,

@@ -932,6 +932,8 @@ tasks.register<Exec>("manifestLint") {
         "--extra-plan",
         "assets-src/image/specs/phase4-v3-pr03-gemini-plan.yaml",
         "--extra-plan",
+        "assets-src/image/specs/phase4-uiux-pr04-reference-crop-plan.yaml",
+        "--extra-plan",
         "assets-src/image/specs/phase4-uiux-pr03-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-uiux-pr05-gemini-plan.yaml",
