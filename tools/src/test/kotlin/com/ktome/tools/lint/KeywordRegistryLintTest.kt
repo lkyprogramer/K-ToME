@@ -43,7 +43,7 @@ class KeywordRegistryLintTest {
             )
 
         assertEquals(
-            listOf("diminishing_returns", "dispel", "dot", "penetration", "power_save", "single_target", "sustain"),
+            listOf("diminishing_returns", "dispel", "dot", "penetration", "power_save", "single_target"),
             findings
                 .filter { finding -> finding.severity == KeywordRegistryLintSeverity.WARN }
                 .map(KeywordRegistryLintFinding::keywordId),

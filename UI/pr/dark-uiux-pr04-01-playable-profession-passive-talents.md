@@ -102,7 +102,7 @@ PR04-01 新增测试统一使用 `camelCase`。`ownerGate` 列中逗号分隔的
 | client detail fast lane | `:client:test --tests com.ktome.client.ui.talent.TalentSidebarPresenterTest --tests com.ktome.client.ui.talent.DescriptionPresenterTest` | Talent Assign 右侧详情、当前/下一等级被动展示变化 | client 只验证展示，不允许计算 gameplay passive | `durationSource` or `N/A before first verifyChanged` |
 | lint and contract | `contractLint`, `localeLint` | 新增 passive coverage rule、passive attractiveness floor、content-pack passive rule、locale token、description keyword 行 | coverage artifact 必须列出 `releaseBlocking`、`pr04_01BlockingDevPlayable`、`excludedFrozen`；unknown passive kind 必须 fail fast；passive value floor 不能退回单字段小数值；EV declaration、conditional uptime、trigger owner、same-dimension soft cap、DamageType enum order、converted talent id 精确集合和 passive line count budget 都是 blocking lint | `durationSource` or `N/A before first verifyChanged` |
 | client evidence | `:client:clientSmoke`, `:client:goldenScreenshot` | PASSIVE detail 视觉、right detail 节奏、active slot modal suppression 可见变化 | 必须执行；packaged whitebox skipped/executed manual record 必须填写 §7 固定字段 | `durationSource` or `N/A before first verifyChanged` |
-| whitebox materialization | `preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-static-passive-detail`, `preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-trigger-passive-detail`, `preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-passive-action-suppression` | PR04-01 玩家可见 PASSIVE detail / action 行为变化 | 三个 scenarioId 必须同时存在于 `ValidationScenarioRegistry`、`phase4-v4-scenarios.yaml` 和 `Phase4V4WhiteboxScenarioMaterializationCatalog` | `durationSource` or `N/A before first verifyChanged` |
+| whitebox materialization | `preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-static-passive-detail`, `preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-trigger-passive-detail`, `preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-passive-action-suppression`, `preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-effective-hp-regen-detail` | PR04-01 玩家可见 PASSIVE detail / action 行为变化 | 四个 scenarioId 必须同时存在于 `ValidationScenarioRegistry`、`phase4-v4-scenarios.yaml` 和 `Phase4V4WhiteboxScenarioMaterializationCatalog`; `trigger-passive-detail` 额外覆盖 `arcane_overload.castSpeedRating` effective decimal，`effective-hp-regen-detail` 覆盖 `pain_fuel.hpRegen` | `durationSource` or `N/A before first verifyChanged` |
 | governance / final closure | `maintainabilityLint`, `verifyChanged` | 新增 source-agnostic passive model、resolver 泛化、public presentation line | `maintainabilityLint` 新增 finding 不能用 baseline 掩盖；`verifyChanged` 不替代 owner gate | `durationSource` or `N/A before first verifyChanged` |
 
 ### Canonical Artifact
@@ -129,7 +129,7 @@ PR04-01 新增测试统一使用 `camelCase`。`ownerGate` 列中逗号分隔的
 | passive action log screenshot evidence | `build/whitebox/dark-uiux-pr04-01-passive-action-suppression/evidence/passive-action-log-no-reserve.png` | PR04-01 | 证明返回 shell/log 后无 respec、reserve confirmation、slot replacement 或 rollback error 文案 |
 | passive action app log evidence | `build/whitebox/dark-uiux-pr04-01-passive-action-suppression/evidence/passive-action-suppression-app.log` | PR04-01 | 证明按 `R` 后 log 中无 PASSIVE respec / reserve / slot command 且无 `log.talent.draft_rollback` |
 | expected evidence manifests | `build/whitebox/dark-uiux-pr04-01-static-passive-detail/expected-evidence.json`, `build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/expected-evidence.json`, `build/whitebox/dark-uiux-pr04-01-passive-action-suppression/expected-evidence.json` | PR04-01 | 生成并列出 §7 的全部 `requiredEvidenceFiles`、`requiredLogEventKeys`、`forbiddenLogFragments`、`expectedFocusedTalentId`、structured typed assertions 和 structured localized visible assertions；M14 拥有文件存在性合同 |
-| whitebox manual record | `UI/manual-records/dark-uiux-pr04-01-playable-profession-passive-talents.md` | PR04-01 | 记录三个 scenario 的执行结果；packaged whitebox executed/skipped 都必须填写 §7 固定字段 |
+| whitebox manual record | `UI/manual-records/dark-uiux-pr04-01-playable-profession-passive-talents.md` | PR04-01 | 记录四个 scenario 的执行结果；packaged whitebox executed/skipped 都必须填写 §7 固定字段 |
 | contract lint report | `tools/build/reports/tests/contractLint/index.html` | PR04-01 | 覆盖 playable passive count 和 frozen exclusion |
 | content-pack preflight summary | `tools/build/reports/verification/content-pack/preflight/content-pack-preflight-summary.json` | tools | 证明 talent overlay registry unsupported 与 content-pack preflight 未漂移 |
 | verify duration | `build/verification/verify-changed/full-task-duration-summary.{json,md}` | tools | 用于 Gate Budget 复盘；不存在时记录 `N/A before first verifyChanged` |
@@ -418,6 +418,7 @@ equipmentSourceEffectiveHeal =
 
    - When multiple equipment hp regen sources exist, round per-source cue amounts with largest-remainder allocation so the sum of equipment cue amounts equals the equipment-attributable healed amount. Talent `StatModifier.hpRegen` does not reuse the equipment cue key; it is visible through typed detail and source-aware derived stat tests.
 8. UI detail renders one `hpRegen` line after aggregation and DR. It displays the same effective value used by turn-start healing, not the raw sum, and must not show separate "equipment hp regen" and "talent hp regen" rows for the same final derived stat.
+9. Official talent schema loading fails fast if the same passive rank declares both `HpRegenPerTurn` and `StatModifier.hpRegen`. Authors must choose one hp regen display route so future content cannot create duplicate hp regen detail rows.
 
 ### 2.4 Runtime contract
 
@@ -457,8 +458,9 @@ Snapshot owner:
 
 1. `TalentPassiveDetailSnapshot`, `PassiveDetailLineSnapshot`, `PassiveDetailDeltaLineSnapshot`, `PassiveDetailLineKindSnapshot`, and `PassiveDetailLineToneSnapshot` live in `core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt`.
 2. `game` builds these snapshots in `FoundationGameSession` / `SessionSnapshotMapper` projection.
-3. `client` maps `PassiveDetailLineToneSnapshot` to `TalentPreviewToneToken`; `core` and `game` must not import `TalentPreviewToneToken`.
-4. `effectKind` is diagnostic only. Client display branching uses `lineKind` and `model.templateKey`, not raw passive effect class names.
+3. `game` owns semantic-to-label projection for stat/resource/damage/status/condition/terrain/tag args.
+4. `client` maps `PassiveDetailLineToneSnapshot` to `TalentPreviewToneToken` and renders `labelKey + valueToken`; it must not inspect raw passive ids or maintain passive arg label mappings.
+5. `diagnosticEffectKind` and `diagnosticArgs` are diagnostic only for tests, whitebox and typed assertions. Client display must not read them.
 
 Game/session boundary must project passive detail before client rendering:
 
@@ -493,8 +495,9 @@ enum class PassiveDetailLineToneSnapshot {
 @Serializable
 data class PassiveDetailLineSnapshot(
     val lineKind: PassiveDetailLineKindSnapshot,
-    val model: DescriptionModelSnapshot,
-    val argOrder: List<String>,
+    val labelKey: String,
+    val valueToken: RenderTextTokenSnapshot,
+    val diagnosticArgs: Map<String, String>,
     val sortKey: String,
     val tone: PassiveDetailLineToneSnapshot,
     val diagnosticEffectKind: String,
@@ -503,8 +506,9 @@ data class PassiveDetailLineSnapshot(
 @Serializable
 data class PassiveDetailDeltaLineSnapshot(
     val lineKind: PassiveDetailLineKindSnapshot,
-    val model: DescriptionModelSnapshot,
-    val argOrder: List<String>,
+    val labelKey: String,
+    val valueToken: RenderTextTokenSnapshot,
+    val diagnosticArgs: Map<String, String>,
     val sortKey: String,
     val tone: PassiveDetailLineToneSnapshot,
     val diagnosticEffectKind: String,
@@ -515,15 +519,17 @@ Projection rules:
 
 1. `game` builds `TalentPassiveDetailSnapshot` from `TalentDef.levelEffects[N].passiveEffects`.
 2. Delta calculation happens at `game` / snapshot projection boundary, not in renderer.
-3. `client` localizes `model.templateKey` and renders placeholders in `argOrder`; it does not inspect `PassiveEffect` classes for gameplay decisions.
+3. `client` localizes `line.labelKey` and renders `line.valueToken`; it does not inspect `PassiveEffect` classes, raw ids or `diagnosticArgs` for gameplay or display decisions.
 4. Unknown serialized passive kind fails fast at schema loader / contract lint boundaries. Projection must be exhaustive over every known `PassiveEffect` subtype and fail if a known kind has no detail template mapping; covered by `SessionSnapshotMapperTest.passiveDetailProjectionHandlesEveryKnownPassiveKind` and `SessionSnapshotMapperTest.passiveDetailProjectionFailsWhenKnownKindHasNoTemplateMapping`.
-5. Locale text owns labels only. Numeric values, status ids, damage types and resource types come from typed args.
-6. Multi-stat effects become one line per non-zero stat, so row order is never derived from `Map` iteration.
-7. All passive detail DTOs and enums in `core.snapshot` are `@Serializable` to match `RenderSnapshot` inspection, golden and contract tooling.
+5. `valueToken.arguments` uses `valueKey` for localizable domain labels (`statId`, `damageType`, `resourceType`, `condition`, `terrainTag`, monster `tag`, `statusId`) and `value` for already formatted numeric strings such as `+10`, `+3%`, `0`, `+1.0`.
+6. `diagnosticArgs` preserves raw ids and raw formatted values (`statId=maxHp`, `damageType=PHYSICAL`, `resourceType=MANA`, `condition=SELF_HAS_STATUS`, `statusId=GUARD_STANCE_BUFF`, `before`, `after`) for owner assertions only.
+7. Locale text owns labels only. Numeric values, status ids, damage types and resource types come from typed args projected by `game`.
+8. Multi-stat effects become one line per non-zero stat, so row order is never derived from `Map` iteration.
+9. All passive detail DTOs and enums in `core.snapshot` are `@Serializable` to match `RenderSnapshot` inspection, golden and contract tooling.
 
 Line template table:
 
-| passive kind | current line model | delta line model | required args | ordering rule |
+| passive kind | current value token | delta value token | required token args | ordering rule |
 | --- | --- | --- | --- | --- |
 | `StatModifier` | one line per non-zero stat | one line per changed stat | `statId`, `value`; delta adds `before`, `after` | fixed stat order from the stat display coverage table |
 | `HpRegenPerTurn` | one shared hp regen line after §2.3 aggregation | one changed shared hp regen line | `amount`; delta adds `before`, `after` | same display line as `StatModifier.hpRegen`; do not create a second hp regen row |
@@ -1045,10 +1051,10 @@ Required changes:
 5. Fail if any `releaseBlocking` or `pr04_01BlockingDevPlayable` profession has fewer than 2 PASSIVE talents.
 6. Fail if PASSIVE talent has no passive effect at any rank.
 7. Keep the lint rule available in report-only mode for rollback; do not delete it during rollback.
-8. Register all three PR04-01 whitebox scenario ids in `ValidationScenarioRegistry`.
-9. Mirror the same three scenario ids in `phase4-v4-scenarios.yaml`.
-10. Add materialization catalog entries that generate deterministic `cua-runbook.md`, `manual-record-template.md`, and `expected-evidence.json` for the same three scenario ids.
-11. Add registry-owned deterministic scenario setup support for `targetTalentId`, `initialFocusedTalentId`, exact `playerLevel`, granted prerequisite ranks, exact `setUnspentTalentPoints`, `targetRank=0`, `clearPendingTalentDraft=true`, `clearActiveSlotChoiceModal=true`, `resetTalentLoadoutSlotsForTargetOwner=true`, and `previewExpanded=false`; PR04-01 scenarios must not depend on repeated `Down` counts.
+8. Register all four PR04-01 whitebox scenario ids in `ValidationScenarioRegistry`.
+9. Mirror the same four scenario ids in `phase4-v4-scenarios.yaml`.
+10. Add materialization catalog entries that generate deterministic `cua-runbook.md`, `manual-record-template.md`, and `expected-evidence.json` for the same four scenario ids.
+11. Add registry-owned deterministic scenario setup support for `targetTalentId`, `initialFocusedTalentId`, exact `playerLevel`, granted prerequisite ranks, exact `setUnspentTalentPoints`, `targetRank=0`, `clearPendingTalentDraft=true`, `clearActiveSlotChoiceModal=true`, `resetTalentLoadoutSlotsForTargetOwner=true`, and `previewExpanded=false`; primary focus must not depend on repeated `Down` counts, while secondary same-tree evidence must record exact key input and target assertions.
 12. Project `initialFocusedTalentId` through `RenderUiStateSnapshot.validationTalentFocusRequest` and consume it once in `InputHandler.enterTalentAssign()` before the first focused evidence screenshot.
 13. Add `ValidationScenarioEvidenceStep.expectedFocusedTalentId`; write it into `expected-evidence.json` and generated runbooks for every PR04-01 evidence step that captures a focused passive detail.
 14. Add PR04-01 log evidence files and required log keys to `ValidationScenarioEvidenceSpec`; `expected-evidence.json` must list them from registry-owned evidence data, not from a tools-only side table.
@@ -1187,6 +1193,7 @@ Registry-ready runtime specs:
 | `dark-uiux-pr04-01-static-passive-detail` | `MAPGEN_DIFF` | `202605170401` | `ZH_CN` | `vanguard` | `human` | `greenwood_fringe` | `2` | `-1` | `NONE` | `1280x840` |
 | `dark-uiux-pr04-01-trigger-passive-detail` | `MAPGEN_DIFF` | `202605170402` | `ZH_CN` | `arcanist` | `human` | `greenwood_fringe` | `2` | `-1` | `NONE` | `1280x840` |
 | `dark-uiux-pr04-01-passive-action-suppression` | `MAPGEN_DIFF` | `202605170403` | `ZH_CN` | `vanguard` | `human` | `greenwood_fringe` | `2` | `-1` | `NONE` | `1280x840` |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `MAPGEN_DIFF` | `202605170404` | `ZH_CN` | `berserker` | `human` | `greenwood_fringe` | `2` | `-1` | `NONE` | `1280x840` |
 
 Every scenario must exist in:
 
@@ -1283,12 +1290,13 @@ Scenario setup contract:
 | scenarioId | targetTalentId | initialFocusedTalentId | playerLevel | prerequisite ranks granted before evidence | setUnspentTalentPoints | targetRank | reset state | expectedTargetState at first Talent Assign screenshot | previewExpanded |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `dark-uiux-pr04-01-static-passive-detail` | `unyielding` | `unyielding` | `5` | `intimidation=2` | `1` | `0` | clear draft, clear active-slot modal, reset loadout slots for owner | `LEARNABLE`, rank `0`, not locked | `false` |
-| `dark-uiux-pr04-01-trigger-passive-detail` | `mana_surge` | `mana_surge` | `2` | `arcane_shield=2` | `1` | `0` | clear draft, clear active-slot modal, reset loadout slots for owner | `LEARNABLE`, rank `0`, not locked | `false` |
+| `dark-uiux-pr04-01-trigger-passive-detail` | `mana_surge` | `mana_surge` | `5` | `arcane_shield=2`, `blink=2` | `1` | `0` | clear draft, clear active-slot modal, reset loadout slots for owner | `LEARNABLE`, rank `0`, not locked | `false` |
 | `dark-uiux-pr04-01-passive-action-suppression` | `bulwark_march` | `bulwark_march` | `4` | `guard_stance=3` | `1` | `0` | clear draft, clear active-slot modal, reset loadout slots for owner | `LEARNABLE`, rank `0`, not locked | `false` |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `pain_fuel` | `pain_fuel` | `4` | `kill_frenzy=2` | `1` | `0` | clear draft, clear active-slot modal, reset loadout slots for owner | `LEARNABLE`, rank `0`, not locked | `false` |
 
 The preparation hook must run a post-setup assertion before materialization writes files: target talent rank equals `targetRank`, target state equals `expectedTargetState`, no pending rank mutation exists, no active-slot-choice modal is open, and `validationTalentFocusRequest.talentId == initialFocusedTalentId`. A failed post-setup assertion fails materialization; it must not emit a runbook that depends on the human operator noticing the wrong state.
 
-Implementation path is fixed: PR04-01 scenarios must use scenario setup / bootstrap support for `targetTalentId` and `initialFocusedTalentId`. They must not rely on repeated `Down` counts from the current tree order. `expected-evidence.json` and the generated `cua-runbook.md` must record `expectedFocusedTalentId` for every evidence step that captures a focused passive row. Locked inspection is not acceptance evidence for PR04-01; all primary screenshots use learnable or learned PASSIVE targets so action suppression and next-rank preview are observable without ambiguity.
+Implementation path is fixed: PR04-01 scenarios must use scenario setup / bootstrap support for `targetTalentId` and `initialFocusedTalentId`. Initial focus must not rely on repeated `Down` counts from the current tree order; secondary same-tree coverage may use exact key input only when the target row and typed assertions are recorded in `ValidationScenarioEvidenceStep`. `expected-evidence.json` and the generated `cua-runbook.md` must record `expectedFocusedTalentId` for every evidence step that captures a focused passive row. Locked inspection is not acceptance evidence for PR04-01; all primary screenshots use learnable or learned PASSIVE targets so action suppression and next-rank preview are observable without ambiguity.
 
 First-detail contract:
 
@@ -1297,14 +1305,16 @@ First-detail contract:
 | `dark-uiux-pr04-01-static-passive-detail` | `talent.vanguard.unyielding.name` | `FocusedTalentAssertion(talentId=unyielding, category=PASSIVE, rank=0, state=LEARNABLE)`; `PassiveLineAssertion(lineKind=STAT_MODIFIER, statId=maxHp, value=+10, orderIndex=0)`; `PassiveLineAssertion(lineKind=STAT_MODIFIER, statId=defense, value=+1, orderIndex=1)`; `PassiveLineAssertion(lineKind=RESISTANCE_BONUS, damageType=PHYSICAL, value=+1, orderIndex=2)` | `LocalizedTextAssertion(locale=ZH_CN, key=talent.vanguard.unyielding.name, visibleTextPolicy=title-visible, evidenceFile=evidence/passive-detail-static.png)`; localized type line renders Passive; visible numeric values match typed assertions |
 | `dark-uiux-pr04-01-trigger-passive-detail` | `talent.arcanist.mana_surge.name` | `FocusedTalentAssertion(talentId=mana_surge, category=PASSIVE, rank=0, state=LEARNABLE)`; `PassiveLineAssertion(lineKind=ON_KILL_RESOURCE_RESTORE, resourceType=MANA, value=+3, orderIndex=0)`; `PassiveLineAssertion(lineKind=DAMAGE_TYPE_BONUS, damageType=FIRE, value=+3%, orderIndex=1)`; `PassiveLineAssertion(lineKind=DAMAGE_TYPE_BONUS, damageType=COLD, value=+3%, orderIndex=2)`; `PassiveLineAssertion(lineKind=DAMAGE_TYPE_BONUS, damageType=LIGHTNING, value=+3%, orderIndex=3)` | `LocalizedTextAssertion(locale=ZH_CN, key=talent.arcanist.mana_surge.name, visibleTextPolicy=title-visible, evidenceFile=evidence/passive-detail-trigger.png)`; on-kill resource wording is localized; FIRE / COLD / LIGHTNING lines appear in `DamageType` enum order |
 | `dark-uiux-pr04-01-passive-action-suppression` | `talent.vanguard.bulwark_march.name` | `FocusedTalentAssertion(talentId=bulwark_march, category=PASSIVE, rank=0, state=LEARNABLE)`; `PassiveLineAssertion(lineKind=CONDITIONAL_STAT_BONUS, condition=SELF_HAS_STATUS, statusId=GUARD_STANCE_BUFF, statId=defense, value=+2, orderIndex=0)`; `PassiveLineAssertion(lineKind=CONDITIONAL_STAT_BONUS, condition=SELF_HAS_STATUS, statusId=GUARD_STANCE_BUFF, statId=speed, value=+1, orderIndex=1)`; `PassiveLineAssertion(lineKind=DAMAGE_VS_STATUS, statusId=TAUNT, value=+4%, orderIndex=2)` | `LocalizedTextAssertion(locale=ZH_CN, key=talent.vanguard.bulwark_march.name, visibleTextPolicy=title-visible, evidenceFile=evidence/passive-conditional-detail-before-r.png)`; condition text is localized; visible numeric defense/speed/TAUNT values match typed assertions |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `talent.berserker.pain_fuel.name` | `FocusedTalentAssertion(talentId=pain_fuel, category=PASSIVE, rank=0, state=LEARNABLE)`; `PassiveLineAssertion(lineKind=STAT_MODIFIER, statId=hpRegen, value=+0.4, orderIndex=0)`; `PassiveLineAssertion(lineKind=STAT_MODIFIER, statId=attackMultiplierBonus, value=+5%, orderIndex=1)` | `LocalizedTextAssertion(locale=ZH_CN, key=talent.berserker.pain_fuel.name, visibleTextPolicy=title-visible, evidenceFile=evidence/passive-hp-regen-effective-detail.png)`; hp regen line uses the §2.5 effective display route |
 
 Required evidence files:
 
 | scenarioId | `requiredEvidenceFiles` |
 | --- | --- |
 | `dark-uiux-pr04-01-static-passive-detail` | `evidence/passive-static-preview-collapsed-after-toggle.png`, `evidence/passive-detail-static.png`, `evidence/passive-static-next-preview.png`, `evidence/passive-static-after-learn-no-slot-modal.png`, `evidence/passive-static-app.log` |
-| `dark-uiux-pr04-01-trigger-passive-detail` | `evidence/passive-trigger-panel-entry.png`, `evidence/passive-detail-trigger.png`, `evidence/passive-trigger-next-preview.png`, `evidence/passive-trigger-after-learn-no-slot-modal.png`, `evidence/passive-trigger-app.log` |
+| `dark-uiux-pr04-01-trigger-passive-detail` | `evidence/passive-trigger-panel-entry.png`, `evidence/passive-detail-trigger.png`, `evidence/passive-cast-speed-effective-detail.png`, `evidence/passive-trigger-next-preview.png`, `evidence/passive-trigger-after-learn-no-slot-modal.png`, `evidence/passive-trigger-app.log` |
 | `dark-uiux-pr04-01-passive-action-suppression` | `evidence/passive-conditional-detail-before-r.png`, `evidence/passive-action-preview-expanded.png`, `evidence/passive-no-active-slot-modal.png`, `evidence/passive-action-log-no-reserve.png`, `evidence/passive-action-suppression-app.log` |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `evidence/passive-hp-regen-effective-detail.png`, `evidence/passive-hp-regen-effective-preview.png`, `evidence/passive-hp-regen-preview-collapsed.png`, `evidence/passive-hp-regen-after-learn-no-slot-modal.png`, `evidence/passive-hp-regen-app.log` |
 
 Log assertion contract:
 
@@ -1313,10 +1323,11 @@ Log assertion contract:
 | `dark-uiux-pr04-01-static-passive-detail` | `log.validation.phase4_v4.action`, `log.talent.learned` | `PlayerCommand.RespecTalentTree`, `RespecTalentTree`, `ConfirmTalentDraftToReserve`, `EquipTalentToSlot`, `ACTIVE_TALENT_SLOT_CHOICE` |
 | `dark-uiux-pr04-01-trigger-passive-detail` | `log.validation.phase4_v4.action`, `log.talent.learned` | `PlayerCommand.RespecTalentTree`, `RespecTalentTree`, `ConfirmTalentDraftToReserve`, `EquipTalentToSlot`, `ACTIVE_TALENT_SLOT_CHOICE` |
 | `dark-uiux-pr04-01-passive-action-suppression` | `log.validation.phase4_v4.action` | `PlayerCommand.RespecTalentTree`, `RespecTalentTree`, `ConfirmTalentDraftToReserve`, `EquipTalentToSlot`, `ACTIVE_TALENT_SLOT_CHOICE`, `log.talent.draft_rollback` |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `log.validation.phase4_v4.action`, `log.talent.learned` | `PlayerCommand.RespecTalentTree`, `RespecTalentTree`, `ConfirmTalentDraftToReserve`, `EquipTalentToSlot`, `ACTIVE_TALENT_SLOT_CHOICE` |
 
-Source-aware combat trigger logs are blocking focused tests, not PR04-01 CUA evidence: `FoundationGameSessionTest.talentPassiveOnKillRestoreUsesTalentSource`, `FoundationGameSessionTest.manaSurgeOnKillRestoreTriggersOnNonElementalKill`, and `FoundationGameSessionTest.manaSurgeDamageTypeBonusDoesNotApplyToNonElementalDamage` own `log.passive.on_kill_resource_restore` and damage-bonus behavior. The three CUA scenarios do not spawn or kill enemies, so their `requiredLogEventKeys` must not list combat trigger keys.
+Source-aware combat trigger logs are blocking focused tests, not PR04-01 CUA evidence: `FoundationGameSessionTest.talentPassiveOnKillRestoreUsesTalentSource`, `FoundationGameSessionTest.manaSurgeOnKillRestoreTriggersOnNonElementalKill`, and `FoundationGameSessionTest.manaSurgeDamageTypeBonusDoesNotApplyToNonElementalDamage` own `log.passive.on_kill_resource_restore` and damage-bonus behavior. The PR04-01 CUA scenarios do not spawn or kill enemies, so their `requiredLogEventKeys` must not list combat trigger keys.
 
-CUA steps must be registry-ready `ValidationScenarioEvidenceStep` rows. The `input` string must contain exact key names, not prose. `ValidationScenarioRegistryTest.pr04_01PassiveTalentScenariosUseExactInputSequences` must fail if a PR04-01 step contains vague phrases such as `open`, `select`, `verify`, `scenario fixture grants`, or `if available`. `ValidationScenarioRegistryTest.pr04_01PassiveTalentScenariosProjectPreferredFocusThroughSnapshot` must fail if a focused detail evidence step omits `expectedFocusedTalentId`, records an id different from the setup table, or lacks a matching `validationTalentFocusRequest`.
+CUA steps must be registry-ready `ValidationScenarioEvidenceStep` rows. The `input` string must contain exact key names, not prose. `ValidationScenarioRegistryTest.pr04_01PassiveTalentScenariosUseExactInputSequences` must fail if a PR04-01 step contains vague phrases such as `open`, `select`, `verify`, `scenario fixture grants`, or `if available`. `ValidationScenarioRegistryTest.pr04_01PassiveTalentScenariosProjectPreferredFocusThroughSnapshot` must fail if the initial focused detail evidence step omits `expectedFocusedTalentId`, records an id different from the setup table, or lacks a matching `validationTalentFocusRequest`; secondary same-tree effective-display steps must record their own exact `expectedFocusedTalentId`.
 
 CUA key glossary:
 
@@ -1329,6 +1340,7 @@ CUA key glossary:
 | `P` | toggle next-rank preview expansion for the focused talent |
 | `R` | current PR04 respec/reserve-related shortcut; suppressed for PASSIVE and must not emit `PlayerCommand.RespecTalentTree` |
 | `Enter` in Talent Assign | learn or rank up the focused talent when allowed |
+| `Down` / `Up` in Talent Assign | move focus to the adjacent row inside the current talent tree; only used for secondary same-tree effective-display evidence |
 
 | scenarioId | mode | input | expectedVisibleResult | evidenceFile |
 | --- | --- | --- | --- | --- |
@@ -1339,11 +1351,16 @@ CUA key glossary:
 | `dark-uiux-pr04-01-trigger-passive-detail` | `Keyboard (initial UI mode: MAP; setup focuses mana_surge)` | `F9, Enter, Esc, T` | `mana_surge` row is focused; right detail shows `Passive`, rank `0`, on-kill MANA restore and FIRE / COLD / LIGHTNING damage lines. | `evidence/passive-detail-trigger.png` |
 | `dark-uiux-pr04-01-trigger-passive-detail` | `Keyboard (same focused row)` | `P` | Next preview is expanded and lists MANA restore plus FIRE / COLD / LIGHTNING damage deltas in `DamageType` enum order. | `evidence/passive-trigger-next-preview.png` |
 | `dark-uiux-pr04-01-trigger-passive-detail` | `Keyboard (same focused row)` | `P` | Preview returns to collapsed state; Talent Assign remains focused on `mana_surge` and no active-slot modal is open. | `evidence/passive-trigger-panel-entry.png` |
-| `dark-uiux-pr04-01-trigger-passive-detail` | `Keyboard (same focused row)` | `Enter` | Learning `mana_surge` does not open `ACTIVE_TALENT_SLOT_CHOICE`; detail remains a PASSIVE rule summary. | `evidence/passive-trigger-after-learn-no-slot-modal.png` |
+| `dark-uiux-pr04-01-trigger-passive-detail` | `Keyboard (same tree after trigger preview)` | `Down` | `arcane_overload` row is focused; right detail renders cast speed as the §2.5 effective decimal value, not the raw rating. | `evidence/passive-cast-speed-effective-detail.png` |
+| `dark-uiux-pr04-01-trigger-passive-detail` | `Keyboard (return to trigger row)` | `Up, Enter` | Learning `mana_surge` does not open `ACTIVE_TALENT_SLOT_CHOICE`; detail remains a PASSIVE rule summary. | `evidence/passive-trigger-after-learn-no-slot-modal.png` |
 | `dark-uiux-pr04-01-passive-action-suppression` | `Keyboard (initial UI mode: MAP; setup focuses bulwark_march)` | `F9, Enter, Esc, T` | `bulwark_march` row is focused; detail shows `SELF_HAS_STATUS=GUARD_STANCE_BUFF`, defense/speed bonus, and `TAUNT` damage payoff. | `evidence/passive-conditional-detail-before-r.png` |
 | `dark-uiux-pr04-01-passive-action-suppression` | `Keyboard (same focused row)` | `P` | Next preview is expanded and lists guarded defense, speed and `TAUNT` damage deltas. | `evidence/passive-action-preview-expanded.png` |
 | `dark-uiux-pr04-01-passive-action-suppression` | `Keyboard (same focused row)` | `R` | Pressing `R` on PASSIVE does not emit `PlayerCommand.RespecTalentTree`, does not open `ACTIVE_TALENT_SLOT_CHOICE`, does not show footer `RESERVE`, and does not emit reserve/slot command. | `evidence/passive-no-active-slot-modal.png` |
 | `dark-uiux-pr04-01-passive-action-suppression` | `Keyboard (same focused row)` | `Esc` | Returning from Talent Assign restores shell/log state without respec, reserve confirmation, slot replacement or rollback error text. | `evidence/passive-action-log-no-reserve.png` |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `Keyboard (initial UI mode: MAP; setup focuses pain_fuel)` | `F9, Enter, Esc, T` | `pain_fuel` row is focused; right detail renders hp regen as the §2.5 effective decimal value and does not open an active-slot modal. | `evidence/passive-hp-regen-effective-detail.png` |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `Keyboard (same focused row)` | `P` | Next preview is expanded and lists hp regen plus attack damage deltas using typed passive detail rows. | `evidence/passive-hp-regen-effective-preview.png` |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `Keyboard (same focused row)` | `P` | Preview returns to collapsed state after a prior preview expansion; Talent Assign remains focused on `pain_fuel`. | `evidence/passive-hp-regen-preview-collapsed.png` |
+| `dark-uiux-pr04-01-effective-hp-regen-detail` | `Keyboard (same focused row)` | `Enter` | Learning `pain_fuel` does not open `ACTIVE_TALENT_SLOT_CHOICE`; learned detail remains PASSIVE. | `evidence/passive-hp-regen-after-learn-no-slot-modal.png` |
 
 Materialization commands:
 
@@ -1353,6 +1370,7 @@ sdk env
 ./gradlew preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-static-passive-detail
 ./gradlew preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-trigger-passive-detail
 ./gradlew preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-passive-action-suppression
+./gradlew preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr04-01-effective-hp-regen-detail
 ```
 
 Run these commands from repo root and execute Gradle serially. The CLI output contract is `cua-runbook.md`, `manual-record-template.md`, `expected-evidence.json`, and `app-executable.sha256` under `build/whitebox/<scenarioId>/`.
@@ -1374,6 +1392,7 @@ Required evidence scenarios:
 | Task A passive log | `build/whitebox/dark-uiux-pr04-01-static-passive-detail/evidence/passive-static-app.log` | required log keys present; forbidden PASSIVE respec / reserve / slot fragments absent |
 | Task B passive panel entry | `build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/evidence/passive-trigger-panel-entry.png` | `mana_surge` remains focused after preview collapse and no active-slot modal is open |
 | Task B passive detail | `build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/evidence/passive-detail-trigger.png` | `mana_surge` row selected, trigger/resource effect line and elemental damage lines |
+| Task B cast speed effective detail | `build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/evidence/passive-cast-speed-effective-detail.png` | `arcane_overload` row selected and `castSpeedRating` displays the effective decimal value `+1.0`, not raw `+1` |
 | Task B passive preview | `build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/evidence/passive-trigger-next-preview.png` | `mana_surge` next-rank MANA restore and elemental damage deltas are visible |
 | Task B passive after learn | `build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/evidence/passive-trigger-after-learn-no-slot-modal.png` | learning `mana_surge` does not open `ACTIVE_TALENT_SLOT_CHOICE` and learned detail remains PASSIVE |
 | Task B passive log | `build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/evidence/passive-trigger-app.log` | required log keys present; forbidden PASSIVE respec / reserve / slot fragments absent |
@@ -1382,6 +1401,11 @@ Required evidence scenarios:
 | Active slot suppression | `build/whitebox/dark-uiux-pr04-01-passive-action-suppression/evidence/passive-no-active-slot-modal.png` | `bulwark_march` row selected, pressing `R` emits no `PlayerCommand.RespecTalentTree`, does not open `ACTIVE_TALENT_SLOT_CHOICE`, does not show footer `RESERVE`, and does not mutate draft, slot or learned-rank state |
 | Active slot suppression log screenshot | `build/whitebox/dark-uiux-pr04-01-passive-action-suppression/evidence/passive-action-log-no-reserve.png` | shell/log screenshot shows no respec, reserve confirmation, slot replacement or rollback error text |
 | Active slot suppression app log | `build/whitebox/dark-uiux-pr04-01-passive-action-suppression/evidence/passive-action-suppression-app.log` | required log keys present; forbidden PASSIVE respec / reserve / slot fragments and `log.talent.draft_rollback` absent |
+| Effective hp regen detail | `build/whitebox/dark-uiux-pr04-01-effective-hp-regen-detail/evidence/passive-hp-regen-effective-detail.png` | `pain_fuel` row selected and `hpRegen` displays through the §2.5 effective display route |
+| Effective hp regen preview | `build/whitebox/dark-uiux-pr04-01-effective-hp-regen-detail/evidence/passive-hp-regen-effective-preview.png` | `pain_fuel` next-rank hp regen and attack damage deltas are visible |
+| Effective hp regen preview collapsed | `build/whitebox/dark-uiux-pr04-01-effective-hp-regen-detail/evidence/passive-hp-regen-preview-collapsed.png` | `pain_fuel` remains focused after preview collapse and PASSIVE footer/action affordances remain suppressed |
+| Effective hp regen after learn | `build/whitebox/dark-uiux-pr04-01-effective-hp-regen-detail/evidence/passive-hp-regen-after-learn-no-slot-modal.png` | learning `pain_fuel` does not open `ACTIVE_TALENT_SLOT_CHOICE` and learned detail remains PASSIVE |
+| Effective hp regen app log | `build/whitebox/dark-uiux-pr04-01-effective-hp-regen-detail/evidence/passive-hp-regen-app.log` | required log keys present; forbidden PASSIVE respec / reserve / slot fragments absent |
 
 Generated whitebox output must not be committed. `UI/manual-records/dark-uiux-pr04-01-playable-profession-passive-talents.md` is required when packaged whitebox is executed or skipped, and it must use repo-relative paths.
 
@@ -1391,7 +1415,7 @@ Generated whitebox output must not be committed. `UI/manual-records/dark-uiux-pr
 | --- | --- | --- |
 | PR04 Talent Assign | hard upstream | PR04-01 must preserve presenter-owned layout and active slot modal rules |
 | PR06 skill icon rebaseline | downstream | PR04-01 does not create icon resources; PR06 still owns formal skill icon replacement |
-| PR07 golden polish | downstream | PR07 final all-screens index must include the three PR04-01 PASSIVE evidence labels from `UI/pr/screen-coverage-matrix.md` |
+| PR07 golden polish | downstream | PR07 final all-screens index must include the four PR04-01 PASSIVE evidence labels from `UI/pr/screen-coverage-matrix.md` |
 | Phase4 v4 PR01 profession tree run choice | hard upstream | learn/rank semantics and active slot choice boundary are gameplay baseline |
 
 ## 9. Rollback Plan
@@ -1445,6 +1469,7 @@ PR04-01 close requires filling these fields in PR description or review note:
 | rank semantics | current rank replaces previous passive values |
 | save/load | passive effects are derived from talent ranks after load |
 | UI detail | current and next passive effects are visible from typed passive detail snapshot |
+| effective detail display | `castSpeedRating` and `hpRegen` player-facing passive detail values are projected through `DiminishingReturns.effectiveCastSpeed` / `DiminishingReturns.effectiveHpRegen`; focused tests cover official talents and a synthetic hpRegen value that differs after DR |
 | UI detail owner | `core.snapshot` owns passive detail snapshots; `game` projects them; `client` maps `PassiveDetailLineToneSnapshot` to `TalentPreviewToneToken` |
 | passive line templates | every supported passive kind has declared current/delta template args and deterministic ordering |
 | conditional line structure | `ConditionalStatBonus` renders one condition-prefixed line per changed stat and emits no separate condition header row |
@@ -1457,9 +1482,9 @@ PR04-01 close requires filling these fields in PR description or review note:
 | callbacks rule | PASSIVE talents serialize `callbacks` as absent or `callbacks: []`; non-empty callbacks are forbidden |
 | content pack | official talent YAML supports `passiveEffects`; `registry: talent` content-pack overlays remain unsupported and unknown passive kind fails fast |
 | frozen coverage | frozen professions listed as excluded, not missing |
-| whitebox scenario setup | all three PR04-01 scenario ids use exact `playerLevel`, exact `setUnspentTalentPoints`, `targetRank=0`, draft/modal/loadout reset, and fail-fast post-setup assertions before materialization |
-| whitebox focus boundary | all three PR04-01 scenario ids project `initialFocusedTalentId` through `RenderUiStateSnapshot.validationTalentFocusRequest`; `InputHandler.enterTalentAssign()` consumes the focus request once by `consumeOnceToken` |
-| whitebox scenarios | all three PR04-01 scenario ids are registered, present in YAML, materialized into `cua-runbook.md` outputs, and use registry-owned focus-by-id setup with `expectedFocusedTalentId`, structured typed assertions, structured localized visible assertions, log evidence, and forbidden log fragments |
+| whitebox scenario setup | all four PR04-01 scenario ids use exact `playerLevel`, exact `setUnspentTalentPoints`, `targetRank=0`, draft/modal/loadout reset, and fail-fast post-setup assertions before materialization |
+| whitebox focus boundary | all four PR04-01 scenario ids project `initialFocusedTalentId` through `RenderUiStateSnapshot.validationTalentFocusRequest`; `InputHandler.enterTalentAssign()` consumes the focus request once by `consumeOnceToken` |
+| whitebox scenarios | all four PR04-01 scenario ids are registered, present in YAML, materialized into `cua-runbook.md` outputs, and use registry-owned focus-by-id setup with `expectedFocusedTalentId`, structured typed assertions, structured localized visible assertions, log evidence, and forbidden log fragments |
 | screen coverage matrix | `UI/pr/screen-coverage-matrix.md` and `UI/pr/README.md` include PR04-01 evidence entries |
 | starter active slot count | every PR04-01 profession has `starter active count after conversion = 3` and `activeSlotCount = 4` |
 | conversion audit parity | conversion audit remains true after implementation; tactical verbs listed in §3.3 are still retained by active talents |

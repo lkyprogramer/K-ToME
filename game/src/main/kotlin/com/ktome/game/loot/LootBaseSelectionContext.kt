@@ -1,7 +1,7 @@
 package com.ktome.game.loot
 
-import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.ItemBaseDef
+import com.ktome.core.item.PassiveEffect
 
 private const val NO_BUILD_MATCH_MULTIPLIER_BPS: Int = 10_000
 private const val WEAK_BUILD_MATCH_MULTIPLIER_BPS: Int = 11_500
@@ -137,36 +137,37 @@ internal fun lootBaseSemanticTags(base: ItemBaseDef): Set<String> =
             add("spell")
         }
         when (val passive = base.passive) {
-            is EquipmentPassive.OnHitStatusProc -> {
+            is PassiveEffect.OnHitStatusProc -> {
                 add(normalizeLootBaseSelectionTag(passive.statusId))
                 add("offense")
             }
-            is EquipmentPassive.OnKillResourceRestore -> {
+            is PassiveEffect.OnKillResourceRestore -> {
                 add(normalizeLootBaseSelectionTag(passive.resourceType.name))
                 add("sustain")
             }
-            is EquipmentPassive.ConditionalStatBonus -> add("conditional")
-            is EquipmentPassive.TerrainAffinityBonus -> {
+            is PassiveEffect.ConditionalStatBonus -> add("conditional")
+            is PassiveEffect.TerrainAffinityBonus -> {
                 add(normalizeLootBaseSelectionTag(passive.terrainTag.name))
                 add("terrain")
             }
-            is EquipmentPassive.DamageVsTag -> {
+            is PassiveEffect.StatModifierEffect -> add("stat")
+            is PassiveEffect.DamageVsTag -> {
                 add(normalizeLootBaseSelectionTag(passive.tag))
                 add("offense")
             }
-            is EquipmentPassive.DamageVsStatus -> {
+            is PassiveEffect.DamageVsStatus -> {
                 add(normalizeLootBaseSelectionTag(passive.statusId))
                 add("offense")
             }
-            is EquipmentPassive.DamageTypeBonus -> {
+            is PassiveEffect.DamageTypeBonus -> {
                 add(normalizeLootBaseSelectionTag(passive.type.name))
                 add("offense")
             }
-            is EquipmentPassive.ResistanceBonus -> {
+            is PassiveEffect.ResistanceBonus -> {
                 add(normalizeLootBaseSelectionTag(passive.damageType.name))
                 addAll(listOf("protection", "resistance"))
             }
-            is EquipmentPassive.HpRegenPerTurn -> addAll(listOf("sustain", "life", "regeneration"))
+            is PassiveEffect.HpRegenPerTurn -> addAll(listOf("sustain", "life", "regeneration"))
             null -> Unit
         }
     }

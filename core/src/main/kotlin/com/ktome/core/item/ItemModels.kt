@@ -37,13 +37,13 @@ enum class ConsumableEffect {
     RESTORE_RESOURCE,
 }
 
-sealed interface EquipmentPassive {
+sealed interface PassiveEffect {
     data class OnHitStatusProc(
         val statusId: String,
         val chance: Double,
         val duration: Int,
         val magnitude: Double = 0.0,
-    ) : EquipmentPassive {
+    ) : PassiveEffect {
         init {
             require(statusId.isNotBlank()) { "OnHitStatusProc.statusId must not be blank." }
             require(chance in 0.0..1.0) { "OnHitStatusProc.chance must be between 0 and 1." }
@@ -54,7 +54,7 @@ sealed interface EquipmentPassive {
     data class OnKillResourceRestore(
         val resourceType: ResourceType,
         val amount: Int,
-    ) : EquipmentPassive {
+    ) : PassiveEffect {
         init {
             require(amount > 0) { "OnKillResourceRestore.amount must be positive." }
         }
@@ -64,7 +64,7 @@ sealed interface EquipmentPassive {
         val condition: PassiveCondition,
         val statModifier: StatModifier,
         val statusId: String? = null,
-    ) : EquipmentPassive {
+    ) : PassiveEffect {
         init {
             require(statusId?.isNotBlank() != false) {
                 "ConditionalStatBonus.statusId must not be blank when present."
@@ -78,38 +78,69 @@ sealed interface EquipmentPassive {
     data class TerrainAffinityBonus(
         val terrainTag: TerrainTag,
         val statModifier: StatModifier,
-    ) : EquipmentPassive
+    ) : PassiveEffect
+
+    data class StatModifierEffect(
+        val statModifier: StatModifier,
+    ) : PassiveEffect
 
     data class DamageVsTag(
         val tag: String,
         val bonusPercent: Double,
-    ) : EquipmentPassive
+    ) : PassiveEffect
 
     data class DamageVsStatus(
         val statusId: String,
         val bonusPercent: Double,
-    ) : EquipmentPassive
+    ) : PassiveEffect
 
     data class HpRegenPerTurn(
         val amount: Int,
-    ) : EquipmentPassive
+    ) : PassiveEffect
 
     data class DamageTypeBonus(
         val type: DamageType,
         val bonusPercent: Double,
-    ) : EquipmentPassive
+    ) : PassiveEffect
 
     data class ResistanceBonus(
         val damageType: DamageType,
         val amount: Int,
-    ) : EquipmentPassive
+    ) : PassiveEffect
 }
 
-object EquipmentPassiveKindIds {
+enum class PassiveSourceKind {
+    EQUIPMENT,
+    TALENT,
+}
+
+data class PassiveSource(
+    val kind: PassiveSourceKind,
+    val sourceId: String,
+    val sourceTemplateId: String,
+    val itemEntityId: EntityId? = null,
+    val affixId: String? = null,
+    val sourceSpecialTemplateId: String? = null,
+    val talentRank: Int? = null,
+    val passive: PassiveEffect,
+) {
+    init {
+        require(sourceId.isNotBlank()) { "PassiveSource.sourceId must not be blank." }
+        require(sourceTemplateId.isNotBlank()) { "PassiveSource.sourceTemplateId must not be blank." }
+        require(affixId?.isNotBlank() != false) { "PassiveSource.affixId must not be blank when present." }
+        require(sourceSpecialTemplateId?.isNotBlank() != false) {
+            "PassiveSource.sourceSpecialTemplateId must not be blank when present."
+        }
+        require(talentRank == null || talentRank > 0) { "PassiveSource.talentRank must be positive when present." }
+    }
+}
+
+object PassiveEffectKindIds {
     const val ON_HIT_STATUS_PROC: String = "OnHitStatusProc"
     const val ON_KILL_RESOURCE_RESTORE: String = "OnKillResourceRestore"
     const val CONDITIONAL_STAT_BONUS: String = "ConditionalStatBonus"
     const val TERRAIN_AFFINITY_BONUS: String = "TerrainAffinityBonus"
+    const val STAT_MODIFIER: String = "StatModifier"
     const val DAMAGE_VS_TAG: String = "DamageVsTag"
     const val DAMAGE_VS_STATUS: String = "DamageVsStatus"
     const val HP_REGEN_PER_TURN: String = "HpRegenPerTurn"
@@ -117,17 +148,18 @@ object EquipmentPassiveKindIds {
     const val RESISTANCE_BONUS: String = "ResistanceBonus"
 }
 
-fun EquipmentPassive.kindId(): String =
+fun PassiveEffect.kindId(): String =
     when (this) {
-        is EquipmentPassive.OnHitStatusProc -> EquipmentPassiveKindIds.ON_HIT_STATUS_PROC
-        is EquipmentPassive.OnKillResourceRestore -> EquipmentPassiveKindIds.ON_KILL_RESOURCE_RESTORE
-        is EquipmentPassive.ConditionalStatBonus -> EquipmentPassiveKindIds.CONDITIONAL_STAT_BONUS
-        is EquipmentPassive.TerrainAffinityBonus -> EquipmentPassiveKindIds.TERRAIN_AFFINITY_BONUS
-        is EquipmentPassive.DamageVsTag -> EquipmentPassiveKindIds.DAMAGE_VS_TAG
-        is EquipmentPassive.DamageVsStatus -> EquipmentPassiveKindIds.DAMAGE_VS_STATUS
-        is EquipmentPassive.HpRegenPerTurn -> EquipmentPassiveKindIds.HP_REGEN_PER_TURN
-        is EquipmentPassive.DamageTypeBonus -> EquipmentPassiveKindIds.DAMAGE_TYPE_BONUS
-        is EquipmentPassive.ResistanceBonus -> EquipmentPassiveKindIds.RESISTANCE_BONUS
+        is PassiveEffect.OnHitStatusProc -> PassiveEffectKindIds.ON_HIT_STATUS_PROC
+        is PassiveEffect.OnKillResourceRestore -> PassiveEffectKindIds.ON_KILL_RESOURCE_RESTORE
+        is PassiveEffect.ConditionalStatBonus -> PassiveEffectKindIds.CONDITIONAL_STAT_BONUS
+        is PassiveEffect.TerrainAffinityBonus -> PassiveEffectKindIds.TERRAIN_AFFINITY_BONUS
+        is PassiveEffect.StatModifierEffect -> PassiveEffectKindIds.STAT_MODIFIER
+        is PassiveEffect.DamageVsTag -> PassiveEffectKindIds.DAMAGE_VS_TAG
+        is PassiveEffect.DamageVsStatus -> PassiveEffectKindIds.DAMAGE_VS_STATUS
+        is PassiveEffect.HpRegenPerTurn -> PassiveEffectKindIds.HP_REGEN_PER_TURN
+        is PassiveEffect.DamageTypeBonus -> PassiveEffectKindIds.DAMAGE_TYPE_BONUS
+        is PassiveEffect.ResistanceBonus -> PassiveEffectKindIds.RESISTANCE_BONUS
     }
 
 enum class PassiveCondition {
@@ -197,7 +229,7 @@ data class AffixDef(
     val minFloor: Int = 1,
     val tags: Set<String> = emptySet(),
     val blacklistTags: Set<String> = emptySet(),
-    val passive: EquipmentPassive? = null,
+    val passive: PassiveEffect? = null,
     val phase: String = "P4",
 )
 
@@ -237,7 +269,7 @@ data class ItemBaseDef(
     val effect: ConsumableEffect? = null,
     val resourceTypeId: String? = null,
     val magnitude: Int = 0,
-    val passive: EquipmentPassive? = null,
+    val passive: PassiveEffect? = null,
 )
 
 data class SpecialItemTemplate(
@@ -320,7 +352,7 @@ data class ItemInstance(
     val effect: ConsumableEffect? = null,
     val resourceTypeId: String? = null,
     val magnitude: Int = 0,
-    val passive: EquipmentPassive? = null,
+    val passive: PassiveEffect? = null,
     val specialTemplateId: String? = null,
 )
 

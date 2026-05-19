@@ -5,7 +5,7 @@ import com.ktome.core.effect.AreaEffectEmitter
 import com.ktome.core.effect.WorldEffect
 import com.ktome.core.ecs.PreferredTerrainAffinity
 import com.ktome.core.ecs.get
-import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.PassiveEffect
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.MilestoneRewardSource
@@ -659,9 +659,9 @@ class SessionSnapshotMapperTest {
         val itemId = requireNotNull(world.get<com.ktome.core.item.Inventory>(com.ktome.core.ecs.EntityId(1))).itemIds.single()
         val restored = requireNotNull(world.get<com.ktome.core.item.ItemInstance>(itemId))
 
-        assertTrue(restored.passive is EquipmentPassive.DamageVsTag)
-        assertEquals("bandit", (restored.passive as EquipmentPassive.DamageVsTag).tag)
-        assertEquals(0.15, (restored.passive as EquipmentPassive.DamageVsTag).bonusPercent, 0.0001)
+        assertTrue(restored.passive is PassiveEffect.DamageVsTag)
+        assertEquals("bandit", (restored.passive as PassiveEffect.DamageVsTag).tag)
+        assertEquals(0.15, (restored.passive as PassiveEffect.DamageVsTag).bonusPercent, 0.0001)
     }
 
     @Test

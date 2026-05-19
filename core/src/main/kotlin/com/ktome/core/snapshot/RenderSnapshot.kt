@@ -207,6 +207,7 @@ data class RenderUiStateSnapshot(
     val reserveTalents: List<TalentReserveSnapshot> = emptyList(),
     val talentTrees: List<TalentTreeSnapshot> = emptyList(),
     val activeTalentSlotChoiceRequirement: TalentActiveSlotChoiceRequirementSnapshot? = null,
+    val validationTalentFocusRequest: TalentAssignPreferredFocusSnapshot? = null,
     val inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
     val inventory: List<InventoryEntrySnapshot>,
     val recentRewards: List<RewardPresentationEntrySnapshot> = emptyList(),
@@ -216,6 +217,15 @@ data class RenderUiStateSnapshot(
     val shardBalance: Int = 0,
     val activeShop: ShopPanelSnapshot? = null,
     val activeRouteSelection: RouteSelectionSnapshot? = null,
+)
+
+@Serializable
+data class TalentAssignPreferredFocusSnapshot(
+    val treeId: String,
+    val talentId: String,
+    val ownerType: String = TalentTreeOwnerType.PROFESSION.name,
+    val treeOwnerId: String = "",
+    val consumeOnceToken: String,
 )
 
 @Serializable
@@ -258,6 +268,55 @@ data class TalentBreakpointPreviewSnapshot(
     val atRank: Int,
     val descriptionAddendumKey: String? = null,
     val model: DescriptionModelSnapshot,
+)
+
+@Serializable
+enum class PassiveDetailLineKindSnapshot {
+    STAT_MODIFIER,
+    ON_KILL_RESOURCE_RESTORE,
+    CONDITIONAL_STAT_BONUS,
+    DAMAGE_VS_STATUS,
+    DAMAGE_TYPE_BONUS,
+    RESISTANCE_BONUS,
+    HP_REGEN_PER_TURN,
+    ON_HIT_STATUS_PROC,
+    TERRAIN_AFFINITY_BONUS,
+    DAMAGE_VS_TAG,
+}
+
+@Serializable
+enum class PassiveDetailLineToneSnapshot {
+    SECONDARY,
+    POSITIVE,
+    WARNING,
+}
+
+@Serializable
+data class PassiveDetailLineSnapshot(
+    val lineKind: PassiveDetailLineKindSnapshot,
+    val labelKey: String,
+    val valueToken: RenderTextTokenSnapshot,
+    val diagnosticArgs: Map<String, String>,
+    val sortKey: String,
+    val tone: PassiveDetailLineToneSnapshot,
+    val diagnosticEffectKind: String,
+)
+
+@Serializable
+data class PassiveDetailDeltaLineSnapshot(
+    val lineKind: PassiveDetailLineKindSnapshot,
+    val labelKey: String,
+    val valueToken: RenderTextTokenSnapshot,
+    val diagnosticArgs: Map<String, String>,
+    val sortKey: String,
+    val tone: PassiveDetailLineToneSnapshot,
+    val diagnosticEffectKind: String,
+)
+
+@Serializable
+data class TalentPassiveDetailSnapshot(
+    val currentLines: List<PassiveDetailLineSnapshot>,
+    val nextLines: List<PassiveDetailDeltaLineSnapshot>,
 )
 
 @Serializable
@@ -452,6 +511,7 @@ data class TalentTreeNodeSnapshot(
     val descriptionModel: DescriptionModelSnapshot? = null,
     val nextRankDescriptionModel: DescriptionModelSnapshot? = null,
     val nextBreakpointPreview: TalentBreakpointPreviewSnapshot? = null,
+    val passiveDetail: TalentPassiveDetailSnapshot? = null,
     val prerequisites: List<TalentNodePrerequisiteSnapshot> = emptyList(),
     val lockReasons: List<TalentNodeLockReasonSnapshot> = emptyList(),
     val isMaxRank: Boolean = false,

@@ -39,7 +39,11 @@ data class CallbackRecord(
 @Serializable
 data class PassiveTriggerTrace(
     val passiveKind: String,
-    val sourceItemBaseId: String,
+    val sourceId: String = "",
+    val sourceKind: String = "EQUIPMENT",
+    val sourceTemplateId: String = "",
+    val talentRank: Int? = null,
+    val sourceItemBaseId: String = sourceTemplateId,
     val sourceAffixId: String? = null,
     val sourceSpecialTemplateId: String? = null,
     val statusId: String? = null,

@@ -145,6 +145,34 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `pr04 01 scenario expected evidence includes talent setup focus assertions and forbidden logs`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr04-01-static-passive-detail"),
+            )
+        val paths = result.paths
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("- target talent: `unyielding`"))
+        assertTrue(runbook.contains("- initial focused talent: `unyielding`"))
+        assertTrue(runbook.contains("Expected focused talent: unyielding."))
+        assertTrue(runbook.contains("PlayerCommand.RespecTalentTree"))
+        assertTrue(runbook.contains("UI/manual-records/dark-uiux-pr04-01-playable-profession-passive-talents.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr04-01-static-passive-detail\""))
+        assertTrue(expectedEvidence.contains("\"targetTalentId\": \"unyielding\""))
+        assertTrue(expectedEvidence.contains("\"initialFocusedTalentId\": \"unyielding\""))
+        assertTrue(expectedEvidence.contains("\"expectedFocusedTalentId\": \"unyielding\""))
+        assertTrue(expectedEvidence.contains("\"type\": \"FocusedTalentAssertion\""))
+        assertTrue(expectedEvidence.contains("\"type\": \"PassiveLineAssertion\""))
+        assertTrue(expectedEvidence.contains("\"forbiddenLogFragments\": ["))
+        assertTrue(expectedEvidence.contains("passive-static-after-learn-no-slot-modal.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `dark uiux pr02 scenario generates chrome fit evidence names from the typed registry`() {
         val result =
             Phase4V4WhiteboxScenarioCli.run(
@@ -398,6 +426,10 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr00-selftest
             |  - id: phase4-v4-pr01
             |  - id: dark-uiux-pr04-profession-tree-ui
+            |  - id: dark-uiux-pr04-01-static-passive-detail
+            |  - id: dark-uiux-pr04-01-trigger-passive-detail
+            |  - id: dark-uiux-pr04-01-passive-action-suppression
+            |  - id: dark-uiux-pr04-01-effective-hp-regen-detail
             |  - id: phase4-v4-pr02
             |  - id: dark-uiux-pr02-ui-chrome-sprite-pilot
             |  - id: dark-uiux-pr02-1-demo-shell-foundation

@@ -62,6 +62,7 @@ data class ValidationSessionOptions(
     val scenarioId: ValidationScenarioId? = null,
     val scenarioRouteIndex: Int? = null,
     val scenarioEvidenceSummary: ValidationScenarioEvidenceSummary? = null,
+    val scenarioTalentSetup: ValidationScenarioTalentSetupSpec? = null,
 ) {
     init {
         validatePresetStartZone(preset = preset, zoneId = foundationConfig.zoneId)

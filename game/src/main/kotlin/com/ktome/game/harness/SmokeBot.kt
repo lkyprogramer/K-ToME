@@ -877,6 +877,7 @@ class SmokeBot : RunBot {
             }
         val criticalHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * criticalHealthThreshold
         val isolatedBossPressure = bossVisible && adjacentHostiles == 0 && nearbyHostiles == 1
+        val isolatedTrashPressure = !pursuingBoss && adjacentHostiles == 1 && nearbyHostiles == 1
         val shouldSkirtTrashThreats =
             shouldPreserveRouteProgress(observation) &&
                 !pursuingBoss &&
@@ -894,7 +895,9 @@ class SmokeBot : RunBot {
                 "POSITIVE_ENERGY" -> lowHealth && distance <= 2 && nearbyHostiles >= 2
                 "ENERGY" -> {
                     val retreatHealth = if (isolatedBossPressure) criticalHealth else lowHealth
-                    retreatHealth && (adjacentHostiles > 0 || nearbyHostiles >= 2)
+                    retreatHealth &&
+                        (adjacentHostiles > 0 || nearbyHostiles >= 2) &&
+                        !(isolatedTrashPressure && recentLoopDetected())
                 }
                 else -> false
             }

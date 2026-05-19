@@ -4,14 +4,14 @@ import com.ktome.core.harness.toJson
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixEquipType
 import com.ktome.core.item.EquipSlot
-import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.GeneratedItemRoll
 import com.ktome.core.item.ItemGenerator
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemType
-import com.ktome.core.item.StatModifier
+import com.ktome.core.item.PassiveEffect
+import com.ktome.core.item.kindId
 import com.ktome.core.loot.LootRollContext
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.loot.SourceTier
@@ -1570,7 +1570,7 @@ internal object LootLabKernel {
         val passiveKinds =
             bundle.affixes
                 .mapNotNull(AffixDef::passive)
-                .mapTo(linkedSetOf(), ::passiveKind)
+                .mapTo(linkedSetOf()) { passive -> passive.kindId() }
         return LootPassiveCoverageSummary(
             passiveKinds = passiveKinds,
             coverageRatio = passiveKinds.size.toDouble() / EQUIPMENT_PASSIVE_KIND_COUNT.toDouble(),
@@ -1741,61 +1741,27 @@ internal object LootLabKernel {
 
     private fun List<Double>.averageOrZero(): Double = if (isEmpty()) 0.0 else average()
 
-    private fun passiveKind(passive: EquipmentPassive): String =
+    private fun passiveSignature(passive: PassiveEffect): String =
         when (passive) {
-            is EquipmentPassive.OnHitStatusProc -> "OnHitStatusProc"
-            is EquipmentPassive.OnKillResourceRestore -> "OnKillResourceRestore"
-            is EquipmentPassive.ConditionalStatBonus -> "ConditionalStatBonus"
-            is EquipmentPassive.TerrainAffinityBonus -> "TerrainAffinityBonus"
-            is EquipmentPassive.DamageVsTag -> "DamageVsTag"
-            is EquipmentPassive.DamageVsStatus -> "DamageVsStatus"
-            is EquipmentPassive.HpRegenPerTurn -> "HpRegenPerTurn"
-            is EquipmentPassive.DamageTypeBonus -> "DamageTypeBonus"
-            is EquipmentPassive.ResistanceBonus -> "ResistanceBonus"
+            is PassiveEffect.OnHitStatusProc ->
+                "${passive.kindId()}:${passive.statusId}:${passive.chance}:${passive.duration}:${passive.magnitude}"
+
+            is PassiveEffect.OnKillResourceRestore ->
+                "${passive.kindId()}:${passive.resourceType.name}:${passive.amount}"
+
+            is PassiveEffect.ConditionalStatBonus ->
+                "${passive.kindId()}:${passive.condition.name}:${passive.statusId ?: "-"}:${statModifierSignature(passive.statModifier)}"
+
+            is PassiveEffect.TerrainAffinityBonus ->
+                "${passive.kindId()}:${passive.terrainTag.name}:${statModifierSignature(passive.statModifier)}"
+
+            is PassiveEffect.StatModifierEffect -> "${passive.kindId()}:${statModifierSignature(passive.statModifier)}"
+            is PassiveEffect.DamageVsTag -> "${passive.kindId()}:${passive.tag}:${passive.bonusPercent}"
+            is PassiveEffect.DamageVsStatus -> "${passive.kindId()}:${passive.statusId}:${passive.bonusPercent}"
+            is PassiveEffect.HpRegenPerTurn -> "${passive.kindId()}:${passive.amount}"
+            is PassiveEffect.DamageTypeBonus -> "${passive.kindId()}:${passive.type.name}:${passive.bonusPercent}"
+            is PassiveEffect.ResistanceBonus -> "${passive.kindId()}:${passive.damageType.name}:${passive.amount}"
         }
-
-    private fun passiveSignature(passive: EquipmentPassive): String =
-        when (passive) {
-            is EquipmentPassive.OnHitStatusProc ->
-                "OnHitStatusProc:${passive.statusId}:${passive.chance}:${passive.duration}:${passive.magnitude}"
-
-            is EquipmentPassive.OnKillResourceRestore ->
-                "OnKillResourceRestore:${passive.resourceType.name}:${passive.amount}"
-
-            is EquipmentPassive.ConditionalStatBonus ->
-                "ConditionalStatBonus:${passive.condition.name}:${passive.statusId ?: "-"}:${statModifierSignature(passive.statModifier)}"
-
-            is EquipmentPassive.TerrainAffinityBonus ->
-                "TerrainAffinityBonus:${passive.terrainTag.name}:${statModifierSignature(passive.statModifier)}"
-
-            is EquipmentPassive.DamageVsTag -> "DamageVsTag:${passive.tag}:${passive.bonusPercent}"
-            is EquipmentPassive.DamageVsStatus -> "DamageVsStatus:${passive.statusId}:${passive.bonusPercent}"
-            is EquipmentPassive.HpRegenPerTurn -> "HpRegenPerTurn:${passive.amount}"
-            is EquipmentPassive.DamageTypeBonus -> "DamageTypeBonus:${passive.type.name}:${passive.bonusPercent}"
-            is EquipmentPassive.ResistanceBonus -> "ResistanceBonus:${passive.damageType.name}:${passive.amount}"
-        }
-
-    private fun statModifierSignature(modifier: StatModifier): String =
-        listOf(
-            modifier.str,
-            modifier.dex,
-            modifier.con,
-            modifier.wil,
-            modifier.attack,
-            modifier.defense,
-            modifier.accuracy,
-            modifier.evasion,
-            modifier.speed,
-            modifier.castSpeedRating,
-            modifier.maxHp,
-            modifier.maxStamina,
-            modifier.hpRegen,
-            modifier.staminaRegen,
-            modifier.critChance,
-            modifier.talentPower,
-            modifier.attackMultiplierBonus,
-            modifier.defenseMultiplierBonus,
-        ).joinToString(":")
 }
 
 object LootBalanceLabRunner {

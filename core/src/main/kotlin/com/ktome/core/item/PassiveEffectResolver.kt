@@ -7,15 +7,9 @@ import com.ktome.core.ecs.get
 import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.resource.ResourceType
 
-data class EquippedPassiveSource(
-    val item: ItemInstance,
-    val passive: EquipmentPassive,
-    val affixId: String? = null,
-)
-
 data class PassiveDamageAdjustment(
     val multiplier: Double,
-    val sources: List<EquippedPassiveSource>,
+    val sources: List<PassiveSource>,
 )
 
 data class PassiveStatContext(
@@ -26,11 +20,11 @@ data class PassiveStatContext(
 
 data class PassiveStatAdjustment(
     val modifier: StatModifier,
-    val sources: List<EquippedPassiveSource>,
+    val sources: List<PassiveSource>,
 )
 
 data class PassiveStatusProcTrigger(
-    val source: EquippedPassiveSource,
+    val source: PassiveSource,
     val statusId: String,
     val chance: Double,
     val duration: Int,
@@ -38,25 +32,25 @@ data class PassiveStatusProcTrigger(
 )
 
 data class PassiveResourceRestoreTrigger(
-    val source: EquippedPassiveSource,
+    val source: PassiveSource,
     val resourceType: ResourceType,
     val amount: Int,
 )
 
 object PassiveEffectResolver {
-    fun equippedPassives(
+    fun equipmentPassiveSources(
         world: World,
         entity: EntityId,
-    ): List<EquippedPassiveSource> =
+    ): List<PassiveSource> =
         world.get<Equipment>(entity)?.slots?.values
             ?.flatMap { itemId ->
                 val item = world.get<ItemInstance>(itemId) ?: return@flatMap emptyList()
-                itemPassives(item)
+                itemPassives(itemId = itemId, item = item)
             }
             .orEmpty()
 
     fun resolveDamageAdjustment(
-        passives: List<EquippedPassiveSource>,
+        passives: List<PassiveSource>,
         targetTags: Set<String>,
         targetStatusIds: Set<String>,
         damageType: DamageType,
@@ -64,30 +58,32 @@ object PassiveEffectResolver {
         val sources =
             passives.filter { source ->
                 when (val passive = source.passive) {
-                    is EquipmentPassive.DamageVsTag -> passive.tag in targetTags
-                    is EquipmentPassive.DamageVsStatus -> passive.statusId in targetStatusIds
-                    is EquipmentPassive.DamageTypeBonus -> passive.type == damageType
-                    is EquipmentPassive.OnHitStatusProc,
-                    is EquipmentPassive.OnKillResourceRestore,
-                    is EquipmentPassive.ConditionalStatBonus,
-                    is EquipmentPassive.TerrainAffinityBonus,
-                    is EquipmentPassive.HpRegenPerTurn,
-                    is EquipmentPassive.ResistanceBonus,
+                    is PassiveEffect.DamageVsTag -> passive.tag in targetTags
+                    is PassiveEffect.DamageVsStatus -> passive.statusId in targetStatusIds
+                    is PassiveEffect.DamageTypeBonus -> passive.type == damageType
+                    is PassiveEffect.OnHitStatusProc,
+                    is PassiveEffect.OnKillResourceRestore,
+                    is PassiveEffect.ConditionalStatBonus,
+                    is PassiveEffect.TerrainAffinityBonus,
+                    is PassiveEffect.StatModifierEffect,
+                    is PassiveEffect.HpRegenPerTurn,
+                    is PassiveEffect.ResistanceBonus,
                     -> false
                 }
             }
         val totalBonus =
             sources.sumOf { source ->
                 when (val passive = source.passive) {
-                    is EquipmentPassive.DamageVsTag -> passive.bonusPercent
-                    is EquipmentPassive.DamageVsStatus -> passive.bonusPercent
-                    is EquipmentPassive.DamageTypeBonus -> passive.bonusPercent
-                    is EquipmentPassive.OnHitStatusProc,
-                    is EquipmentPassive.OnKillResourceRestore,
-                    is EquipmentPassive.ConditionalStatBonus,
-                    is EquipmentPassive.TerrainAffinityBonus,
-                    is EquipmentPassive.HpRegenPerTurn,
-                    is EquipmentPassive.ResistanceBonus,
+                    is PassiveEffect.DamageVsTag -> passive.bonusPercent
+                    is PassiveEffect.DamageVsStatus -> passive.bonusPercent
+                    is PassiveEffect.DamageTypeBonus -> passive.bonusPercent
+                    is PassiveEffect.OnHitStatusProc,
+                    is PassiveEffect.OnKillResourceRestore,
+                    is PassiveEffect.ConditionalStatBonus,
+                    is PassiveEffect.TerrainAffinityBonus,
+                    is PassiveEffect.StatModifierEffect,
+                    is PassiveEffect.HpRegenPerTurn,
+                    is PassiveEffect.ResistanceBonus,
                     -> 0.0
                 }
             }
@@ -97,59 +93,62 @@ object PassiveEffectResolver {
         )
     }
 
-    fun hpRegenPerTurn(passives: List<EquippedPassiveSource>): Int =
+    fun hpRegenPerTurn(passives: List<PassiveSource>): Int =
         passives.sumOf { source ->
             when (val passive = source.passive) {
-                is EquipmentPassive.HpRegenPerTurn -> passive.amount
-                is EquipmentPassive.OnHitStatusProc,
-                is EquipmentPassive.OnKillResourceRestore,
-                is EquipmentPassive.ConditionalStatBonus,
-                is EquipmentPassive.TerrainAffinityBonus,
-                is EquipmentPassive.DamageVsStatus,
-                is EquipmentPassive.DamageTypeBonus,
-                is EquipmentPassive.DamageVsTag,
-                is EquipmentPassive.ResistanceBonus,
+                is PassiveEffect.HpRegenPerTurn -> passive.amount
+                is PassiveEffect.OnHitStatusProc,
+                is PassiveEffect.OnKillResourceRestore,
+                is PassiveEffect.ConditionalStatBonus,
+                is PassiveEffect.TerrainAffinityBonus,
+                is PassiveEffect.StatModifierEffect,
+                is PassiveEffect.DamageVsStatus,
+                is PassiveEffect.DamageTypeBonus,
+                is PassiveEffect.DamageVsTag,
+                is PassiveEffect.ResistanceBonus,
                 -> 0
             }
         }
 
-    fun resistanceBonuses(passives: List<EquippedPassiveSource>): Map<DamageType, Int> =
+    fun resistanceBonuses(passives: List<PassiveSource>): Map<DamageType, Int> =
         buildMap {
             passives.forEach { source ->
                 when (val passive = source.passive) {
-                    is EquipmentPassive.ResistanceBonus -> {
+                    is PassiveEffect.ResistanceBonus -> {
                         put(passive.damageType, (get(passive.damageType) ?: 0) + passive.amount)
                     }
 
-                    is EquipmentPassive.OnHitStatusProc,
-                    is EquipmentPassive.OnKillResourceRestore,
-                    is EquipmentPassive.ConditionalStatBonus,
-                    is EquipmentPassive.TerrainAffinityBonus,
-                    is EquipmentPassive.DamageVsStatus,
-                    is EquipmentPassive.DamageTypeBonus,
-                    is EquipmentPassive.DamageVsTag,
-                    is EquipmentPassive.HpRegenPerTurn,
+                    is PassiveEffect.OnHitStatusProc,
+                    is PassiveEffect.OnKillResourceRestore,
+                    is PassiveEffect.ConditionalStatBonus,
+                    is PassiveEffect.TerrainAffinityBonus,
+                    is PassiveEffect.StatModifierEffect,
+                    is PassiveEffect.DamageVsStatus,
+                    is PassiveEffect.DamageTypeBonus,
+                    is PassiveEffect.DamageVsTag,
+                    is PassiveEffect.HpRegenPerTurn,
                     -> Unit
                 }
             }
         }
 
     fun resolveStatAdjustment(
-        passives: List<EquippedPassiveSource>,
+        passives: List<PassiveSource>,
         context: PassiveStatContext,
     ): PassiveStatAdjustment {
         val sources =
             passives.filter { source ->
                 when (val passive = source.passive) {
-                    is EquipmentPassive.ConditionalStatBonus -> matchesCondition(passive, context)
-                    is EquipmentPassive.TerrainAffinityBonus -> passive.terrainTag in context.terrainTags
-                    is EquipmentPassive.OnHitStatusProc,
-                    is EquipmentPassive.OnKillResourceRestore,
-                    is EquipmentPassive.DamageVsStatus,
-                    is EquipmentPassive.DamageTypeBonus,
-                    is EquipmentPassive.DamageVsTag,
-                    is EquipmentPassive.HpRegenPerTurn,
-                    is EquipmentPassive.ResistanceBonus,
+                    is PassiveEffect.ConditionalStatBonus -> matchesCondition(passive, context)
+                    is PassiveEffect.TerrainAffinityBonus -> passive.terrainTag in context.terrainTags
+                    is PassiveEffect.StatModifierEffect -> true
+                    is PassiveEffect.HpRegenPerTurn -> true
+                    is PassiveEffect.OnHitStatusProc,
+                    is PassiveEffect.OnKillResourceRestore,
+                    is PassiveEffect.DamageVsStatus,
+                    is PassiveEffect.DamageTypeBonus,
+                    is PassiveEffect.DamageVsTag,
+                    is PassiveEffect.ResistanceBonus,
                     -> false
                 }
             }
@@ -157,8 +156,10 @@ object PassiveEffectResolver {
             sources.fold(StatModifier.ZERO) { acc, source ->
                 val next =
                     when (val passive = source.passive) {
-                        is EquipmentPassive.ConditionalStatBonus -> passive.statModifier
-                        is EquipmentPassive.TerrainAffinityBonus -> passive.statModifier
+                        is PassiveEffect.ConditionalStatBonus -> passive.statModifier
+                        is PassiveEffect.TerrainAffinityBonus -> passive.statModifier
+                        is PassiveEffect.StatModifierEffect -> passive.statModifier
+                        is PassiveEffect.HpRegenPerTurn -> StatModifier(hpRegen = passive.amount.toDouble())
                         else -> StatModifier.ZERO
                     }
                 acc + next
@@ -169,9 +170,9 @@ object PassiveEffectResolver {
         )
     }
 
-    fun onHitStatusProcs(passives: List<EquippedPassiveSource>): List<PassiveStatusProcTrigger> =
+    fun onHitStatusProcs(passives: List<PassiveSource>): List<PassiveStatusProcTrigger> =
         passives.mapNotNull { source ->
-            val passive = source.passive as? EquipmentPassive.OnHitStatusProc ?: return@mapNotNull null
+            val passive = source.passive as? PassiveEffect.OnHitStatusProc ?: return@mapNotNull null
             PassiveStatusProcTrigger(
                 source = source,
                 statusId = passive.statusId,
@@ -181,9 +182,9 @@ object PassiveEffectResolver {
             )
         }
 
-    fun onKillResourceRestores(passives: List<EquippedPassiveSource>): List<PassiveResourceRestoreTrigger> =
+    fun onKillResourceRestores(passives: List<PassiveSource>): List<PassiveResourceRestoreTrigger> =
         passives.mapNotNull { source ->
-            val passive = source.passive as? EquipmentPassive.OnKillResourceRestore ?: return@mapNotNull null
+            val passive = source.passive as? PassiveEffect.OnKillResourceRestore ?: return@mapNotNull null
             PassiveResourceRestoreTrigger(
                 source = source,
                 resourceType = passive.resourceType,
@@ -192,7 +193,7 @@ object PassiveEffectResolver {
         }
 
     private fun matchesCondition(
-        passive: EquipmentPassive.ConditionalStatBonus,
+        passive: PassiveEffect.ConditionalStatBonus,
         context: PassiveStatContext,
     ): Boolean =
         when (passive.condition) {
@@ -202,12 +203,19 @@ object PassiveEffectResolver {
             PassiveCondition.SELF_HAS_STATUS -> passive.statusId in context.selfStatusIds
         }
 
-    private fun itemPassives(item: ItemInstance): List<EquippedPassiveSource> =
+    private fun itemPassives(
+        itemId: EntityId,
+        item: ItemInstance,
+    ): List<PassiveSource> =
         buildList {
             item.passive?.let { passive ->
                 add(
-                    EquippedPassiveSource(
-                        item = item,
+                    PassiveSource(
+                        kind = PassiveSourceKind.EQUIPMENT,
+                        sourceId = item.basePassiveSourceId(itemId),
+                        sourceTemplateId = item.baseId,
+                        itemEntityId = itemId,
+                        sourceSpecialTemplateId = item.specialTemplateId,
                         passive = passive,
                     ),
                 )
@@ -215,13 +223,30 @@ object PassiveEffectResolver {
             item.affixes.forEach { affix ->
                 affix.passive?.let { passive ->
                     add(
-                        EquippedPassiveSource(
-                            item = item,
+                        PassiveSource(
+                            kind = PassiveSourceKind.EQUIPMENT,
+                            sourceId = item.affixPassiveSourceId(itemId = itemId, affixId = affix.id),
+                            sourceTemplateId = item.baseId,
+                            itemEntityId = itemId,
                             passive = passive,
                             affixId = affix.id,
+                            sourceSpecialTemplateId = item.specialTemplateId,
                         ),
                     )
                 }
             }
         }
+
+    private fun ItemInstance.basePassiveSourceId(itemId: EntityId): String =
+        specialTemplateId?.let { templateId ->
+            "equipment:${itemId.value}:$baseId:special:$templateId"
+        } ?: "equipment:${itemId.value}:$baseId"
+
+    private fun ItemInstance.affixPassiveSourceId(
+        itemId: EntityId,
+        affixId: String,
+    ): String =
+        specialTemplateId?.let { templateId ->
+            "equipment:${itemId.value}:$baseId:special:$templateId:affix:$affixId"
+        } ?: "equipment:${itemId.value}:$baseId:affix:$affixId"
 }

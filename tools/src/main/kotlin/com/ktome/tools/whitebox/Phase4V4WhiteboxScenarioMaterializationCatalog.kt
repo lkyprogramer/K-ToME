@@ -34,6 +34,26 @@ internal object Phase4V4WhiteboxScenarioMaterializationCatalog {
                 windowHeight = 840,
             ),
             Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-01-static-passive-detail"),
+                windowWidth = 1280,
+                windowHeight = 840,
+            ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-01-trigger-passive-detail"),
+                windowWidth = 1280,
+                windowHeight = 840,
+            ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-01-passive-action-suppression"),
+                windowWidth = 1280,
+                windowHeight = 840,
+            ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-01-effective-hp-regen-detail"),
+                windowWidth = 1280,
+                windowHeight = 840,
+            ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
                 id = ValidationScenarioId("phase4-v4-pr02"),
                 windowWidth = 1280,
                 windowHeight = 800,

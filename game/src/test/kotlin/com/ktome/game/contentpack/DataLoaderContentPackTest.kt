@@ -147,6 +147,47 @@ class DataLoaderContentPackTest {
     }
 
     @Test
+    fun `data loader rejects talent overlay registry remains unsupported`() {
+        val packRoot = tempDir.resolve("unsupported-talent-overlay-pack")
+        Files.createDirectories(packRoot.resolve("data/talents"))
+        Files.writeString(
+            packRoot.resolve("manifest.yaml"),
+            """
+            |id: fixture.unsupported_talent_overlay
+            |version: 1.0.0
+            |schemaVersion: ${ContentPackManifest.SCHEMA_VERSION}
+            |gameVersionRange: ">=0.4.0 <0.5.0"
+            |namespace: fixture_unsupported_talent_overlay
+            |dependencies: []
+            |overlays:
+            |  - targetRef:
+            |      registry: talent
+            |      id: unyielding
+            |    op: ADD
+            |    sourceFile: data/talents/unyielding.yaml
+            |
+            """.trimMargin(),
+        )
+        Files.writeString(
+            packRoot.resolve("data/talents/unyielding.yaml"),
+            """
+            |talents: []
+            |
+            """.trimMargin(),
+        )
+
+        val exception =
+            assertThrows(ContentPackLoadException::class.java) {
+                DataLoader(
+                    locale = GameLocale.EN_US,
+                    packSelection = ContentPackSelection.of(packRoot),
+                ).loadSchemaCatalog()
+            }
+
+        assertEquals(setOf("content-pack.overlay.registry-unsupported"), exception.diagnostics.map { diagnostic -> diagnostic.code }.toSet())
+    }
+
+    @Test
     fun `data loader rejects legacy v2 loot profiles with dedicated structured diagnostic`() {
         val exception =
             assertThrows(ContentPackLoadException::class.java) {

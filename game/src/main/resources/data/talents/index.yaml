@@ -882,70 +882,58 @@ talents:
     schemaVersion: 2
     tags: [talent, vanguard, panic]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 12
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { STAMINA: 14 }
     unlockLevel: 5
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: vanguard_warcry
     requirements:
       talentPrereqs:
         - talentId: intimidation
           minRank: 2
-    keywords: [panic, defense]
+    keywords: [defense]
     levelEffects:
       1:
-        associatedEffects:
-          - effectId: unyielding_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.15
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 10, defense: 1 }
+          - kind: ResistanceBonus
+            damageType: PHYSICAL
+            amount: 1
       2:
-        associatedEffects:
-          - effectId: unyielding_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.18
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 16, defense: 2 }
+          - kind: ResistanceBonus
+            damageType: PHYSICAL
+            amount: 2
       3:
-        associatedEffects:
-          - effectId: unyielding_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.20
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 22, defense: 3 }
+          - kind: ResistanceBonus
+            damageType: PHYSICAL
+            amount: 3
       4:
-        associatedEffects:
-          - effectId: unyielding_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.22
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 30, defense: 4 }
+          - kind: ResistanceBonus
+            damageType: PHYSICAL
+            amount: 4
       5:
-        associatedEffects:
-          - effectId: unyielding_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 5
-            magnitude: 0.25
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 40, defense: 5 }
+          - kind: ResistanceBonus
+            damageType: PHYSICAL
+            amount: 6
   - id: fireball
     nameKey: talent.arcanist.fireball.name
     descKey: talent.arcanist.fireball.desc
@@ -1373,75 +1361,93 @@ talents:
     schemaVersion: 2
     tags: [talent, arcanist, utility]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 10
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { MANA: 0 }
     unlockLevel: 2
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: arcanist_arcane
     requirements:
       talentPrereqs:
         - talentId: arcane_shield
           minRank: 2
-    keywords: [resource, buff]
+    keywords: [resource]
     levelEffects:
       1:
-        resourceRestoreFraction: 0.10
-        associatedEffects:
-          - effectId: mana_surge_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.10
+        passiveEffects:
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 3
+          - kind: DamageTypeBonus
+            damageType: FIRE
+            bonusPercent: 0.03
+          - kind: DamageTypeBonus
+            damageType: COLD
+            bonusPercent: 0.03
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.03
       2:
-        resourceRestoreFraction: 0.12
-        associatedEffects:
-          - effectId: mana_surge_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.12
+        passiveEffects:
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 4
+          - kind: DamageTypeBonus
+            damageType: FIRE
+            bonusPercent: 0.04
+          - kind: DamageTypeBonus
+            damageType: COLD
+            bonusPercent: 0.04
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.04
       3:
-        resourceRestoreFraction: 0.14
-        associatedEffects:
-          - effectId: mana_surge_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.14
+        passiveEffects:
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 5
+          - kind: DamageTypeBonus
+            damageType: FIRE
+            bonusPercent: 0.05
+          - kind: DamageTypeBonus
+            damageType: COLD
+            bonusPercent: 0.05
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.05
       4:
-        resourceRestoreFraction: 0.16
-        associatedEffects:
-          - effectId: mana_surge_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.16
+        passiveEffects:
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 7
+          - kind: DamageTypeBonus
+            damageType: FIRE
+            bonusPercent: 0.06
+          - kind: DamageTypeBonus
+            damageType: COLD
+            bonusPercent: 0.06
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.06
       5:
-        resourceRestoreFraction: 0.18
-        associatedEffects:
-          - effectId: mana_surge_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.18
+        passiveEffects:
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 9
+          - kind: DamageTypeBonus
+            damageType: FIRE
+            bonusPercent: 0.08
+          - kind: DamageTypeBonus
+            damageType: COLD
+            bonusPercent: 0.08
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.08
   - id: backstab
     nameKey: talent.rogue.backstab.name
     descKey: talent.rogue.backstab.desc
@@ -1839,19 +1845,17 @@ talents:
     schemaVersion: 2
     tags: [talent, rogue, finisher]
     maxPoints: 5
-    category: ACTIVE
+    category: PASSIVE
     damageType: PHYSICAL
-    kind: ACTIVE
-    cooldown: 8
-    castTime: STANDARD
-    range: 1
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
+    range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { ENERGY: 24 }
     unlockLevel: 5
-    targeting: SINGLE_TARGET
+    targeting: SELF
     callbacks: []
-    telegraphRef: melee_single
     treeId: rogue_assassination
     requirements:
       talentPrereqs:
@@ -1859,11 +1863,46 @@ talents:
           minRank: 2
     keywords: [damage, resource]
     levelEffects:
-      1: { damageMultiplier: 1.60, resourceRestoreFraction: 0.10 }
-      2: { damageMultiplier: 1.85, resourceRestoreFraction: 0.12 }
-      3: { damageMultiplier: 2.10, resourceRestoreFraction: 0.14 }
-      4: { damageMultiplier: 2.35, resourceRestoreFraction: 0.16 }
-      5: { damageMultiplier: 2.70, resourceRestoreFraction: 0.18 }
+      1:
+        passiveEffects:
+          - kind: DamageVsStatus
+            statusId: MARKED
+            bonusPercent: 0.08
+          - kind: OnKillResourceRestore
+            resourceType: ENERGY
+            amount: 4
+      2:
+        passiveEffects:
+          - kind: DamageVsStatus
+            statusId: MARKED
+            bonusPercent: 0.12
+          - kind: OnKillResourceRestore
+            resourceType: ENERGY
+            amount: 6
+      3:
+        passiveEffects:
+          - kind: DamageVsStatus
+            statusId: MARKED
+            bonusPercent: 0.16
+          - kind: OnKillResourceRestore
+            resourceType: ENERGY
+            amount: 8
+      4:
+        passiveEffects:
+          - kind: DamageVsStatus
+            statusId: MARKED
+            bonusPercent: 0.20
+          - kind: OnKillResourceRestore
+            resourceType: ENERGY
+            amount: 10
+      5:
+        passiveEffects:
+          - kind: DamageVsStatus
+            statusId: MARKED
+            bonusPercent: 0.25
+          - kind: OnKillResourceRestore
+            resourceType: ENERGY
+            amount: 12
   - id: holy_strike
     nameKey: talent.templar.holy_strike.name
     descKey: talent.templar.holy_strike.desc
@@ -2077,66 +2116,39 @@ talents:
     schemaVersion: 2
     tags: [talent, templar, support, cleanse, sustain]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 7
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { POSITIVE_ENERGY: 0 }
     unlockLevel: 1
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: templar_faith
-    keywords: [buff, holy]
+    keywords: [holy]
     levelEffects:
       1:
-        associatedEffects:
-          - effectId: devotion_buff
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.10
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 8, wil: 1, talentPower: 0.03 }
       2:
-        associatedEffects:
-          - effectId: devotion_buff
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.12
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 14, wil: 2, talentPower: 0.05 }
       3:
-        associatedEffects:
-          - effectId: devotion_buff
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 5
-            magnitude: 0.14
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 20, wil: 3, talentPower: 0.07 }
       4:
-        associatedEffects:
-          - effectId: devotion_buff
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 5
-            magnitude: 0.16
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 26, wil: 4, talentPower: 0.09 }
       5:
-        associatedEffects:
-          - effectId: devotion_buff
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 6
-            magnitude: 0.18
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { maxHp: 34, wil: 5, talentPower: 0.12 }
   - id: holy_aura
     nameKey: talent.templar.holy_aura.name
     descKey: talent.templar.holy_aura.desc
@@ -2653,75 +2665,43 @@ talents:
     schemaVersion: 3
     tags: [talent, arcanist, utility]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 12
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { MANA: 0 }
     unlockLevel: 5
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: arcanist_arcane
     requirements:
       talentPrereqs:
         - talentId: blink
           minRank: 2
-    keywords: [buff, resource, boss]
+    keywords: [resource, boss]
     levelEffects:
       1:
-        resourceRestoreFraction: 0.12
-        associatedEffects:
-          - effectId: arcane_overload_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.16
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.06, castSpeedRating: 1 }
       2:
-        resourceRestoreFraction: 0.14
-        associatedEffects:
-          - effectId: arcane_overload_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.18
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.09, castSpeedRating: 2 }
       3:
-        resourceRestoreFraction: 0.16
-        associatedEffects:
-          - effectId: arcane_overload_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.20
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.12, castSpeedRating: 3 }
       4:
-        resourceRestoreFraction: 0.18
-        associatedEffects:
-          - effectId: arcane_overload_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.22
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.15, castSpeedRating: 4 }
       5:
-        resourceRestoreFraction: 0.20
-        associatedEffects:
-          - effectId: arcane_overload_buff
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.24
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.20, castSpeedRating: 5 }
   - id: execution
     nameKey: talent.rogue.execution.name
     descKey: talent.rogue.execution.desc
@@ -2765,70 +2745,43 @@ talents:
     schemaVersion: 3
     tags: [talent, rogue, utility, crit]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 7
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { ENERGY: 8 }
     unlockLevel: 3
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: rogue_agility
     requirements:
       talentPrereqs:
         - talentId: roll
           minRank: 2
-    keywords: [buff, crit]
+    keywords: [crit]
     levelEffects:
       1:
-        associatedEffects:
-          - effectId: killer_instinct_buff
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.12
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { accuracy: 2, critChance: 0.04, attackMultiplierBonus: 0.03 }
       2:
-        associatedEffects:
-          - effectId: killer_instinct_buff
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.14
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { accuracy: 3, critChance: 0.06, attackMultiplierBonus: 0.05 }
       3:
-        associatedEffects:
-          - effectId: killer_instinct_buff
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.16
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { accuracy: 4, critChance: 0.08, attackMultiplierBonus: 0.07 }
       4:
-        associatedEffects:
-          - effectId: killer_instinct_buff
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.18
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { accuracy: 5, critChance: 0.10, attackMultiplierBonus: 0.09 }
       5:
-        associatedEffects:
-          - effectId: killer_instinct_buff
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.20
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { accuracy: 7, critChance: 0.14, attackMultiplierBonus: 0.12 }
   - id: vanish
     nameKey: talent.rogue.vanish.name
     descKey: talent.rogue.vanish.desc
@@ -3178,70 +3131,68 @@ talents:
     schemaVersion: 3
     tags: [talent, vanguard, defense]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 8
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { STAMINA: 10 }
     unlockLevel: 4
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: vanguard_shield
     requirements:
       talentPrereqs:
         - talentId: guard_stance
           minRank: 3
-    keywords: [buff, defense, movement]
+    keywords: [defense, movement]
     levelEffects:
       1:
-        associatedEffects:
-          - effectId: bulwark_march_guard
-            effectType: GUARD
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.18
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: SELF_HAS_STATUS
+            statusId: GUARD_STANCE_BUFF
+            statModifier: { defense: 2, speed: 1 }
+          - kind: DamageVsStatus
+            statusId: TAUNT
+            bonusPercent: 0.04
       2:
-        associatedEffects:
-          - effectId: bulwark_march_guard
-            effectType: GUARD
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.22
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: SELF_HAS_STATUS
+            statusId: GUARD_STANCE_BUFF
+            statModifier: { defense: 3, speed: 2 }
+          - kind: DamageVsStatus
+            statusId: TAUNT
+            bonusPercent: 0.06
       3:
-        associatedEffects:
-          - effectId: bulwark_march_guard
-            effectType: GUARD
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.26
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: SELF_HAS_STATUS
+            statusId: GUARD_STANCE_BUFF
+            statModifier: { defense: 4, speed: 3 }
+          - kind: DamageVsStatus
+            statusId: TAUNT
+            bonusPercent: 0.08
       4:
-        associatedEffects:
-          - effectId: bulwark_march_guard
-            effectType: GUARD
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 5
-            magnitude: 0.30
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: SELF_HAS_STATUS
+            statusId: GUARD_STANCE_BUFF
+            statModifier: { defense: 5, speed: 4 }
+          - kind: DamageVsStatus
+            statusId: TAUNT
+            bonusPercent: 0.10
       5:
-        associatedEffects:
-          - effectId: bulwark_march_guard
-            effectType: GUARD
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 5
-            magnitude: 0.34
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: SELF_HAS_STATUS
+            statusId: GUARD_STANCE_BUFF
+            statModifier: { defense: 6, speed: 5 }
+          - kind: DamageVsStatus
+            statusId: TAUNT
+            bonusPercent: 0.12
   - id: battlefield_command
     nameKey: talent.vanguard.battlefield_command.name
     descKey: talent.vanguard.battlefield_command.desc
@@ -4496,70 +4447,78 @@ talents:
     schemaVersion: 3
     tags: [talent, templar, holy]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 8
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
-    areaRadius: 2
-    resourceCosts: { POSITIVE_ENERGY: 12 }
+    areaRadius: 0
     unlockLevel: 4
-    targeting: RADIUS_SELF
+    targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: templar_faith
     requirements:
       talentPrereqs:
         - talentId: devotion
           minRank: 2
-    keywords: [buff, holy, defense]
+    keywords: [holy, defense]
     levelEffects:
       1:
-        associatedEffects:
-          - effectId: beacon_of_zeal_devotion
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.18
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: HOLY
+            bonusPercent: 0.05
+          - kind: ResistanceBonus
+            damageType: HOLY
+            amount: 3
+          - kind: OnKillResourceRestore
+            resourceType: POSITIVE_ENERGY
+            amount: 2
       2:
-        associatedEffects:
-          - effectId: beacon_of_zeal_devotion
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.22
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: HOLY
+            bonusPercent: 0.07
+          - kind: ResistanceBonus
+            damageType: HOLY
+            amount: 4
+          - kind: OnKillResourceRestore
+            resourceType: POSITIVE_ENERGY
+            amount: 3
       3:
-        associatedEffects:
-          - effectId: beacon_of_zeal_devotion
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.26
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: HOLY
+            bonusPercent: 0.09
+          - kind: ResistanceBonus
+            damageType: HOLY
+            amount: 6
+          - kind: OnKillResourceRestore
+            resourceType: POSITIVE_ENERGY
+            amount: 4
       4:
-        associatedEffects:
-          - effectId: beacon_of_zeal_devotion
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 5
-            magnitude: 0.30
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: HOLY
+            bonusPercent: 0.12
+          - kind: ResistanceBonus
+            damageType: HOLY
+            amount: 8
+          - kind: OnKillResourceRestore
+            resourceType: POSITIVE_ENERGY
+            amount: 5
       5:
-        associatedEffects:
-          - effectId: beacon_of_zeal_devotion
-            effectType: DEVOTION_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 5
-            magnitude: 0.34
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: HOLY
+            bonusPercent: 0.15
+          - kind: ResistanceBonus
+            damageType: HOLY
+            amount: 10
+          - kind: OnKillResourceRestore
+            resourceType: POSITIVE_ENERGY
+            amount: 7
   - id: ritual_break
     nameKey: talent.templar.ritual_break.name
     descKey: talent.templar.ritual_break.desc
@@ -4852,71 +4811,44 @@ talents:
     schemaVersion: 3
     tags: [talent, berserker, panic]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 12
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { HATE: 10 }
     unlockLevel: 5
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: berserker_bloodwar
     keywords: [panic, defense]
     levelEffects:
       1:
-        healFraction: 0.10
-        associatedEffects:
-          - effectId: last_stand_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.18
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: HP_BELOW_30
+            statModifier: { attackMultiplierBonus: 0.10, defense: 2 }
       2:
-        healFraction: 0.12
-        associatedEffects:
-          - effectId: last_stand_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.20
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: HP_BELOW_30
+            statModifier: { attackMultiplierBonus: 0.14, defense: 3 }
       3:
-        healFraction: 0.14
-        associatedEffects:
-          - effectId: last_stand_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.22
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: HP_BELOW_30
+            statModifier: { attackMultiplierBonus: 0.18, defense: 5 }
       4:
-        healFraction: 0.16
-        associatedEffects:
-          - effectId: last_stand_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.24
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: HP_BELOW_30
+            statModifier: { attackMultiplierBonus: 0.24, defense: 6 }
       5:
-        healFraction: 0.18
-        associatedEffects:
-          - effectId: last_stand_buff
-            effectType: UNYIELDING_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.26
+        passiveEffects:
+          - kind: ConditionalStatBonus
+            condition: HP_BELOW_30
+            statModifier: { attackMultiplierBonus: 0.30, defense: 8 }
   - id: arcane_edge
     nameKey: talent.spellblade.arcane_edge.name
     descKey: talent.spellblade.arcane_edge.desc
@@ -4990,27 +4922,75 @@ talents:
     schemaVersion: 3
     tags: [talent, spellblade, utility]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 8
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { MANA: 0 }
     unlockLevel: 1
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     equilibriumAffinity: NEUTRAL
     treeId: spellblade_elemental_flux
     keywords: [resource, defense]
     levelEffects:
-      1: { resourceRestoreFraction: 0.10 }
-      2: { resourceRestoreFraction: 0.12 }
-      3: { resourceRestoreFraction: 0.14 }
-      4: { resourceRestoreFraction: 0.16 }
-      5: { resourceRestoreFraction: 0.18 }
+      1:
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.05
+          - kind: ResistanceBonus
+            damageType: LIGHTNING
+            amount: 2
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 3
+      2:
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.07
+          - kind: ResistanceBonus
+            damageType: LIGHTNING
+            amount: 3
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 4
+      3:
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.09
+          - kind: ResistanceBonus
+            damageType: LIGHTNING
+            amount: 4
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 5
+      4:
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.12
+          - kind: ResistanceBonus
+            damageType: LIGHTNING
+            amount: 5
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 6
+      5:
+        passiveEffects:
+          - kind: DamageTypeBonus
+            damageType: LIGHTNING
+            bonusPercent: 0.15
+          - kind: ResistanceBonus
+            damageType: LIGHTNING
+            amount: 7
+          - kind: OnKillResourceRestore
+            resourceType: MANA
+            amount: 8
   - id: flux_burst
     nameKey: talent.spellblade.flux_burst.name
     descKey: talent.spellblade.flux_burst.desc
@@ -5399,75 +5379,43 @@ talents:
     schemaVersion: 3
     tags: [talent, berserker, sustain]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 9
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { HATE: 6 }
     unlockLevel: 4
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     treeId: berserker_bloodwar
     requirements:
       talentPrereqs:
         - talentId: kill_frenzy
           minRank: 2
-    keywords: [panic, buff]
+    keywords: [panic, sustain]
     levelEffects:
       1:
-        healFraction: 0.08
-        associatedEffects:
-          - effectId: pain_fuel_empower
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.08
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { attackMultiplierBonus: 0.05, hpRegen: 0.4 }
       2:
-        healFraction: 0.10
-        associatedEffects:
-          - effectId: pain_fuel_empower
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.10
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { attackMultiplierBonus: 0.08, hpRegen: 0.6 }
       3:
-        healFraction: 0.12
-        associatedEffects:
-          - effectId: pain_fuel_empower
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.12
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { attackMultiplierBonus: 0.11, hpRegen: 0.8 }
       4:
-        healFraction: 0.14
-        associatedEffects:
-          - effectId: pain_fuel_empower
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.14
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { attackMultiplierBonus: 0.14, hpRegen: 1.0 }
       5:
-        healFraction: 0.16
-        associatedEffects:
-          - effectId: pain_fuel_empower
-            effectType: war_cry_empower
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.16
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { attackMultiplierBonus: 0.18, hpRegen: 1.2 }
   - id: slaughter_drive
     nameKey: talent.berserker.slaughter_drive.name
     descKey: talent.berserker.slaughter_drive.desc
@@ -5727,76 +5675,44 @@ talents:
     schemaVersion: 3
     tags: [talent, spellblade, utility]
     maxPoints: 5
-    category: ACTIVE
-    kind: ACTIVE
-    cooldown: 6
-    castTime: STANDARD
+    category: PASSIVE
+    kind: PASSIVE
+    cooldown: 0
+    castTime: INSTANT
     range: 0
     minRange: 0
     areaRadius: 0
-    resourceCosts: { MANA: 6 }
     unlockLevel: 3
     targeting: SELF
     callbacks: []
-    telegraphRef: self_buff_aura
     equilibriumAffinity: NEUTRAL
     treeId: spellblade_elemental_flux
     requirements:
       talentPrereqs:
         - talentId: flux_anchor
           minRank: 2
-    keywords: [buff, resource]
+    keywords: [resource]
     levelEffects:
       1:
-        resourceRestoreFraction: 0.08
-        associatedEffects:
-          - effectId: balance_point_focus
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.08
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.04, attackMultiplierBonus: 0.03, defense: 1, castSpeedRating: 2 }
       2:
-        resourceRestoreFraction: 0.10
-        associatedEffects:
-          - effectId: balance_point_focus
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 2
-            magnitude: 0.10
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.06, attackMultiplierBonus: 0.05, defense: 2, castSpeedRating: 3 }
       3:
-        resourceRestoreFraction: 0.12
-        associatedEffects:
-          - effectId: balance_point_focus
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.12
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.08, attackMultiplierBonus: 0.07, defense: 3, castSpeedRating: 4 }
       4:
-        resourceRestoreFraction: 0.14
-        associatedEffects:
-          - effectId: balance_point_focus
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 3
-            magnitude: 0.14
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.10, attackMultiplierBonus: 0.09, defense: 4, castSpeedRating: 6 }
       5:
-        resourceRestoreFraction: 0.16
-        associatedEffects:
-          - effectId: balance_point_focus
-            effectType: MANA_SURGE_BUFF
-            trigger: ON_CAST
-            targetScope: SELF
-            applicationPolicy: SELF_AUTO
-            duration: 4
-            magnitude: 0.16
+        passiveEffects:
+          - kind: StatModifier
+            statModifier: { talentPower: 0.12, attackMultiplierBonus: 0.12, defense: 5, castSpeedRating: 8 }
   - id: flux_reversal
     nameKey: talent.spellblade.flux_reversal.name
     descKey: talent.spellblade.flux_reversal.desc

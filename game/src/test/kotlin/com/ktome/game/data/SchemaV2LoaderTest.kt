@@ -5,7 +5,7 @@ import com.ktome.core.talent.EffectOp
 import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
-import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.PassiveEffect
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.loot.SourceTier
@@ -174,7 +174,8 @@ class SchemaV2LoaderTest {
             "INSTANT_ACTION",
             catalog.talents.first { it.id == "purify" }.levelEffects.getValue(1).cleanseEffect?.applicationPolicy,
         )
-        assertEquals(0.10, catalog.talents.first { it.id == "mana_surge" }.levelEffects.getValue(1).resourceRestoreFraction)
+        assertEquals("PASSIVE", catalog.talents.first { it.id == "mana_surge" }.category)
+        assertEquals(4, catalog.talents.first { it.id == "mana_surge" }.levelEffects.getValue(1).passiveEffects.size)
         assertEquals(0.18, catalog.talents.first { it.id == "holy_light" }.levelEffects.getValue(1).healFraction)
         assertEquals(0.20, catalog.talents.first { it.id == "divine_intervention" }.levelEffects.getValue(1).healFraction)
         assertEquals("audio.talent.shadowstep", catalog.talents.first { it.id == "shadowstep" }.audioProfile)
@@ -529,22 +530,22 @@ class SchemaV2LoaderTest {
             enLoader.loadTalentDefinitions().first { it.id == "mana_surge" }
                 .levelEffects
                 .getValue(1)
-                .effectOps
-                .filterIsInstance<EffectOp.ResourceRestore>()
+                .passiveEffects
+                .filterIsInstance<PassiveEffect.OnKillResourceRestore>()
                 .single()
-                .type,
+                .resourceType,
         )
         assertEquals(
             ResourceType.ENERGY,
             enLoader.loadTalentDefinitions().first { it.id == "deathblow" }
                 .levelEffects
                 .getValue(1)
-                .effectOps
-                .filterIsInstance<EffectOp.ResourceRestore>()
+                .passiveEffects
+                .filterIsInstance<PassiveEffect.OnKillResourceRestore>()
                 .single()
-                .type,
+                .resourceType,
         )
-        assertEquals(0.10, enLoader.loadTalentDefinitions().first { it.id == "mana_surge" }.levelEffects.getValue(1).resourceRestoreFraction)
+        assertTrue(enLoader.loadTalentDefinitions().first { it.id == "mana_surge" }.levelEffects.getValue(1).effectOps.isEmpty())
         assertEquals(0.18, enLoader.loadTalentDefinitions().first { it.id == "holy_light" }.levelEffects.getValue(1).healFraction)
         assertTrue(
             enLoader.loadTalentDefinitions().first { it.id == "blink" }
@@ -574,13 +575,13 @@ class SchemaV2LoaderTest {
                 .unlockedEffects
                 .any { effect -> effect is EffectOp.ApplyStatus && effect.statusId == StatusEffectType.BANE.schemaId },
         )
-        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "emerald_charm" }.passive is EquipmentPassive.HpRegenPerTurn)
-        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "hunter_bow" }.passive is EquipmentPassive.DamageVsTag)
-        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "long_sword" }.passive is EquipmentPassive.DamageVsTag)
-        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "chain_mail" }.passive is EquipmentPassive.ResistanceBonus)
-        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "shadow_cloak" }.passive is EquipmentPassive.ResistanceBonus)
-        assertTrue(enLoader.loadItemBundle().affixes.first { it.id == "of_smite" }.passive is EquipmentPassive.DamageVsStatus)
-        assertTrue(enLoader.loadItemBundle().affixes.first { it.id == "of_cleansing" }.passive is EquipmentPassive.HpRegenPerTurn)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "emerald_charm" }.passive is PassiveEffect.HpRegenPerTurn)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "hunter_bow" }.passive is PassiveEffect.DamageVsTag)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "long_sword" }.passive is PassiveEffect.DamageVsTag)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "chain_mail" }.passive is PassiveEffect.ResistanceBonus)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "shadow_cloak" }.passive is PassiveEffect.ResistanceBonus)
+        assertTrue(enLoader.loadItemBundle().affixes.first { it.id == "of_smite" }.passive is PassiveEffect.DamageVsStatus)
+        assertTrue(enLoader.loadItemBundle().affixes.first { it.id == "of_cleansing" }.passive is PassiveEffect.HpRegenPerTurn)
         assertEquals(4, enLoader.loadTalentDefinitions().first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
     }
 
@@ -764,6 +765,180 @@ class SchemaV2LoaderTest {
 
         assertTrue(invalidTagError.cause is IllegalArgumentException)
         assertTrue(invalidTagError.cause?.message?.contains("No enum constant") == true)
+    }
+
+    @Test
+    fun `schema v2 loader rejects passive talents without rank passive effects`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseTalentSchemas", Map::class.java, Set::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "talents" to
+                            listOf(
+                                linkedMapOf(
+                                    "id" to "test_empty_passive",
+                                    "nameKey" to "talent.test.empty_passive.name",
+                                    "descKey" to "talent.test.empty_passive.desc",
+                                    "visualKey" to "talent.test.empty_passive.visual",
+                                    "iconKey" to "icon.skill.test_empty_passive",
+                                    "audioProfile" to "audio.talent.test_empty_passive",
+                                    "schemaVersion" to 2,
+                                    "maxPoints" to 1,
+                                    "tier" to 1,
+                                    "category" to "PASSIVE",
+                                    "damageType" to "PHYSICAL",
+                                    "powerDimension" to "PHYSICAL",
+                                    "kind" to "PASSIVE",
+                                    "cooldown" to 0,
+                                    "castTime" to "INSTANT",
+                                    "targeting" to "SELF",
+                                    "range" to 0,
+                                    "minRange" to 0,
+                                    "levelEffects" to
+                                        linkedMapOf(
+                                            "1" to linkedMapOf<String, Any?>(),
+                                        ),
+                                    "treeId" to "vanguard_warcry",
+                                ),
+                            ),
+                    ),
+                    emptySet<String>(),
+                )
+            }
+
+        assertTrue(error.cause is IllegalArgumentException)
+        assertTrue(error.cause?.message?.contains("rank 1 must declare passiveEffects") == true)
+    }
+
+    @Test
+    fun `schema v2 loader rejects unknown talent passive effect kind`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseTalentSchemas", Map::class.java, Set::class.java).apply {
+                isAccessible = true
+            }
+        val toRuntimeMethod =
+            DataLoader::class.java.getDeclaredMethod("toRuntimeTalent", TalentSchemaV2::class.java, ResourceType::class.java).apply {
+                isAccessible = true
+            }
+
+        @Suppress("UNCHECKED_CAST")
+        val schema =
+            (parseMethod.invoke(
+                loader,
+                linkedMapOf(
+                    "talents" to
+                        listOf(
+                            linkedMapOf(
+                                "id" to "test_unknown_passive",
+                                "nameKey" to "talent.test.unknown_passive.name",
+                                "descKey" to "talent.test.unknown_passive.desc",
+                                "visualKey" to "talent.test.unknown_passive.visual",
+                                "iconKey" to "icon.skill.test_unknown_passive",
+                                "audioProfile" to "audio.talent.test_unknown_passive",
+                                "schemaVersion" to 2,
+                                "maxPoints" to 1,
+                                "tier" to 1,
+                                "category" to "PASSIVE",
+                                "damageType" to "PHYSICAL",
+                                "powerDimension" to "PHYSICAL",
+                                "kind" to "PASSIVE",
+                                "cooldown" to 0,
+                                "castTime" to "INSTANT",
+                                "targeting" to "SELF",
+                                "range" to 0,
+                                "minRange" to 0,
+                                "levelEffects" to
+                                    linkedMapOf(
+                                        "1" to
+                                            linkedMapOf(
+                                                "passiveEffects" to
+                                                    listOf(
+                                                        linkedMapOf("kind" to "NewCoreKind"),
+                                                    ),
+                                            ),
+                                    ),
+                                "treeId" to "vanguard_warcry",
+                            ),
+                        ),
+                ),
+                emptySet<String>(),
+            ) as List<TalentSchemaV2>).single()
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                toRuntimeMethod.invoke(loader, schema, ResourceType.STAMINA)
+            }
+
+        assertTrue(error.cause is IllegalStateException)
+        assertTrue(error.cause?.message?.contains("Unsupported passive effect kind 'NewCoreKind'") == true)
+    }
+
+    @Test
+    fun `schema v2 loader rejects passive ranks mixing hp regen effect routes`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseTalentSchemas", Map::class.java, Set::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "talents" to
+                            listOf(
+                                linkedMapOf(
+                                    "id" to "test_mixed_hp_regen_passive",
+                                    "nameKey" to "talent.test.mixed_hp_regen.name",
+                                    "descKey" to "talent.test.mixed_hp_regen.desc",
+                                    "visualKey" to "talent.test.mixed_hp_regen.visual",
+                                    "iconKey" to "icon.skill.test_mixed_hp_regen",
+                                    "audioProfile" to "audio.talent.test_mixed_hp_regen",
+                                    "schemaVersion" to 2,
+                                    "maxPoints" to 1,
+                                    "tier" to 1,
+                                    "category" to "PASSIVE",
+                                    "damageType" to "PHYSICAL",
+                                    "powerDimension" to "PHYSICAL",
+                                    "kind" to "PASSIVE",
+                                    "cooldown" to 0,
+                                    "castTime" to "INSTANT",
+                                    "targeting" to "SELF",
+                                    "range" to 0,
+                                    "minRange" to 0,
+                                    "levelEffects" to
+                                        linkedMapOf(
+                                            "1" to
+                                                linkedMapOf(
+                                                    "passiveEffects" to
+                                                        listOf(
+                                                            linkedMapOf(
+                                                                "kind" to "StatModifier",
+                                                                "statModifier" to linkedMapOf("hpRegen" to 1.0),
+                                                            ),
+                                                            linkedMapOf("kind" to "HpRegenPerTurn", "amount" to 1),
+                                                        ),
+                                                ),
+                                        ),
+                                    "treeId" to "vanguard_warcry",
+                                ),
+                            ),
+                    ),
+                    emptySet<String>(),
+                )
+            }
+
+        assertTrue(error.cause is IllegalArgumentException)
+        assertTrue(error.cause?.message?.contains("must not mix HpRegenPerTurn with StatModifier.hpRegen") == true)
     }
 
     @Test

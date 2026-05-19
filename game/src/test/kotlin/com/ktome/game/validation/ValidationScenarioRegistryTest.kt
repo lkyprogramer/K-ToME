@@ -588,6 +588,95 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `pr04 01 passive talent scenarios publish registry owned setup and evidence contracts`() {
+        val scenarios =
+            listOf(
+                "dark-uiux-pr04-01-static-passive-detail" to Triple("vanguard", 202605170401L, "unyielding"),
+                "dark-uiux-pr04-01-trigger-passive-detail" to Triple("arcanist", 202605170402L, "mana_surge"),
+                "dark-uiux-pr04-01-passive-action-suppression" to Triple("vanguard", 202605170403L, "bulwark_march"),
+                "dark-uiux-pr04-01-effective-hp-regen-detail" to Triple("berserker", 202605170404L, "pain_fuel"),
+            ).map { (id, expectation) ->
+                ValidationScenarioRegistry.require(ValidationScenarioId(id)) to expectation
+            }
+
+        scenarios.forEach { (scenario, expectation) ->
+            val (professionId, seed, targetTalentId) = expectation
+            val setup = requireNotNull(scenario.talentSetup)
+
+            assertEquals("PR-04-01", scenario.prId)
+            assertEquals(ValidationPreset.MAPGEN_DIFF, scenario.runtime.preset)
+            assertEquals(seed, scenario.runtime.seed)
+            assertEquals(GameLocale.ZH_CN, scenario.runtime.locale)
+            assertEquals(professionId, scenario.runtime.professionId)
+            assertEquals("greenwood_fringe", scenario.runtime.zoneId)
+            assertEquals(2, scenario.runtime.floor)
+            assertEquals(-1, scenario.runtime.routeIndex)
+            assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+            assertEquals(targetTalentId, setup.targetTalentId)
+            assertEquals(targetTalentId, setup.initialFocusedTalentId)
+            assertEquals(0, setup.targetRank)
+            assertEquals("LEARNABLE", setup.expectedTargetState)
+            assertFalse(setup.previewExpanded)
+            assertEquals(setup, scenario.toSessionOptions().scenarioTalentSetup)
+            assertEquals(
+                "UI/manual-records/dark-uiux-pr04-01-playable-profession-passive-talents.md",
+                scenario.evidence.manualRecordPath,
+            )
+            assertTrue(scenario.evidence.requiredEvidenceFiles.count { file -> file.endsWith(".png") } >= 4)
+            assertTrue(scenario.evidence.requiredLogEventKeys.contains("log.validation.phase4_v4.action"))
+            assertTrue("PlayerCommand.RespecTalentTree" in scenario.evidence.forbiddenLogFragments)
+            assertTrue(scenario.evidence.cuaSteps.any { step -> step.expectedFocusedTalentId == targetTalentId })
+            assertTrue(scenario.evidence.cuaSteps.any { step -> step.typedAssertions.isNotEmpty() })
+            scenario.evidence.cuaSteps.forEach { step ->
+                assertFalse(step.input.contains("open", ignoreCase = true), "PR04-01 steps must use exact key names.")
+                assertFalse(step.input.contains("select", ignoreCase = true), "PR04-01 steps must use exact key names.")
+                assertFalse(step.input.contains("verify", ignoreCase = true), "PR04-01 steps must use exact key names.")
+            }
+        }
+    }
+
+    @Test
+    fun `pr04 01 passive talent scenario actions project preferred focus through snapshot`() {
+        listOf(
+            "dark-uiux-pr04-01-static-passive-detail",
+            "dark-uiux-pr04-01-trigger-passive-detail",
+            "dark-uiux-pr04-01-passive-action-suppression",
+            "dark-uiux-pr04-01-effective-hp-regen-detail",
+        ).forEach { scenarioId ->
+            val scenario = ValidationScenarioRegistry.require(ValidationScenarioId(scenarioId))
+            val setup = requireNotNull(scenario.talentSetup)
+            val session =
+                GameModule.newValidationSession(
+                    ValidationSessionRequest(
+                        saveManager = SaveManager(tempDir.resolve("$scenarioId-scenario-actions")),
+                        options = scenario.toSessionOptions(),
+                    ),
+                )
+
+            assertTrue(
+                session.perform(
+                    PlayerCommand.Validation(
+                        ValidationAction.Phase4V4ScenarioAction(
+                            scenarioId = scenario.id,
+                            actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                        ),
+                    ),
+                ),
+            )
+
+            val targetNode = talentTreeNode(session, setup.targetTalentId)
+            val focusRequest = requireNotNull(session.renderSnapshot().uiState.validationTalentFocusRequest)
+            assertEquals("PASSIVE", targetNode.category.name)
+            assertEquals(TalentNodeStateSnapshot.LEARNABLE, targetNode.state)
+            assertEquals(0, targetNode.rank)
+            assertEquals(setup.initialFocusedTalentId, focusRequest.talentId)
+            assertEquals(targetNode.treeId, focusRequest.treeId)
+            assertTrue(focusRequest.consumeOnceToken.contains(setup.initialFocusedTalentId))
+            assertEquals(null, session.renderSnapshot().uiState.activeTalentSlotChoiceRequirement)
+        }
+    }
+
+    @Test
     fun `pr03 scenario actions materialize build identity reward payoff scenes`() {
         val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr03"))
         val session =

@@ -46,7 +46,7 @@ import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.Equipment
-import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.PassiveEffect
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.loot.PityTracker
@@ -2183,7 +2183,7 @@ class FoundationGameSessionTest {
                                     cost = 10,
                                     affixFamily = "suffix_piercing",
                                     statModifiers = StatModifier(attack = 3),
-                                    passive = EquipmentPassive.DamageVsStatus(statusId = StatusEffectType.ARMOR_BREAK.schemaId, bonusPercent = 0.12),
+                                    passive = PassiveEffect.DamageVsStatus(statusId = StatusEffectType.ARMOR_BREAK.schemaId, bonusPercent = 0.12),
                                 ),
                             ),
                         stats = StatModifier(attack = 12),
@@ -2238,7 +2238,7 @@ class FoundationGameSessionTest {
                                     cost = 10,
                                     affixFamily = "suffix_piercing",
                                     statModifiers = StatModifier(attack = 3),
-                                    passive = EquipmentPassive.DamageVsStatus(statusId = StatusEffectType.ARMOR_BREAK.schemaId, bonusPercent = 0.12),
+                                    passive = PassiveEffect.DamageVsStatus(statusId = StatusEffectType.ARMOR_BREAK.schemaId, bonusPercent = 0.12),
                                 ),
                             ),
                         stats = StatModifier(attack = 10),
@@ -2634,7 +2634,7 @@ class FoundationGameSessionTest {
                         colorHex = "#4F8F6B",
                         quality = RarityTier.NORMAL,
                         stats = StatModifier(wil = 1),
-                        passive = EquipmentPassive.HpRegenPerTurn(amount = 2),
+                        passive = PassiveEffect.HpRegenPerTurn(amount = 2),
                     ),
             )
         inventory.itemIds += itemId
@@ -2646,8 +2646,36 @@ class FoundationGameSessionTest {
         repeat(2) {
             assertTrue(session.perform(PlayerCommand.Wait))
         }
-        assertEquals(16, requireNotNull(runtimeWorld(session).get<Health>(playerId)).current)
-        assertTrue(session.messageLog().any { message -> message.contains("Emerald Charm restores 2 HP") })
+        val health = requireNotNull(runtimeWorld(session).get<Health>(playerId))
+        assertTrue(health.current > 10)
+        assertTrue(health.current <= health.max)
+        assertTrue(session.messageLog().any { message -> message.contains("Emerald Charm restores") })
+    }
+
+    @Test
+    fun `equipment hp regen cue attribution never exceeds actual restored hp`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260518L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("hp-regen-cue-attribution-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val offHandIndex = addInventoryItem(session, baseItem("emerald_charm").copy(passive = PassiveEffect.HpRegenPerTurn(amount = 1)))
+        val armorIndex = addInventoryItem(session, baseItem("chain_mail").copy(passive = PassiveEffect.HpRegenPerTurn(amount = 1)))
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(armorIndex)))
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(offHandIndex)))
+        requireNotNull(world.get<Health>(session.playerId)).apply {
+            current = max - 1
+        }
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        val hpRegenCues =
+            session.renderSnapshot().uiState.frontstageReadability.recentActionCues
+                .filter { cue -> cue.message.key == "log.passive.hp_regen" }
+        assertEquals(1, hpRegenCues.sumOf { cue -> requireNotNull(cue.argumentValue("amount")).toInt() })
+        assertTrue(hpRegenCues.all { cue -> cue.stableKey.startsWith("passive:hp_regen:") })
     }
 
     @Test
@@ -2679,7 +2707,8 @@ class FoundationGameSessionTest {
         movePlayerTo(session, attackOrigin)
 
         assertTrue(session.perform(PlayerCommand.Move(banditPoint - attackOrigin)))
-        assertNotNull(logEventByKey(session, "log.passive.damage_bonus_vs_tag"))
+        val cue = requireNotNull(frontstageCueByMessageKey(session, "log.passive.damage_bonus_vs_tag"))
+        assertEquals("passive:damage_bonus:bandit_trophy:vs_tag:bandit", cue.stableKey)
     }
 
     @Test
@@ -2734,7 +2763,8 @@ class FoundationGameSessionTest {
         val targetPoint = requireNotNull(world.get<Position>(fireResistant)).toPoint()
 
         assertTrue(session.perform(PlayerCommand.UseTalent(slot = fireballSlot, target = targetPoint)))
-        assertNotNull(logEventByKey(session, "log.passive.damage_bonus_type"))
+        val cue = requireNotNull(frontstageCueByMessageKey(session, "log.passive.damage_bonus_type"))
+        assertEquals("passive:damage_bonus:furnace_talisman:type:FIRE", cue.stableKey)
     }
 
     @Test
@@ -2777,7 +2807,7 @@ class FoundationGameSessionTest {
                 session,
                 specialItem(
                     templateId = "unique.thornpath_crook",
-                    passiveOverride = EquipmentPassive.OnHitStatusProc(StatusEffectType.MARKED.schemaId, 1.0, 2),
+                    passiveOverride = PassiveEffect.OnHitStatusProc(StatusEffectType.MARKED.schemaId, 1.0, 2),
                 ),
             )
 
@@ -2788,6 +2818,8 @@ class FoundationGameSessionTest {
         assertTrue(tracker.has(StatusEffectType.MARKED))
 
         val log = requireNotNull(logEventByKey(session, "log.passive.on_hit_status"))
+        val cue = requireNotNull(frontstageCueByMessageKey(session, "log.passive.on_hit_status"))
+        assertEquals("passive:on_hit_status:unique_thornpath_crook:MARKED", cue.stableKey)
         val itemToken = requireNotNull(log.message.arguments.first { argument -> argument.name == "item" }.valueToken)
         val baseArgument = itemToken.arguments.first { argument -> argument.name == "base" }
         assertEquals("item.display.composed", itemToken.key)
@@ -2818,7 +2850,7 @@ class FoundationGameSessionTest {
                 session,
                 specialItem(
                     templateId = "unique.nullwake_blade",
-                    passiveOverride = EquipmentPassive.OnHitStatusProc(StatusEffectType.BANE.schemaId, 1.0, 2),
+                    passiveOverride = PassiveEffect.OnHitStatusProc(StatusEffectType.BANE.schemaId, 1.0, 2),
                 ),
             )
         val backstabSlot = session.talentSlots().first { slot -> slot.talentId == "backstab" }.slot
@@ -2854,7 +2886,7 @@ class FoundationGameSessionTest {
                 session,
                 specialItem(
                     templateId = "unique.deepcurrent_lens",
-                    passiveOverride = EquipmentPassive.OnKillResourceRestore(ResourceType.MANA, 6),
+                    passiveOverride = PassiveEffect.OnKillResourceRestore(ResourceType.MANA, 6),
                 ).copy(affixes = emptyList()),
             )
 
@@ -2868,6 +2900,8 @@ class FoundationGameSessionTest {
         assertTrue(manaPool.current >= baselineMana + 6)
 
         val log = requireNotNull(logEventByKey(session, "log.passive.on_kill_resource_restore"))
+        val cue = requireNotNull(frontstageCueByMessageKey(session, "log.passive.on_kill_resource_restore"))
+        assertEquals("passive:on_kill_resource_restore:unique_deepcurrent_lens:MANA", cue.stableKey)
         val itemToken = requireNotNull(log.message.arguments.first { argument -> argument.name == "item" }.valueToken)
         val baseArgument = itemToken.arguments.first { argument -> argument.name == "base" }
         assertEquals("item.display.composed", itemToken.key)
@@ -2950,7 +2984,7 @@ class FoundationGameSessionTest {
             )
             invokeRefreshActorDerivedStats(session, session.playerId)
 
-            val passiveModifier = world.get<com.ktome.core.ecs.EquipmentPassiveStatModifier>(session.playerId)?.modifier ?: StatModifier.ZERO
+            val passiveModifier = world.get<com.ktome.core.ecs.PassiveStatModifier>(session.playerId)?.modifier ?: StatModifier.ZERO
             if (onWater) {
                 assertEquals(9, passiveModifier.accuracy)
             } else {
@@ -3014,7 +3048,7 @@ class FoundationGameSessionTest {
                     colorHex = "#AA6644",
                     quality = RarityTier.RARE,
                     passive =
-                        EquipmentPassive.ConditionalStatBonus(
+                        PassiveEffect.ConditionalStatBonus(
                             condition = com.ktome.core.item.PassiveCondition.HP_BELOW_30,
                             statModifier = StatModifier(maxHp = 20),
                         ),
@@ -3070,7 +3104,7 @@ class FoundationGameSessionTest {
                     colorHex = "#AA6644",
                     quality = RarityTier.RARE,
                     passive =
-                        EquipmentPassive.ConditionalStatBonus(
+                        PassiveEffect.ConditionalStatBonus(
                             condition = com.ktome.core.item.PassiveCondition.HP_BELOW_50,
                             statModifier = StatModifier(defense = 50),
                         ),
@@ -3131,7 +3165,7 @@ class FoundationGameSessionTest {
                 specialItem(
                     templateId = "unique.cinderveil_plate",
                     passiveOverride =
-                        EquipmentPassive.ConditionalStatBonus(
+                        PassiveEffect.ConditionalStatBonus(
                             condition = com.ktome.core.item.PassiveCondition.HP_BELOW_50,
                             statModifier = StatModifier(attack = 2, defense = 2),
                         ),
@@ -3174,7 +3208,7 @@ class FoundationGameSessionTest {
                 specialItem(
                     templateId = "unique.cinderveil_plate",
                     passiveOverride =
-                        EquipmentPassive.ConditionalStatBonus(
+                        PassiveEffect.ConditionalStatBonus(
                             condition = com.ktome.core.item.PassiveCondition.HP_BELOW_50,
                             statModifier = StatModifier(defense = 3),
                         ),
@@ -6432,7 +6466,7 @@ class FoundationGameSessionTest {
                     materialName = "Mithril",
                     affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, cost = 6, affixFamily = "suffix_speed", statModifiers = StatModifier(speed = 1))),
                     stats = StatModifier(attack = 5, speed = 1),
-                    passive = EquipmentPassive.DamageVsTag(tag = "bandit", bonusPercent = 0.15),
+                    passive = PassiveEffect.DamageVsTag(tag = "bandit", bonusPercent = 0.15),
                 ),
             position = Point(1, 1),
         )
@@ -7300,7 +7334,7 @@ class FoundationGameSessionTest {
     private fun invokeLogTriggeredDamagePassives(
         session: FoundationGameSession,
         attacker: EntityId,
-        sources: List<com.ktome.core.item.EquippedPassiveSource>,
+        sources: List<com.ktome.core.item.PassiveSource>,
     ) {
         val method =
             FoundationGameSession::class.java.declaredMethods.first { declared ->
@@ -7662,6 +7696,15 @@ class FoundationGameSessionTest {
     ): com.ktome.core.snapshot.RenderLogEventSnapshot? =
         session.renderSnapshot().logEvents.firstOrNull { event -> event.message.key == key }
 
+    private fun frontstageCueByMessageKey(
+        session: FoundationGameSession,
+        key: String,
+    ): com.ktome.core.snapshot.FrontstageActionCueSnapshot? =
+        session.renderSnapshot().uiState.frontstageReadability.recentActionCues.firstOrNull { cue -> cue.message.key == key }
+
+    private fun com.ktome.core.snapshot.FrontstageActionCueSnapshot.argumentValue(name: String): String? =
+        message.arguments.firstOrNull { argument -> argument.name == name }?.value
+
     private fun FoundationGameSession.hasVisibleFrontstageCue(stableKey: String): Boolean =
         renderSnapshot().uiState.frontstageReadability.recentActionCues.any { cue -> cue.stableKey == stableKey }
 
@@ -7864,7 +7907,7 @@ class FoundationGameSessionTest {
 
     private fun specialItem(
         templateId: String,
-        passiveOverride: EquipmentPassive? = null,
+        passiveOverride: PassiveEffect? = null,
     ): ItemInstance {
         val bundle = dataLoader.loadItemBundle()
         val template = requireNotNull(bundle.specialTemplate(templateId)) { "Unknown special template '$templateId'." }

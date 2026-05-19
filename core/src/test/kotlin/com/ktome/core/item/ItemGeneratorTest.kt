@@ -56,7 +56,7 @@ class ItemGeneratorTest {
                         allowedMaterials = listOf("STEEL"),
                         dropFloors = listOf(2, 3, 4),
                         dropWeight = 0,
-                        passive = EquipmentPassive.DamageTypeBonus(type = DamageType.HOLY, bonusPercent = 0.12),
+                        passive = PassiveEffect.DamageTypeBonus(type = DamageType.HOLY, bonusPercent = 0.12),
                     ),
                     ItemBaseDef(
                         id = "river_echo_artifact",
@@ -477,7 +477,7 @@ class ItemGeneratorTest {
                 glyph = ')',
                 colorHex = "#FFFFFF",
                 dropFloors = listOf(4),
-                passive = EquipmentPassive.DamageTypeBonus(type = DamageType.HOLY, bonusPercent = 0.10),
+                passive = PassiveEffect.DamageTypeBonus(type = DamageType.HOLY, bonusPercent = 0.10),
             )
         val affixBundle =
             ItemDataBundle(
@@ -493,7 +493,7 @@ class ItemGeneratorTest {
                             affixFamily = "holy_smite",
                             statModifiers = StatModifier(attack = 2),
                             minFloor = 4,
-                            passive = EquipmentPassive.DamageVsStatus(statusId = "BANE", bonusPercent = 0.12),
+                            passive = PassiveEffect.DamageVsStatus(statusId = "BANE", bonusPercent = 0.12),
                         ),
                     ),
             )
@@ -509,8 +509,8 @@ class ItemGeneratorTest {
             )
 
         assertEquals("of_smite", generated.affixes.single().id)
-        assertTrue(generated.passive is EquipmentPassive.DamageTypeBonus)
-        assertTrue(generated.affixes.single().passive is EquipmentPassive.DamageVsStatus)
+        assertTrue(generated.passive is PassiveEffect.DamageTypeBonus)
+        assertTrue(generated.affixes.single().passive is PassiveEffect.DamageVsStatus)
     }
 
     private fun affix(

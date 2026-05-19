@@ -77,7 +77,7 @@ data class DerivedStats(
     val effectiveCastSpeed: Double = 0.0,
 )
 
-data class EquipmentPassiveStatModifier(
+data class PassiveStatModifier(
     val modifier: StatModifier = StatModifier.ZERO,
 )
 

@@ -4,6 +4,11 @@ import com.ktome.client.input.OverlayState
 import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
+import com.ktome.core.snapshot.PassiveDetailDeltaLineSnapshot
+import com.ktome.core.snapshot.PassiveDetailLineSnapshot
+import com.ktome.core.snapshot.PassiveDetailLineToneSnapshot
+import com.ktome.core.snapshot.RenderTextArgumentSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
 import com.ktome.core.snapshot.TalentNodeLockReasonSnapshot
@@ -111,7 +116,7 @@ object TalentSidebarPresenter {
             sections = sections,
             detail = selectedNode?.let { node -> detailPane(localizer, node) },
             legend = legend(localizer, sections.any { section -> section.rows.any(TalentAssignTreeRowModel::pendingOverlay) }),
-            footerHints = footerHints(localizer),
+            footerHints = footerHints(localizer, selectedNode),
             activeSlotChoiceModal =
                 if (
                     overlayState.activeModalKind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE &&
@@ -438,6 +443,9 @@ object TalentSidebarPresenter {
         localizer: Localizer,
         node: TalentTreeNodeSnapshot,
     ): List<TalentPreviewLine> {
+        if (node.category == TalentCategory.PASSIVE) {
+            return passiveNextRankPreviewLines(localizer, node)
+        }
         val nextRank = (node.rank.coerceAtLeast(1) + 1).coerceAtMost(node.maxRank)
         val upgradeLines = nextRankUpgradeLines(localizer, node, nextRank)
         return buildList {
@@ -733,14 +741,10 @@ object TalentSidebarPresenter {
     private fun actionsBlock(
         localizer: Localizer,
         node: TalentTreeNodeSnapshot,
-    ): TalentDetailBlock =
-        TalentDetailBlock(
-            kind = TalentDetailBlockKind.ACTIONS,
-            iconKey = null,
-            primaryText = "",
-            secondaryText = null,
-            bodyLines =
-                listOf(
+    ): TalentDetailBlock {
+        val actionLines =
+            buildList {
+                add(
                     TalentPreviewLine(
                         label = "Enter",
                         value =
@@ -752,16 +756,29 @@ object TalentSidebarPresenter {
                         iconKey = null,
                         toneToken = if (node.state == TalentNodeStateSnapshot.LOCKED) TalentPreviewToneToken.LOCKED else TalentPreviewToneToken.POSITIVE,
                     ),
-                    TalentPreviewLine("R", localizer.text("ui.talent.assign.action.reserve"), null, TalentPreviewToneToken.SECONDARY),
-                    TalentPreviewLine("Esc", localizer.text("ui.talent.assign.action.back"), null, TalentPreviewToneToken.SECONDARY),
-                ),
+                )
+                if (node.category != TalentCategory.PASSIVE) {
+                    add(TalentPreviewLine("R", localizer.text("ui.talent.assign.action.reserve"), null, TalentPreviewToneToken.SECONDARY))
+                }
+                add(TalentPreviewLine("Esc", localizer.text("ui.talent.assign.action.back"), null, TalentPreviewToneToken.SECONDARY))
+            }
+        return TalentDetailBlock(
+            kind = TalentDetailBlockKind.ACTIONS,
+            iconKey = null,
+            primaryText = "",
+            secondaryText = null,
+            bodyLines = actionLines,
             toneToken = TalentPreviewToneToken.SECONDARY,
         )
+    }
 
     private fun currentDetailLines(
         localizer: Localizer,
         node: TalentTreeNodeSnapshot,
     ): List<TalentPreviewLine> {
+        if (node.category == TalentCategory.PASSIVE) {
+            return passiveCurrentDetailLines(localizer, node)
+        }
         val descriptionLines =
             DescriptionPresenter.presentSurfaceLines(
                 localizer = localizer,
@@ -778,6 +795,24 @@ object TalentSidebarPresenter {
         return (structuredCurrentDetailLines(localizer, node) + metricLines + fallbackLines + activeSlotNoteLine(localizer, node))
             .distinctBy { line -> line.label to line.value }
     }
+
+    private fun passiveCurrentDetailLines(
+        localizer: Localizer,
+        node: TalentTreeNodeSnapshot,
+    ): List<TalentPreviewLine> =
+        node.passiveDetail
+            ?.currentLines
+            ?.map { line -> line.toPreviewLine(localizer) }
+            .orEmpty()
+
+    private fun passiveNextRankPreviewLines(
+        localizer: Localizer,
+        node: TalentTreeNodeSnapshot,
+    ): List<TalentPreviewLine> =
+        node.passiveDetail
+            ?.nextLines
+            ?.map { line -> line.toPreviewLine(localizer) }
+            .orEmpty()
 
     private fun activeSlotNoteLine(
         localizer: Localizer,
@@ -1023,34 +1058,49 @@ object TalentSidebarPresenter {
                     },
         )
 
-    private fun footerHints(localizer: Localizer): List<TalentAssignFooterHintModel> =
-        listOf(
-            TalentAssignFooterHintModel(
-                TalentAssignFooterHintKind.SELECT,
-                localizer.text("ui.talent.assign.footer.select.key"),
-                localizer.text("ui.talent.assign.footer.select.label"),
-            ),
-            TalentAssignFooterHintModel(
-                TalentAssignFooterHintKind.SWITCH_TREE,
-                localizer.text("ui.talent.assign.footer.switch_tree.key"),
-                localizer.text("ui.talent.assign.footer.switch_tree.label"),
-            ),
-            TalentAssignFooterHintModel(
-                TalentAssignFooterHintKind.LEARN,
-                localizer.text("ui.talent.assign.footer.learn.key"),
-                localizer.text("ui.talent.assign.footer.learn.label"),
-            ),
-            TalentAssignFooterHintModel(
-                TalentAssignFooterHintKind.RESERVE,
-                localizer.text("ui.talent.assign.footer.reserve.key"),
-                localizer.text("ui.talent.assign.footer.reserve.label"),
-            ),
-            TalentAssignFooterHintModel(
-                TalentAssignFooterHintKind.CLOSE,
-                localizer.text("ui.talent.assign.footer.close.key"),
-                localizer.text("ui.talent.assign.footer.close.label"),
-            ),
-        )
+    private fun footerHints(
+        localizer: Localizer,
+        selectedNode: TalentTreeNodeSnapshot?,
+    ): List<TalentAssignFooterHintModel> =
+        buildList {
+            add(
+                TalentAssignFooterHintModel(
+                    TalentAssignFooterHintKind.SELECT,
+                    localizer.text("ui.talent.assign.footer.select.key"),
+                    localizer.text("ui.talent.assign.footer.select.label"),
+                ),
+            )
+            add(
+                TalentAssignFooterHintModel(
+                    TalentAssignFooterHintKind.SWITCH_TREE,
+                    localizer.text("ui.talent.assign.footer.switch_tree.key"),
+                    localizer.text("ui.talent.assign.footer.switch_tree.label"),
+                ),
+            )
+            add(
+                TalentAssignFooterHintModel(
+                    TalentAssignFooterHintKind.LEARN,
+                    localizer.text("ui.talent.assign.footer.learn.key"),
+                    localizer.text("ui.talent.assign.footer.learn.label"),
+                ),
+            )
+            if (selectedNode?.category != TalentCategory.PASSIVE) {
+                add(
+                    TalentAssignFooterHintModel(
+                        TalentAssignFooterHintKind.RESERVE,
+                        localizer.text("ui.talent.assign.footer.reserve.key"),
+                        localizer.text("ui.talent.assign.footer.reserve.label"),
+                    ),
+                )
+            }
+            add(
+                TalentAssignFooterHintModel(
+                    TalentAssignFooterHintKind.CLOSE,
+                    localizer.text("ui.talent.assign.footer.close.key"),
+                    localizer.text("ui.talent.assign.footer.close.label"),
+                ),
+            )
+        }
 
     private fun TalentNodeStateSnapshot.stateGlyph(): String =
         when (this) {
@@ -1207,6 +1257,47 @@ object TalentSidebarPresenter {
             minRange <= 0 && maxRange <= 1 -> localizer.text("ui.talent.assign.detail.range.adjacent")
             minRange == maxRange -> localizer.text("ui.talent.assign.detail.range.cells", "range" to maxRange)
             else -> localizer.text("ui.talent.assign.detail.range.cells_span", "min" to minRange, "max" to maxRange)
+        }
+
+    private fun PassiveDetailLineSnapshot.toPreviewLine(localizer: Localizer): TalentPreviewLine =
+        TalentPreviewLine(
+            label = localizer.text(labelKey),
+            value = renderTextToken(localizer, valueToken),
+            iconKey = null,
+            toneToken = tone.toTalentTone(),
+        )
+
+    private fun PassiveDetailDeltaLineSnapshot.toPreviewLine(localizer: Localizer): TalentPreviewLine =
+        TalentPreviewLine(
+            label = localizer.text(labelKey),
+            value = renderTextToken(localizer, valueToken),
+            iconKey = null,
+            toneToken = tone.toTalentTone(),
+        )
+
+    private fun renderTextToken(
+        localizer: Localizer,
+        token: RenderTextTokenSnapshot,
+    ): String =
+        localizer.text(
+            token.key,
+            *token.arguments.map { argument -> argument.name to resolveTextArgument(localizer, argument) }.toTypedArray(),
+        )
+
+    private fun resolveTextArgument(
+        localizer: Localizer,
+        argument: RenderTextArgumentSnapshot,
+    ): String =
+        argument.value
+            ?: argument.valueKey?.let(localizer::text)
+            ?: argument.valueToken?.let { token -> renderTextToken(localizer, token) }
+            ?: ""
+
+    private fun PassiveDetailLineToneSnapshot.toTalentTone(): TalentPreviewToneToken =
+        when (this) {
+            PassiveDetailLineToneSnapshot.SECONDARY -> TalentPreviewToneToken.SECONDARY
+            PassiveDetailLineToneSnapshot.POSITIVE -> TalentPreviewToneToken.POSITIVE
+            PassiveDetailLineToneSnapshot.WARNING -> TalentPreviewToneToken.WARNING
         }
 
     private fun DescriptionModelSnapshot?.intPlaceholder(name: String): Int? =

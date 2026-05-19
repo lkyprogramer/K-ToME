@@ -11,7 +11,7 @@ import com.ktome.core.ecs.remove
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
-import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.PassiveEffect
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.ItemType

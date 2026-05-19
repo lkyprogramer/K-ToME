@@ -182,6 +182,322 @@ object ValidationScenarioRegistry {
                         manualRecordPath = "UI/manual-records/dark-uiux-pr04-profession-tree-ui.md",
                     ),
             ),
+            pr0401PassiveScenario(
+                id = "dark-uiux-pr04-01-static-passive-detail",
+                seed = 202605170401L,
+                professionId = "vanguard",
+                setup =
+                    ValidationScenarioTalentSetupSpec(
+                        targetTalentId = "unyielding",
+                        initialFocusedTalentId = "unyielding",
+                        playerLevel = 5,
+                        prerequisiteRanks = mapOf("intimidation" to 2),
+                        setUnspentTalentPoints = 1,
+                        previewExpanded = false,
+                    ),
+                requiredEvidenceFiles =
+                    listOf(
+                        "evidence/passive-static-preview-collapsed-after-toggle.png",
+                        "evidence/passive-detail-static.png",
+                        "evidence/passive-static-next-preview.png",
+                        "evidence/passive-static-after-learn-no-slot-modal.png",
+                        "evidence/passive-static-app.log",
+                    ),
+                cuaSteps =
+                    listOf(
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (initial UI mode: MAP; setup focuses unyielding)",
+                            input = "F9, Enter, Esc, T",
+                            expectedVisibleResult = "`unyielding` row is focused; right detail shows `Passive`, rank `0`, rank 1 max HP, defense, physical resistance, and no active-slot modal.",
+                            evidenceFile = "evidence/passive-detail-static.png",
+                            expectedFocusedTalentId = "unyielding",
+                            typedAssertions =
+                                listOf(
+                                    FocusedTalentAssertion(talentId = "unyielding", category = "PASSIVE", rank = 0, state = "LEARNABLE"),
+                                    PassiveLineAssertion(lineKind = "STAT_MODIFIER", statId = "maxHp", value = "+10", orderIndex = 0),
+                                    PassiveLineAssertion(lineKind = "STAT_MODIFIER", statId = "defense", value = "+1", orderIndex = 1),
+                                    PassiveLineAssertion(lineKind = "RESISTANCE_BONUS", damageType = "PHYSICAL", value = "+1", orderIndex = 2),
+                                ),
+                            localizedVisibleAssertions =
+                                listOf(
+                                    LocalizedTextAssertion(
+                                        locale = "ZH_CN",
+                                        key = "talent.vanguard.unyielding.name",
+                                        visibleTextPolicy = "title-visible",
+                                        evidenceFile = "evidence/passive-detail-static.png",
+                                    ),
+                                ),
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "P",
+                            expectedVisibleResult = "Next preview is expanded and lists rank 1 to rank 2 deltas for max HP, defense and physical resistance.",
+                            evidenceFile = "evidence/passive-static-next-preview.png",
+                            expectedFocusedTalentId = "unyielding",
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "P",
+                            expectedVisibleResult = "Preview returns to collapsed state after a prior preview expansion; Talent Assign remains focused on `unyielding` and PASSIVE actions/footer remain free of `R` shortcut affordance.",
+                            evidenceFile = "evidence/passive-static-preview-collapsed-after-toggle.png",
+                            expectedFocusedTalentId = "unyielding",
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "Enter",
+                            expectedVisibleResult = "Learning `unyielding` does not open `ACTIVE_TALENT_SLOT_CHOICE`; learned detail still renders PASSIVE current effects.",
+                            evidenceFile = "evidence/passive-static-after-learn-no-slot-modal.png",
+                            expectedFocusedTalentId = "unyielding",
+                        ),
+                    ),
+                requiredLogEventKeys = listOf("log.validation.phase4_v4.action", "log.talent.learned"),
+                forbiddenLogFragments =
+                    listOf("PlayerCommand.RespecTalentTree", "RespecTalentTree", "ConfirmTalentDraftToReserve", "EquipTalentToSlot", "ACTIVE_TALENT_SLOT_CHOICE"),
+            ),
+            pr0401PassiveScenario(
+                id = "dark-uiux-pr04-01-trigger-passive-detail",
+                seed = 202605170402L,
+                professionId = "arcanist",
+                setup =
+                    ValidationScenarioTalentSetupSpec(
+                        targetTalentId = "mana_surge",
+                        initialFocusedTalentId = "mana_surge",
+                        playerLevel = 5,
+                        prerequisiteRanks = mapOf("arcane_shield" to 2, "blink" to 2),
+                        setUnspentTalentPoints = 1,
+                        previewExpanded = false,
+                    ),
+                requiredEvidenceFiles =
+                    listOf(
+                        "evidence/passive-trigger-panel-entry.png",
+                        "evidence/passive-detail-trigger.png",
+                        "evidence/passive-cast-speed-effective-detail.png",
+                        "evidence/passive-trigger-next-preview.png",
+                        "evidence/passive-trigger-after-learn-no-slot-modal.png",
+                        "evidence/passive-trigger-app.log",
+                    ),
+                cuaSteps =
+                    listOf(
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (initial UI mode: MAP; setup focuses mana_surge)",
+                            input = "F9, Enter, Esc, T",
+                            expectedVisibleResult = "`mana_surge` row is focused; right detail shows `Passive`, rank `0`, on-kill MANA restore and FIRE / COLD / LIGHTNING damage lines.",
+                            evidenceFile = "evidence/passive-detail-trigger.png",
+                            expectedFocusedTalentId = "mana_surge",
+                            typedAssertions =
+                                listOf(
+                                    FocusedTalentAssertion(talentId = "mana_surge", category = "PASSIVE", rank = 0, state = "LEARNABLE"),
+                                    PassiveLineAssertion(lineKind = "ON_KILL_RESOURCE_RESTORE", resourceType = "MANA", value = "+3", orderIndex = 0),
+                                    PassiveLineAssertion(lineKind = "DAMAGE_TYPE_BONUS", damageType = "FIRE", value = "+3%", orderIndex = 1),
+                                    PassiveLineAssertion(lineKind = "DAMAGE_TYPE_BONUS", damageType = "COLD", value = "+3%", orderIndex = 2),
+                                    PassiveLineAssertion(lineKind = "DAMAGE_TYPE_BONUS", damageType = "LIGHTNING", value = "+3%", orderIndex = 3),
+                                ),
+                            localizedVisibleAssertions =
+                                listOf(
+                                    LocalizedTextAssertion(
+                                        locale = "ZH_CN",
+                                        key = "talent.arcanist.mana_surge.name",
+                                        visibleTextPolicy = "title-visible",
+                                        evidenceFile = "evidence/passive-detail-trigger.png",
+                                    ),
+                                ),
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "P",
+                            expectedVisibleResult = "Next preview is expanded and lists MANA restore plus FIRE / COLD / LIGHTNING damage deltas in `DamageType` enum order.",
+                            evidenceFile = "evidence/passive-trigger-next-preview.png",
+                            expectedFocusedTalentId = "mana_surge",
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "P",
+                            expectedVisibleResult = "Preview returns to collapsed state; Talent Assign remains focused on `mana_surge` and no active-slot modal is open.",
+                            evidenceFile = "evidence/passive-trigger-panel-entry.png",
+                            expectedFocusedTalentId = "mana_surge",
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same tree after trigger preview)",
+                            input = "Down",
+                            expectedVisibleResult = "`arcane_overload` row is focused; right detail renders cast speed as the §2.5 effective decimal value, not the raw rating.",
+                            evidenceFile = "evidence/passive-cast-speed-effective-detail.png",
+                            expectedFocusedTalentId = "arcane_overload",
+                            typedAssertions =
+                                listOf(
+                                    FocusedTalentAssertion(talentId = "arcane_overload", category = "PASSIVE", rank = 0, state = "LEARNABLE"),
+                                    PassiveLineAssertion(lineKind = "STAT_MODIFIER", statId = "castSpeedRating", value = "+1.0", orderIndex = 0),
+                                ),
+                            localizedVisibleAssertions =
+                                listOf(
+                                    LocalizedTextAssertion(
+                                        locale = "ZH_CN",
+                                        key = "talent.arcanist.arcane_overload.name",
+                                        visibleTextPolicy = "title-visible",
+                                        evidenceFile = "evidence/passive-cast-speed-effective-detail.png",
+                                    ),
+                                ),
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (return to trigger row)",
+                            input = "Up, Enter",
+                            expectedVisibleResult = "Learning `mana_surge` does not open `ACTIVE_TALENT_SLOT_CHOICE`; detail remains a PASSIVE rule summary.",
+                            evidenceFile = "evidence/passive-trigger-after-learn-no-slot-modal.png",
+                            expectedFocusedTalentId = "mana_surge",
+                        ),
+                    ),
+                requiredLogEventKeys = listOf("log.validation.phase4_v4.action", "log.talent.learned"),
+                forbiddenLogFragments =
+                    listOf("PlayerCommand.RespecTalentTree", "RespecTalentTree", "ConfirmTalentDraftToReserve", "EquipTalentToSlot", "ACTIVE_TALENT_SLOT_CHOICE"),
+            ),
+            pr0401PassiveScenario(
+                id = "dark-uiux-pr04-01-passive-action-suppression",
+                seed = 202605170403L,
+                professionId = "vanguard",
+                setup =
+                    ValidationScenarioTalentSetupSpec(
+                        targetTalentId = "bulwark_march",
+                        initialFocusedTalentId = "bulwark_march",
+                        playerLevel = 4,
+                        prerequisiteRanks = mapOf("guard_stance" to 3),
+                        setUnspentTalentPoints = 1,
+                        previewExpanded = false,
+                    ),
+                requiredEvidenceFiles =
+                    listOf(
+                        "evidence/passive-conditional-detail-before-r.png",
+                        "evidence/passive-action-preview-expanded.png",
+                        "evidence/passive-no-active-slot-modal.png",
+                        "evidence/passive-action-log-no-reserve.png",
+                        "evidence/passive-action-suppression-app.log",
+                    ),
+                cuaSteps =
+                    listOf(
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (initial UI mode: MAP; setup focuses bulwark_march)",
+                            input = "F9, Enter, Esc, T",
+                            expectedVisibleResult = "`bulwark_march` row is focused; detail shows `SELF_HAS_STATUS=GUARD_STANCE_BUFF`, defense/speed bonus, and `TAUNT` damage payoff.",
+                            evidenceFile = "evidence/passive-conditional-detail-before-r.png",
+                            expectedFocusedTalentId = "bulwark_march",
+                            typedAssertions =
+                                listOf(
+                                    FocusedTalentAssertion(talentId = "bulwark_march", category = "PASSIVE", rank = 0, state = "LEARNABLE"),
+                                    PassiveLineAssertion(lineKind = "CONDITIONAL_STAT_BONUS", condition = "SELF_HAS_STATUS", statusId = "GUARD_STANCE_BUFF", statId = "defense", value = "+2", orderIndex = 0),
+                                    PassiveLineAssertion(lineKind = "CONDITIONAL_STAT_BONUS", condition = "SELF_HAS_STATUS", statusId = "GUARD_STANCE_BUFF", statId = "speed", value = "+1", orderIndex = 1),
+                                    PassiveLineAssertion(lineKind = "DAMAGE_VS_STATUS", statusId = "TAUNT", value = "+4%", orderIndex = 2),
+                                ),
+                            localizedVisibleAssertions =
+                                listOf(
+                                    LocalizedTextAssertion(
+                                        locale = "ZH_CN",
+                                        key = "talent.vanguard.bulwark_march.name",
+                                        visibleTextPolicy = "title-visible",
+                                        evidenceFile = "evidence/passive-conditional-detail-before-r.png",
+                                    ),
+                                ),
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "P",
+                            expectedVisibleResult = "Next preview is expanded and lists guarded defense, speed and `TAUNT` damage deltas.",
+                            evidenceFile = "evidence/passive-action-preview-expanded.png",
+                            expectedFocusedTalentId = "bulwark_march",
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "R",
+                            expectedVisibleResult = "Pressing `R` on PASSIVE does not emit `PlayerCommand.RespecTalentTree`, does not open `ACTIVE_TALENT_SLOT_CHOICE`, does not show footer `RESERVE`, and does not emit reserve/slot command.",
+                            evidenceFile = "evidence/passive-no-active-slot-modal.png",
+                            expectedFocusedTalentId = "bulwark_march",
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "Esc",
+                            expectedVisibleResult = "Returning from Talent Assign restores shell/log state without respec, reserve confirmation, slot replacement or rollback error text.",
+                            evidenceFile = "evidence/passive-action-log-no-reserve.png",
+                        ),
+                    ),
+                requiredLogEventKeys = listOf("log.validation.phase4_v4.action"),
+                forbiddenLogFragments =
+                    listOf(
+                        "PlayerCommand.RespecTalentTree",
+                        "RespecTalentTree",
+                        "ConfirmTalentDraftToReserve",
+                        "EquipTalentToSlot",
+                        "ACTIVE_TALENT_SLOT_CHOICE",
+                        "log.talent.draft_rollback",
+                    ),
+            ),
+            pr0401PassiveScenario(
+                id = "dark-uiux-pr04-01-effective-hp-regen-detail",
+                seed = 202605170404L,
+                professionId = "berserker",
+                setup =
+                    ValidationScenarioTalentSetupSpec(
+                        targetTalentId = "pain_fuel",
+                        initialFocusedTalentId = "pain_fuel",
+                        playerLevel = 4,
+                        prerequisiteRanks = mapOf("kill_frenzy" to 2),
+                        setUnspentTalentPoints = 1,
+                        previewExpanded = false,
+                    ),
+                requiredEvidenceFiles =
+                    listOf(
+                        "evidence/passive-hp-regen-effective-detail.png",
+                        "evidence/passive-hp-regen-effective-preview.png",
+                        "evidence/passive-hp-regen-preview-collapsed.png",
+                        "evidence/passive-hp-regen-after-learn-no-slot-modal.png",
+                        "evidence/passive-hp-regen-app.log",
+                    ),
+                cuaSteps =
+                    listOf(
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (initial UI mode: MAP; setup focuses pain_fuel)",
+                            input = "F9, Enter, Esc, T",
+                            expectedVisibleResult = "`pain_fuel` row is focused; right detail renders hp regen as the §2.5 effective decimal value and does not open an active-slot modal.",
+                            evidenceFile = "evidence/passive-hp-regen-effective-detail.png",
+                            expectedFocusedTalentId = "pain_fuel",
+                            typedAssertions =
+                                listOf(
+                                    FocusedTalentAssertion(talentId = "pain_fuel", category = "PASSIVE", rank = 0, state = "LEARNABLE"),
+                                    PassiveLineAssertion(lineKind = "STAT_MODIFIER", statId = "hpRegen", value = "+0.4", orderIndex = 0),
+                                    PassiveLineAssertion(lineKind = "STAT_MODIFIER", statId = "attackMultiplierBonus", value = "+5%", orderIndex = 1),
+                                ),
+                            localizedVisibleAssertions =
+                                listOf(
+                                    LocalizedTextAssertion(
+                                        locale = "ZH_CN",
+                                        key = "talent.berserker.pain_fuel.name",
+                                        visibleTextPolicy = "title-visible",
+                                        evidenceFile = "evidence/passive-hp-regen-effective-detail.png",
+                                    ),
+                                ),
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "P",
+                            expectedVisibleResult = "Next preview is expanded and lists hp regen plus attack damage deltas using typed passive detail rows.",
+                            evidenceFile = "evidence/passive-hp-regen-effective-preview.png",
+                            expectedFocusedTalentId = "pain_fuel",
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "P",
+                            expectedVisibleResult = "Preview returns to collapsed state after a prior preview expansion; Talent Assign remains focused on `pain_fuel`.",
+                            evidenceFile = "evidence/passive-hp-regen-preview-collapsed.png",
+                            expectedFocusedTalentId = "pain_fuel",
+                        ),
+                        ValidationScenarioEvidenceStep(
+                            mode = "Keyboard (same focused row)",
+                            input = "Enter",
+                            expectedVisibleResult = "Learning `pain_fuel` does not open `ACTIVE_TALENT_SLOT_CHOICE`; learned detail remains PASSIVE.",
+                            evidenceFile = "evidence/passive-hp-regen-after-learn-no-slot-modal.png",
+                            expectedFocusedTalentId = "pain_fuel",
+                        ),
+                    ),
+                requiredLogEventKeys = listOf("log.validation.phase4_v4.action", "log.talent.learned"),
+                forbiddenLogFragments =
+                    listOf("PlayerCommand.RespecTalentTree", "RespecTalentTree", "ConfirmTalentDraftToReserve", "EquipTalentToSlot", "ACTIVE_TALENT_SLOT_CHOICE"),
+            ),
             ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr02"),
                 prId = "PR-02",
@@ -776,6 +1092,42 @@ object ValidationScenarioRegistry {
                         scenarioNoteLabelKey = "validation.phase4.v4.phase4-v4-pr07.evidence.summary_note",
                     ),
             ),
+        )
+
+    private fun pr0401PassiveScenario(
+        id: String,
+        seed: Long,
+        professionId: String,
+        setup: ValidationScenarioTalentSetupSpec,
+        requiredEvidenceFiles: List<String>,
+        cuaSteps: List<ValidationScenarioEvidenceStep>,
+        requiredLogEventKeys: List<String>,
+        forbiddenLogFragments: List<String>,
+    ): ValidationScenarioDef =
+        ValidationScenarioDef(
+            id = ValidationScenarioId(id),
+            prId = "PR-04-01",
+            runtime =
+                ValidationScenarioRuntimeSpec(
+                    preset = ValidationPreset.MAPGEN_DIFF,
+                    seed = seed,
+                    locale = GameLocale.ZH_CN,
+                    professionId = professionId,
+                    raceId = "human",
+                    zoneId = "greenwood_fringe",
+                    floor = 2,
+                    routeIndex = -1,
+                    contentPackMode = ValidationScenarioContentPackMode.NONE,
+                ),
+            evidence =
+                ValidationScenarioEvidenceSpec(
+                    requiredEvidenceFiles = requiredEvidenceFiles,
+                    cuaSteps = cuaSteps,
+                    manualRecordPath = "UI/manual-records/dark-uiux-pr04-01-playable-profession-passive-talents.md",
+                    requiredLogEventKeys = requiredLogEventKeys,
+                    forbiddenLogFragments = forbiddenLogFragments,
+                ),
+            talentSetup = setup,
         )
 
     fun all(): List<ValidationScenarioDef> = scenarios

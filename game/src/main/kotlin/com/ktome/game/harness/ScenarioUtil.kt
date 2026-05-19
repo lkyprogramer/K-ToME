@@ -489,6 +489,14 @@ private fun routeProgressCommand(
         return PlayerCommand.Descend
     }
 
+    val closeVisibleHostile =
+        observation.visibleHostilePositions.any { hostile ->
+            hostile.chebyshevDistanceTo(observation.playerPosition) <= 3
+        }
+    if (observation.playerResource.typeId == "ENERGY" && closeVisibleHostile) {
+        return null
+    }
+
     val stairsDown = session.automationStairPoint(StairDirection.DOWN)
     if (stairsDown != null) {
         if (stairsDown == observation.playerPosition) {
