@@ -33,12 +33,70 @@ data class ValidationScenarioEvidenceStep(
     val input: String,
     val expectedVisibleResult: String,
     val evidenceFile: String,
+    val expectedFocusedTalentId: String? = null,
+    val typedAssertions: List<ValidationScenarioTypedAssertion> = emptyList(),
+    val localizedVisibleAssertions: List<LocalizedTextAssertion> = emptyList(),
 ) {
     init {
         require(mode.isNotBlank()) { "Validation scenario evidence step mode must not be blank." }
         require(input.isNotBlank()) { "Validation scenario evidence step input must not be blank." }
         require(expectedVisibleResult.isNotBlank()) { "Validation scenario evidence step expected result must not be blank." }
         require(evidenceFile.isNotBlank()) { "Validation scenario evidence step file must not be blank." }
+        require(expectedFocusedTalentId == null || expectedFocusedTalentId.isNotBlank()) {
+            "Validation scenario evidence step expectedFocusedTalentId must not be blank when present."
+        }
+    }
+}
+
+sealed interface ValidationScenarioTypedAssertion
+
+data class FocusedTalentAssertion(
+    val talentId: String,
+    val category: String,
+    val rank: Int,
+    val state: String,
+) : ValidationScenarioTypedAssertion {
+    init {
+        require(talentId.isNotBlank()) { "Focused talent assertion must declare talentId." }
+        require(category.isNotBlank()) { "Focused talent assertion must declare category." }
+        require(rank >= 0) { "Focused talent assertion rank must not be negative." }
+        require(state.isNotBlank()) { "Focused talent assertion must declare state." }
+    }
+}
+
+data class PassiveLineAssertion(
+    val lineKind: String,
+    val statId: String? = null,
+    val damageType: String? = null,
+    val resourceType: String? = null,
+    val statusId: String? = null,
+    val condition: String? = null,
+    val value: String,
+    val orderIndex: Int? = null,
+) : ValidationScenarioTypedAssertion {
+    init {
+        require(lineKind.isNotBlank()) { "Passive line assertion must declare lineKind." }
+        require(value.isNotBlank()) { "Passive line assertion must declare value." }
+        require(statId == null || statId.isNotBlank()) { "Passive line assertion statId must not be blank." }
+        require(damageType == null || damageType.isNotBlank()) { "Passive line assertion damageType must not be blank." }
+        require(resourceType == null || resourceType.isNotBlank()) { "Passive line assertion resourceType must not be blank." }
+        require(statusId == null || statusId.isNotBlank()) { "Passive line assertion statusId must not be blank." }
+        require(condition == null || condition.isNotBlank()) { "Passive line assertion condition must not be blank." }
+        require(orderIndex == null || orderIndex >= 0) { "Passive line assertion orderIndex must not be negative." }
+    }
+}
+
+data class LocalizedTextAssertion(
+    val locale: String,
+    val key: String? = null,
+    val visibleTextPolicy: String,
+    val evidenceFile: String,
+) {
+    init {
+        require(locale.isNotBlank()) { "Localized text assertion must declare locale." }
+        require(key == null || key.isNotBlank()) { "Localized text assertion key must not be blank." }
+        require(visibleTextPolicy.isNotBlank()) { "Localized text assertion must declare visibleTextPolicy." }
+        require(evidenceFile.isNotBlank()) { "Localized text assertion must declare evidenceFile." }
     }
 }
 
@@ -91,6 +149,7 @@ data class ValidationScenarioDef(
     val prId: String,
     val runtime: ValidationScenarioRuntimeSpec,
     val evidence: ValidationScenarioEvidenceSpec,
+    val talentSetup: ValidationScenarioTalentSetupSpec? = null,
 ) {
     init {
         require(prId.isNotBlank()) { "Validation scenario ${id.value} must declare prId." }
@@ -125,6 +184,7 @@ data class ValidationScenarioDef(
             scenarioId = id,
             scenarioRouteIndex = runtime.routeIndex,
             scenarioEvidenceSummary = evidenceSummary,
+            scenarioTalentSetup = talentSetup,
         )
     }
 
@@ -134,6 +194,32 @@ data class ValidationScenarioDef(
         } else {
             listOf(runtime.zoneId)
         }
+}
+
+data class ValidationScenarioTalentSetupSpec(
+    val targetTalentId: String,
+    val initialFocusedTalentId: String,
+    val playerLevel: Int,
+    val prerequisiteRanks: Map<String, Int>,
+    val setUnspentTalentPoints: Int,
+    val targetRank: Int = 0,
+    val clearPendingTalentDraft: Boolean = true,
+    val clearActiveSlotChoiceModal: Boolean = true,
+    val resetTalentLoadoutSlotsForTargetOwner: Boolean = true,
+    val expectedTargetState: String = "LEARNABLE",
+    val previewExpanded: Boolean,
+) {
+    init {
+        require(targetTalentId.isNotBlank()) { "Validation scenario talent setup must declare targetTalentId." }
+        require(initialFocusedTalentId.isNotBlank()) { "Validation scenario talent setup must declare initialFocusedTalentId." }
+        require(playerLevel > 0) { "Validation scenario talent setup playerLevel must be positive." }
+        require(prerequisiteRanks.all { (talentId, rank) -> talentId.isNotBlank() && rank > 0 }) {
+            "Validation scenario talent setup prerequisite ranks must use non-blank talent ids and positive ranks."
+        }
+        require(setUnspentTalentPoints >= 0) { "Validation scenario talent setup unspent points must not be negative." }
+        require(targetRank >= 0) { "Validation scenario talent setup targetRank must not be negative." }
+        require(expectedTargetState.isNotBlank()) { "Validation scenario talent setup expectedTargetState must not be blank." }
+    }
 }
 
 data class ValidationScenarioRuntimeSpec(
@@ -163,6 +249,7 @@ data class ValidationScenarioEvidenceSpec(
     val cuaSteps: List<ValidationScenarioEvidenceStep>,
     val manualRecordPath: String,
     val requiredLogEventKeys: List<String> = emptyList(),
+    val forbiddenLogFragments: List<String> = emptyList(),
     val scenarioNoteLabelKey: String? = null,
 ) {
     val allRequiredEvidenceFiles: List<String>
@@ -188,6 +275,9 @@ data class ValidationScenarioEvidenceSpec(
         require(manualRecordPath.isNotBlank()) { "Validation scenario evidence must declare manualRecordPath." }
         require(requiredLogEventKeys.all(String::isNotBlank)) {
             "Validation scenario evidence requiredLogEventKeys must not contain blank entries."
+        }
+        require(forbiddenLogFragments.all(String::isNotBlank)) {
+            "Validation scenario evidence forbiddenLogFragments must not contain blank entries."
         }
         require(scenarioNoteLabelKey == null || scenarioNoteLabelKey.isNotBlank()) {
             "Validation scenario evidence scenarioNoteLabelKey must not be blank."

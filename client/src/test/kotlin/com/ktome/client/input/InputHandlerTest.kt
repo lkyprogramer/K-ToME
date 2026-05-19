@@ -33,6 +33,7 @@ import com.ktome.core.snapshot.RouteSelectionSnapshot
 import com.ktome.core.snapshot.ShopOfferSnapshot
 import com.ktome.core.snapshot.ShopPanelSnapshot
 import com.ktome.core.snapshot.ShopSellEntrySnapshot
+import com.ktome.core.snapshot.TalentAssignPreferredFocusSnapshot
 import com.ktome.core.snapshot.TalentActiveSlotChoiceRequirementSnapshot
 import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
@@ -1420,6 +1421,70 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `validation talent focus request matches owner identity before selecting row`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            treeId = "shared_tree",
+                            ownerType = TalentTreeOwnerType.PROFESSION,
+                            treeOwnerId = "vanguard",
+                            nodes =
+                                listOf(
+                                    talentTreeNode(
+                                        talentId = "shared_talent",
+                                        treeId = "shared_tree",
+                                        nameKey = "talent.vanguard.shared_talent.name",
+                                        ownerType = TalentTreeOwnerType.PROFESSION,
+                                        treeOwnerId = "vanguard",
+                                    ),
+                                ),
+                        ),
+                        talentTree(
+                            treeId = "shared_tree",
+                            ownerType = TalentTreeOwnerType.RACE,
+                            treeOwnerId = "shalore",
+                            nodes =
+                                listOf(
+                                    talentTreeNode(
+                                        talentId = "shared_talent",
+                                        treeId = "shared_tree",
+                                        nameKey = "talent.shalore.shared_talent.name",
+                                        ownerType = TalentTreeOwnerType.RACE,
+                                        treeOwnerId = "shalore",
+                                    ),
+                                ),
+                        ),
+                    ),
+                validationTalentFocusRequest =
+                    TalentAssignPreferredFocusSnapshot(
+                        treeId = "shared_tree",
+                        talentId = "shared_talent",
+                        ownerType = TalentTreeOwnerType.RACE.name,
+                        treeOwnerId = "shalore",
+                        consumeOnceToken = "focus-race-shared",
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.R))
+        assertEquals(
+            PlayerCommand.RespecTalentTree(
+                ownerType = TalentTreeOwnerType.RACE,
+                treeOwnerId = "shalore",
+            ),
+            handler.pollCommand(snapshot),
+        )
+    }
+
+    @Test
     fun `talent assign mode can invest selected tree talent directly`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
@@ -1797,6 +1862,43 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `focused passive tree talent ignores reserve hotkey`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithPendingTreeTalent(TalentCategory.PASSIVE)
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.R))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.TALENT_ASSIGN, handler.overlayState().activeModalKind)
+    }
+
+    @Test
+    fun `focused locked passive tree talent ignores reserve hotkey`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithPendingTreeTalent(
+                category = TalentCategory.PASSIVE,
+                state = TalentNodeStateSnapshot.LOCKED,
+                rank = 0,
+                committedRank = 0,
+                hasPendingAllocation = false,
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.R))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(ModalFrameKind.TALENT_ASSIGN, handler.overlayState().activeModalKind)
+    }
+
+    @Test
     fun `talent assign p toggles tree preview without creating a command`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
@@ -2061,6 +2163,7 @@ class InputHandlerTest {
         targetablePositions: List<com.ktome.core.snapshot.GridPointSnapshot> = emptyList(),
         talentTrees: List<TalentTreeSnapshot> = emptyList(),
         activeTalentSlotChoiceRequirement: TalentActiveSlotChoiceRequirementSnapshot? = null,
+        validationTalentFocusRequest: TalentAssignPreferredFocusSnapshot? = null,
         talents: List<TalentSlotSnapshot> =
             listOf(
                 activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
@@ -2122,6 +2225,7 @@ class InputHandlerTest {
                     reserveTalents = reserveTalents,
                     talentTrees = talentTrees,
                     activeTalentSlotChoiceRequirement = activeTalentSlotChoiceRequirement,
+                    validationTalentFocusRequest = validationTalentFocusRequest,
                     inscriptions = inscriptions,
                     inventory = inventory,
                     activeShop = activeShop,
@@ -2183,6 +2287,10 @@ class InputHandlerTest {
     private fun snapshotWithPendingTreeTalent(
         category: TalentCategory,
         activeTalentSlotChoiceRequired: Boolean = false,
+        state: TalentNodeStateSnapshot = TalentNodeStateSnapshot.LEARNED_RESERVE,
+        rank: Int = 1,
+        committedRank: Int = 0,
+        hasPendingAllocation: Boolean = true,
     ): RenderSnapshot =
         snapshotWithLoadout(
             talents =
@@ -2203,11 +2311,11 @@ class InputHandlerTest {
                                     talentId = "charge",
                                     treeId = "vanguard_arms",
                                     nameKey = "talent.vanguard.charge.name",
-                                    state = TalentNodeStateSnapshot.LEARNED_RESERVE,
+                                    state = state,
                                     category = category,
-                                    rank = 1,
-                                    committedRank = 0,
-                                    hasPendingAllocation = true,
+                                    rank = rank,
+                                    committedRank = committedRank,
+                                    hasPendingAllocation = hasPendingAllocation,
                                 ),
                         ),
                     ),

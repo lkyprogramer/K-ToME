@@ -1637,6 +1637,44 @@ class SmokeBotTest {
         assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(releaseObservation))
     }
 
+    @Test
+    fun `critical rogue breaks isolated trash retreat loop with melee pressure`() {
+        val routeBot = SmokeBot()
+        val loopPositions = listOf(Point(3, 0), Point(2, 0), Point(3, 0), Point(2, 0), Point(3, 0), Point(2, 0), Point(3, 0))
+        loopPositions.forEach { position ->
+            routeBot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    playerStatus = healthyStatus().copy(currentHp = 30, maxHp = 100),
+                    playerResource = PlayerResourceView(current = 0, max = 20, typeId = "ENERGY"),
+                    map = corridorMap,
+                    playerPosition = position,
+                    visibleHostilePositions = listOf(Point(position.x + 1, 0)),
+                    visibleTiles = corridorMap.floorPoints().toSet(),
+                    exploredTiles = corridorMap.floorPoints().toSet(),
+                    talentSlots = emptyList(),
+                ),
+            )
+        }
+
+        val command =
+            routeBot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    playerStatus = healthyStatus().copy(currentHp = 30, maxHp = 100),
+                    playerResource = PlayerResourceView(current = 0, max = 20, typeId = "ENERGY"),
+                    map = corridorMap,
+                    playerPosition = Point(2, 0),
+                    visibleHostilePositions = listOf(Point(3, 0)),
+                    visibleTiles = corridorMap.floorPoints().toSet(),
+                    exploredTiles = corridorMap.floorPoints().toSet(),
+                    talentSlots = emptyList(),
+                ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(1, 0)), command)
+    }
+
     private fun observation(
         inventoryItems: List<InventoryItemView>,
         zoneId: String = "shattered_outpost",

@@ -42,6 +42,30 @@ internal object ValidationScenarioPresentationCatalog {
                 initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
             ),
             ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-01-static-passive-detail"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr04-01-static-passive-detail.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-01-trigger-passive-detail"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr04-01-trigger-passive-detail.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-01-passive-action-suppression"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr04-01-passive-action-suppression.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr04-01-effective-hp-regen-detail"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr04-01-effective-hp-regen-detail.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
                 id = ValidationScenarioId("phase4-v4-pr02"),
                 titleKey = "validation.phase4.v4.phase4-v4-pr02.title",
                 startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,

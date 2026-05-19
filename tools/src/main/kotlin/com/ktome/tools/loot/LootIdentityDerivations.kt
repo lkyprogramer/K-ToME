@@ -1,11 +1,11 @@
 package com.ktome.tools.loot
 
-import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.MilestoneRewardSource
-import com.ktome.core.item.StatModifier
+import com.ktome.core.item.PassiveEffect
+import com.ktome.core.item.kindId
 import com.ktome.game.data.schema.BossEncounterSchemaV2
 import com.ktome.game.data.schema.LootPoolStrategy
 import com.ktome.game.data.schema.LootProfileSchemaV3
@@ -184,41 +184,20 @@ internal fun computeSpecialTierPassiveFamilyDuplicateSummary(itemBundle: ItemDat
     return SpecialTierPassiveFamilyDuplicateSummary(duplicateFamilies = duplicates)
 }
 
-private fun specialTierPassiveFamily(passive: EquipmentPassive?): String =
+private fun specialTierPassiveFamily(passive: PassiveEffect?): String =
     when (passive) {
-        is EquipmentPassive.OnHitStatusProc -> "OnHitStatusProc:${passive.statusId}"
-        is EquipmentPassive.OnKillResourceRestore -> "OnKillResourceRestore:${passive.resourceType.name}"
-        is EquipmentPassive.ConditionalStatBonus -> "ConditionalStatBonus:${passive.condition.name}:${passive.statusId ?: "-"}:${statModifierSignature(passive.statModifier)}"
-        is EquipmentPassive.TerrainAffinityBonus -> "TerrainAffinityBonus:${passive.terrainTag.name}"
-        is EquipmentPassive.DamageVsTag -> "DamageVsTag:${passive.tag}"
-        is EquipmentPassive.DamageVsStatus -> "DamageVsStatus:${passive.statusId}"
-        is EquipmentPassive.DamageTypeBonus -> "DamageTypeBonus:${passive.type.name}"
-        is EquipmentPassive.ResistanceBonus -> "ResistanceBonus:${passive.damageType.name}"
-        is EquipmentPassive.HpRegenPerTurn -> "HpRegenPerTurn"
+        is PassiveEffect.OnHitStatusProc -> "${passive.kindId()}:${passive.statusId}"
+        is PassiveEffect.OnKillResourceRestore -> "${passive.kindId()}:${passive.resourceType.name}"
+        is PassiveEffect.ConditionalStatBonus -> "${passive.kindId()}:${passive.condition.name}:${passive.statusId ?: "-"}:${statModifierSignature(passive.statModifier)}"
+        is PassiveEffect.TerrainAffinityBonus -> "${passive.kindId()}:${passive.terrainTag.name}"
+        is PassiveEffect.StatModifierEffect -> "${passive.kindId()}:${statModifierSignature(passive.statModifier)}"
+        is PassiveEffect.DamageVsTag -> "${passive.kindId()}:${passive.tag}"
+        is PassiveEffect.DamageVsStatus -> "${passive.kindId()}:${passive.statusId}"
+        is PassiveEffect.DamageTypeBonus -> "${passive.kindId()}:${passive.type.name}"
+        is PassiveEffect.ResistanceBonus -> "${passive.kindId()}:${passive.damageType.name}"
+        is PassiveEffect.HpRegenPerTurn -> passive.kindId()
         null -> "NoPassive"
     }
-
-private fun statModifierSignature(modifier: StatModifier): String =
-    listOf(
-        modifier.str,
-        modifier.dex,
-        modifier.con,
-        modifier.wil,
-        modifier.attack,
-        modifier.defense,
-        modifier.accuracy,
-        modifier.evasion,
-        modifier.speed,
-        modifier.castSpeedRating,
-        modifier.maxHp,
-        modifier.maxStamina,
-        modifier.hpRegen,
-        modifier.staminaRegen,
-        modifier.critChance,
-        modifier.talentPower,
-        modifier.attackMultiplierBonus,
-        modifier.defenseMultiplierBonus,
-    ).joinToString(separator = ":")
 
 private val FOUNDATION_PROFESSION_IDS: Set<String> = foundationBuildIdentityProfessionIds
 

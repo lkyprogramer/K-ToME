@@ -7,9 +7,16 @@ import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.PassiveDetailDeltaLineSnapshot
+import com.ktome.core.snapshot.PassiveDetailLineKindSnapshot
+import com.ktome.core.snapshot.PassiveDetailLineSnapshot
+import com.ktome.core.snapshot.PassiveDetailLineToneSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
+import com.ktome.core.snapshot.RenderTextArgumentSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.TalentActiveSlotChoiceRequirementSnapshot
+import com.ktome.core.snapshot.TalentPassiveDetailSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
 import com.ktome.core.snapshot.TalentNodeLockReasonSnapshot
 import com.ktome.core.snapshot.TalentNodeLockReasonTypeSnapshot
@@ -188,6 +195,69 @@ class TalentSidebarPresenterTest {
         )
         assertEquals("Up/Down select  Left/Right switch tree  Enter learn  R reserve  Esc close", panel.footerHelpText)
         assertTrue(actions.bodyLines.any { line -> line.label == "Enter" && line.value == "Learn" })
+    }
+
+    @Test
+    fun passiveTalentAssignActionsDoNotShowReserveCommands() {
+        val panel =
+            panel(
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            nodes =
+                                listOf(
+                                    talentNode(
+                                        "unyielding",
+                                        category = TalentCategory.PASSIVE,
+                                        requiresTarget = false,
+                                        range = 0,
+                                        minRange = 0,
+                                    ),
+                                ),
+                        ),
+                    ),
+            )
+        val actions = requireNotNull(panel.detail).blocks.single { block -> block.kind == TalentDetailBlockKind.ACTIONS }
+
+        assertFalse(panel.footerHints.any { hint -> hint.kind == TalentAssignFooterHintKind.RESERVE })
+        assertFalse(actions.bodyLines.any { line -> line.label == "R" || line.value == "Reserve" })
+        assertEquals(listOf("Enter" to "Learn", "Esc" to "Back"), actions.bodyLines.map { line -> line.label to line.value })
+    }
+
+    @Test
+    fun lockedPassiveTalentAssignActionsStayLockedWithoutReserveCommands() {
+        val panel =
+            panel(
+                talentTrees =
+                    listOf(
+                        talentTree(
+                            nodes =
+                                listOf(
+                                    talentNode(
+                                        "unyielding",
+                                        state = TalentNodeStateSnapshot.LOCKED,
+                                        category = TalentCategory.PASSIVE,
+                                        requiresTarget = false,
+                                        range = 0,
+                                        minRange = 0,
+                                        lockReasons =
+                                            listOf(
+                                                TalentNodeLockReasonSnapshot(
+                                                    type = TalentNodeLockReasonTypeSnapshot.LEVEL,
+                                                    messageKey = "ui.talent.tree.lock.level",
+                                                    requiredLevel = 5,
+                                                    currentLevel = 1,
+                                                ),
+                                            ),
+                                    ),
+                                ),
+                        ),
+                    ),
+            )
+        val actions = requireNotNull(panel.detail).blocks.single { block -> block.kind == TalentDetailBlockKind.ACTIONS }
+
+        assertEquals(listOf("Enter" to "Locked", "Esc" to "Back"), actions.bodyLines.map { line -> line.label to line.value })
+        assertFalse(panel.footerHints.any { hint -> hint.kind == TalentAssignFooterHintKind.RESERVE })
     }
 
     @Test
@@ -540,6 +610,87 @@ class TalentSidebarPresenterTest {
     }
 
     @Test
+    fun passiveDetailShowsCurrentAndNextPassiveEffectsFromTypedSnapshot() {
+        val detail =
+            requireNotNull(
+                panel(
+                    talentTrees =
+                        listOf(
+                            talentTree(
+                                nodes =
+                                    listOf(
+                                        talentNode(
+                                            "unyielding",
+                                            category = TalentCategory.PASSIVE,
+                                            requiresTarget = false,
+                                            range = 0,
+                                            minRange = 0,
+                                            passiveDetail =
+                                                TalentPassiveDetailSnapshot(
+                                                    currentLines =
+                                                        listOf(
+                                                            PassiveDetailLineSnapshot(
+                                                                lineKind = PassiveDetailLineKindSnapshot.STAT_MODIFIER,
+                                                                labelKey = "ui.talent.passive.detail.kind.stat_modifier",
+                                                                valueToken =
+                                                                    RenderTextTokenSnapshot(
+                                                                        key = "ui.talent.passive.detail.stat_modifier",
+                                                                        arguments =
+                                                                            listOf(
+                                                                                RenderTextArgumentSnapshot(name = "statId", valueKey = "ui.hud.hp.short"),
+                                                                                RenderTextArgumentSnapshot(name = "value", value = "+10"),
+                                                                            ),
+                                                                    ),
+                                                                diagnosticArgs = mapOf("statId" to "futureMaxHpRawId", "value" to "+10"),
+                                                                sortKey = "000:004:maxHp",
+                                                                tone = PassiveDetailLineToneSnapshot.SECONDARY,
+                                                                diagnosticEffectKind = "StatModifier",
+                                                            ),
+                                                        ),
+                                                    nextLines =
+                                                        listOf(
+                                                            PassiveDetailDeltaLineSnapshot(
+                                                                lineKind = PassiveDetailLineKindSnapshot.STAT_MODIFIER,
+                                                                labelKey = "ui.talent.passive.detail.kind.stat_modifier",
+                                                                valueToken =
+                                                                    RenderTextTokenSnapshot(
+                                                                        key = "ui.talent.passive.detail.stat_modifier.delta",
+                                                                        arguments =
+                                                                            listOf(
+                                                                                RenderTextArgumentSnapshot(name = "statId", valueKey = "ui.hud.hp.short"),
+                                                                                RenderTextArgumentSnapshot(name = "value", value = "+16"),
+                                                                                RenderTextArgumentSnapshot(name = "before", value = "+10"),
+                                                                                RenderTextArgumentSnapshot(name = "after", value = "+16"),
+                                                                            ),
+                                                                    ),
+                                                                diagnosticArgs =
+                                                                    mapOf(
+                                                                        "statId" to "futureMaxHpRawId",
+                                                                        "value" to "+16",
+                                                                        "before" to "+10",
+                                                                        "after" to "+16",
+                                                                    ),
+                                                                sortKey = "000:004:maxHp",
+                                                                tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                                                                diagnosticEffectKind = "StatModifier",
+                                                            ),
+                                                        ),
+                                                ),
+                                        ),
+                                    ),
+                            ),
+                        ),
+                ).detail,
+            )
+
+        val current = detail.blocks.single { block -> block.kind == TalentDetailBlockKind.CURRENT_RANK_DETAIL }
+        val next = detail.blocks.single { block -> block.kind == TalentDetailBlockKind.NEXT_RANK_PREVIEW }
+
+        assertTrue(current.bodyLines.any { line -> line.label == "Stats" && line.value == "HP +10" })
+        assertTrue(next.bodyLines.any { line -> line.label == "Stats" && line.value == "HP +10 -> +16" })
+    }
+
+    @Test
     fun pr04DetailHeroPrefersFullSkillIconOverReferenceCrop() {
         val detail =
             requireNotNull(
@@ -639,6 +790,13 @@ class TalentSidebarPresenterTest {
                 "Healing",
                 "Movement / knockback",
                 "Knockback",
+                "Stats",
+                "Resistance",
+                "On Kill",
+                "Condition",
+                "Recovery",
+                "Trigger",
+                "Terrain",
             )
         listOf("vanguard", "arcanist", "rogue", "templar").forEachIndexed { professionIndex, professionId ->
             val session =
@@ -834,6 +992,7 @@ class TalentSidebarPresenterTest {
         lockReasons: List<TalentNodeLockReasonSnapshot> = emptyList(),
         hasPendingAllocation: Boolean = false,
         unlockLevel: Int = 1,
+        passiveDetail: TalentPassiveDetailSnapshot? = null,
     ): TalentTreeNodeSnapshot =
         TalentTreeNodeSnapshot(
             talentId = talentId,
@@ -859,6 +1018,7 @@ class TalentSidebarPresenterTest {
             descriptionModel = descriptionModel,
             nextRankDescriptionModel = nextRankDescriptionModel,
             nextBreakpointPreview = nextBreakpointPreview,
+            passiveDetail = passiveDetail,
             prerequisites = prerequisites,
             lockReasons = lockReasons,
             hasPendingAllocation = hasPendingAllocation,

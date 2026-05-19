@@ -410,6 +410,7 @@ data class TalentLevelEffectSchemaV2(
     val resourceRestoreFraction: Double = 0.0,
     val associatedEffects: List<AssociatedStatusEffectSchemaV2> = emptyList(),
     val cleanseEffect: CleanseEffectSchemaV2? = null,
+    val passiveEffects: List<PassiveEffectSchemaV2> = emptyList(),
 )
 
 data class AssociatedStatusEffectSchemaV2(
@@ -737,7 +738,7 @@ data class AffixSchemaV2(
     val minFloor: Int,
     val stats: SchemaStatModifier,
     val blacklistTags: List<String> = emptyList(),
-    val passive: EquipmentPassiveSchemaV2? = null,
+    val passive: PassiveEffectSchemaV2? = null,
 )
 
 data class SpecialItemTemplateSchemaV2(
@@ -816,7 +817,7 @@ data class AffordableRescueSlotPolicySchemaV2(
     val requiredAffordableTags: List<String>,
 )
 
-data class EquipmentPassiveSchemaV2(
+data class PassiveEffectSchemaV2(
     val kind: String,
     val tag: String? = null,
     val statusId: String? = null,
@@ -854,7 +855,7 @@ data class ItemSchemaV2(
     val effect: ConsumableEffect? = null,
     val resourceTypeId: String? = null,
     val magnitude: Int = 0,
-    val passive: EquipmentPassiveSchemaV2? = null,
+    val passive: PassiveEffectSchemaV2? = null,
 )
 
 data class SchemaStats(

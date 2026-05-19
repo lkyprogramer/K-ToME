@@ -29,6 +29,7 @@ import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.CallbackDecision
 import com.ktome.core.combat.CombatRuleset
 import com.ktome.core.combat.CombatResolver
+import com.ktome.core.combat.DiminishingReturns
 import com.ktome.core.combat.DamageFormula
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.ElementInteractionRegistry
@@ -52,7 +53,6 @@ import com.ktome.core.ecs.DisplayColor
 import com.ktome.core.ecs.Energy
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.EliteMutationLoadout
-import com.ktome.core.ecs.EquipmentPassiveStatModifier
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.ExperienceReward
 import com.ktome.core.ecs.FactionTag
@@ -61,6 +61,7 @@ import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Name
+import com.ktome.core.ecs.PassiveStatModifier
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.PreferredTerrainAffinity
@@ -110,9 +111,6 @@ import com.ktome.core.item.AffixPool
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Equipment
-import com.ktome.core.item.EquipmentPassive
-import com.ktome.core.item.EquipmentPassiveKindIds
-import com.ktome.core.item.EquippedPassiveSource
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemGenerator
@@ -125,8 +123,12 @@ import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.PassiveDamageAdjustment
+import com.ktome.core.item.PassiveEffect
+import com.ktome.core.item.PassiveEffectKindIds
 import com.ktome.core.item.PassiveEffectResolver
 import com.ktome.core.item.PassiveCondition
+import com.ktome.core.item.PassiveSource
+import com.ktome.core.item.PassiveSourceKind
 import com.ktome.core.item.PassiveStatContext
 import com.ktome.core.item.SpecialItemTemplate
 import com.ktome.core.item.StatModifier
@@ -202,6 +204,10 @@ import com.ktome.core.snapshot.ItemStatModifierSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.OverlayShapeSnapshot
+import com.ktome.core.snapshot.PassiveDetailDeltaLineSnapshot
+import com.ktome.core.snapshot.PassiveDetailLineKindSnapshot
+import com.ktome.core.snapshot.PassiveDetailLineSnapshot
+import com.ktome.core.snapshot.PassiveDetailLineToneSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RewardPresentationBuildIdentitySnapshot
@@ -221,7 +227,9 @@ import com.ktome.core.snapshot.ShopSellEntrySnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentActiveSlotChoiceRequirementSnapshot
+import com.ktome.core.snapshot.TalentAssignPreferredFocusSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
+import com.ktome.core.snapshot.TalentPassiveDetailSnapshot
 import com.ktome.core.snapshot.TalentNodeLockReasonSnapshot
 import com.ktome.core.snapshot.TalentNodeLockReasonTypeSnapshot
 import com.ktome.core.snapshot.TalentNodePrerequisiteSnapshot
@@ -251,6 +259,7 @@ import com.ktome.core.talent.TalentAllocationDraft
 import com.ktome.core.talent.TalentAllocationPlanner
 import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentCombatCallbackResolver
+import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentFailureCode
 import com.ktome.core.talent.TalentLoadout
 import com.ktome.core.talent.TalentRegistry
@@ -329,8 +338,10 @@ import com.ktome.game.validation.Phase4V4Pr06RouteDiversityArtifactSummary
 import com.ktome.game.validation.ProfileRunPersistenceMode
 import com.ktome.game.validation.persistValidationSessionMetadata
 import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioDef
 import com.ktome.game.validation.ValidationScenarioId
 import com.ktome.game.validation.ValidationScenarioRegistry
+import com.ktome.game.validation.ValidationScenarioTalentSetupSpec
 import com.ktome.game.validation.ValidationSessionOptions
 import com.ktome.game.validation.ValidationSummarySnapshot
 import com.ktome.game.validation.hasMeaningfulNextSeedRestart
@@ -340,6 +351,8 @@ import com.ktome.game.professionAffixBuildContext
 import com.ktome.game.routeRewardBiasTags
 import com.ktome.game.zoneRouteHash
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -417,6 +430,12 @@ private data class WeightedLootBaseCandidate(
     }
 }
 
+private data class PassiveStatDetailValue(
+    val statId: String,
+    val value: String,
+    val order: Int,
+)
+
 internal fun cacheRewardSourceId(
     zoneId: String,
     floor: Int,
@@ -480,6 +499,19 @@ class FoundationGameSession internal constructor(
     private val milestoneRewardSelector: MilestoneRewardSelector by lazy(LazyThreadSafetyMode.NONE) {
         MilestoneRewardSelector(content.itemBundle)
     }
+    private val whiteboxAppLogPath: Path? by lazy(LazyThreadSafetyMode.NONE) {
+        val options = validationSessionOptions ?: return@lazy null
+        val scenarioId = options.scenarioId ?: return@lazy null
+        val summary = options.scenarioEvidenceSummary ?: return@lazy null
+        val logPath =
+            ValidationScenarioRegistry
+                .find(scenarioId)
+                ?.evidence
+                ?.allRequiredEvidenceFiles
+                ?.firstOrNull { path -> path.endsWith("-app.log") || path == "evidence/app.log" }
+                ?: return@lazy null
+        Path.of(summary.whiteboxRoot).resolve(logPath).normalize()
+    }
 
     private data class LevelUpFeedbackSnapshot(
         val stats: Stats,
@@ -519,6 +551,7 @@ class FoundationGameSession internal constructor(
     )
 
     private var validationTalentTreeActiveStateIds: Set<String> = emptySet()
+    private var validationTalentFocusRequest: TalentAssignPreferredFocusSnapshot? = null
 
     data class TalentChoiceRunSummary(
         val starterProfessionTalentCount: Int,
@@ -813,7 +846,7 @@ class FoundationGameSession internal constructor(
             }
         talentResolver.combatCallbackResolver =
             TalentCombatCallbackResolver { _, attacker, _, _, _ ->
-                buildEquipmentPassiveCallbacks(attacker)
+                buildPassiveCallbacks(attacker)
             }
         combatResolver.terrainInteractionContextResolver =
             TerrainInteractionContextResolver { _, attacker, target, damageType, interactionDepth ->
@@ -1359,6 +1392,12 @@ class FoundationGameSession internal constructor(
 
     internal fun automationPreferredTerrainTags(entityId: EntityId): Set<com.ktome.core.mapgen.TerrainTag> = entityPreferredTerrainTags(entityId)
 
+    internal fun automationAdvanceBossPhaseForValidation(monsterId: EntityId): Boolean =
+        updateBossPhaseIfNeeded(
+            monsterId = monsterId,
+            transitionTiming = BossPhaseTransitionTiming.START_OF_TURN,
+        ).phaseChanged
+
     fun automationMovePlayerTo(point: Point) {
         require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
         movePlayerTo(point, refreshFieldOfView = true)
@@ -1863,13 +1902,13 @@ class FoundationGameSession internal constructor(
             ValidationScenarioActionId.PREPARE_PRIMARY_SCENE -> acceptValidationScenarioAction(
                 scenarioId = scenario.id.value,
                 actionId = action.actionId.value,
-                result = preparePhase4V4ScenarioPrimaryScene(scenario.id),
+                result = preparePhase4V4ScenarioPrimaryScene(scenario),
             )
 
             ValidationScenarioActionId.PREPARE_SECONDARY_SCENE -> acceptValidationScenarioAction(
                 scenarioId = scenario.id.value,
                 actionId = action.actionId.value,
-                result = preparePhase4V4ScenarioSecondaryScene(scenario.id),
+                result = preparePhase4V4ScenarioSecondaryScene(scenario),
             )
 
             ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY -> {
@@ -1896,8 +1935,8 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun preparePhase4V4ScenarioPrimaryScene(scenarioId: ValidationScenarioId): String =
-        when (scenarioId.value) {
+    private fun preparePhase4V4ScenarioPrimaryScene(scenario: ValidationScenarioDef): String =
+        when (scenario.id.value) {
             "phase4-v4-pr01" -> {
                 preparePhase4V4Pr01TalentTreeStart()
                 "profession_tree_start_ready"
@@ -1906,6 +1945,11 @@ class FoundationGameSession internal constructor(
                 prepareDarkUiuxPr04TalentAssignReference()
                 "dark_uiux_pr04_reference_talent_assign_ready"
             }
+            "dark-uiux-pr04-01-static-passive-detail",
+            "dark-uiux-pr04-01-trigger-passive-detail",
+            "dark-uiux-pr04-01-passive-action-suppression",
+            "dark-uiux-pr04-01-effective-hp-regen-detail",
+            -> prepareDarkUiuxPr0401TalentSetup(requireNotNull(scenario.talentSetup))
             "phase4-v4-pr02" -> {
                 preparePhase4V4Pr02PrimaryScene()
                 "inscription_shop_primary_ready"
@@ -1931,8 +1975,8 @@ class FoundationGameSession internal constructor(
             else -> "ok"
         }
 
-    private fun preparePhase4V4ScenarioSecondaryScene(scenarioId: ValidationScenarioId): String =
-        when (scenarioId.value) {
+    private fun preparePhase4V4ScenarioSecondaryScene(scenario: ValidationScenarioDef): String =
+        when (scenario.id.value) {
             "phase4-v4-pr01" -> {
                 preparePhase4V4Pr01ReserveChoiceTarget()
                 "profession_tree_reserve_choice_ready"
@@ -1941,6 +1985,11 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr01ReserveChoiceTarget()
                 "dark_uiux_pr04_active_slot_choice_ready"
             }
+            "dark-uiux-pr04-01-static-passive-detail",
+            "dark-uiux-pr04-01-trigger-passive-detail",
+            "dark-uiux-pr04-01-passive-action-suppression",
+            "dark-uiux-pr04-01-effective-hp-regen-detail",
+            -> prepareDarkUiuxPr0401TalentSetup(requireNotNull(scenario.talentSetup))
             "phase4-v4-pr02" -> {
                 preparePhase4V4Pr02ReplacementScene()
                 "inscription_shop_replacement_ready"
@@ -1962,6 +2011,73 @@ class FoundationGameSession internal constructor(
             "phase4-v4-pr07" -> preparePhase4V4Pr07SecondaryScene()
             else -> "ok"
         }
+
+    private fun prepareDarkUiuxPr0401TalentSetup(setup: ValidationScenarioTalentSetupSpec): String {
+        clearValidationTalentTreePresentationOverrides()
+        val experience = requireNotNull(world.get<Experience>(playerId))
+        experience.level = setup.playerLevel
+        experience.unspentTalentPoints = setup.setUnspentTalentPoints
+        val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+        loadout.talentLevels.clear()
+        syncPlayerStarterTalents()
+        setup.prerequisiteRanks.forEach { (talentId, rank) -> loadout.talentLevels[talentId] = rank }
+        if (setup.targetRank > 0) {
+            loadout.talentLevels[setup.targetTalentId] = setup.targetRank
+        }
+        if (setup.resetTalentLoadoutSlotsForTargetOwner) {
+            loadout.slotToTalentId.clear()
+        }
+        if (setup.clearPendingTalentDraft || setup.clearActiveSlotChoiceModal) {
+            setTalentDraft(null)
+        }
+        canonicalizePlayerLoadout(loadout)
+        refreshActorDerivedStats(playerId)
+        requestValidationTalentFocus(setup.initialFocusedTalentId)
+        assertDarkUiuxPr0401TalentSetup(setup)
+        invalidateRenderSnapshot()
+        return "dark_uiux_pr04_01_${setup.targetTalentId}_ready"
+    }
+
+    private fun assertDarkUiuxPr0401TalentSetup(setup: ValidationScenarioTalentSetupSpec) {
+        val targetNode = talentNodeSnapshotFor(setup.targetTalentId)
+        require(targetNode.rank == setup.targetRank) {
+            "PR04-01 setup ${setup.targetTalentId} expected rank ${setup.targetRank}, actual ${targetNode.rank}."
+        }
+        require(targetNode.state.name == setup.expectedTargetState) {
+            "PR04-01 setup ${setup.targetTalentId} expected state ${setup.expectedTargetState}, actual ${targetNode.state.name}."
+        }
+        require(talentDraft() == null) {
+            "PR04-01 setup ${setup.targetTalentId} must not leave pending talent draft."
+        }
+        require(buildActiveTalentSlotChoiceRequirementSnapshot() == null) {
+            "PR04-01 setup ${setup.targetTalentId} must not leave active slot choice modal."
+        }
+        require(validationTalentFocusRequest?.talentId == setup.initialFocusedTalentId) {
+            "PR04-01 setup ${setup.targetTalentId} must request focus for ${setup.initialFocusedTalentId}."
+        }
+    }
+
+    private fun talentNodeSnapshotFor(talentId: String): TalentTreeNodeSnapshot =
+        buildTalentTreeSnapshots()
+            .asSequence()
+            .flatMap { tree -> tree.nodes.asSequence() }
+            .firstOrNull { node -> node.talentId == talentId }
+            ?: error("PR04-01 setup target talent '$talentId' is not visible in current talent trees.")
+
+    private fun requestValidationTalentFocus(talentId: String) {
+        val talentSchema = requireNotNull(talentSchemaFor(talentId)) {
+            "PR04-01 validation focus target '$talentId' is not a known talent."
+        }
+        val owner = resolveTalentTreeOwner(talentSchema)
+        validationTalentFocusRequest =
+            TalentAssignPreferredFocusSnapshot(
+                treeId = talentSchema.treeId,
+                talentId = talentId,
+                ownerType = owner?.ownerType?.name ?: TalentTreeOwnerType.PROFESSION.name,
+                treeOwnerId = owner?.treeOwnerId.orEmpty(),
+                consumeOnceToken = "validation:${talentSchema.treeId}:$talentId:$turnCount",
+            )
+    }
 
     private fun preparePhase4V4Pr01TalentTreeStart() {
         clearValidationTalentTreePresentationOverrides()
@@ -2186,10 +2302,16 @@ class FoundationGameSession internal constructor(
         if (variantId == "boss.variant.grey_crown") {
             prepareGreyCrownWarCallerAuraForValidation(bossId)
         }
-        perform(PlayerCommand.Wait)
         val health = world.get<Health>(bossId) ?: return
         health.current = (health.max * targetHealthRatioPercent / 100).coerceAtLeast(1)
-        perform(PlayerCommand.Wait)
+        val phaseUpdate =
+            updateBossPhaseIfNeeded(
+                monsterId = bossId,
+                transitionTiming = BossPhaseTransitionTiming.START_OF_TURN,
+            )
+        require(phaseUpdate.phaseChanged) {
+            "PR-05 validation scene '$variantId' did not trigger a boss phase transition."
+        }
         renderSnapshot()
     }
 
@@ -3059,7 +3181,9 @@ class FoundationGameSession internal constructor(
         }
 
     private fun reserveTalentIds(loadout: TalentLoadout): List<String> {
-        return orderedLearnedTalentIds(loadout).filterNot(activeTalentStateIds(loadout)::contains)
+        return orderedLearnedTalentIds(loadout)
+            .filter(::isActiveSlotTalent)
+            .filterNot(activeTalentStateIds(loadout)::contains)
     }
 
     private fun activeTalentStateIds(loadout: TalentLoadout): Set<String> {
@@ -4995,6 +5119,7 @@ class FoundationGameSession internal constructor(
             reserveTalents = buildReserveTalentSnapshots(),
             talentTrees = buildTalentTreeSnapshots(),
             activeTalentSlotChoiceRequirement = buildActiveTalentSlotChoiceRequirementSnapshot(),
+            validationTalentFocusRequest = validationTalentFocusRequest,
             inscriptions = buildInscriptionSnapshots(),
             inventory = buildInventoryEntries(),
             recentRewards = buildRecentRewardSnapshots(),
@@ -5590,12 +5715,455 @@ class FoundationGameSession internal constructor(
             descriptionModel = details.descriptionModel.toSnapshot(),
             nextRankDescriptionModel = details.nextRankDescriptionModel?.toSnapshot(),
             nextBreakpointPreview = details.nextBreakpointPreview,
+            passiveDetail = passiveDetailSnapshot(definition, rank),
             prerequisites = schema.requirements.talentPrereqs.map { prerequisite -> toTalentNodePrerequisiteSnapshot(prerequisite, context) },
             lockReasons = lockReasons.map(::toTalentNodeLockReasonSnapshot),
             isMaxRank = rank >= details.maxLevel,
             hasPendingAllocation = details.hasPendingAllocation,
         )
     }
+
+    private fun passiveDetailSnapshot(
+        definition: TalentDef,
+        rank: Int,
+    ): TalentPassiveDetailSnapshot? {
+        if (definition.category != TalentCategory.PASSIVE) {
+            return null
+        }
+        val currentRank = rank.coerceAtLeast(1).coerceAtMost(definition.maxLevel)
+        val nextRank = (currentRank + 1).takeIf { candidate -> candidate <= definition.maxLevel }
+        val currentEffects = definition.levelEffects[currentRank]?.passiveEffects.orEmpty()
+        val nextEffects = nextRank?.let { rankValue -> definition.levelEffects[rankValue]?.passiveEffects.orEmpty() }.orEmpty()
+        val currentLines = passiveDetailLines(currentEffects)
+        return TalentPassiveDetailSnapshot(
+            currentLines = currentLines,
+            nextLines = passiveDeltaLines(currentLines = currentLines, nextLines = passiveDetailLines(nextEffects)),
+        )
+    }
+
+    private fun passiveDetailLines(passives: List<PassiveEffect>): List<PassiveDetailLineSnapshot> =
+        passives.flatMapIndexed { index, passive -> passiveDetailLines(passive = passive, passiveIndex = index) }
+            .sortedBy(PassiveDetailLineSnapshot::sortKey)
+
+    private fun passiveDetailLines(
+        passive: PassiveEffect,
+        passiveIndex: Int,
+    ): List<PassiveDetailLineSnapshot> =
+        when (passive) {
+            is PassiveEffect.StatModifierEffect ->
+                statModifierPassiveDetailLines(
+                    modifier = passive.statModifier,
+                    lineKind = PassiveDetailLineKindSnapshot.STAT_MODIFIER,
+                    tone = PassiveDetailLineToneSnapshot.SECONDARY,
+                    passiveIndex = passiveIndex,
+                    diagnosticEffectKind = passive.kindId(),
+                )
+
+            is PassiveEffect.ConditionalStatBonus ->
+                statModifierPassiveDetailLines(
+                    modifier = passive.statModifier,
+                    lineKind = PassiveDetailLineKindSnapshot.CONDITIONAL_STAT_BONUS,
+                    tone = PassiveDetailLineToneSnapshot.WARNING,
+                    passiveIndex = passiveIndex,
+                    diagnosticEffectKind = passive.kindId(),
+                    extraPlaceholders =
+                        mapOf(
+                            "condition" to DescriptionValueSnapshot.TextValue(passive.condition.name),
+                            "statusId" to
+                                (
+                                    passive.statusId
+                                        ?.let { statusId -> DescriptionValueSnapshot.StatusValue(statusId = statusId, nameKey = statusNameKey(statusId)) }
+                                        ?: DescriptionValueSnapshot.TextValue("")
+                                ),
+                        ),
+                    leadingArgOrder = listOf("condition", "statusId"),
+                    sortSuffix = passive.condition.name + passive.statusId.orEmpty(),
+                )
+
+            is PassiveEffect.TerrainAffinityBonus ->
+                statModifierPassiveDetailLines(
+                    modifier = passive.statModifier,
+                    lineKind = PassiveDetailLineKindSnapshot.TERRAIN_AFFINITY_BONUS,
+                    tone = PassiveDetailLineToneSnapshot.WARNING,
+                    passiveIndex = passiveIndex,
+                    diagnosticEffectKind = passive.kindId(),
+                    extraPlaceholders = mapOf("terrainTag" to DescriptionValueSnapshot.TextValue(passive.terrainTag.name)),
+                    leadingArgOrder = listOf("terrainTag"),
+                    sortSuffix = passive.terrainTag.name,
+                )
+
+            is PassiveEffect.DamageVsTag ->
+                listOf(
+                    passiveDetailLine(
+                        lineKind = PassiveDetailLineKindSnapshot.DAMAGE_VS_TAG,
+                        tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                        passiveIndex = passiveIndex,
+                        diagnosticEffectKind = passive.kindId(),
+                        placeholders =
+                            mapOf(
+                                "tag" to DescriptionValueSnapshot.TextValue(passive.tag),
+                                "percent" to DescriptionValueSnapshot.TextValue(percentText(passive.bonusPercent)),
+                                "value" to DescriptionValueSnapshot.TextValue(percentText(passive.bonusPercent)),
+                            ),
+                        argOrder = listOf("tag", "percent"),
+                        sortSuffix = passive.tag,
+                    ),
+                )
+
+            is PassiveEffect.DamageVsStatus ->
+                listOf(
+                    passiveDetailLine(
+                        lineKind = PassiveDetailLineKindSnapshot.DAMAGE_VS_STATUS,
+                        tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                        passiveIndex = passiveIndex,
+                        diagnosticEffectKind = passive.kindId(),
+                        placeholders =
+                            mapOf(
+                                "statusId" to DescriptionValueSnapshot.StatusValue(statusId = passive.statusId, nameKey = statusNameKey(passive.statusId)),
+                                "percent" to DescriptionValueSnapshot.TextValue(percentText(passive.bonusPercent)),
+                                "value" to DescriptionValueSnapshot.TextValue(percentText(passive.bonusPercent)),
+                            ),
+                        argOrder = listOf("statusId", "percent"),
+                        sortSuffix = passive.statusId,
+                    ),
+                )
+
+            is PassiveEffect.DamageTypeBonus ->
+                listOf(
+                    passiveDetailLine(
+                        lineKind = PassiveDetailLineKindSnapshot.DAMAGE_TYPE_BONUS,
+                        tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                        passiveIndex = passiveIndex,
+                        diagnosticEffectKind = passive.kindId(),
+                        placeholders =
+                            mapOf(
+                                "damageType" to DescriptionValueSnapshot.TextValue(passive.type.name),
+                                "percent" to DescriptionValueSnapshot.TextValue(percentText(passive.bonusPercent)),
+                                "value" to DescriptionValueSnapshot.TextValue(percentText(passive.bonusPercent)),
+                            ),
+                        argOrder = listOf("damageType", "percent"),
+                        sortSuffix = passive.type.ordinal.toString().padStart(2, '0'),
+                    ),
+                )
+
+            is PassiveEffect.ResistanceBonus ->
+                listOf(
+                    passiveDetailLine(
+                        lineKind = PassiveDetailLineKindSnapshot.RESISTANCE_BONUS,
+                        tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                        passiveIndex = passiveIndex,
+                        diagnosticEffectKind = passive.kindId(),
+                        placeholders =
+                            mapOf(
+                                "damageType" to DescriptionValueSnapshot.TextValue(passive.damageType.name),
+                                "value" to DescriptionValueSnapshot.TextValue(signed(passive.amount)),
+                            ),
+                        argOrder = listOf("damageType", "value"),
+                        sortSuffix = passive.damageType.ordinal.toString().padStart(2, '0'),
+                    ),
+                )
+
+            is PassiveEffect.OnKillResourceRestore ->
+                listOf(
+                    passiveDetailLine(
+                        lineKind = PassiveDetailLineKindSnapshot.ON_KILL_RESOURCE_RESTORE,
+                        tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                        passiveIndex = passiveIndex,
+                        diagnosticEffectKind = passive.kindId(),
+                        placeholders =
+                            mapOf(
+                                "resourceType" to DescriptionValueSnapshot.TextValue(passive.resourceType.name),
+                                "amount" to DescriptionValueSnapshot.IntValue(passive.amount),
+                                "value" to DescriptionValueSnapshot.TextValue(signed(passive.amount)),
+                            ),
+                        argOrder = listOf("amount", "resourceType"),
+                        sortSuffix = passive.resourceType.name,
+                    ),
+                )
+
+            is PassiveEffect.OnHitStatusProc ->
+                listOf(
+                    passiveDetailLine(
+                        lineKind = PassiveDetailLineKindSnapshot.ON_HIT_STATUS_PROC,
+                        tone = PassiveDetailLineToneSnapshot.WARNING,
+                        passiveIndex = passiveIndex,
+                        diagnosticEffectKind = passive.kindId(),
+                        placeholders =
+                            mapOf(
+                                "statusId" to DescriptionValueSnapshot.StatusValue(statusId = passive.statusId, nameKey = statusNameKey(passive.statusId)),
+                                "chancePercent" to DescriptionValueSnapshot.IntValue((passive.chance * 100).roundToInt()),
+                                "duration" to DescriptionValueSnapshot.IntValue(passive.duration),
+                                "magnitude" to DescriptionValueSnapshot.TextValue(percentText(passive.magnitude)),
+                                "value" to DescriptionValueSnapshot.TextValue("${(passive.chance * 100).roundToInt()}%"),
+                            ),
+                        argOrder = listOf("statusId", "chancePercent", "duration", "magnitude"),
+                        sortSuffix = passive.statusId,
+                    ),
+                )
+
+            is PassiveEffect.HpRegenPerTurn ->
+                listOf(
+                    passiveDetailLine(
+                        lineKind = PassiveDetailLineKindSnapshot.HP_REGEN_PER_TURN,
+                        tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                        passiveIndex = passiveIndex,
+                        diagnosticEffectKind = passive.kindId(),
+                        placeholders =
+                            mapOf(
+                                "amount" to DescriptionValueSnapshot.IntValue(passive.amount),
+                                "value" to DescriptionValueSnapshot.TextValue(signed(passive.amount)),
+                            ),
+                        argOrder = listOf("amount"),
+                    ),
+                )
+        }
+
+    private fun statModifierPassiveDetailLines(
+        modifier: StatModifier,
+        lineKind: PassiveDetailLineKindSnapshot,
+        tone: PassiveDetailLineToneSnapshot,
+        passiveIndex: Int,
+        diagnosticEffectKind: String,
+        extraPlaceholders: Map<String, DescriptionValueSnapshot> = emptyMap(),
+        leadingArgOrder: List<String> = emptyList(),
+        sortSuffix: String = "",
+    ): List<PassiveDetailLineSnapshot> =
+        passiveStatDetailValues(modifier).map { stat ->
+            passiveDetailLine(
+                lineKind = lineKind,
+                tone = tone,
+                passiveIndex = passiveIndex,
+                diagnosticEffectKind = diagnosticEffectKind,
+                placeholders =
+                    extraPlaceholders +
+                        mapOf(
+                            "statId" to DescriptionValueSnapshot.TextValue(stat.statId),
+                            "value" to DescriptionValueSnapshot.TextValue(stat.value),
+                        ),
+                argOrder = leadingArgOrder + listOf("statId", "value"),
+                sortSuffix = "$sortSuffix:${stat.order.toString().padStart(2, '0')}:${stat.statId}",
+            )
+        }
+
+    private fun passiveStatDetailValues(modifier: StatModifier): List<PassiveStatDetailValue> =
+        buildList {
+            addIntStat("str", modifier.str)
+            addIntStat("dex", modifier.dex)
+            addIntStat("con", modifier.con)
+            addIntStat("wil", modifier.wil)
+            addIntStat("maxHp", modifier.maxHp)
+            addIntStat("maxStamina", modifier.maxStamina)
+            addIntStat("attack", modifier.attack)
+            addIntStat("defense", modifier.defense)
+            addIntStat("accuracy", modifier.accuracy)
+            addIntStat("evasion", modifier.evasion)
+            addIntStat("speed", modifier.speed)
+            addDecimalStat("castSpeedRating", DiminishingReturns.effectiveCastSpeed(modifier.castSpeedRating))
+            addDecimalStat("hpRegen", DiminishingReturns.effectiveHpRegen(modifier.hpRegen))
+            addDecimalStat("staminaRegen", modifier.staminaRegen)
+            addPercentStat("critChance", modifier.critChance)
+            addPercentStat("talentPower", modifier.talentPower)
+            addPercentStat("attackMultiplierBonus", modifier.attackMultiplierBonus)
+            addPercentStat("defenseMultiplierBonus", modifier.defenseMultiplierBonus)
+        }
+
+    private fun MutableList<PassiveStatDetailValue>.addIntStat(
+        statId: String,
+        value: Int,
+    ) {
+        if (value != 0) {
+            add(PassiveStatDetailValue(statId = statId, value = signed(value), order = size))
+        }
+    }
+
+    private fun MutableList<PassiveStatDetailValue>.addDecimalStat(
+        statId: String,
+        value: Double,
+    ) {
+        if (value != 0.0) {
+            add(PassiveStatDetailValue(statId = statId, value = signedDecimal(value), order = size))
+        }
+    }
+
+    private fun MutableList<PassiveStatDetailValue>.addPercentStat(
+        statId: String,
+        value: Double,
+    ) {
+        if (value != 0.0) {
+            add(PassiveStatDetailValue(statId = statId, value = percentText(value), order = size))
+        }
+    }
+
+    private fun passiveDetailLine(
+        lineKind: PassiveDetailLineKindSnapshot,
+        tone: PassiveDetailLineToneSnapshot,
+        passiveIndex: Int,
+        diagnosticEffectKind: String,
+        placeholders: Map<String, DescriptionValueSnapshot>,
+        argOrder: List<String>,
+        sortSuffix: String = "",
+    ): PassiveDetailLineSnapshot =
+        PassiveDetailLineSnapshot(
+            lineKind = lineKind,
+            labelKey = passiveDetailLabelKey(lineKind),
+            valueToken =
+                RenderTextTokenSnapshot(
+                    key = passiveDetailTemplateKey(lineKind),
+                    arguments =
+                        argOrder.mapNotNull { name ->
+                            placeholders[name]?.let { value -> passiveDetailArgument(name = name, value = value) }
+                        },
+                ),
+            diagnosticArgs = placeholders.mapValues { (_, value) -> passiveDetailDiagnosticArg(value) },
+            sortKey =
+                listOf(
+                    passiveIndex.toString().padStart(2, '0'),
+                    lineKind.name,
+                    sortSuffix,
+                ).joinToString(":"),
+            tone = tone,
+            diagnosticEffectKind = diagnosticEffectKind,
+        )
+
+    private fun passiveDeltaLines(
+        currentLines: List<PassiveDetailLineSnapshot>,
+        nextLines: List<PassiveDetailLineSnapshot>,
+    ): List<PassiveDetailDeltaLineSnapshot> {
+        val currentBySortKey = currentLines.associateBy(PassiveDetailLineSnapshot::sortKey)
+        return nextLines.map { next ->
+            val currentValue = currentBySortKey[next.sortKey]?.diagnosticArgs?.get("value") ?: "0"
+            val nextValue = next.diagnosticArgs.getValue("value")
+            PassiveDetailDeltaLineSnapshot(
+                lineKind = next.lineKind,
+                labelKey = next.labelKey,
+                valueToken =
+                    next.valueToken.copy(
+                        key = passiveDetailDeltaTemplateKey(next.lineKind),
+                        arguments =
+                            next.valueToken.arguments +
+                                listOf(
+                                    literalArg("before", currentValue),
+                                    literalArg("after", nextValue),
+                                ),
+                    ),
+                diagnosticArgs =
+                    next.diagnosticArgs +
+                        mapOf(
+                            "before" to currentValue,
+                            "after" to nextValue,
+                        ),
+                sortKey = next.sortKey,
+                tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                diagnosticEffectKind = next.diagnosticEffectKind,
+            )
+        }
+    }
+
+    private fun passiveDetailArgument(
+        name: String,
+        value: DescriptionValueSnapshot,
+    ): RenderTextArgumentSnapshot =
+        when (value) {
+            is DescriptionValueSnapshot.BooleanValue -> literalArg(name, value.value)
+            is DescriptionValueSnapshot.DecimalValue -> literalArg(name, value.value)
+            is DescriptionValueSnapshot.IntValue -> literalArg(name, value.value)
+            is DescriptionValueSnapshot.StatusValue -> keyArg(name, value.nameKey)
+            is DescriptionValueSnapshot.TextValue -> passiveDetailTextArgument(name = name, value = value.value)
+        }
+
+    private fun passiveDetailTextArgument(
+        name: String,
+        value: String,
+    ): RenderTextArgumentSnapshot =
+        when (name) {
+            "statId" -> keyArg(name, passiveStatLabelKey(value))
+            "damageType" -> keyArg(name, damageTypeLabelKey(DamageType.valueOf(value)))
+            "resourceType" -> keyArg(name, resourceLabelKey(ResourceType.fromId(value).name))
+            "condition" -> keyArg(name, passiveConditionLabelKey(PassiveCondition.valueOf(value)))
+            "terrainTag" -> keyArg(name, terrainTagLabelKey(TerrainTag.valueOf(value)))
+            "tag" ->
+                damageVsTagLabelKeyOrNull(value)
+                    ?.let { key -> keyArg(name, key) }
+                    ?: literalArg(name, value)
+
+            else -> literalArg(name, value)
+        }
+
+    private fun passiveDetailDiagnosticArg(value: DescriptionValueSnapshot): String =
+        when (value) {
+            is DescriptionValueSnapshot.BooleanValue -> value.value.toString()
+            is DescriptionValueSnapshot.DecimalValue -> value.value.toString()
+            is DescriptionValueSnapshot.IntValue -> value.value.toString()
+            is DescriptionValueSnapshot.StatusValue -> value.statusId
+            is DescriptionValueSnapshot.TextValue -> value.value
+        }
+
+    private fun passiveDetailLabelKey(lineKind: PassiveDetailLineKindSnapshot): String =
+        when (lineKind) {
+            PassiveDetailLineKindSnapshot.STAT_MODIFIER -> "ui.talent.passive.detail.kind.stat_modifier"
+            PassiveDetailLineKindSnapshot.ON_KILL_RESOURCE_RESTORE -> "ui.talent.passive.detail.kind.on_kill_resource_restore"
+            PassiveDetailLineKindSnapshot.CONDITIONAL_STAT_BONUS -> "ui.talent.passive.detail.kind.conditional_stat_bonus"
+            PassiveDetailLineKindSnapshot.DAMAGE_VS_STATUS -> "ui.talent.passive.detail.kind.damage_vs_status"
+            PassiveDetailLineKindSnapshot.DAMAGE_TYPE_BONUS -> "ui.talent.passive.detail.kind.damage_type_bonus"
+            PassiveDetailLineKindSnapshot.RESISTANCE_BONUS -> "ui.talent.passive.detail.kind.resistance_bonus"
+            PassiveDetailLineKindSnapshot.HP_REGEN_PER_TURN -> "ui.talent.passive.detail.kind.hp_regen_per_turn"
+            PassiveDetailLineKindSnapshot.ON_HIT_STATUS_PROC -> "ui.talent.passive.detail.kind.on_hit_status_proc"
+            PassiveDetailLineKindSnapshot.TERRAIN_AFFINITY_BONUS -> "ui.talent.passive.detail.kind.terrain_affinity_bonus"
+            PassiveDetailLineKindSnapshot.DAMAGE_VS_TAG -> "ui.talent.passive.detail.kind.damage_vs_tag"
+        }
+
+    private fun passiveDetailTemplateKey(lineKind: PassiveDetailLineKindSnapshot): String =
+        when (lineKind) {
+            PassiveDetailLineKindSnapshot.STAT_MODIFIER -> "ui.talent.passive.detail.stat_modifier"
+            PassiveDetailLineKindSnapshot.ON_KILL_RESOURCE_RESTORE -> "ui.talent.passive.detail.on_kill_resource_restore"
+            PassiveDetailLineKindSnapshot.CONDITIONAL_STAT_BONUS -> "ui.talent.passive.detail.conditional_stat_bonus"
+            PassiveDetailLineKindSnapshot.DAMAGE_VS_STATUS -> "ui.talent.passive.detail.damage_vs_status"
+            PassiveDetailLineKindSnapshot.DAMAGE_TYPE_BONUS -> "ui.talent.passive.detail.damage_type_bonus"
+            PassiveDetailLineKindSnapshot.RESISTANCE_BONUS -> "ui.talent.passive.detail.resistance_bonus"
+            PassiveDetailLineKindSnapshot.HP_REGEN_PER_TURN -> "ui.talent.passive.detail.hp_regen_per_turn"
+            PassiveDetailLineKindSnapshot.ON_HIT_STATUS_PROC -> "ui.talent.passive.detail.on_hit_status_proc"
+            PassiveDetailLineKindSnapshot.TERRAIN_AFFINITY_BONUS -> "ui.talent.passive.detail.terrain_affinity_bonus"
+            PassiveDetailLineKindSnapshot.DAMAGE_VS_TAG -> "ui.talent.passive.detail.damage_vs_tag"
+        }
+
+    private fun passiveDetailDeltaTemplateKey(lineKind: PassiveDetailLineKindSnapshot): String =
+        when (lineKind) {
+            PassiveDetailLineKindSnapshot.STAT_MODIFIER -> "ui.talent.passive.detail.stat_modifier.delta"
+            PassiveDetailLineKindSnapshot.ON_KILL_RESOURCE_RESTORE -> "ui.talent.passive.detail.on_kill_resource_restore.delta"
+            PassiveDetailLineKindSnapshot.CONDITIONAL_STAT_BONUS -> "ui.talent.passive.detail.conditional_stat_bonus.delta"
+            PassiveDetailLineKindSnapshot.DAMAGE_VS_STATUS -> "ui.talent.passive.detail.damage_vs_status.delta"
+            PassiveDetailLineKindSnapshot.DAMAGE_TYPE_BONUS -> "ui.talent.passive.detail.damage_type_bonus.delta"
+            PassiveDetailLineKindSnapshot.RESISTANCE_BONUS -> "ui.talent.passive.detail.resistance_bonus.delta"
+            PassiveDetailLineKindSnapshot.HP_REGEN_PER_TURN -> "ui.talent.passive.detail.hp_regen_per_turn.delta"
+            PassiveDetailLineKindSnapshot.ON_HIT_STATUS_PROC -> "ui.talent.passive.detail.on_hit_status_proc.delta"
+            PassiveDetailLineKindSnapshot.TERRAIN_AFFINITY_BONUS -> "ui.talent.passive.detail.terrain_affinity_bonus.delta"
+            PassiveDetailLineKindSnapshot.DAMAGE_VS_TAG -> "ui.talent.passive.detail.damage_vs_tag.delta"
+        }
+
+    private fun passiveStatLabelKey(statId: String): String =
+        when (statId) {
+            "str" -> "ui.stat.str"
+            "dex" -> "ui.stat.dex"
+            "con" -> "ui.stat.con"
+            "wil" -> "ui.stat.wil"
+            "maxHp" -> "ui.hud.hp.short"
+            "maxStamina" -> "ui.hud.stamina.short"
+            "attack" -> "ui.hud.attack.short"
+            "defense" -> "ui.hud.defense.short"
+            "accuracy" -> "ui.hud.accuracy.short"
+            "evasion" -> "ui.hud.evasion.short"
+            "speed" -> "ui.hud.speed.short"
+            "castSpeedRating" -> "ui.inspect.mod.cast_speed"
+            "hpRegen" -> "ui.inspect.mod.hp_regen"
+            "staminaRegen" -> "ui.inspect.mod.stamina_regen"
+            "critChance" -> "ui.inspect.mod.crit"
+            "talentPower" -> "ui.inspect.mod.talent"
+            "attackMultiplierBonus" -> "ui.inspect.mod.attack_multiplier_bonus"
+            "defenseMultiplierBonus" -> "ui.inspect.mod.defense_multiplier_bonus"
+            else -> error("Unsupported passive detail stat '$statId'.")
+        }
+
+    private fun percentText(value: Double): String = signed((value * 100).roundToInt()) + "%"
 
     private fun toTalentNodePrerequisiteSnapshot(
         prerequisite: TalentPrerequisiteSchemaV2,
@@ -10741,7 +11309,7 @@ class FoundationGameSession internal constructor(
                 target = target,
                 damageType = DamageType.PHYSICAL,
                 damageMultiplier = damageAdjustment.multiplier,
-                callbacks = buildEquipmentPassiveCallbacks(attacker),
+                callbacks = buildPassiveCallbacks(attacker),
             )
 
         if (!result.hit) {
@@ -11504,56 +12072,111 @@ class FoundationGameSession internal constructor(
 
     private fun applyTurnStartPassives(actorId: EntityId) {
         val health = world.get<Health>(actorId) ?: return
-        var refreshed = false
-        PassiveEffectResolver.equippedPassives(world, actorId).forEach { source ->
-            when (val passive = source.passive) {
-                is EquipmentPassive.HpRegenPerTurn -> {
-                    val before = health.current
-                    health.current = (health.current + passive.amount).coerceAtMost(health.max)
-                    val restored = health.current - before
-                    if (restored > 0 && actorId == playerId) {
-                        recordFrontstagePassiveCue(
-                            "log.passive.hp_regen",
-                            priority = FrontstageActionPrioritySnapshot.LOW,
-                            stableKey = "passive:hp_regen:${source.item.baseId}",
-                            itemDisplayArgument("item", source.item),
-                            literalArg("amount", restored),
-                        )
-                    }
-                    refreshed = refreshed || restored > 0
-                }
+        val derived = world.get<DerivedStats>(actorId) ?: StatsCalculator.recalculateAndStore(world, actorId)
+        val amount = derived.hpRegen.roundToInt().coerceAtLeast(0)
+        if (amount <= 0) {
+            return
+        }
+        val before = health.current
+        health.current = (health.current + amount).coerceAtMost(health.max)
+        val restored = health.current - before
+        if (restored <= 0) {
+            return
+        }
+        if (actorId == playerId) {
+            recordEquipmentHpRegenCue(actorId = actorId, restored = restored)
+        }
+    }
 
-                is EquipmentPassive.OnHitStatusProc,
-                is EquipmentPassive.OnKillResourceRestore,
-                is EquipmentPassive.ConditionalStatBonus,
-                is EquipmentPassive.TerrainAffinityBonus,
-                is EquipmentPassive.DamageVsStatus,
-                is EquipmentPassive.DamageTypeBonus,
-                is EquipmentPassive.DamageVsTag,
-                is EquipmentPassive.ResistanceBonus,
-                -> Unit
+    private fun recordEquipmentHpRegenCue(
+        actorId: EntityId,
+        restored: Int,
+    ) {
+        val equipmentRegenSources =
+            PassiveEffectResolver.equipmentPassiveSources(world, actorId)
+                .filter { source -> source.passive is PassiveEffect.HpRegenPerTurn }
+        if (equipmentRegenSources.isEmpty()) {
+            return
+        }
+        val attributableSources =
+            equipmentRegenSources.mapNotNull { source ->
+                val passive = source.passive as PassiveEffect.HpRegenPerTurn
+                val item = equipmentItemForPassiveSource(actorId, source) ?: return@mapNotNull null
+                Triple(source, item, passive.amount)
             }
+        val totalRawEquipmentRegen = attributableSources.sumOf { (_, _, amount) -> amount }
+        if (totalRawEquipmentRegen <= 0) {
+            return
         }
-        if (refreshed) {
-            refreshActorDerivedStats(actorId)
+        val baseAllocations =
+            attributableSources.map { (_, _, amount) -> restored * amount / totalRawEquipmentRegen }.toMutableList()
+        var remaining = restored - baseAllocations.sum()
+        attributableSources.indices
+            .sortedWith(
+                compareByDescending<Int> { index -> restored * attributableSources[index].third % totalRawEquipmentRegen }
+                    .thenBy { index -> attributableSources[index].first.sourceTemplateId }
+                    .thenBy { index -> attributableSources[index].first.sourceId },
+            )
+            .forEach { index ->
+                if (remaining > 0) {
+                    baseAllocations[index] += 1
+                    remaining -= 1
+                }
+            }
+        attributableSources.forEachIndexed { index, (source, item, _) ->
+            val attributed = baseAllocations[index]
+            if (attributed <= 0) {
+                return@forEachIndexed
+            }
+            recordFrontstagePassiveCue(
+                "log.passive.hp_regen",
+                priority = FrontstageActionPrioritySnapshot.LOW,
+                stableKey = "passive:hp_regen:${source.sourceTemplateId}",
+                itemDisplayArgument("item", item),
+                literalArg("amount", attributed),
+            )
         }
+    }
+
+    private fun passiveSources(actorId: EntityId): List<PassiveSource> =
+        PassiveEffectResolver.equipmentPassiveSources(world, actorId) + talentPassiveSources(actorId)
+
+    private fun talentPassiveSources(actorId: EntityId): List<PassiveSource> {
+        val loadout = world.get<TalentLoadout>(actorId) ?: return emptyList()
+        return loadout.talentLevels
+            .asSequence()
+            .filter { (_, rank) -> rank > 0 }
+            .flatMap { (talentId, rank) ->
+                val definition = talentRegistry.get(talentId) ?: return@flatMap emptySequence()
+                val levelEffect = definition.levelEffects[rank.coerceIn(1, definition.maxLevel)] ?: return@flatMap emptySequence()
+                levelEffect.passiveEffects.asSequence().map { passive ->
+                    PassiveSource(
+                        kind = PassiveSourceKind.TALENT,
+                        sourceId = "talent:$talentId:rank$rank:${passive.kindId()}",
+                        sourceTemplateId = talentId,
+                        talentRank = rank,
+                        passive = passive,
+                    )
+                }
+            }
+            .toList()
     }
 
     private fun refreshActorDerivedStats(actorId: EntityId) {
         if (world.get<Stats>(actorId) == null || world.get<com.ktome.core.ecs.CombatProfile>(actorId) == null) {
             return
         }
-        syncEquipmentPassiveStatModifier(actorId)
+        syncPassiveStatModifier(actorId)
         StatsCalculator.recalculateAndStore(world, actorId)
         if (actorId == playerId) {
             syncPlayerResistanceProfile()
         }
     }
 
-    private fun syncEquipmentPassiveStatModifier(actorId: EntityId) {
+    private fun syncPassiveStatModifier(actorId: EntityId) {
         val health = world.get<Health>(actorId)
-        val currentComponent = world.get<EquipmentPassiveStatModifier>(actorId)
-        val passiveFreeDerived = StatsCalculator.calculateWithoutEquipmentPassive(world, actorId)
+        val currentComponent = world.get<PassiveStatModifier>(actorId)
+        val passiveFreeDerived = StatsCalculator.calculateWithoutPassive(world, actorId)
         val passiveFreeMaxHp = passiveFreeDerived.maxHp.coerceAtLeast(1)
         val passiveMaxHpDelta = (health?.max ?: passiveFreeMaxHp) - passiveFreeMaxHp
         val underlyingCurrentHp =
@@ -11578,7 +12201,7 @@ class FoundationGameSession internal constructor(
                 .orEmpty()
         val statAdjustment =
             PassiveEffectResolver.resolveStatAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actorId),
+                passives = passiveSources(actorId),
                 context =
                     PassiveStatContext(
                         healthFraction = healthFraction,
@@ -11588,14 +12211,14 @@ class FoundationGameSession internal constructor(
             )
         if (statAdjustment.modifier == StatModifier.ZERO) {
             if (currentComponent != null) {
-                world.remove<EquipmentPassiveStatModifier>(actorId)
+                world.remove<PassiveStatModifier>(actorId)
             }
             return
         }
         if (currentComponent?.modifier != statAdjustment.modifier) {
             world.add(
                 actorId,
-                EquipmentPassiveStatModifier(
+                PassiveStatModifier(
                     modifier = statAdjustment.modifier,
                 ),
             )
@@ -11604,7 +12227,7 @@ class FoundationGameSession internal constructor(
 
     private fun syncPlayerResistanceProfile() {
         val combined = playerBaseResistanceValues.toMutableMap()
-        PassiveEffectResolver.resistanceBonuses(PassiveEffectResolver.equippedPassives(world, playerId)).forEach { (type, amount) ->
+        PassiveEffectResolver.resistanceBonuses(passiveSources(playerId)).forEach { (type, amount) ->
             combined[type] = (combined[type] ?: 0) + amount
         }
         val currentProfile = world.get<ResistanceProfile>(playerId)
@@ -11645,7 +12268,7 @@ class FoundationGameSession internal constructor(
                 .orEmpty()
         val passiveAdjustment =
             PassiveEffectResolver.resolveDamageAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, attacker),
+                passives = passiveSources(attacker),
                 targetTags = targetTags,
                 targetStatusIds = targetStatusIds,
                 damageType = damageType,
@@ -11745,8 +12368,8 @@ class FoundationGameSession internal constructor(
         return monsterTags + statusTags
     }
 
-    private fun buildEquipmentPassiveCallbacks(attacker: EntityId): List<PipelineCallback> {
-        val passives = PassiveEffectResolver.equippedPassives(world, attacker)
+    private fun buildPassiveCallbacks(attacker: EntityId): List<PipelineCallback> {
+        val passives = passiveSources(attacker)
         if (passives.isEmpty()) {
             return emptyList()
         }
@@ -11755,7 +12378,7 @@ class FoundationGameSession internal constructor(
             callbacks +=
                 PipelineCallback(
                     ownerId = attacker,
-                    callbackName = "item_passive_on_hit:${trigger.source.item.baseId}:${trigger.source.affixId ?: "base"}",
+                    callbackName = "passive_on_hit:${trigger.source.sourceId}",
                     phase = com.ktome.core.combat.CombatCallbackPhase.ON_DAMAGE_APPLIED,
                     priority = 220,
                 ) { context ->
@@ -11769,10 +12392,19 @@ class FoundationGameSession internal constructor(
                     if (triggered) {
                         context.recordPassiveTrigger(
                             PassiveTriggerTrace(
-                                passiveKind = EquipmentPassiveKindIds.ON_HIT_STATUS_PROC,
-                                sourceItemBaseId = trigger.source.item.baseId,
+                                passiveKind = PassiveEffectKindIds.ON_HIT_STATUS_PROC,
+                                sourceId = trigger.source.sourceId,
+                                sourceKind = trigger.source.kind.name,
+                                sourceTemplateId = trigger.source.sourceTemplateId,
+                                talentRank = trigger.source.talentRank,
+                                sourceItemBaseId =
+                                    if (trigger.source.kind == PassiveSourceKind.EQUIPMENT) {
+                                        trigger.source.sourceTemplateId
+                                    } else {
+                                        ""
+                                    },
                                 sourceAffixId = trigger.source.affixId,
-                                sourceSpecialTemplateId = trigger.source.item.specialTemplateId,
+                                sourceSpecialTemplateId = trigger.source.sourceSpecialTemplateId,
                                 statusId = trigger.statusId,
                                 triggeredCount = 1,
                                 duration = trigger.duration,
@@ -11789,16 +12421,25 @@ class FoundationGameSession internal constructor(
             callbacks +=
                 PipelineCallback(
                     ownerId = attacker,
-                    callbackName = "item_passive_on_kill:${trigger.source.item.baseId}:${trigger.source.affixId ?: "base"}",
+                    callbackName = "passive_on_kill:${trigger.source.sourceId}",
                     phase = com.ktome.core.combat.CombatCallbackPhase.ON_KILL,
                     priority = 230,
                 ) { context ->
                     context.recordPassiveTrigger(
                         PassiveTriggerTrace(
-                            passiveKind = EquipmentPassiveKindIds.ON_KILL_RESOURCE_RESTORE,
-                            sourceItemBaseId = trigger.source.item.baseId,
+                            passiveKind = PassiveEffectKindIds.ON_KILL_RESOURCE_RESTORE,
+                            sourceId = trigger.source.sourceId,
+                            sourceKind = trigger.source.kind.name,
+                            sourceTemplateId = trigger.source.sourceTemplateId,
+                            talentRank = trigger.source.talentRank,
+                            sourceItemBaseId =
+                                if (trigger.source.kind == PassiveSourceKind.EQUIPMENT) {
+                                    trigger.source.sourceTemplateId
+                                } else {
+                                    ""
+                                },
                             sourceAffixId = trigger.source.affixId,
-                            sourceSpecialTemplateId = trigger.source.item.specialTemplateId,
+                            sourceSpecialTemplateId = trigger.source.sourceSpecialTemplateId,
                             resourceType = trigger.resourceType.name,
                             triggeredCount = 1,
                             amount = trigger.amount,
@@ -11823,8 +12464,8 @@ class FoundationGameSession internal constructor(
     ) {
         triggers.forEach { trigger ->
             when (trigger.passiveKind) {
-                EquipmentPassiveKindIds.ON_HIT_STATUS_PROC -> applyTriggeredStatusProc(attacker = attacker, target = target, trigger = trigger)
-                EquipmentPassiveKindIds.ON_KILL_RESOURCE_RESTORE -> Unit // Applied in the ON_KILL callback path.
+                PassiveEffectKindIds.ON_HIT_STATUS_PROC -> applyTriggeredStatusProc(attacker = attacker, target = target, trigger = trigger)
+                PassiveEffectKindIds.ON_KILL_RESOURCE_RESTORE -> Unit // Applied in the ON_KILL callback path.
                 else -> Unit
             }
         }
@@ -11864,7 +12505,7 @@ class FoundationGameSession internal constructor(
                 target,
                 com.ktome.core.status.StatusLifecycle.createInstance(
                     type = statusType,
-                    effectId = "item_passive:${trigger.sourceItemBaseId}:${statusId}:${target.value}:$turnCount",
+                    effectId = "passive:${trigger.sourceKind}:${trigger.sourceTemplateId}:$statusId:${target.value}:$turnCount",
                     duration = duration,
                     magnitude = trigger.magnitude ?: 0.0,
                     sourceEntityId = attacker,
@@ -11889,8 +12530,8 @@ class FoundationGameSession internal constructor(
             recordFrontstagePassiveCue(
                 "log.passive.on_hit_status",
                 priority = FrontstageActionPrioritySnapshot.MEDIUM,
-                stableKey = "passive:on_hit_status:${source.item.baseId}:$statusId",
-                itemDisplayArgument("item", source.item),
+                stableKey = passiveStableKey(source, "on_hit_status:$statusId"),
+                passiveSourceDisplayArgument("item", attacker, source),
                 entityArg("target", target),
                 keyArg("status", statusNameKey(statusId)),
                 literalArg("turns", duration),
@@ -11902,7 +12543,7 @@ class FoundationGameSession internal constructor(
         attacker: EntityId,
     ) {
         val pools = world.get<com.ktome.core.resource.ResourcePools>(attacker) ?: return
-        PassiveEffectResolver.onKillResourceRestores(PassiveEffectResolver.equippedPassives(world, attacker)).forEach { trigger ->
+        PassiveEffectResolver.onKillResourceRestores(passiveSources(attacker)).forEach { trigger ->
             val pool = pools.pool(trigger.resourceType) ?: return@forEach
             val before = pool.current
             pool.restore(trigger.amount)
@@ -11911,8 +12552,8 @@ class FoundationGameSession internal constructor(
                 recordFrontstagePassiveCue(
                     "log.passive.on_kill_resource_restore",
                     priority = FrontstageActionPrioritySnapshot.MEDIUM,
-                    stableKey = "passive:on_kill_resource_restore:${trigger.source.item.baseId}:${trigger.resourceType.name}",
-                    itemDisplayArgument("item", trigger.source.item),
+                    stableKey = passiveStableKey(trigger.source, "on_kill_resource_restore:${trigger.resourceType.name}"),
+                    passiveSourceDisplayArgument("item", attacker, trigger.source),
                     literalArg("amount", restored),
                     keyArg("resource", resourceLabelKey(trigger.resourceType.name)),
                 )
@@ -11923,73 +12564,160 @@ class FoundationGameSession internal constructor(
     private fun findTriggeredPassiveSource(
         attacker: EntityId,
         trigger: PassiveTriggerTrace,
-    ): EquippedPassiveSource? =
-        PassiveEffectResolver.equippedPassives(world, attacker).firstOrNull { source ->
-            source.item.baseId == trigger.sourceItemBaseId &&
+    ): PassiveSource? =
+        passiveSources(attacker).firstOrNull { source ->
+            (trigger.sourceId.isBlank() || source.sourceId == trigger.sourceId) &&
+                source.kind.name == trigger.sourceKind &&
+                source.sourceTemplateId == trigger.sourceTemplateId &&
                 source.affixId == trigger.sourceAffixId &&
-                source.item.specialTemplateId == trigger.sourceSpecialTemplateId &&
+                source.sourceSpecialTemplateId == trigger.sourceSpecialTemplateId &&
+                source.talentRank == trigger.talentRank &&
                 source.passive.kindId() == trigger.passiveKind
         }
 
     private fun logTriggeredDamagePassives(
         attacker: EntityId,
-        sources: List<EquippedPassiveSource>,
+        sources: List<PassiveSource>,
     ) {
         if (attacker != playerId || sources.isEmpty()) {
             return
         }
-        val distinctSources = sources.distinctBy { source -> source.item.baseId to source.passive }
+        val distinctSources = sources.distinctBy { source -> source.sourceId to source.passive }
         recordAffixSynergyActivations(distinctSources)
         distinctSources.forEach { source ->
-            val itemArgument = itemDisplayArgument("item", source.item)
+            val itemArgument = passiveSourceDisplayArgument("item", attacker, source)
             when (val passive = source.passive) {
-                is EquipmentPassive.DamageVsTag ->
+                is PassiveEffect.DamageVsTag ->
                     recordFrontstagePassiveCue(
                         "log.passive.damage_bonus_vs_tag",
                         priority = FrontstageActionPrioritySnapshot.MEDIUM,
-                        stableKey = "passive:damage_bonus:${source.item.baseId}:vs_tag:${passive.tag}",
+                        stableKey = passiveStableKey(source, "damage_bonus:vs_tag:${passive.tag}"),
                         itemArgument,
                         monsterTagArg("tag", passive.tag),
                         literalArg("amount", (passive.bonusPercent * 100).toInt()),
                     )
 
-                is EquipmentPassive.DamageVsStatus ->
+                is PassiveEffect.DamageVsStatus ->
                     recordFrontstagePassiveCue(
                         "log.passive.damage_bonus_vs_status",
                         priority = FrontstageActionPrioritySnapshot.MEDIUM,
-                        stableKey = "passive:damage_bonus:${source.item.baseId}:vs_status:${passive.statusId}",
+                        stableKey = passiveStableKey(source, "damage_bonus:vs_status:${passive.statusId}"),
                         itemArgument,
                         keyArg("status", statusNameKey(passive.statusId)),
                         literalArg("amount", (passive.bonusPercent * 100).toInt()),
                     )
 
-                is EquipmentPassive.DamageTypeBonus ->
+                is PassiveEffect.DamageTypeBonus ->
                     recordFrontstagePassiveCue(
                         "log.passive.damage_bonus_type",
                         priority = FrontstageActionPrioritySnapshot.MEDIUM,
-                        stableKey = "passive:damage_bonus:${source.item.baseId}:type:${passive.type.name}",
+                        stableKey = passiveStableKey(source, "damage_bonus:type:${passive.type.name}"),
                         itemArgument,
                         keyArg("damageType", damageTypeLabelKey(passive.type)),
                         literalArg("amount", (passive.bonusPercent * 100).toInt()),
                     )
 
-                is EquipmentPassive.OnHitStatusProc,
-                is EquipmentPassive.OnKillResourceRestore,
-                is EquipmentPassive.ConditionalStatBonus,
-                is EquipmentPassive.TerrainAffinityBonus,
-                is EquipmentPassive.HpRegenPerTurn,
-                is EquipmentPassive.ResistanceBonus,
+                is PassiveEffect.OnHitStatusProc,
+                is PassiveEffect.OnKillResourceRestore,
+                is PassiveEffect.ConditionalStatBonus,
+                is PassiveEffect.TerrainAffinityBonus,
+                is PassiveEffect.StatModifierEffect,
+                is PassiveEffect.HpRegenPerTurn,
+                is PassiveEffect.ResistanceBonus,
                 -> Unit
             }
         }
     }
 
-    private fun recordAffixSynergyActivations(sources: List<EquippedPassiveSource>) {
+    private fun recordAffixSynergyActivations(sources: List<PassiveSource>) {
         sources.forEach { source ->
-            val passive = source.passive as? EquipmentPassive.DamageVsStatus ?: return@forEach
-            val affixId = source.item.affixes.firstOrNull { affix -> affix.passive == passive }?.id ?: return@forEach
+            val passive = source.passive as? PassiveEffect.DamageVsStatus ?: return@forEach
+            val item = equipmentItemForPassiveSource(playerId, source) ?: return@forEach
+            val affixId = item.affixes.firstOrNull { affix -> affix.passive == passive }?.id ?: return@forEach
             affixSynergyActivationCounts[affixId] = (affixSynergyActivationCounts[affixId] ?: 0) + 1
         }
+    }
+
+    private fun passiveStableKey(
+        source: PassiveSource,
+        effectKind: String,
+    ): String =
+        when (source.kind) {
+            PassiveSourceKind.EQUIPMENT -> equipmentPassiveStableKey(sourceTemplateId = source.sourceTemplateId, effectKind = effectKind)
+            PassiveSourceKind.TALENT -> {
+                val rank =
+                    requireNotNull(source.talentRank) {
+                        "Talent passive source '${source.sourceTemplateId}' must carry talentRank."
+                    }
+                "passive:talent:${source.sourceTemplateId}:$effectKind:rank$rank"
+            }
+        }
+
+    private fun equipmentPassiveStableKey(
+        sourceTemplateId: String,
+        effectKind: String,
+    ): String {
+        val parts = effectKind.split(":")
+        return when (parts.firstOrNull()) {
+            "on_hit_status" -> {
+                require(parts.size == 2) { "Equipment on-hit passive stable key requires status id." }
+                "passive:on_hit_status:$sourceTemplateId:${parts[1]}"
+            }
+
+            "on_kill_resource_restore" -> {
+                require(parts.size == 2) { "Equipment on-kill passive stable key requires resource type." }
+                "passive:on_kill_resource_restore:$sourceTemplateId:${parts[1]}"
+            }
+
+            "damage_bonus" -> {
+                require(parts.size >= 3) { "Equipment damage passive stable key requires bonus subtype." }
+                "passive:damage_bonus:$sourceTemplateId:${parts.drop(1).joinToString(":")}"
+            }
+
+            else -> error("Unsupported equipment passive stable effect '$effectKind'.")
+        }
+    }
+
+    private fun passiveSourceDisplayArgument(
+        name: String,
+        actorId: EntityId,
+        source: PassiveSource,
+    ): RenderTextArgumentSnapshot =
+        when (source.kind) {
+            PassiveSourceKind.EQUIPMENT ->
+                equipmentItemForPassiveSource(actorId, source)
+                    ?.let { item -> itemDisplayArgument(name, item) }
+                    ?: literalArg(name, source.sourceTemplateId)
+
+            PassiveSourceKind.TALENT ->
+                talentRegistry.get(source.sourceTemplateId)
+                    ?.let { definition -> keyArg(name, definition.nameKey) }
+                    ?: literalArg(name, source.sourceTemplateId)
+        }
+
+    private fun equipmentItemForPassiveSource(
+        actorId: EntityId,
+        source: PassiveSource,
+    ): ItemInstance? {
+        if (source.kind != PassiveSourceKind.EQUIPMENT) {
+            return null
+        }
+        source.itemEntityId?.let { itemId ->
+            return world.get<ItemInstance>(itemId)
+                ?.takeIf { item ->
+                    item.baseId == source.sourceTemplateId &&
+                        item.specialTemplateId == source.sourceSpecialTemplateId &&
+                        (source.affixId?.let { affixId -> item.affixes.any { affix -> affix.id == affixId } } ?: true)
+                }
+        }
+        return world.get<Equipment>(actorId)?.slots?.values
+            ?.asSequence()
+            ?.mapNotNull { itemId -> world.get<ItemInstance>(itemId) }
+            ?.firstOrNull { item ->
+                item.baseId == source.sourceTemplateId &&
+                    item.specialTemplateId == source.sourceSpecialTemplateId &&
+                    (source.affixId?.let { affixId -> item.affixes.any { affix -> affix.id == affixId } } ?: true)
+            }
     }
 
     private fun logTriggeredTalentDamagePassives(result: com.ktome.core.talent.TalentResult) {
@@ -13788,7 +14516,19 @@ class FoundationGameSession internal constructor(
 
     private fun addMessage(message: RenderLogEventSnapshot) {
         recordMessage(message)
+        appendWhiteboxAppLog(message)
         invalidateRenderSnapshot()
+    }
+
+    private fun appendWhiteboxAppLog(message: RenderLogEventSnapshot) {
+        val path = whiteboxAppLogPath ?: return
+        Files.createDirectories(path.parent)
+        Files.writeString(
+            path,
+            "key=${message.message.key} text=${render(message.message)}\n",
+            StandardOpenOption.CREATE,
+            StandardOpenOption.APPEND,
+        )
     }
 
     private fun recordFrontstageSearchCue(
@@ -14033,9 +14773,9 @@ class FoundationGameSession internal constructor(
             RunOutcome.InProgress -> "ui.summary.reason.in_progress"
         }
 
-    private fun passiveDescriptionToken(passive: EquipmentPassive): RenderTextTokenSnapshot =
+    private fun passiveDescriptionToken(passive: PassiveEffect): RenderTextTokenSnapshot =
         when (passive) {
-            is EquipmentPassive.OnHitStatusProc ->
+            is PassiveEffect.OnHitStatusProc ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.on_hit_status_proc",
                     listOf(
@@ -14045,7 +14785,7 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
-            is EquipmentPassive.OnKillResourceRestore ->
+            is PassiveEffect.OnKillResourceRestore ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.on_kill_resource_restore",
                     listOf(
@@ -14054,7 +14794,7 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
-            is EquipmentPassive.ConditionalStatBonus ->
+            is PassiveEffect.ConditionalStatBonus ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.conditional_stat_bonus",
                     listOf(
@@ -14063,7 +14803,7 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
-            is EquipmentPassive.TerrainAffinityBonus ->
+            is PassiveEffect.TerrainAffinityBonus ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.terrain_affinity_bonus",
                     listOf(
@@ -14072,7 +14812,15 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
-            is EquipmentPassive.DamageVsTag ->
+            is PassiveEffect.StatModifierEffect ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.stat_modifier",
+                    listOf(
+                        literalArg("modifier", statModifierSummary(passive.statModifier)),
+                    ),
+                )
+
+            is PassiveEffect.DamageVsTag ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.damage_vs_tag",
                     listOf(
@@ -14081,7 +14829,7 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
-            is EquipmentPassive.DamageVsStatus ->
+            is PassiveEffect.DamageVsStatus ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.damage_vs_status",
                     listOf(
@@ -14090,7 +14838,7 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
-            is EquipmentPassive.HpRegenPerTurn ->
+            is PassiveEffect.HpRegenPerTurn ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.hp_regen_turn",
                     listOf(
@@ -14098,7 +14846,7 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
-            is EquipmentPassive.DamageTypeBonus ->
+            is PassiveEffect.DamageTypeBonus ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.damage_type_bonus",
                     listOf(
@@ -14107,7 +14855,7 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
-            is EquipmentPassive.ResistanceBonus ->
+            is PassiveEffect.ResistanceBonus ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.resistance_bonus",
                     listOf(

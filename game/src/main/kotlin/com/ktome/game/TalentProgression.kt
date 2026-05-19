@@ -1,6 +1,7 @@
 package com.ktome.game
 
 import com.ktome.core.race.RaceDef
+import com.ktome.core.talent.TalentCategory
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.TalentPrerequisiteSchemaV2
@@ -94,8 +95,9 @@ internal object TalentProgression {
             return listOf(unknownTreeReason(tree.id))
         }
 
+        val isPassiveTalent = talent.category == TalentCategory.PASSIVE.name
         val nodeTier = talentNodeTier(tree, talentId)
-        val requiredUnlockLevel = requiredUnlockLevel(tree, talent)
+        val requiredUnlockLevel = if (isPassiveTalent) talent.unlockLevel else requiredUnlockLevel(tree, talent)
         val reasons = mutableListOf<TalentLockReason>()
         if (request.level < requiredUnlockLevel) {
             reasons +=
@@ -107,7 +109,7 @@ internal object TalentProgression {
                 )
         }
         reasons += missingPrerequisiteReasons(talent.requirements.talentPrereqs, request.learnedRanks)
-        val sameTreeRequired = sameTreeInvestmentRequirement(nodeTier)
+        val sameTreeRequired = if (isPassiveTalent) 0 else sameTreeInvestmentRequirement(nodeTier)
         if (sameTreeRequired > 0) {
             val currentPoints = context.treeInvestments[tree.id] ?: 0
             if (currentPoints < sameTreeRequired) {
@@ -121,7 +123,7 @@ internal object TalentProgression {
                     )
             }
         }
-        val otherTreeRequired = otherTreeInvestmentRequirement(nodeTier)
+        val otherTreeRequired = if (isPassiveTalent) 0 else otherTreeInvestmentRequirement(nodeTier)
         if (otherTreeRequired > 0 && tree.ownerRef().ownerType == com.ktome.core.talent.TalentTreeOwnerType.PROFESSION) {
             val investedOtherTrees =
                 context.ownerTreeIds

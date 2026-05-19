@@ -32,6 +32,7 @@ import com.ktome.core.snapshot.TalentNodeStateSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.snapshot.TalentTreeNodeSnapshot
+import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.PrimaryStat
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
@@ -162,6 +163,7 @@ class InputHandler(
     private var loadoutReserveSelection: Int = 0
     private var talentTreeSelection: Int = 0
     private var talentTreeSelectionIdentity: TalentTreeSelectionIdentity? = null
+    private var consumedTalentFocusRequestId: String? = null
     private var talentTreePreviewExpanded: Boolean = true
     private var talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE
     private var targetingSlot: Int? = null
@@ -1347,6 +1349,9 @@ class InputHandler(
             return PlayerCommand.RollbackTalentDraft
         }
         if (input.isKeyJustPressed(Keys.R)) {
+            if (talentAssignFocus == TalentAssignFocus.TREE && selectedTalentTreeNode(snapshot)?.category == TalentCategory.PASSIVE) {
+                return null
+            }
             return selectedTalentOwner(snapshot)?.let { owner ->
                 PlayerCommand.RespecTalentTree(ownerType = owner.ownerType, treeOwnerId = owner.treeOwnerId)
             }
@@ -1676,7 +1681,9 @@ class InputHandler(
     private fun enterTalentAssign(snapshot: RenderSnapshot) {
         loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
         loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
-        restoreTalentTreeSelection(talentTreeNodes(snapshot))
+        val treeNodes = talentTreeNodes(snapshot)
+        restoreTalentTreeSelection(treeNodes)
+        applyValidationTalentFocusRequest(snapshot, treeNodes)
         talentAssignFocus = TalentAssignFocus.TREE
         openModalFrame(
             ModalFrame(
@@ -1691,6 +1698,32 @@ class InputHandler(
                     ),
             ),
         )
+    }
+
+    private fun applyValidationTalentFocusRequest(
+        snapshot: RenderSnapshot,
+        treeNodes: List<TalentTreeNodeSnapshot>,
+    ) {
+        val request = snapshot.uiState.validationTalentFocusRequest ?: return
+        if (consumedTalentFocusRequestId == request.consumeOnceToken) {
+            return
+        }
+        val requestIdentity =
+            TalentTreeSelectionIdentity(
+                talentId = request.talentId,
+                treeId = request.treeId,
+                ownerType = parseOwnerType(request.ownerType),
+                treeOwnerId = request.treeOwnerId,
+            )
+        val requestedIndex =
+            treeNodes.indexOfFirst { node ->
+                node.toTalentTreeSelectionIdentity() == requestIdentity
+            }
+        if (requestedIndex >= 0) {
+            consumedTalentFocusRequestId = request.consumeOnceToken
+            talentTreeSelection = requestedIndex
+            talentTreeSelectionIdentity = treeNodes[requestedIndex].toTalentTreeSelectionIdentity()
+        }
     }
 
     private fun clearValidation() {

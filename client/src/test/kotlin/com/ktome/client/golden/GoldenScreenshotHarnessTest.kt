@@ -326,8 +326,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "cfe0e07b72aa3b4dc9614dabc60094fe55b0a8cd04bd165d514c73b1177aad62",
-                "9602ff8d9e1b4ec9ebcfbae72cf300b84056ae0a66518b49f9646ed1a24bb6e0",
+                "e566cd63ec31d6b3bc0c4c04c1273fd1904afed37091ba4bf50a6ce81cb5d56e",
+                "7f0a880a45c78064a7d4d1b58b042bf5d12d58e30db2673a2d36da51ea6923a9",
             ),
             listOf(english, chinese),
         )
@@ -505,7 +505,7 @@ class GoldenScreenshotHarnessTest {
             mapOf(
                 "phase4-v4-pr05-molten-glass-phase-override-warning" to "9de96baff1d351ca5fb602e6ad5fdbb4c778914476d43a8f76df74308dd4512e",
                 "phase4-v4-pr05-grey-crown-phase-override-warning" to "167d2106f37b6afb3209e8c1e376d1358899cd27db8120e84dc99e0c2f252ea1",
-                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "fc06e2d8992b143d2913c2e066a1bd803911672de63ae2ac13639d27c98a961c",
+                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "2993d9b32139bbc98a8d9f4ec6d66cc460df18b96f8363022c33a94230f0a39a",
             ),
             hashes,
         )

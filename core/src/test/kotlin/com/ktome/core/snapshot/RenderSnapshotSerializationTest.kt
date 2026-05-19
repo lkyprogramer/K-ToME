@@ -203,6 +203,69 @@ class RenderSnapshotSerializationTest {
     }
 
     @Test
+    fun `passive detail snapshot round trips label token and diagnostics`() {
+        val detail =
+            TalentPassiveDetailSnapshot(
+                currentLines =
+                    listOf(
+                        PassiveDetailLineSnapshot(
+                            lineKind = PassiveDetailLineKindSnapshot.STAT_MODIFIER,
+                            labelKey = "ui.talent.passive.detail.kind.stat_modifier",
+                            valueToken =
+                                RenderTextTokenSnapshot(
+                                    key = "ui.talent.passive.detail.stat_modifier",
+                                    arguments =
+                                        listOf(
+                                            RenderTextArgumentSnapshot(name = "statId", valueKey = "ui.hud.hp.short"),
+                                            RenderTextArgumentSnapshot(name = "value", value = "+10"),
+                                        ),
+                                ),
+                            diagnosticArgs = mapOf("statId" to "maxHp", "value" to "+10"),
+                            sortKey = "stat:maxHp",
+                            tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                            diagnosticEffectKind = "StatModifier",
+                        ),
+                    ),
+                nextLines =
+                    listOf(
+                        PassiveDetailDeltaLineSnapshot(
+                            lineKind = PassiveDetailLineKindSnapshot.STAT_MODIFIER,
+                            labelKey = "ui.talent.passive.detail.kind.stat_modifier",
+                            valueToken =
+                                RenderTextTokenSnapshot(
+                                    key = "ui.talent.passive.detail.stat_modifier.delta",
+                                    arguments =
+                                        listOf(
+                                            RenderTextArgumentSnapshot(name = "statId", valueKey = "ui.hud.hp.short"),
+                                            RenderTextArgumentSnapshot(name = "value", value = "+6"),
+                                            RenderTextArgumentSnapshot(name = "before", value = "+10"),
+                                            RenderTextArgumentSnapshot(name = "after", value = "+16"),
+                                        ),
+                                ),
+                            diagnosticArgs =
+                                mapOf(
+                                    "statId" to "maxHp",
+                                    "value" to "+6",
+                                    "before" to "+10",
+                                    "after" to "+16",
+                                ),
+                            sortKey = "stat:maxHp",
+                            tone = PassiveDetailLineToneSnapshot.POSITIVE,
+                            diagnosticEffectKind = "StatModifier",
+                        ),
+                    ),
+            )
+
+        val encoded = json.encodeToString(detail)
+        val decoded = json.decodeFromString<TalentPassiveDetailSnapshot>(encoded)
+
+        assertTrue(encoded.contains("\"labelKey\""))
+        assertTrue(encoded.contains("\"valueToken\""))
+        assertTrue(encoded.contains("\"diagnosticArgs\""))
+        assertEquals(detail, decoded)
+    }
+
+    @Test
     fun `special item snapshot requires special template and tier together`() {
         assertThrows(IllegalArgumentException::class.java) {
             ItemRenderSnapshot(

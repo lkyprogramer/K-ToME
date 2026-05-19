@@ -4,6 +4,7 @@ import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.item.PassiveEffect
 import com.ktome.core.item.StatModifier
 import com.ktome.core.resource.EquilibriumAffinity
 import com.ktome.core.resource.ResourceType
@@ -195,6 +196,7 @@ data class TalentLevelEffect(
     val associatedEffects: List<AssociatedStatusEffect> = emptyList(),
     val cleanseEffect: CleanseEffect? = null,
     val effectOps: List<EffectOp> = emptyList(),
+    val passiveEffects: List<PassiveEffect> = emptyList(),
 )
 
 enum class EffectTrigger {

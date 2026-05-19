@@ -1,7 +1,11 @@
 package com.ktome.tools.whitebox
 
 import com.ktome.game.validation.ValidationScenarioDef
+import com.ktome.game.validation.FocusedTalentAssertion
+import com.ktome.game.validation.LocalizedTextAssertion
+import com.ktome.game.validation.PassiveLineAssertion
 import com.ktome.game.validation.ValidationScenarioRegistry
+import com.ktome.game.validation.ValidationScenarioTypedAssertion
 import com.ktome.game.validation.Phase4V4Pr06WhiteboxProperties
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -11,6 +15,8 @@ import kotlin.io.path.inputStream
 import kotlin.io.path.writeText
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -213,7 +219,12 @@ object Phase4V4WhiteboxScenarioCli {
                     Phase4V4RunbookStep(
                         mode = step.mode,
                         input = step.input,
-                        expectedVisibleResult = step.expectedVisibleResult,
+                        expectedVisibleResult =
+                            if (step.expectedFocusedTalentId == null) {
+                                step.expectedVisibleResult
+                            } else {
+                                "${step.expectedVisibleResult} Expected focused talent: ${step.expectedFocusedTalentId}."
+                            },
                         evidenceFile = step.evidenceFile,
                     )
                 }
@@ -231,6 +242,14 @@ object Phase4V4WhiteboxScenarioCli {
             appendLine("- manual record: `${evidence.manualRecordPath}`")
             if (evidence.requiredLogEventKeys.isNotEmpty()) {
                 appendLine("- required log events: `${evidence.requiredLogEventKeys.joinToString("`, `")}`")
+            }
+            if (evidence.forbiddenLogFragments.isNotEmpty()) {
+                appendLine("- forbidden log fragments: `${evidence.forbiddenLogFragments.joinToString("`, `")}`")
+            }
+            scenario.talentSetup?.let { setup ->
+                appendLine("- target talent: `${setup.targetTalentId}`")
+                appendLine("- initial focused talent: `${setup.initialFocusedTalentId}`")
+                appendLine("- target rank/state: `${setup.targetRank}` / `${setup.expectedTargetState}`")
             }
             appendLine()
             appendLine("## 2. Launch command")
@@ -350,13 +369,91 @@ object Phase4V4WhiteboxScenarioCli {
                     "manualRecordPath" to JsonPrimitive(scenario.evidence.manualRecordPath),
                     "runtimeHome" to JsonPrimitive(repoRelative(repoRoot, paths.runtimeHome)),
                     "evidenceDir" to JsonPrimitive(repoRelative(repoRoot, paths.evidenceDir)),
+                    "talentSetup" to renderTalentSetup(scenario),
                     "requiredLogEventKeys" to JsonArray(scenario.evidence.requiredLogEventKeys.map(::JsonPrimitive)),
+                    "forbiddenLogFragments" to JsonArray(scenario.evidence.forbiddenLogFragments.map(::JsonPrimitive)),
                     "externalEvidence" to JsonArray(scenario.evidence.requiredExternalEvidenceFiles.map(::JsonPrimitive)),
+                    "steps" to JsonArray(scenario.evidence.cuaSteps.map(::renderEvidenceStep)),
                     "evidence" to JsonArray(evidenceItems),
                 ),
             )
         return json.encodeToString(JsonObject.serializer(), payload) + "\n"
     }
+
+    private fun renderTalentSetup(scenario: ValidationScenarioDef): JsonObject {
+        val setup = scenario.talentSetup ?: return JsonObject(emptyMap())
+        return JsonObject(
+            mapOf(
+                "targetTalentId" to JsonPrimitive(setup.targetTalentId),
+                "initialFocusedTalentId" to JsonPrimitive(setup.initialFocusedTalentId),
+                "playerLevel" to JsonPrimitive(setup.playerLevel),
+                "prerequisiteRanks" to JsonObject(setup.prerequisiteRanks.mapValues { (_, rank) -> JsonPrimitive(rank) }),
+                "setUnspentTalentPoints" to JsonPrimitive(setup.setUnspentTalentPoints),
+                "targetRank" to JsonPrimitive(setup.targetRank),
+                "clearPendingTalentDraft" to JsonPrimitive(setup.clearPendingTalentDraft),
+                "clearActiveSlotChoiceModal" to JsonPrimitive(setup.clearActiveSlotChoiceModal),
+                "resetTalentLoadoutSlotsForTargetOwner" to JsonPrimitive(setup.resetTalentLoadoutSlotsForTargetOwner),
+                "expectedTargetState" to JsonPrimitive(setup.expectedTargetState),
+                "previewExpanded" to JsonPrimitive(setup.previewExpanded),
+            ),
+        )
+    }
+
+    private fun renderEvidenceStep(step: com.ktome.game.validation.ValidationScenarioEvidenceStep): JsonObject =
+        JsonObject(
+            mapOf(
+                "mode" to JsonPrimitive(step.mode),
+                "input" to JsonPrimitive(step.input),
+                "expectedVisibleResult" to JsonPrimitive(step.expectedVisibleResult),
+                "evidenceFile" to JsonPrimitive(step.evidenceFile),
+                "expectedFocusedTalentId" to jsonString(step.expectedFocusedTalentId),
+                "typedAssertions" to JsonArray(step.typedAssertions.map(::renderTypedAssertion)),
+                "localizedVisibleAssertions" to JsonArray(step.localizedVisibleAssertions.map(::renderLocalizedTextAssertion)),
+            ),
+        )
+
+    private fun renderTypedAssertion(assertion: ValidationScenarioTypedAssertion): JsonObject =
+        when (assertion) {
+            is FocusedTalentAssertion ->
+                JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("FocusedTalentAssertion"),
+                        "talentId" to JsonPrimitive(assertion.talentId),
+                        "category" to JsonPrimitive(assertion.category),
+                        "rank" to JsonPrimitive(assertion.rank),
+                        "state" to JsonPrimitive(assertion.state),
+                    ),
+                )
+
+            is PassiveLineAssertion ->
+                JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("PassiveLineAssertion"),
+                        "lineKind" to JsonPrimitive(assertion.lineKind),
+                        "statId" to jsonString(assertion.statId),
+                        "damageType" to jsonString(assertion.damageType),
+                        "resourceType" to jsonString(assertion.resourceType),
+                        "statusId" to jsonString(assertion.statusId),
+                        "condition" to jsonString(assertion.condition),
+                        "value" to JsonPrimitive(assertion.value),
+                        "orderIndex" to jsonInt(assertion.orderIndex),
+                    ),
+                )
+        }
+
+    private fun renderLocalizedTextAssertion(assertion: LocalizedTextAssertion): JsonObject =
+        JsonObject(
+            mapOf(
+                "locale" to JsonPrimitive(assertion.locale),
+                "key" to jsonString(assertion.key),
+                "visibleTextPolicy" to JsonPrimitive(assertion.visibleTextPolicy),
+                "evidenceFile" to JsonPrimitive(assertion.evidenceFile),
+            ),
+        )
+
+    private fun jsonString(value: String?): JsonElement = value?.let(::JsonPrimitive) ?: JsonNull
+
+    private fun jsonInt(value: Int?): JsonElement = value?.let(::JsonPrimitive) ?: JsonNull
 
     private fun repoRelative(
         repoRoot: Path,

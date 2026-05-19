@@ -1,12 +1,14 @@
 package com.ktome.core.item
 
 import com.ktome.core.combat.DamageType
+import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.resource.ResourceType
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -22,13 +24,13 @@ class PassiveEffectResolverTest {
             item =
                 item(
                     baseId = "bandit_trophy",
-                    passive = EquipmentPassive.DamageVsTag(tag = "bandit", bonusPercent = 0.15),
+                    passive = PassiveEffect.DamageVsTag(tag = "bandit", bonusPercent = 0.15),
                 ),
         )
 
         val adjustment =
             PassiveEffectResolver.resolveDamageAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                passives = PassiveEffectResolver.equipmentPassiveSources(world, actor),
                 targetTags = setOf("bandit", "humanoid"),
                 targetStatusIds = emptySet(),
                 damageType = DamageType.PHYSICAL,
@@ -49,20 +51,20 @@ class PassiveEffectResolverTest {
             item =
                 item(
                     baseId = "furnace_talisman",
-                    passive = EquipmentPassive.DamageTypeBonus(type = DamageType.FIRE, bonusPercent = 0.15),
+                    passive = PassiveEffect.DamageTypeBonus(type = DamageType.FIRE, bonusPercent = 0.15),
                 ),
         )
 
         val fireAdjustment =
             PassiveEffectResolver.resolveDamageAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                passives = PassiveEffectResolver.equipmentPassiveSources(world, actor),
                 targetTags = emptySet(),
                 targetStatusIds = emptySet(),
                 damageType = DamageType.FIRE,
             )
         val coldAdjustment =
             PassiveEffectResolver.resolveDamageAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                passives = PassiveEffectResolver.equipmentPassiveSources(world, actor),
                 targetTags = emptySet(),
                 targetStatusIds = emptySet(),
                 damageType = DamageType.COLD,
@@ -80,10 +82,10 @@ class PassiveEffectResolverTest {
             world = world,
             actor = actor,
             slot = EquipSlot.OFF_HAND,
-            item = item(baseId = "emerald_charm", passive = EquipmentPassive.HpRegenPerTurn(amount = 2)),
+            item = item(baseId = "emerald_charm", passive = PassiveEffect.HpRegenPerTurn(amount = 2)),
         )
 
-        assertEquals(2, PassiveEffectResolver.hpRegenPerTurn(PassiveEffectResolver.equippedPassives(world, actor)))
+        assertEquals(2, PassiveEffectResolver.hpRegenPerTurn(PassiveEffectResolver.equipmentPassiveSources(world, actor)))
     }
 
     @Test
@@ -94,19 +96,19 @@ class PassiveEffectResolverTest {
             world = world,
             actor = actor,
             slot = EquipSlot.WEAPON,
-            item = item(baseId = "of_smite", passive = EquipmentPassive.DamageVsStatus(statusId = "BANE", bonusPercent = 0.12)),
+            item = item(baseId = "of_smite", passive = PassiveEffect.DamageVsStatus(statusId = "BANE", bonusPercent = 0.12)),
         )
 
         val matching =
             PassiveEffectResolver.resolveDamageAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                passives = PassiveEffectResolver.equipmentPassiveSources(world, actor),
                 targetTags = emptySet(),
                 targetStatusIds = setOf("BANE"),
                 damageType = DamageType.HOLY,
             )
         val nonMatching =
             PassiveEffectResolver.resolveDamageAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                passives = PassiveEffectResolver.equipmentPassiveSources(world, actor),
                 targetTags = emptySet(),
                 targetStatusIds = setOf("MARKED"),
                 damageType = DamageType.HOLY,
@@ -124,16 +126,16 @@ class PassiveEffectResolverTest {
             world = world,
             actor = actor,
             slot = EquipSlot.OFF_HAND,
-            item = item(baseId = "seal_reliquary", passive = EquipmentPassive.ResistanceBonus(DamageType.SHADOW, 10)),
+            item = item(baseId = "seal_reliquary", passive = PassiveEffect.ResistanceBonus(DamageType.SHADOW, 10)),
         )
         equip(
             world = world,
             actor = actor,
             slot = EquipSlot.ARMOR,
-            item = item(baseId = "shadow_cloak", passive = EquipmentPassive.ResistanceBonus(DamageType.SHADOW, 5)),
+            item = item(baseId = "shadow_cloak", passive = PassiveEffect.ResistanceBonus(DamageType.SHADOW, 5)),
         )
 
-        val bonuses = PassiveEffectResolver.resistanceBonuses(PassiveEffectResolver.equippedPassives(world, actor))
+        val bonuses = PassiveEffectResolver.resistanceBonuses(PassiveEffectResolver.equipmentPassiveSources(world, actor))
 
         assertEquals(15, bonuses[DamageType.SHADOW])
         assertTrue(DamageType.FIRE !in bonuses)
@@ -164,18 +166,18 @@ class PassiveEffectResolverTest {
                                 cost = 10,
                                 affixFamily = "holy_smite",
                                 statModifiers = StatModifier(attack = 2),
-                                passive = EquipmentPassive.DamageVsStatus(statusId = "BANE", bonusPercent = 0.15),
+                                passive = PassiveEffect.DamageVsStatus(statusId = "BANE", bonusPercent = 0.15),
                             ),
                         ),
-                    passive = EquipmentPassive.DamageTypeBonus(type = DamageType.HOLY, bonusPercent = 0.10),
+                    passive = PassiveEffect.DamageTypeBonus(type = DamageType.HOLY, bonusPercent = 0.10),
                 ),
         )
 
-        val passives = PassiveEffectResolver.equippedPassives(world, actor)
+        val passives = PassiveEffectResolver.equipmentPassiveSources(world, actor)
 
         assertEquals(2, passives.size)
-        assertTrue(passives.any { source -> source.passive is EquipmentPassive.DamageTypeBonus })
-        assertTrue(passives.any { source -> source.passive is EquipmentPassive.DamageVsStatus && source.passive.statusId == "BANE" })
+        assertTrue(passives.any { source -> source.passive is PassiveEffect.DamageTypeBonus })
+        assertTrue(passives.any { source -> source.passive is PassiveEffect.DamageVsStatus && source.passive.statusId == "BANE" })
     }
 
     @Test
@@ -190,7 +192,7 @@ class PassiveEffectResolverTest {
                 item(
                     baseId = "last_stand_mail",
                     passive =
-                        EquipmentPassive.ConditionalStatBonus(
+                        PassiveEffect.ConditionalStatBonus(
                             condition = PassiveCondition.HP_BELOW_50,
                             statModifier = StatModifier(defense = 4, maxHp = 12),
                         ),
@@ -204,7 +206,7 @@ class PassiveEffectResolverTest {
                 item(
                     baseId = "river_charm",
                     passive =
-                        EquipmentPassive.TerrainAffinityBonus(
+                        PassiveEffect.TerrainAffinityBonus(
                             terrainTag = TerrainTag.WATER,
                             statModifier = StatModifier(accuracy = 3, speed = 2),
                         ),
@@ -213,7 +215,7 @@ class PassiveEffectResolverTest {
 
         val adjustment =
             PassiveEffectResolver.resolveStatAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                passives = PassiveEffectResolver.equipmentPassiveSources(world, actor),
                 context =
                     PassiveStatContext(
                         healthFraction = 0.45,
@@ -240,7 +242,7 @@ class PassiveEffectResolverTest {
                 item(
                     baseId = "warded_mail",
                     passive =
-                        EquipmentPassive.ConditionalStatBonus(
+                        PassiveEffect.ConditionalStatBonus(
                             condition = PassiveCondition.SELF_HAS_STATUS,
                             statusId = "GUARD",
                             statModifier = StatModifier(defense = 5),
@@ -250,12 +252,12 @@ class PassiveEffectResolverTest {
 
         val matching =
             PassiveEffectResolver.resolveStatAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                passives = PassiveEffectResolver.equipmentPassiveSources(world, actor),
                 context = PassiveStatContext(healthFraction = 1.0, selfStatusIds = setOf("GUARD")),
             )
         val nonMatching =
             PassiveEffectResolver.resolveStatAdjustment(
-                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                passives = PassiveEffectResolver.equipmentPassiveSources(world, actor),
                 context = PassiveStatContext(healthFraction = 1.0, selfStatusIds = setOf("BANE")),
             )
 
@@ -288,18 +290,18 @@ class PassiveEffectResolverTest {
                                 cost = 10,
                                 affixFamily = "toxic_edge",
                                 statModifiers = StatModifier(),
-                                passive = EquipmentPassive.OnHitStatusProc(statusId = "POISONED", chance = 0.35, duration = 3),
+                                passive = PassiveEffect.OnHitStatusProc(statusId = "POISONED", chance = 0.35, duration = 3),
                             ),
                         ),
                 ),
         )
 
-        val trigger = PassiveEffectResolver.onHitStatusProcs(PassiveEffectResolver.equippedPassives(world, actor)).single()
+        val trigger = PassiveEffectResolver.onHitStatusProcs(PassiveEffectResolver.equipmentPassiveSources(world, actor)).single()
 
         assertEquals("POISONED", trigger.statusId)
         assertEquals(0.35, trigger.chance, 0.0001)
         assertEquals(3, trigger.duration)
-        assertEquals("venom_blade", trigger.source.item.baseId)
+        assertEquals("venom_blade", trigger.source.sourceTemplateId)
         assertEquals("toxic_edge", trigger.source.affixId)
     }
 
@@ -311,20 +313,20 @@ class PassiveEffectResolverTest {
             world = world,
             actor = actor,
             slot = EquipSlot.WEAPON,
-            item = item(baseId = "venom_blade", passive = EquipmentPassive.OnHitStatusProc(statusId = "POISONED", chance = 0.25, duration = 2)),
+            item = item(baseId = "venom_blade", passive = PassiveEffect.OnHitStatusProc(statusId = "POISONED", chance = 0.25, duration = 2)),
         )
         equip(
             world = world,
             actor = actor,
             slot = EquipSlot.OFF_HAND,
-            item = item(baseId = "bane_idol", passive = EquipmentPassive.OnHitStatusProc(statusId = "BANE", chance = 0.40, duration = 3)),
+            item = item(baseId = "bane_idol", passive = PassiveEffect.OnHitStatusProc(statusId = "BANE", chance = 0.40, duration = 3)),
         )
 
-        val triggers = PassiveEffectResolver.onHitStatusProcs(PassiveEffectResolver.equippedPassives(world, actor))
+        val triggers = PassiveEffectResolver.onHitStatusProcs(PassiveEffectResolver.equipmentPassiveSources(world, actor))
 
         assertEquals(2, triggers.size)
-        assertTrue(triggers.any { trigger -> trigger.source.item.baseId == "venom_blade" && trigger.statusId == "POISONED" })
-        assertTrue(triggers.any { trigger -> trigger.source.item.baseId == "bane_idol" && trigger.statusId == "BANE" })
+        assertTrue(triggers.any { trigger -> trigger.source.sourceTemplateId == "venom_blade" && trigger.statusId == "POISONED" })
+        assertTrue(triggers.any { trigger -> trigger.source.sourceTemplateId == "bane_idol" && trigger.statusId == "BANE" })
     }
 
     @Test
@@ -338,15 +340,15 @@ class PassiveEffectResolverTest {
             item =
                 item(
                     baseId = "reaper_idol",
-                    passive = EquipmentPassive.OnKillResourceRestore(resourceType = ResourceType.MANA, amount = 6),
+                    passive = PassiveEffect.OnKillResourceRestore(resourceType = ResourceType.MANA, amount = 6),
                 ),
         )
 
-        val trigger = PassiveEffectResolver.onKillResourceRestores(PassiveEffectResolver.equippedPassives(world, actor)).single()
+        val trigger = PassiveEffectResolver.onKillResourceRestores(PassiveEffectResolver.equipmentPassiveSources(world, actor)).single()
 
         assertEquals(ResourceType.MANA, trigger.resourceType)
         assertEquals(6, trigger.amount)
-        assertEquals("reaper_idol", trigger.source.item.baseId)
+        assertEquals("reaper_idol", trigger.source.sourceTemplateId)
     }
 
     @Test
@@ -357,37 +359,157 @@ class PassiveEffectResolverTest {
             world = world,
             actor = actor,
             slot = EquipSlot.OFF_HAND,
-            item = item(baseId = "reaper_idol", passive = EquipmentPassive.OnKillResourceRestore(resourceType = ResourceType.MANA, amount = 6)),
+            item = item(baseId = "reaper_idol", passive = PassiveEffect.OnKillResourceRestore(resourceType = ResourceType.MANA, amount = 6)),
         )
         equip(
             world = world,
             actor = actor,
             slot = EquipSlot.ARMOR,
-            item = item(baseId = "war_drum", passive = EquipmentPassive.OnKillResourceRestore(resourceType = ResourceType.STAMINA, amount = 4)),
+            item = item(baseId = "war_drum", passive = PassiveEffect.OnKillResourceRestore(resourceType = ResourceType.STAMINA, amount = 4)),
         )
 
-        val triggers = PassiveEffectResolver.onKillResourceRestores(PassiveEffectResolver.equippedPassives(world, actor))
+        val triggers = PassiveEffectResolver.onKillResourceRestores(PassiveEffectResolver.equipmentPassiveSources(world, actor))
 
         assertEquals(2, triggers.size)
         assertTrue(triggers.any { trigger -> trigger.resourceType == ResourceType.MANA && trigger.amount == 6 })
         assertTrue(triggers.any { trigger -> trigger.resourceType == ResourceType.STAMINA && trigger.amount == 4 })
     }
 
+    @Test
+    fun `equipment passive sources retain item entity and special template identity`() {
+        val world = World()
+        val actor = world.createEntity()
+        val weaponItemId =
+            equip(
+                world = world,
+                actor = actor,
+                slot = EquipSlot.WEAPON,
+                item =
+                    item(
+                        baseId = "repeating_base",
+                        passive = PassiveEffect.DamageVsTag(tag = "bandit", bonusPercent = 0.10),
+                        specialTemplateId = "unique_a",
+                    ),
+            )
+        val armorItemId =
+            equip(
+                world = world,
+                actor = actor,
+                slot = EquipSlot.ARMOR,
+                item =
+                    item(
+                        baseId = "repeating_base",
+                        passive = PassiveEffect.DamageVsTag(tag = "orc", bonusPercent = 0.12),
+                        specialTemplateId = "unique_b",
+                    ),
+            )
+
+        val sources = PassiveEffectResolver.equipmentPassiveSources(world, actor)
+
+        assertEquals(2, sources.mapTo(linkedSetOf(), PassiveSource::sourceId).size)
+        assertTrue(
+            sources.any { source ->
+                source.itemEntityId == weaponItemId &&
+                    source.sourceTemplateId == "repeating_base" &&
+                    source.sourceSpecialTemplateId == "unique_a" &&
+                    source.sourceId.contains(":${weaponItemId.value}:")
+            },
+        )
+        assertTrue(
+            sources.any { source ->
+                source.itemEntityId == armorItemId &&
+                    source.sourceTemplateId == "repeating_base" &&
+                    source.sourceSpecialTemplateId == "unique_b" &&
+                    source.sourceId.contains(":${armorItemId.value}:")
+            },
+        )
+    }
+
+    @Test
+    fun `stat modifier and regen passive effects contribute to stat adjustment`() {
+        val passives =
+            listOf(
+                PassiveSource(
+                    kind = PassiveSourceKind.TALENT,
+                    sourceId = "talent:arcane_overload:2:stat_modifier",
+                    sourceTemplateId = "arcane_overload",
+                    talentRank = 2,
+                    passive = PassiveEffect.StatModifierEffect(StatModifier(maxHp = 8, castSpeedRating = 3, hpRegen = 0.4)),
+                ),
+                PassiveSource(
+                    kind = PassiveSourceKind.TALENT,
+                    sourceId = "talent:pain_fuel:2:hp_regen",
+                    sourceTemplateId = "pain_fuel",
+                    talentRank = 2,
+                    passive = PassiveEffect.HpRegenPerTurn(amount = 2),
+                ),
+            )
+
+        val adjustment = PassiveEffectResolver.resolveStatAdjustment(passives, PassiveStatContext(healthFraction = 1.0))
+
+        assertEquals(2, adjustment.sources.size)
+        assertEquals(8, adjustment.modifier.maxHp)
+        assertEquals(3, adjustment.modifier.castSpeedRating)
+        assertEquals(2.4, adjustment.modifier.hpRegen, 0.0001)
+    }
+
+    @Test
+    fun `passive source validates stable identity fields`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            PassiveSource(
+                kind = PassiveSourceKind.TALENT,
+                sourceId = "",
+                sourceTemplateId = "mana_surge",
+                talentRank = 1,
+                passive = PassiveEffect.OnKillResourceRestore(ResourceType.MANA, amount = 3),
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            PassiveSource(
+                kind = PassiveSourceKind.TALENT,
+                sourceId = "talent:mana_surge:0:restore",
+                sourceTemplateId = "mana_surge",
+                talentRank = 0,
+                passive = PassiveEffect.OnKillResourceRestore(ResourceType.MANA, amount = 3),
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            PassiveSource(
+                kind = PassiveSourceKind.EQUIPMENT,
+                sourceId = "equipment:1:wand:affix:",
+                sourceTemplateId = "wand",
+                affixId = "",
+                passive = PassiveEffect.DamageTypeBonus(DamageType.FIRE, bonusPercent = 0.03),
+            )
+        }
+    }
+
+    @Test
+    fun `passive effect kind ids include stat modifier effect`() {
+        assertEquals(PassiveEffectKindIds.STAT_MODIFIER, PassiveEffect.StatModifierEffect(StatModifier(maxHp = 1)).kindId())
+        assertEquals(
+            PassiveEffectKindIds.ON_KILL_RESOURCE_RESTORE,
+            PassiveEffect.OnKillResourceRestore(ResourceType.MANA, amount = 3).kindId(),
+        )
+    }
+
     private fun equip(
         world: World,
-        actor: com.ktome.core.ecs.EntityId,
+        actor: EntityId,
         slot: EquipSlot,
         item: ItemInstance,
-    ) {
+    ): EntityId {
         val itemId = world.createEntity()
         world.add(itemId, item)
         val equipment = world.get<Equipment>(actor) ?: Equipment().also { world.add(actor, it) }
         equipment.slots[slot] = itemId
+        return itemId
     }
 
     private fun item(
         baseId: String,
-        passive: EquipmentPassive,
+        passive: PassiveEffect,
+        specialTemplateId: String? = null,
     ): ItemInstance =
         ItemInstance(
             baseId = baseId,
@@ -397,5 +519,6 @@ class PassiveEffectResolverTest {
             glyph = ']',
             colorHex = "#FFFFFF",
             passive = passive,
+            specialTemplateId = specialTemplateId,
         )
 }

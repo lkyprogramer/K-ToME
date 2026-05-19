@@ -34,7 +34,6 @@ import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixEquipType
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
-import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
@@ -42,6 +41,8 @@ import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.PassiveCondition
+import com.ktome.core.item.PassiveEffect
+import com.ktome.core.item.PassiveEffectKindIds
 import com.ktome.core.item.SpecialItemTemplate
 import com.ktome.core.item.StatModifier
 import com.ktome.core.loot.SourceTier
@@ -123,7 +124,7 @@ import com.ktome.game.data.schema.AffordableRescueSlotPolicySchemaV2
 import com.ktome.game.data.schema.AffixSchemaV2
 import com.ktome.game.data.schema.BossEncounterSchemaV2
 import com.ktome.game.data.schema.DifficultySchemaV2
-import com.ktome.game.data.schema.EquipmentPassiveSchemaV2
+import com.ktome.game.data.schema.PassiveEffectSchemaV2
 import com.ktome.game.data.schema.InteractableSchemaV2
 import com.ktome.game.data.schema.ItemBundleSchemaV2
 import com.ktome.game.data.schema.ItemSchemaV2
@@ -1756,8 +1757,70 @@ class DataLoader(
                 equilibriumAffinity = talent.optionalString("equilibriumAffinity"),
                 aiHints = aiHints,
                 treeId = talent.requiredString("treeId"),
-            )
+            ).also(::validateTalentPassiveContract)
         }
+
+    private fun validateTalentPassiveContract(talent: TalentSchemaV2) {
+        val hasPassiveEffects = talent.levelEffects.values.any { effect -> effect.passiveEffects.isNotEmpty() }
+        if (talent.category == TalentCategory.PASSIVE.name) {
+            require(talent.kind == TalentCategory.PASSIVE.name) {
+                "Passive talent '${talent.id}' must declare kind PASSIVE."
+            }
+            require(talent.cooldown == 0) { "Passive talent '${talent.id}' must have cooldown 0." }
+            require(talent.castTime == "INSTANT") { "Passive talent '${talent.id}' must have castTime INSTANT." }
+            require(talent.targeting.type == "SELF") { "Passive talent '${talent.id}' must target SELF." }
+            require(talent.resourceCosts.isEmpty()) { "Passive talent '${talent.id}' must not declare resourceCosts." }
+            require(talent.callbacks.isEmpty()) { "Passive talent '${talent.id}' must not declare callbacks." }
+            require(talent.telegraphRef == null) { "Passive talent '${talent.id}' must not declare telegraphRef." }
+            (1..talent.maxPoints).forEach { rank ->
+                val effect =
+                    requireNotNull(talent.levelEffects[rank]) {
+                        "Passive talent '${talent.id}' rank $rank must declare levelEffects."
+                    }
+                require(effect.passiveEffects.isNotEmpty()) {
+                    "Passive talent '${talent.id}' rank $rank must declare passiveEffects."
+                }
+                validatePassiveHpRegenDisplayRoute(talentId = talent.id, rank = rank, passiveEffects = effect.passiveEffects)
+                require(effect.damageMultiplier == 1.0) {
+                    "Passive talent '${talent.id}' rank $rank must not declare damageMultiplier."
+                }
+                require(effect.knockback == 0) { "Passive talent '${talent.id}' rank $rank must not declare knockback." }
+                require(effect.rangeBonus == 0) { "Passive talent '${talent.id}' rank $rank must not declare rangeBonus." }
+                require(effect.healFraction == 0.0) {
+                    "Passive talent '${talent.id}' rank $rank must not declare healFraction."
+                }
+                require(effect.resourceRestoreFraction == 0.0) {
+                    "Passive talent '${talent.id}' rank $rank must not declare resourceRestoreFraction."
+                }
+                require(effect.associatedEffects.isEmpty()) {
+                    "Passive talent '${talent.id}' rank $rank must not declare associatedEffects."
+                }
+                require(effect.cleanseEffect == null) {
+                    "Passive talent '${talent.id}' rank $rank must not declare cleanseEffect."
+                }
+            }
+        } else {
+            require(!hasPassiveEffects) {
+                "Active/sustained talent '${talent.id}' must not declare passiveEffects."
+            }
+        }
+    }
+
+    private fun validatePassiveHpRegenDisplayRoute(
+        talentId: String,
+        rank: Int,
+        passiveEffects: List<PassiveEffectSchemaV2>,
+    ) {
+        val hasHpRegenPerTurn = passiveEffects.any { passive -> passive.kind == PassiveEffectKindIds.HP_REGEN_PER_TURN }
+        val hasStatModifierHpRegen =
+            passiveEffects.any { passive ->
+                passive.kind == PassiveEffectKindIds.STAT_MODIFIER && (passive.statModifier?.hpRegen ?: 0.0) != 0.0
+            }
+        require(!hasHpRegenPerTurn || !hasStatModifierHpRegen) {
+            "Passive talent '$talentId' rank $rank must not mix HpRegenPerTurn with StatModifier.hpRegen; " +
+                "use one hpRegen display route."
+        }
+    }
 
     private fun parseTalentTreeSchemas(root: Map<String, Any?>): List<TalentTreeSchemaV2> =
         root.requiredList("talentTrees").map { entry ->
@@ -2623,7 +2686,7 @@ class DataLoader(
                     minFloor = affix.requiredInt("minFloor"),
                     stats = affix.requiredMap("stats").toSchemaStatModifier(),
                     blacklistTags = affix.optionalStringList("blacklistTags"),
-                    passive = affix.optionalMap("passive")?.toEquipmentPassiveSchema(),
+                    passive = affix.optionalMap("passive")?.toPassiveEffectSchema(),
                 )
             },
             items = root.requiredList("items").map { entry ->
@@ -2650,7 +2713,7 @@ class DataLoader(
                     effect = item.optionalString("effect")?.let(ConsumableEffect::valueOf),
                     resourceTypeId = item.optionalString("resourceTypeId"),
                     magnitude = item.optionalInt("magnitude"),
-                    passive = item.optionalMap("passive")?.toEquipmentPassiveSchema(),
+                    passive = item.optionalMap("passive")?.toPassiveEffectSchema(),
                 )
             },
             uniqueTemplates =
@@ -2715,6 +2778,10 @@ class DataLoader(
                             applicationPolicy = configuredCleanse.optionalString("applicationPolicy") ?: "INSTANT_ACTION",
                             maxEffectsRemoved = configuredCleanse.optionalInt("maxEffectsRemoved", 1),
                         )
+                    },
+                passiveEffects =
+                    effect.optionalList("passiveEffects").map { entry ->
+                        entry.requiredMap().toPassiveEffectSchema()
                     },
             )
         return parsed
@@ -2807,8 +2874,8 @@ class DataLoader(
         )
     }
 
-    private fun Map<*, *>.toEquipmentPassiveSchema(): EquipmentPassiveSchemaV2 =
-        EquipmentPassiveSchemaV2(
+    private fun Map<*, *>.toPassiveEffectSchema(): PassiveEffectSchemaV2 =
+        PassiveEffectSchemaV2(
             kind = requiredString("kind"),
             tag = optionalString("tag"),
             statusId = optionalString("statusId"),
@@ -2824,10 +2891,10 @@ class DataLoader(
             amount = optionalInt("amount"),
         )
 
-    private fun EquipmentPassiveSchemaV2.toRuntimePassive(): EquipmentPassive =
+    private fun PassiveEffectSchemaV2.toRuntimePassive(): PassiveEffect =
         when (kind) {
-            "OnHitStatusProc" ->
-                EquipmentPassive.OnHitStatusProc(
+            PassiveEffectKindIds.ON_HIT_STATUS_PROC ->
+                PassiveEffect.OnHitStatusProc(
                     statusId = canonicalStatusId(requireNotNull(statusId) { "OnHitStatusProc passive requires 'statusId'." }),
                     chance = chance.also { resolvedChance ->
                         require(resolvedChance in 0.0..1.0) { "OnHitStatusProc chance must be between 0 and 1." }
@@ -2838,16 +2905,16 @@ class DataLoader(
                     magnitude = magnitude,
                 )
 
-            "OnKillResourceRestore" ->
-                EquipmentPassive.OnKillResourceRestore(
+            PassiveEffectKindIds.ON_KILL_RESOURCE_RESTORE ->
+                PassiveEffect.OnKillResourceRestore(
                     resourceType = ResourceType.fromId(requireNotNull(resourceType) { "OnKillResourceRestore passive requires 'resourceType'." }),
                     amount = amount.also { resolvedAmount ->
                         require(resolvedAmount > 0) { "OnKillResourceRestore amount must be positive." }
                     },
                 )
 
-            "ConditionalStatBonus" ->
-                EquipmentPassive.ConditionalStatBonus(
+            PassiveEffectKindIds.CONDITIONAL_STAT_BONUS ->
+                PassiveEffect.ConditionalStatBonus(
                     condition =
                         PassiveCondition.valueOf(
                             requireNotNull(condition) { "ConditionalStatBonus passive requires 'condition'." },
@@ -2861,8 +2928,8 @@ class DataLoader(
                         },
                 )
 
-            "TerrainAffinityBonus" ->
-                EquipmentPassive.TerrainAffinityBonus(
+            PassiveEffectKindIds.TERRAIN_AFFINITY_BONUS ->
+                PassiveEffect.TerrainAffinityBonus(
                     terrainTag =
                         TerrainTag.valueOf(
                             requireNotNull(terrainTag) { "TerrainAffinityBonus passive requires 'terrainTag'." },
@@ -2872,36 +2939,43 @@ class DataLoader(
                             .toRuntimeStatModifier(),
                 )
 
-            "DamageVsTag" ->
-                EquipmentPassive.DamageVsTag(
+            PassiveEffectKindIds.STAT_MODIFIER ->
+                PassiveEffect.StatModifierEffect(
+                    statModifier =
+                        requireNotNull(statModifier) { "StatModifier passive requires 'statModifier'." }
+                            .toRuntimeStatModifier(),
+                )
+
+            PassiveEffectKindIds.DAMAGE_VS_TAG ->
+                PassiveEffect.DamageVsTag(
                     tag = requireNotNull(tag) { "DamageVsTag passive requires 'tag'." },
                     bonusPercent = bonusPercent,
                 )
 
-            "DamageVsStatus" ->
-                EquipmentPassive.DamageVsStatus(
+            PassiveEffectKindIds.DAMAGE_VS_STATUS ->
+                PassiveEffect.DamageVsStatus(
                     statusId = canonicalStatusId(requireNotNull(statusId) { "DamageVsStatus passive requires 'statusId'." }),
                     bonusPercent = bonusPercent,
                 )
 
-            "HpRegenPerTurn" ->
-                EquipmentPassive.HpRegenPerTurn(
+            PassiveEffectKindIds.HP_REGEN_PER_TURN ->
+                PassiveEffect.HpRegenPerTurn(
                     amount = amount,
                 )
 
-            "DamageTypeBonus" ->
-                EquipmentPassive.DamageTypeBonus(
+            PassiveEffectKindIds.DAMAGE_TYPE_BONUS ->
+                PassiveEffect.DamageTypeBonus(
                     type = DamageType.valueOf(requireNotNull(damageType) { "DamageTypeBonus passive requires 'damageType'." }),
                     bonusPercent = bonusPercent,
                 )
 
-            "ResistanceBonus" ->
-                EquipmentPassive.ResistanceBonus(
+            PassiveEffectKindIds.RESISTANCE_BONUS ->
+                PassiveEffect.ResistanceBonus(
                     damageType = DamageType.valueOf(requireNotNull(damageType) { "ResistanceBonus passive requires 'damageType'." }),
                     amount = amount,
                 )
 
-            else -> error("Unsupported equipment passive kind '$kind'.")
+            else -> error("Unsupported passive effect kind '$kind'.")
         }
 
     private fun MaterialSchemaV2.toRuntimeMaterial(localizer: Localizer): MaterialDef =
@@ -3017,8 +3091,10 @@ class DataLoader(
             requiredAffordableTags = requiredAffordableTags.toSet(),
         )
 
-    private fun TalentSchemaV2.toRuntimeTalent(defaultRestoreResourceType: ResourceType?): TalentDef =
-        TalentDef(
+    private fun TalentSchemaV2.toRuntimeTalent(defaultRestoreResourceType: ResourceType?): TalentDef {
+        val resolvedCategory = TalentCategory.valueOf(category)
+        val includeActiveEffects = resolvedCategory != TalentCategory.PASSIVE
+        return TalentDef(
             id = id,
             nameKey = nameKey,
             descriptionTemplateKey = descKey,
@@ -3027,7 +3103,7 @@ class DataLoader(
             audioProfile = audioProfile,
             maxRank = maxPoints,
             tier = tier,
-            category = TalentCategory.valueOf(category),
+            category = resolvedCategory,
             damageType = damageType?.let(DamageType::valueOf) ?: DamageType.PHYSICAL,
             powerDimension = powerDimension?.let(SaveDimension::valueOf),
             resourceCosts = resourceCosts.map { cost -> ResourceCost(type = ResourceType.fromId(cost.axis), amount = cost.amount) },
@@ -3044,10 +3120,12 @@ class DataLoader(
                         resourceRestoreFraction = effect.resourceRestoreFraction,
                         associatedEffects = effect.associatedEffects.map { associatedEffect -> associatedEffect.toRuntime() },
                         cleanseEffect = effect.cleanseEffect?.toRuntime(),
+                        passiveEffects = effect.passiveEffects.map { passiveEffect -> passiveEffect.toRuntimePassive() },
                         effectOps =
                             effect.toEffectOps(
                                 defaultDamageType = damageType?.let(DamageType::valueOf),
                                 defaultRestoreResourceType = defaultRestoreResourceType,
+                                includeActiveEffects = includeActiveEffects,
                             ),
                     )
                 },
@@ -3065,6 +3143,7 @@ class DataLoader(
                                         ?.toEffectOps(
                                             defaultDamageType = damageType?.let(DamageType::valueOf),
                                             defaultRestoreResourceType = defaultRestoreResourceType,
+                                            includeActiveEffects = includeActiveEffects,
                                         ).orEmpty(),
                             )
                         }
@@ -3073,6 +3152,7 @@ class DataLoader(
                         rankEffects = levelEffects,
                         defaultDamageType = damageType?.let(DamageType::valueOf),
                         defaultRestoreResourceType = defaultRestoreResourceType,
+                        includeActiveEffects = includeActiveEffects,
                     )
                 },
             keywords = keywords,
@@ -3083,6 +3163,7 @@ class DataLoader(
             treeId = treeId,
             unlockLevel = unlockLevel,
         )
+    }
 
     private fun AssociatedStatusEffectSchemaV2.toRuntime(): AssociatedStatusEffect =
         AssociatedStatusEffect(
@@ -3108,8 +3189,12 @@ class DataLoader(
     private fun TalentLevelEffectSchemaV2.toEffectOps(
         defaultDamageType: DamageType?,
         defaultRestoreResourceType: ResourceType?,
+        includeActiveEffects: Boolean = true,
     ): List<EffectOp> =
         buildList {
+            if (!includeActiveEffects) {
+                return@buildList
+            }
             if (damageMultiplier > 0.0) {
                 add(
                     EffectOp.Damage(
@@ -3205,14 +3290,15 @@ class DataLoader(
         rankEffects: Map<Int, TalentLevelEffectSchemaV2>,
         defaultDamageType: DamageType?,
         defaultRestoreResourceType: ResourceType?,
+        includeActiveEffects: Boolean = true,
     ): List<TalentBreakpoint> {
         val sortedRanks = rankEffects.keys.sorted()
         return sortedRanks.mapNotNull { rank ->
             if (rank == sortedRanks.first()) {
                 return@mapNotNull null
             }
-            val currentOps = rankEffects.getValue(rank).toEffectOps(defaultDamageType, defaultRestoreResourceType)
-            val previousOps = rankEffects.getValue(rank - 1).toEffectOps(defaultDamageType, defaultRestoreResourceType)
+            val currentOps = rankEffects.getValue(rank).toEffectOps(defaultDamageType, defaultRestoreResourceType, includeActiveEffects)
+            val previousOps = rankEffects.getValue(rank - 1).toEffectOps(defaultDamageType, defaultRestoreResourceType, includeActiveEffects)
             val previousSignatures = previousOps.map(::breakpointSignature).toSet()
             val unlockedEffects = currentOps.filter { effect -> breakpointSignature(effect) !in previousSignatures }
             if (unlockedEffects.isEmpty()) {

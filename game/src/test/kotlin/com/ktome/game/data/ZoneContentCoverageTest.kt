@@ -1,7 +1,7 @@
 package com.ktome.game.data
 
 import com.ktome.core.economy.ShardEconomy
-import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.PassiveEffect
 import com.ktome.core.economy.ShopNode
 import com.ktome.core.item.AffixEquipType
 import com.ktome.core.item.AffixType
@@ -232,8 +232,8 @@ class ZoneContentCoverageTest {
         val itemBundle = DataLoader(GameLocale.EN_US).loadItemBundle()
         val passiveTags =
             (
-                itemBundle.baseItems.mapNotNull { item -> (item.passive as? EquipmentPassive.DamageVsTag)?.tag } +
-                    itemBundle.affixes.mapNotNull { affix -> (affix.passive as? EquipmentPassive.DamageVsTag)?.tag }
+                itemBundle.baseItems.mapNotNull { item -> (item.passive as? PassiveEffect.DamageVsTag)?.tag } +
+                    itemBundle.affixes.mapNotNull { affix -> (affix.passive as? PassiveEffect.DamageVsTag)?.tag }
             ).toSet()
 
         assertEquals(setOf("bandit", "undead", "orc", "cultist", "forge", "river", "crystal", "abyssal"), passiveTags)

@@ -39,27 +39,23 @@ class BerserkerPlayableTest {
     }
 
     @Test
-    fun `berserker pr11 sustain loop can spend and rebuild hate`() {
+    fun `berserker pr11 sustain loop can spend and rebuild hate while passive stays unslotted`() {
         val session = ClassFormalizationTestSupport.newSession(tempDir, professionId = "berserker")
         ClassFormalizationTestSupport.clearMonsters(session)
         val dummyId = ClassFormalizationTestSupport.installCombatDummy(session)
         val dummyPoint = ClassFormalizationTestSupport.entityPoint(session, dummyId)
         val hatePool = ClassFormalizationTestSupport.resourcePool(session, ResourceType.HATE)
         val world = ClassFormalizationTestSupport.runtimeWorld(session)
+        val loadout = requireNotNull(world.get<TalentLoadout>(session.playerId))
 
-        val painFuelSlot = ensureTalentEquipped(session, "pain_fuel", slot = 3)
+        loadout.talentLevels["pain_fuel"] = 3
+        assertTrue(session.talentSlots().none { talent -> talent.talentId == "pain_fuel" })
+        assertTrue(session.reserveTalentSlots().none { talent -> talent.talentId == "pain_fuel" })
+        assertTrue(session.renderSnapshot().uiState.reserveTalents.none { talent -> talent.talentId == "pain_fuel" })
         val pursuitDriveSlot = ensureTalentEquipped(session, "pursuit_drive", slot = 2)
         val slaughterDriveSlot = ensureTalentEquipped(session, "slaughter_drive", slot = 4)
 
-        val health = requireNotNull(world.get<com.ktome.core.ecs.Health>(session.playerId))
-        health.current = (health.max * 0.55).toInt()
         hatePool.current = 26
-        val hpBeforePainFuel = health.current
-
-        assertTrue(session.perform(PlayerCommand.UseTalent(painFuelSlot)))
-        assertTrue(health.current > hpBeforePainFuel)
-        val tracker = requireNotNull(world.get<StatusTracker>(session.playerId))
-        assertTrue(tracker.activeEffects().any { effect -> effect.schemaId == "war_cry_empower" })
 
         assertTrue(session.perform(PlayerCommand.UseTalent(pursuitDriveSlot, dummyPoint)))
         assertTrue(hatePool.current < 26)
@@ -67,6 +63,7 @@ class BerserkerPlayableTest {
         val hateAfterStrike = hatePool.current
         assertTrue(session.perform(PlayerCommand.UseTalent(slaughterDriveSlot)))
         assertTrue(hatePool.current >= hateAfterStrike)
+        val tracker = requireNotNull(world.get<StatusTracker>(session.playerId))
         assertTrue(tracker.activeEffects().any { effect -> effect.schemaId == "war_cry_empower" })
     }
 

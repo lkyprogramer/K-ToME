@@ -91,6 +91,69 @@ class RouteProgressCommandTest {
     }
 
     @Test
+    fun `energy route progress yields to combat bot when a visible hostile is close`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260318L,
+                        zoneId = "bandit_camp",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe", "bandit_camp"),
+                        routeIndex = 2,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("close-hostile-route-progress")),
+            )
+
+        val observation = RunObservationCapture.capture(session, turnIndex = 0)
+        val closeHostile = observation.playerPosition + Point(2, 0)
+
+        assertTrue(routeProgressCommand(session, observation.copy(visibleHostilePositions = listOf(closeHostile))) == null)
+    }
+
+    @Test
+    fun `mana route progress yields to combat bot when a visible hostile is close`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260318L,
+                        zoneId = "bandit_camp",
+                        playerProfessionId = "arcanist",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe", "bandit_camp"),
+                        routeIndex = 2,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("close-hostile-route-progress-mana")),
+            )
+
+        val observation = RunObservationCapture.capture(session, turnIndex = 0)
+        val closeHostile = observation.playerPosition + Point(2, 0)
+
+        assertTrue(routeProgressCommand(session, observation.copy(visibleHostilePositions = listOf(closeHostile))) == null)
+    }
+
+    @Test
+    fun `non energy route progress keeps hard route push when a visible hostile is close`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260318L,
+                        zoneId = "bandit_camp",
+                        playerProfessionId = "vanguard",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe", "bandit_camp"),
+                        routeIndex = 2,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("close-hostile-route-progress-non-energy")),
+            )
+
+        val observation = RunObservationCapture.capture(session, turnIndex = 0)
+        val closeHostile = observation.playerPosition + Point(2, 0)
+
+        assertTrue(routeProgressCommand(session, observation.copy(visibleHostilePositions = listOf(closeHostile))) != null)
+    }
+
+    @Test
     fun `route progress without objective hook does not auto interact pending objective`() {
         val session =
             GameModule.newFoundationSession(

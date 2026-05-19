@@ -4,10 +4,10 @@ import com.ktome.core.combat.DiminishingReturns
 import com.ktome.core.combat.PowerSaveFormula
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
-import com.ktome.core.ecs.EquipmentPassiveStatModifier
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.PassiveStatModifier
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
@@ -38,7 +38,7 @@ object StatsCalculator {
         return calculate(stats, profile, collectModifiers(world, entity), level)
     }
 
-    fun calculateWithoutEquipmentPassive(
+    fun calculateWithoutPassive(
         world: World,
         entity: EntityId,
     ): DerivedStats {
@@ -99,7 +99,7 @@ object StatsCalculator {
     private fun collectPassiveModifiers(
         world: World,
         entity: EntityId,
-    ): StatModifier = world.get<EquipmentPassiveStatModifier>(entity)?.modifier ?: StatModifier.ZERO
+    ): StatModifier = world.get<PassiveStatModifier>(entity)?.modifier ?: StatModifier.ZERO
 
     private fun calculateDerived(
         stats: Stats,
@@ -126,7 +126,9 @@ object StatsCalculator {
             critResistance = 0.0,
             maxHp = profile.baseHp + effectiveStats.con * 8 + modifiers.maxHp,
             maxStamina = profile.baseStamina + effectiveStats.wil * 5 + modifiers.maxStamina,
-            hpRegen = profile.baseHpRegen + effectiveStats.con * 0.2 + modifiers.hpRegen,
+            hpRegen = DiminishingReturns.effectiveHpRegen(
+                profile.baseHpRegen + effectiveStats.con * 0.2 + modifiers.hpRegen,
+            ),
             staminaRegen = 3.0 + modifiers.staminaRegen,
             talentPower = 1.0 + effectiveStats.wil * 0.01 + modifiers.talentPower,
             powerSave = PowerSaveFormula.calculate(effectiveStats, level),
