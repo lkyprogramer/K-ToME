@@ -493,7 +493,7 @@ private fun routeProgressCommand(
         observation.visibleHostilePositions.any { hostile ->
             hostile.chebyshevDistanceTo(observation.playerPosition) <= 3
         }
-    if (observation.playerResource.typeId == "ENERGY" && closeVisibleHostile) {
+    if (observation.playerResource.typeId in FRAGILE_ROUTE_RESOURCE_IDS && closeVisibleHostile) {
         return null
     }
 
@@ -529,6 +529,8 @@ private fun routeProgressCommand(
     }
     return null
 }
+
+private val FRAGILE_ROUTE_RESOURCE_IDS: Set<String> = setOf("ENERGY", "MANA")
 
 internal fun preferredRouteIndex(routeSelection: RouteSelectionSnapshot): Int {
     val mainlineOption =

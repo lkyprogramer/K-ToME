@@ -8,6 +8,7 @@ import com.ktome.core.ecs.get
 import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.resource.ResourceType
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -421,6 +422,74 @@ class PassiveEffectResolverTest {
                     source.sourceSpecialTemplateId == "unique_b" &&
                     source.sourceId.contains(":${armorItemId.value}:")
             },
+        )
+    }
+
+    @Test
+    fun `stat modifier and regen passive effects contribute to stat adjustment`() {
+        val passives =
+            listOf(
+                PassiveSource(
+                    kind = PassiveSourceKind.TALENT,
+                    sourceId = "talent:arcane_overload:2:stat_modifier",
+                    sourceTemplateId = "arcane_overload",
+                    talentRank = 2,
+                    passive = PassiveEffect.StatModifierEffect(StatModifier(maxHp = 8, castSpeedRating = 3, hpRegen = 0.4)),
+                ),
+                PassiveSource(
+                    kind = PassiveSourceKind.TALENT,
+                    sourceId = "talent:pain_fuel:2:hp_regen",
+                    sourceTemplateId = "pain_fuel",
+                    talentRank = 2,
+                    passive = PassiveEffect.HpRegenPerTurn(amount = 2),
+                ),
+            )
+
+        val adjustment = PassiveEffectResolver.resolveStatAdjustment(passives, PassiveStatContext(healthFraction = 1.0))
+
+        assertEquals(2, adjustment.sources.size)
+        assertEquals(8, adjustment.modifier.maxHp)
+        assertEquals(3, adjustment.modifier.castSpeedRating)
+        assertEquals(2.4, adjustment.modifier.hpRegen, 0.0001)
+    }
+
+    @Test
+    fun `passive source validates stable identity fields`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            PassiveSource(
+                kind = PassiveSourceKind.TALENT,
+                sourceId = "",
+                sourceTemplateId = "mana_surge",
+                talentRank = 1,
+                passive = PassiveEffect.OnKillResourceRestore(ResourceType.MANA, amount = 3),
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            PassiveSource(
+                kind = PassiveSourceKind.TALENT,
+                sourceId = "talent:mana_surge:0:restore",
+                sourceTemplateId = "mana_surge",
+                talentRank = 0,
+                passive = PassiveEffect.OnKillResourceRestore(ResourceType.MANA, amount = 3),
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            PassiveSource(
+                kind = PassiveSourceKind.EQUIPMENT,
+                sourceId = "equipment:1:wand:affix:",
+                sourceTemplateId = "wand",
+                affixId = "",
+                passive = PassiveEffect.DamageTypeBonus(DamageType.FIRE, bonusPercent = 0.03),
+            )
+        }
+    }
+
+    @Test
+    fun `passive effect kind ids include stat modifier effect`() {
+        assertEquals(PassiveEffectKindIds.STAT_MODIFIER, PassiveEffect.StatModifierEffect(StatModifier(maxHp = 1)).kindId())
+        assertEquals(
+            PassiveEffectKindIds.ON_KILL_RESOURCE_RESTORE,
+            PassiveEffect.OnKillResourceRestore(ResourceType.MANA, amount = 3).kindId(),
         )
     }
 

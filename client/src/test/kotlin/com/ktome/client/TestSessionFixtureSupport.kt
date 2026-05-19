@@ -48,7 +48,7 @@ internal fun installProfessionReserveTalent(session: FoundationGameSession) {
     val reserveTalentId =
         when (session.config.playerProfessionId) {
             "vanguard" -> "charge"
-            "arcanist" -> "mana_surge"
+            "arcanist" -> "flame_wall"
             "rogue" -> "shadowstep"
             "templar" -> "judgment_hammer"
             else -> error("Unsupported profession ${session.config.playerProfessionId} for smoke loadout fixture.")

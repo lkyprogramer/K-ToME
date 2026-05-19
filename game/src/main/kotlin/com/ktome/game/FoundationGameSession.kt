@@ -3181,7 +3181,9 @@ class FoundationGameSession internal constructor(
         }
 
     private fun reserveTalentIds(loadout: TalentLoadout): List<String> {
-        return orderedLearnedTalentIds(loadout).filterNot(activeTalentStateIds(loadout)::contains)
+        return orderedLearnedTalentIds(loadout)
+            .filter(::isActiveSlotTalent)
+            .filterNot(activeTalentStateIds(loadout)::contains)
     }
 
     private fun activeTalentStateIds(loadout: TalentLoadout): Set<String> {

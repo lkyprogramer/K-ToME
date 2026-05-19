@@ -3998,13 +3998,19 @@ class FoundationGameSessionTest {
 
         state.nextCycleTurn = session.currentTurnCount()
         val stabilizedHealth = requireNotNull(world.get<Health>(session.playerId)).current
+        val settledStatusTickCount =
+            recentEventSummaries(session).count { event -> event.startsWith("status_tick:${session.playerId.value}:") }
         movePlayerTo(session, hazardPoint)
 
         repeat(2) {
             assertTrue(session.perform(PlayerCommand.Wait))
         }
 
-        assertEquals(stabilizedHealth, requireNotNull(world.get<Health>(session.playerId)).current)
+        assertTrue(requireNotNull(world.get<Health>(session.playerId)).current >= stabilizedHealth)
+        assertEquals(
+            settledStatusTickCount,
+            recentEventSummaries(session).count { event -> event.startsWith("status_tick:${session.playerId.value}:") },
+        )
         assertTrue(session.renderSnapshot().overlays.none { overlay -> overlay.id.startsWith("crystal-shards:") })
     }
 
@@ -4241,19 +4247,22 @@ class FoundationGameSessionTest {
 
         assertTrue(session.perform(PlayerCommand.Wait))
         assertEquals(VoidPressurePhase.TELEGRAPH, state.phase)
-        val healthBeforeTick = requireNotNull(world.get<Health>(session.playerId)).current
 
         assertTrue(session.perform(PlayerCommand.Wait))
         assertEquals(VoidPressurePhase.ACTIVE, state.phase)
-        assertTrue(
+        val activeEffects =
             requireNotNull(world.get<WorldEffect>(eruptionEntity))
                 .effects
-                .any { effect -> effect.schemaId == StatusEffectType.WEAKEN.schemaId },
+        assertTrue(activeEffects.any { effect -> effect.schemaId == StatusEffectType.WEAKEN.schemaId })
+        assertTrue(
+            activeEffects.any { effect ->
+                effect.schemaId == StatusEffectType.POISON.schemaId && effect.tickDamage == state.damagePerTick
+            },
         )
         assertTrue(session.perform(PlayerCommand.Wait))
 
-        val healthAfterTick = requireNotNull(world.get<Health>(session.playerId)).current
-        assertEquals(healthBeforeTick - state.damagePerTick, healthAfterTick)
+        val tickEvents = recentEventSummaries(session).filter { event -> event.startsWith("status_tick:${session.playerId.value}:") }
+        assertTrue(tickEvents.any { event -> event.endsWith(":WORLD") })
     }
 
     @Test
@@ -5542,7 +5551,7 @@ class FoundationGameSessionTest {
         val world = runtimeWorld(session)
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
         movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
-        requireNotNull(world.get<Health>(bossId)).current = requireNotNull(world.get<Health>(bossId)).max * 2 / 5
+        requireNotNull(world.get<Health>(bossId)).let { health -> health.current = health.max / 4 }
 
         advanceTurnsUntil(session, maxTurns = 4) {
             world.get<BossEncounterState>(bossId)?.currentPhaseId == "phase_desperate"

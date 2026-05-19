@@ -85,13 +85,11 @@ class SpellbladeEquilibriumTest {
 
         val balancePointSession = ClassFormalizationTestSupport.newSession(tempDir.resolve("balance-point"), professionId = "spellblade")
         val balancePointWorld = ClassFormalizationTestSupport.runtimeWorld(balancePointSession)
-        val balancePointSlot = ensureTalentEquipped(balancePointSession, "balance_point", slot = 3)
-        val balancePointManaPool = ClassFormalizationTestSupport.resourcePool(balancePointSession, ResourceType.MANA)
-        balancePointManaPool.current = balancePointManaPool.max
-        assertTrue(balancePointSession.perform(PlayerCommand.UseTalent(balancePointSlot)))
-        assertTrue(ClassFormalizationTestSupport.playerCooldown(balancePointSession, "balance_point") > 0)
-        val balancePointTracker = requireNotNull(balancePointWorld.get<StatusTracker>(balancePointSession.playerId))
-        assertTrue(balancePointTracker.activeEffects().any { effect -> effect.schemaId == "MANA_SURGE_BUFF" })
+        val balancePointLoadout = requireNotNull(balancePointWorld.get<TalentLoadout>(balancePointSession.playerId))
+        balancePointLoadout.talentLevels["balance_point"] = 3
+        assertTrue(balancePointSession.talentSlots().none { talent -> talent.talentId == "balance_point" })
+        assertTrue(balancePointSession.reserveTalentSlots().none { talent -> talent.talentId == "balance_point" })
+        assertTrue(balancePointSession.renderSnapshot().uiState.reserveTalents.none { talent -> talent.talentId == "balance_point" })
 
         val blinkStrikeSession = ClassFormalizationTestSupport.newSession(tempDir.resolve("blink-strike"), professionId = "spellblade")
         ClassFormalizationTestSupport.clearMonsters(blinkStrikeSession)

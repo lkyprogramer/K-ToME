@@ -271,6 +271,17 @@ class PlayableProfessionPassiveTalentTest {
         assertTrue(session.talentSlots().none { slot -> slot.talentId == "devotion" })
     }
 
+    @Test
+    fun `PR04-01 learned passive talents do not enter reserve loadout`() {
+        val session = newProfessionSession("arcanist", "passive-reserve-suppression")
+
+        setTalentRank(session, talentId = "mana_surge", rank = 1)
+
+        assertTrue(session.reserveTalentSlots().none { talent -> talent.talentId == "mana_surge" })
+        assertTrue(session.renderSnapshot().uiState.reserveTalents.none { talent -> talent.talentId == "mana_surge" })
+        assertEquals(1, passiveNode(session, "mana_surge").rank)
+    }
+
     private fun newProfessionSession(
         professionId: String,
         saveName: String,
