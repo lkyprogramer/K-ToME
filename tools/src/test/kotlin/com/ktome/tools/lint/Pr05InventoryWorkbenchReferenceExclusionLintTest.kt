@@ -66,6 +66,25 @@ class Pr05InventoryWorkbenchReferenceExclusionLintTest {
     }
 
     @Test
+    fun `production surface matching normalizes platform path separators`() {
+        val findings =
+            scanProductionSurfaceText(
+                relativePath = """client\src\main\kotlin\com\ktome\client\render\InventoryWorkbenchPresentation.kt""",
+                text = "ui.inventory.category_tab",
+            )
+
+        assertEquals(
+            listOf(
+                ReferenceExclusionFinding(
+                    "client/src/main/kotlin/com/ktome/client/render/InventoryWorkbenchPresentation.kt",
+                    "ui.inventory.category_tab",
+                ),
+            ),
+            findings,
+        )
+    }
+
+    @Test
     fun `docs reviews and prompts are not scanned production surfaces`() {
         val forbiddenText = FORBIDDEN_TOKENS.joinToString(separator = "\n")
         val findings =
@@ -117,12 +136,16 @@ class Pr05InventoryWorkbenchReferenceExclusionLintTest {
         relativePath: String,
         text: String,
     ): List<ReferenceExclusionFinding> {
-        if (!isProductionSurfacePath(relativePath) || !isScannedTextFile(relativePath)) {
+        val normalizedPath = normalizePath(relativePath)
+        if (!isProductionSurfacePath(normalizedPath) || !isScannedTextFile(normalizedPath)) {
             return emptyList()
         }
 
-        return findForbiddenTokens(relativePath = relativePath, text = text)
+        return findForbiddenTokens(relativePath = normalizedPath, text = text)
     }
+
+    private fun normalizePath(path: String): String =
+        path.replace('\\', '/')
 
     private fun isProductionSurfacePath(relativePath: String): Boolean =
         PRODUCTION_SURFACE_ROOTS.any { root ->
