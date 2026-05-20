@@ -1380,6 +1380,14 @@ class FoundationGameSession internal constructor(
 
     internal fun automationWorld(): World = world
 
+    internal fun automationContentIdentityHash(): Int = System.identityHashCode(content)
+
+    internal fun automationActiveShopId(): String? = activeShopId
+
+    internal fun automationActiveRouteSelection(): RouteSelectionSnapshot? = buildRouteSelectionSnapshot()
+
+    internal fun automationPlayerResourceView(): PlayerResourceView = resolvePlayerResourceView()
+
     internal fun automationTerrainTags(): Map<Point, Set<com.ktome.core.mapgen.TerrainTag>> = activeFloorState.terrainTags
 
     internal fun automationTerrainTagsAt(point: Point): Set<com.ktome.core.mapgen.TerrainTag> = activeFloorState.terrainTagsAt(point)
@@ -3297,11 +3305,12 @@ class FoundationGameSession internal constructor(
         prepareSnapshotFrontstageCues()
         val zone = currentZoneSchema()
         val zonePresentation = currentZonePresentation()
-        val overlays = buildOverlaySnapshots()
+        val snapshotEntityIndex = buildSnapshotEntityIndex()
+        val overlays = buildOverlaySnapshots(snapshotEntityIndex)
         val combatFeedbackEvents = resolvePendingCombatFeedbackEvents()
         pendingCombatFeedbackEvents.clear()
-        val mapCells = buildMapCells(zone)
-        val actors = buildActorSnapshots()
+        val mapCells = buildMapCells(zone, snapshotEntityIndex)
+        val actors = buildActorSnapshots(snapshotEntityIndex)
         return RenderSnapshot(
             metadata =
                 RenderMetadataSnapshot(
@@ -3321,12 +3330,72 @@ class FoundationGameSession internal constructor(
                     ambientProfile = zone.ambientProfile,
                 ),
             mapCells = mapCells,
-            props = buildPropSnapshots(),
+            props = buildPropSnapshots(snapshotEntityIndex),
             actors = actors,
             overlays = overlays,
             uiState = buildRenderUiState(),
-            logEvents = buildVisibleLogEvents(overlays),
+            logEvents = buildVisibleLogEvents(overlays, snapshotEntityIndex),
             combatFeedbackEvents = combatFeedbackEvents,
+        )
+    }
+
+    private data class SnapshotEntityIndex(
+        val stairDirectionsByPoint: Map<Point, StairDirection>,
+        val liveNamedActorsByPoint: Map<Point, EntityId>,
+        val groundItemsByPoint: Map<Point, List<EntityId>>,
+        val stairSnapshotEntityIds: List<EntityId>,
+        val interactableSnapshotEntityIds: List<EntityId>,
+        val liveNamedActorIds: List<EntityId>,
+        val actorSnapshotEntityIds: List<EntityId>,
+        val livingMonsterEntityIds: List<EntityId>,
+    )
+
+    private fun buildSnapshotEntityIndex(): SnapshotEntityIndex {
+        val stairDirectionsByPoint = linkedMapOf<Point, StairDirection>()
+        val stairSnapshotEntityIds = mutableListOf<EntityId>()
+        world.entitiesWith(Position::class, Stair::class).forEach { entityId ->
+            val point = requireNotNull(world.get<Position>(entityId)).toPoint()
+            stairSnapshotEntityIds += entityId
+            if (point !in stairDirectionsByPoint) {
+                stairDirectionsByPoint[point] = requireNotNull(world.get<Stair>(entityId)).direction
+            }
+        }
+
+        val liveNamedActorsByPoint = linkedMapOf<Point, EntityId>()
+        val liveNamedActorIds = mutableListOf<EntityId>()
+        world.entitiesWith(Position::class, Health::class, Name::class).forEach { entityId ->
+            if (requireNotNull(world.get<Health>(entityId)).current <= 0) {
+                return@forEach
+            }
+            val point = requireNotNull(world.get<Position>(entityId)).toPoint()
+            liveNamedActorIds += entityId
+            if (point !in liveNamedActorsByPoint) {
+                liveNamedActorsByPoint[point] = entityId
+            }
+        }
+
+        val groundItemsByPoint = linkedMapOf<Point, MutableList<EntityId>>()
+        world.entitiesWith(Position::class, ItemInstance::class).forEach { entityId ->
+            val point = requireNotNull(world.get<Position>(entityId)).toPoint()
+            groundItemsByPoint.getOrPut(point) { mutableListOf() } += entityId
+        }
+
+        val actorSnapshotEntityIds =
+            world.entitiesWith(Position::class, Health::class, Stats::class, DerivedStats::class, Name::class)
+                .filter { entityId -> requireNotNull(world.get<Health>(entityId)).current > 0 }
+        val livingMonsterEntityIds =
+            world.entitiesWith(Position::class, Health::class, MonsterTemplateId::class)
+                .filter { entityId -> requireNotNull(world.get<Health>(entityId)).current > 0 }
+
+        return SnapshotEntityIndex(
+            stairDirectionsByPoint = stairDirectionsByPoint,
+            liveNamedActorsByPoint = liveNamedActorsByPoint,
+            groundItemsByPoint = groundItemsByPoint.mapValues { entry -> entry.value.toList() },
+            stairSnapshotEntityIds = stairSnapshotEntityIds,
+            interactableSnapshotEntityIds = world.entitiesWith(Position::class, Interactable::class),
+            liveNamedActorIds = liveNamedActorIds,
+            actorSnapshotEntityIds = actorSnapshotEntityIds,
+            livingMonsterEntityIds = livingMonsterEntityIds,
         )
     }
 
@@ -3346,18 +3415,20 @@ class FoundationGameSession internal constructor(
             )
         }
 
-    private fun buildVisibleLogEvents(overlays: List<OverlayRenderSnapshot>): List<RenderLogEventSnapshot> =
+    private fun buildVisibleLogEvents(
+        overlays: List<OverlayRenderSnapshot>,
+        snapshotEntityIndex: SnapshotEntityIndex,
+    ): List<RenderLogEventSnapshot> =
         messageLog.map(SessionLogEntry::snapshot) +
-            visibleEncounterReadabilityEvents() +
+            visibleEncounterReadabilityEvents(snapshotEntityIndex) +
             overlays.mapNotNull { overlay -> overlay.warningMessage?.let(::RenderLogEventSnapshot) }
 
-    private fun visibleEncounterReadabilityEvents(): List<RenderLogEventSnapshot> =
-        world.entitiesWith(Position::class, Health::class, Name::class)
+    private fun visibleEncounterReadabilityEvents(snapshotEntityIndex: SnapshotEntityIndex): List<RenderLogEventSnapshot> =
+        snapshotEntityIndex.liveNamedActorIds
             .asSequence()
             .filter { entityId ->
-                val health = world.get<Health>(entityId)
                 val position = world.get<Position>(entityId)?.toPoint()
-                health != null && health.current > 0 && position in visibleTiles
+                position in visibleTiles
             }.sortedBy(EntityId::value)
             .flatMap { entityId ->
                 sequence {
@@ -3397,7 +3468,10 @@ class FoundationGameSession internal constructor(
                 }
             }.toList()
 
-    private fun buildMapCells(zone: ZoneSchemaV2): List<MapCellSnapshot> =
+    private fun buildMapCells(
+        zone: ZoneSchemaV2,
+        snapshotEntityIndex: SnapshotEntityIndex,
+    ): List<MapCellSnapshot> =
         buildList(capacity = map.width * map.height) {
             for (y in 0 until map.height) {
                 for (x in 0 until map.width) {
@@ -3427,16 +3501,16 @@ class FoundationGameSession internal constructor(
                                     terrainTags = terrainTags.map { tag -> tag.name }.sorted(),
                                     terrainAudioProfile = terrainAudioProfile(terrainTags, terrainOverride),
                                     terrainOverride = terrainOverride?.toRenderSnapshot(),
-                                    stairDirectionId = stairDirectionAt(point)?.name,
+                                    stairDirectionId = snapshotEntityIndex.stairDirectionsByPoint[point]?.name,
                                     actorEntityId =
                                         if (visibility == CellVisibilitySnapshot.VISIBLE) {
-                                            actorAt(point)?.value
+                                            snapshotEntityIndex.liveNamedActorsByPoint[point]?.value
                                         } else {
                                             null
                                         },
                                     items =
                                         if (visibility == CellVisibilitySnapshot.VISIBLE) {
-                                            itemsOnGroundAt(point).mapNotNull(::toItemRenderSnapshot)
+                                            snapshotEntityIndex.groundItemsByPoint[point].orEmpty().mapNotNull(::toItemRenderSnapshot)
                                         } else {
                                             emptyList()
                                         },
@@ -3448,9 +3522,9 @@ class FoundationGameSession internal constructor(
             }
         }
 
-    private fun buildPropSnapshots(): List<PropRenderSnapshot> =
+    private fun buildPropSnapshots(snapshotEntityIndex: SnapshotEntityIndex): List<PropRenderSnapshot> =
         (
-            world.entitiesWith(Position::class, Stair::class)
+            snapshotEntityIndex.stairSnapshotEntityIds
                 .mapNotNull { entityId ->
                     val position = requireNotNull(world.get<Position>(entityId)).toPoint()
                     if (cellVisibility(position) == CellVisibilitySnapshot.HIDDEN) {
@@ -3472,7 +3546,7 @@ class FoundationGameSession internal constructor(
                                 },
                         )
                     } +
-                world.entitiesWith(Position::class, Interactable::class)
+                snapshotEntityIndex.interactableSnapshotEntityIds
                     .mapNotNull { entityId ->
                         val position = requireNotNull(world.get<Position>(entityId)).toPoint()
                         if (cellVisibility(position) == CellVisibilitySnapshot.HIDDEN) {
@@ -3550,14 +3624,11 @@ class FoundationGameSession internal constructor(
                     }
         ).sortedWith(compareBy<PropRenderSnapshot> { it.y }.thenBy { it.x }.thenBy(PropRenderSnapshot::id))
 
-    private fun buildActorSnapshots(): List<ActorRenderSnapshot> =
-        world.entitiesWith(Position::class, Health::class, Stats::class, DerivedStats::class, Name::class)
+    private fun buildActorSnapshots(snapshotEntityIndex: SnapshotEntityIndex): List<ActorRenderSnapshot> =
+        snapshotEntityIndex.actorSnapshotEntityIds
             .mapNotNull { entityId ->
                 val position = requireNotNull(world.get<Position>(entityId)).toPoint()
                 val health = requireNotNull(world.get<Health>(entityId))
-                if (health.current <= 0) {
-                    return@mapNotNull null
-                }
                 if (entityId != playerId && position !in visibleTiles) {
                     return@mapNotNull null
                 }
@@ -3631,14 +3702,10 @@ class FoundationGameSession internal constructor(
             )
         }
 
-    private fun buildOverlaySnapshots(): List<OverlayRenderSnapshot> {
+    private fun buildOverlaySnapshots(snapshotEntityIndex: SnapshotEntityIndex): List<OverlayRenderSnapshot> {
         val bossAndTelegraphOverlays =
-            world.entitiesWith(Position::class, Health::class, MonsterTemplateId::class)
+            snapshotEntityIndex.livingMonsterEntityIds
                 .flatMap { entityId ->
-                    val health = requireNotNull(world.get<Health>(entityId))
-                    if (health.current <= 0) {
-                        return@flatMap emptyList()
-                    }
                     val templateId = requireNotNull(world.get<MonsterTemplateId>(entityId)).value
                     val position = requireNotNull(world.get<Position>(entityId)).toPoint()
                     buildList {
@@ -4003,7 +4070,7 @@ class FoundationGameSession internal constructor(
     private fun spawnPatrolPressureWave(state: PatrolPressureRuntimeState): Int {
         val templates =
             state.spawnTemplateIds
-                .mapNotNull { templateId -> content.monsterCatalog.firstOrNull { template -> template.id == templateId } }
+                .mapNotNull(content::monsterCatalogTemplate)
         if (templates.isEmpty()) {
             return 0
         }
@@ -4423,7 +4490,7 @@ class FoundationGameSession internal constructor(
     private fun spawnAmbushLaneGroup(state: AmbushLaneTriggerState): Int {
         val templates =
             state.spawnTemplateIds
-                .mapNotNull { templateId -> content.monsterCatalog.firstOrNull { template -> template.id == templateId } }
+                .mapNotNull(content::monsterCatalogTemplate)
         if (templates.isEmpty()) {
             return 0
         }
@@ -5019,7 +5086,7 @@ class FoundationGameSession internal constructor(
     }
 
     private fun talentTreeIdForTalent(talentId: String): String =
-        content.schemaCatalog.talents.firstOrNull { talent -> talent.id == talentId }?.treeId.orEmpty()
+        content.talentSchema(talentId)?.treeId.orEmpty()
 
     private fun projectSingleTarget(
         origin: Point,
@@ -6215,7 +6282,7 @@ class FoundationGameSession internal constructor(
         effectiveRanks: Map<String, Int>,
     ): TalentSlotSnapshot? {
         val details = playerTalentDetails(loadout, talentId, cooldowns, effectiveRanks) ?: return null
-        val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talentId }) {
+        val schema = requireNotNull(content.talentSchema(talentId)) {
             "Unknown talent schema '$talentId'."
         }
         val owner = requireNotNull(resolveTalentTreeOwner(schema)) { "Unknown talent tree owner for '$talentId'." }
@@ -6256,7 +6323,7 @@ class FoundationGameSession internal constructor(
         effectiveRanks: Map<String, Int>,
     ): TalentReserveSnapshot? {
         val details = playerTalentDetails(loadout, talentId, cooldowns, effectiveRanks) ?: return null
-        val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talentId }) {
+        val schema = requireNotNull(content.talentSchema(talentId)) {
             "Unknown talent schema '$talentId'."
         }
         val owner = requireNotNull(resolveTalentTreeOwner(schema)) { "Unknown talent tree owner for '$talentId'." }
@@ -6856,7 +6923,7 @@ class FoundationGameSession internal constructor(
 
     private fun bossNameKeyFor(templateId: String): String? =
         bossDefinitionByTemplateId(templateId)?.nameKey
-            ?: content.schemaCatalog.monsters.firstOrNull { schema -> schema.id == templateId }?.nameKey
+            ?: content.monsterSchema(templateId)?.nameKey
 
     private fun defeatedBossNameKeys(): List<String> {
         val defeatedBossIds = worldProgress.defeatedBossIds
@@ -7270,7 +7337,7 @@ class FoundationGameSession internal constructor(
             entityId == playerId -> currentProfessionSchema()?.visualKey ?: "actor.player"
             else -> {
                 val templateId = world.get<MonsterTemplateId>(entityId)?.value ?: return "actor.unknown"
-                content.allMonsterTemplates().firstOrNull { template -> template.id == templateId }?.visualKey ?: "actor.unknown"
+                content.monsterTemplate(templateId)?.visualKey ?: "actor.unknown"
             }
         }
 
@@ -7279,7 +7346,7 @@ class FoundationGameSession internal constructor(
             entityId == playerId -> currentProfessionSchema()?.audioProfile
             else -> {
                 val templateId = world.get<MonsterTemplateId>(entityId)?.value ?: return null
-                content.allMonsterTemplates().firstOrNull { template -> template.id == templateId }?.audioProfile
+                content.monsterTemplate(templateId)?.audioProfile
             }
         }
 
@@ -7291,15 +7358,15 @@ class FoundationGameSession internal constructor(
             entityId == playerId -> "actor.player.name"
             else -> {
                 val templateId = world.get<MonsterTemplateId>(entityId)?.value ?: return null
-                content.schemaCatalog.monsters.firstOrNull { schema -> schema.id == templateId }?.nameKey
+                content.monsterSchema(templateId)?.nameKey
             }
         }
 
     private fun itemSchemaFor(item: ItemInstance) =
-        content.schemaCatalog.itemBundle.items.firstOrNull { schema -> schema.id == item.baseId }
+        content.itemSchema(item.baseId)
 
     private fun itemSchemaFor(baseItemId: String) =
-        content.schemaCatalog.itemBundle.items.firstOrNull { schema -> schema.id == baseItemId }
+        content.itemSchema(baseItemId)
 
     private fun specialTemplateFor(item: ItemInstance): SpecialItemTemplate? =
         item.specialTemplateId?.let(content.itemBundle::specialTemplate)
@@ -8710,7 +8777,7 @@ class FoundationGameSession internal constructor(
         return preferredIds
             .filter(allowedIds::contains)
             .asSequence()
-            .mapNotNull { templateId -> content.monsterCatalog.firstOrNull { template -> template.id == templateId } }
+            .mapNotNull(content::monsterCatalogTemplate)
             .firstOrNull()
     }
 
@@ -10506,7 +10573,7 @@ class FoundationGameSession internal constructor(
     }
 
     private fun inspectPropView(point: Point): InspectPropView? =
-        buildPropSnapshots()
+        buildPropSnapshots(buildSnapshotEntityIndex())
             .firstOrNull { prop -> prop.x == point.x && prop.y == point.y && prop.nameKey != null }
             ?.let { prop ->
                 InspectPropView(
@@ -12925,7 +12992,7 @@ class FoundationGameSession internal constructor(
     }
 
     private fun talentSchemaFor(talentId: String): TalentSchemaV2? =
-        content.schemaCatalog.talents.firstOrNull { schema -> schema.id == talentId }
+        content.talentSchema(talentId)
 
     private fun handleTalentDeaths(
         targets: List<EntityId>,
@@ -13892,7 +13959,7 @@ class FoundationGameSession internal constructor(
                 .asSequence()
                 .mapNotNull(content.monsterTemplatesById::get)
                 .firstOrNull { template -> template.isEliteEncounterTemplate() }
-                ?: content.monsterCatalog.firstOrNull { template -> template.isEliteEncounterTemplate() }
+                ?: content.eliteEncounterTemplateFallback()
                 ?: return null
         val blocked = occupiedBlockingTiles(excluding = playerId)
         val playerPoint = playerPosition()
@@ -15448,7 +15515,7 @@ class FoundationGameSession internal constructor(
             ?: literalArg(name, "")
 
     private fun itemNameKeyOrNull(baseItemId: String): String? =
-        content.schemaCatalog.itemBundle.items.firstOrNull { schema -> schema.id == baseItemId }?.nameKey
+        content.itemSchema(baseItemId)?.nameKey
 
     private fun itemNameKeyOrNull(
         baseItemId: String?,
@@ -15627,7 +15694,7 @@ class FoundationGameSession internal constructor(
         talentNameKeyOrNull(talentId) ?: "log.talent.failure.unknown"
 
     private fun talentNameKeyOrNull(talentId: String): String? =
-        content.schemaCatalog.talents.firstOrNull { schema -> schema.id == talentId }?.nameKey
+        content.talentSchema(talentId)?.nameKey
 
     private fun talentTreeNameKey(treeId: String): String =
         content.schemaCatalog.talentTrees.firstOrNull { tree -> tree.id == treeId }?.nameKey

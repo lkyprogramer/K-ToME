@@ -4,6 +4,7 @@ import com.ktome.core.loot.AffixCost
 import com.ktome.core.loot.AffixCostBand
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.random.RandomSource
+import java.util.concurrent.ConcurrentHashMap
 
 data class AffixSelectionContext(
     val itemTags: Set<String> = emptySet(),
@@ -131,16 +132,26 @@ class AffixBlacklist {
 class AffixPool(
     private val affixes: List<AffixDef>,
 ) {
+    private val candidatesByKey = ConcurrentHashMap<AffixPoolCandidateKey, List<AffixDef>>()
+
     fun candidates(
         floor: Int,
         equipType: AffixEquipType,
         slotType: AffixType,
     ): List<AffixDef> =
-        affixes.filter { affix ->
-            floor >= affix.minFloor &&
-                affix.equipType == equipType &&
-                affix.type == slotType
+        candidatesByKey.computeIfAbsent(AffixPoolCandidateKey(floor = floor, equipType = equipType, slotType = slotType)) {
+            affixes.filter { affix ->
+                floor >= affix.minFloor &&
+                    affix.equipType == equipType &&
+                    affix.type == slotType
+            }
         }
+
+    private data class AffixPoolCandidateKey(
+        val floor: Int,
+        val equipType: AffixEquipType,
+        val slotType: AffixType,
+    )
 }
 
 class AffixGenerator(

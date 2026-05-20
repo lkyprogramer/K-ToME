@@ -17,9 +17,12 @@ import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.status.StatusCatalog
+import com.ktome.game.data.schema.ItemSchemaV2
 import com.ktome.game.data.schema.LootProfileSchemaV3
+import com.ktome.game.data.schema.MonsterSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.StatusSchemaV2
+import com.ktome.game.data.schema.TalentSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.contentpack.ContentPackKeyResolutionSummary
@@ -36,6 +39,7 @@ import com.ktome.game.loot.LootProfileCandidatePool
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.model.isEliteEncounterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
 import com.ktome.game.telegraph.ThreatProfileRegistry
 
@@ -145,8 +149,21 @@ internal data class GameContent(
         SecretZoneRegistry(schemaCatalog.secretZones.associateBy { zone -> zone.id.id })
     val actionWeightProfilesById: Map<String, com.ktome.game.elites.ActionWeightProfileDef> =
         schemaCatalog.actionWeightProfiles.associateBy { profile -> profile.id }
+    private val monsterCatalogById: Map<String, MonsterTemplate> = monsterCatalog.associateBy(MonsterTemplate::id)
+    private val firstEliteEncounterTemplate: MonsterTemplate? =
+        monsterCatalog.firstOrNull { template -> template.isEliteEncounterTemplate() }
+    private val allMonsterTemplateList: List<MonsterTemplate> =
+        (monsterCatalog + bossDefinitions.values.map(BossDefinition::template)).distinctBy(MonsterTemplate::id)
     val monsterTemplatesById: Map<String, MonsterTemplate> =
         (monsterCatalog + bossDefinitions.values.map(BossDefinition::template)).associateBy(MonsterTemplate::id)
+    private val allMonsterTemplatesById: Map<String, MonsterTemplate> =
+        allMonsterTemplateList.associateBy(MonsterTemplate::id)
+    private val monsterSchemasById: Map<String, MonsterSchemaV2> =
+        schemaCatalog.monsters.associateBy(MonsterSchemaV2::id)
+    private val itemSchemasById: Map<String, ItemSchemaV2> =
+        schemaCatalog.itemBundle.items.associateBy(ItemSchemaV2::id)
+    private val talentSchemasById: Map<String, TalentSchemaV2> =
+        schemaCatalog.talents.associateBy(TalentSchemaV2::id)
 
     init {
         schemaCatalog.bossVariants.forEach { variant ->
@@ -220,7 +237,19 @@ internal data class GameContent(
     fun bossTemplateIds(): Set<String> = bossDefinitions.values.map { definition -> definition.template.id }.toSet()
 
     fun allMonsterTemplates(): List<MonsterTemplate> =
-        (monsterCatalog + bossDefinitions.values.map(BossDefinition::template)).distinctBy(MonsterTemplate::id)
+        allMonsterTemplateList
+
+    fun monsterCatalogTemplate(templateId: String): MonsterTemplate? = monsterCatalogById[templateId]
+
+    fun monsterTemplate(templateId: String): MonsterTemplate? = allMonsterTemplatesById[templateId]
+
+    fun eliteEncounterTemplateFallback(): MonsterTemplate? = firstEliteEncounterTemplate
+
+    fun monsterSchema(templateId: String): MonsterSchemaV2? = monsterSchemasById[templateId]
+
+    fun itemSchema(baseItemId: String): ItemSchemaV2? = itemSchemasById[baseItemId]
+
+    fun talentSchema(talentId: String): TalentSchemaV2? = talentSchemasById[talentId]
 
     fun statusSchemaFor(statusId: String): StatusSchemaV2? =
         statuses.firstOrNull { schema -> schema.id == statusId || schema.effectType == statusId }

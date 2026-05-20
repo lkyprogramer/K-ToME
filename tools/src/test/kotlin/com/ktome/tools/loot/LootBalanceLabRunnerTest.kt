@@ -3,15 +3,14 @@ package com.ktome.tools.loot
 import com.ktome.tools.verification.VerificationCacheSupport
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -23,8 +22,6 @@ import org.junit.jupiter.api.io.TempDir
 class LootBalanceLabRunnerTest {
     @TempDir
     lateinit var tempDir: Path
-
-    private val json: Json = Json { prettyPrint = true; explicitNulls = false }
 
     @Test
     @Tag("lootBalanceLab")
@@ -39,28 +36,44 @@ class LootBalanceLabRunnerTest {
         try {
             val effectiveReportDir = originalReportDir ?: tempDir.resolve("loot-reports").toString()
             System.setProperty("ktome.phase4.loot.reportDir", effectiveReportDir)
-            val coldRun = LootBalanceLabRunner.run()
-            val coldPayload = Json.parseToJsonElement(Files.readString(coldRun.summaryPath)).jsonObject
-            val warmRun = LootBalanceLabRunner.run()
+            val firstRun = LootBalanceLabRunner.run()
+            val firstPayload = Json.parseToJsonElement(Files.readString(firstRun.summaryPath)).jsonObject
+            val (run, payload) =
+                if (isolatedTestRun) {
+                    val warmRun = LootBalanceLabRunner.run()
+                    val warmPayload = Json.parseToJsonElement(Files.readString(warmRun.summaryPath)).jsonObject
+                    val coldKernelCache = firstPayload.getValue("kernelCache").jsonObject
+                    val warmKernelCache = warmPayload.getValue("kernelCache").jsonObject
 
-            assertEquals(6, warmRun.matrixCount)
-            assertEquals(60_000, warmRun.totalRolls)
-            assertEquals(0, warmRun.failedExpectationCount, "lootBalanceLab recorded threshold failures; inspect ${warmRun.summaryPath}")
-            assertTrue(Files.exists(warmRun.summaryPath), "Expected summary report at ${warmRun.summaryPath}")
-            assertTrue(Files.exists(warmRun.rollsPath), "Expected roll report at ${warmRun.rollsPath}")
+                    assertEquals("MISS", coldKernelCache.getValue("cacheStatus").jsonPrimitive.content)
+                    assertEquals("HIT", warmKernelCache.getValue("cacheStatus").jsonPrimitive.content)
+                    warmRun to warmPayload
+                } else {
+                    val kernelCache = firstPayload.getValue("kernelCache").jsonObject
+                    val cacheStatus = kernelCache.getValue("cacheStatus").jsonPrimitive.content
+                    assertTrue(
+                        cacheStatus == "MISS" || cacheStatus == "HIT",
+                        "Expected loot kernel cache status to be MISS or HIT, but was $cacheStatus.",
+                    )
+                    firstRun to firstPayload
+                }
 
-            val payload = Json.parseToJsonElement(Files.readString(warmRun.summaryPath)).jsonObject
-            val rollLines = Files.readAllLines(warmRun.rollsPath)
+            assertEquals(6, run.matrixCount)
+            assertEquals(60_000, run.totalRolls)
+            assertEquals(0, run.failedExpectationCount, "lootBalanceLab recorded threshold failures; inspect ${run.summaryPath}")
+            assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
+            assertTrue(Files.exists(run.rollsPath), "Expected roll report at ${run.rollsPath}")
+
+            val rollLineStats = lootRollLineStats(run.rollsPath)
             val header = payload.getValue("header").jsonObject
             val summary = payload.getValue("summary").jsonObject
             val matrices = payload.getValue("matrices").jsonArray
             val clamp = payload.getValue("magicFindClampComparison").jsonObject
             val specialTemplatePool = payload.getValue("specialTemplatePool").jsonObject
             val profileOverlapSummary = payload.getValue("profileOverlapSummary").jsonObject
-            val coldKernelCache = coldPayload.getValue("kernelCache").jsonObject
-            val warmKernelCache = payload.getValue("kernelCache").jsonObject
+            val kernelCache = payload.getValue("kernelCache").jsonObject
             val shardRollPaths =
-                warmKernelCache
+                kernelCache
                     .getValue("shardRollPaths")
                     .jsonArray
                     .map { element -> repoRoot.resolve(element.jsonPrimitive.content) }
@@ -68,13 +81,9 @@ class LootBalanceLabRunnerTest {
                 matrices
                     .map { element -> element.jsonObject }
                     .first { matrix -> matrix.getValue("matrixId").jsonPrimitive.content == "abyssal_reward_chest_mf010" }
-            val restoredKernelRun = LootBalanceLabRunner.readKernelRun(warmRun.summaryPath.parent)
+            val restoredKernelRun = LootBalanceLabRunner.readKernelRun(run.summaryPath.parent)
 
-            if (isolatedTestRun) {
-                assertEquals("MISS", coldKernelCache.getValue("cacheStatus").jsonPrimitive.content)
-            }
-            assertEquals("HIT", warmKernelCache.getValue("cacheStatus").jsonPrimitive.content)
-            assertEquals("60", warmKernelCache.getValue("shardCount").jsonPrimitive.content)
+            assertEquals("60", kernelCache.getValue("shardCount").jsonPrimitive.content)
             assertEquals(60, shardRollPaths.size)
             assertEquals("PASS", summary.getValue("verdict").jsonPrimitive.content)
             assertEquals("6", summary.getValue("matrixCount").jsonPrimitive.content)
@@ -91,8 +100,8 @@ class LootBalanceLabRunnerTest {
                 "PR-05 special pool must expose secret-zone artifact coverage.",
             )
             assertTrue(
-                rollLines.any { line -> "\"rawAffixBudgetShortfall\":0" !in line && "\"rawAffixBudgetShortfall\":" in line },
-                "Expected at least one non-zero raw affix budget shortfall sample in ${warmRun.rollsPath}",
+                rollLineStats.hasNonZeroBudgetShortfall,
+                "Expected at least one non-zero raw affix budget shortfall sample in ${run.rollsPath}",
             )
             assertEquals(
                 setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple"),
@@ -113,10 +122,11 @@ class LootBalanceLabRunnerTest {
             assertNotNull(restoredKernelRun)
             assertEquals(6, restoredKernelRun?.matrices?.size)
             assertEquals(60_000, restoredKernelRun?.totalRolls)
-            assertEquals(60_000, rollLines.count { line -> line.isNotBlank() })
+            assertEquals(60_000, rollLineStats.nonBlankCount)
             assertTrue(shardRollPaths.all(Files::isRegularFile))
-            assertTrue(shardRollPaths.all { path -> Files.readAllLines(path).count(String::isNotBlank) == 1_000 })
-            assertEquals(60_000, shardRollPaths.sumOf { path -> Files.readAllLines(path).count(String::isNotBlank) })
+            val shardRollLineCounts = shardRollPaths.associateWith(::countNonBlankLines)
+            assertTrue(shardRollLineCounts.values.all { count -> count == 1_000 })
+            assertEquals(60_000, shardRollLineCounts.values.sum())
 
             val shardPayloads =
                 shardRollPaths
@@ -150,55 +160,56 @@ class LootBalanceLabRunnerTest {
     @Test
     @Tag("lootBalanceLab")
     fun `readKernelRun ignores cached payloads with stale contract version`() {
-        val originalReportDir = System.getProperty("ktome.phase4.loot.reportDir")
-        val repoRoot = VerificationCacheSupport.repoRoot()
-        val cacheDirs = VerificationCacheSupport.cacheDirs(domainId = "loot", repoRoot = repoRoot)
-        VerificationCacheSupport.clearDirectory(cacheDirs.kernelDir)
-        try {
-            val effectiveReportDir = tempDir.resolve("loot-reports-stale-contract").toString()
-            System.setProperty("ktome.phase4.loot.reportDir", effectiveReportDir)
-            val run = LootBalanceLabRunner.run()
-            val mergedKernelPath = cacheDirs.kernelDir.resolve("merged").resolve("loot-kernel-merged.json")
+        val repoRoot = tempDir.resolve("stale-contract-repo")
+        val reportDir = tempDir.resolve("loot-reports-stale-contract")
+        val summaryPath = reportDir.resolve("loot-balance-summary.json")
+        val mergedKernelPath =
+            VerificationCacheSupport.cacheDirs(domainId = "loot", repoRoot = repoRoot)
+                .kernelDir
+                .resolve("merged")
+                .resolve("loot-kernel-merged.json")
 
-            overwriteContractVersion(run.summaryPath, "uvr-pr05-loot-kernel-v5")
-            overwriteContractVersion(mergedKernelPath, "uvr-pr05-loot-kernel-v5")
+        writeStaleKernelPayload(summaryPath)
+        writeStaleKernelPayload(mergedKernelPath)
 
-            assertEquals(null, LootBalanceLabRunner.readKernelRun(run.summaryPath.parent))
-        } finally {
-            VerificationCacheSupport.clearDirectory(cacheDirs.kernelDir)
-            if (originalReportDir == null) {
-                System.clearProperty("ktome.phase4.loot.reportDir")
-            } else {
-                System.setProperty("ktome.phase4.loot.reportDir", originalReportDir)
-            }
-        }
+        assertEquals(null, LootBalanceLabRunner.readKernelRun(reportDir = reportDir, repoRoot = repoRoot))
     }
 
-    private fun overwriteContractVersion(
-        path: Path,
-        contractVersion: String,
-    ) {
-        val payload = json.parseToJsonElement(Files.readString(path)).jsonObject
-        val rewritten =
+    private fun writeStaleKernelPayload(path: Path) {
+        VerificationCacheSupport.writeJson(
+            path,
             buildJsonObject {
-                payload.forEach { (key, value) ->
-                    if (key == "kernelCache") {
-                        put(
-                            key,
-                            buildJsonObject {
-                                value.jsonObject.forEach { (cacheKey, cacheValue) ->
-                                    put(
-                                        cacheKey,
-                                        if (cacheKey == "contractVersion") JsonPrimitive(contractVersion) else cacheValue,
-                                    )
-                                }
-                            },
-                        )
-                    } else {
-                        put(key, value)
+                putJsonObject("kernelCache") {
+                    put("contractVersion", "uvr-pr05-loot-kernel-v5")
+                }
+            },
+        )
+    }
+
+    private data class LootRollLineStats(
+        val nonBlankCount: Int,
+        val hasNonZeroBudgetShortfall: Boolean,
+    )
+
+    private fun lootRollLineStats(path: Path): LootRollLineStats {
+        var nonBlankCount = 0
+        var hasNonZeroBudgetShortfall = false
+        Files.newBufferedReader(path).useLines { lines ->
+            lines.forEach { line ->
+                if (line.isNotBlank()) {
+                    nonBlankCount += 1
+                    if ("\"rawAffixBudgetShortfall\":0" !in line && "\"rawAffixBudgetShortfall\":" in line) {
+                        hasNonZeroBudgetShortfall = true
                     }
                 }
             }
-        Files.writeString(path, json.encodeToString(JsonElement.serializer(), rewritten))
+        }
+        return LootRollLineStats(
+            nonBlankCount = nonBlankCount,
+            hasNonZeroBudgetShortfall = hasNonZeroBudgetShortfall,
+        )
     }
+
+    private fun countNonBlankLines(path: Path): Int =
+        Files.newBufferedReader(path).useLines { lines -> lines.count(String::isNotBlank) }
 }

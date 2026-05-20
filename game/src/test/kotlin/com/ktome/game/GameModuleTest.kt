@@ -75,6 +75,31 @@ class GameModuleTest {
     }
 
     @Test
+    fun `foundation session factory reuses content without sharing mutable session state`() {
+        val factory = GameModule.newFoundationSessionFactory()
+        val first =
+            factory.newSession(
+                config = FoundationGameConfig(seed = 20260409010000L, zoneId = "greenwood_fringe", playerProfessionId = "arcanist"),
+                saveManager = SaveManager(tempDir.resolve("factory-first")),
+            )
+        val second =
+            factory.newSession(
+                config = FoundationGameConfig(seed = 20260409010001L, zoneId = "greenwood_fringe", playerProfessionId = "arcanist"),
+                saveManager = SaveManager(tempDir.resolve("factory-second")),
+            )
+        val secondStart = second.playerPosition()
+
+        assertEquals(first.automationContentIdentityHash(), second.automationContentIdentityHash())
+        assertFalse(first.automationWorld() === second.automationWorld())
+
+        first.automationMovePlayerTo(requireNotNull(first.automationStairPoint(StairDirection.DOWN)))
+        assertTrue(first.perform(PlayerCommand.Wait))
+
+        assertEquals(secondStart, second.playerPosition())
+        assertEquals(0, second.currentTurnCount())
+    }
+
+    @Test
     fun `new foundation session fails fast when zone or profession id is outside schema v2`() {
         assertThrows(IllegalArgumentException::class.java) {
             GameModule.newFoundationSession(

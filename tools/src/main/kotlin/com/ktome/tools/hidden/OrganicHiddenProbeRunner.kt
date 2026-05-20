@@ -8,6 +8,7 @@ import com.ktome.core.profile.ClassPlayabilityState
 import com.ktome.core.save.SaveManager
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.game.FoundationGameConfig
+import com.ktome.game.FoundationGameSessionFactory
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.harness.RunObservation
@@ -23,9 +24,12 @@ import java.nio.file.Path
 import java.util.ArrayDeque
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
@@ -88,6 +92,9 @@ object OrganicHiddenProbeRunner {
         var reusedShardCount = 0
         val shardSpecs = buildShardSpecs(cases)
         val shardEventPaths = mutableListOf<Path>()
+        val sessionFactory by lazy(LazyThreadSafetyMode.NONE) {
+            GameModule.newFoundationSessionFactory(locale = GameLocale.EN_US)
+        }
         val results =
             shardSpecs
                 .flatMap { shardSpec ->
@@ -95,12 +102,24 @@ object OrganicHiddenProbeRunner {
                     val shardSummaryPath = shardDir.resolve("summary.json")
                     val shardEventsPath = shardDir.resolve("events.jsonl")
                     shardEventPaths.add(shardEventsPath)
-                    if (Files.isRegularFile(shardSummaryPath) && Files.isRegularFile(shardEventsPath)) {
+                    val cachedShardResults =
+                        readValidShardResults(
+                            shardSummaryPath = shardSummaryPath,
+                            shardEventsPath = shardEventsPath,
+                            shardSpec = shardSpec,
+                        )
+                    if (cachedShardResults != null) {
                         reusedShardCount += 1
-                        readShardResults(shardEventsPath)
+                        cachedShardResults
                     } else {
                         val shardResults =
-                            shardSpec.cases.map { caseSpec -> executeCase(caseSpec = caseSpec, tempSaveRoot = tempSaveRoot) }
+                            shardSpec.cases.map { caseSpec ->
+                                executeCase(
+                                    caseSpec = caseSpec,
+                                    tempSaveRoot = tempSaveRoot,
+                                    sessionFactory = sessionFactory,
+                                )
+                            }
                         writeShardResults(shardSummaryPath = shardSummaryPath, shardEventsPath = shardEventsPath, header = header, shardSpec = shardSpec, results = shardResults)
                         shardResults
                     }
@@ -160,12 +179,13 @@ object OrganicHiddenProbeRunner {
     private fun executeCase(
         caseSpec: OrganicHiddenProbeCaseSpec,
         tempSaveRoot: Path,
+        sessionFactory: FoundationGameSessionFactory,
     ): OrganicHiddenProbeCaseResult {
         val bot = OrganicHiddenProbeBotPolicy(delegate = SmokeBot())
         val commandTail = ArrayDeque<String>()
         return try {
             val session =
-                GameModule.newFoundationSession(
+                sessionFactory.newSession(
                     config =
                         FoundationGameConfig(
                             seed = caseSpec.seed,
@@ -175,7 +195,6 @@ object OrganicHiddenProbeRunner {
                             playerRaceId = caseSpec.raceId,
                         ),
                     saveManager = SaveManager(tempSaveRoot.resolve("organic-${caseSpec.zoneId}-${caseSpec.professionId}-${caseSpec.raceId}-${caseSpec.seed}")),
-                    locale = GameLocale.EN_US,
                 )
             val stallDetector = ProbeStallDetector(maxRepeats = 12)
             var turnCount = 0
@@ -375,6 +394,51 @@ object OrganicHiddenProbeRunner {
         Files.readAllLines(shardEventsPath)
             .filter(String::isNotBlank)
             .map { line -> json.parseToJsonElement(line).jsonObject.toOrganicHiddenProbeCaseResult() }
+
+    private fun readValidShardResults(
+        shardSummaryPath: Path,
+        shardEventsPath: Path,
+        shardSpec: OrganicHiddenProbeShardSpec,
+    ): List<OrganicHiddenProbeCaseResult>? {
+        if (!Files.isRegularFile(shardSummaryPath) || !Files.isRegularFile(shardEventsPath)) {
+            return null
+        }
+        val summary =
+            runCatching {
+                json.parseToJsonElement(Files.readString(shardSummaryPath)).jsonObject
+            }.getOrNull() ?: return null
+        if (!summary.matchesShardSpec(shardSpec)) {
+            return null
+        }
+        val results = runCatching { readShardResults(shardEventsPath) }.getOrNull() ?: return null
+        if (results.size != shardSpec.cases.size) {
+            return null
+        }
+        return results.takeIf { shardResults ->
+            shardResults.zip(shardSpec.cases).all { (result, expected) -> result.matchesCaseSpec(expected) }
+        }
+    }
+
+    private fun JsonObject.matchesShardSpec(shardSpec: OrganicHiddenProbeShardSpec): Boolean =
+        stringField("shardId") == shardSpec.shardId &&
+            stringField("zoneId") == shardSpec.zoneId &&
+            intField("floorIndex") == shardSpec.floorIndex &&
+            stringField("professionId") == shardSpec.professionId &&
+            stringField("raceId") == shardSpec.raceId &&
+            intField("caseCount") == shardSpec.cases.size
+
+    private fun JsonObject.stringField(name: String): String? =
+        this[name]?.jsonPrimitive?.contentOrNull
+
+    private fun JsonObject.intField(name: String): Int? =
+        stringField(name)?.toIntOrNull()
+
+    private fun OrganicHiddenProbeCaseResult.matchesCaseSpec(caseSpec: OrganicHiddenProbeCaseSpec): Boolean =
+        zoneId == caseSpec.zoneId &&
+            floorIndex == caseSpec.floorIndex &&
+            professionId == caseSpec.professionId &&
+            raceId == caseSpec.raceId &&
+            seed == caseSpec.seed
 }
 
 private data class OrganicProbeState(

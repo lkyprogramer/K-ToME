@@ -8,6 +8,7 @@ import com.ktome.core.loot.SourceTier
 import com.ktome.core.loot.SpecialTier
 import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.resource.ResourceType
+import java.util.concurrent.ConcurrentHashMap
 
 enum class EquipSlot {
     WEAPON,
@@ -314,8 +315,19 @@ data class ItemDataBundle(
     val affixes: List<AffixDef>,
     val specialTemplates: List<SpecialItemTemplate> = emptyList(),
 ) {
+    private val baseItemsById: Map<String, ItemBaseDef> = baseItems.associateBy(ItemBaseDef::id)
+    private val materialsById: Map<String, MaterialDef> = materials.associateBy(MaterialDef::id)
+    private val affixesById: Map<String, AffixDef> = affixes.associateBy(AffixDef::id)
     private val specialTemplatesById: Map<String, SpecialItemTemplate> = specialTemplates.associateBy(SpecialItemTemplate::id)
     private val specialTemplateByItemId: Map<String, SpecialItemTemplate> = specialTemplates.associateBy(SpecialItemTemplate::itemId)
+    private val normalBaseItemsByFloorBand = ConcurrentHashMap<Int, List<ItemBaseDef>>()
+    private val eligibleSpecialTemplateIdsByKey = ConcurrentHashMap<SpecialTemplateEligibilityCacheKey, Set<String>>()
+
+    fun baseItem(id: String): ItemBaseDef? = baseItemsById[id]
+
+    fun material(id: String): MaterialDef? = materialsById[id]
+
+    fun affix(id: String): AffixDef? = affixesById[id]
 
     fun specialTemplate(id: String): SpecialItemTemplate? = specialTemplatesById[id]
 
@@ -324,17 +336,50 @@ data class ItemDataBundle(
 
     fun specialTemplateForItemId(itemId: String): SpecialItemTemplate? = specialTemplateByItemId[itemId]
 
+    fun normalBaseItemsForFloorBand(floorBand: Int): List<ItemBaseDef> =
+        normalBaseItemsByFloorBand.computeIfAbsent(floorBand) { resolvedFloorBand ->
+            baseItems.filter { item ->
+                item.type != ItemType.CONSUMABLE &&
+                    specialTemplateByItemId[item.id] == null &&
+                    resolvedFloorBand in item.dropFloors
+            }
+        }
+
+    fun materialsFor(
+        allowedMaterialIds: Collection<String>,
+        floorBand: Int,
+    ): List<MaterialDef> =
+        allowedMaterialIds
+            .asSequence()
+            .mapNotNull(materialsById::get)
+            .filter { material -> floorBand >= material.minFloor }
+            .toList()
+
     fun eligibleSpecialTemplateIds(
         zoneId: String,
         sourceTier: SourceTier,
         allowedSpecialTiers: Set<SpecialTier>,
     ): Set<String> =
-        specialTemplates
-            .asSequence()
-            .filter { template -> template.specialTier in allowedSpecialTiers }
-            .filter { template -> sourceTier in template.allowedSourceTiers }
-            .filter { template -> zoneId in template.allowedZones }
-            .mapTo(linkedSetOf(), SpecialItemTemplate::id)
+        eligibleSpecialTemplateIdsByKey.computeIfAbsent(
+            SpecialTemplateEligibilityCacheKey(
+                zoneId = zoneId,
+                sourceTier = sourceTier,
+                allowedSpecialTiers = allowedSpecialTiers.toSet(),
+            ),
+        ) { key ->
+            specialTemplates
+                .asSequence()
+                .filter { template -> template.specialTier in key.allowedSpecialTiers }
+                .filter { template -> key.sourceTier in template.allowedSourceTiers }
+                .filter { template -> key.zoneId in template.allowedZones }
+                .mapTo(linkedSetOf(), SpecialItemTemplate::id)
+        }
+
+    private data class SpecialTemplateEligibilityCacheKey(
+        val zoneId: String,
+        val sourceTier: SourceTier,
+        val allowedSpecialTiers: Set<SpecialTier>,
+    )
 }
 
 data class ItemInstance(
