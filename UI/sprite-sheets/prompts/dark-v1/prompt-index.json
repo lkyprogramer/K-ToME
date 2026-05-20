@@ -152,6 +152,278 @@
       "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-unique-artifact.png",
       "round": 7,
       "sheetId": "r07-items-unique-artifact"
+    },
+    {
+      "cellCount": 4,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "9028d29350297dbdd921fe4481155dac792b14c3b2c6f5caf2f8526e138bfc67",
+      "promptId": "010-r02-tiles-decal",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/010-r02-tiles-decal.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r02-tiles-decal.png",
+      "round": 2,
+      "sheetId": "r02-tiles-decal"
+    },
+    {
+      "cellCount": 3,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "c1d0e819916ab6377d18e3698e5941d56372e23fc0d48eef16f6192de66077e9",
+      "promptId": "011-r02-tiles-ground",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/011-r02-tiles-ground.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r02-tiles-ground.png",
+      "round": 2,
+      "sheetId": "r02-tiles-ground"
+    },
+    {
+      "cellCount": 3,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "47b76f1702971016d4177e649d4541635b5328f6a7d80345462f732dc64a0be4",
+      "promptId": "012-r02-tiles-wall",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/012-r02-tiles-wall.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r02-tiles-wall.png",
+      "round": 2,
+      "sheetId": "r02-tiles-wall"
+    },
+    {
+      "cellCount": 1,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "b24423a60a224d1a304a907216ac8aec83e516b5839742ef3ad11253256c696a",
+      "promptId": "013-r03-props-environment",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/013-r03-props-environment.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r03-props-environment.png",
+      "round": 3,
+      "sheetId": "r03-props-environment"
+    },
+    {
+      "cellCount": 11,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "4c9925fe10643a490ebd1d5da4ed093313d89ceee7c28111e7972be28f0c01c7",
+      "promptId": "014-r03-props-interactable",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/014-r03-props-interactable.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r03-props-interactable.png",
+      "round": 3,
+      "sheetId": "r03-props-interactable"
+    },
+    {
+      "cellCount": 9,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "48e743fc4ff141e51541dbfb99aa658189bf2bbb4c166d589267c32892132ed0",
+      "promptId": "015-r03-vfx-telegraph",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/015-r03-vfx-telegraph.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r03-vfx-telegraph.png",
+      "round": 3,
+      "sheetId": "r03-vfx-telegraph"
+    },
+    {
+      "cellCount": 4,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 256,
+        "cellWidth": 256,
+        "columns": 4,
+        "rows": 4
+      },
+      "gridCapacity": 16,
+      "promptHash": "80bd565bc61811c28fdd95ec998ebe81c8b30be6ea0c76e12b7f7b90b527e91e",
+      "promptId": "016-r04-actors-boss",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/016-r04-actors-boss.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r04-actors-boss.png",
+      "round": 4,
+      "sheetId": "r04-actors-boss"
+    },
+    {
+      "cellCount": 19,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "39d169b6803c584c34be01f8fc7a69de717b94451a2c7cee7eb95b921dabaeb3",
+      "promptId": "017-r04-actors-humanoid",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/017-r04-actors-humanoid.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r04-actors-humanoid.png",
+      "round": 4,
+      "sheetId": "r04-actors-humanoid"
+    },
+    {
+      "cellCount": 28,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "afd22de71031278176b5b4313725a99e1e71b29021c5aa77d5de80b9a3ade8db",
+      "promptId": "018-r04-actors-monster",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/018-r04-actors-monster.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r04-actors-monster.png",
+      "round": 4,
+      "sheetId": "r04-actors-monster"
+    },
+    {
+      "cellCount": 4,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 256,
+        "cellWidth": 256,
+        "columns": 4,
+        "rows": 4
+      },
+      "gridCapacity": 16,
+      "promptHash": "1fa501b96b867cd0cf8e48c4f3638b1cc67958938db27b8e5ed226409bbea31b",
+      "promptId": "019-r04-actors-player",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/019-r04-actors-player.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r04-actors-player.png",
+      "round": 4,
+      "sheetId": "r04-actors-player"
+    },
+    {
+      "cellCount": 27,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "cd3358c65d282427801881c11faf84c76735dde66d8ac77ec6db485339182b10",
+      "promptId": "020-r05-bestiary-creature-icons",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/020-r05-bestiary-creature-icons.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r05-bestiary-creature-icons.png",
+      "round": 5,
+      "sheetId": "r05-bestiary-creature-icons"
+    },
+    {
+      "cellCount": 15,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "73aa07105857daaa6ad3240314b41c2af7f4b9cf34be15e5ccbe4a6bf70bc713",
+      "promptId": "021-r05-bestiary-humanoid-icons",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/021-r05-bestiary-humanoid-icons.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r05-bestiary-humanoid-icons.png",
+      "round": 5,
+      "sheetId": "r05-bestiary-humanoid-icons"
+    },
+    {
+      "cellCount": 3,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "6c336eb73a33897efc1857119c94a8d4812524bb484ca7e784e16749aa2ad86b",
+      "promptId": "022-r05-boss-icons",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/022-r05-boss-icons.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r05-boss-icons.png",
+      "round": 5,
+      "sheetId": "r05-boss-icons"
+    },
+    {
+      "cellCount": 4,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 256,
+        "cellWidth": 256,
+        "columns": 4,
+        "rows": 4
+      },
+      "gridCapacity": 16,
+      "promptHash": "46e5fc2ddc6a4661b3ce7ab482a0bd05cd435f5391eb08bcbe0475c3034405a6",
+      "promptId": "023-r06-portraits-classes",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/023-r06-portraits-classes.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r06-portraits-classes.png",
+      "round": 6,
+      "sheetId": "r06-portraits-classes"
+    },
+    {
+      "cellCount": 12,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 256,
+        "cellWidth": 256,
+        "columns": 4,
+        "rows": 4
+      },
+      "gridCapacity": 16,
+      "promptHash": "ccf210a048abde75d7b9e63c5bd67064798c4b6bac88d50245a6e63a8faa01fe",
+      "promptId": "024-r06-portraits-trees",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/024-r06-portraits-trees.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r06-portraits-trees.png",
+      "round": 6,
+      "sheetId": "r06-portraits-trees"
+    },
+    {
+      "cellCount": 14,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 256,
+        "cellWidth": 256,
+        "columns": 4,
+        "rows": 4
+      },
+      "gridCapacity": 16,
+      "promptHash": "63dce3e796f75ae3da64e63a49eca49f21a7d626e96b58ecab0f99ad1ac11620",
+      "promptId": "025-r06-portraits-zones",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/025-r06-portraits-zones.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r06-portraits-zones.png",
+      "round": 6,
+      "sheetId": "r06-portraits-zones"
     }
   ],
   "schemaVersion": "dark-prompt-index-v1"

@@ -91,6 +91,7 @@ internal enum class TileTextRowKind {
 }
 
 private const val MAX_REPLACEMENT_SLOT_HINT_ROWS = 4
+private const val INSCRIPTION_HOTKEY_START = 5
 
 internal data class TileVisualPlacement(
     val x: Int,
@@ -98,6 +99,7 @@ internal data class TileVisualPlacement(
     val asset: ResolvedVisualAsset,
     val alpha: Float = 1f,
     val tintColorHex: String? = null,
+    val drawPriority: Int = 0,
 )
 
 internal data class TileGroundLootMarkerModel(
@@ -363,6 +365,20 @@ internal data class TileDemoShellModel(
     }
 }
 
+internal enum class TilePanelTooltipAnchorKind {
+    EQUIPMENT_SLOT,
+    INSCRIPTION_SLOT,
+    BACKPACK_SLOT,
+}
+
+internal data class TilePanelTooltipModel(
+    val anchorKind: TilePanelTooltipAnchorKind,
+    val anchorIndex: Int,
+    val anchorId: String,
+    val titleLine: TileTextLine,
+    val bodyLines: List<TileTextLine>,
+)
+
 internal data class TileDemoShellAssets(
     val outerFrame: ResolvedVisualAsset,
     val mapStageFrame: ResolvedVisualAsset,
@@ -494,6 +510,7 @@ internal data class TileRenderModel(
     val actorTiles: List<TileVisualPlacement>,
     val fogTiles: List<TileFogPlacement>,
     val targetCursorState: TileTargetCursorState?,
+    val targetHighlights: List<TileTargetHighlightModel> = emptyList(),
     val hud: TileHudModel,
     val messageLines: List<TileMessageLine>,
     val logPresentation: LogPresentationModel,
@@ -504,6 +521,7 @@ internal data class TileRenderModel(
     val sidebar: TileSidebarModel,
     val talentAssignPanel: TileTalentAssignPanelRenderModel? = null,
     val shell: TileShellModel,
+    val panelTooltip: TilePanelTooltipModel? = null,
     val playerTile: com.ktome.core.map.Point,
     val mapDimensions: TileMapDimensions,
     val chromeAssets: TileChromeAssets? = null,
@@ -565,6 +583,7 @@ internal object TileRenderModelBuilder {
                         y = cell.y,
                         asset = asset,
                         alpha = TelegraphStyle.overlayAlpha(overlay.dangerLevel),
+                        drawPriority = overlay.dangerLevel,
                     )
                 }
             }
@@ -671,6 +690,7 @@ internal object TileRenderModelBuilder {
                 combatPanel,
                 talentAssignPanelModel,
             )
+        val shell = buildShell(localizer, visualResolver, snapshot, overlayState, hud, sidebar, messageLines)
         return TileRenderModel(
             terrainTiles = terrainTiles,
             propTiles = propTiles,
@@ -679,6 +699,7 @@ internal object TileRenderModelBuilder {
             actorTiles = actorTiles,
             fogTiles = fogTiles,
             targetCursorState = combatDecisionTargetCursorState(snapshot, overlayState),
+            targetHighlights = combatDecisionTargetHighlights(snapshot, overlayState),
             hud = hud,
             messageLines = messageLines,
             logPresentation =
@@ -721,7 +742,8 @@ internal object TileRenderModelBuilder {
             combatFeedback = buildCombatFeedback(localizer, snapshot.metadata.width, overlayCells, snapshot.combatFeedbackEvents),
             sidebar = sidebar,
             talentAssignPanel = talentAssignPanelModel?.let { panel -> TileTalentAssignPanelRenderModel.from(panel, visualResolver) },
-            shell = buildShell(localizer, visualResolver, snapshot, overlayState, hud, sidebar, messageLines),
+            shell = shell,
+            panelTooltip = panelTooltip(localizer, snapshot, overlayState, shell),
             playerTile = point(player.x, player.y),
             mapDimensions = TileMapDimensions(snapshot.metadata.width, snapshot.metadata.height),
             chromeAssets = chromeAssets,
@@ -955,6 +977,7 @@ internal object TileRenderModelBuilder {
     ): TileDemoShellModel {
         val status = snapshot.uiState.playerStatus
         val operationHints = demoOperationHints(localizer, overlayState)
+        val effectiveInventorySelection = overlayState.hoveredInventoryIndex ?: overlayState.inventorySelection
         val equipmentInventory =
             EquipmentInventoryPresenter.present(
                 EquipmentInventoryPresenterRequest(
@@ -962,7 +985,8 @@ internal object TileRenderModelBuilder {
                     visualResolver = visualResolver,
                     equipment = snapshot.uiState.equipment,
                     inventory = snapshot.uiState.inventory,
-                    inventorySelection = overlayState.inventorySelection,
+                    inventorySelection = effectiveInventorySelection,
+                    selectedEquipmentSlotId = overlayState.hoveredEquipmentSlotId,
                 ),
             )
         val operationRows = demoOperationRows(localizer, visualResolver, snapshot, overlayState, operationHints)
@@ -985,7 +1009,7 @@ internal object TileRenderModelBuilder {
                     localizer.text("ui.shell.operation_hints")
                 },
             equipmentSlots = equipmentInventory.equipmentSlots.map(::equipmentSlot),
-            inscriptionSlots = inscriptionSlotModels(localizer, visualResolver, snapshot),
+            inscriptionSlots = inscriptionSlotModels(localizer, visualResolver, snapshot, overlayState),
             backpackSlots = equipmentInventory.inventoryGrid.cells.map(::inventorySlot),
             backpackPageLabel = equipmentInventory.inventoryGrid.pageLabel,
             operationHints = operationHints,
@@ -1098,10 +1122,12 @@ internal object TileRenderModelBuilder {
         localizer: Localizer,
         visualResolver: VisualManifestResolver,
         snapshot: RenderSnapshot,
+        overlayState: OverlayState,
     ): List<TileDemoSlotModel> {
         val byHotkey = snapshot.uiState.inscriptions.associateBy { inscription -> inscription.hotkey }
         return (5..12).map { hotkey ->
             val inscription = byHotkey[hotkey]
+            val selected = overlayState.hoveredInscriptionHotkey == hotkey
             when {
                 inscription != null ->
                     TileDemoSlotModel(
@@ -1109,6 +1135,9 @@ internal object TileRenderModelBuilder {
                         detail = localizer.text(inscription.nameKey),
                         icon = resolveVisual(visualResolver, inscription.iconKey),
                         state = TileDemoSlotState.FILLED,
+                        stableId = "inscription:$hotkey",
+                        selected = selected,
+                        tooltipAnchorId = "inscription:$hotkey",
                     )
 
                 hotkey <= 8 ->
@@ -1117,6 +1146,9 @@ internal object TileRenderModelBuilder {
                         detail = localizer.text("ui.shell.inscription.empty"),
                         icon = null,
                         state = TileDemoSlotState.EMPTY,
+                        stableId = "inscription:$hotkey",
+                        selected = selected,
+                        tooltipAnchorId = "inscription:$hotkey",
                     )
 
                 else ->
@@ -1125,6 +1157,9 @@ internal object TileRenderModelBuilder {
                         detail = null,
                         icon = null,
                         state = TileDemoSlotState.EMPTY,
+                        stableId = "inscription:$hotkey",
+                        selected = selected,
+                        tooltipAnchorId = "inscription:$hotkey",
                     )
             }
         }
@@ -1484,7 +1519,7 @@ internal object TileRenderModelBuilder {
                     return TileSidebarModel(title = localizer.text("ui.sidebar.item_compare"), rows = rows)
                 }
                 if (overlayState.activeModalKind == ModalFrameKind.ITEM_DETAIL) {
-                    val selectedItem = snapshot.uiState.inventory.getOrNull(overlayState.inventorySelection)?.item
+                    val selectedItem = selectedInventoryItem(snapshot, overlayState)
                     if (selectedItem == null) {
                         rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
                     } else {
@@ -1506,6 +1541,19 @@ internal object TileRenderModelBuilder {
                     return TileSidebarModel(title = localizer.text("ui.sidebar.item_detail"), rows = rows)
                 }
                 rows += TileTextRow(localizer.text("ui.controls.inventory.close_hint"), TileTextTone.LIGHT_GRAY)
+                val selectedItem = selectedInventoryItem(snapshot, overlayState)
+                selectedItem?.let { item ->
+                    rows += inventoryItemHeaderRow(localizer, visualResolver, item)
+                    DescriptionPresenter.presentInventoryItemLines(localizer, item).forEach { line ->
+                        rows += TileTextRow(line.text, descriptionTone(line))
+                    }
+                    itemDetailLines(localizer, item).forEach { detail ->
+                        rows += TileTextRow(detail, TileTextTone.LIGHT_GRAY)
+                    }
+                    equipmentComparisonLines(localizer, snapshot, item).take(3).forEach { line ->
+                        rows += TileTextRow(line.text, line.tone)
+                    }
+                }
                 snapshot.uiState.inventory.forEach { entry ->
                     val presentation = QualityPresentation.from(entry.item)
                     val label = "${entry.index + 1}. ${renderItemDisplay(localizer, entry.item, presentation)}"
@@ -1520,16 +1568,6 @@ internal object TileRenderModelBuilder {
                 }
                 if (snapshot.uiState.inventory.isEmpty()) {
                     rows += emptyStateRows(localizer, visualResolver, UiEmptyState.inventory())
-                } else {
-                    val selectedItem = snapshot.uiState.inventory.getOrNull(overlayState.inventorySelection)?.item
-                    selectedItem?.let { item ->
-                        DescriptionPresenter.presentInventoryItemLines(localizer, item).forEach { line ->
-                            rows += TileTextRow(line.text, descriptionTone(line))
-                        }
-                        itemDetailLines(localizer, item).forEach { detail ->
-                            rows += TileTextRow(detail, TileTextTone.LIGHT_GRAY)
-                        }
-                    }
                 }
                 rows += TileTextRow(localizer.text("ui.controls.inventory"), TileTextTone.LIGHT_GRAY)
             }
@@ -1944,6 +1982,51 @@ internal object TileRenderModelBuilder {
         } else {
             TileTargetCursorState.ILLEGAL
         }
+    }
+
+    private fun combatDecisionTargetHighlights(
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+    ): List<TileTargetHighlightModel> {
+        if (overlayState.mode != UiMode.TARGETING || overlayState.activeModalKind != ModalFrameKind.COMBAT_DECISION) {
+            return emptyList()
+        }
+        val localState = overlayState.modalFrames.lastOrNull()?.localState ?: return emptyList()
+        val state = localState.combatDecisionState ?: return emptyList()
+        if (state.phase != com.ktome.client.ui.combat.CombatDecisionPhase.TARGET) {
+            return emptyList()
+        }
+        val cursor = overlayState.targetingCursor ?: localState.targetingCursor
+        overlayState.validationCombatDecisionSurface?.let { surface ->
+            if (surface == CombatDecisionValidationSurface.NO_LEGAL_TARGET) {
+                return emptyList()
+            }
+            val legalTarget = CombatDecisionValidationFixtures.legalTargetPoint(snapshot)
+            return listOfNotNull(
+                TileTargetHighlightModel(legalTarget, TileTargetCursorState.LEGAL),
+                cursor
+                    ?.takeUnless { tile -> tile == legalTarget }
+                    ?.let { tile -> TileTargetHighlightModel(tile, TileTargetCursorState.ILLEGAL) },
+            )
+        }
+        val action = CombatDecisionFrame.selectedAction(snapshot, state)
+        if (action == null) {
+            return cursor
+                ?.let { tile -> listOf(TileTargetHighlightModel(tile, TileTargetCursorState.ILLEGAL)) }
+                .orEmpty()
+        }
+        if (action.usesFreeCursorTargeting()) {
+            return cursor
+                ?.let { tile -> listOf(TileTargetHighlightModel(tile, TileTargetCursorState.LEGAL)) }
+                .orEmpty()
+        }
+        val legalTargets = CombatDecisionFrame.legalTargets(snapshot, action).map { target -> target.point }.distinct()
+        val legalHighlights = legalTargets.map { tile -> TileTargetHighlightModel(tile, TileTargetCursorState.LEGAL) }
+        val invalidCursorHighlight =
+            cursor
+                ?.takeUnless { tile -> tile in legalTargets }
+                ?.let { tile -> TileTargetHighlightModel(tile, TileTargetCursorState.ILLEGAL) }
+        return legalHighlights + listOfNotNull(invalidCursorHighlight)
     }
 
     private fun com.ktome.client.ui.combat.CombatDecisionPanelModel.toActionPanel(visualResolver: VisualManifestResolver): ActionPanelModel =
@@ -2412,6 +2495,257 @@ internal object TileRenderModelBuilder {
         val baseName = item.displayName?.let { token -> renderTextToken(localizer, token) } ?: localizer.text(item.nameKey)
         return presentation.cornerGlyph?.let { glyph -> "$glyph $baseName" } ?: baseName
     }
+
+    private fun selectedInventoryItem(
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+    ): ItemRenderSnapshot? {
+        val selectedIndex = overlayState.hoveredInventoryIndex ?: overlayState.inventorySelection
+        return snapshot.uiState.inventory.firstOrNull { entry -> entry.index == selectedIndex }?.item
+    }
+
+    private fun inventoryItemHeaderRow(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        item: ItemRenderSnapshot,
+    ): TileTextRow {
+        val presentation = QualityPresentation.from(item)
+        return TileTextRow(
+            text = renderItemDisplay(localizer, item, presentation),
+            tone = itemTone(presentation),
+            icon = resolveItemIconVisual(visualResolver, item),
+        )
+    }
+
+    private fun panelTooltip(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+        shell: TileShellModel,
+    ): TilePanelTooltipModel? {
+        overlayState.hoveredEquipmentSlotId?.let { slotId ->
+            val anchorIndex = typedEquipmentSlotOrder.indexOf(slotId).takeIf { index -> index >= 0 } ?: return@let
+            return equipmentTooltip(localizer, snapshot, slotId, anchorIndex)
+        }
+        overlayState.hoveredInscriptionHotkey?.let { hotkey ->
+            val anchorIndex = hotkey - INSCRIPTION_HOTKEY_START
+            if (anchorIndex in shell.demo.inscriptionSlots.indices) {
+                return inscriptionTooltip(localizer, snapshot, hotkey, anchorIndex)
+            }
+        }
+        val inventoryIndex =
+            overlayState.hoveredInventoryIndex
+                ?: overlayState.inventorySelection.takeIf {
+                    overlayState.mode == UiMode.INVENTORY && overlayState.activeModalKind == ModalFrameKind.INVENTORY
+                }
+        inventoryIndex?.let { index ->
+            val anchorIndex = shell.demo.equipmentInventory.inventoryGrid.cells.indexOfFirst { cell -> cell.identityIndex == index }
+            if (anchorIndex >= 0) {
+                val item = snapshot.uiState.inventory.firstOrNull { entry -> entry.index == index }?.item ?: return@let
+                return itemTooltip(
+                    localizer = localizer,
+                    snapshot = snapshot,
+                    anchorKind = TilePanelTooltipAnchorKind.BACKPACK_SLOT,
+                    anchorIndex = anchorIndex,
+                    anchorId = "inventory:$index",
+                    item = item,
+                    includeEquipmentComparison = true,
+                )
+            }
+        }
+        return null
+    }
+
+    private fun equipmentTooltip(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+        slotId: String,
+        anchorIndex: Int,
+    ): TilePanelTooltipModel {
+        val slotLabel = equipmentSlotLabel(localizer, slotId)
+        val item = snapshot.uiState.equipment.firstOrNull { slot -> slot.slotId == slotId }?.item
+        if (item == null) {
+            return TilePanelTooltipModel(
+                anchorKind = TilePanelTooltipAnchorKind.EQUIPMENT_SLOT,
+                anchorIndex = anchorIndex,
+                anchorId = "equipment:$slotId",
+                titleLine = TileTextLine(slotLabel, TileTextTone.GOLD),
+                bodyLines =
+                    listOf(
+                        TileTextLine(localizer.text("log.inventory.slot_nothing_equipped", "slot" to slotLabel), TileTextTone.GRAY),
+                    ),
+            )
+        }
+        return itemTooltip(
+            localizer = localizer,
+            snapshot = snapshot,
+            anchorKind = TilePanelTooltipAnchorKind.EQUIPMENT_SLOT,
+            anchorIndex = anchorIndex,
+            anchorId = "equipment:$slotId",
+            item = item,
+            includeEquipmentComparison = false,
+            titleSuffix = slotLabel,
+        )
+    }
+
+    private fun inscriptionTooltip(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+        hotkey: Int,
+        anchorIndex: Int,
+    ): TilePanelTooltipModel {
+        val inscription = snapshot.uiState.inscriptions.firstOrNull { slot -> slot.hotkey == hotkey }
+        if (inscription == null) {
+            return TilePanelTooltipModel(
+                anchorKind = TilePanelTooltipAnchorKind.INSCRIPTION_SLOT,
+                anchorIndex = anchorIndex,
+                anchorId = "inscription:$hotkey",
+                titleLine = TileTextLine("$hotkey. ${localizer.text("ui.shell.inscription.empty")}", TileTextTone.GOLD),
+                bodyLines =
+                    listOf(
+                        TileTextLine(localizer.text("log.inscription.slot_empty", "slot" to hotkey), TileTextTone.GRAY),
+                    ),
+            )
+        }
+        val categoryKey = inscription.categoryId.takeIf(String::isNotBlank)?.let { categoryId -> "ui.inscription.category.$categoryId" }
+        val bodyLines =
+            buildList {
+                categoryKey?.let { key ->
+                    add(TileTextLine(localizer.text("ui.inscription.detail.category", "category" to localizer.text(key)), TileTextTone.LIGHT_GRAY))
+                }
+                add(
+                    TileTextLine(
+                        localizer.text(
+                            "ui.inscription.detail.cooldown",
+                            "current" to inscription.cooldownRemaining,
+                            "max" to inscription.maxCooldown,
+                        ),
+                        if (inscription.cooldownRemaining > 0) TileTextTone.RED else TileTextTone.LIGHT_GRAY,
+                    ),
+                )
+                add(TileTextLine(localizer.text(inscription.descKey), TileTextTone.LIGHT_GRAY))
+                if (inscription.requiresTarget) {
+                    add(TileTextLine(localizer.text("ui.inscription.detail.requires_target"), TileTextTone.CYAN))
+                }
+            }
+        return TilePanelTooltipModel(
+            anchorKind = TilePanelTooltipAnchorKind.INSCRIPTION_SLOT,
+            anchorIndex = anchorIndex,
+            anchorId = "inscription:$hotkey",
+            titleLine = TileTextLine("$hotkey. ${localizer.text(inscription.nameKey)}", TileTextTone.GOLD),
+            bodyLines = bodyLines,
+        )
+    }
+
+    private fun itemTooltip(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+        anchorKind: TilePanelTooltipAnchorKind,
+        anchorIndex: Int,
+        anchorId: String,
+        item: ItemRenderSnapshot,
+        includeEquipmentComparison: Boolean,
+        titleSuffix: String? = null,
+    ): TilePanelTooltipModel {
+        val presentation = QualityPresentation.from(item)
+        val title =
+            listOfNotNull(renderItemDisplay(localizer, item, presentation), titleSuffix?.let { suffix -> "[$suffix]" })
+                .joinToString(" ")
+        val bodyLines =
+            DescriptionPresenter.presentInventoryItemLines(localizer, item).map { line ->
+                TileTextLine(line.text, descriptionTone(line))
+            } +
+                itemDetailLines(localizer, item).map { line -> TileTextLine(line, TileTextTone.LIGHT_GRAY) } +
+                if (includeEquipmentComparison) {
+                    equipmentComparisonLines(localizer, snapshot, item)
+                } else {
+                    emptyList()
+                }
+        return TilePanelTooltipModel(
+            anchorKind = anchorKind,
+            anchorIndex = anchorIndex,
+            anchorId = anchorId,
+            titleLine = TileTextLine(title, itemTone(presentation)),
+            bodyLines = bodyLines,
+        )
+    }
+
+    private fun equipmentComparisonLines(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+        candidate: ItemRenderSnapshot,
+    ): List<TileTextLine> {
+        val slotId = candidate.slotId ?: return emptyList()
+        val slotLabel = equipmentSlotLabel(localizer, slotId)
+        val equipped = snapshot.uiState.equipment.firstOrNull { slot -> slot.slotId == slotId }?.item
+        if (equipped == null) {
+            return listOf(TileTextLine(localizer.text("ui.inventory.detail.compare.no_equipped", "slot" to slotLabel), TileTextTone.GRAY))
+        }
+        val header =
+            TileTextLine(
+                localizer.text("ui.inventory.detail.compare.equipped", "item" to renderItemDisplay(localizer, equipped)),
+                TileTextTone.GOLD,
+            )
+        val deltas = statDeltaLines(localizer, candidate.stats, equipped.stats)
+        return listOf(header) +
+            if (deltas.isEmpty()) {
+                listOf(TileTextLine(localizer.text("ui.inventory.detail.compare.no_delta"), TileTextTone.GRAY))
+            } else {
+                deltas
+            }
+    }
+
+    private fun statDeltaLines(
+        localizer: Localizer,
+        candidate: ItemStatModifierSnapshot,
+        equipped: ItemStatModifierSnapshot,
+    ): List<TileTextLine> =
+        buildList {
+            addDelta(localizer.text("ui.stat.str"), candidate.str - equipped.str)
+            addDelta(localizer.text("ui.stat.dex"), candidate.dex - equipped.dex)
+            addDelta(localizer.text("ui.stat.con"), candidate.con - equipped.con)
+            addDelta(localizer.text("ui.stat.wil"), candidate.wil - equipped.wil)
+            addDelta(localizer.text("ui.hud.attack.short"), candidate.attack - equipped.attack)
+            addDelta(localizer.text("ui.hud.defense.short"), candidate.defense - equipped.defense)
+            addDelta(localizer.text("ui.hud.accuracy.short"), candidate.accuracy - equipped.accuracy)
+            addDelta(localizer.text("ui.hud.evasion.short"), candidate.evasion - equipped.evasion)
+            addDelta(localizer.text("ui.hud.speed.short"), candidate.speed - equipped.speed)
+            addDelta(localizer.text("ui.hud.hp.short"), candidate.maxHp - equipped.maxHp)
+            addDelta(localizer.text("ui.hud.stamina.short"), candidate.maxStamina - equipped.maxStamina)
+            addDecimalDelta(localizer.text("ui.inspect.mod.hp_regen"), candidate.hpRegen - equipped.hpRegen)
+            addDecimalDelta(localizer.text("ui.inspect.mod.stamina_regen"), candidate.staminaRegen - equipped.staminaRegen)
+            addPercentDelta(localizer.text("ui.inspect.mod.crit"), candidate.critChance - equipped.critChance)
+            addPercentDelta(localizer.text("ui.inspect.mod.talent"), candidate.talentPower - equipped.talentPower)
+        }
+
+    private fun MutableList<TileTextLine>.addDelta(
+        label: String,
+        value: Int,
+    ) {
+        if (value != 0) {
+            add(TileTextLine("$label ${signed(value)}", deltaTone(value.toDouble())))
+        }
+    }
+
+    private fun MutableList<TileTextLine>.addDecimalDelta(
+        label: String,
+        value: Double,
+    ) {
+        if (value != 0.0) {
+            add(TileTextLine("$label ${signedDecimal(value)}", deltaTone(value)))
+        }
+    }
+
+    private fun MutableList<TileTextLine>.addPercentDelta(
+        label: String,
+        value: Double,
+    ) {
+        if (value != 0.0) {
+            add(TileTextLine("$label ${signed((value * 100).toInt())}%", deltaTone(value)))
+        }
+    }
+
+    private fun deltaTone(value: Double): TileTextTone = if (value > 0.0) TileTextTone.GREEN else TileTextTone.RED
 
     private fun talentUsageSummary(
         localizer: Localizer,

@@ -966,6 +966,125 @@ object ValidationScenarioRegistry {
                     ),
             ),
             ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr05-map-layer-stack"),
+                prId = "PR-05",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.CUSTOM,
+                        seed = 202605090501L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "arcanist",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 1,
+                        routeIndex = 0,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/dark-uiux-pr05-map-layer-stack-primary.png",
+                                "evidence/dark-uiux-pr05-map-layer-stack-prop-marker.png",
+                                "evidence/dark-uiux-pr05-map-layer-stack-loot-marker.png",
+                                "evidence/dark-uiux-pr05-map-layer-stack-report.png",
+                                "evidence/dark-uiux-pr05-map-layer-stack-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "Open scenario",
+                                    expectedVisibleResult = "Dark PR-05 ground and wall tiles, player actor, and map props render without old black-grid fallback.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-map-layer-stack-primary.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "Move focus to a visible interactable prop",
+                                    expectedVisibleResult = "Interactable prop art remains readable above the dark ground and below actor sprites.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-map-layer-stack-prop-marker.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "Move focus to a loot marker",
+                                    expectedVisibleResult = "Ground loot marker and tile content remain readable without covering the actor sprite.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-map-layer-stack-loot-marker.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "Open evidence summary",
+                                    expectedVisibleResult = "Evidence summary lists PR-05 map layer stack checks and artifact paths.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-map-layer-stack-report.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/dark-uiux-pr05-map-actor-portrait-replacement.md",
+                        scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr05-map-layer-stack.evidence.summary_note",
+                    ),
+            ),
+            ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr05-actor-boss-telegraph"),
+                prId = "PR-05",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.BOSS_VARIANT,
+                        seed = 202605090502L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "templar",
+                        raceId = "human",
+                        zoneId = "grey_gate_depths",
+                        floor = 2,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/dark-uiux-pr05-actor-boss-telegraph-primary.png",
+                                "evidence/dark-uiux-pr05-actor-boss-telegraph-grey-crown.png",
+                                "evidence/dark-uiux-pr05-actor-boss-telegraph-abyssal-eclipse.png",
+                                "evidence/dark-uiux-pr05-actor-boss-telegraph-report.png",
+                                "evidence/dark-uiux-pr05-actor-boss-telegraph-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Enter",
+                                    expectedVisibleResult = "Boss actor, ordinary VFX, and molten_glass boss warning remain readable in the dark PR-05 map surface.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-actor-boss-telegraph-primary.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "grey_crown warning overlaps the boss actor without hiding actor silhouette or warning ring.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-actor-boss-telegraph-grey-crown.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "abyssal_eclipse warning and ordinary VFX remain separable from the boss actor on dark tiles.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-actor-boss-telegraph-abyssal-eclipse.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Right, Enter",
+                                    expectedVisibleResult = "Evidence summary lists the PR-05 boss telegraph screenshots and phase override coverage.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-actor-boss-telegraph-report.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/dark-uiux-pr05-map-actor-portrait-replacement.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.boss.phase_override_entered",
+                                "boss.variant.molten_glass.phase_override.entered",
+                                "boss.variant.grey_crown.phase_override.entered",
+                                "boss.variant.abyssal_eclipse.phase_override.entered",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr05-actor-boss-telegraph.evidence.summary_note",
+                    ),
+            ),
+            ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 prId = "PR-06",
                 runtime =

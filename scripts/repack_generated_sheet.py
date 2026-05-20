@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import sys
 from dataclasses import dataclass
 
 from PIL import Image
@@ -140,6 +141,50 @@ def ordered_pieces(components: list[Component], sheet) -> list[Component]:
     return ordered
 
 
+def normalize_piece_count(pieces: list[Component], expected_count: int, sheet) -> list[Component]:
+    if len(pieces) <= expected_count:
+        return pieces
+
+    cell_width = sheet.grid["cellWidth"]
+    cell_height = sheet.grid["cellHeight"]
+    merge_distance = max(cell_width, cell_height) * 1.4
+    anchors = sorted(pieces, key=lambda component: component.area, reverse=True)[:expected_count]
+    extras = sorted(pieces, key=lambda component: component.area, reverse=True)[expected_count:]
+    merged_count = 0
+    for extra in extras:
+        nearest_index = min(
+            range(len(anchors)),
+            key=lambda index: squared_distance(extra, anchors[index]),
+        )
+        anchor = anchors[nearest_index]
+        if extra.area <= anchor.area * 0.35 and squared_distance(extra, anchor) <= merge_distance * merge_distance:
+            anchors[nearest_index] = merge_components(anchor, extra)
+            merged_count += 1
+    if merged_count > 0:
+        print(
+            f"[repack-generated-sheet] WARN {sheet.sheet_id} merged {merged_count} small alpha components "
+            f"to match expected_count={expected_count}.",
+            file=sys.stderr,
+        )
+    return ordered_pieces(anchors, sheet)
+
+
+def squared_distance(left: Component, right: Component) -> float:
+    delta_x = left.center_x - right.center_x
+    delta_y = left.center_y - right.center_y
+    return delta_x * delta_x + delta_y * delta_y
+
+
+def merge_components(left: Component, right: Component) -> Component:
+    return Component(
+        min(left.left, right.left),
+        min(left.top, right.top),
+        max(left.right, right.right),
+        max(left.bottom, right.bottom),
+        left.area + right.area,
+    )
+
+
 def average_center_y(row: list[Component]) -> float:
     return sum(component.center_y for component in row) / len(row)
 
@@ -163,6 +208,18 @@ def repack_sheet(sheet, cells, raw_path: pathlib.Path, overwrite: bool) -> list[
         pieces = ordered_pieces(components, sheet)
     else:
         pieces = ordered_pieces(split_oversized_components(components, sheet), sheet)
+    if len(pieces) > len(direct_cells):
+        pieces = normalize_piece_count(pieces, len(direct_cells), sheet)
+    if len(pieces) < len(direct_cells):
+        grid_output = repack_from_existing_grid(source, sheet, direct_cells)
+        if grid_output is not None:
+            print(
+                f"[repack-generated-sheet] WARN {sheet.sheet_id} used fixed-grid fallback "
+                f"after detecting {len(pieces)} subjects for expected_count={len(direct_cells)}.",
+                file=sys.stderr,
+            )
+            grid_output.save(raw_path)
+            return []
     if len(pieces) != len(direct_cells):
         return [
             f"{sheet.sheet_id} generated subject count mismatch: expected={len(direct_cells)} actual={len(pieces)}. "
@@ -190,6 +247,39 @@ def repack_sheet(sheet, cells, raw_path: pathlib.Path, overwrite: bool) -> list[
         output.alpha_composite(crop, (x, y))
     output.save(raw_path)
     return []
+
+
+def repack_from_existing_grid(source: Image.Image, sheet, direct_cells) -> Image.Image | None:
+    output = Image.new("RGBA", sheet.canvas_size, (0, 0, 0, 0))
+    cell_width = sheet.grid["cellWidth"]
+    cell_height = sheet.grid["cellHeight"]
+    padding = max(6, min(cell_width, cell_height) // 12)
+    for cell in direct_cells:
+        crop = source.crop(cell_box(sheet, cell))
+        crop = keep_largest_alpha_component(crop)
+        crop = trim_alpha(crop)
+        if crop.getchannel("A").getbbox() is None:
+            return None
+        max_width = cell_width - padding * 2
+        max_height = cell_height - padding * 2
+        scale = min(max_width / crop.width, max_height / crop.height, 1.0)
+        if scale < 1.0:
+            crop = crop.resize(
+                (max(1, round(crop.width * scale)), max(1, round(crop.height * scale))),
+                Image.Resampling.LANCZOS,
+            )
+        x = cell.col * cell_width + (cell_width - crop.width) // 2
+        y = cell.row * cell_height + (cell_height - crop.height) // 2
+        output.alpha_composite(crop, (x, y))
+    return output
+
+
+def cell_box(sheet, cell) -> tuple[int, int, int, int]:
+    cell_width = sheet.grid["cellWidth"]
+    cell_height = sheet.grid["cellHeight"]
+    left = cell.col * cell_width
+    top = cell.row * cell_height
+    return (left, top, left + cell_width, top + cell_height)
 
 
 def expand_box(component: Component, image_size: tuple[int, int], padding: int) -> tuple[int, int, int, int]:

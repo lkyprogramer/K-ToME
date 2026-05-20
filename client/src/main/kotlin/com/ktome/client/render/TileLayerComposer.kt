@@ -8,6 +8,11 @@ internal data class TileCursorLayerModel(
     val state: TileTargetCursorState?,
 )
 
+internal data class TileTargetHighlightModel(
+    val tile: Point,
+    val state: TileTargetCursorState,
+)
+
 internal data class TilePlayerIndicatorModel(
     val tile: Point,
 )
@@ -20,6 +25,7 @@ internal data class TileMapLayerPlan(
     val fogVeils: List<TileFogPlacement>,
     val groundLootMarkers: List<TileGroundLootMarkerModel>,
     val playerIndicators: List<TilePlayerIndicatorModel>,
+    val targetHighlights: List<TileTargetHighlightModel>,
     val activeCursor: TileCursorLayerModel?,
     val combatFeedback: List<TileCombatFeedbackModel>,
 )
@@ -32,14 +38,24 @@ internal object TileLayerComposer {
         TileMapLayerPlan(
             terrainBase = model.terrainTiles,
             propsAndDecals = model.propTiles,
-            spriteOverlaysAndTelegraphs = model.overlayTiles,
+            spriteOverlaysAndTelegraphs = orderedOverlays(model.overlayTiles),
             actors = model.actorTiles,
             fogVeils = model.fogTiles,
             groundLootMarkers = model.groundLootMarkers,
             playerIndicators = listOf(TilePlayerIndicatorModel(model.playerTile)),
+            targetHighlights = model.targetHighlights,
             activeCursor = activeCursor(model, projection),
             combatFeedback = model.combatFeedback,
         )
+
+    private fun orderedOverlays(overlays: List<TileVisualPlacement>): List<TileVisualPlacement> =
+        overlays
+            .withIndex()
+            .sortedWith(
+                compareBy<IndexedValue<TileVisualPlacement>> { indexed -> indexed.value.drawPriority }
+                    .thenBy { indexed -> indexed.index },
+            )
+            .map { indexed -> indexed.value }
 
     private fun activeCursor(
         model: TileRenderModel,

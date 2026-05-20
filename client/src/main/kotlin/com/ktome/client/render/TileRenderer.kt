@@ -65,6 +65,7 @@ internal enum class TileLayerFlushReason {
     MAP_FOG_VEILS,
     MAP_GROUND_LOOT_MARKERS,
     MAP_PLAYER_INDICATOR,
+    MAP_TARGETING_HIGHLIGHTS,
     MAP_ACTIVE_CURSOR,
     MAP_COMBAT_FEEDBACK,
     MAP_WARM_OVERLAY,
@@ -483,6 +484,7 @@ class TileRenderer(
                         viewportBounds = gameBounds(0f, 0f, layout.worldWidth, layout.worldHeight),
                         modalSafeBounds = layout.shell.modalSafeBounds,
                         bottomLogReservedBounds = layout.shell.bottomLogReservedBounds,
+                        explicitModalTooltip = panelTooltip(model, layout),
                     ),
                 )
             val overlayFrame =
@@ -544,6 +546,42 @@ class TileRenderer(
                 )
             }
         }
+
+        private fun panelTooltip(
+            model: TileRenderModel,
+            layout: TileLayoutMetrics,
+        ): TileTooltipModel? {
+            val tooltip = model.panelTooltip ?: return null
+            val anchorBounds =
+                when (tooltip.anchorKind) {
+                    TilePanelTooltipAnchorKind.EQUIPMENT_SLOT ->
+                        layout.demoShell.rightPanelLayout.equipmentSlots.slotBounds.getOrNull(tooltip.anchorIndex)
+                    TilePanelTooltipAnchorKind.INSCRIPTION_SLOT ->
+                        layout.demoShell.rightPanelLayout.inscriptionSlots.slotBounds.getOrNull(tooltip.anchorIndex)
+                    TilePanelTooltipAnchorKind.BACKPACK_SLOT ->
+                        layout.demoShell.rightPanelLayout.backpackSlots.slotBounds.getOrNull(tooltip.anchorIndex)
+                } ?: return null
+            val rect = anchorBounds.toRectInt()
+            return TileTooltipModel(
+                anchor =
+                    ResolvedTileOverlayAnchor(
+                        source = TileOverlayAnchor.PanelSlot(rect, tooltip.anchorId),
+                        bounds = rect,
+                        coordinateAuthority = TileOverlayCoordinateAuthority.SHELL_LAYOUT,
+                    ),
+                titleLine = tooltip.titleLine,
+                bodyLines = tooltip.bodyLines,
+                placedRect = rect,
+            )
+        }
+
+        private fun GameShellBounds.toRectInt(): RectInt =
+            RectInt(
+                x = x.roundToInt(),
+                y = y.roundToInt(),
+                width = width.roundToInt().coerceAtLeast(1),
+                height = height.roundToInt().coerceAtLeast(1),
+            )
 
         private fun buildShellTextLayout(
             model: TileRenderModel,
@@ -755,6 +793,8 @@ class TileRenderer(
                 canvas.flushLayer(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS)
                 drawFogOverlays(canvas, frame.layerPlan.fogVeils, viewport)
                 canvas.flushLayer(TileLayerFlushReason.MAP_FOG_VEILS)
+                drawTargetHighlights(canvas, frame.layerPlan.targetHighlights, viewport)
+                canvas.flushLayer(TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS)
                 frame.layerPlan.activeCursor?.let { cursor ->
                     drawCursor(
                         canvas = canvas,
@@ -1540,6 +1580,18 @@ class TileRenderer(
                 -> UiDesignTokens.color.quality.rare.color()
             }
 
+        private fun targetHighlightFill(state: TileTargetCursorState): Color =
+            when (state) {
+                TileTargetCursorState.ILLEGAL -> color("5F1616", 0.24f)
+                TileTargetCursorState.LEGAL -> color("0C515A", 0.20f)
+            }
+
+        private fun targetHighlightBorder(state: TileTargetCursorState): Color =
+            when (state) {
+                TileTargetCursorState.ILLEGAL -> color("D4524D", 0.72f)
+                TileTargetCursorState.LEGAL -> color("1CB7C8", 0.62f)
+            }
+
         private fun drawChromeFrame(
             canvas: TileCanvas,
             assets: ChromeFrameAssets,
@@ -1660,6 +1712,37 @@ class TileRenderer(
                     canvas.drawRect(tileBounds(iconX + iconSize - badgeWidth + 3f, iconY - 4f, badgeWidth, 18f), UiDesignTokens.color.surface.baseDim.color())
                     canvas.drawText(TileTextStyle.SMALL, badge, tilePosition(iconX + iconSize - badgeWidth + 6f, iconY + 11f), tone(TileTextTone.WHITE))
                 }
+            }
+        }
+
+        private fun drawTargetHighlights(
+            canvas: TileCanvas,
+            highlights: List<TileTargetHighlightModel>,
+            viewport: TileMapViewport,
+        ) {
+            highlights.forEach { highlight ->
+                if (!viewport.containsTile(highlight.tile)) {
+                    return@forEach
+                }
+                val rect = viewport.tileRect(highlight.tile)
+                val inset = 4f
+                val bounds =
+                    tileBounds(
+                        x = rect.x.toFloat() + inset,
+                        y = rect.y.toFloat() + inset,
+                        width = (rect.width - inset * 2f).coerceAtLeast(1f),
+                        height = (rect.height - inset * 2f).coerceAtLeast(1f),
+                    )
+                canvas.drawRect(bounds, targetHighlightFill(highlight.state))
+                drawRectOutline(
+                    canvas = canvas,
+                    x = bounds.x,
+                    y = bounds.y,
+                    width = bounds.width,
+                    height = bounds.height,
+                    stroke = 1f,
+                    color = targetHighlightBorder(highlight.state),
+                )
             }
         }
 

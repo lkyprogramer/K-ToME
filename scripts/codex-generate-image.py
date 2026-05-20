@@ -182,7 +182,7 @@ def remove_generated_checkerboard(image):
     sample_count = 0
     for x, y in sample_points(width, height):
         red, green, blue, alpha = pixels[x, y]
-        if alpha == 255:
+        if alpha >= 192:
             sample_count += 1
             if is_generated_checker_pixel(red, green, blue):
                 light_neutral_count += 1
@@ -193,7 +193,7 @@ def remove_generated_checkerboard(image):
     for y in range(height):
         for x in range(width):
             red, green, blue, alpha = pixels[x, y]
-            if alpha == 255 and is_generated_checker_pixel(red, green, blue):
+            if alpha >= 24 and is_generated_checker_pixel(red, green, blue):
                 pixels[x, y] = (red, green, blue, 0)
     return image
 
@@ -207,7 +207,7 @@ def sample_points(width: int, height: int) -> Iterable[tuple[int, int]]:
 
 
 def is_generated_checker_pixel(red: int, green: int, blue: int) -> bool:
-    return min(red, green, blue) >= 225 and max(red, green, blue) - min(red, green, blue) <= 14
+    return min(red, green, blue) >= 188 and max(red, green, blue) - min(red, green, blue) <= 28
 
 
 def sha256(path: pathlib.Path) -> str:

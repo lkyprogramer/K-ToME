@@ -222,31 +222,33 @@ internal object TileOverlayModelBuilder {
     fun build(request: TileOverlayModelRequest): TileOverlayModel {
         val topModal = request.overlayState.modalFrames.lastOrNull()
         val activeModal =
-            topModal?.let { frame ->
-                val bounds = modalBounds(frame.kind, request)
-                TileModalModel(
-                    frameKind = frame.kind,
-                    bounds = bounds,
-                    visualBounds =
-                        if (frame.kind == ModalFrameKind.TALENT_ASSIGN || frame.kind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE) {
-                            talentAssignVisualBounds(request)
-                        } else {
-                            null
-                        },
-                    titleLine = TileTextLine(modalTitle(frame.kind), TileTextTone.GOLD),
-                    bodyLines =
-                        request.renderModel.sidebar.rows
-                            .take(8)
-                            .map { row -> TileTextLine(row.text, row.tone) },
-                    footerHintLines =
-                        request.renderModel.shell.footerHints
-                            .take(2)
-                            .map { row -> TileTextLine(row.text, row.tone) },
-                    talentAssignPanel =
-                        request.renderModel.talentAssignPanel
-                            ?.takeIf { frame.kind == ModalFrameKind.TALENT_ASSIGN || frame.kind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE },
-                )
-            }
+            topModal
+                ?.takeUnless { frame -> frame.kind == ModalFrameKind.COMBAT_DECISION }
+                ?.let { frame ->
+                    val bounds = modalBounds(frame.kind, request)
+                    TileModalModel(
+                        frameKind = frame.kind,
+                        bounds = bounds,
+                        visualBounds =
+                            if (frame.kind == ModalFrameKind.TALENT_ASSIGN || frame.kind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE) {
+                                talentAssignVisualBounds(request)
+                            } else {
+                                null
+                            },
+                        titleLine = TileTextLine(modalTitle(frame.kind), TileTextTone.GOLD),
+                        bodyLines =
+                            request.renderModel.sidebar.rows
+                                .take(8)
+                                .map { row -> TileTextLine(row.text, row.tone) },
+                        footerHintLines =
+                            request.renderModel.shell.footerHints
+                                .take(2)
+                                .map { row -> TileTextLine(row.text, row.tone) },
+                        talentAssignPanel =
+                            request.renderModel.talentAssignPanel
+                                ?.takeIf { frame.kind == ModalFrameKind.TALENT_ASSIGN || frame.kind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE },
+                    )
+                }
         val passiveTooltip = passiveTooltip(request)
         val explicitTooltip = request.explicitModalTooltip?.let { tooltip -> tooltip.withPlacement(request) }
         val suppressed = mutableListOf<TileTooltipSuppression>()

@@ -93,6 +93,8 @@ contact sheet 未确认前不得把 runtime PNG 视为稳定合同。任何 comm
 3. 替换 bestiary monster icon、boss icon、职业 portrait、天赋树 portrait、区域 visual。
 4. 在 PR-02-1 `UI-demo-new` 首屏基础上，把正式地图、actor、portrait、bestiary、VFX 家族扩展到全局暗黑地牢视觉；不得退回黑底程序网格。
 5. 保持 PR-05 只改资源、manifest 和 client presentation；不改变地图生成、战斗、AI、Boss 或掉落规则。
+6. 技能/铭刻释放必须保持 ToME-like map-first targeting：热键直达地图瞄准，地图层显示 cursor、合法目标/非法 hover 标记，侧栏和底部动作条显示当前技能与确认提示；不得在 `TARGET` 阶段生成遮挡战场的居中 combat decision 弹窗。
+7. 右侧装备、铭刻与背包 companion 面板必须支持低摩擦详情：鼠标 hover 直接显示装备/铭刻/物品详情；背包选中物品直接显示详情与同槽装备属性差异；`PageUp/PageDown` 在背包上下文用于翻页，不得被 map 移动抢占。
 
 ## 2. 影响范围
 

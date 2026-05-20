@@ -506,6 +506,61 @@ class ClientSmokeHarnessTest {
 
     @Test
     @Tag("clientSmoke")
+    fun `validation scenario smoke renders dark uiux pr05 map layer stack`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr05-map-layer-stack"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-dark-uiux-pr05-map-layer-stack-smoke/save")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertDarkUiuxPr05MapLayerStackVisible(session)
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `validation scenario smoke renders dark uiux pr05 boss telegraph`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr05-actor-boss-telegraph"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-dark-uiux-pr05-boss-telegraph-smoke/save")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertPr05BossVariantWarningVisible(
+            session = session,
+            scenarioId = scenario.id,
+            actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+            expectedOverlaySourceAbilityId = "molten_glass_phase_override_warning",
+            expectedLogKey = "boss.variant.molten_glass.phase_override.entered",
+        )
+
+        val snapshot = session.renderSnapshot()
+        val model =
+            TileRenderer.buildRenderModel(
+                session.localizer(),
+                clientAssets.visualResolver,
+                snapshot,
+                OverlayState(mode = UiMode.MAP),
+            )
+        assertTrue(
+            model.overlayTiles.any { overlay ->
+                overlay.asset.resolvedKey == "vfx.boss.warning.sigil_01" && overlay.drawPriority >= 3
+            },
+            "Expected high-priority PR-05 boss warning overlay, got ${model.overlayTiles.map { it.asset.resolvedKey to it.drawPriority }}.",
+        )
+        assertTrue(
+            model.actorTiles.any { actor -> actor.asset.resolvedKey in pr05BossActorKeys },
+            "Expected boss actor art in PR-05 boss telegraph scenario, got ${model.actorTiles.map { it.asset.resolvedKey }}.",
+        )
+    }
+
+    @Test
+    @Tag("clientSmoke")
     fun `validation overlay exposes hidden content and content pack phase4 guidance`() {
         withHeadlessGdx {
             val hiddenSnapshot =
@@ -1622,6 +1677,36 @@ class ClientSmokeHarnessTest {
         )
         TileRenderer.renderHeadless(localizer, clientAssets.visualResolver, snapshot, overlayState)
     }
+
+    private fun assertDarkUiuxPr05MapLayerStackVisible(session: FoundationGameSession) {
+        val snapshot = session.renderSnapshot()
+        val localizer = session.localizer()
+        val overlayState = OverlayState(mode = UiMode.MAP)
+        val model = TileRenderer.buildRenderModel(localizer, clientAssets.visualResolver, snapshot, overlayState)
+
+        assertTrue(
+            model.terrainTiles.any { tile -> tile.asset.entry.rawOutputPath.startsWith("dark-v1/tiles/") },
+            "Expected PR-05 dark tile output, got ${model.terrainTiles.map { tile -> tile.asset.entry.rawOutputPath }.distinct()}",
+        )
+        assertTrue(
+            model.propTiles.any { prop -> prop.asset.entry.rawOutputPath.startsWith("dark-v1/props/") },
+            "Expected PR-05 dark prop output, got ${model.propTiles.map { prop -> prop.asset.entry.rawOutputPath }.distinct()}",
+        )
+        assertTrue(
+            model.actorTiles.any { actor -> actor.asset.entry.rawOutputPath.startsWith("dark-v1/actors/") },
+            "Expected PR-05 dark actor output, got ${model.actorTiles.map { actor -> actor.asset.entry.rawOutputPath }.distinct()}",
+        )
+        TileRenderer.renderHeadless(localizer, clientAssets.visualResolver, snapshot, overlayState)
+    }
+
+    private val pr05BossActorKeys: Set<String> =
+        setOf(
+            "actor.boss.ashgate_warden",
+            "actor.orc.molten_giant",
+            "boss.abyssal.guardian.visual",
+            "boss.cultist.dungeon_lord.visual",
+            "boss.orc.molten_giant.visual",
+        )
 
     private fun samplePackSelection(): ContentPackSelection {
         val repoRoot =

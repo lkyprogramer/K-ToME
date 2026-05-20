@@ -18,6 +18,7 @@ data class CombatDecisionFrameState(
     val selectedActionId: String?,
     val selectedMethodId: String?,
     val skippedMethod: Boolean = false,
+    val targetBackspacePhase: CombatDecisionPhase? = null,
 )
 
 internal enum class CombatActionKind {

@@ -42,6 +42,12 @@ internal object CombatDecisionValidationFixtures {
                     selectedActionId = ACTION_ID,
                     selectedMethodId = METHOD_ID,
                     skippedMethod = false,
+                    targetBackspacePhase =
+                        if (surface == CombatDecisionValidationSurface.METHOD) {
+                            CombatDecisionPhase.METHOD
+                        } else {
+                            null
+                        },
                 )
 
             CombatDecisionValidationSurface.DISABLED_RESOURCE,

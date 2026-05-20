@@ -19,8 +19,15 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import java.lang.reflect.Proxy
+import java.nio.file.Files
 import java.nio.file.Path
 import javax.imageio.ImageIO
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -135,6 +142,117 @@ class ManifestResolveTest {
     }
 
     @Test
+    fun darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        listOf(
+            "tileset.forest_edge.ground_01" to "dark-v1/tiles/tileset_forest_edge_ground_01.png",
+            "tileset.forest_edge.wall_01" to "dark-v1/tiles/tileset_forest_edge_wall_01.png",
+            "tileset.mine.ground_01" to "dark-v1/tiles/tileset_mine_ground_01.png",
+            "tileset.mine.wall_01" to "dark-v1/tiles/tileset_mine_wall_01.png",
+            "tileset.shadow_depths.ground_01" to "dark-v1/tiles/tileset_shadow_depths_ground_01.png",
+            "tileset.shadow_depths.wall_01" to "dark-v1/tiles/tileset_shadow_depths_wall_01.png",
+        ).forEach { (key, expectedPath) ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals(expectedPath, resolved.entry.rawOutputPath)
+            assertTrue(resolved.entry.tags.contains("pr05"), key)
+            assertFalse(resolved.fallbackUsed, key)
+            assertFalse(resolved.matchedByPrefix, key)
+        }
+    }
+
+    @Test
+    fun darkUiuxPr05BestiaryIconsResolveThroughExactEntries() {
+        val assets = ClientAssetBundleLoader.load()
+        val resolver = assets.visualResolver
+        val keys =
+            assets.visualManifest.entries
+                .filter { entry -> entry.tags.contains("pr05") && entry.rawOutputPath.startsWith("dark-v1/icons/") }
+                .map(VisualManifestEntry::key)
+
+        assertTrue(keys.size >= 40, keys.toString())
+        listOf("icon.monster.bandit.captain", "icon.monster.abyssal.guardian", "boss.orc.molten_giant.icon").forEach { key ->
+            assertTrue(key in keys, keys.toString())
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals("icon", resolved.entry.category)
+            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/icons/"))
+            assertFalse(resolved.fallbackUsed)
+            assertFalse(resolved.matchedByPrefix)
+        }
+    }
+
+    @Test
+    fun darkUiuxPr05PortraitKeysResolveThroughExactEntries() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        listOf("portrait.arcanist", "portrait.rogue", "tree.vanguard_arms", "tree.arcanist_flame").forEach { key ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals("portrait", resolved.entry.category)
+            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/portraits/"))
+            assertTrue(resolved.entry.tags.contains("pr05"), key)
+            assertFalse(resolved.fallbackUsed)
+            assertFalse(resolved.matchedByPrefix)
+        }
+    }
+
+    @Test
+    fun darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        listOf(
+            "zone.greenwood_fringe.visual" to "prop_environment",
+            "zone.deep_iron_pit.visual" to "prop_environment",
+            "zone.grey_gate_depths.visual" to "prop_environment",
+            "zone.secret.abyssal_temple_warded_archive.visual" to "portrait",
+        ).forEach { (key, expectedCategory) ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals(expectedCategory, resolved.entry.category)
+            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/portraits/"))
+            assertTrue(resolved.entry.tags.contains("r06-portraits-zones"), key)
+            assertFalse(resolved.fallbackUsed)
+            assertFalse(resolved.matchedByPrefix)
+        }
+    }
+
+    @Test
+    fun darkUiuxPr05OwnerInventoryClosesAgainstExactManifestEntries() {
+        val assets = ClientAssetBundleLoader.load()
+        val resolver = assets.visualResolver
+        val inventory = pr05OwnerInventory()
+        val entries = inventory["entries"]!!.jsonArray.map { item -> item.jsonObject }
+        val expectedKeys = stringArray(inventory, "ownerExpectedKeys")
+        val coveredKeys = stringArray(inventory, "ownerCoveredKeys")
+
+        assertEquals(161, entries.size)
+        assertEquals(expectedKeys, coveredKeys)
+        assertEquals(expectedKeys, entries.map { entry -> entry.string("targetKey") }.sorted())
+        assertEquals(emptyList<String>(), stringArray(inventory, "allowedOwnerFallbackKeys"))
+        assertEquals(emptyList<String>(), stringArray(inventory, "oldStyleOwnerKeys"))
+        assertEquals(emptyList<String>(), stringArray(inventory, "pendingOwnerKeys"))
+
+        entries.forEach { entry ->
+            val key = entry.string("targetKey")
+            val resolved = resolver.resolve(key)
+
+            assertEquals("PR-05", entry.string("ownerPr"), key)
+            assertEquals("missing_visual", entry.string("fallbackKey"), key)
+            assertEquals(key, resolved.resolvedKey)
+            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/"), key)
+            assertTrue(resolved.entry.tags.contains("pr05"), key)
+            assertFalse(resolved.fallbackUsed, key)
+            assertFalse(resolved.matchedByPrefix, key)
+        }
+    }
+
+    @Test
     fun `vanguard starter hotbar icons keep transparent socket background`() {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 
@@ -184,10 +302,10 @@ class ManifestResolveTest {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 
         listOf(
-            "actor.beast.rat" to "phase2/p2-b/actor_beast_rat.png",
-            "actor.bandit.sentry" to "phase2/p2-b/actor_bandit_raider.png",
-            "actor.undead.bone_archer" to "phase2/p2-b/actor_restless_skeleton.png",
-            "actor.orc.raider" to "phase2/p2-c/actor_orc_miner.png",
+            "actor.beast.rat" to "dark-v1/actors/actor_beast_rat.png",
+            "actor.bandit.sentry" to "dark-v1/actors/actor_bandit_sentry.png",
+            "actor.undead.bone_archer" to "dark-v1/actors/actor_undead_bone_archer.png",
+            "actor.orc.raider" to "dark-v1/actors/actor_orc_raider.png",
         ).forEach { (key, expectedPath) ->
             val resolved = resolver.resolve(key)
             assertEquals(expectedPath, resolved.entry.rawOutputPath)
@@ -200,13 +318,13 @@ class ManifestResolveTest {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 
         listOf(
-            "zone.shattered_outpost.visual" to "phase2/p2-c/zone_shattered_outpost_visual.png",
+            "zone.shattered_outpost.visual" to "dark-v1/portraits/zone_shattered_outpost_visual.png",
             "zone.shattered_outpost.icon" to "phase2/p2-c/zone_shattered_outpost_icon.png",
-            "zone.greenwood_fringe.visual" to "phase2/p2-c/zone_greenwood_fringe_visual.png",
+            "zone.greenwood_fringe.visual" to "dark-v1/portraits/zone_greenwood_fringe_visual.png",
             "zone.greenwood_fringe.icon" to "phase2/p2-c/zone_greenwood_fringe_icon.png",
-            "zone.deep_iron_pit.visual" to "phase2/p2-c/zone_deep_iron_pit_visual.png",
+            "zone.deep_iron_pit.visual" to "dark-v1/portraits/zone_deep_iron_pit_visual.png",
             "zone.deep_iron_pit.icon" to "phase2/p2-c/zone_deep_iron_pit_icon.png",
-            "zone.grey_gate_depths.visual" to "phase2/p2-c/zone_grey_gate_depths_visual.png",
+            "zone.grey_gate_depths.visual" to "dark-v1/portraits/zone_grey_gate_depths_visual.png",
             "zone.grey_gate_depths.icon" to "phase2/p2-c/zone_grey_gate_depths_icon.png",
         ).forEach { (key, expectedPath) ->
             val resolved = resolver.resolve(key)
@@ -493,4 +611,20 @@ class ManifestResolveTest {
         val packRoot = repoRoot.resolve("examples/content-packs/sample.flooded_relics")
         return ContentPackSelection.of(packRoot)
     }
+
+    private fun pr05OwnerInventory(): JsonObject {
+        val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
+        return Json.parseToJsonElement(
+            Files.readString(repoRoot.resolve("UI/sprite-sheets/pr05-owner-key-inventory.json")),
+        ).jsonObject
+    }
+
+    private fun stringArray(
+        payload: JsonObject,
+        key: String,
+    ): List<String> =
+        (payload[key] as JsonArray).map { item -> item.jsonPrimitive.content }
+
+    private fun JsonObject.string(key: String): String =
+        requireNotNull(this[key]) { "Missing '$key' in PR-05 owner inventory entry." }.jsonPrimitive.content
 }
