@@ -1,0 +1,105 @@
+Prompt ID: dark-uiux-pr03-inventory-page-reference
+Expected output file: UI/dark-uiux-pr03-inventory-page-reference.png
+Canvas: 1672x941
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create one full-screen K-ToME inventory page UI/UX mockup at 1672x941.
+Use case: ui-mockup.
+Asset type: one-off development reference image, not a sprite sheet, not a manifest asset.
+Purpose: practical PR03 inventory page reference for a Kotlin/libGDX roguelike UI. The image should be usable by a developer as a near one-to-one layout guide for a better backpack page.
+
+Project visual thesis:
+A low-saturation dark fantasy roguelike tactical inventory screen with forged iron frames, worn stone panels, old leather backing, ember-gold section titles, restrained cold-cyan focus edges, readable item silhouettes, and dense but calm ToME-like keyboard-first interaction.
+
+Global shell composition:
+- Mac-style dark window frame at top, title "K-ToME".
+- Left vertical icon navigation rail remains visible. The backpack/equipment icon is selected with a thin cyan edge; map, log, talent, and settings icons are dim.
+- The dungeon map remains dimly visible behind the inventory workbench as context, but it must not compete with the inventory page.
+- Bottom HUD remains visible and secondary: hero crest, health/stamina bars, four action slots, and a short log strip. Keep it readable but lower contrast than the inventory workbench.
+- Do not cover the whole screen with a messy text modal. The inventory workbench is the main focus but still feels integrated into the current game shell.
+
+Main inventory workbench layout:
+- Large dark iron workbench centered over the map, occupying most of the center and right side while leaving the left navigation rail and bottom HUD visible.
+- Header row: title "背包", compact subtitle "负重 18/40", page chip "1/3", currency chip "金币 215".
+- Header right contains compact tabs: "全部", "武器", "护甲", "消耗品", "材料". The "全部" tab is selected. Tabs are small command chips, not big web buttons.
+- Main area split into three columns:
+  1. Left column, 25% width: equipment paper-doll / socket panel.
+  2. Center column, 45% width: backpack grid.
+  3. Right column, 30% width: selected item detail and compare pane.
+- Footer line pinned inside the workbench: keyboard help, page controls, and legend. It must not overlap the grid or item detail.
+
+Left equipment column:
+- Section title "装备".
+- Show a compact 9-slot equipment layout in a body silhouette arrangement:
+  weapon and offhand at top,
+  helm and armor,
+  cloak and gloves,
+  amulet and ring,
+  boots centered at bottom.
+- True rule slots are weapon, offhand, armor, accessory; other sockets are visual-only empty frames. Empty sockets should be hollow dark iron frames, not fake items.
+- Filled slots show crisp dark fantasy icons: short sword, shield, chest armor, ring.
+- The currently equipped weapon slot has a restrained ember-gold inner accent, because the selected inventory item can replace it.
+- Slot labels are tiny and secondary; icons and socket shapes carry the layout.
+
+Center backpack grid:
+- Section title "背包".
+- Use a clear 6 columns x 4 rows grid, stable 64px item display cells with 8px gaps.
+- Empty cells are dark hollow slots with thin iron rims.
+- Filled cells contain item icons, quantity badges, and tiny rarity marks drawn by UI overlay, not baked inside the item icon.
+- The selected item is "长剑" in the first row, second column. It has a thin cold-cyan focus ring plus a small ember-gold rarity pip; do not flood the cell with glow.
+- Other visible items: healing potion x2, teleport scroll x3, key x1, gold stack 215, mana potion x3, red gem x5, purple shard x1, herb x2, iron ingot x4, arcane staff, leather armor, shield, emerald charm, empty slots.
+- Add a subtle vertical category divider and a slim scrollbar at the grid edge. The page indicator should make it obvious there are more items.
+- The grid must be scan-friendly, not a collage. Every cell has stable dimensions and no item crosses cell boundaries.
+
+Right selected item detail and comparison:
+- Top block: selected item card for "长剑".
+  Include a 72px sword icon, name "长剑", quality chip "普通", slot line "槽位 武器", and item type "单手剑".
+- Stats block:
+  "攻击 +8"
+  "命中 +3"
+  "速度 100%"
+  "对亡灵额外造成 +10% 伤害"
+- Compare block directly below, titled "当前装备对比".
+  Show current weapon "短剑" in a smaller row.
+  Show deltas with clear visual hierarchy:
+  "攻击 +3" in stamina-green,
+  "命中 -1" in blood-red,
+  "速度 相同" in muted text.
+- Action block at the bottom of the detail pane:
+  "Enter 装备"
+  "E 使用"
+  "D 丢弃"
+  "G 拾取"
+  "Esc 返回"
+  These are compact keycap rows, not large CTA buttons.
+- The detail pane must support fast decision-making: what item is selected, whether it is better than current equipment, what actions are available.
+
+ToME-like UX principles to reflect:
+- Keyboard-first navigation: obvious focus indicator, page controls, stable selected item, and compact action hints.
+- Complex inventory uses a large focused workbench, but the game shell remains recognizable.
+- Equipment slots are limited and visible; backpack is a grid; selected item detail and compare view are visible at the same time.
+- Avoid forcing the player to read a giant paragraph before understanding whether to equip the item.
+- Dense but organized: item grid, equipment, and tooltip are all visible without overlapping.
+
+Color and material rules:
+- Dominant colors: void black, charcoal panel, iron edge, worn stone, old leather.
+- Accents: ember-gold for title, currency, equipped/rarity emphasis; cold-cyan only for focus and selected tab edges; stamina-green only for positive stat deltas; blood-red only for negative deltas.
+- No one-note purple/blue palette. Purple appears only on the shard icon.
+- Borders are thin forged iron, not bright neon outlines.
+- Material texture is subtle dungeon grit, not noisy wallpaper.
+
+Text rules:
+- Use sparse, crisp UI labels only. Chinese UI labels are okay and should be legible.
+- Important labels to render: "背包", "装备", "长剑", "当前装备对比", "Enter 装备", "D 丢弃", "Esc 返回".
+- Do not render long tutorial paragraphs, marketing copy, random fake text, gibberish, logos, watermarks, row/column numbers, or baked text inside item icons.
+
+Implementation feasibility constraints:
+- The mockup must look feasible for a Kotlin/libGDX renderer using existing primitives: panel rectangles, slot frames, item icon sprites, text lines, small chips, quantity badges, scroll bar, selection ring, and right detail pane.
+- Avoid drag-and-drop previews, complex radial menus, animated 3D item models, huge decorative cards, or web dashboard widgets.
+- Keep the bottom HUD and left rail visually consistent with UI-demo-new.png, but the backpack workbench should be cleaner, more readable, and more useful than the current inventory modal.
+
+Avoid:
+No sci-fi HUD, no neon cyberpunk, no anime/chibi, no glossy plastic, no bright glassmorphism, no mobile gacha shine, no giant hero typography, no landing page, no marketing layout, no full-screen flat spreadsheet, no random fantasy poster, no cluttered tooltip covering the grid, no cyan-filled panels, no fake item rules, no absolute file paths, no watermark.
+
+Quality target:
+At full resolution, a developer should be able to copy the inventory information architecture, column widths, slot grammar, selected item behavior, comparison pane, keyboard footer, and dark material language into implementation.
