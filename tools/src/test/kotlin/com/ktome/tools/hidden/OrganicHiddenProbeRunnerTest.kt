@@ -30,9 +30,41 @@ class OrganicHiddenProbeRunnerTest {
         try {
             val effectiveReportDir = originalReportDir ?: tempDir.resolve("hidden-reports").toString()
             System.setProperty("ktome.phase4.hidden.reportDir", effectiveReportDir)
-            val coldRun = OrganicHiddenProbeRunner.run()
-            val coldPayload = Json.parseToJsonElement(Files.readString(coldRun.summaryPath)).jsonObject
-            val run = OrganicHiddenProbeRunner.run()
+            val firstRun = OrganicHiddenProbeRunner.run()
+            val firstPayload = Json.parseToJsonElement(Files.readString(firstRun.summaryPath)).jsonObject
+            val (run, payload) =
+                if (isolatedTestRun) {
+                    val coldKernelCache = firstPayload.getValue("kernelCache").jsonObject
+                    val corruptedShardEventPath =
+                        repoRoot.resolve(coldKernelCache.getValue("shardEventPaths").jsonArray.first().jsonPrimitive.content)
+
+                    Files.writeString(corruptedShardEventPath, "")
+                    val repairedRun = OrganicHiddenProbeRunner.run()
+                    val repairedPayload = Json.parseToJsonElement(Files.readString(repairedRun.summaryPath)).jsonObject
+                    val repairedKernelCache = repairedPayload.getValue("kernelCache").jsonObject
+                    val repairedShardCount = repairedKernelCache.getValue("shardCount").jsonPrimitive.content.toInt()
+
+                    assertEquals("MISS", coldKernelCache.getValue("cacheStatus").jsonPrimitive.content)
+                    assertEquals("MISS", repairedKernelCache.getValue("cacheStatus").jsonPrimitive.content)
+                    assertEquals(repairedShardCount - 1, repairedKernelCache.getValue("reusedShardCount").jsonPrimitive.content.toInt())
+                    assertEquals(528, repairedRun.totalCases)
+                    assertEquals(528, scanJsonl(repairedRun.eventsPath).nonBlankCount)
+
+                    val warmRun = OrganicHiddenProbeRunner.run()
+                    val warmPayload = Json.parseToJsonElement(Files.readString(warmRun.summaryPath)).jsonObject
+                    val warmKernelCache = warmPayload.getValue("kernelCache").jsonObject
+
+                    assertEquals("HIT", warmKernelCache.getValue("cacheStatus").jsonPrimitive.content)
+                    warmRun to warmPayload
+                } else {
+                    val kernelCache = firstPayload.getValue("kernelCache").jsonObject
+                    val cacheStatus = kernelCache.getValue("cacheStatus").jsonPrimitive.content
+                    assertTrue(
+                        cacheStatus == "MISS" || cacheStatus == "HIT",
+                        "Expected organic hidden kernel cache status to be MISS or HIT, but was $cacheStatus.",
+                    )
+                    firstRun to firstPayload
+                }
 
             assertEquals(528, run.totalCases)
             assertEquals(0, run.runtimeFailureCount, "organicHiddenProbe recorded runtime failures; inspect ${run.summaryPath}")
@@ -40,7 +72,6 @@ class OrganicHiddenProbeRunnerTest {
             assertTrue(Files.exists(run.eventsPath), "Expected event report at ${run.eventsPath}")
             assertTrue(Files.exists(run.markdownPath), "Expected markdown report at ${run.markdownPath}")
 
-            val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
             val markdown = Files.readString(run.markdownPath)
             val summary = payload.getValue("summary").jsonObject
             val zones = payload.getValue("zones").jsonObject
@@ -48,14 +79,9 @@ class OrganicHiddenProbeRunnerTest {
             val zoneDiscoveryDistribution = payload.getValue("zoneDiscoveryDistribution").jsonObject
             val secretZoneDiscoveryDistribution = payload.getValue("secretZoneDiscoveryDistribution").jsonObject
             val notes = payload.getValue("notes").jsonArray
-            val coldKernelCache = coldPayload.getValue("kernelCache").jsonObject
-            val kernelCache = payload.getValue("kernelCache").jsonObject
-            val firstEvent = Json.parseToJsonElement(Files.readAllLines(run.eventsPath).first { line -> line.isNotBlank() }).jsonObject
+            val eventScan = scanJsonl(run.eventsPath)
+            val firstEvent = Json.parseToJsonElement(eventScan.firstNonBlankLine).jsonObject
 
-            if (isolatedTestRun) {
-                assertEquals("MISS", coldKernelCache.getValue("cacheStatus").jsonPrimitive.content)
-            }
-            assertEquals("HIT", kernelCache.getValue("cacheStatus").jsonPrimitive.content)
             assertEquals("false", summary.getValue("scriptedVerification").jsonPrimitive.content)
             assertEquals("0", summary.getValue("primerActionUsedCount").jsonPrimitive.content)
             assertEquals("528", summary.getValue("totalCases").jsonPrimitive.content)
@@ -92,7 +118,7 @@ class OrganicHiddenProbeRunnerTest {
             assertEquals(44, combinations.first().jsonObject.getValue("caseCount").jsonPrimitive.content.toInt())
             assertTrue(firstEvent.containsKey("professionId"))
             assertTrue(firstEvent.containsKey("raceId"))
-            assertEquals(528, Files.readAllLines(run.eventsPath).count { line -> line.isNotBlank() })
+            assertEquals(528, eventScan.nonBlankCount)
             assertTrue(markdown.contains("## Zone Discovery Distribution"))
             assertTrue(markdown.contains("## Secret-Zone Discovery Distribution"))
             assertTrue(markdown.contains("## Combination Breakdown"))
@@ -109,4 +135,27 @@ class OrganicHiddenProbeRunnerTest {
         }
     }
 
+    private data class JsonlScanResult(
+        val firstNonBlankLine: String,
+        val nonBlankCount: Int,
+    )
+
+    private fun scanJsonl(path: Path): JsonlScanResult {
+        var firstNonBlankLine: String? = null
+        var nonBlankCount = 0
+        Files.newBufferedReader(path).useLines { lines ->
+            lines.forEach { line ->
+                if (line.isNotBlank()) {
+                    if (firstNonBlankLine == null) {
+                        firstNonBlankLine = line
+                    }
+                    nonBlankCount += 1
+                }
+            }
+        }
+        return JsonlScanResult(
+            firstNonBlankLine = checkNotNull(firstNonBlankLine) { "Expected at least one non-blank JSONL line in $path." },
+            nonBlankCount = nonBlankCount,
+        )
+    }
 }

@@ -3,6 +3,8 @@ package com.ktome.tools.loot
 import com.ktome.core.harness.toJson
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixEquipType
+import com.ktome.core.item.AffixGenerator
+import com.ktome.core.item.AffixPool
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.GeneratedItemRoll
 import com.ktome.core.item.ItemGenerator
@@ -13,6 +15,7 @@ import com.ktome.core.item.ItemType
 import com.ktome.core.item.PassiveEffect
 import com.ktome.core.item.kindId
 import com.ktome.core.loot.LootRollContext
+import com.ktome.core.loot.LootBudgetResolver
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.loot.SourceTier
 import com.ktome.core.loot.SpecialTier
@@ -872,10 +875,13 @@ internal object LootLabKernel {
         var rarePityActivations = 0
         var uniquePityActivations = 0
         var pityTracker = startingPityTracker
+        val itemBundle = itemBundleLoader()
+        val affixPool = AffixPool(itemBundle.affixes)
 
         repeat(shardSpec.rollCount) { shardIndex ->
             val rollIndex = shardSpec.rollStartInclusive + shardIndex
             val seed = spec.seedBase + rollIndex
+            val randomSource = SplitMix64RandomSource.fromSeed(seed)
             val context =
                 LootRollContext(
                     sourceLevel = spec.sourceLevel,
@@ -887,8 +893,10 @@ internal object LootLabKernel {
                 )
             val generated =
                 ItemGenerator(
-                    bundle = itemBundleLoader(),
-                    random = SplitMix64RandomSource.fromSeed(seed),
+                    bundle = itemBundle,
+                    random = randomSource,
+                    affixGenerator = AffixGenerator(affixPool, randomSource),
+                    lootBudgetResolver = LootBudgetResolver(randomSource),
                 ).rollAndGenerate(
                     context = context,
                     zoneRewardProfile = zoneRewardProfile,

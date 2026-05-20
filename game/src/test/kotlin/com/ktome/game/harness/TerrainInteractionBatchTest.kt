@@ -43,6 +43,7 @@ import com.ktome.core.talent.TalentLoadout
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
+import com.ktome.game.PlayerCommand
 import com.ktome.game.data.DataLoader
 import com.ktome.game.terrainPreferenceImplemented
 import java.nio.file.Path
@@ -82,6 +83,7 @@ class TerrainInteractionBatchTest {
         DataLoader().loadSchemaCatalog().eliteMutations.associate { mutation ->
             mutation.id to mutation.preferredTerrainTags.toSet()
         }
+    private val sessionFactory = GameModule.newFoundationSessionFactory()
 
     @Test
     @Tag("terrainInteractionBatch")
@@ -130,6 +132,23 @@ class TerrainInteractionBatchTest {
 
         assertEquals(0, writeResult.failedAssertions, "terrainInteractionBatch left failed white-box assertions in ${writeResult.summaryPath}")
         assertTrue(writeResult.artifactCount >= allCases.size * 5, "terrainInteractionBatch should retain all requested artifacts.")
+    }
+
+    @Test
+    @Tag("terrainInteractionBatch")
+    fun `terrain exposure fast frame preserves pilot aggregate metrics`() {
+        val fastFrameProbe =
+            runTerrainExposureProbe(
+                seedsPerZone = 2,
+                capturePath = TerrainExposureCapturePath.FAST_FRAME,
+            )
+        val fullObservationProbe =
+            runTerrainExposureProbe(
+                seedsPerZone = 2,
+                capturePath = TerrainExposureCapturePath.FULL_OBSERVATION,
+            )
+
+        assertEquals(fullObservationProbe, fastFrameProbe)
     }
 
     private fun isolatedCases(): List<TerrainBatchCaseRecord> =
@@ -714,38 +733,23 @@ class TerrainInteractionBatchTest {
         )
     }
 
-    private fun runTerrainExposureProbe(): TerrainExposureProbeSummary {
+    private fun runTerrainExposureProbe(
+        seedsPerZone: Int = TERRAIN_EXPOSURE_SEEDS_PER_ZONE,
+        capturePath: TerrainExposureCapturePath = TerrainExposureCapturePath.FAST_FRAME,
+    ): TerrainExposureProbeSummary {
         val observations = mutableListOf<FoundationGameSession.TerrainCombatObservation>()
         val seeds = mutableListOf<Long>()
         TERRAIN_EXPOSURE_ZONE_IDS.forEachIndexed { zoneOrdinal, zoneId ->
-            repeat(TERRAIN_EXPOSURE_SEEDS_PER_ZONE) { seedOrdinal ->
+            repeat(seedsPerZone) { seedOrdinal ->
                 val seed = TERRAIN_EXPOSURE_SEED_BASE + zoneOrdinal * TERRAIN_EXPOSURE_ZONE_SEED_BLOCK + seedOrdinal
                 seeds += seed
-                val session = newProbeSession(seed = seed, zoneId = zoneId)
-                val bot = SmokeBot()
-                val stallDetector = StallDetector(maxRepeats = 12)
-                var turnIndex = 0
-                var observation = RunObservationCapture.capture(session, turnIndex)
-                while (turnIndex < TERRAIN_EXPOSURE_TURN_BUDGET && !observation.runOutcome.isTerminal && session.currentFloor() <= TERRAIN_EXPOSURE_MAX_FLOOR) {
-                    val command =
-                        if (shouldPrioritizeTerrainProbeRouteProgress(observation)) {
-                            routeProgressCommandWithoutObjectiveHook(session, observation)
-                        } else {
-                            null
-                        }
-                            ?: bot.decide(observation)
-                    val accepted = session.perform(command)
-                    if (!accepted) {
-                        break
-                    }
-                    if (command.consumesTurn()) {
-                        turnIndex += 1
-                    }
-                    observation = RunObservationCapture.capture(session, turnIndex)
-                    if (stallDetector.observe(observation) != null) {
-                        break
-                    }
-                }
+                val session =
+                    newProbeSession(
+                        seed = seed,
+                        zoneId = zoneId,
+                        savePathPrefix = capturePath.savePathPrefix,
+                    )
+                runTerrainExposureSession(session = session, capturePath = capturePath)
                 observations += session.automationTerrainCombatObservations()
             }
         }
@@ -789,6 +793,84 @@ class TerrainInteractionBatchTest {
                 },
             coverageByZone = coverageByZone,
         )
+    }
+
+    private fun runTerrainExposureSession(
+        session: FoundationGameSession,
+        capturePath: TerrainExposureCapturePath,
+    ) {
+        when (capturePath) {
+            TerrainExposureCapturePath.FAST_FRAME -> runTerrainExposureSessionWithFastFrame(session)
+            TerrainExposureCapturePath.FULL_OBSERVATION -> runTerrainExposureSessionWithFullObservation(session)
+        }
+    }
+
+    private fun runTerrainExposureSessionWithFastFrame(session: FoundationGameSession) {
+        val bot = SmokeBot()
+        val stallDetector = StallDetector(maxRepeats = 12)
+        var turnIndex = 0
+        var frame = TerrainExposureFastFrame.capture(session)
+        while (turnIndex < TERRAIN_EXPOSURE_TURN_BUDGET && !frame.runOutcome.isTerminal && frame.currentFloor <= TERRAIN_EXPOSURE_MAX_FLOOR) {
+            val fastRouteCommand =
+                if (shouldPrioritizeTerrainProbeRouteProgress(frame)) {
+                    routeProgressCommandWithoutObjectiveHook(session, frame)
+                } else {
+                    null
+                }
+            val command = fastRouteCommand?.takeIf { command -> command is PlayerCommand.Move } ?: run {
+                val observation = RunObservationCapture.capture(session, turnIndex)
+                val routeCommand =
+                    if (shouldPrioritizeTerrainProbeRouteProgress(observation)) {
+                        routeProgressCommandWithoutObjectiveHook(session, observation)
+                    } else {
+                        null
+                    }
+                routeCommand ?: bot.decide(observation)
+            }
+            val accepted = session.perform(command)
+            if (!accepted) {
+                break
+            }
+            if (command.consumesTurn()) {
+                turnIndex += 1
+            }
+            if (fastRouteCommand is PlayerCommand.Move) {
+                frame = TerrainExposureFastFrame.capture(session)
+            } else {
+                val observation = RunObservationCapture.capture(session, turnIndex)
+                if (stallDetector.observe(observation) != null) {
+                    break
+                }
+                frame = TerrainExposureFastFrame.fromObservation(observation)
+            }
+        }
+    }
+
+    private fun runTerrainExposureSessionWithFullObservation(session: FoundationGameSession) {
+        val bot = SmokeBot()
+        val stallDetector = StallDetector(maxRepeats = 12)
+        var turnIndex = 0
+        var observation = RunObservationCapture.capture(session, turnIndex)
+        while (turnIndex < TERRAIN_EXPOSURE_TURN_BUDGET && !observation.runOutcome.isTerminal && session.currentFloor() <= TERRAIN_EXPOSURE_MAX_FLOOR) {
+            val routeCommand =
+                if (shouldPrioritizeTerrainProbeRouteProgress(observation)) {
+                    routeProgressCommandWithoutObjectiveHook(session, observation)
+                } else {
+                    null
+                }
+            val command = routeCommand ?: bot.decide(observation)
+            val accepted = session.perform(command)
+            if (!accepted) {
+                break
+            }
+            if (command.consumesTurn()) {
+                turnIndex += 1
+            }
+            observation = RunObservationCapture.capture(session, turnIndex)
+            if (stallDetector.observe(observation) != null) {
+                break
+            }
+        }
     }
 
     private fun locateMapgenCase(
@@ -1089,7 +1171,7 @@ class TerrainInteractionBatchTest {
         seed: Long,
         zoneId: String,
     ): FoundationGameSession =
-        GameModule.newFoundationSession(
+        sessionFactory.newSession(
             config = FoundationGameConfig(seed = seed, zoneId = zoneId, playerProfessionId = "templar"),
             saveManager = SaveManager(tempDir.resolve("terrain-$zoneId-$seed")),
         )
@@ -1097,11 +1179,12 @@ class TerrainInteractionBatchTest {
     private fun newProbeSession(
         seed: Long,
         zoneId: String,
+        savePathPrefix: String = "terrain-probe",
     ): FoundationGameSession =
-        GameModule
-            .newFoundationSession(
+        sessionFactory
+            .newSession(
                 config = FoundationGameConfig(seed = seed, zoneId = zoneId, playerProfessionId = "arcanist"),
-                saveManager = SaveManager(tempDir.resolve("terrain-probe-$zoneId-$seed")),
+                saveManager = SaveManager(tempDir.resolve("$savePathPrefix-$zoneId-$seed")),
             ).also(::installTerrainProbeLoadout)
 
     private fun installTerrainProbeLoadout(session: FoundationGameSession) {
@@ -1145,6 +1228,13 @@ private data class TerrainBatchCaseRecord(
     val sourceTags: Set<String>,
     val report: WhiteBoxCaseReport,
 )
+
+private enum class TerrainExposureCapturePath(
+    val savePathPrefix: String,
+) {
+    FAST_FRAME("terrain-probe"),
+    FULL_OBSERVATION("terrain-probe-full-observation"),
+}
 
 private data class TerrainExposureProbeSummary(
     val seeds: List<Long>,
@@ -1293,3 +1383,7 @@ private fun terrainPerZoneLowerBoundTarget(): Double {
 private fun shouldPrioritizeTerrainProbeRouteProgress(observation: RunObservation): Boolean =
     observation.visibleBossPositions.isEmpty() &&
         observation.visibleHostilePositions.none { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) <= 2 }
+
+private fun shouldPrioritizeTerrainProbeRouteProgress(frame: TerrainExposureFastFrame): Boolean =
+    frame.visibleBossPositions.isEmpty() &&
+        frame.visibleHostilePositions.none { hostile -> hostile.chebyshevDistanceTo(frame.playerPosition) <= 2 }

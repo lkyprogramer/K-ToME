@@ -2,6 +2,9 @@ package com.ktome.game.harness
 
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
+import com.ktome.core.ecs.Faction
+import com.ktome.core.ecs.FactionTag
+import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.item.ConsumableEffect
@@ -74,31 +77,27 @@ object RunObservationCapture {
         val uiState = snapshot.uiState
         val playerStatusSnapshot = uiState.playerStatus
         val mapCells = snapshot.mapCells
-        val visibleTiles = mapCells.asSequence()
-            .filter { cell -> cell.visibility == CellVisibilitySnapshot.VISIBLE }
-            .map { cell -> Point(cell.x, cell.y) }
-            .toSet()
-        val exploredTiles = mapCells.asSequence()
-            .filter { cell -> cell.visibility != CellVisibilitySnapshot.HIDDEN }
-            .map { cell -> Point(cell.x, cell.y) }
-            .toSet()
-        val knownDownstairsPositions =
-            mapCells
-                .asSequence()
-                .filter { cell -> cell.visibility != CellVisibilitySnapshot.HIDDEN && cell.stairDirectionId == StairDirection.DOWN.name }
-                .map { cell -> Point(cell.x, cell.y) }
-                .distinct()
-                .sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
-                .toList()
-
-        val visibleGroundItemPositions =
-            mapCells
-                .asSequence()
-                .filter { cell -> cell.visibility == CellVisibilitySnapshot.VISIBLE && cell.items.isNotEmpty() }
-                .map { cell -> Point(cell.x, cell.y) }
-                .distinct()
-                .sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
-                .toList()
+        val visibleTiles = linkedSetOf<Point>()
+        val exploredTiles = linkedSetOf<Point>()
+        val knownDownstairsPositions = mutableListOf<Point>()
+        val visibleGroundItemPositions = mutableListOf<Point>()
+        mapCells.forEach { cell ->
+            val point = Point(cell.x, cell.y)
+            when (cell.visibility) {
+                CellVisibilitySnapshot.VISIBLE -> {
+                    visibleTiles += point
+                    exploredTiles += point
+                    if (cell.items.isNotEmpty()) {
+                        visibleGroundItemPositions += point
+                    }
+                }
+                CellVisibilitySnapshot.EXPLORED -> exploredTiles += point
+                CellVisibilitySnapshot.HIDDEN -> Unit
+            }
+            if (cell.visibility != CellVisibilitySnapshot.HIDDEN && cell.stairDirectionId == StairDirection.DOWN.name) {
+                knownDownstairsPositions += point
+            }
+        }
         val interactableTagsByType = linkedMapOf<String, Set<String>>()
         val visibleInteractables =
             snapshot.props
@@ -207,6 +206,65 @@ object RunObservationCapture {
             messageLogTail = session.messageLog().takeLast(12),
             eventTail = session.recentEventLog(12),
         )
+    }
+}
+
+internal data class TerrainExposureFastFrame(
+    val currentFloor: Int,
+    val runOutcome: com.ktome.core.run.RunOutcome,
+    val playerPosition: Point,
+    val playerResourceTypeId: String,
+    val visibleHostilePositions: List<Point>,
+    val visibleBossPositions: List<Point>,
+    val activeRouteSelection: RouteSelectionSnapshot?,
+    val activeShopId: String?,
+    val canDescend: Boolean,
+) {
+    companion object {
+        fun capture(session: FoundationGameSession): TerrainExposureFastFrame {
+            val visibleTiles = session.visibleTiles()
+            val world = session.automationWorld()
+            val visibleHostilePositions =
+                world.entitiesWith(Position::class, Health::class, FactionTag::class)
+                    .asSequence()
+                    .filter { entityId -> entityId != session.playerId }
+                    .filter { entityId -> world.get<FactionTag>(entityId)?.value == Faction.MONSTER }
+                    .filter { entityId -> (world.get<Health>(entityId)?.current ?: 0) > 0 }
+                    .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+                    .filter { point -> point in visibleTiles }
+                    .distinct()
+                    .sortedWith(compareBy<Point> { point -> point.y }.thenBy { point -> point.x })
+                    .toList()
+            val visibleBossPositions =
+                session.automationBossPoint()
+                    ?.takeIf { point -> point in visibleTiles }
+                    ?.let(::listOf)
+                    .orEmpty()
+            return TerrainExposureFastFrame(
+                currentFloor = session.currentFloor(),
+                runOutcome = session.runOutcome(),
+                playerPosition = session.playerPosition(),
+                playerResourceTypeId = session.automationPlayerResourceView().typeId,
+                visibleHostilePositions = visibleHostilePositions,
+                visibleBossPositions = visibleBossPositions,
+                activeRouteSelection = session.automationActiveRouteSelection(),
+                activeShopId = session.automationActiveShopId(),
+                canDescend = session.canDescend(),
+            )
+        }
+
+        fun fromObservation(observation: RunObservation): TerrainExposureFastFrame =
+            TerrainExposureFastFrame(
+                currentFloor = observation.floor,
+                runOutcome = observation.runOutcome,
+                playerPosition = observation.playerPosition,
+                playerResourceTypeId = observation.playerResource.typeId,
+                visibleHostilePositions = observation.visibleHostilePositions,
+                visibleBossPositions = observation.visibleBossPositions,
+                activeRouteSelection = observation.activeRouteSelection,
+                activeShopId = observation.activeShopId,
+                canDescend = observation.canDescend,
+            )
     }
 }
 
@@ -440,16 +498,71 @@ fun routeProgressCommandWithoutObjectiveHook(
     )
 }
 
+internal fun routeProgressCommandWithoutObjectiveHook(
+    session: FoundationGameSession,
+    frame: TerrainExposureFastFrame,
+): PlayerCommand? =
+    routeProgressCommand(
+        session = session,
+        state = RouteProgressState.fromFastFrame(frame),
+        pendingObjectivePoint = null,
+    )
+
 private fun routeProgressCommand(
     session: FoundationGameSession,
     observation: RunObservation,
     pendingObjectivePoint: Point?,
+): PlayerCommand? =
+    routeProgressCommand(
+        session = session,
+        state = RouteProgressState.fromObservation(observation),
+        pendingObjectivePoint = pendingObjectivePoint,
+    )
+
+private data class RouteProgressState(
+    val playerPosition: Point,
+    val playerResourceTypeId: String,
+    val visibleHostilePositions: List<Point>,
+    val visibleBossPositions: List<Point>,
+    val activeRouteSelection: RouteSelectionSnapshot?,
+    val activeShopId: String?,
+    val canDescend: Boolean,
+) {
+    companion object {
+        fun fromObservation(observation: RunObservation): RouteProgressState =
+            RouteProgressState(
+                playerPosition = observation.playerPosition,
+                playerResourceTypeId = observation.playerResource.typeId,
+                visibleHostilePositions = observation.visibleHostilePositions,
+                visibleBossPositions = observation.visibleBossPositions,
+                activeRouteSelection = observation.activeRouteSelection,
+                activeShopId = observation.activeShopId,
+                canDescend = observation.canDescend,
+            )
+
+        fun fromFastFrame(frame: TerrainExposureFastFrame): RouteProgressState =
+            RouteProgressState(
+                playerPosition = frame.playerPosition,
+                playerResourceTypeId = frame.playerResourceTypeId,
+                visibleHostilePositions = frame.visibleHostilePositions,
+                visibleBossPositions = frame.visibleBossPositions,
+                activeRouteSelection = frame.activeRouteSelection,
+                activeShopId = frame.activeShopId,
+                canDescend = frame.canDescend,
+            )
+    }
+}
+
+private fun routeProgressCommand(
+    session: FoundationGameSession,
+    state: RouteProgressState,
+    pendingObjectivePoint: Point?,
 ): PlayerCommand? {
-    if (observation.activeShopId != null) {
+    if (state.activeShopId != null) {
         return null
     }
 
-    observation.activeRouteSelection?.let { routeSelection ->
+    state.activeRouteSelection?.let { routeSelection ->
         return PlayerCommand.SelectRoute(preferredRouteIndex(routeSelection))
     }
 
@@ -460,72 +573,72 @@ private fun routeProgressCommand(
             .map { entityId -> requireNotNull(session.automationWorld().get<Position>(entityId)).toPoint() }
             .toSet()
     }
-    val hazardTiles by lazy { session.automationZoneHazardPoints() - observation.playerPosition }
+    val hazardTiles by lazy { session.automationZoneHazardPoints() - state.playerPosition }
 
     val canPursueObjectiveHook =
         pendingObjectivePoint != null &&
-            observation.visibleBossPositions.isEmpty() &&
-            observation.visibleHostilePositions.none { hostile ->
-                hostile.chebyshevDistanceTo(observation.playerPosition) <= 2
+            state.visibleBossPositions.isEmpty() &&
+            state.visibleHostilePositions.none { hostile ->
+                hostile.chebyshevDistanceTo(state.playerPosition) <= 2
             }
     if (canPursueObjectiveHook) {
         val objectivePoint = requireNotNull(pendingObjectivePoint)
-        if (objectivePoint == observation.playerPosition) {
+        if (objectivePoint == state.playerPosition) {
             return PlayerCommand.Interact
         }
         val path =
             AStar.findPath(
                 map = session.map,
-                start = observation.playerPosition,
+                start = state.playerPosition,
                 goal = objectivePoint,
                 blocked = (occupiedTiles + hazardTiles) - objectivePoint,
             )
         path.getOrNull(1)?.let { nextStep ->
-            return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
+            return PlayerCommand.Move(nextStep.deltaFrom(state.playerPosition))
         }
     }
 
-    if (observation.canDescend) {
+    if (state.canDescend) {
         return PlayerCommand.Descend
     }
 
     val closeVisibleHostile =
-        observation.visibleHostilePositions.any { hostile ->
-            hostile.chebyshevDistanceTo(observation.playerPosition) <= 3
+        state.visibleHostilePositions.any { hostile ->
+            hostile.chebyshevDistanceTo(state.playerPosition) <= 3
         }
-    if (observation.playerResource.typeId in FRAGILE_ROUTE_RESOURCE_IDS && closeVisibleHostile) {
+    if (state.playerResourceTypeId in FRAGILE_ROUTE_RESOURCE_IDS && closeVisibleHostile) {
         return null
     }
 
     val stairsDown = session.automationStairPoint(StairDirection.DOWN)
     if (stairsDown != null) {
-        if (stairsDown == observation.playerPosition) {
+        if (stairsDown == state.playerPosition) {
             return PlayerCommand.Descend
         }
         val path =
             AStar.findPath(
                 map = session.map,
-                start = observation.playerPosition,
+                start = state.playerPosition,
                 goal = stairsDown,
                 blocked = (occupiedTiles + hazardTiles) - stairsDown,
             )
         val nextStep = path.getOrNull(1) ?: return null
-        return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
+        return PlayerCommand.Move(nextStep.deltaFrom(state.playerPosition))
     }
 
     val bossPoint = session.automationBossPoint()
-    if (bossPoint != null && observation.visibleBossPositions.isEmpty()) {
+    if (bossPoint != null && state.visibleBossPositions.isEmpty()) {
         val path =
             AStar.findPath(
                 map = session.map,
-                start = observation.playerPosition,
+                start = state.playerPosition,
                 goal = bossPoint,
                 // Offscreen boss pursuit must not freeze on transient hazard telegraphs,
                 // otherwise the harness can orbit outside the arena without ever reacquiring the boss.
                 blocked = occupiedTiles - bossPoint,
             )
         val nextStep = path.getOrNull(1) ?: return null
-        return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
+        return PlayerCommand.Move(nextStep.deltaFrom(state.playerPosition))
     }
     return null
 }

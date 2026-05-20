@@ -8,6 +8,7 @@ import com.ktome.game.FoundationGameConfig
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -174,6 +175,62 @@ class RouteProgressCommandTest {
 
         assertTrue(routeProgressCommand(session, observation) == PlayerCommand.Interact)
         assertTrue(routeProgressCommandWithoutObjectiveHook(session, observation) != PlayerCommand.Interact)
+    }
+
+    @Test
+    fun `terrain exposure fast frame matches full observation route command pilot set`() {
+        val pilotCases =
+            listOf(
+                "greenwood_fringe" to 20260409010000L,
+                "deep_iron_pit" to 20260409011000L,
+                "underground_river" to 20260409012000L,
+                "crystal_cavern" to 20260409013000L,
+            )
+        val fullCommands =
+            pilotCases.map { (zoneId, seed) ->
+                val session =
+                    GameModule.newFoundationSession(
+                        config = FoundationGameConfig(seed = seed, zoneId = zoneId, playerProfessionId = "arcanist"),
+                        saveManager = SaveManager(tempDir.resolve("terrain-fast-frame-route-$zoneId-$seed")),
+                    )
+                val observation = RunObservationCapture.capture(session, turnIndex = 0)
+                val frame = TerrainExposureFastFrame.capture(session)
+                val fullCommand = routeProgressCommandWithoutObjectiveHook(session, observation)
+                val fastCommand = routeProgressCommandWithoutObjectiveHook(session, frame)
+
+                assertEquals(fullCommand, fastCommand, "Fast frame command drifted for $zoneId/$seed.")
+                fullCommand
+            }
+
+        assertTrue(fullCommands.any { command -> command is PlayerCommand.Move })
+    }
+
+    @Test
+    fun `terrain exposure fast frame falls back when route progress cannot prove a move`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260318L,
+                        zoneId = "bandit_camp",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe", "bandit_camp"),
+                        routeIndex = 2,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("terrain-fast-frame-close-hostile")),
+            )
+        val observation = RunObservationCapture.capture(session, turnIndex = 0)
+        val closeHostile = observation.playerPosition + Point(2, 0)
+        val frame =
+            TerrainExposureFastFrame
+                .fromObservation(observation)
+                .copy(visibleHostilePositions = listOf(closeHostile))
+
+        assertEquals(
+            routeProgressCommandWithoutObjectiveHook(session, observation.copy(visibleHostilePositions = listOf(closeHostile))),
+            routeProgressCommandWithoutObjectiveHook(session, frame),
+        )
+        assertEquals(null, routeProgressCommandWithoutObjectiveHook(session, frame))
     }
 
     @Test

@@ -305,14 +305,14 @@ def validate_no_resource_inventory_mirrors(
         if not root_path.is_dir():
             continue
         for path in sorted(root_path.rglob("*.kt")):
-            text = path.read_text(encoding="utf-8")
-            for match in RESOURCE_MIRROR_DECLARATION_PATTERN.finditer(text):
-                line_number = text.count("\n", 0, match.start()) + 1
-                name = match.group("name")
-                errors.append(
-                    f"{rel(path)}:{line_number} declares resource inventory mirror '{name}'. "
-                    "Use the canonical resource plan, key registry, or manifest-derived lint report instead."
-                )
+            with path.open(encoding="utf-8") as source:
+                for line_number, line in enumerate(source, start=1):
+                    for match in RESOURCE_MIRROR_DECLARATION_PATTERN.finditer(line):
+                        name = match.group("name")
+                        errors.append(
+                            f"{rel(path)}:{line_number} declares resource inventory mirror '{name}'. "
+                            "Use the canonical resource plan, key registry, or manifest-derived lint report instead."
+                        )
 
 
 def write_report(path: pathlib.Path, records: dict[str, Any]) -> None:

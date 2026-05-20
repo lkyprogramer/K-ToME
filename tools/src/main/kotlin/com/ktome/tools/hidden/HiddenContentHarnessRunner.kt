@@ -420,15 +420,19 @@ internal object HiddenContentHarnessKernel {
                 }
             }
         val header = phase4HarnessHeader(harnessId = HiddenContentHarnessRunner.HARNESS_ID, seedList = cases.map(HiddenContentCaseSpec::seed))
-        val results = cases.map(::executeCase)
+        val sessionFactory = GameModule.newFoundationSessionFactory(locale = GameLocale.EN_US)
+        val results = cases.map { caseSpec -> executeCase(caseSpec = caseSpec, sessionFactory = sessionFactory) }
         return HiddenContentKernelRun(header = header, results = results)
     }
 
-    private fun executeCase(caseSpec: HiddenContentCaseSpec): HiddenContentCaseResult =
+    private fun executeCase(
+        caseSpec: HiddenContentCaseSpec,
+        sessionFactory: com.ktome.game.FoundationGameSessionFactory,
+    ): HiddenContentCaseResult =
         try {
             val bindingId = SearchBindingId(caseSpec.searchBindingId)
             val session =
-                GameModule.newFoundationSession(
+                sessionFactory.newSession(
                     config =
                         FoundationGameConfig(
                             seed = caseSpec.seed,
@@ -437,7 +441,6 @@ internal object HiddenContentHarnessKernel {
                             playerProfessionId = "arcanist",
                         ),
                     saveManager = com.ktome.core.save.SaveManager(reportDir().resolve("tmp").resolve("${caseSpec.zoneId}-${caseSpec.seed}")),
-                    locale = GameLocale.EN_US,
                 )
             val generatedFloor = session.automationGeneratedFloor()
             val entrance = requireNotNull(generatedFloor.entranceByBinding(bindingId)) {
@@ -471,9 +474,10 @@ internal object HiddenContentHarnessKernel {
                     generatedFloor.roomByAnchor(entrance.targetAnchorId)
                         ?: generatedFloor.rooms.firstOrNull { room -> room.nodeId == entrance.targetNodeId }
                 val rewardPoint = session.automationSecretRewardPointForBinding(bindingId)
+                val revealedSnapshot = session.renderSnapshot()
                 secretRewardNodePresent =
                     rewardPoint != null &&
-                        session.renderSnapshot().props.any { prop ->
+                        revealedSnapshot.props.any { prop ->
                             prop.propTypeId == "secret_reward" && Point(prop.x, prop.y) == rewardPoint
                         }
                 secretRewardPathClass =
@@ -743,15 +747,15 @@ internal object HiddenContentHarnessKernel {
     }
 
     private object DataRegistryHolder {
+        private val catalog: com.ktome.game.data.schema.SchemaCatalog by lazy {
+            com.ktome.game.data.DataLoader(GameLocale.EN_US).loadSchemaCatalog()
+        }
+
         private val hiddenEventsById: Map<String, HiddenEventDef> by lazy {
-            val loader = com.ktome.game.data.DataLoader(GameLocale.EN_US)
-            val catalog = loader.loadSchemaCatalog()
             catalog.hiddenEvents.associateBy(HiddenEventDef::id)
         }
 
         private val secretZonesById: Map<String, SecretZoneDef> by lazy {
-            val loader = com.ktome.game.data.DataLoader(GameLocale.EN_US)
-            val catalog = loader.loadSchemaCatalog()
             catalog.secretZones.associateBy { secretZone -> secretZone.id.id }
         }
 
@@ -1265,16 +1269,18 @@ private fun runFrontstageCueContractProbe(outputDir: Path): FrontstageCueContrac
         stableKey = "search:no_target",
         messageKey = "log.search.no_target",
     )
-    val duplicateNoTargetLogCount = session.renderSnapshot().logEvents.count { event -> event.message.key == "log.search.no_target" }
+    val duplicateSnapshot = session.renderSnapshot()
+    val duplicateNoTargetLogCount = duplicateSnapshot.logEvents.count { event -> event.message.key == "log.search.no_target" }
     val dedupedCueCount =
-        session.renderSnapshot().uiState.frontstageReadability.recentActionCues.count { cue ->
+        duplicateSnapshot.uiState.frontstageReadability.recentActionCues.count { cue ->
             cue.stableKey == "search:no_target"
         }
     repeat(3) {
         session.perform(PlayerCommand.Wait)
     }
+    val remainingSnapshot = session.renderSnapshot()
     val remainingNoTargetCueCount =
-        session.renderSnapshot().uiState.frontstageReadability.recentActionCues.count { cue ->
+        remainingSnapshot.uiState.frontstageReadability.recentActionCues.count { cue ->
             cue.stableKey == "search:no_target"
         }
     val ttlProbeResults =

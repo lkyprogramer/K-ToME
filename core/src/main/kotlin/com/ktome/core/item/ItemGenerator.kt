@@ -256,7 +256,7 @@ class ItemGenerator(
         itemLevel: Int,
     ): ItemInstance {
         val base =
-            requireNotNull(bundle.baseItems.firstOrNull { item -> item.id == template.itemId }) {
+            requireNotNull(bundle.baseItem(template.itemId)) {
                 "Special template '${template.id}' references unknown item '${template.itemId}'."
             }
         val material =
@@ -265,7 +265,7 @@ class ItemGenerator(
             }
         val affixes =
             template.fixedAffixIds.map { affixId ->
-                requireNotNull(bundle.affixes.firstOrNull { affix -> affix.id == affixId }) {
+                requireNotNull(bundle.affix(affixId)) {
                     "Special template '${template.id}' references unknown affix '$affixId'."
                 }
             }
@@ -367,12 +367,7 @@ class ItemGenerator(
 
     private fun chooseBaseItem(itemLevel: Int): ItemBaseDef {
         val floorBand = legacyFloorBandForItemLevel(itemLevel)
-        val candidates =
-            bundle.baseItems.filter { item ->
-                item.type != ItemType.CONSUMABLE &&
-                    bundle.specialTemplateForItemId(item.id) == null &&
-                    floorBand in item.dropFloors
-            }
+        val candidates = bundle.normalBaseItemsForFloorBand(floorBand)
         require(candidates.isNotEmpty()) { "No normal base items are configured for floor band $floorBand (itemLevel=$itemLevel)." }
         return chooseWeighted(candidates) { it.dropWeight }
     }
@@ -384,7 +379,7 @@ class ItemGenerator(
     ): MaterialDef? {
         if (fixedMaterialId != null) {
             val material =
-                requireNotNull(bundle.materials.firstOrNull { candidate -> candidate.id == fixedMaterialId }) {
+                requireNotNull(bundle.material(fixedMaterialId)) {
                     "Missing fixed material '$fixedMaterialId' for item '${base.id}'."
                 }
             require(base.allowedMaterials.isEmpty() || fixedMaterialId in base.allowedMaterials) {
@@ -401,7 +396,7 @@ class ItemGenerator(
         }
 
         val floorBand = legacyFloorBandForItemLevel(itemLevel)
-        val candidates = bundle.materials.filter { it.id in base.allowedMaterials && floorBand >= it.minFloor }
+        val candidates = bundle.materialsFor(allowedMaterialIds = base.allowedMaterials, floorBand = floorBand)
         require(candidates.isNotEmpty()) { "No materials are configured for ${base.id} on floor band $floorBand (itemLevel=$itemLevel)." }
         return candidates[random.nextInt(0, candidates.size)]
     }

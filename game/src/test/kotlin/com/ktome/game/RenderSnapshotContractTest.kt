@@ -637,6 +637,10 @@ class RenderSnapshotContractTest {
         assertEquals(OverlayShapeSnapshot.SINGLE_TILE, overlay.shape)
         assertTrue(overlay.cells.any { cell -> cell.x == bossPoint.x && cell.y == bossPoint.y })
         assertNull(initialSnapshot.overlays.firstOrNull { candidate -> candidate.id.startsWith("telegraph:${bossId.value}:") })
+        val repeatedInitialSnapshot = session.renderSnapshot()
+        assertEquals(RenderSnapshotHasher.sha256(initialSnapshot), RenderSnapshotHasher.sha256(repeatedInitialSnapshot))
+        assertEquals(initialSnapshot.overlays.map { candidate -> candidate.id }, repeatedInitialSnapshot.overlays.map { candidate -> candidate.id })
+        assertTrue(initialSnapshot.logEvents.any { event -> event.message.key == "log.warning.boss_presence" })
 
         session.automationWorld().add(
             bossId,
@@ -773,6 +777,39 @@ class RenderSnapshotContractTest {
 
         assertTrue(snapshot.props.any { prop -> prop.propTypeId == "armory_gate" })
         assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.objective.advance" })
+    }
+
+    @Test
+    fun `render snapshot indexed entity fields stay stable across repeated snapshot and action invalidation`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("indexed-snapshot-entities")),
+            )
+        val stairsDown = requireNotNull(session.automationStairPoint(StairDirection.DOWN))
+
+        session.automationMovePlayerTo(stairsDown)
+        ItemFactory().createGroundItem(
+            world = session.automationWorld(),
+            item = affixItem(baseId = "long_sword", affixId = "briarhook"),
+            position = stairsDown,
+        )
+
+        val first = session.renderSnapshot()
+        val repeated = session.renderSnapshot()
+        val stairCell = first.mapCells.single { cell -> cell.x == stairsDown.x && cell.y == stairsDown.y }
+
+        assertEquals(RenderSnapshotHasher.sha256(first), RenderSnapshotHasher.sha256(repeated))
+        assertEquals(StairDirection.DOWN.name, stairCell.stairDirectionId)
+        assertTrue(stairCell.items.any { item -> item.baseItemId == "long_sword" })
+        assertTrue(first.actors.any { actor -> actor.isPlayer && actor.x == stairsDown.x && actor.y == stairsDown.y })
+        assertTrue(first.props.any { prop -> prop.propTypeId == "stairs" && prop.x == stairsDown.x && prop.y == stairsDown.y })
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        val updated = session.renderSnapshot()
+
+        assertTrue(updated.metadata.revision > first.metadata.revision)
+        assertNotEquals(RenderSnapshotHasher.sha256(first), RenderSnapshotHasher.sha256(updated))
     }
 
     @Test

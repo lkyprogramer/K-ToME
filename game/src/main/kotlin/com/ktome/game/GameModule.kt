@@ -82,6 +82,15 @@ import kotlin.random.Random
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 
+class FoundationGameSessionFactory internal constructor(
+    private val sessionBuilder: (FoundationGameConfig, SaveManager) -> FoundationGameSession,
+) {
+    fun newSession(
+        config: FoundationGameConfig,
+        saveManager: SaveManager,
+    ): FoundationGameSession = sessionBuilder(config, saveManager)
+}
+
 object GameModule {
     private const val DEFAULT_ROUTE_VISIBILITY_RADIUS = 8
 
@@ -167,6 +176,26 @@ object GameModule {
             validationSessionOptions = null,
         )
 
+    fun newFoundationSessionFactory(
+        locale: GameLocale = GameLocale.DEFAULT,
+        profile: ProfileData = ProfileData(),
+        availabilityContext: AvailabilityContext = AvailabilityContext.PLAYER_CREATION,
+        contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
+    ): FoundationGameSessionFactory {
+        val content = loadContent(locale = locale, contentPackSelection = contentPackSelection)
+        return FoundationGameSessionFactory { config, saveManager ->
+            createNewSessionFromContent(
+                config = config,
+                saveManager = saveManager,
+                locale = locale,
+                profile = profile,
+                availabilityContext = availabilityContext,
+                content = content,
+                validationSessionOptions = null,
+            )
+        }
+    }
+
     fun newValidationSession(
         request: ValidationSessionRequest = ValidationSessionRequest(),
     ): FoundationGameSession =
@@ -190,6 +219,26 @@ object GameModule {
         validationSessionOptions: ValidationSessionOptions?,
     ): FoundationGameSession {
         val content = loadContent(locale = locale, contentPackSelection = contentPackSelection)
+        return createNewSessionFromContent(
+            config = config,
+            saveManager = saveManager,
+            locale = locale,
+            profile = profile,
+            availabilityContext = availabilityContext,
+            content = content,
+            validationSessionOptions = validationSessionOptions,
+        )
+    }
+
+    private fun createNewSessionFromContent(
+        config: FoundationGameConfig,
+        saveManager: SaveManager,
+        locale: GameLocale,
+        profile: ProfileData,
+        availabilityContext: AvailabilityContext,
+        content: GameContent,
+        validationSessionOptions: ValidationSessionOptions?,
+    ): FoundationGameSession {
         validateNewSessionConfig(
             config = config,
             schemaCatalog = content.schemaCatalog,
@@ -1152,12 +1201,14 @@ object GameModule {
             }
         }
         val focusPoint = routeTarget?.let { target -> Point((routeSeed.x + target.x) / 2, (routeSeed.y + target.y) / 2) } ?: fallback
+        val reachableFromRouteSeed = reachablePassablePoints(map = map, start = routeSeed)
+        val reachableFromRouteTarget = routeTarget?.let { target -> reachablePassablePoints(map = map, start = target) }
         return map.rooms
             .asSequence()
             .map(Room::center)
             .filter { point -> point != routeSeed && !map[point].blocksMovement }
-            .filter { point -> pathExists(map = map, start = routeSeed, goal = point) }
-            .filter { point -> routeTarget == null || pathExists(map = map, start = point, goal = routeTarget) }
+            .filter { point -> point in reachableFromRouteSeed }
+            .filter { point -> reachableFromRouteTarget == null || point in reachableFromRouteTarget }
             .minWithOrNull(
                 compareBy<Point> { point -> point.chebyshevDistanceTo(focusPoint) }
                     .thenBy { point -> point.chebyshevDistanceTo(routeSeed) }

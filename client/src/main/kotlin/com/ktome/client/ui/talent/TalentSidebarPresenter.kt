@@ -69,6 +69,7 @@ object TalentSidebarPresenter {
             uiState.talentTrees.map { tree ->
                 val ownerType = parseOwnerType(tree.ownerType)
                 val rowProjections = projectTreeRows(tree.nodes)
+                val nodesByTalentId = tree.nodes.associateBy(TalentTreeNodeSnapshot::talentId)
                 TalentAssignSectionModel(
                     treeId = tree.treeId,
                     ownerType = ownerType,
@@ -96,7 +97,7 @@ object TalentSidebarPresenter {
                                 focused = selectedIdentity != null && node.toTalentTreeSelectionIdentity() == selectedIdentity,
                             )
                         },
-                    edges = rowProjections.values.mapNotNull { projection -> projection.toEdge(tree.nodes) },
+                    edges = rowProjections.values.mapNotNull { projection -> projection.toEdge(nodesByTalentId) },
                     scroll = TalentAssignSectionScrollModel(verticalOffset = 0, hasVerticalOverflow = false),
                 )
             }
@@ -137,10 +138,10 @@ object TalentSidebarPresenter {
         val connectorPrefix: String,
         val parentPrerequisite: TalentNodePrerequisiteSnapshot?,
     ) {
-        fun toEdge(nodes: List<TalentTreeNodeSnapshot>): TalentTreeEdgeProjection? {
+        fun toEdge(nodesByTalentId: Map<String, TalentTreeNodeSnapshot>): TalentTreeEdgeProjection? {
             val prerequisite = parentPrerequisite ?: return null
-            val parent = nodes.firstOrNull { node -> node.talentId == prerequisite.talentId } ?: return null
-            val child = nodes.firstOrNull { node -> node.talentId == talentId } ?: return null
+            val parent = nodesByTalentId[prerequisite.talentId] ?: return null
+            val child = nodesByTalentId[talentId] ?: return null
             return TalentTreeEdgeProjection(
                 fromTalentId = parent.talentId,
                 toTalentId = child.talentId,

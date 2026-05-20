@@ -61,6 +61,7 @@ import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.ItemStatModifierSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
+import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
@@ -541,6 +542,7 @@ internal object TileRenderModelBuilder {
         val cellByPoint = snapshot.mapCells.associateBy { cell -> point(cell.x, cell.y) }
         val actorById = snapshot.actors.associateBy(ActorRenderSnapshot::entityId)
         val propByPoint = snapshot.props.associateBy { prop -> point(prop.x, prop.y) }
+        val overlaysByPoint = linkedMapOf<com.ktome.core.map.Point, MutableList<OverlayRenderSnapshot>>()
         val player = requireNotNull(snapshot.actors.singleOrNull { actor -> actor.isPlayer }) {
             "Expected a single player actor in render snapshot."
         }
@@ -578,6 +580,7 @@ internal object TileRenderModelBuilder {
             snapshot.overlays.flatMap { overlay ->
                 val asset = resolveVisual(visualResolver, overlay.visualKey)
                 overlay.cells.map { cell ->
+                    overlaysByPoint.getOrPut(point(cell.x, cell.y)) { mutableListOf() } += overlay
                     TileVisualPlacement(
                         x = cell.x,
                         y = cell.y,
@@ -587,7 +590,7 @@ internal object TileRenderModelBuilder {
                     )
                 }
             }
-        val overlayCells = snapshot.overlays.flatMap { overlay -> overlay.cells }.map { cell -> cell.x to cell.y }.toSet()
+        val overlayCells = overlaysByPoint.keys.map { point -> point.x to point.y }.toSet()
         val groundLootMarkers =
             snapshot.mapCells.mapNotNull { cell ->
                 if (cell.visibility != CellVisibilitySnapshot.VISIBLE || cell.items.isEmpty()) {
@@ -686,6 +689,7 @@ internal object TileRenderModelBuilder {
                 actorById,
                 cellByPoint,
                 propByPoint,
+                overlaysByPoint,
                 playerCell,
                 combatPanel,
                 talentAssignPanelModel,
@@ -724,6 +728,7 @@ internal object TileRenderModelBuilder {
                     actorById = actorById,
                     cellByPoint = cellByPoint,
                     propByPoint = propByPoint,
+                    overlaysByPoint = overlaysByPoint,
                 ),
             actionPanel =
                 combatPanel?.toActionPanel(visualResolver)
@@ -1213,6 +1218,7 @@ internal object TileRenderModelBuilder {
         actorById: Map<Int, ActorRenderSnapshot>,
         cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
         propByPoint: Map<com.ktome.core.map.Point, PropRenderSnapshot>,
+        overlaysByPoint: Map<com.ktome.core.map.Point, List<OverlayRenderSnapshot>>,
     ): TargetCardModel {
         val inspectEmptyState = UiEmptyState.inspect()
         val emptyText = renderTextToken(localizer, inspectEmptyState.title)
@@ -1225,10 +1231,7 @@ internal object TileRenderModelBuilder {
             } ?: return TargetCardModel(title = hud.focusName, lines = hud.focusLines, emptyStateText = emptyText)
         val cell = cellByPoint[focusPoint] ?: return TargetCardModel(title = null, lines = emptyList(), emptyStateText = emptyText)
         val actor = cell.actorEntityId?.let(actorById::get)
-        val overlaysAtFocus =
-            snapshot.overlays.filter { overlay ->
-                overlay.cells.any { cell -> cell.x == focusPoint.x && cell.y == focusPoint.y }
-            }
+        val overlaysAtFocus = overlaysByPoint[focusPoint].orEmpty()
         val telegraphRows = overlaysAtFocus.flatMap { overlay -> TelegraphRenderer.targetCardRows(localizer, overlay) }
         if (actor != null) {
             return TargetCardModel(
@@ -1310,6 +1313,7 @@ internal object TileRenderModelBuilder {
         actorById: Map<Int, ActorRenderSnapshot>,
         cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
         propByPoint: Map<com.ktome.core.map.Point, PropRenderSnapshot>,
+        overlaysByPoint: Map<com.ktome.core.map.Point, List<OverlayRenderSnapshot>>,
         playerCell: MapCellSnapshot,
         combatPanel: CombatDecisionPanelModel?,
         talentAssignPanel: TalentAssignPanelModel?,
@@ -1675,10 +1679,7 @@ internal object TileRenderModelBuilder {
                         )
                     }
                 }
-                val overlaysAtCursor =
-                    snapshot.overlays.filter { overlay ->
-                        overlay.cells.any { cell -> cell.x == cursor.x && cell.y == cursor.y }
-                    }
+                val overlaysAtCursor = overlaysByPoint[cursor].orEmpty()
                 if (overlaysAtCursor.isNotEmpty()) {
                     rows += TileTextRow(localizer.text("ui.sidebar.warnings"), TileTextTone.GOLD)
                     rows += TelegraphRenderer.tileRows(localizer, overlaysAtCursor)
