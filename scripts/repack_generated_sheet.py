@@ -151,6 +151,7 @@ def normalize_piece_count(pieces: list[Component], expected_count: int, sheet) -
     anchors = sorted(pieces, key=lambda component: component.area, reverse=True)[:expected_count]
     extras = sorted(pieces, key=lambda component: component.area, reverse=True)[expected_count:]
     merged_count = 0
+    unmerged_extras: list[Component] = []
     for extra in extras:
         nearest_index = min(
             range(len(anchors)),
@@ -160,12 +161,16 @@ def normalize_piece_count(pieces: list[Component], expected_count: int, sheet) -
         if extra.area <= anchor.area * 0.35 and squared_distance(extra, anchor) <= merge_distance * merge_distance:
             anchors[nearest_index] = merge_components(anchor, extra)
             merged_count += 1
+        else:
+            unmerged_extras.append(extra)
     if merged_count > 0:
         print(
             f"[repack-generated-sheet] WARN {sheet.sheet_id} merged {merged_count} small alpha components "
             f"to match expected_count={expected_count}.",
             file=sys.stderr,
         )
+    if unmerged_extras:
+        return ordered_pieces(anchors + unmerged_extras, sheet)
     return ordered_pieces(anchors, sheet)
 
 

@@ -437,6 +437,8 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr03
             |  - id: phase4-v4-pr04
             |  - id: phase4-v4-pr05
+            |  - id: dark-uiux-pr05-map-layer-stack
+            |  - id: dark-uiux-pr05-actor-boss-telegraph
             |  - id: phase4-v4-pr06
             |  - id: phase4-v4-pr07
             |
