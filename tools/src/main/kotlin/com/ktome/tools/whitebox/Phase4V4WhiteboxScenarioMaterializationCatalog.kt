@@ -89,6 +89,16 @@ internal object Phase4V4WhiteboxScenarioMaterializationCatalog {
                 windowHeight = 800,
             ),
             Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("dark-uiux-pr05-map-layer-stack"),
+                windowWidth = 1280,
+                windowHeight = 800,
+            ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
+                id = ValidationScenarioId("dark-uiux-pr05-actor-boss-telegraph"),
+                windowWidth = 1280,
+                windowHeight = 800,
+            ),
+            Phase4V4WhiteboxScenarioMaterializationSpec(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 windowWidth = 1280,
                 windowHeight = 800,

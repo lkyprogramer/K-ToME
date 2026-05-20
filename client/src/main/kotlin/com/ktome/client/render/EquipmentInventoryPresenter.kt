@@ -82,8 +82,9 @@ internal data class EquipmentInventoryPresenterRequest(
     val gapPx: Int = 6,
 )
 
+internal val typedEquipmentSlotOrder: List<String> = listOf("WEAPON", "OFF_HAND", "ARMOR", "ACCESSORY")
+
 internal object EquipmentInventoryPresenter {
-    private val typedEquipmentSlotOrder = listOf("WEAPON", "OFF_HAND", "ARMOR", "ACCESSORY")
     private const val VISUAL_ONLY_SOCKET_COUNT = 5
 
     fun present(request: EquipmentInventoryPresenterRequest): EquipmentInventoryPresentation =

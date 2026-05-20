@@ -1966,7 +1966,9 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr04PrimaryScene()
                 "deep_iron_search_cue_ready"
             }
-            "phase4-v4-pr05" -> {
+            "phase4-v4-pr05",
+            "dark-uiux-pr05-actor-boss-telegraph",
+            -> {
                 preparePhase4V4Pr05PrimaryScene()
                 "boss_variant_molten_glass_phase_override_ready"
             }
@@ -2006,7 +2008,9 @@ class FoundationGameSession internal constructor(
                 preparePhase4V4Pr04SecondaryScene()
                 "abyssal_void_pressure_hook_ready"
             }
-            "phase4-v4-pr05" -> preparePhase4V4Pr05SecondaryScene()
+            "phase4-v4-pr05",
+            "dark-uiux-pr05-actor-boss-telegraph",
+            -> preparePhase4V4Pr05SecondaryScene()
             "phase4-v4-pr06" -> Phase4V4Pr06RouteDiversityArtifactSummary.evidenceResultText() + "; uiSurface=>clientSmoke+goldenScreenshot"
             "phase4-v4-pr07" -> preparePhase4V4Pr07SecondaryScene()
             else -> "ok"

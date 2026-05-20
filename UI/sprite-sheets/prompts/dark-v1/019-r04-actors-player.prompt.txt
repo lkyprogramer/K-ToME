@@ -1,0 +1,20 @@
+Prompt ID: 019-r04-actors-player
+Sheet ID: r04-actors-player
+Expected output file: assets-src/image/raw/sheets/dark-v1/r04-actors-player.png
+Canvas: 1024x1024
+Grid: 4 columns x 4 rows
+Cell: 256x256
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create a 1024x1024 transparent-background sprite sheet for K-ToME.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Grid: 4 columns x 4 rows, each cell is 256x256.
+Every listed non-reserved cell contains exactly one centered subject, no text, no numbers, no labels, no watermark, no merged cells.
+Only render the cells listed below; leave every unlisted grid slot transparent and empty.
+Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
+Cell list:
+row 0 col 0 targetKey actor.arcanist: compact actor arcanist gameplay actor sprite, strong faction silhouette, dark fantasy top-down three-quarter token.
+row 0 col 1 targetKey actor.player: compact actor player gameplay actor sprite, strong faction silhouette, dark fantasy top-down three-quarter token.
+row 0 col 2 targetKey actor.rogue: compact actor rogue gameplay actor sprite, strong faction silhouette, dark fantasy top-down three-quarter token.
+row 0 col 3 targetKey actor.templar: compact actor templar gameplay actor sprite, strong faction silhouette, dark fantasy top-down three-quarter token.
+Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

@@ -112,64 +112,56 @@ entries:
   sheetId: r01-ui-controls
   fallbackKey: ui.hud.warning.icon
   consumer: ValidationSetupScreen chrome marker
-  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
-    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
 - targetKey: ui.screen.outcome.victory_marker
   category: icon
   ownerPr: PR-02
   sheetId: r01-ui-controls
   fallbackKey: ui.hud.quest_marker.icon
   consumer: VictoryScreen outcome marker
-  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
-    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
 - targetKey: ui.screen.outcome.defeat_marker
   category: icon
   ownerPr: PR-02
   sheetId: r01-ui-controls
   fallbackKey: ui.hud.warning.icon
   consumer: GameOverScreen outcome marker
-  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
-    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
 - targetKey: ui.screen.error.marker
   category: icon
   ownerPr: PR-02
   sheetId: r01-ui-controls
   fallbackKey: ui.hud.warning.icon
   consumer: UiErrorScreen marker
-  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
-    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
 - targetKey: ui.screen.loading.marker
   category: icon
   ownerPr: PR-02
   sheetId: r01-ui-controls
   fallbackKey: ui.hud.log_marker.icon
   consumer: UiLoadingState marker
-  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
-    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
 - targetKey: ui.control.back.icon
   category: icon
   ownerPr: PR-02
   sheetId: r01-ui-controls
   fallbackKey: ui.hud.log_marker.icon
   consumer: StandaloneScreenChrome action icon
-  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
-    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
 - targetKey: ui.control.confirm.icon
   category: icon
   ownerPr: PR-02
   sheetId: r01-ui-controls
   fallbackKey: ui.hud.quest_marker.icon
   consumer: StandaloneScreenChrome action icon
-  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
-    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
 - targetKey: ui.control.copy.icon
   category: icon
   ownerPr: PR-02
   sheetId: r01-ui-controls
   fallbackKey: ui.hud.log_marker.icon
   consumer: StandaloneScreenChrome action icon
-  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys,
-    ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
+  consumerTest: StandaloneScreenLayoutTest.darkUiuxPr02StandaloneChromeConsumesManifestKeys, ManifestResolveTest.darkUiuxPr02Round1OwnerKeysResolveThroughExactEntries
 - targetKey: ui.control.backpack.icon
   category: icon
   ownerPr: PR-02
@@ -745,3 +737,1130 @@ entries:
   consumer: ModalCardModel shop offer frame
   consumerTest: ModalCardModelTest
   aliasOf: ui.frame.panel.body
+- targetKey: tileset.forest_edge.ground_01
+  category: tile_ground
+  ownerPr: PR-05
+  sheetId: r02-tiles-ground
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> TileRenderModelBuilder
+  consumerTest: ManifestResolveTest.darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries
+- targetKey: tileset.mine.ground_01
+  category: tile_ground
+  ownerPr: PR-05
+  sheetId: r02-tiles-ground
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> TileRenderModelBuilder
+  consumerTest: ManifestResolveTest.darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries
+- targetKey: tileset.shadow_depths.ground_01
+  category: tile_ground
+  ownerPr: PR-05
+  sheetId: r02-tiles-ground
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> TileRenderModelBuilder
+  consumerTest: ManifestResolveTest.darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries
+- targetKey: tileset.forest_edge.wall_01
+  category: tile_wall
+  ownerPr: PR-05
+  sheetId: r02-tiles-wall
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> TileRenderModelBuilder
+  consumerTest: ManifestResolveTest.darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries
+- targetKey: tileset.mine.wall_01
+  category: tile_wall
+  ownerPr: PR-05
+  sheetId: r02-tiles-wall
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> TileRenderModelBuilder
+  consumerTest: ManifestResolveTest.darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries
+- targetKey: tileset.shadow_depths.wall_01
+  category: tile_wall
+  ownerPr: PR-05
+  sheetId: r02-tiles-wall
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> TileRenderModelBuilder
+  consumerTest: ManifestResolveTest.darkUiuxPr05TilesetOwnerKeysResolveThroughExactEntries
+- targetKey: vfx.terrain.interaction.ice
+  category: tile_decal
+  ownerPr: PR-05
+  sheetId: r02-tiles-decal
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> overlay terrain renderer
+  consumerTest: TileLayerComposerTest.composesTerrainPropsVfxTelegraphBeforeActors
+- targetKey: vfx.terrain.interaction.oil
+  category: tile_decal
+  ownerPr: PR-05
+  sheetId: r02-tiles-decal
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> overlay terrain renderer
+  consumerTest: TileLayerComposerTest.composesTerrainPropsVfxTelegraphBeforeActors
+- targetKey: vfx.terrain.interaction.oil_burning
+  category: tile_decal
+  ownerPr: PR-05
+  sheetId: r02-tiles-decal
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> overlay terrain renderer
+  consumerTest: TileLayerComposerTest.composesTerrainPropsVfxTelegraphBeforeActors
+- targetKey: vfx.terrain.interaction.water
+  category: tile_decal
+  ownerPr: PR-05
+  sheetId: r02-tiles-decal
+  fallbackKey: missing_visual
+  consumer: FoundationGameSession.terrainVisualKey -> overlay terrain renderer
+  consumerTest: TileLayerComposerTest.composesTerrainPropsVfxTelegraphBeforeActors
+- targetKey: prop.alarm_bonfire
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.armory_gate
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.crystal_resonance_node
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.heart_ward_focus
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.hidden_entrance.return_bridge
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.hidden_entrance.revealed
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.ritual_altar
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.river_ferry_anchor
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.stairs.up
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.supply_crate
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.temple_ward_reliquary
+  category: prop_interactable
+  ownerPr: PR-05
+  sheetId: r03-props-interactable
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: prop.mine_furnace
+  category: prop_environment
+  ownerPr: PR-05
+  sheetId: r03-props-environment
+  fallbackKey: missing_visual
+  consumer: map prop visual placements
+  consumerTest: TileRendererCanvasTest.rendersPr05InteractablePropsWithDarkManifestEntries
+- targetKey: vfx.boss.variant.abyssal_eclipse
+  category: vfx_plate
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: overlay visual placements and boss telegraph renderer
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: vfx.boss.variant.grey_crown
+  category: vfx_plate
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: overlay visual placements and boss telegraph renderer
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: vfx.boss.variant.molten_glass
+  category: vfx_plate
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: overlay visual placements and boss telegraph renderer
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: vfx.boss.warning.sigil_01
+  category: vfx_plate
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: overlay visual placements and boss telegraph renderer
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: vfx.telegraph.warning.sigil_01
+  category: vfx_plate
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: overlay visual placements and boss telegraph renderer
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: vfx.zone.effect.crystal_shard_01
+  category: tile_decal
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: zone effect overlay visual placements
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: vfx.zone.effect.current_lane_01
+  category: tile_decal
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: zone effect overlay visual placements
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: vfx.zone.effect.void_pressure_01
+  category: tile_decal
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: zone effect overlay visual placements
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: vfx.zone.effect.ward_seal_01
+  category: tile_decal
+  ownerPr: PR-05
+  sheetId: r03-vfx-telegraph
+  fallbackKey: missing_visual
+  consumer: zone effect overlay visual placements
+  consumerTest: TileLayerComposerTest.keepsBossTelegraphAboveOrdinaryVfx
+- targetKey: actor.arcanist
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-player
+  fallbackKey: missing_visual
+  consumer: snapshot.actors[].visualKey
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.player
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-player
+  fallbackKey: missing_visual
+  consumer: snapshot.actors[].visualKey
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.rogue
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-player
+  fallbackKey: missing_visual
+  consumer: snapshot.actors[].visualKey
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.templar
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-player
+  fallbackKey: missing_visual
+  consumer: snapshot.actors[].visualKey
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.archer
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.banner_guard
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.cache_overseer
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.captain
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.cutthroat
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.pillager
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.raider
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.sentry
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.bandit.slingshotter
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.cultist.dungeon_lord
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.cultist.shadow_priest
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.orc.miner
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.orc.molten_giant
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.orc.raider
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.warded_ruin.cleanse_adept
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.warded_ruin.relic_guard
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.warded_ruin.shard_archivist
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.warded_ruin.vault_watcher
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.warded_ruin.ward_lancer
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-humanoid
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.abyssal.cleanse_hunter
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.abyssal.eclipsed_seraph
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.abyssal.guardian
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.abyssal.null_lancer
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.abyssal.reliquary_guard
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.abyssal.ritual_binder
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.abyssal.void_preacher
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.abyssal.ward_breaker
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.beast.rat
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.crystal.beam_savant
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.crystal.prism_weaver
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.crystal.resonant_colossus
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.crystal.seal_keeper
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.crystal.shardling
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.forge.anvil_guard
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.forge.chain_overseer
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.forge.crucible_knight
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.forge.heat_channeler
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.forge.slag_tender
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.river.current_reaver
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.river.drowned_stalker
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.river.ferry_raider
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.river.hook_lurker
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.river.silt_shaman
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.river.tide_mender
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.river.undertow_brute
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.undead.bone_archer
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.undead.restless_skeleton
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-monster
+  fallbackKey: missing_visual
+  consumer: actor visual placements
+  consumerTest: TileRendererCanvasTest.keepsPr05ActorSpritesReadableOnDarkMap
+- targetKey: actor.boss.ashgate_warden
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-boss
+  fallbackKey: missing_visual
+  consumer: boss actor visual placements and boss data visualKey
+  consumerTest: TileRendererCanvasTest.keepsBossTelegraphReadableWhenActorOccupiesCell
+- targetKey: boss.abyssal.guardian.visual
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-boss
+  fallbackKey: missing_visual
+  consumer: boss actor visual placements and boss data visualKey
+  consumerTest: TileRendererCanvasTest.keepsBossTelegraphReadableWhenActorOccupiesCell
+- targetKey: boss.cultist.dungeon_lord.visual
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-boss
+  fallbackKey: missing_visual
+  consumer: boss actor visual placements and boss data visualKey
+  consumerTest: TileRendererCanvasTest.keepsBossTelegraphReadableWhenActorOccupiesCell
+- targetKey: boss.orc.molten_giant.visual
+  category: actor_sprite
+  ownerPr: PR-05
+  sheetId: r04-actors-boss
+  fallbackKey: missing_visual
+  consumer: boss actor visual placements and boss data visualKey
+  consumerTest: TileRendererCanvasTest.keepsBossTelegraphReadableWhenActorOccupiesCell
+- targetKey: icon.monster.bandit.banner_guard
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.bandit.cache_overseer
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.bandit.captain
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.bandit.cutthroat
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.bandit.pillager
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.bandit.sentry
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.bandit.slingshotter
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.cultist.dungeon_lord
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.orc.molten_giant
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.orc.raider
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.warded_ruin.cleanse_adept
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.warded_ruin.relic_guard
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.warded_ruin.shard_archivist
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.warded_ruin.vault_watcher
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.warded_ruin.ward_lancer
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-humanoid-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.abyssal.cleanse_hunter
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.abyssal.eclipsed_seraph
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.abyssal.guardian
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.abyssal.null_lancer
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.abyssal.reliquary_guard
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.abyssal.ritual_binder
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.abyssal.void_preacher
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.abyssal.ward_breaker
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.beast.rat
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.crystal.beam_savant
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.crystal.prism_weaver
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.crystal.resonant_colossus
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.crystal.seal_keeper
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.crystal.shardling
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.forge.anvil_guard
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.forge.chain_overseer
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.forge.crucible_knight
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.forge.heat_channeler
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.forge.slag_tender
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.river.current_reaver
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.river.drowned_stalker
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.river.ferry_raider
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.river.hook_lurker
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.river.silt_shaman
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.river.tide_mender
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.river.undertow_brute
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: icon.monster.undead.bone_archer
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-bestiary-creature-icons
+  fallbackKey: missing_visual
+  consumer: bestiary / codex icon resolver
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: boss.abyssal.guardian.icon
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-boss-icons
+  fallbackKey: missing_visual
+  consumer: boss / bestiary icon resolver and boss data iconKey
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: boss.cultist.dungeon_lord.icon
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-boss-icons
+  fallbackKey: missing_visual
+  consumer: boss / bestiary icon resolver and boss data iconKey
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: boss.orc.molten_giant.icon
+  category: icon
+  ownerPr: PR-05
+  sheetId: r05-boss-icons
+  fallbackKey: missing_visual
+  consumer: boss / bestiary icon resolver and boss data iconKey
+  consumerTest: ManifestResolveTest.darkUiuxPr05BestiaryIconsResolveThroughExactEntries
+- targetKey: portrait.arcanist
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-classes
+  fallbackKey: missing_visual
+  consumer: profession / class portrait UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: portrait.rogue
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-classes
+  fallbackKey: missing_visual
+  consumer: profession / class portrait UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: portrait.templar
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-classes
+  fallbackKey: missing_visual
+  consumer: profession / class portrait UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: portrait.vanguard
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-classes
+  fallbackKey: missing_visual
+  consumer: profession / class portrait UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.arcanist_arcane
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.arcanist_flame
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.arcanist_frost
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.rogue_agility
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.rogue_assassination
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.rogue_subtlety
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.templar_faith
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.templar_grace
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.templar_smite
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.vanguard_arms
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.vanguard_shield
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: tree.vanguard_warcry
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-trees
+  fallbackKey: missing_visual
+  consumer: talent tree UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05PortraitKeysResolveThroughExactEntries
+- targetKey: zone.abyssal_heart.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.abyssal_temple.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.crystal_cavern.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.deep_iron_pit.visual
+  category: prop_environment
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.greenwood_fringe.visual
+  category: prop_environment
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.grey_gate_depths.visual
+  category: prop_environment
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.secret.abyssal_temple_warded_archive.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.secret.deep_iron_slag_cache.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.secret.deep_iron_smuggler_stash.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.secret.greenwood_ambush_hideout.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.secret.greenwood_hidden_cache.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.secret.underground_river_crystal_rift.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.shattered_outpost.visual
+  category: prop_environment
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: zone.underground_river.visual
+  category: portrait
+  ownerPr: PR-05
+  sheetId: r06-portraits-zones
+  fallbackKey: missing_visual
+  consumer: zone / route / hidden content UI
+  consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries

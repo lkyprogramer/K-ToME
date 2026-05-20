@@ -96,6 +96,8 @@ def validate_registry(
             errors.append(f"{target_key} fallbackKey is required.")
         elif fallback_key not in manifest_by_key:
             errors.append(f"{target_key} fallbackKey '{fallback_key}' does not exist in canonical manifest.")
+        elif fallback_key == target_key:
+            errors.append(f"{target_key} fallbackKey must not point to itself.")
         if not consumer:
             errors.append(f"{target_key} consumer is required.")
         if not consumer_test:

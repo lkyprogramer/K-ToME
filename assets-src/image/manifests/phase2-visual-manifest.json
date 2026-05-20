@@ -6,646 +6,795 @@
     {
       "key": "actor.abyssal.cleanse_hunter",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_abyssal_cleanse_hunter.png",
+      "rawOutputPath": "dark-v1/actors/actor_abyssal_cleanse_hunter.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.abyssal.eclipsed_seraph",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_abyssal_eclipsed_seraph.png",
+      "rawOutputPath": "dark-v1/actors/actor_abyssal_eclipsed_seraph.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.abyssal.guardian",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_abyssal_guardian.png",
+      "rawOutputPath": "dark-v1/actors/actor_abyssal_guardian.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.abyssal.null_lancer",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_abyssal_null_lancer.png",
+      "rawOutputPath": "dark-v1/actors/actor_abyssal_null_lancer.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.abyssal.reliquary_guard",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_abyssal_reliquary_guard.png",
+      "rawOutputPath": "dark-v1/actors/actor_abyssal_reliquary_guard.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.abyssal.ritual_binder",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_abyssal_ritual_binder.png",
+      "rawOutputPath": "dark-v1/actors/actor_abyssal_ritual_binder.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.abyssal.void_preacher",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_abyssal_void_preacher.png",
+      "rawOutputPath": "dark-v1/actors/actor_abyssal_void_preacher.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.abyssal.ward_breaker",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_abyssal_ward_breaker.png",
+      "rawOutputPath": "dark-v1/actors/actor_abyssal_ward_breaker.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.arcanist",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_arcanist.png",
+      "rawOutputPath": "dark-v1/actors/actor_arcanist.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "profession",
-        "arcanist"
+        "arcanist",
+        "actor_sprite",
+        "r04-actors-player"
       ]
     },
     {
       "key": "actor.bandit.archer",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_bandit_archer.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_archer.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "bandit"
+        "bandit",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.bandit.banner_guard",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_bandit_banner_guard.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_banner_guard.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "bandit"
+        "bandit",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.bandit.cache_overseer",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_bandit_cache_overseer.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_cache_overseer.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "bandit"
+        "bandit",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.bandit.captain",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_bandit_captain.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_captain.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "bandit"
+        "bandit",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.bandit.cutthroat",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_bandit_cutthroat.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_cutthroat.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "bandit"
+        "bandit",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.bandit.pillager",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_bandit_pillager.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_pillager.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "bandit"
+        "bandit",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.bandit.raider",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_bandit_raider.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_raider.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "bandit"
+        "bandit",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.bandit.sentry",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_bandit_raider.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_sentry.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "monster"
+        "dark-v1",
+        "uiux",
+        "pr05",
+        "monster",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.bandit.slingshotter",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_bandit_slingshotter.png",
+      "rawOutputPath": "dark-v1/actors/actor_bandit_slingshotter.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "bandit"
+        "bandit",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.beast.rat",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_beast_rat.png",
+      "rawOutputPath": "dark-v1/actors/actor_beast_rat.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "monster"
+        "dark-v1",
+        "uiux",
+        "pr05",
+        "monster",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.boss.ashgate_warden",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-c/actor_boss_ashgate_warden.png",
+      "rawOutputPath": "dark-v1/actors/actor_boss_ashgate_warden.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "ashgate"
+        "ashgate",
+        "actor_sprite",
+        "r04-actors-boss"
       ]
     },
     {
       "key": "actor.crystal.beam_savant",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_crystal_beam_savant.png",
+      "rawOutputPath": "dark-v1/actors/actor_crystal_beam_savant.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "crystal"
+        "crystal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.crystal.prism_weaver",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_crystal_prism_weaver.png",
+      "rawOutputPath": "dark-v1/actors/actor_crystal_prism_weaver.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "crystal"
+        "crystal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.crystal.resonant_colossus",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_crystal_resonant_colossus.png",
+      "rawOutputPath": "dark-v1/actors/actor_crystal_resonant_colossus.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "crystal"
+        "crystal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.crystal.seal_keeper",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_crystal_seal_keeper.png",
+      "rawOutputPath": "dark-v1/actors/actor_crystal_seal_keeper.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "crystal"
+        "crystal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.crystal.shardling",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_crystal_shardling.png",
+      "rawOutputPath": "dark-v1/actors/actor_crystal_shardling.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "crystal"
+        "crystal",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.cultist.dungeon_lord",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-c/actor_cultist_dungeon_lord.png",
+      "rawOutputPath": "dark-v1/actors/actor_cultist_dungeon_lord.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "cultist"
+        "cultist",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.cultist.shadow_priest",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-c/actor_cultist_shadow_priest.png",
+      "rawOutputPath": "dark-v1/actors/actor_cultist_shadow_priest.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "cultist"
+        "cultist",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.forge.anvil_guard",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_forge_anvil_guard.png",
+      "rawOutputPath": "dark-v1/actors/actor_forge_anvil_guard.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "forge"
+        "forge",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.forge.chain_overseer",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_forge_chain_overseer.png",
+      "rawOutputPath": "dark-v1/actors/actor_forge_chain_overseer.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "forge"
+        "forge",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.forge.crucible_knight",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_forge_crucible_knight.png",
+      "rawOutputPath": "dark-v1/actors/actor_forge_crucible_knight.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "forge"
+        "forge",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.forge.heat_channeler",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_forge_heat_channeler.png",
+      "rawOutputPath": "dark-v1/actors/actor_forge_heat_channeler.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "forge"
+        "forge",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.forge.slag_tender",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_forge_slag_tender.png",
+      "rawOutputPath": "dark-v1/actors/actor_forge_slag_tender.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "forge"
+        "forge",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.orc.miner",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-c/actor_orc_miner.png",
+      "rawOutputPath": "dark-v1/actors/actor_orc_miner.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "orc"
+        "orc",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.orc.molten_giant",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_orc_molten_giant.png",
+      "rawOutputPath": "dark-v1/actors/actor_orc_molten_giant.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "orc"
+        "orc",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.orc.raider",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-c/actor_orc_miner.png",
+      "rawOutputPath": "dark-v1/actors/actor_orc_raider.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "monster"
+        "dark-v1",
+        "uiux",
+        "pr05",
+        "monster",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.player",
       "category": "actor_sprite",
-      "rawOutputPath": "debug/actor_player.png",
+      "rawOutputPath": "dark-v1/actors/actor_player.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "player"
+        "dark-v1",
+        "uiux",
+        "pr05",
+        "player",
+        "actor_sprite",
+        "r04-actors-player"
       ]
     },
     {
       "key": "actor.river.current_reaver",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_river_current_reaver.png",
+      "rawOutputPath": "dark-v1/actors/actor_river_current_reaver.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "river"
+        "river",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.river.drowned_stalker",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_river_drowned_stalker.png",
+      "rawOutputPath": "dark-v1/actors/actor_river_drowned_stalker.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "river"
+        "river",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.river.ferry_raider",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_river_ferry_raider.png",
+      "rawOutputPath": "dark-v1/actors/actor_river_ferry_raider.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "river"
+        "river",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.river.hook_lurker",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_river_hook_lurker.png",
+      "rawOutputPath": "dark-v1/actors/actor_river_hook_lurker.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "river"
+        "river",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.river.silt_shaman",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_river_silt_shaman.png",
+      "rawOutputPath": "dark-v1/actors/actor_river_silt_shaman.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "river"
+        "river",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.river.tide_mender",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_river_tide_mender.png",
+      "rawOutputPath": "dark-v1/actors/actor_river_tide_mender.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "river"
+        "river",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.river.undertow_brute",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_river_undertow_brute.png",
+      "rawOutputPath": "dark-v1/actors/actor_river_undertow_brute.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "river"
+        "river",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.rogue",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-c/actor_rogue.png",
+      "rawOutputPath": "dark-v1/actors/actor_rogue.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "profession",
-        "rogue"
+        "rogue",
+        "actor_sprite",
+        "r04-actors-player"
       ]
     },
     {
       "key": "actor.templar",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-c/actor_templar.png",
+      "rawOutputPath": "dark-v1/actors/actor_templar.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "profession",
-        "templar"
+        "templar",
+        "actor_sprite",
+        "r04-actors-player"
       ]
     },
     {
       "key": "actor.undead.bone_archer",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_restless_skeleton.png",
+      "rawOutputPath": "dark-v1/actors/actor_undead_bone_archer.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "monster"
+        "dark-v1",
+        "uiux",
+        "pr05",
+        "monster",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
       "key": "actor.undead.restless_skeleton",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-b/actor_restless_skeleton.png",
+      "rawOutputPath": "dark-v1/actors/actor_undead_restless_skeleton.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "undead"
+        "undead",
+        "actor_sprite",
+        "r04-actors-monster"
       ]
     },
     {
@@ -679,71 +828,86 @@
     {
       "key": "actor.warded_ruin.cleanse_adept",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_warded_ruin_cleanse_adept.png",
+      "rawOutputPath": "dark-v1/actors/actor_warded_ruin_cleanse_adept.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.warded_ruin.relic_guard",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_warded_ruin_relic_guard.png",
+      "rawOutputPath": "dark-v1/actors/actor_warded_ruin_relic_guard.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.warded_ruin.shard_archivist",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_warded_ruin_shard_archivist.png",
+      "rawOutputPath": "dark-v1/actors/actor_warded_ruin_shard_archivist.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.warded_ruin.vault_watcher",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_warded_ruin_vault_watcher.png",
+      "rawOutputPath": "dark-v1/actors/actor_warded_ruin_vault_watcher.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
       "key": "actor.warded_ruin.ward_lancer",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/actor_warded_ruin_ward_lancer.png",
+      "rawOutputPath": "dark-v1/actors/actor_warded_ruin_ward_lancer.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "actor_sprite",
+        "r04-actors-humanoid"
       ]
     },
     {
@@ -1351,87 +1515,103 @@
     {
       "key": "boss.abyssal.guardian.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_boss_abyssal_guardian.png",
+      "rawOutputPath": "dark-v1/icons/boss_abyssal_guardian_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
         "icon",
-        "abyssal"
+        "abyssal",
+        "r05-boss-icons"
       ]
     },
     {
       "key": "boss.abyssal.guardian.visual",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/boss_abyssal_guardian_visual.png",
+      "rawOutputPath": "dark-v1/actors/boss_abyssal_guardian_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "abyssal"
+        "abyssal",
+        "actor_sprite",
+        "r04-actors-boss"
       ]
     },
     {
       "key": "boss.cultist.dungeon_lord.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_boss_cultist_dungeon_lord.png",
+      "rawOutputPath": "dark-v1/icons/boss_cultist_dungeon_lord_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "cultist"
+        "cultist",
+        "icon",
+        "r05-boss-icons"
       ]
     },
     {
       "key": "boss.cultist.dungeon_lord.visual",
       "category": "actor_sprite",
-      "rawOutputPath": "phase2/p2-c/boss_cultist_dungeon_lord_visual.png",
+      "rawOutputPath": "dark-v1/actors/boss_cultist_dungeon_lord_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "cultist"
+        "cultist",
+        "actor_sprite",
+        "r04-actors-boss"
       ]
     },
     {
       "key": "boss.orc.molten_giant.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_boss_orc_molten_giant.png",
+      "rawOutputPath": "dark-v1/icons/boss_orc_molten_giant_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
         "icon",
-        "orc"
+        "orc",
+        "r05-boss-icons"
       ]
     },
     {
       "key": "boss.orc.molten_giant.visual",
       "category": "actor_sprite",
-      "rawOutputPath": "phase3/p3-followup/boss_orc_molten_giant_visual.png",
+      "rawOutputPath": "dark-v1/actors/boss_orc_molten_giant_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "orc"
+        "orc",
+        "actor_sprite",
+        "r04-actors-boss"
       ]
     },
     {
@@ -1581,631 +1761,715 @@
     {
       "key": "icon.monster.abyssal.cleanse_hunter",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_abyssal_cleanse_hunter.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_abyssal_cleanse_hunter.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "abyssal"
+        "abyssal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.abyssal.eclipsed_seraph",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_abyssal_eclipsed_seraph.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_abyssal_eclipsed_seraph.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "abyssal"
+        "abyssal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.abyssal.guardian",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_abyssal_guardian.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_abyssal_guardian.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "abyssal"
+        "abyssal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.abyssal.null_lancer",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_abyssal_null_lancer.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_abyssal_null_lancer.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "abyssal"
+        "abyssal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.abyssal.reliquary_guard",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_abyssal_reliquary_guard.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_abyssal_reliquary_guard.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "abyssal"
+        "abyssal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.abyssal.ritual_binder",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_abyssal_ritual_binder.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_abyssal_ritual_binder.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "abyssal"
+        "abyssal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.abyssal.void_preacher",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_abyssal_void_preacher.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_abyssal_void_preacher.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "abyssal"
+        "abyssal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.abyssal.ward_breaker",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_abyssal_ward_breaker.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_abyssal_ward_breaker.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "abyssal"
+        "abyssal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.bandit.banner_guard",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_bandit_banner_guard.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_bandit_banner_guard.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "bandit"
+        "bandit",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.bandit.cache_overseer",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_bandit_cache_overseer.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_bandit_cache_overseer.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "bandit"
+        "bandit",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.bandit.captain",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_monster_bandit_captain.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_bandit_captain.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "bandit"
+        "bandit",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.bandit.cutthroat",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_bandit_cutthroat.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_bandit_cutthroat.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "bandit"
+        "bandit",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.bandit.pillager",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_bandit_pillager.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_bandit_pillager.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "bandit"
+        "bandit",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.bandit.sentry",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_monster_bandit_sentry.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_bandit_sentry.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "bandit"
+        "bandit",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.bandit.slingshotter",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_bandit_slingshotter.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_bandit_slingshotter.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "bandit"
+        "bandit",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.beast.rat",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_monster_beast_rat.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_beast_rat.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "beast"
+        "beast",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.crystal.beam_savant",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_crystal_beam_savant.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_crystal_beam_savant.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "crystal"
+        "crystal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.crystal.prism_weaver",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_crystal_prism_weaver.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_crystal_prism_weaver.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "crystal"
+        "crystal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.crystal.resonant_colossus",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_crystal_resonant_colossus.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_crystal_resonant_colossus.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "crystal"
+        "crystal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.crystal.seal_keeper",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_crystal_seal_keeper.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_crystal_seal_keeper.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "crystal"
+        "crystal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.crystal.shardling",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_crystal_shardling.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_crystal_shardling.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "crystal"
+        "crystal",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.cultist.dungeon_lord",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_monster_cultist_dungeon_lord.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_cultist_dungeon_lord.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "cultist"
+        "cultist",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.forge.anvil_guard",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_forge_anvil_guard.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_forge_anvil_guard.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "forge"
+        "forge",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.forge.chain_overseer",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_forge_chain_overseer.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_forge_chain_overseer.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "forge"
+        "forge",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.forge.crucible_knight",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_forge_crucible_knight.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_forge_crucible_knight.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "forge"
+        "forge",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.forge.heat_channeler",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_forge_heat_channeler.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_forge_heat_channeler.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "forge"
+        "forge",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.forge.slag_tender",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_forge_slag_tender.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_forge_slag_tender.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "forge"
+        "forge",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.orc.molten_giant",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_orc_molten_giant.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_orc_molten_giant.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "orc"
+        "orc",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.orc.raider",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_monster_orc_raider.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_orc_raider.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "orc"
+        "orc",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.river.current_reaver",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_river_current_reaver.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_river_current_reaver.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "river"
+        "river",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.river.drowned_stalker",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_river_drowned_stalker.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_river_drowned_stalker.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "river"
+        "river",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.river.ferry_raider",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_river_ferry_raider.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_river_ferry_raider.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "river"
+        "river",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.river.hook_lurker",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_river_hook_lurker.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_river_hook_lurker.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "river"
+        "river",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.river.silt_shaman",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_river_silt_shaman.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_river_silt_shaman.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "river"
+        "river",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.river.tide_mender",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_river_tide_mender.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_river_tide_mender.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "river"
+        "river",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.river.undertow_brute",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_river_undertow_brute.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_river_undertow_brute.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "river"
+        "river",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.undead.bone_archer",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_monster_undead_bone_archer.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_undead_bone_archer.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "undead"
+        "undead",
+        "r05-bestiary-creature-icons"
       ]
     },
     {
       "key": "icon.monster.warded_ruin.cleanse_adept",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_warded_ruin_cleanse_adept.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_warded_ruin_cleanse_adept.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.warded_ruin.relic_guard",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_warded_ruin_relic_guard.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_warded_ruin_relic_guard.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.warded_ruin.shard_archivist",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_warded_ruin_shard_archivist.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_warded_ruin_shard_archivist.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.warded_ruin.vault_watcher",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_warded_ruin_vault_watcher.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_warded_ruin_vault_watcher.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
       "key": "icon.monster.warded_ruin.ward_lancer",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_monster_warded_ruin_ward_lancer.png",
+      "rawOutputPath": "dark-v1/icons/icon_monster_warded_ruin_ward_lancer.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "icon",
         "monster",
-        "warded_ruin"
+        "warded_ruin",
+        "r05-bestiary-humanoid-icons"
       ]
     },
     {
@@ -5243,183 +5507,220 @@
     {
       "key": "portrait.arcanist",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-b/portrait_arcanist.png",
+      "rawOutputPath": "dark-v1/portraits/portrait_arcanist.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "portrait",
-        "arcanist"
+        "arcanist",
+        "r06-portraits-classes"
       ]
     },
     {
       "key": "portrait.rogue",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-c/portrait_rogue.png",
+      "rawOutputPath": "dark-v1/portraits/portrait_rogue.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "portrait",
-        "rogue"
+        "rogue",
+        "r06-portraits-classes"
       ]
     },
     {
       "key": "portrait.templar",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-c/portrait_templar.png",
+      "rawOutputPath": "dark-v1/portraits/portrait_templar.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "portrait",
-        "templar"
+        "templar",
+        "r06-portraits-classes"
       ]
     },
     {
       "key": "portrait.vanguard",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-b/portrait_vanguard.png",
+      "rawOutputPath": "dark-v1/portraits/portrait_vanguard.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "portrait",
-        "vanguard"
+        "vanguard",
+        "r06-portraits-classes"
       ]
     },
     {
       "key": "prop.alarm_bonfire",
       "category": "prop_interactable",
-      "rawOutputPath": "phase2/p2-b/prop_alarm_bonfire.png",
+      "rawOutputPath": "dark-v1/props/prop_alarm_bonfire.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "ruins",
-        "interactable"
+        "interactable",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.armory_gate",
       "category": "prop_interactable",
-      "rawOutputPath": "phase2/p2-b/prop_armory_gate.png",
+      "rawOutputPath": "dark-v1/props/prop_armory_gate.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "ruins",
-        "interactable"
+        "interactable",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.crystal_resonance_node",
       "category": "prop_interactable",
-      "rawOutputPath": "phase3/p3-followup/prop_crystal_resonance_node.png",
+      "rawOutputPath": "dark-v1/props/prop_crystal_resonance_node.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "crystal",
-        "interactable"
+        "interactable",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.heart_ward_focus",
       "category": "prop_interactable",
-      "rawOutputPath": "phase3/p3-followup/prop_heart_ward_focus.png",
+      "rawOutputPath": "dark-v1/props/prop_heart_ward_focus.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "abyssal",
-        "interactable"
+        "interactable",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.hidden_entrance.return_bridge",
       "category": "prop_interactable",
-      "rawOutputPath": "phase4/pr07/prop_hidden_entrance_return_bridge.png",
+      "rawOutputPath": "dark-v1/props/prop_hidden_entrance_return_bridge.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "pr07",
         "hidden",
-        "return"
+        "return",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.hidden_entrance.revealed",
       "category": "prop_interactable",
-      "rawOutputPath": "phase4/pr07/prop_hidden_entrance_revealed.png",
+      "rawOutputPath": "dark-v1/props/prop_hidden_entrance_revealed.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "pr07",
         "hidden",
-        "entrance"
+        "entrance",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.mine_furnace",
       "category": "prop_environment",
-      "rawOutputPath": "phase2/p2-c/prop_mine_furnace.png",
+      "rawOutputPath": "dark-v1/props/prop_mine_furnace.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "mine",
-        "prop"
+        "prop",
+        "prop_environment",
+        "r03-props-environment"
       ]
     },
     {
       "key": "prop.ritual_altar",
       "category": "prop_interactable",
-      "rawOutputPath": "phase2/p2-c/prop_ritual_altar.png",
+      "rawOutputPath": "dark-v1/props/prop_ritual_altar.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "shadow-depths",
-        "interactable"
+        "interactable",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.river_ferry_anchor",
       "category": "prop_interactable",
-      "rawOutputPath": "phase3/p3-followup/prop_river_ferry_anchor.png",
+      "rawOutputPath": "dark-v1/props/prop_river_ferry_anchor.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "river",
-        "interactable"
+        "interactable",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
@@ -5442,43 +5743,52 @@
     {
       "key": "prop.stairs.up",
       "category": "prop_interactable",
-      "rawOutputPath": "phase2/p2-b/prop_stairs_up.png",
+      "rawOutputPath": "dark-v1/props/prop_stairs_up.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "ruins",
-        "stairs"
+        "stairs",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.supply_crate",
       "category": "prop_interactable",
-      "rawOutputPath": "phase2/p2-b/prop_supply_crate.png",
+      "rawOutputPath": "dark-v1/props/prop_supply_crate.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "ruins",
-        "interactable"
+        "interactable",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
       "key": "prop.temple_ward_reliquary",
       "category": "prop_interactable",
-      "rawOutputPath": "phase3/p3-followup/prop_temple_ward_reliquary.png",
+      "rawOutputPath": "dark-v1/props/prop_temple_ward_reliquary.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "abyssal",
-        "interactable"
+        "interactable",
+        "prop_interactable",
+        "r03-props-interactable"
       ]
     },
     {
@@ -6875,57 +7185,65 @@
     {
       "key": "tileset.forest_edge.ground_01",
       "category": "tile_ground",
-      "rawOutputPath": "phase2/p2-c/tileset_forest_edge_ground_01.png",
+      "rawOutputPath": "dark-v1/tiles/tileset_forest_edge_ground_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "forest",
-        "tile_ground"
+        "tile_ground",
+        "r02-tiles-ground"
       ]
     },
     {
       "key": "tileset.forest_edge.wall_01",
       "category": "tile_wall",
-      "rawOutputPath": "phase2/p2-c/tileset_forest_edge_wall_01.png",
+      "rawOutputPath": "dark-v1/tiles/tileset_forest_edge_wall_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "forest",
-        "tile_wall"
+        "tile_wall",
+        "r02-tiles-wall"
       ]
     },
     {
       "key": "tileset.mine.ground_01",
       "category": "tile_ground",
-      "rawOutputPath": "phase2/p2-c/tileset_mine_ground_01.png",
+      "rawOutputPath": "dark-v1/tiles/tileset_mine_ground_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "mine",
-        "tile_ground"
+        "tile_ground",
+        "r02-tiles-ground"
       ]
     },
     {
       "key": "tileset.mine.wall_01",
       "category": "tile_wall",
-      "rawOutputPath": "phase2/p2-c/tileset_mine_wall_01.png",
+      "rawOutputPath": "dark-v1/tiles/tileset_mine_wall_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "mine",
-        "tile_wall"
+        "tile_wall",
+        "r02-tiles-wall"
       ]
     },
     {
@@ -6965,197 +7283,237 @@
     {
       "key": "tileset.shadow_depths.ground_01",
       "category": "tile_ground",
-      "rawOutputPath": "phase2/p2-c/tileset_shadow_depths_ground_01.png",
+      "rawOutputPath": "dark-v1/tiles/tileset_shadow_depths_ground_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "shadow-depths",
-        "tile_ground"
+        "tile_ground",
+        "r02-tiles-ground"
       ]
     },
     {
       "key": "tileset.shadow_depths.wall_01",
       "category": "tile_wall",
-      "rawOutputPath": "phase2/p2-c/tileset_shadow_depths_wall_01.png",
+      "rawOutputPath": "dark-v1/tiles/tileset_shadow_depths_wall_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "shadow-depths",
-        "tile_wall"
+        "tile_wall",
+        "r02-tiles-wall"
       ]
     },
     {
       "key": "tree.arcanist_arcane",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-b/tree_arcanist_arcane.png",
+      "rawOutputPath": "dark-v1/portraits/tree_arcanist_arcane.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "arcanist"
+        "arcanist",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.arcanist_flame",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-b/tree_arcanist_flame.png",
+      "rawOutputPath": "dark-v1/portraits/tree_arcanist_flame.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "arcanist"
+        "arcanist",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.arcanist_frost",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-b/tree_arcanist_frost.png",
+      "rawOutputPath": "dark-v1/portraits/tree_arcanist_frost.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "arcanist"
+        "arcanist",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.rogue_agility",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-c/portrait_rogue.png",
+      "rawOutputPath": "dark-v1/portraits/tree_rogue_agility.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "rogue"
+        "rogue",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.rogue_assassination",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-c/portrait_rogue.png",
+      "rawOutputPath": "dark-v1/portraits/tree_rogue_assassination.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "rogue"
+        "rogue",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.rogue_subtlety",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-c/portrait_rogue.png",
+      "rawOutputPath": "dark-v1/portraits/tree_rogue_subtlety.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "rogue"
+        "rogue",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.templar_faith",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-c/portrait_templar.png",
+      "rawOutputPath": "dark-v1/portraits/tree_templar_faith.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "templar"
+        "templar",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.templar_grace",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-c/portrait_templar.png",
+      "rawOutputPath": "dark-v1/portraits/tree_templar_grace.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "templar"
+        "templar",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.templar_smite",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-c/portrait_templar.png",
+      "rawOutputPath": "dark-v1/portraits/tree_templar_smite.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "templar"
+        "templar",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.vanguard_arms",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-b/tree_vanguard_arms.png",
+      "rawOutputPath": "dark-v1/portraits/tree_vanguard_arms.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "vanguard"
+        "vanguard",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.vanguard_shield",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-b/tree_vanguard_shield.png",
+      "rawOutputPath": "dark-v1/portraits/tree_vanguard_shield.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "vanguard"
+        "vanguard",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
       "key": "tree.vanguard_warcry",
       "category": "portrait",
-      "rawOutputPath": "phase2/p2-b/tree_vanguard_warcry.png",
+      "rawOutputPath": "dark-v1/portraits/tree_vanguard_warcry.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "tree",
-        "vanguard"
+        "vanguard",
+        "portrait",
+        "r06-portraits-trees"
       ]
     },
     {
@@ -7240,187 +7598,226 @@
     },
     {
       "key": "vfx.boss.variant.abyssal_eclipse",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_boss_variant_abyssal_eclipse.png",
-      "footprint": "ui",
+      "category": "vfx_plate",
+      "rawOutputPath": "dark-v1/vfx/vfx_boss_variant_abyssal_eclipse.png",
+      "footprint": "overlay",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr06",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "variant"
+        "variant",
+        "vfx_plate",
+        "r03-vfx-telegraph"
       ],
       "tintColorHex": "#6AD0C4"
     },
     {
       "key": "vfx.boss.variant.grey_crown",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_boss_variant_grey_crown.png",
-      "footprint": "ui",
+      "category": "vfx_plate",
+      "rawOutputPath": "dark-v1/vfx/vfx_boss_variant_grey_crown.png",
+      "footprint": "overlay",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr06",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "variant"
+        "variant",
+        "vfx_plate",
+        "r03-vfx-telegraph"
       ],
       "tintColorHex": "#9BB4D4"
     },
     {
       "key": "vfx.boss.variant.molten_glass",
-      "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_boss_variant_molten_glass.png",
-      "footprint": "ui",
+      "category": "vfx_plate",
+      "rawOutputPath": "dark-v1/vfx/vfx_boss_variant_molten_glass.png",
+      "footprint": "overlay",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr06",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "boss",
-        "variant"
+        "variant",
+        "vfx_plate",
+        "r03-vfx-telegraph"
       ],
       "tintColorHex": "#FF7A3C"
     },
     {
       "key": "vfx.boss.warning.sigil_01",
-      "category": "tile_decal",
-      "rawOutputPath": "phase2/p2-b/vfx_boss_warning_sigil_01.png",
+      "category": "vfx_plate",
+      "rawOutputPath": "dark-v1/vfx/vfx_boss_warning_sigil_01.png",
       "footprint": "overlay",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "vfx",
-        "boss-warning"
+        "boss-warning",
+        "vfx_plate",
+        "r03-vfx-telegraph"
       ]
     },
     {
       "key": "vfx.telegraph.warning.sigil_01",
-      "category": "tile_decal",
-      "rawOutputPath": "phase2/p2-b/vfx_telegraph_warning_sigil_01.png",
+      "category": "vfx_plate",
+      "rawOutputPath": "dark-v1/vfx/vfx_telegraph_warning_sigil_01.png",
       "footprint": "overlay",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "vfx",
-        "telegraph"
+        "telegraph",
+        "vfx_plate",
+        "r03-vfx-telegraph"
       ]
     },
     {
       "key": "vfx.terrain.interaction.ice",
       "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_terrain_ice.png",
+      "rawOutputPath": "dark-v1/tiles/vfx_terrain_interaction_ice.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr06",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "terrain",
-        "ice"
+        "ice",
+        "tile_decal",
+        "r02-tiles-decal"
       ]
     },
     {
       "key": "vfx.terrain.interaction.oil",
       "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_terrain_oil.png",
+      "rawOutputPath": "dark-v1/tiles/vfx_terrain_interaction_oil.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr06",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "terrain",
-        "oil"
+        "oil",
+        "tile_decal",
+        "r02-tiles-decal"
       ]
     },
     {
       "key": "vfx.terrain.interaction.oil_burning",
       "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_terrain_oil_burning.png",
+      "rawOutputPath": "dark-v1/tiles/vfx_terrain_interaction_oil_burning.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr06",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "terrain",
-        "oil-burning"
+        "oil-burning",
+        "tile_decal",
+        "r02-tiles-decal"
       ]
     },
     {
       "key": "vfx.terrain.interaction.water",
       "category": "tile_decal",
-      "rawOutputPath": "phase4/pr06/vfx_terrain_water.png",
+      "rawOutputPath": "dark-v1/tiles/vfx_terrain_interaction_water.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr06",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "terrain",
-        "water"
+        "water",
+        "tile_decal",
+        "r02-tiles-decal"
       ]
     },
     {
       "key": "vfx.zone.effect.crystal_shard_01",
       "category": "tile_decal",
-      "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_crystal_shard_01.png",
+      "rawOutputPath": "dark-v1/vfx/vfx_zone_effect_crystal_shard_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "crystal",
-        "zone-effect"
+        "zone-effect",
+        "tile_decal",
+        "r03-vfx-telegraph"
       ]
     },
     {
       "key": "vfx.zone.effect.current_lane_01",
       "category": "tile_decal",
-      "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_current_lane_01.png",
+      "rawOutputPath": "dark-v1/vfx/vfx_zone_effect_current_lane_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "river",
-        "zone-effect"
+        "zone-effect",
+        "tile_decal",
+        "r03-vfx-telegraph"
       ]
     },
     {
       "key": "vfx.zone.effect.void_pressure_01",
       "category": "tile_decal",
-      "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_void_pressure_01.png",
+      "rawOutputPath": "dark-v1/vfx/vfx_zone_effect_void_pressure_01.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "abyssal",
-        "zone-effect"
+        "zone-effect",
+        "tile_decal",
+        "r03-vfx-telegraph"
       ]
     },
     {
       "key": "vfx.zone.effect.ward_seal_01",
       "category": "tile_decal",
-      "rawOutputPath": "phase2/p2-b/vfx_zone_effect_ward_seal_01.png",
-      "footprint": "overlay",
+      "rawOutputPath": "dark-v1/vfx/vfx_zone_effect_ward_seal_01.png",
+      "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "vfx",
-        "zone-effect"
+        "zone-effect",
+        "tile_decal",
+        "r03-vfx-telegraph"
       ]
     },
     {
@@ -7440,15 +7837,18 @@
     {
       "key": "zone.abyssal_heart.visual",
       "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_abyssal_heart_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_abyssal_heart_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "zone",
-        "abyssal"
+        "abyssal",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7468,15 +7868,18 @@
     {
       "key": "zone.abyssal_temple.visual",
       "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_abyssal_temple_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_abyssal_temple_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "zone",
-        "abyssal"
+        "abyssal",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7496,15 +7899,18 @@
     {
       "key": "zone.crystal_cavern.visual",
       "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_crystal_cavern_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_crystal_cavern_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "zone",
-        "crystal"
+        "crystal",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7524,15 +7930,18 @@
     {
       "key": "zone.deep_iron_pit.visual",
       "category": "prop_environment",
-      "rawOutputPath": "phase2/p2-c/zone_deep_iron_pit_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_deep_iron_pit_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "zone",
-        "mine"
+        "mine",
+        "prop_environment",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7552,15 +7961,18 @@
     {
       "key": "zone.greenwood_fringe.visual",
       "category": "prop_environment",
-      "rawOutputPath": "phase2/p2-c/zone_greenwood_fringe_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_greenwood_fringe_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "zone",
-        "forest-edge"
+        "forest-edge",
+        "prop_environment",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7580,15 +7992,18 @@
     {
       "key": "zone.grey_gate_depths.visual",
       "category": "prop_environment",
-      "rawOutputPath": "phase2/p2-c/zone_grey_gate_depths_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_grey_gate_depths_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "zone",
-        "shadow-depths"
+        "shadow-depths",
+        "prop_environment",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7609,16 +8024,20 @@
     {
       "key": "zone.secret.abyssal_temple_warded_archive.visual",
       "category": "portrait",
-      "rawOutputPath": "phase4/pr07/zone_secret_abyssal_temple_warded_archive_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_secret_abyssal_temple_warded_archive_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "pr07",
         "zone",
         "abyssal",
-        "secret"
+        "secret",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7639,16 +8058,20 @@
     {
       "key": "zone.secret.deep_iron_slag_cache.visual",
       "category": "portrait",
-      "rawOutputPath": "phase4/pr07/zone_secret_deep_iron_slag_cache_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_secret_deep_iron_slag_cache_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "pr07",
         "zone",
         "mine",
-        "secret"
+        "secret",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7670,17 +8093,20 @@
     {
       "key": "zone.secret.deep_iron_smuggler_stash.visual",
       "category": "portrait",
-      "rawOutputPath": "phase4/opt_pr05/zone_secret_deep_iron_smuggler_stash_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_secret_deep_iron_smuggler_stash_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
+        "dark-v1",
+        "uiux",
         "pr05",
+        "opt",
         "zone",
         "mine",
-        "secret"
+        "secret",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7703,18 +8129,22 @@
     {
       "key": "zone.secret.greenwood_ambush_hideout.visual",
       "category": "portrait",
-      "rawOutputPath": "phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_secret_greenwood_ambush_hideout_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "v3",
         "pr03",
         "zone",
         "greenwood",
         "secret",
-        "ambush"
+        "ambush",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7735,16 +8165,20 @@
     {
       "key": "zone.secret.greenwood_hidden_cache.visual",
       "category": "portrait",
-      "rawOutputPath": "phase4/pr07/zone_secret_greenwood_hidden_cache_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_secret_greenwood_hidden_cache_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "pr07",
         "zone",
         "greenwood",
-        "secret"
+        "secret",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7765,16 +8199,20 @@
     {
       "key": "zone.secret.underground_river_crystal_rift.visual",
       "category": "portrait",
-      "rawOutputPath": "phase4/pr07/zone_secret_underground_river_crystal_rift_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_secret_underground_river_crystal_rift_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "pr07",
         "zone",
         "river",
-        "secret"
+        "secret",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7794,15 +8232,18 @@
     {
       "key": "zone.shattered_outpost.visual",
       "category": "prop_environment",
-      "rawOutputPath": "phase2/p2-c/zone_shattered_outpost_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_shattered_outpost_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "zone",
-        "ruins"
+        "ruins",
+        "prop_environment",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -7822,15 +8263,18 @@
     {
       "key": "zone.underground_river.visual",
       "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_underground_river_visual.png",
+      "rawOutputPath": "dark-v1/portraits/zone_underground_river_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr05",
         "zone",
-        "river"
+        "river",
+        "portrait",
+        "r06-portraits-zones"
       ]
     },
     {
@@ -8854,7 +9298,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.sweeping_strike.icon",
@@ -8863,7 +9314,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.sweeping_strike.hero",
@@ -8872,7 +9330,15 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop", "hero"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop",
+        "hero"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.linebreaker.icon",
@@ -8881,7 +9347,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.earthshaker.icon",
@@ -8890,7 +9363,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.charge.icon",
@@ -8899,7 +9379,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.sunder_armor.icon",
@@ -8908,7 +9395,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.shield_bash.icon",
@@ -8917,7 +9411,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.taunt.icon",
@@ -8926,7 +9427,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.guard_stance.icon",
@@ -8935,7 +9443,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.iron_wall.icon",
@@ -8944,7 +9459,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.bulwark_march.icon",
@@ -8953,7 +9475,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.war_cry.icon",
@@ -8962,7 +9491,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.rallying_banner.icon",
@@ -8971,7 +9507,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.battlefield_command.icon",
@@ -8980,7 +9523,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.intimidation.icon",
@@ -8989,7 +9539,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent.vanguard.unyielding.icon",
@@ -8998,7 +9555,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent", "vanguard", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent",
+        "vanguard",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.top_edge",
@@ -9007,7 +9571,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.surface_texture",
@@ -9016,7 +9587,15 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "texture", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "texture",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.bottom_edge",
@@ -9025,7 +9604,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.left_edge",
@@ -9034,7 +9620,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.right_edge",
@@ -9043,7 +9636,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.corner_top_left",
@@ -9052,7 +9652,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.corner_top_right",
@@ -9061,7 +9668,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.corner_bottom_left",
@@ -9070,7 +9684,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     },
     {
       "key": "dark.uiux.pr04.talent_assign.chrome.corner_bottom_right",
@@ -9079,7 +9700,14 @@
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
-      "tags": ["dark-v1", "uiux", "pr04", "talent-assign", "chrome", "reference-crop"]
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr04",
+        "talent-assign",
+        "chrome",
+        "reference-crop"
+      ]
     }
   ],
   "prefixRules": [

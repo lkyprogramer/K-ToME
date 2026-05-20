@@ -19,15 +19,13 @@ sheets:
     targetKey: ui.frame.panel.body
     category: ui_frame
     outputName: dark-v1/ui/ui_frame_panel_body.png
-    subject: forged iron worn stone panel body with ember scratches and subtle cyan
-      edge light
+    subject: forged iron worn stone panel body with ember scratches and subtle cyan edge light
   - row: 0
     col: 1
     targetKey: ui.frame.panel.focus
     category: ui_frame
     outputName: dark-v1/ui/ui_frame_panel_focus.png
-    subject: focused panel frame with brighter cold cyan edge glow and worn brass
-      corner accents
+    subject: focused panel frame with brighter cold cyan edge glow and worn brass corner accents
   - row: 0
     col: 2
     targetKey: ui.frame.panel.corner_tl
@@ -87,8 +85,7 @@ sheets:
     targetKey: ui.frame.slot.equipped
     category: ui_frame
     outputName: dark-v1/ui/ui_frame_slot_equipped.png
-    subject: equipped item slot frame with ember-gold inner accent and worn metal
-      rim
+    subject: equipped item slot frame with ember-gold inner accent and worn metal rim
   - row: 3
     col: 0
     targetKey: ui.frame.slot.selected
@@ -117,8 +114,7 @@ sheets:
   styleTag: ktome-dark-fantasy-sprite-ui-v1
   rawSheetPath: assets-src/image/raw/sheets/dark-v1/r01-ui-controls.png
   outputRoot: client/src/main/resources
-  promptBase: Dark fantasy roguelike UI control and state icon sheet, no text, transparent
-    background
+  promptBase: Dark fantasy roguelike UI control and state icon sheet, no text, transparent background
   grid:
     columns: 8
     rows: 8
@@ -425,7 +421,8 @@ sheets:
   styleTag: ktome-dark-fantasy-sprite-ui-v1
   rawSheetPath: assets-src/image/raw/sheets/dark-v1/r01-ui-hud-icons.png
   outputRoot: client/src/main/resources
-  promptBase: Dark fantasy roguelike HUD icon sheet, no text, transparent background, eight isolated centered icons with wide transparent padding, no overlap, no cropped edge decorations
+  promptBase: Dark fantasy roguelike HUD icon sheet, no text, transparent background, eight isolated centered
+    icons with wide transparent padding, no overlap, no cropped edge decorations
   grid:
     columns: 8
     rows: 8
@@ -710,7 +707,8 @@ sheets:
   styleTag: ktome-dark-fantasy-sprite-ui-v1
   rawSheetPath: assets-src/image/raw/sheets/dark-v1/r01b-ui-shell-chrome.png
   outputRoot: client/src/main/resources
-  promptBase: Dark fantasy roguelike demo shell chrome and navigation icon sheet, no text, transparent background
+  promptBase: Dark fantasy roguelike demo shell chrome and navigation icon sheet, no text, transparent
+    background
   grid:
     columns: 4
     rows: 4
@@ -728,7 +726,8 @@ sheets:
     targetKey: ui.shell.map_stage.frame
     category: ui_frame
     outputName: dark-v1/ui/ui_shell_map_stage_frame.png
-    subject: wide near-black map stage frame body with subtle smoky stone texture, restrained dark edge, no large ornament, no readable text, no brick wall
+    subject: wide near-black map stage frame body with subtle smoky stone texture, restrained dark edge,
+      no large ornament, no readable text, no brick wall
   - row: 0
     col: 2
     targetKey: ui.shell.nav_rail.frame
@@ -812,14 +811,17 @@ sheets:
     targetKey: ui.shell.map_stage.backdrop
     category: ui_frame
     outputName: dark-v1/ui/ui_shell_map_stage_backdrop.png
-    subject: near-black radial dungeon fog backdrop for map-stage empty space, soft smoky vignette, very subtle soot scratches, no visible tile grid, no brick wall, no actor, no item, no readable text, shell presentation only
+    subject: near-black radial dungeon fog backdrop for map-stage empty space, soft smoky vignette, very
+      subtle soot scratches, no visible tile grid, no brick wall, no actor, no item, no readable text,
+      shell presentation only
 - sheetId: r02-ui-demo-ruins-tiles
   round: 2
   type: tile-sheet
   styleTag: ktome-dark-fantasy-sprite-ui-v1
   rawSheetPath: assets-src/image/raw/sheets/dark-v1/r02-ui-demo-ruins-tiles.png
   outputRoot: client/src/main/resources
-  promptBase: Dark fantasy roguelike UI-demo-new dungeon ruin tile sprites, no text, transparent background, painterly worn stone, warm torch edge lighting, readable when downscaled to 32px
+  promptBase: Dark fantasy roguelike UI-demo-new dungeon ruin tile sprites, no text, transparent background,
+    painterly worn stone, warm torch edge lighting, readable when downscaled to 32px
   grid:
     columns: 8
     rows: 8
@@ -831,20 +833,25 @@ sheets:
     targetKey: tileset.ruins.ground_01
     category: tile_ground
     outputName: dark-v1/tiles/tileset_ruins_ground_01.png
-    subject: orthographic single 128px dark dungeon floor tile, top-down square stone slab cluster, varied cracked flagstones, subtle moss and soot, warm amber grime in seams, readable at 32px, seamless edges, no grass, no modern grid, no letters
+    subject: orthographic single 128px dark dungeon floor tile, top-down square stone slab cluster, varied
+      cracked flagstones, subtle moss and soot, warm amber grime in seams, readable at 32px, seamless
+      edges, no grass, no modern grid, no letters
   - row: 0
     col: 1
     targetKey: tileset.ruins.wall_01
     category: tile_wall
     outputName: dark-v1/tiles/tileset_ruins_wall_01.png
-    subject: orthographic single 128px raised ruined dungeon wall tile, top-down blocking wall cap with thick dark stone rim, carved chipped face, warm torch highlights on upper edge, matches floor material, readable at 32px, no horizontal brick stripe, no modern grid, no letters
+    subject: orthographic single 128px raised ruined dungeon wall tile, top-down blocking wall cap with
+      thick dark stone rim, carved chipped face, warm torch highlights on upper edge, matches floor material,
+      readable at 32px, no horizontal brick stripe, no modern grid, no letters
 - sheetId: r03-ui-demo-actor-props
   round: 3
   type: large-sheet
   styleTag: ktome-dark-fantasy-sprite-ui-v1
   rawSheetPath: assets-src/image/raw/sheets/dark-v1/r03-ui-demo-actor-props.png
   outputRoot: client/src/main/resources
-  promptBase: Dark fantasy roguelike UI-demo-new painterly actor and prop sprites, no text, transparent background, readable at game size, not flat vector icon art
+  promptBase: Dark fantasy roguelike UI-demo-new painterly actor and prop sprites, no text, transparent
+    background, readable at game size, not flat vector icon art
   grid:
     columns: 4
     rows: 4
@@ -856,13 +863,18 @@ sheets:
     targetKey: actor.vanguard
     category: actor_sprite
     outputName: dark-v1/actors/actor_vanguard.png
-    subject: painterly top-down three-quarter armored vanguard map sprite, compact 32px-readable game token, shield and sword silhouette held close to body, dark steel and worn leather, warm ember rim light, restrained cyan glint, transparent background, no white outline, no drop shadow, not a standing portrait, not flat vector icon art
+    subject: painterly top-down three-quarter armored vanguard map sprite, compact 32px-readable game
+      token, shield and sword silhouette held close to body, dark steel and worn leather, warm ember rim
+      light, restrained cyan glint, transparent background, no white outline, no drop shadow, not a standing
+      portrait, not flat vector icon art
   - row: 0
     col: 1
     targetKey: prop.stairs.down
     category: prop_interactable
     outputName: dark-v1/props/prop_stairs_down.png
-    subject: painterly downward dungeon stairs map prop, compact 32px-readable orthographic three-quarter game token, cracked black stone steps descending into deep shadow, subtle ember glow from below, transparent background, no white outline, no drop shadow, not flat vector icon art
+    subject: painterly downward dungeon stairs map prop, compact 32px-readable orthographic three-quarter
+      game token, cracked black stone steps descending into deep shadow, subtle ember glow from below,
+      transparent background, no white outline, no drop shadow, not flat vector icon art
 - sheetId: r07-items-base
   round: 7
   type: icon-sheet
@@ -1754,3 +1766,1285 @@ sheets:
     col: 7
     reserved: true
     note: reserved PR-03 r07-items-affix-material future slot
+- sheetId: r02-tiles-ground
+  round: 2
+  type: tile-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r02-tiles-ground.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy roguelike tactical ground tile sheet, no text
+  grid: &id001
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: tileset.forest_edge.ground_01
+    category: tile_ground
+    outputName: dark-v1/tiles/tileset_forest_edge_ground_01.png
+    subject: walkable tileset forest edge ground 01 floor tile, low contrast worn stone surface, top-down
+      tactical readability
+  - row: 0
+    col: 1
+    targetKey: tileset.mine.ground_01
+    category: tile_ground
+    outputName: dark-v1/tiles/tileset_mine_ground_01.png
+    subject: walkable tileset mine ground 01 floor tile, low contrast worn stone surface, top-down tactical
+      readability
+  - row: 0
+    col: 2
+    targetKey: tileset.shadow_depths.ground_01
+    category: tile_ground
+    outputName: dark-v1/tiles/tileset_shadow_depths_ground_01.png
+    subject: walkable tileset shadow depths ground 01 floor tile, low contrast worn stone surface, top-down
+      tactical readability
+- sheetId: r02-tiles-wall
+  round: 2
+  type: tile-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r02-tiles-wall.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy roguelike tactical wall tile sheet, no text
+  grid: *id001
+  cells:
+  - row: 0
+    col: 0
+    targetKey: tileset.forest_edge.wall_01
+    category: tile_wall
+    outputName: dark-v1/tiles/tileset_forest_edge_wall_01.png
+    subject: blocking tileset forest edge wall 01 wall tile, heavy dark stone boundary, top-down tactical
+      readability
+  - row: 0
+    col: 1
+    targetKey: tileset.mine.wall_01
+    category: tile_wall
+    outputName: dark-v1/tiles/tileset_mine_wall_01.png
+    subject: blocking tileset mine wall 01 wall tile, heavy dark stone boundary, top-down tactical readability
+  - row: 0
+    col: 2
+    targetKey: tileset.shadow_depths.wall_01
+    category: tile_wall
+    outputName: dark-v1/tiles/tileset_shadow_depths_wall_01.png
+    subject: blocking tileset shadow depths wall 01 wall tile, heavy dark stone boundary, top-down tactical
+      readability
+- sheetId: r02-tiles-decal
+  round: 2
+  type: tile-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r02-tiles-decal.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy terrain interaction decal sheet, no text, transparent background
+  grid: *id001
+  cells:
+  - row: 0
+    col: 0
+    targetKey: vfx.terrain.interaction.ice
+    category: tile_decal
+    outputName: dark-v1/tiles/vfx_terrain_interaction_ice.png
+    subject: vfx terrain interaction ice terrain decal plate, readable hazard shape, transparent background,
+      subordinate to actors
+  - row: 0
+    col: 1
+    targetKey: vfx.terrain.interaction.oil
+    category: tile_decal
+    outputName: dark-v1/tiles/vfx_terrain_interaction_oil.png
+    subject: vfx terrain interaction oil terrain decal plate, readable hazard shape, transparent background,
+      subordinate to actors
+  - row: 0
+    col: 2
+    targetKey: vfx.terrain.interaction.oil_burning
+    category: tile_decal
+    outputName: dark-v1/tiles/vfx_terrain_interaction_oil_burning.png
+    subject: vfx terrain interaction oil burning terrain decal plate, readable hazard shape, transparent
+      background, subordinate to actors
+  - row: 0
+    col: 3
+    targetKey: vfx.terrain.interaction.water
+    category: tile_decal
+    outputName: dark-v1/tiles/vfx_terrain_interaction_water.png
+    subject: vfx terrain interaction water terrain decal plate, readable hazard shape, transparent background,
+      subordinate to actors
+- sheetId: r03-props-interactable
+  round: 3
+  type: tile-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r03-props-interactable.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy interactable dungeon prop sheet, no text, transparent background
+  grid: *id001
+  cells:
+  - row: 0
+    col: 0
+    targetKey: prop.alarm_bonfire
+    category: prop_interactable
+    outputName: dark-v1/props/prop_alarm_bonfire.png
+    subject: prop alarm bonfire interactable dungeon prop, strong silhouette with small ember or cyan
+      cue, transparent background
+  - row: 0
+    col: 1
+    targetKey: prop.armory_gate
+    category: prop_interactable
+    outputName: dark-v1/props/prop_armory_gate.png
+    subject: prop armory gate interactable dungeon prop, strong silhouette with small ember or cyan cue,
+      transparent background
+  - row: 0
+    col: 2
+    targetKey: prop.crystal_resonance_node
+    category: prop_interactable
+    outputName: dark-v1/props/prop_crystal_resonance_node.png
+    subject: prop crystal resonance node interactable dungeon prop, strong silhouette with small ember
+      or cyan cue, transparent background
+  - row: 0
+    col: 3
+    targetKey: prop.heart_ward_focus
+    category: prop_interactable
+    outputName: dark-v1/props/prop_heart_ward_focus.png
+    subject: prop heart ward focus interactable dungeon prop, strong silhouette with small ember or cyan
+      cue, transparent background
+  - row: 0
+    col: 4
+    targetKey: prop.hidden_entrance.return_bridge
+    category: prop_interactable
+    outputName: dark-v1/props/prop_hidden_entrance_return_bridge.png
+    subject: prop hidden entrance return bridge interactable dungeon prop, strong silhouette with small
+      ember or cyan cue, transparent background
+  - row: 0
+    col: 5
+    targetKey: prop.hidden_entrance.revealed
+    category: prop_interactable
+    outputName: dark-v1/props/prop_hidden_entrance_revealed.png
+    subject: prop hidden entrance revealed interactable dungeon prop, strong silhouette with small ember
+      or cyan cue, transparent background
+  - row: 0
+    col: 6
+    targetKey: prop.ritual_altar
+    category: prop_interactable
+    outputName: dark-v1/props/prop_ritual_altar.png
+    subject: prop ritual altar interactable dungeon prop, strong silhouette with small ember or cyan cue,
+      transparent background
+  - row: 0
+    col: 7
+    targetKey: prop.river_ferry_anchor
+    category: prop_interactable
+    outputName: dark-v1/props/prop_river_ferry_anchor.png
+    subject: prop river ferry anchor interactable dungeon prop, strong silhouette with small ember or
+      cyan cue, transparent background
+  - row: 1
+    col: 0
+    targetKey: prop.stairs.up
+    category: prop_interactable
+    outputName: dark-v1/props/prop_stairs_up.png
+    subject: prop stairs up interactable dungeon prop, strong silhouette with small ember or cyan cue,
+      transparent background
+  - row: 1
+    col: 1
+    targetKey: prop.supply_crate
+    category: prop_interactable
+    outputName: dark-v1/props/prop_supply_crate.png
+    subject: prop supply crate interactable dungeon prop, strong silhouette with small ember or cyan cue,
+      transparent background
+  - row: 1
+    col: 2
+    targetKey: prop.temple_ward_reliquary
+    category: prop_interactable
+    outputName: dark-v1/props/prop_temple_ward_reliquary.png
+    subject: prop temple ward reliquary interactable dungeon prop, strong silhouette with small ember
+      or cyan cue, transparent background
+- sheetId: r03-props-environment
+  round: 3
+  type: tile-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r03-props-environment.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy environmental dungeon prop sheet, no text, transparent background
+  grid: *id001
+  cells:
+  - row: 0
+    col: 0
+    targetKey: prop.mine_furnace
+    category: prop_environment
+    outputName: dark-v1/props/prop_mine_furnace.png
+    subject: prop mine furnace dark zone visual or environmental prop, worn stone and ember mood, transparent-safe
+      composition
+- sheetId: r03-vfx-telegraph
+  round: 3
+  type: tile-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r03-vfx-telegraph.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy tactical VFX and telegraph plate sheet, no text, transparent background
+  grid: *id001
+  cells:
+  - row: 0
+    col: 0
+    targetKey: vfx.boss.variant.abyssal_eclipse
+    category: vfx_plate
+    outputName: dark-v1/vfx/vfx_boss_variant_abyssal_eclipse.png
+    subject: vfx boss variant abyssal eclipse warning telegraph plate, open center, ember and restrained
+      cyan edge, transparent background
+  - row: 0
+    col: 1
+    targetKey: vfx.boss.variant.grey_crown
+    category: vfx_plate
+    outputName: dark-v1/vfx/vfx_boss_variant_grey_crown.png
+    subject: vfx boss variant grey crown warning telegraph plate, open center, ember and restrained cyan
+      edge, transparent background
+  - row: 0
+    col: 2
+    targetKey: vfx.boss.variant.molten_glass
+    category: vfx_plate
+    outputName: dark-v1/vfx/vfx_boss_variant_molten_glass.png
+    subject: vfx boss variant molten glass warning telegraph plate, open center, ember and restrained
+      cyan edge, transparent background
+  - row: 0
+    col: 3
+    targetKey: vfx.boss.warning.sigil_01
+    category: vfx_plate
+    outputName: dark-v1/vfx/vfx_boss_warning_sigil_01.png
+    subject: vfx boss warning sigil 01 warning telegraph plate, open center, ember and restrained cyan
+      edge, transparent background
+  - row: 0
+    col: 4
+    targetKey: vfx.telegraph.warning.sigil_01
+    category: vfx_plate
+    outputName: dark-v1/vfx/vfx_telegraph_warning_sigil_01.png
+    subject: vfx telegraph warning sigil 01 warning telegraph plate, open center, ember and restrained
+      cyan edge, transparent background
+  - row: 0
+    col: 5
+    targetKey: vfx.zone.effect.crystal_shard_01
+    category: tile_decal
+    outputName: dark-v1/vfx/vfx_zone_effect_crystal_shard_01.png
+    subject: vfx zone effect crystal shard 01 terrain decal plate, readable hazard shape, transparent
+      background, subordinate to actors
+  - row: 0
+    col: 6
+    targetKey: vfx.zone.effect.current_lane_01
+    category: tile_decal
+    outputName: dark-v1/vfx/vfx_zone_effect_current_lane_01.png
+    subject: vfx zone effect current lane 01 terrain decal plate, readable hazard shape, transparent background,
+      subordinate to actors
+  - row: 0
+    col: 7
+    targetKey: vfx.zone.effect.void_pressure_01
+    category: tile_decal
+    outputName: dark-v1/vfx/vfx_zone_effect_void_pressure_01.png
+    subject: vfx zone effect void pressure 01 terrain decal plate, readable hazard shape, transparent
+      background, subordinate to actors
+  - row: 1
+    col: 0
+    targetKey: vfx.zone.effect.ward_seal_01
+    category: tile_decal
+    outputName: dark-v1/vfx/vfx_zone_effect_ward_seal_01.png
+    subject: vfx zone effect ward seal 01 terrain decal plate, readable hazard shape, transparent background,
+      subordinate to actors
+- sheetId: r04-actors-player
+  round: 4
+  type: large-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r04-actors-player.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy playable actor sprite sheet, no text, transparent background
+  grid: &id003
+    columns: 4
+    rows: 4
+    cellWidth: 256
+    cellHeight: 256
+  cells:
+  - row: 0
+    col: 0
+    targetKey: actor.arcanist
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_arcanist.png
+    subject: compact actor arcanist gameplay actor sprite, strong faction silhouette, dark fantasy top-down
+      three-quarter token
+  - row: 0
+    col: 1
+    targetKey: actor.player
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_player.png
+    subject: compact actor player gameplay actor sprite, strong faction silhouette, dark fantasy top-down
+      three-quarter token
+  - row: 0
+    col: 2
+    targetKey: actor.rogue
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_rogue.png
+    subject: compact actor rogue gameplay actor sprite, strong faction silhouette, dark fantasy top-down
+      three-quarter token
+  - row: 0
+    col: 3
+    targetKey: actor.templar
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_templar.png
+    subject: compact actor templar gameplay actor sprite, strong faction silhouette, dark fantasy top-down
+      three-quarter token
+- sheetId: r04-actors-humanoid
+  round: 4
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r04-actors-humanoid.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy humanoid enemy actor sprite sheet, no text, transparent background
+  grid: &id002
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: actor.bandit.archer
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_archer.png
+    subject: compact actor bandit archer gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 0
+    col: 1
+    targetKey: actor.bandit.banner_guard
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_banner_guard.png
+    subject: compact actor bandit banner guard gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 2
+    targetKey: actor.bandit.cache_overseer
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_cache_overseer.png
+    subject: compact actor bandit cache overseer gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 3
+    targetKey: actor.bandit.captain
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_captain.png
+    subject: compact actor bandit captain gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 0
+    col: 4
+    targetKey: actor.bandit.cutthroat
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_cutthroat.png
+    subject: compact actor bandit cutthroat gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 0
+    col: 5
+    targetKey: actor.bandit.pillager
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_pillager.png
+    subject: compact actor bandit pillager gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 0
+    col: 6
+    targetKey: actor.bandit.raider
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_raider.png
+    subject: compact actor bandit raider gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 0
+    col: 7
+    targetKey: actor.bandit.sentry
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_sentry.png
+    subject: compact actor bandit sentry gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 1
+    col: 0
+    targetKey: actor.bandit.slingshotter
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_bandit_slingshotter.png
+    subject: compact actor bandit slingshotter gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 1
+    col: 1
+    targetKey: actor.cultist.dungeon_lord
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_cultist_dungeon_lord.png
+    subject: compact actor cultist dungeon lord gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 1
+    col: 2
+    targetKey: actor.cultist.shadow_priest
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_cultist_shadow_priest.png
+    subject: compact actor cultist shadow priest gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 1
+    col: 3
+    targetKey: actor.orc.miner
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_orc_miner.png
+    subject: compact actor orc miner gameplay actor sprite, strong faction silhouette, dark fantasy top-down
+      three-quarter token
+  - row: 1
+    col: 4
+    targetKey: actor.orc.molten_giant
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_orc_molten_giant.png
+    subject: compact actor orc molten giant gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 1
+    col: 5
+    targetKey: actor.orc.raider
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_orc_raider.png
+    subject: compact actor orc raider gameplay actor sprite, strong faction silhouette, dark fantasy top-down
+      three-quarter token
+  - row: 1
+    col: 6
+    targetKey: actor.warded_ruin.cleanse_adept
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_warded_ruin_cleanse_adept.png
+    subject: compact actor warded ruin cleanse adept gameplay actor sprite, strong faction silhouette,
+      dark fantasy top-down three-quarter token
+  - row: 1
+    col: 7
+    targetKey: actor.warded_ruin.relic_guard
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_warded_ruin_relic_guard.png
+    subject: compact actor warded ruin relic guard gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 2
+    col: 0
+    targetKey: actor.warded_ruin.shard_archivist
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_warded_ruin_shard_archivist.png
+    subject: compact actor warded ruin shard archivist gameplay actor sprite, strong faction silhouette,
+      dark fantasy top-down three-quarter token
+  - row: 2
+    col: 1
+    targetKey: actor.warded_ruin.vault_watcher
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_warded_ruin_vault_watcher.png
+    subject: compact actor warded ruin vault watcher gameplay actor sprite, strong faction silhouette,
+      dark fantasy top-down three-quarter token
+  - row: 2
+    col: 2
+    targetKey: actor.warded_ruin.ward_lancer
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_warded_ruin_ward_lancer.png
+    subject: compact actor warded ruin ward lancer gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+- sheetId: r04-actors-monster
+  round: 4
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r04-actors-monster.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy creature enemy actor sprite sheet, no text, transparent background
+  grid: *id002
+  cells:
+  - row: 0
+    col: 0
+    targetKey: actor.abyssal.cleanse_hunter
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_abyssal_cleanse_hunter.png
+    subject: compact actor abyssal cleanse hunter gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 1
+    targetKey: actor.abyssal.eclipsed_seraph
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_abyssal_eclipsed_seraph.png
+    subject: compact actor abyssal eclipsed seraph gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 2
+    targetKey: actor.abyssal.guardian
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_abyssal_guardian.png
+    subject: compact actor abyssal guardian gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 0
+    col: 3
+    targetKey: actor.abyssal.null_lancer
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_abyssal_null_lancer.png
+    subject: compact actor abyssal null lancer gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 4
+    targetKey: actor.abyssal.reliquary_guard
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_abyssal_reliquary_guard.png
+    subject: compact actor abyssal reliquary guard gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 5
+    targetKey: actor.abyssal.ritual_binder
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_abyssal_ritual_binder.png
+    subject: compact actor abyssal ritual binder gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 6
+    targetKey: actor.abyssal.void_preacher
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_abyssal_void_preacher.png
+    subject: compact actor abyssal void preacher gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 7
+    targetKey: actor.abyssal.ward_breaker
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_abyssal_ward_breaker.png
+    subject: compact actor abyssal ward breaker gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 1
+    col: 0
+    targetKey: actor.beast.rat
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_beast_rat.png
+    subject: compact actor beast rat gameplay actor sprite, strong faction silhouette, dark fantasy top-down
+      three-quarter token
+  - row: 1
+    col: 1
+    targetKey: actor.crystal.beam_savant
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_crystal_beam_savant.png
+    subject: compact actor crystal beam savant gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 1
+    col: 2
+    targetKey: actor.crystal.prism_weaver
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_crystal_prism_weaver.png
+    subject: compact actor crystal prism weaver gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 1
+    col: 3
+    targetKey: actor.crystal.resonant_colossus
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_crystal_resonant_colossus.png
+    subject: compact actor crystal resonant colossus gameplay actor sprite, strong faction silhouette,
+      dark fantasy top-down three-quarter token
+  - row: 1
+    col: 4
+    targetKey: actor.crystal.seal_keeper
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_crystal_seal_keeper.png
+    subject: compact actor crystal seal keeper gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 1
+    col: 5
+    targetKey: actor.crystal.shardling
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_crystal_shardling.png
+    subject: compact actor crystal shardling gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 1
+    col: 6
+    targetKey: actor.forge.anvil_guard
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_forge_anvil_guard.png
+    subject: compact actor forge anvil guard gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 1
+    col: 7
+    targetKey: actor.forge.chain_overseer
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_forge_chain_overseer.png
+    subject: compact actor forge chain overseer gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 2
+    col: 0
+    targetKey: actor.forge.crucible_knight
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_forge_crucible_knight.png
+    subject: compact actor forge crucible knight gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 2
+    col: 1
+    targetKey: actor.forge.heat_channeler
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_forge_heat_channeler.png
+    subject: compact actor forge heat channeler gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 2
+    col: 2
+    targetKey: actor.forge.slag_tender
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_forge_slag_tender.png
+    subject: compact actor forge slag tender gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 2
+    col: 3
+    targetKey: actor.river.current_reaver
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_river_current_reaver.png
+    subject: compact actor river current reaver gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 2
+    col: 4
+    targetKey: actor.river.drowned_stalker
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_river_drowned_stalker.png
+    subject: compact actor river drowned stalker gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 2
+    col: 5
+    targetKey: actor.river.ferry_raider
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_river_ferry_raider.png
+    subject: compact actor river ferry raider gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 2
+    col: 6
+    targetKey: actor.river.hook_lurker
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_river_hook_lurker.png
+    subject: compact actor river hook lurker gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 2
+    col: 7
+    targetKey: actor.river.silt_shaman
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_river_silt_shaman.png
+    subject: compact actor river silt shaman gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 3
+    col: 0
+    targetKey: actor.river.tide_mender
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_river_tide_mender.png
+    subject: compact actor river tide mender gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 3
+    col: 1
+    targetKey: actor.river.undertow_brute
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_river_undertow_brute.png
+    subject: compact actor river undertow brute gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 3
+    col: 2
+    targetKey: actor.undead.bone_archer
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_undead_bone_archer.png
+    subject: compact actor undead bone archer gameplay actor sprite, strong faction silhouette, dark fantasy
+      top-down three-quarter token
+  - row: 3
+    col: 3
+    targetKey: actor.undead.restless_skeleton
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_undead_restless_skeleton.png
+    subject: compact actor undead restless skeleton gameplay actor sprite, strong faction silhouette,
+      dark fantasy top-down three-quarter token
+- sheetId: r04-actors-boss
+  round: 4
+  type: large-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r04-actors-boss.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy boss actor sprite sheet, no text, transparent background
+  grid: *id003
+  cells:
+  - row: 0
+    col: 0
+    targetKey: actor.boss.ashgate_warden
+    category: actor_sprite
+    outputName: dark-v1/actors/actor_boss_ashgate_warden.png
+    subject: compact actor boss ashgate warden gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 1
+    targetKey: boss.abyssal.guardian.visual
+    category: actor_sprite
+    outputName: dark-v1/actors/boss_abyssal_guardian_visual.png
+    subject: compact boss abyssal guardian visual gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+  - row: 0
+    col: 2
+    targetKey: boss.cultist.dungeon_lord.visual
+    category: actor_sprite
+    outputName: dark-v1/actors/boss_cultist_dungeon_lord_visual.png
+    subject: compact boss cultist dungeon lord visual gameplay actor sprite, strong faction silhouette,
+      dark fantasy top-down three-quarter token
+  - row: 0
+    col: 3
+    targetKey: boss.orc.molten_giant.visual
+    category: actor_sprite
+    outputName: dark-v1/actors/boss_orc_molten_giant_visual.png
+    subject: compact boss orc molten giant visual gameplay actor sprite, strong faction silhouette, dark
+      fantasy top-down three-quarter token
+- sheetId: r05-bestiary-humanoid-icons
+  round: 5
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r05-bestiary-humanoid-icons.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy humanoid bestiary icon sheet, no text, transparent background
+  grid: *id002
+  cells:
+  - row: 0
+    col: 0
+    targetKey: icon.monster.bandit.banner_guard
+    category: icon
+    outputName: dark-v1/icons/icon_monster_bandit_banner_guard.png
+    subject: icon monster bandit banner guard bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 1
+    targetKey: icon.monster.bandit.cache_overseer
+    category: icon
+    outputName: dark-v1/icons/icon_monster_bandit_cache_overseer.png
+    subject: icon monster bandit cache overseer bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 2
+    targetKey: icon.monster.bandit.captain
+    category: icon
+    outputName: dark-v1/icons/icon_monster_bandit_captain.png
+    subject: icon monster bandit captain bestiary or boss icon, head crest silhouette, dark iron and ember
+      accent, readable at 32px
+  - row: 0
+    col: 3
+    targetKey: icon.monster.bandit.cutthroat
+    category: icon
+    outputName: dark-v1/icons/icon_monster_bandit_cutthroat.png
+    subject: icon monster bandit cutthroat bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 0
+    col: 4
+    targetKey: icon.monster.bandit.pillager
+    category: icon
+    outputName: dark-v1/icons/icon_monster_bandit_pillager.png
+    subject: icon monster bandit pillager bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 0
+    col: 5
+    targetKey: icon.monster.bandit.sentry
+    category: icon
+    outputName: dark-v1/icons/icon_monster_bandit_sentry.png
+    subject: icon monster bandit sentry bestiary or boss icon, head crest silhouette, dark iron and ember
+      accent, readable at 32px
+  - row: 0
+    col: 6
+    targetKey: icon.monster.bandit.slingshotter
+    category: icon
+    outputName: dark-v1/icons/icon_monster_bandit_slingshotter.png
+    subject: icon monster bandit slingshotter bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 7
+    targetKey: icon.monster.cultist.dungeon_lord
+    category: icon
+    outputName: dark-v1/icons/icon_monster_cultist_dungeon_lord.png
+    subject: icon monster cultist dungeon lord bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 1
+    col: 0
+    targetKey: icon.monster.orc.molten_giant
+    category: icon
+    outputName: dark-v1/icons/icon_monster_orc_molten_giant.png
+    subject: icon monster orc molten giant bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 1
+    col: 1
+    targetKey: icon.monster.orc.raider
+    category: icon
+    outputName: dark-v1/icons/icon_monster_orc_raider.png
+    subject: icon monster orc raider bestiary or boss icon, head crest silhouette, dark iron and ember
+      accent, readable at 32px
+  - row: 1
+    col: 2
+    targetKey: icon.monster.warded_ruin.cleanse_adept
+    category: icon
+    outputName: dark-v1/icons/icon_monster_warded_ruin_cleanse_adept.png
+    subject: icon monster warded ruin cleanse adept bestiary or boss icon, head crest silhouette, dark
+      iron and ember accent, readable at 32px
+  - row: 1
+    col: 3
+    targetKey: icon.monster.warded_ruin.relic_guard
+    category: icon
+    outputName: dark-v1/icons/icon_monster_warded_ruin_relic_guard.png
+    subject: icon monster warded ruin relic guard bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 1
+    col: 4
+    targetKey: icon.monster.warded_ruin.shard_archivist
+    category: icon
+    outputName: dark-v1/icons/icon_monster_warded_ruin_shard_archivist.png
+    subject: icon monster warded ruin shard archivist bestiary or boss icon, head crest silhouette, dark
+      iron and ember accent, readable at 32px
+  - row: 1
+    col: 5
+    targetKey: icon.monster.warded_ruin.vault_watcher
+    category: icon
+    outputName: dark-v1/icons/icon_monster_warded_ruin_vault_watcher.png
+    subject: icon monster warded ruin vault watcher bestiary or boss icon, head crest silhouette, dark
+      iron and ember accent, readable at 32px
+  - row: 1
+    col: 6
+    targetKey: icon.monster.warded_ruin.ward_lancer
+    category: icon
+    outputName: dark-v1/icons/icon_monster_warded_ruin_ward_lancer.png
+    subject: icon monster warded ruin ward lancer bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+- sheetId: r05-bestiary-creature-icons
+  round: 5
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r05-bestiary-creature-icons.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy creature bestiary icon sheet, no text, transparent background
+  grid: *id002
+  cells:
+  - row: 0
+    col: 0
+    targetKey: icon.monster.abyssal.cleanse_hunter
+    category: icon
+    outputName: dark-v1/icons/icon_monster_abyssal_cleanse_hunter.png
+    subject: icon monster abyssal cleanse hunter bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 1
+    targetKey: icon.monster.abyssal.eclipsed_seraph
+    category: icon
+    outputName: dark-v1/icons/icon_monster_abyssal_eclipsed_seraph.png
+    subject: icon monster abyssal eclipsed seraph bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 2
+    targetKey: icon.monster.abyssal.guardian
+    category: icon
+    outputName: dark-v1/icons/icon_monster_abyssal_guardian.png
+    subject: icon monster abyssal guardian bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 0
+    col: 3
+    targetKey: icon.monster.abyssal.null_lancer
+    category: icon
+    outputName: dark-v1/icons/icon_monster_abyssal_null_lancer.png
+    subject: icon monster abyssal null lancer bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 4
+    targetKey: icon.monster.abyssal.reliquary_guard
+    category: icon
+    outputName: dark-v1/icons/icon_monster_abyssal_reliquary_guard.png
+    subject: icon monster abyssal reliquary guard bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 5
+    targetKey: icon.monster.abyssal.ritual_binder
+    category: icon
+    outputName: dark-v1/icons/icon_monster_abyssal_ritual_binder.png
+    subject: icon monster abyssal ritual binder bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 6
+    targetKey: icon.monster.abyssal.void_preacher
+    category: icon
+    outputName: dark-v1/icons/icon_monster_abyssal_void_preacher.png
+    subject: icon monster abyssal void preacher bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 0
+    col: 7
+    targetKey: icon.monster.abyssal.ward_breaker
+    category: icon
+    outputName: dark-v1/icons/icon_monster_abyssal_ward_breaker.png
+    subject: icon monster abyssal ward breaker bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 1
+    col: 0
+    targetKey: icon.monster.beast.rat
+    category: icon
+    outputName: dark-v1/icons/icon_monster_beast_rat.png
+    subject: icon monster beast rat bestiary or boss icon, head crest silhouette, dark iron and ember
+      accent, readable at 32px
+  - row: 1
+    col: 1
+    targetKey: icon.monster.crystal.beam_savant
+    category: icon
+    outputName: dark-v1/icons/icon_monster_crystal_beam_savant.png
+    subject: icon monster crystal beam savant bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 1
+    col: 2
+    targetKey: icon.monster.crystal.prism_weaver
+    category: icon
+    outputName: dark-v1/icons/icon_monster_crystal_prism_weaver.png
+    subject: icon monster crystal prism weaver bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 1
+    col: 3
+    targetKey: icon.monster.crystal.resonant_colossus
+    category: icon
+    outputName: dark-v1/icons/icon_monster_crystal_resonant_colossus.png
+    subject: icon monster crystal resonant colossus bestiary or boss icon, head crest silhouette, dark
+      iron and ember accent, readable at 32px
+  - row: 1
+    col: 4
+    targetKey: icon.monster.crystal.seal_keeper
+    category: icon
+    outputName: dark-v1/icons/icon_monster_crystal_seal_keeper.png
+    subject: icon monster crystal seal keeper bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 1
+    col: 5
+    targetKey: icon.monster.crystal.shardling
+    category: icon
+    outputName: dark-v1/icons/icon_monster_crystal_shardling.png
+    subject: icon monster crystal shardling bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 1
+    col: 6
+    targetKey: icon.monster.forge.anvil_guard
+    category: icon
+    outputName: dark-v1/icons/icon_monster_forge_anvil_guard.png
+    subject: icon monster forge anvil guard bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 1
+    col: 7
+    targetKey: icon.monster.forge.chain_overseer
+    category: icon
+    outputName: dark-v1/icons/icon_monster_forge_chain_overseer.png
+    subject: icon monster forge chain overseer bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 2
+    col: 0
+    targetKey: icon.monster.forge.crucible_knight
+    category: icon
+    outputName: dark-v1/icons/icon_monster_forge_crucible_knight.png
+    subject: icon monster forge crucible knight bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 2
+    col: 1
+    targetKey: icon.monster.forge.heat_channeler
+    category: icon
+    outputName: dark-v1/icons/icon_monster_forge_heat_channeler.png
+    subject: icon monster forge heat channeler bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 2
+    col: 2
+    targetKey: icon.monster.forge.slag_tender
+    category: icon
+    outputName: dark-v1/icons/icon_monster_forge_slag_tender.png
+    subject: icon monster forge slag tender bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 2
+    col: 3
+    targetKey: icon.monster.river.current_reaver
+    category: icon
+    outputName: dark-v1/icons/icon_monster_river_current_reaver.png
+    subject: icon monster river current reaver bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 2
+    col: 4
+    targetKey: icon.monster.river.drowned_stalker
+    category: icon
+    outputName: dark-v1/icons/icon_monster_river_drowned_stalker.png
+    subject: icon monster river drowned stalker bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 2
+    col: 5
+    targetKey: icon.monster.river.ferry_raider
+    category: icon
+    outputName: dark-v1/icons/icon_monster_river_ferry_raider.png
+    subject: icon monster river ferry raider bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 2
+    col: 6
+    targetKey: icon.monster.river.hook_lurker
+    category: icon
+    outputName: dark-v1/icons/icon_monster_river_hook_lurker.png
+    subject: icon monster river hook lurker bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 2
+    col: 7
+    targetKey: icon.monster.river.silt_shaman
+    category: icon
+    outputName: dark-v1/icons/icon_monster_river_silt_shaman.png
+    subject: icon monster river silt shaman bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 3
+    col: 0
+    targetKey: icon.monster.river.tide_mender
+    category: icon
+    outputName: dark-v1/icons/icon_monster_river_tide_mender.png
+    subject: icon monster river tide mender bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 3
+    col: 1
+    targetKey: icon.monster.river.undertow_brute
+    category: icon
+    outputName: dark-v1/icons/icon_monster_river_undertow_brute.png
+    subject: icon monster river undertow brute bestiary or boss icon, head crest silhouette, dark iron
+      and ember accent, readable at 32px
+  - row: 3
+    col: 2
+    targetKey: icon.monster.undead.bone_archer
+    category: icon
+    outputName: dark-v1/icons/icon_monster_undead_bone_archer.png
+    subject: icon monster undead bone archer bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+- sheetId: r05-boss-icons
+  round: 5
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r05-boss-icons.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy boss icon sheet, no text, transparent background
+  grid: *id002
+  cells:
+  - row: 0
+    col: 0
+    targetKey: boss.abyssal.guardian.icon
+    category: icon
+    outputName: dark-v1/icons/boss_abyssal_guardian_icon.png
+    subject: boss abyssal guardian icon bestiary or boss icon, head crest silhouette, dark iron and ember
+      accent, readable at 32px
+  - row: 0
+    col: 1
+    targetKey: boss.cultist.dungeon_lord.icon
+    category: icon
+    outputName: dark-v1/icons/boss_cultist_dungeon_lord_icon.png
+    subject: boss cultist dungeon lord icon bestiary or boss icon, head crest silhouette, dark iron and
+      ember accent, readable at 32px
+  - row: 0
+    col: 2
+    targetKey: boss.orc.molten_giant.icon
+    category: icon
+    outputName: dark-v1/icons/boss_orc_molten_giant_icon.png
+    subject: boss orc molten giant icon bestiary or boss icon, head crest silhouette, dark iron and ember
+      accent, readable at 32px
+- sheetId: r06-portraits-classes
+  round: 6
+  type: large-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r06-portraits-classes.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy playable profession portrait sheet, no text, transparent background
+  grid: *id003
+  cells:
+  - row: 0
+    col: 0
+    targetKey: portrait.arcanist
+    category: portrait
+    outputName: dark-v1/portraits/portrait_arcanist.png
+    subject: portrait arcanist identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 0
+    col: 1
+    targetKey: portrait.rogue
+    category: portrait
+    outputName: dark-v1/portraits/portrait_rogue.png
+    subject: portrait rogue identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 0
+    col: 2
+    targetKey: portrait.templar
+    category: portrait
+    outputName: dark-v1/portraits/portrait_templar.png
+    subject: portrait templar identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 0
+    col: 3
+    targetKey: portrait.vanguard
+    category: portrait
+    outputName: dark-v1/portraits/portrait_vanguard.png
+    subject: portrait vanguard identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+- sheetId: r06-portraits-trees
+  round: 6
+  type: large-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r06-portraits-trees.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy talent tree portrait sheet, no text, transparent background
+  grid: *id003
+  cells:
+  - row: 0
+    col: 0
+    targetKey: tree.arcanist_arcane
+    category: portrait
+    outputName: dark-v1/portraits/tree_arcanist_arcane.png
+    subject: tree arcanist arcane identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 0
+    col: 1
+    targetKey: tree.arcanist_flame
+    category: portrait
+    outputName: dark-v1/portraits/tree_arcanist_flame.png
+    subject: tree arcanist flame identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 0
+    col: 2
+    targetKey: tree.arcanist_frost
+    category: portrait
+    outputName: dark-v1/portraits/tree_arcanist_frost.png
+    subject: tree arcanist frost identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 0
+    col: 3
+    targetKey: tree.rogue_agility
+    category: portrait
+    outputName: dark-v1/portraits/tree_rogue_agility.png
+    subject: tree rogue agility identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 1
+    col: 0
+    targetKey: tree.rogue_assassination
+    category: portrait
+    outputName: dark-v1/portraits/tree_rogue_assassination.png
+    subject: tree rogue assassination identity portrait, dark fantasy iron stone ember era, restrained
+      background, no text
+  - row: 1
+    col: 1
+    targetKey: tree.rogue_subtlety
+    category: portrait
+    outputName: dark-v1/portraits/tree_rogue_subtlety.png
+    subject: tree rogue subtlety identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 1
+    col: 2
+    targetKey: tree.templar_faith
+    category: portrait
+    outputName: dark-v1/portraits/tree_templar_faith.png
+    subject: tree templar faith identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 1
+    col: 3
+    targetKey: tree.templar_grace
+    category: portrait
+    outputName: dark-v1/portraits/tree_templar_grace.png
+    subject: tree templar grace identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 2
+    col: 0
+    targetKey: tree.templar_smite
+    category: portrait
+    outputName: dark-v1/portraits/tree_templar_smite.png
+    subject: tree templar smite identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 2
+    col: 1
+    targetKey: tree.vanguard_arms
+    category: portrait
+    outputName: dark-v1/portraits/tree_vanguard_arms.png
+    subject: tree vanguard arms identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 2
+    col: 2
+    targetKey: tree.vanguard_shield
+    category: portrait
+    outputName: dark-v1/portraits/tree_vanguard_shield.png
+    subject: tree vanguard shield identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+  - row: 2
+    col: 3
+    targetKey: tree.vanguard_warcry
+    category: portrait
+    outputName: dark-v1/portraits/tree_vanguard_warcry.png
+    subject: tree vanguard warcry identity portrait, dark fantasy iron stone ember era, restrained background,
+      no text
+- sheetId: r06-portraits-zones
+  round: 6
+  type: large-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r06-portraits-zones.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy zone visual portrait sheet, no text, transparent background
+  grid: *id003
+  cells:
+  - row: 0
+    col: 0
+    targetKey: zone.abyssal_heart.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_abyssal_heart_visual.png
+    subject: zone abyssal heart visual identity portrait, dark fantasy iron stone ember era, restrained
+      background, no text
+  - row: 0
+    col: 1
+    targetKey: zone.abyssal_temple.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_abyssal_temple_visual.png
+    subject: zone abyssal temple visual identity portrait, dark fantasy iron stone ember era, restrained
+      background, no text
+  - row: 0
+    col: 2
+    targetKey: zone.crystal_cavern.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_crystal_cavern_visual.png
+    subject: zone crystal cavern visual identity portrait, dark fantasy iron stone ember era, restrained
+      background, no text
+  - row: 0
+    col: 3
+    targetKey: zone.deep_iron_pit.visual
+    category: prop_environment
+    outputName: dark-v1/portraits/zone_deep_iron_pit_visual.png
+    subject: zone deep iron pit visual dark zone visual or environmental prop, worn stone and ember mood,
+      transparent-safe composition
+  - row: 1
+    col: 0
+    targetKey: zone.greenwood_fringe.visual
+    category: prop_environment
+    outputName: dark-v1/portraits/zone_greenwood_fringe_visual.png
+    subject: zone greenwood fringe visual dark zone visual or environmental prop, worn stone and ember
+      mood, transparent-safe composition
+  - row: 1
+    col: 1
+    targetKey: zone.grey_gate_depths.visual
+    category: prop_environment
+    outputName: dark-v1/portraits/zone_grey_gate_depths_visual.png
+    subject: zone grey gate depths visual dark zone visual or environmental prop, worn stone and ember
+      mood, transparent-safe composition
+  - row: 1
+    col: 2
+    targetKey: zone.secret.abyssal_temple_warded_archive.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_secret_abyssal_temple_warded_archive_visual.png
+    subject: zone secret abyssal temple warded archive visual identity portrait, dark fantasy iron stone
+      ember era, restrained background, no text
+  - row: 1
+    col: 3
+    targetKey: zone.secret.deep_iron_slag_cache.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_secret_deep_iron_slag_cache_visual.png
+    subject: zone secret deep iron slag cache visual identity portrait, dark fantasy iron stone ember
+      era, restrained background, no text
+  - row: 2
+    col: 0
+    targetKey: zone.secret.deep_iron_smuggler_stash.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_secret_deep_iron_smuggler_stash_visual.png
+    subject: zone secret deep iron smuggler stash visual identity portrait, dark fantasy iron stone ember
+      era, restrained background, no text
+  - row: 2
+    col: 1
+    targetKey: zone.secret.greenwood_ambush_hideout.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_secret_greenwood_ambush_hideout_visual.png
+    subject: zone secret greenwood ambush hideout visual identity portrait, dark fantasy iron stone ember
+      era, restrained background, no text
+  - row: 2
+    col: 2
+    targetKey: zone.secret.greenwood_hidden_cache.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_secret_greenwood_hidden_cache_visual.png
+    subject: zone secret greenwood hidden cache visual identity portrait, dark fantasy iron stone ember
+      era, restrained background, no text
+  - row: 2
+    col: 3
+    targetKey: zone.secret.underground_river_crystal_rift.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_secret_underground_river_crystal_rift_visual.png
+    subject: zone secret underground river crystal rift visual identity portrait, dark fantasy iron stone
+      ember era, restrained background, no text
+  - row: 3
+    col: 0
+    targetKey: zone.shattered_outpost.visual
+    category: prop_environment
+    outputName: dark-v1/portraits/zone_shattered_outpost_visual.png
+    subject: zone shattered outpost visual dark zone visual or environmental prop, worn stone and ember
+      mood, transparent-safe composition
+  - row: 3
+    col: 1
+    targetKey: zone.underground_river.visual
+    category: portrait
+    outputName: dark-v1/portraits/zone_underground_river_visual.png
+    subject: zone underground river visual identity portrait, dark fantasy iron stone ember era, restrained
+      background, no text

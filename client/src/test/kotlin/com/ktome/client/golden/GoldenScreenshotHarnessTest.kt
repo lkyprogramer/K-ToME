@@ -153,6 +153,11 @@ class GoldenScreenshotHarnessTest {
             "dark-uiux-pr04-talent-assign-panel-start",
             "dark-uiux-pr04-active-slot-choice",
         )
+    private val darkUiuxPr05GoldenEvidenceLabels =
+        listOf(
+            "dark-uiux-pr05-map-layer-stack",
+            "dark-uiux-pr05-actor-boss-telegraph",
+        )
 
     @Test
     fun `dark uiux pr01 1 golden evidence labels remain registered`() {
@@ -236,29 +241,40 @@ class GoldenScreenshotHarnessTest {
     }
 
     @Test
+    fun `dark uiux pr05 golden evidence labels remain registered`() {
+        assertEquals(
+            listOf(
+                "dark-uiux-pr05-map-layer-stack",
+                "dark-uiux-pr05-actor-boss-telegraph",
+            ),
+            darkUiuxPr05GoldenEvidenceLabels,
+        )
+    }
+
+    @Test
     fun `dark uiux pr01 1 golden evidence hashes remain stable and writes canonical artifacts`() {
         val hashes = captureDarkUiuxPr011GoldenEvidence()
 
         assertEquals(
             mapOf(
-                "dark-uiux-pr01-1-viewport-deadzone-still" to "290b82f0aa2057ca6ade79065753bbf45009ea052a52e16583fec456dcb61e47",
-                "dark-uiux-pr01-1-viewport-deadzone-scroll" to "7b37860b31c4699ec66ad12dbe136f338c37c5d2ee0d5c2a2ad00f8aa7880986",
-                "dark-uiux-pr01-1-viewport-edge-clamp-top-left" to "e10d8797ed5bf1a92902032780f0cfc6ac423595fb8c3bbdc5922b91448ed423",
+                "dark-uiux-pr01-1-viewport-deadzone-still" to "d1663670cec01a697ecebb377ef07e7acf8bf036514e69b934a45ed6087f94ac",
+                "dark-uiux-pr01-1-viewport-deadzone-scroll" to "933e669bd96773355bc58732b34fddf66d0ca1795cc35a413964608b352ab226",
+                "dark-uiux-pr01-1-viewport-edge-clamp-top-left" to "94dcedf53c74ffa4028b65ca505f8983c66042ffa7f7a55eded60ba4b3fd1309",
                 "dark-uiux-pr01-1-viewport-edge-clamp-bottom-right" to "0b52b046f25b79e884e784bb6123c6ae842655b22ec5f335c002b2d861445b0d",
-                "dark-uiux-pr01-1-inspect-tooltip-layer" to "cc9aa909c2d2e773f0d0add6056da723177366dfd92925723ccf2ee03f4dd142",
+                "dark-uiux-pr01-1-inspect-tooltip-layer" to "19aa22cc4736a22dab701493d3cde5b8789ca428ad8dacb8d810aff86c28a17b",
                 "dark-uiux-pr01-1-item-modal-layer" to "6a87265f7edec921d6f5108005125e99acb3121e2bd5ab26ca6193a872806469",
                 "dark-uiux-pr01-1-overlay-conflict-fixture" to "55a0d1e8377641571bbdd0404db7e25f76c4824adef55b1294b07f2fe6913251",
-                "dark-uiux-pr01-1-targeting-cursor-viewport" to "3fddb60c33e244671f3c66a6cd2af64a04667bd60e2a7b41b83415fa99dcd6f1",
-                "dark-uiux-pr01-1-focus-projection-resolution" to "cc9aa909c2d2e773f0d0add6056da723177366dfd92925723ccf2ee03f4dd142",
-                "dark-uiux-pr01-1-foundation-viewport-fixed-world" to "77657a7aa0c4b9a7b4e99cfbfbc30e1062742decef7723121a355255c19fcf7e",
-                "dark-uiux-pr01-1-map-sublayer-order" to "77657a7aa0c4b9a7b4e99cfbfbc30e1062742decef7723121a355255c19fcf7e",
+                "dark-uiux-pr01-1-targeting-cursor-viewport" to "c16f3286501b810ad8da352114fdeb96d16ad61a7b28a629a4be6690ce533098",
+                "dark-uiux-pr01-1-focus-projection-resolution" to "19aa22cc4736a22dab701493d3cde5b8789ca428ad8dacb8d810aff86c28a17b",
+                "dark-uiux-pr01-1-foundation-viewport-fixed-world" to "ac62f98c007d137bf46e82c8b6913a364dabeaac86a876f74e4bd7cb49339f45",
+                "dark-uiux-pr01-1-map-sublayer-order" to "ac62f98c007d137bf46e82c8b6913a364dabeaac86a876f74e4bd7cb49339f45",
                 "dark-uiux-pr01-1-modal-backdrop-stack" to "6a87265f7edec921d6f5108005125e99acb3121e2bd5ab26ca6193a872806469",
-                "dark-uiux-pr01-1-combat-feedback-with-modal" to "9ba35435a140e42de7de7ab586824175e914b22e8362d3eb7ddf5644bbbde63a",
+                "dark-uiux-pr01-1-combat-feedback-with-modal" to "25c6783829c2ab3a611f1458138723556fbd60bee757593d83c3457ee1cd1bcb",
                 "dark-uiux-pr01-1-tooltip-flip-corners" to "30cb5aed6b06c865eb294838f3b86cddbd9cddc4c726a901f6f8cbb429ecfc72",
                 "dark-uiux-pr01-1-item-tooltip-vs-modal-parity" to "65e435c12d77261665feb5480f5a429ef75245a1f569ae969f38ef6f276017fb",
-                "dark-uiux-pr01-1-ascii-deletion-scan" to "77657a7aa0c4b9a7b4e99cfbfbc30e1062742decef7723121a355255c19fcf7e",
-                "dark-uiux-pr01-1-tome-layout-reference" to "77657a7aa0c4b9a7b4e99cfbfbc30e1062742decef7723121a355255c19fcf7e",
-                "dark-uiux-pr01-1-shell-min-window" to "6af892e26d89dd3476a094a27eee8bbfc28195ca78af48636552b76e3651f922",
+                "dark-uiux-pr01-1-ascii-deletion-scan" to "ac62f98c007d137bf46e82c8b6913a364dabeaac86a876f74e4bd7cb49339f45",
+                "dark-uiux-pr01-1-tome-layout-reference" to "ac62f98c007d137bf46e82c8b6913a364dabeaac86a876f74e4bd7cb49339f45",
+                "dark-uiux-pr01-1-shell-min-window" to "089d73d73f3c6d78e4976db9b1c0327c9d9d29f1c616c7206db00c357b9b72bb",
             ),
             hashes,
         )
@@ -270,8 +286,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "dark-uiux-pr02-round1-chrome" to "8019a190992d766556e68d989a5ef7a319f3e69221bd46fdff27992c0d2715dd",
-                "dark-uiux-pr02-hud-icons-pilot" to "c191326c6f903a5aee81adeefe66f6761e677bf405598835130a121a1e04ceae",
+                "dark-uiux-pr02-round1-chrome" to "d6da14059a379e5cf463b1c7497f07f95e3719ab343426590df77827eea3ba5c",
+                "dark-uiux-pr02-hud-icons-pilot" to "464a750cd40009bdf6c9c7f82c69e3ad62b207340e36208be8bc161084d3408a",
                 "dark-uiux-pr02-standalone-screen-chrome" to "11cd74c8765a1f8017b72042381480379cbb89989e8b75351df5e0baf663ea8b",
             ),
             hashes,
@@ -284,14 +300,14 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "ui-demo-new-parity-1672x941" to "20484493c897876f2f50bee9607d1352e2e61ff4f3ca3be77812fd3327440dbd",
-                "ui-demo-new-parity-1280x800" to "201ed2dbb71f01e1c1053a0544a355aec01b348cc831cceec0e7c095f62c7267",
+                "ui-demo-new-parity-1672x941" to "340e61c8eb3a65e838d4b1a47b6d923aeca15d2608eee189381b9c1d346e2c07",
+                "ui-demo-new-parity-1280x800" to "44af6cccabcb1d4349055afc1d4b4c648e1bdbf93248d3f6b9550c999e8c6076",
                 "ui-demo-new-right-panel-grid" to "97694b6d053b199a4ac1cdaf9d2cffd1f2af230e872f31fb0a6dc596ec045b4d",
                 "ui-demo-new-bottom-deck-no-command-hints" to "7d6e8294a344b3e3855e3fa74f3b77c96a8b5b1d55bbc249fd6807377053743a",
                 "ui-demo-new-inventory-page-1" to "5e245777a23ed90626e4747cbbf04dd429a375b3da9a45c45265c4f54a5bd767",
                 "ui-demo-new-inventory-page-2" to "f3acb92f2bd0dbfba6350265413b466f99de809f888777d0fb19939c2a7d39a7",
                 "ui-demo-new-nav-rail-crop" to "c52f8db795b5e932c91fb5d5084fc113ea134f685f416ce08e7e8e89947d4f03",
-                "ui-demo-new-map-stage-crop" to "551b3baf3d5751d5fa311164254deb81b2e5c0b7005cdbbaa6cb55cb98ade212",
+                "ui-demo-new-map-stage-crop" to "8ff35a68fa746ad2b38ad165110030e0ae694f8c30b589bbd3ac63454bb5022c",
             ),
             hashes,
         )
@@ -305,15 +321,15 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "1af8c316e586fd46bc9d46805e26913e7866b4ea5eb9b798b433a73a098a5aa2",
-                "290b82f0aa2057ca6ade79065753bbf45009ea052a52e16583fec456dcb61e47",
-                "183805b2988d822c5b1c012da9cb6d507ec599a6f675108e4fdcbc2a67028399",
-                "57a11716884ebcd813973c6c54ec3d8ae9ab09e9dc84fe2d0805e1c10e8a1060",
-                "045ed7e1d7b8d96bbb90b3065619d6d07e08e171113bd4991af3bc5daf526b95",
+                "d1663670cec01a697ecebb377ef07e7acf8bf036514e69b934a45ed6087f94ac",
+                "6d66afe88b2c9b06719653563b231ad42d75672e6a44f4611731877d1188f1bb",
+                "5398319ee53e99f7b99588ac4bffef0224545ebc2d5113381313bf6b4def5204",
+                "6c93b038bac7e1f7dca170a885dec607219de06975c1431e6cc9d952e2f601a5",
                 "f45cfa16a929281374a59033fcdfc24a135646f8bec5d111dc635177ce86d3ff",
-                "484ba11f4133e9cba3f22fcca88df70590eeaee73afa09f6b0ef6880e4fc8d97",
-                "3695305ec205978b501eb41f7a3fcd233a546c5526468b902169a1c3e0e14805",
-                "a1dd2187907ceecf91a73f6fdebcd5720d936fa3cec4bfc3726461e4293dfcbf",
-                "1906e857095805771f2e7e956dea9f0bd1fa976939766f208b788b78b8d9ab45",
+                "3fa600120c5b401bf998db7d7e0e58a164e21ec9a533dee3625441f93b8c0ef4",
+                "6e6ab16592b6b57e69d6c23fbe1939ef31b4913f0a808787827d507032e6bd18",
+                "b6905d6031e25d76c62146ed7ea1f37ea07ae25af00d358eb6dc80ab5ca39791",
+                "951f08437d9adcf0ee05844a8df7714c8bffa220d1db2866a83ecc801fd4ed8b",
             ),
             english + chinese,
         )
@@ -326,8 +342,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "e566cd63ec31d6b3bc0c4c04c1273fd1904afed37091ba4bf50a6ce81cb5d56e",
-                "7f0a880a45c78064a7d4d1b58b042bf5d12d58e30db2673a2d36da51ea6923a9",
+                "9e2bb81775c9ca461baf31a139202df9ea9be34ead8ff11eeaa05c8159fab077",
+                "addc0b2b927cb6c8c0b137925339aa537441ff801c467efc9cdbb725136d8b41",
             ),
             listOf(english, chinese),
         )
@@ -340,12 +356,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "a7316e8a081797873fed0d7130512286874642de4e80ef3ee85d477f26347e18",
-                "a2083b745b2ddd1905e9258e3615a295c24e8bf1d7cae3da6f7a757018bd2f34",
-                "dcf53f29b58d4868aa073b82b9070c2b22d67b3d9676b81391b7ac438ce61a02",
-                "9ea9f5a76ec7ec35ffcb659fee51848821b4ebfb64463ca71df392adb3f712f2",
-                "cf1c4b1c72885ebd1a7168628b1d327e2b09dd151228157daedafeda95f1b120",
-                "cdd5b182c6529f2d0866a7215c2a710a76fc9020fd1680e0c99ae21cf0e50cdc",
+                "2e747f096139305f222487d9e0b806e2110d3e6752eff5ef951366e8c242cd82",
+                "f79b3dc841fbf6a0b57f2012d56a7390ce6a104a12f83a0080f97ea74d27afe4",
+                "923995822732a418f418f90a3fbe4094a8c3ae09671f3707e7b57093db4b31d0",
+                "462d1dba4258bf6bf71013eafb627c023d94a9c9414ff750e11b381a1c3cdce9",
+                "ad84dda690753f48a60b40d712147bcee9056f1127c2434094616f267193aad8",
+                "1ef7db225a116c4dbc018f9f9938496d5e21106ca96777e2efc859d9661d9a6b",
             ),
             english + chinese,
         )
@@ -402,9 +418,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "d4a3377e11cbbf220d0f90a4d8fd394a8345db2b0053dd7daf1d862edd0b8ab9",
-                "920d1996b778c5c7e04ed133f0f504ff6a45ccc590eec1caf8c1769e374c4891",
+                "8e8e0fe6b9de4c157952c3a194c1dbef52c27d38fdadbbb08d8e3a12b62b2a10",
                 "b01b5396109cd8f53c9eca4ad98cb109191f4d27d4b5f2d938d5af03ed325202",
-                "52be7853567bbec6ab473c1696fb1c842c0b651138a169fb7bc2d8ae8efaf7fa",
+                "204c71f95a93ef96199ff2aa7033ba373e015826707c7a06d8d2a1a94069893b",
             ),
             english + chinese,
         )
@@ -414,7 +430,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("13d6da5060a28f99bcc4408ae710219820c08f7e4a2871d122fd28ed166de715", hash)
+        assertEquals("78d6df625c0dfc024fe1510e4f4feb410968a808477fe9ad445b928fe81a151b", hash)
     }
 
     @Test
@@ -424,16 +440,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "fddee40648178a8c60bf16cfd830de6d0e2f618755ddfcc47a50fc4abf6c454c",
-                "5df6f6e813d66aed3efc48510ac1a2c74d2a84d640cf11f94681593e2373e9d9",
-                "f3016b994315d520022a297c3b23ffaae2e99e80f111a51b457dc3c09acb546d",
-                "7b1bb878175f4c7baf89fa521634bb99a31b85177814a5a5f9e09e527e87c7f6",
-                "fead43e40807af9b9c3a4c3da917dae02c119f181328c7d078cf50856c2cfc46",
-                "f92f7a728a260ce7e6ca67cf610a9790a6fe9163e51a106dddd84f5f2dbdb760",
-                "ffb22861001586baa7df1b7420742c2721677d486007663d0d90ba36812151e2",
-                "7d1e6721da9bc371a6a12dfade50cff7cea7de96243553188bce7ffdea736838",
-                "bd2343a70ac143f9a4bef1d6552c68c9e82100916f318eab1c3a22ef14c106d9",
-                "faa55548a45398c28761109c341d96f80005d1eb1457a6f139ffac0b8fc2883a",
+                "63f73a07d92b527852539661b4e3388df64f9c618397aaa76c700ef295c45b17",
+                "8272ba138ab8c14734775be5e9342c66f0a17d94968f0db51ea8cc4f8579c7da",
+                "81cbf8f14df818dee9ee0ddcea6d791b9ecaa6465d6bb1e7d565faa2cf6a1a0f",
+                "f90ce47716244d4b265f29c4ea031f6a3d958389550787f79fdb89dc8cd6602a",
+                "9bfa1678c71f5ce1ed5d9219e745dea2a1a0839b4c869f6f8298370b02691aef",
+                "13e45f8177d7155970d4829c78088137448228083b61dfd056579396cd46efe4",
+                "a6ab3209738af9c2f629eadeb3b099edd4808c21a5b949464a6f8b17006b55da",
+                "0912688a9dba9c784b6ef65870736433bf27a632b25c6198bff4367507958d58",
+                "a3fe75d99ec402c78aa571d199c246d2ed817060e38b917b8a21bec54d9a2784",
+                "d3fa2829f56ff061a0fdf9fcf9a3019886321a659d1ad9b5b5ce56067c3b6cf8",
             ),
             english + chinese,
         )
@@ -448,8 +464,8 @@ class GoldenScreenshotHarnessTest {
                 "dark-uiux-pr03-equipment-slots" to "2c928166f3d87736bf8a7370fcd4e5f0e0ba442d9a41f3dcad2dbfde326430ca",
                 "dark-uiux-pr03-inventory-empty" to "33c34425a3318460972d8829763c644ef9f22eca2fe845cb62e7a03ec4fba3ef",
                 "dark-uiux-pr03-inventory-stacked" to "6bfc775be7f1700488ad2df23509bde43ce6c046cc3ac92da5ffea750df6a85e",
-                "dark-uiux-pr03-inscription-shop" to "87591c8d06e6e813ecb2c8e5c3bfab061bbe6deb25bd5e857d83ce8927e73e5e",
-                "dark-uiux-pr03-shop-full-slot-replace" to "972ee90eef8f84aa36df468743421dafb6c04d9bf65402c5ff538eaec39d7eca",
+                "dark-uiux-pr03-inscription-shop" to "1d7e2bc54e1ff526a789bba13d3bf1efe9293e3bf1608a92735631136465471f",
+                "dark-uiux-pr03-shop-full-slot-replace" to "faeb990d01e122b1dd6506ad0942d90ce6676893b59f390f7919527af4f8f3e9",
             ),
             hashes,
         )
@@ -468,8 +484,20 @@ class GoldenScreenshotHarnessTest {
     }
 
     @Test
+    fun `dark uiux pr05 map actor portrait golden evidence writes canonical artifacts`() {
+        val hashes = captureDarkUiuxPr05GoldenEvidence()
+
+        assertEquals(darkUiuxPr05GoldenEvidenceLabels, hashes.keys.toList())
+        assertTrue(hashes.values.all { hash -> hash.matches(Regex("[a-f0-9]{64}")) })
+        assertTrue(
+            hashes["dark-uiux-pr05-map-layer-stack"] != hashes["dark-uiux-pr05-actor-boss-telegraph"],
+            "PR05 boss telegraph evidence must not duplicate the ordinary map layer stack capture.",
+        )
+    }
+
+    @Test
     fun `phase4 uiux pr05 telegraph and combat decision hashes remain stable`() {
-        val hashes =
+        val labels =
             listOf(
                 "phase4-uiux-pr05-telegraph-triple-surface",
                 "phase4-uiux-pr05-combat-action",
@@ -477,16 +505,19 @@ class GoldenScreenshotHarnessTest {
                 "phase4-uiux-pr05-combat-target",
                 "phase4-uiux-pr05-combat-disabled-resource",
                 "phase4-uiux-pr05-combat-illegal-target",
-            ).zip(capturePhase4UiuxPr05Set()).toMap()
+            )
+        val hashes =
+            labels.zip(capturePhase4UiuxPr05Set()).toMap()
+        writePhase4UiuxPr05EvidenceIndex(hashes)
 
         assertEquals(
             mapOf(
-                "phase4-uiux-pr05-telegraph-triple-surface" to "e076f566c1a47f02540e811fd97d8915077a5ae699116c76154d54adc1e3bc64",
-                "phase4-uiux-pr05-combat-action" to "d0290197d2eeb502255a21c033aeeb90e82ed3871182f57c9b51b10dd8925421",
-                "phase4-uiux-pr05-combat-method" to "222c7e77f3497a5100e07156f8a5509101e2451b268467496a78c32676f14f8b",
-                "phase4-uiux-pr05-combat-target" to "400f069cbe421f8bd7e1851fec8d89b9d19613bec5326e0fa79f97066a6f219a",
-                "phase4-uiux-pr05-combat-disabled-resource" to "d0290197d2eeb502255a21c033aeeb90e82ed3871182f57c9b51b10dd8925421",
-                "phase4-uiux-pr05-combat-illegal-target" to "8934860090dc723c5888f11855c2d41dbceb4a518792cc87ec0f84299d2e94e4",
+                "phase4-uiux-pr05-telegraph-triple-surface" to "20697ade71cf36730cc55b8a3dc66fdca70b813116a9f3bbd6e37978831d480d",
+                "phase4-uiux-pr05-combat-action" to "d7dd2091cf88a42b21084ac6133556319ac5e87c7fbbcbcb3582938162fa3c51",
+                "phase4-uiux-pr05-combat-method" to "eb1356b564ea1e543ad4e5929a881ee6651e3ab1fa2ec5fd6a70313c954bceba",
+                "phase4-uiux-pr05-combat-target" to "7547bbda9a24446e4665fcce5dd4f9fe4b41e3b548ebfca03d18a09e7a0b3e5d",
+                "phase4-uiux-pr05-combat-disabled-resource" to "d7dd2091cf88a42b21084ac6133556319ac5e87c7fbbcbcb3582938162fa3c51",
+                "phase4-uiux-pr05-combat-illegal-target" to "01eca8da44674318ebee3546be153c99502c60100aabf304e85bb42a825b1490",
             ),
             hashes,
         )
@@ -503,9 +534,9 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "phase4-v4-pr05-molten-glass-phase-override-warning" to "9de96baff1d351ca5fb602e6ad5fdbb4c778914476d43a8f76df74308dd4512e",
-                "phase4-v4-pr05-grey-crown-phase-override-warning" to "167d2106f37b6afb3209e8c1e376d1358899cd27db8120e84dc99e0c2f252ea1",
-                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "2993d9b32139bbc98a8d9f4ec6d66cc460df18b96f8363022c33a94230f0a39a",
+                "phase4-v4-pr05-molten-glass-phase-override-warning" to "f72af717173251321e827dcc85bbec3b3352e6f0dbb8d692ffe9fb11734c3653",
+                "phase4-v4-pr05-grey-crown-phase-override-warning" to "8abe9c0cf1ca8a104cf1f71d4a24fbe4d82d3ba081467f746fa5645eedf7742b",
+                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "8a2698e90e710da7450b8af0ee4eec6ede4ae8b63d505f274d74377100e37308",
             ),
             hashes,
         )
@@ -943,6 +974,120 @@ class GoldenScreenshotHarnessTest {
                     }
                 writeDarkUiuxPr04EvidenceIndex(hashes)
                 hashes
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureDarkUiuxPr05GoldenEvidence(): Map<String, String> {
+        val hashes = linkedMapOf<String, String>()
+        hashes += captureDarkUiuxPr05MapLayerStack()
+        hashes += captureDarkUiuxPr05ActorBossTelegraph()
+        writeDarkUiuxPr05EvidenceIndex(hashes)
+        return hashes
+    }
+
+    private fun captureDarkUiuxPr05MapLayerStack(): Map<String, String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr05-map-layer-stack"))
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr05-map-layer-stack")),
+                    validationSaveManager = SaveManager(tempDir.resolve("dark-uiux-pr05-map-layer-stack-validation")),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                app.startValidationSession(scenario.toSessionOptions())
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active PR05 map layer stack session." }
+                val propPoint =
+                    session.automationInteractablePoint("supply_crate")
+                        ?: requireNotNull(automationStairPoint(session, StairDirection.DOWN)) {
+                            "Expected a prop or downstairs entry for PR05 map layer stack evidence."
+                        }
+                automationMovePlayerTo(session, findOpenAdjacentPoint(session, propPoint))
+                installOptPr03GroundLootFixtures(session)
+                invalidateGoldenFixtureSnapshot(session)
+                val layout = currentTileLayout(session)
+                val mapStageCrop = goldenCrop(layout.demoShell.mapStage, layout)
+                linkedMapOf(
+                    "dark-uiux-pr05-map-layer-stack" to
+                        captureGoldenArtifact(
+                            label = "dark-uiux-pr05-map-layer-stack",
+                            evidenceDir = darkUiuxPr05GoldenDir(),
+                            crop = mapStageCrop,
+                            flipY = true,
+                        ) {
+                            overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                            repeat(2) { app.render() }
+                        },
+                )
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureDarkUiuxPr05ActorBossTelegraph(): Map<String, String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr05-actor-boss-telegraph"))
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr05-actor-boss-telegraph")),
+                    validationSaveManager = SaveManager(tempDir.resolve("dark-uiux-pr05-actor-boss-telegraph-validation")),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                app.startValidationSession(scenario.toSessionOptions())
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active PR05 boss telegraph session." }
+                check(
+                    session.perform(
+                        PlayerCommand.Validation(
+                            ValidationAction.Phase4V4ScenarioAction(
+                                scenarioId = scenario.id,
+                                actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                            ),
+                        ),
+                    ),
+                ) {
+                    "Failed to prepare PR05 boss telegraph validation scene."
+                }
+                app.render()
+
+                val bossId = requireNotNull(automationBossEntity(session)) { "Expected a live boss entity for PR05 boss telegraph evidence." }
+                val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)) {
+                    "Expected boss position for PR05 boss telegraph evidence."
+                }.toPoint()
+                automationMovePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+                prepareBossTelegraphFixture(session, bossId)
+                val snapshot = waitForBossTelegraph(session, app)
+                assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("boss-warning:") })
+                val layout = currentTileLayout(session)
+                val mapStageCrop = goldenCrop(layout.demoShell.mapStage, layout)
+                linkedMapOf(
+                    "dark-uiux-pr05-actor-boss-telegraph" to
+                        captureGoldenArtifact(
+                            label = "dark-uiux-pr05-actor-boss-telegraph",
+                            evidenceDir = darkUiuxPr05GoldenDir(),
+                            crop = mapStageCrop,
+                            flipY = true,
+                        ) {
+                            overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                            repeat(2) { app.render() }
+                        },
+                )
             } finally {
                 app.dispose()
             }
@@ -1555,17 +1700,26 @@ class GoldenScreenshotHarnessTest {
 
                 val hashes = mutableListOf<String>()
                 hashes +=
-                    captureHash {
+                    captureGoldenArtifact(
+                        label = "phase4-uiux-pr05-telegraph-triple-surface",
+                        evidenceDir = phase4UiuxPr05GoldenDir(),
+                    ) {
                         overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
                         repeat(2) { app.render() }
                     }
                 hashes +=
-                    captureHash {
+                    captureGoldenArtifact(
+                        label = "phase4-uiux-pr05-combat-action",
+                        evidenceDir = phase4UiuxPr05GoldenDir(),
+                    ) {
                         overlaySource.overlayState = combatDecisionOverlay(CombatDecisionFrame.initialState)
                         repeat(2) { app.render() }
                     }
                 hashes +=
-                    captureHash {
+                    captureGoldenArtifact(
+                        label = "phase4-uiux-pr05-combat-method",
+                        evidenceDir = phase4UiuxPr05GoldenDir(),
+                    ) {
                         overlaySource.overlayState =
                             combatDecisionOverlay(
                                 CombatDecisionFrameState(
@@ -1577,7 +1731,10 @@ class GoldenScreenshotHarnessTest {
                         repeat(2) { app.render() }
                     }
                 hashes +=
-                    captureHash {
+                    captureGoldenArtifact(
+                        label = "phase4-uiux-pr05-combat-target",
+                        evidenceDir = phase4UiuxPr05GoldenDir(),
+                    ) {
                         overlaySource.overlayState = combatDecisionOverlay(targetState, targetPoint)
                         repeat(2) { app.render() }
                     }
@@ -1590,12 +1747,18 @@ class GoldenScreenshotHarnessTest {
                     "Expected positive energy pool for PR-05 low-resource golden capture."
                 }.current = 0
                 hashes +=
-                    captureHash {
+                    captureGoldenArtifact(
+                        label = "phase4-uiux-pr05-combat-disabled-resource",
+                        evidenceDir = phase4UiuxPr05GoldenDir(),
+                    ) {
                         overlaySource.overlayState = combatDecisionOverlay(CombatDecisionFrame.initialState)
                         repeat(2) { app.render() }
                     }
                 hashes +=
-                    captureHash {
+                    captureGoldenArtifact(
+                        label = "phase4-uiux-pr05-combat-illegal-target",
+                        evidenceDir = phase4UiuxPr05GoldenDir(),
+                    ) {
                         overlaySource.overlayState = combatDecisionOverlay(targetState, illegalPoint)
                         repeat(2) { app.render() }
                     }
@@ -1855,6 +2018,32 @@ class GoldenScreenshotHarnessTest {
         Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
     }
 
+    private fun writeDarkUiuxPr05EvidenceIndex(hashes: Map<String, String>) {
+        val evidenceDir = darkUiuxPr05GoldenDir()
+        Files.createDirectories(evidenceDir)
+        val rows =
+            buildString {
+                appendLine("label\thash\tartifact")
+                hashes.forEach { (label, hash) ->
+                    appendLine("$label\t$hash\tclient/build/reports/golden/dark-uiux-pr05/$label.png")
+                }
+            }
+        Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
+    }
+
+    private fun writePhase4UiuxPr05EvidenceIndex(hashes: Map<String, String>) {
+        val evidenceDir = phase4UiuxPr05GoldenDir()
+        Files.createDirectories(evidenceDir)
+        val rows =
+            buildString {
+                appendLine("label\thash\tartifact")
+                hashes.forEach { (label, hash) ->
+                    appendLine("$label\t$hash\tclient/build/reports/golden/phase4-uiux-pr05/$label.png")
+                }
+            }
+        Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
+    }
+
     private fun darkUiuxPr011GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr01-1")
 
@@ -1869,6 +2058,12 @@ class GoldenScreenshotHarnessTest {
 
     private fun darkUiuxPr04GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr04")
+
+    private fun darkUiuxPr05GoldenDir(): Path =
+        repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr05")
+
+    private fun phase4UiuxPr05GoldenDir(): Path =
+        repoRootPath().resolve("client/build/reports/golden/phase4-uiux-pr05")
 
     private fun repoRootPath(): Path =
         Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()

@@ -16,6 +16,7 @@ import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.EquipmentSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.InscriptionReplacementCategoryChangeSnapshot
 import com.ktome.core.snapshot.InscriptionReplacementEntrySnapshot
@@ -975,6 +976,36 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `direct combat decision target backspace cancels instead of opening action menu`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talents =
+                    listOf(
+                        activeTalent(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            requiresTarget = true,
+                        ),
+                    ),
+                targetablePositions = listOf(com.ktome.core.snapshot.GridPointSnapshot(4, 3)),
+            )
+
+        input.frame(justPressed = setOf(Keys.NUM_1))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.COMBAT_DECISION, handler.overlayState().activeModalKind)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        assertNull(handler.overlayState().activeModalKind)
+    }
+
+    @Test
     fun `controlled inscription combat decision accepts arbitrary cursor target outside hostile list`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
@@ -1272,6 +1303,97 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `map page keys page backpack instead of moving the actor`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    (0..8).map { index ->
+                        InventoryEntrySnapshot(
+                            index = index,
+                            item = ItemRenderSnapshot(baseItemId = "item_$index", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                        )
+                    },
+            )
+
+        input.frame(justPressed = setOf(Keys.PAGE_DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(8, handler.overlayState().inventorySelection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.PAGE_UP))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(0, handler.overlayState().inventorySelection)
+    }
+
+    @Test
+    fun `right panel hover tracks equipment inscriptions and backpack items`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                equipment =
+                    listOf(
+                        EquipmentSlotSnapshot(
+                            slotId = "WEAPON",
+                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                        ),
+                    ),
+                inscriptions =
+                    listOf(
+                        InscriptionSlotSnapshot(
+                            hotkey = 5,
+                            inscriptionId = "phase_door",
+                            nameKey = "inscription.phase_door.name",
+                            descKey = "inscription.phase_door.desc",
+                            iconKey = "icon.skill.arcanist.blink",
+                            categoryId = "MOVEMENT",
+                            cooldownRemaining = 0,
+                            maxCooldown = 12,
+                        ),
+                    ),
+                inventory =
+                    listOf(
+                        InventoryEntrySnapshot(
+                            index = 3,
+                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                        ),
+                        InventoryEntrySnapshot(
+                            index = 7,
+                            item = ItemRenderSnapshot(baseItemId = "healing_potion", nameKey = "item.healing_potion.name", typeId = "CONSUMABLE"),
+                        ),
+                    ),
+            )
+        val layout =
+            DemoShellLayoutSolver.resolve(
+                DemoShellLayoutRequest(viewportWidth = 1280, viewportHeight = 800, cellSize = 32),
+            ).rightPanelLayout
+
+        val weaponBounds = layout.equipmentSlots.slotBounds[0]
+        input.frame(pointerX = (weaponBounds.x + 2f).roundToInt(), pointerY = (weaponBounds.y + 2f).roundToInt())
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals("WEAPON", handler.overlayState().hoveredEquipmentSlotId)
+        input.clear()
+
+        val inscriptionBounds = layout.inscriptionSlots.slotBounds[0]
+        input.frame(pointerX = (inscriptionBounds.x + 2f).roundToInt(), pointerY = (inscriptionBounds.y + 2f).roundToInt())
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(5, handler.overlayState().hoveredInscriptionHotkey)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        val backpackBounds = layout.backpackSlots.slotBounds[1]
+        input.frame(pointerX = (backpackBounds.x + 2f).roundToInt(), pointerY = (backpackBounds.y + 2f).roundToInt())
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(7, handler.overlayState().hoveredInventoryIndex)
+        assertEquals(7, handler.overlayState().inventorySelection)
+    }
+
+    @Test
     fun `inventory escape and backspace close root frame while x is not list navigation`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
@@ -1372,7 +1494,8 @@ class InputHandlerTest {
         input.clear()
 
         input.frame(justPressed = setOf(Keys.PAGE_DOWN))
-        assertEquals(PlayerCommand.Move(Point(1, 1)), handler.pollCommand(snapshot))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(16, handler.overlayState().inventorySelection)
     }
 
     @Test
@@ -2157,6 +2280,7 @@ class InputHandlerTest {
         talentPoints: Int = 0,
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
+        equipment: List<EquipmentSlotSnapshot> = emptyList(),
         inventory: List<InventoryEntrySnapshot> = emptyList(),
         activeShop: ShopPanelSnapshot? = null,
         activeRouteSelection: RouteSelectionSnapshot? = null,
@@ -2220,7 +2344,7 @@ class InputHandlerTest {
                             evasion = 2,
                             speed = 100,
                         ),
-                    equipment = emptyList(),
+                    equipment = equipment,
                     talents = talents,
                     reserveTalents = reserveTalents,
                     talentTrees = talentTrees,

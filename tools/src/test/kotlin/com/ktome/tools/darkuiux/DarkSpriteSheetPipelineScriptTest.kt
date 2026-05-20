@@ -124,6 +124,44 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `key registry rejects self fallback keys`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        writeText(
+            plan,
+            largeSheetPlan(
+                "r98-base",
+                "- { row: 0, col: 0, targetKey: ui.test.a, category: icon, outputName: debug/missing_visual.png, subject: test icon }",
+            ),
+        )
+        writeText(
+            registry,
+            """
+            schemaVersion: dark-key-registry-v1
+            styleTag: ktome-dark-fantasy-sprite-ui-v1
+            entries:
+              - { targetKey: ui.test.a, category: icon, ownerPr: PR-00, sheetId: r98-base, fallbackKey: ui.test.a, consumer: test, consumerTest: test }
+            """.trimIndent(),
+        )
+        writeText(manifest, manifest("ui.test.a"))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_key_registry.py",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("fallbackKey must not point to itself"), result.output)
+    }
+
+    @Test
     fun `sheet plan lint rejects capacity overflow`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val cells =

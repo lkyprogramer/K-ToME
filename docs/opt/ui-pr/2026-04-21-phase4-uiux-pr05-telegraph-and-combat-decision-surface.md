@@ -27,12 +27,12 @@
 
 ## 1. 阶段目标
 
-完成 telegraph 三位一体和战斗三层决策面。
+完成 telegraph 三位一体和 map-first 战斗决策面。
 
 完成标准：
 
 1. Boss/scripted telegraph 在地图 overlay、目标卡、日志前缀上同 icon、同主色、同 danger 语义。
-2. 新增单一 `CombatDecisionFrame`，内部 phase 为 `ACTION -> METHOD -> TARGET`。
+2. 新增单一 `CombatDecisionFrame` 内部状态，phase 为 `ACTION -> METHOD -> TARGET`；该 frame 只作为输入/state owner，不在 `TARGET` 阶段绘制阻塞式居中 modal。
 3. `ESC / Backspace / Tab / Shift+Tab / Enter / Space / 数字键 / 方向键` 行为符合 phase 状态图。
 4. `ActionHintModel` 只消费规则层已暴露 typed hint，不在 client 预测普通敌人 intent。
 5. 禁用动作、无合法目标、非法目标、单一方式动作都有可读反馈。
@@ -49,9 +49,9 @@
 
 1. 复用现有链路：`PendingTelegraphState -> OverlayRenderSnapshot -> TelegraphRenderer`。
 2. 不新增 `AIPlanSnapshot` 或普通敌人 intent snapshot。
-3. `CombatDecisionFrame` 是单一 modal frame，内部 phase 机，不把三层拆成三个 stack frame。
+3. `CombatDecisionFrame` 是单一 stack frame 和内部 phase 机，不把三层拆成三个 stack frame；视觉上必须走地图优先 targeting，不能在目标选择时遮挡战场。
 4. `Backspace` 回上一 phase；`ESC` 直接退出到 `MAP`。
-5. 单一 method action 可跳过 `METHOD` 进入 `TARGET`；这种路径下 `Backspace` 直接回 `ACTION`。
+5. 单一 method action 可跳过 `METHOD` 进入 `TARGET`；若玩家是从 `ACTION` 层确认进入，则 `Backspace` 回 `ACTION`；若玩家是技能/铭刻热键直达 `TARGET`，`Backspace` 直接取消回 `MAP`。
 6. TARGET phase 的 defensive `legalTargets.isEmpty()` 不自动降级、不自动退出；玩家必须手动 `Backspace` 或 `ESC`。已知 `legalTargetSummary.count == 0` 的 action 在 ACTION phase 提前禁用。
 7. 战斗决策期间 `Ctrl+S` 阻断并 toast `ui.message.save.blocked-in-combat-decision`。
 
@@ -122,7 +122,7 @@
 
 ### 4.2 `CombatDecisionFrame`
 
-frame state 必须显式记录 method 是否被跳过：
+frame state 必须显式记录 method 是否被跳过，以及 TARGET 阶段 `Backspace` 是否存在真实上一层：
 
 ```kotlin
 data class CombatDecisionFrameState(
@@ -130,10 +130,11 @@ data class CombatDecisionFrameState(
     val selectedActionId: String?,
     val selectedMethodId: String?,
     val skippedMethod: Boolean = false,
+    val targetBackspacePhase: CombatDecisionPhase? = null,
 )
 ```
 
-`skippedMethod == true` 只允许由“action 只有一个 method option，直接进入 TARGET”产生；从 `METHOD` 正常进入 `TARGET` 时必须为 `false`。该字段是 `Backspace` 回退语义的唯一依据，不能靠 method list size 现场反推。
+`skippedMethod == true` 只表达 method 层被跳过；它不能单独决定回退语义。`targetBackspacePhase` 是 TARGET 阶段的回退合同：从 ACTION 选择单一方式进入 TARGET 时为 `ACTION`，从 METHOD 进入 TARGET 时为 `METHOD`，从技能/铭刻热键直达 TARGET 时为 `null` 并由 `Backspace` 直接取消。禁止靠 method list size 或 hotkey 文案现场反推。
 
 状态图：
 
@@ -150,14 +151,14 @@ ACTION
   若 action.legalTargetSummary.count == 0 && action.legalTargetSummary.missingReason == null -> action 显示 disabled；提交时保持 ACTION + toast ui.message.combat.no-legal-target
   若 action.legalTargetSummary.count == null -> 不显示 no-legal-target disabled；展示 missingFactReason / missingReason，并禁止 client 反推合法目标数
   若 action.methodOptions.size > 1 -> METHOD
-  若 action.methodOptions.size == 1 -> TARGET，并设置 skippedMethod=true
+  若 action.methodOptions.size == 1 -> TARGET，并设置 skippedMethod=true、targetBackspacePhase=ACTION
   若 action.methodOptions.size == 0 -> 拒绝选中并保持 ACTION
   Backspace -> pop frame 回 MAP
   ESC -> pop frame 回 MAP
 
 METHOD
   数字键 N -> 选择并确认第 N 个 method -> TARGET；0 固定 no-op，无 toast
-  Enter -> 确认当前高亮 method -> TARGET，并设置 skippedMethod=false
+  Enter -> 确认当前高亮 method -> TARGET，并设置 skippedMethod=false、targetBackspacePhase=METHOD
   Space -> 等价 Enter
   Tab / Shift+Tab -> method 高亮循环
   Ctrl+S -> 保持 METHOD + toast ui.message.save.blocked-in-combat-decision
@@ -174,9 +175,11 @@ TARGET
   若 legalTargets.isEmpty() -> 仅作为 post-method snapshot drift / count unknown 后的防御路径；拒绝提交 + toast ui.message.combat.no-legal-target
   若尝试确认非法位置 -> 保持 TARGET + toast ui.message.combat.illegal-target
   cursor 悬停非法格 -> 显示 illegal 边框，不 toast；确认时才 toast
-  Backspace -> 若 skippedMethod=true 则 ACTION，否则 METHOD
+  Backspace -> 若 targetBackspacePhase=ACTION 则 ACTION；若 targetBackspacePhase=METHOD 则 METHOD；若 targetBackspacePhase=null 则取消回 MAP
   ESC -> pop frame 回 MAP
 ```
+
+技能/铭刻热键直达 TARGET 是 ToME-like map-first targeting 路径：热键已经确定 action 和 method，画面必须保持地图为主，直接显示 targeting cursor、合法目标高亮、非法 hover 边框和侧栏/底部 HUD 提示。`CombatDecisionPanel` 可以继续生成 action/method/target 文本模型供侧栏与底部动作条消费，但 `TileOverlayModelBuilder` 不得为 `COMBAT_DECISION` 生成居中 `activeModal` 或 modal backdrop。
 
 已知 `legalTargetSummary.count == 0` 的 action 必须在 ACTION phase 禁用并短路；TARGET phase 的 `legalTargets.isEmpty()` 只处理选择 method 后目标集合被刷新、snapshot 漂移或合法目标数未知但列表为空的防御场景。
 
@@ -262,7 +265,7 @@ data class TelegraphLinkageHint(
 2. 若 `legalActions == 0`，保持 `MAP` 并 toast `ui.message.combat.no-available-action`。
 3. active modal stack 非空时，不被动清栈进入 combat decision；玩家必须先用 `ESC / Backspace` 退出当前 modal，再进入战斗决策。
 4. PR-02 `TARGETING` 行在本 PR 后由 `CombatDecisionFrame.TARGET` phase 接管；旧 `TARGETING` 只允许作为内部 cursor 兼容壳。
-5. `Backspace` 在 phase 内回退，不直接 pop stack，除非在 `ACTION`。
+5. `Backspace` 在 phase 内只回到用户真实访问过的上一层；热键直达 `TARGET` 没有上一层，直接 pop stack 回 `MAP`。
 6. `ESC` 从任意 phase pop frame 回 `MAP`。
 7. `Ctrl+S` 在 frame 内阻断并 toast。
 8. `CombatDecisionFrame` push 后必须暂停 PR-02 `PaneFocusController` 的跨面板焦点循环；frame pop 后恢复原焦点锚点。`Tab / Shift+Tab` 在 frame 内只循环当前 phase 的候选项，不切到世界面/上下文面/角色动作面。
@@ -288,7 +291,7 @@ data class TelegraphLinkageHint(
 ### 5.2 `client/ui/combat`
 
 1. 新增 `CombatDecisionFrame` 与 phase state。
-2. 新增 `CombatDecisionPanel` 负责绘制动作层、方式层、目标层。
+2. 新增 `CombatDecisionPanel` 负责生成动作层、方式层、目标层的文本/图标模型；该模型只进入侧栏和底部动作条，不作为 `TARGET` 阶段居中弹窗。
 3. `ActionHintModel` 聚合 typed hint、禁用原因、resource/cooldown/range。
 
 ### 5.3 `client/input`
@@ -300,7 +303,7 @@ data class TelegraphLinkageHint(
 ### 5.4 `tests`
 
 1. `InputHandlerTest` 增加 combat frame phase tests。
-2. `TileRendererCanvasTest` 增加 triple telegraph and combat decision panel tests。
+2. `TileRendererCanvasTest` 增加 triple telegraph、map-first combat targeting highlight 和 no blocking modal tests。
 3. `ClientSmokeHarnessTest` 增加 boss/scripted telegraph + action decision smoke。
 4. `GoldenScreenshotHarnessTest` 增加 `phase4-uiux-pr05-*` label。
 5. `CombatDecisionFrameTest` 覆盖 ACTION/METHOD/TARGET phase state machine，至少覆盖 §4.2 中 `Enter / Space / Tab / Ctrl+S / Backspace / ESC / 数字越界 / 0 no-op / disabled action / skippedMethod Backspace`。

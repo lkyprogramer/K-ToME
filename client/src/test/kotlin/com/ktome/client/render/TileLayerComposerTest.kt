@@ -1,5 +1,7 @@
 package com.ktome.client.render
 
+import com.ktome.client.assets.ResolvedVisualAsset
+import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.core.map.Point
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -29,6 +31,41 @@ class TileLayerComposerTest {
         assertEquals(model.fogTiles, plan.fogVeils)
         assertEquals(model.groundLootMarkers, plan.groundLootMarkers)
         assertEquals(model.combatFeedback, plan.combatFeedback)
+    }
+
+    @Test
+    fun composesTerrainPropsVfxTelegraphBeforeActors() {
+        val terrain = placement("tileset.forest_edge.ground_01")
+        val prop = placement("prop.stairs.up")
+        val terrainDecal = placement("vfx.terrain.interaction.ice")
+        val telegraph = placement("vfx.telegraph.warning.sigil_01")
+        val actor = placement("actor.arcanist")
+        val model =
+            minimalModel().copy(
+                terrainTiles = listOf(terrain),
+                propTiles = listOf(prop, terrainDecal),
+                overlayTiles = listOf(telegraph),
+                actorTiles = listOf(actor),
+            )
+
+        val plan = TileLayerComposer.compose(model, projection(TileViewportFocusMode.INSPECT, Point(0, 0), valid = true))
+
+        assertEquals(listOf(terrain), plan.terrainBase)
+        assertEquals(listOf(prop, terrainDecal), plan.propsAndDecals)
+        assertEquals(listOf(telegraph), plan.spriteOverlaysAndTelegraphs)
+        assertEquals(listOf(actor), plan.actors)
+    }
+
+    @Test
+    fun keepsBossTelegraphAboveOrdinaryVfx() {
+        val ordinaryVfx = placement("vfx.zone.effect.void_pressure_01", drawPriority = 1)
+        val bossTelegraph = placement("vfx.boss.warning.sigil_01", drawPriority = 3)
+        val model = minimalModel().copy(overlayTiles = listOf(bossTelegraph, ordinaryVfx))
+
+        val plan = TileLayerComposer.compose(model, projection(TileViewportFocusMode.INSPECT, Point(0, 0), valid = true))
+
+        assertEquals(listOf(ordinaryVfx, bossTelegraph), plan.spriteOverlaysAndTelegraphs)
+        assertEquals("vfx.boss.warning.sigil_01", plan.spriteOverlaysAndTelegraphs.last().asset.resolvedKey)
     }
 
     @Test
@@ -114,4 +151,28 @@ class TileLayerComposerTest {
 
     private fun gauge(type: String): TileGaugeModel =
         TileGaugeModel(label = type, current = 1, max = 1, tone = TileTextTone.WHITE, resourceTypeId = type)
+
+    private fun placement(
+        key: String,
+        drawPriority: Int = 0,
+    ): TileVisualPlacement =
+        TileVisualPlacement(
+            x = 0,
+            y = 0,
+            drawPriority = drawPriority,
+            asset =
+                ResolvedVisualAsset(
+                    requestedKey = key,
+                    resolvedKey = key,
+                    matchedByPrefix = false,
+                    fallbackUsed = false,
+                    entry =
+                        VisualManifestEntry(
+                            key = key,
+                            category = "test",
+                            rawOutputPath = "dark-v1/test/${key.replace('.', '_')}.png",
+                            footprint = "1x1",
+                        ),
+                ),
+        )
 }

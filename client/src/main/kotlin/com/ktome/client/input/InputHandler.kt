@@ -5,6 +5,8 @@ import com.badlogic.gdx.Input.Keys
 import com.ktome.client.render.DemoNavRailButtonLayout
 import com.ktome.client.render.layout.DemoShellLayoutRequest
 import com.ktome.client.render.layout.DemoShellLayoutSolver
+import com.ktome.client.render.layout.GameShellBounds
+import com.ktome.client.render.typedEquipmentSlotOrder
 import com.ktome.client.ui.chrome.ChromeFrameBounds
 import com.ktome.client.ui.combat.CombatDecisionFeedbackKeys
 import com.ktome.client.ui.combat.CombatDecisionFrame
@@ -26,6 +28,7 @@ import com.ktome.client.ui.talent.toTalentTreeSelectionIdentity
 import com.ktome.client.validation.ValidationScenarioPresentationCatalog
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.TalentNodeStateSnapshot
@@ -73,11 +76,16 @@ private enum class DemoNavRailAction {
     VALIDATION,
 }
 
+private const val INSCRIPTION_HOTKEY_START = 5
+
 data class OverlayState(
     val mode: UiMode,
     val modalFrames: List<ModalFrame> = emptyList(),
     val paneFocusAnchor: PaneFocusAnchor = PaneFocusAnchor.WORLD,
     val inventorySelection: Int = 0,
+    val hoveredEquipmentSlotId: String? = null,
+    val hoveredInscriptionHotkey: Int? = null,
+    val hoveredInventoryIndex: Int? = null,
     val shopOfferSelection: Int = 0,
     val inscriptionReplacementHotkeySelection: Int? = null,
     val routeSelection: Int = 0,
@@ -139,9 +147,7 @@ class InputHandler(
             Keys.LEFT to Point(-1, 0),
             Keys.RIGHT to Point(1, 0),
             Keys.HOME to Point(-1, -1),
-            Keys.PAGE_UP to Point(1, -1),
             Keys.END to Point(-1, 1),
-            Keys.PAGE_DOWN to Point(1, 1),
             Keys.NUMPAD_7 to Point(-1, -1),
             Keys.NUMPAD_8 to Point(0, -1),
             Keys.NUMPAD_9 to Point(1, -1),
@@ -155,6 +161,9 @@ class InputHandler(
     private val waitBindings = listOf(Keys.PERIOD, Keys.SPACE, Keys.NUMPAD_5)
     private var mode: UiMode = UiMode.MAP
     private var inventorySelection: Int = 0
+    private var hoveredEquipmentSlotId: String? = null
+    private var hoveredInscriptionHotkey: Int? = null
+    private var hoveredInventoryIndex: Int? = null
     private var shopOfferSelection: Int = 0
     private var inscriptionReplacementHotkeySelection: Int? = null
     private var routeSelection: Int = 0
@@ -190,6 +199,9 @@ class InputHandler(
             modalFrames = modalStack.frames(),
             paneFocusAnchor = paneFocusController.currentAnchor,
             inventorySelection = inventorySelection,
+            hoveredEquipmentSlotId = hoveredEquipmentSlotId,
+            hoveredInscriptionHotkey = hoveredInscriptionHotkey,
+            hoveredInventoryIndex = hoveredInventoryIndex,
             shopOfferSelection = shopOfferSelection,
             inscriptionReplacementHotkeySelection = inscriptionReplacementHotkeySelection,
             routeSelection = routeSelection,
@@ -216,6 +228,7 @@ class InputHandler(
         advanceUiMessageFrame()
         debugMessageKey = null
         reconcileMode(snapshot)
+        updateRightPanelHover(snapshot)
         if (toggleValidationModeIfRequested(snapshot)) {
             return null
         }
@@ -427,6 +440,10 @@ class InputHandler(
             return PlayerCommand.Ascend
         }
 
+        if (pollBackpackPaging(snapshot)) {
+            return null
+        }
+
         val movement = pollMovementCommand()
         if (movement != null) {
             return PlayerCommand.Move(movement)
@@ -487,6 +504,25 @@ class InputHandler(
         }
 
         return null
+    }
+
+    private fun pollBackpackPaging(snapshot: RenderSnapshot): Boolean {
+        val inventorySize = snapshot.uiState.inventory.size
+        if (input.isKeyJustPressed(Keys.PAGE_UP)) {
+            if (inventorySize > 0) {
+                inventorySelection = previousInventoryPageStart(snapshot)
+            }
+            resetMovementRepeat()
+            return true
+        }
+        if (input.isKeyJustPressed(Keys.PAGE_DOWN)) {
+            if (inventorySize > 0) {
+                inventorySelection = nextInventoryPageStart(snapshot)
+            }
+            resetMovementRepeat()
+            return true
+        }
+        return false
     }
 
     private fun pollShopCommand(snapshot: RenderSnapshot): PlayerCommand? {
@@ -832,25 +868,25 @@ class InputHandler(
         }
 
         if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
-            inventorySelection = (inventorySelection - 1).coerceAtLeast(0)
+            inventorySelection = moveInventorySelection(snapshot, step = -1)
             updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
             return null
         }
 
         if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
-            inventorySelection = (inventorySelection + 1).coerceAtMost(inventorySize - 1)
+            inventorySelection = moveInventorySelection(snapshot, step = 1)
             updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
             return null
         }
 
         if (input.isKeyJustPressed(Keys.PAGE_UP)) {
-            inventorySelection = previousInventoryPageStart(inventorySelection)
+            inventorySelection = previousInventoryPageStart(snapshot)
             updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
             return null
         }
 
         if (input.isKeyJustPressed(Keys.PAGE_DOWN)) {
-            inventorySelection = nextInventoryPageStart(inventorySelection, inventorySize)
+            inventorySelection = nextInventoryPageStart(snapshot)
             updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
             return null
         }
@@ -874,16 +910,43 @@ class InputHandler(
         return null
     }
 
-    private fun previousInventoryPageStart(selection: Int): Int =
-        (((selection / inventoryPageSize) - 1).coerceAtLeast(0)) * inventoryPageSize
-
-    private fun nextInventoryPageStart(
-        selection: Int,
-        inventorySize: Int,
+    private fun moveInventorySelection(
+        snapshot: RenderSnapshot,
+        step: Int,
     ): Int {
-        val nextPageStart = ((selection / inventoryPageSize) + 1) * inventoryPageSize
-        return nextPageStart.coerceAtMost(inventorySize - 1)
+        val entries = sortedInventory(snapshot)
+        if (entries.isEmpty()) {
+            return 0
+        }
+        val nextPosition = (selectedInventoryPosition(entries) + step).coerceIn(0, entries.size - 1)
+        return entries[nextPosition].index
     }
+
+    private fun previousInventoryPageStart(snapshot: RenderSnapshot): Int {
+        val entries = sortedInventory(snapshot)
+        if (entries.isEmpty()) {
+            return 0
+        }
+        val nextPosition = (((selectedInventoryPosition(entries) / inventoryPageSize) - 1).coerceAtLeast(0)) * inventoryPageSize
+        return entries[nextPosition].index
+    }
+
+    private fun nextInventoryPageStart(snapshot: RenderSnapshot): Int {
+        val entries = sortedInventory(snapshot)
+        if (entries.isEmpty()) {
+            return 0
+        }
+        val nextPageStart = ((selectedInventoryPosition(entries) / inventoryPageSize) + 1) * inventoryPageSize
+        return entries[nextPageStart.coerceAtMost(entries.size - 1)].index
+    }
+
+    private fun sortedInventory(snapshot: RenderSnapshot): List<InventoryEntrySnapshot> =
+        snapshot.uiState.inventory.sortedBy(InventoryEntrySnapshot::index)
+
+    private fun selectedInventoryPosition(entries: List<InventoryEntrySnapshot>): Int =
+        entries.indexOfFirst { entry -> entry.index == inventorySelection }
+            .takeIf { index -> index >= 0 }
+            ?: inventorySelection.coerceIn(0, entries.size - 1)
 
     private fun pollItemDetailCommand(snapshot: RenderSnapshot): PlayerCommand? {
         if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
@@ -903,7 +966,7 @@ class InputHandler(
             return null
         }
         if (input.isKeyJustPressed(Keys.E)) {
-            val selectedEntry = snapshot.uiState.inventory.getOrNull(inventorySelection) ?: return null
+            val selectedEntry = snapshot.uiState.inventory.firstOrNull { entry -> entry.index == inventorySelection } ?: return null
             return PlayerCommand.ActivateInventoryItem(selectedEntry.index)
         }
         return null
@@ -994,13 +1057,26 @@ class InputHandler(
                 }
 
                 CombatDecisionPhase.TARGET -> {
-                    if (surface == CombatDecisionValidationSurface.METHOD) {
-                        setCombatDecisionState(
-                            state.copy(phase = CombatDecisionPhase.METHOD, selectedMethodId = null, skippedMethod = false),
-                            focusIndex = 0,
-                        )
-                    } else {
-                        closeAllModalFrames()
+                    val targetBackspacePhase =
+                        state.targetBackspacePhase
+                            ?: CombatDecisionPhase.METHOD.takeIf { surface == CombatDecisionValidationSurface.METHOD }
+                    when (targetBackspacePhase) {
+                        CombatDecisionPhase.METHOD ->
+                            setCombatDecisionState(
+                                state.copy(
+                                    phase = CombatDecisionPhase.METHOD,
+                                    selectedMethodId = null,
+                                    skippedMethod = false,
+                                    targetBackspacePhase = null,
+                                ),
+                                focusIndex = 0,
+                            )
+
+                        CombatDecisionPhase.ACTION ->
+                            setCombatDecisionState(CombatDecisionFrame.initialState, focusIndex = 0)
+
+                        else ->
+                            closeAllModalFrames()
                     }
                 }
             }
@@ -1062,6 +1138,7 @@ class InputHandler(
                         selectedActionId = CombatDecisionValidationFixtures.ACTION_ID,
                         selectedMethodId = CombatDecisionValidationFixtures.METHOD_ID,
                         skippedMethod = false,
+                        targetBackspacePhase = CombatDecisionPhase.METHOD,
                     ),
                     focusIndex = 0,
                 )
@@ -1130,6 +1207,7 @@ class InputHandler(
                     selectedActionId = action.id,
                     selectedMethodId = action.methodOptions.single().id,
                     skippedMethod = true,
+                    targetBackspacePhase = CombatDecisionPhase.ACTION,
                 )
             } else {
                 CombatDecisionFrameState(
@@ -1188,6 +1266,7 @@ class InputHandler(
                 selectedActionId = action.id,
                 selectedMethodId = method.id,
                 skippedMethod = false,
+                targetBackspacePhase = CombatDecisionPhase.METHOD,
             ),
             focusIndex = 0,
         )
@@ -1209,13 +1288,23 @@ class InputHandler(
             return null
         }
         if (input.isKeyJustPressed(Keys.BACKSPACE)) {
-            if (state.skippedMethod) {
-                setCombatDecisionState(CombatDecisionFrame.initialState, focusIndex = 0)
-            } else {
-                setCombatDecisionState(
-                    state.copy(phase = CombatDecisionPhase.METHOD, selectedMethodId = null, skippedMethod = false),
-                    focusIndex = 0,
-                )
+            when (state.targetBackspacePhase) {
+                CombatDecisionPhase.ACTION ->
+                    setCombatDecisionState(CombatDecisionFrame.initialState, focusIndex = 0)
+
+                CombatDecisionPhase.METHOD ->
+                    setCombatDecisionState(
+                        state.copy(
+                            phase = CombatDecisionPhase.METHOD,
+                            selectedMethodId = null,
+                            skippedMethod = false,
+                            targetBackspacePhase = null,
+                        ),
+                        focusIndex = 0,
+                    )
+
+                else ->
+                    closeAllModalFrames()
             }
             return null
         }
@@ -1572,6 +1661,7 @@ class InputHandler(
                     },
                 selectedMethodId = "default",
                 skippedMethod = true,
+                targetBackspacePhase = null,
             )
         val updateTargetingFrame: (ModalFrameLocalState) -> ModalFrameLocalState = { localState ->
             localState.copy(
@@ -1592,6 +1682,69 @@ class InputHandler(
                 ),
             )
         }
+    }
+
+    private fun updateRightPanelHover(snapshot: RenderSnapshot) {
+        val layout =
+            DemoShellLayoutSolver.resolve(
+                DemoShellLayoutRequest(
+                    viewportWidth = input.viewportWidth(),
+                    viewportHeight = input.viewportHeight(),
+                    cellSize = 32,
+                ),
+            ).rightPanelLayout
+        val pointerX = input.pointerX().toFloat()
+        val pointerY = input.pointerY().toFloat()
+        hoveredEquipmentSlotId =
+            layout.equipmentSlots.slotBounds
+                .indexOfFirst { bounds -> bounds.contains(pointerX, pointerY) }
+                .let { index -> typedEquipmentSlotOrder.getOrNull(index) }
+        hoveredInscriptionHotkey =
+            layout.inscriptionSlots.slotBounds
+                .withIndex()
+                .indexOfFirst { indexed ->
+                    inscriptionHitBounds(layout.inscriptions, indexed.value, indexed.index).contains(pointerX, pointerY)
+                }
+                .takeIf { index -> index >= 0 }
+                ?.let { index -> INSCRIPTION_HOTKEY_START + index }
+        hoveredInventoryIndex = resolveHoveredInventoryIndex(snapshot, layout.backpackSlots.slotBounds, pointerX, pointerY)
+        val hoveredInventory = hoveredInventoryIndex
+        if (mode == UiMode.INVENTORY && hoveredInventory != null) {
+            inventorySelection = hoveredInventory
+            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+        }
+    }
+
+    private fun inscriptionHitBounds(
+        section: GameShellBounds,
+        slotBounds: GameShellBounds,
+        index: Int,
+    ): GameShellBounds {
+        val columnGap = 10f
+        val rowWidth = ((section.width - 24f - columnGap) / 2f).coerceAtLeast(slotBounds.width + 48f)
+        val leftX = section.x + 12f
+        val rightX = section.right - 12f - rowWidth
+        val rowX = if (index % 2 == 0) leftX else rightX
+        return GameShellBounds(rowX, slotBounds.y, rowWidth, slotBounds.height)
+    }
+
+    private fun resolveHoveredInventoryIndex(
+        snapshot: RenderSnapshot,
+        slotBounds: List<GameShellBounds>,
+        pointerX: Float,
+        pointerY: Float,
+    ): Int? {
+        val slotIndex = slotBounds.indexOfFirst { bounds -> bounds.contains(pointerX, pointerY) }
+        if (slotIndex < 0) {
+            return null
+        }
+        val sortedInventory = sortedInventory(snapshot)
+        if (sortedInventory.isEmpty()) {
+            return null
+        }
+        val selectedPosition = selectedInventoryPosition(sortedInventory)
+        val pageStart = (selectedPosition / inventoryPageSize) * inventoryPageSize
+        return sortedInventory.getOrNull(pageStart + slotIndex)?.index
     }
 
     private fun pollDemoNavRailClick(snapshot: RenderSnapshot): Boolean {
@@ -1914,6 +2067,7 @@ class InputHandler(
                     selectedActionId = action.id,
                     selectedMethodId = methods.single().id,
                     skippedMethod = true,
+                    targetBackspacePhase = null,
                 )
             } else {
                 CombatDecisionFrameState(

@@ -1,0 +1,43 @@
+Prompt ID: 020-r05-bestiary-creature-icons
+Sheet ID: r05-bestiary-creature-icons
+Expected output file: assets-src/image/raw/sheets/dark-v1/r05-bestiary-creature-icons.png
+Canvas: 1024x1024
+Grid: 8 columns x 8 rows
+Cell: 128x128
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create a 1024x1024 transparent-background sprite sheet for K-ToME.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Grid: 8 columns x 8 rows, each cell is 128x128.
+Every listed non-reserved cell contains exactly one centered subject, no text, no numbers, no labels, no watermark, no merged cells.
+Only render the cells listed below; leave every unlisted grid slot transparent and empty.
+Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
+Cell list:
+row 0 col 0 targetKey icon.monster.abyssal.cleanse_hunter: icon monster abyssal cleanse hunter bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 0 col 1 targetKey icon.monster.abyssal.eclipsed_seraph: icon monster abyssal eclipsed seraph bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 0 col 2 targetKey icon.monster.abyssal.guardian: icon monster abyssal guardian bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 0 col 3 targetKey icon.monster.abyssal.null_lancer: icon monster abyssal null lancer bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 0 col 4 targetKey icon.monster.abyssal.reliquary_guard: icon monster abyssal reliquary guard bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 0 col 5 targetKey icon.monster.abyssal.ritual_binder: icon monster abyssal ritual binder bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 0 col 6 targetKey icon.monster.abyssal.void_preacher: icon monster abyssal void preacher bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 0 col 7 targetKey icon.monster.abyssal.ward_breaker: icon monster abyssal ward breaker bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 1 col 0 targetKey icon.monster.beast.rat: icon monster beast rat bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 1 col 1 targetKey icon.monster.crystal.beam_savant: icon monster crystal beam savant bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 1 col 2 targetKey icon.monster.crystal.prism_weaver: icon monster crystal prism weaver bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 1 col 3 targetKey icon.monster.crystal.resonant_colossus: icon monster crystal resonant colossus bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 1 col 4 targetKey icon.monster.crystal.seal_keeper: icon monster crystal seal keeper bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 1 col 5 targetKey icon.monster.crystal.shardling: icon monster crystal shardling bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 1 col 6 targetKey icon.monster.forge.anvil_guard: icon monster forge anvil guard bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 1 col 7 targetKey icon.monster.forge.chain_overseer: icon monster forge chain overseer bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 2 col 0 targetKey icon.monster.forge.crucible_knight: icon monster forge crucible knight bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 2 col 1 targetKey icon.monster.forge.heat_channeler: icon monster forge heat channeler bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 2 col 2 targetKey icon.monster.forge.slag_tender: icon monster forge slag tender bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 2 col 3 targetKey icon.monster.river.current_reaver: icon monster river current reaver bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 2 col 4 targetKey icon.monster.river.drowned_stalker: icon monster river drowned stalker bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 2 col 5 targetKey icon.monster.river.ferry_raider: icon monster river ferry raider bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 2 col 6 targetKey icon.monster.river.hook_lurker: icon monster river hook lurker bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 2 col 7 targetKey icon.monster.river.silt_shaman: icon monster river silt shaman bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 3 col 0 targetKey icon.monster.river.tide_mender: icon monster river tide mender bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 3 col 1 targetKey icon.monster.river.undertow_brute: icon monster river undertow brute bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+row 3 col 2 targetKey icon.monster.undead.bone_archer: icon monster undead bone archer bestiary or boss icon, head crest silhouette, dark iron and ember accent, readable at 32px.
+Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

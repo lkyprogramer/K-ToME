@@ -50,10 +50,12 @@ import com.ktome.core.snapshot.InscriptionReplacementPromptSnapshot
 import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
+import com.ktome.core.snapshot.ItemStatModifierSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
+import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
 import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
@@ -80,6 +82,7 @@ import com.ktome.game.validation.ValidationSummarySnapshot
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -318,6 +321,122 @@ class TileRendererCanvasTest {
         assertEquals("Item Detail", model.sidebar.title)
         assertTrue(model.sidebar.rows.any { row -> row.text.contains("Long Sword") })
         assertTrue(model.sidebar.rows.any { row -> row.text == "E use, X/C compare stub, Backspace back, Esc close all." })
+    }
+
+    @Test
+    fun `inventory root frame shows selected item detail and comparison without entering detail frame`() {
+        val equipped =
+            ItemRenderSnapshot(
+                baseItemId = "worn_sword",
+                nameKey = "item.long_sword.name",
+                typeId = "WEAPON",
+                slotId = "WEAPON",
+                stats = ItemStatModifierSnapshot(attack = 1, defense = 1),
+            )
+        val candidate =
+            ItemRenderSnapshot(
+                baseItemId = "hunter_bow",
+                nameKey = "item.hunter_bow.name",
+                typeId = "WEAPON",
+                slotId = "WEAPON",
+                stats = ItemStatModifierSnapshot(attack = 4),
+            )
+        val overlayState =
+            OverlayState(
+                mode = UiMode.INVENTORY,
+                modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY)),
+                inventorySelection = 3,
+            )
+        val snapshot =
+            sampleSnapshot(
+                equipment = listOf(EquipmentSlotSnapshot(slotId = "WEAPON", item = equipped)),
+                inventory = listOf(InventoryEntrySnapshot(index = 3, item = candidate)),
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = overlayState,
+            )
+        val diagnostics =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = overlayState,
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        assertEquals("Inventory", model.sidebar.title)
+        assertTrue(model.sidebar.rows.take(6).any { row -> row.text.contains("Hunter Bow") })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "Equipped: Long Sword" })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "ATK +3" && row.tone == TileTextTone.GREEN })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "DEF -1" && row.tone == TileTextTone.RED })
+        val tooltip = requireNotNull(diagnostics.overlayFrame.overlayModel.selectedTooltip)
+        assertTrue(tooltip.titleLine.text.contains("Hunter Bow"))
+        assertTrue(tooltip.bodyLines.any { line -> line.text == "ATK +3" && line.tone == TileTextTone.GREEN })
+    }
+
+    @Test
+    fun `right panel equipment and inscription hover produce detail tooltip models`() {
+        val weapon =
+            ItemRenderSnapshot(
+                baseItemId = "hunter_bow",
+                nameKey = "item.hunter_bow.name",
+                typeId = "WEAPON",
+                slotId = "WEAPON",
+                stats = ItemStatModifierSnapshot(attack = 3),
+            )
+        val snapshot =
+            sampleSnapshot(
+                equipment = listOf(EquipmentSlotSnapshot(slotId = "WEAPON", item = weapon)),
+                inscriptions =
+                    listOf(
+                        InscriptionSlotSnapshot(
+                            hotkey = 5,
+                            inscriptionId = "phase_door",
+                            nameKey = "inscription.phase_door.name",
+                            descKey = "inscription.phase_door.desc",
+                            iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                            categoryId = "MOVEMENT",
+                            cooldownRemaining = 2,
+                            maxCooldown = 12,
+                            requiresTarget = true,
+                        ),
+                    ),
+            )
+
+        val equipmentDiagnostics =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP, hoveredEquipmentSlotId = "WEAPON"),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+        val equipmentTooltip = requireNotNull(equipmentDiagnostics.overlayFrame.overlayModel.selectedTooltip)
+        assertTrue(equipmentTooltip.titleLine.text.contains("Hunter Bow"))
+        assertTrue(equipmentTooltip.bodyLines.any { line -> line.text == "ATK +3" })
+
+        val inscriptionDiagnostics =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP, hoveredInscriptionHotkey = 5),
+                canvas = RecordingTileCanvas(),
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+        val inscriptionTooltip = requireNotNull(inscriptionDiagnostics.overlayFrame.overlayModel.selectedTooltip)
+        assertTrue(inscriptionTooltip.titleLine.text.contains("Phase Door"))
+        assertTrue(inscriptionTooltip.bodyLines.any { line -> line.text == "Cooldown: 2/12" && line.tone == TileTextTone.RED })
+        assertTrue(inscriptionTooltip.bodyLines.any { line -> line.text == "Requires target" })
     }
 
     @Test
@@ -1067,17 +1186,23 @@ class TileRendererCanvasTest {
                 overlayState = overlayState,
             )
         assertEquals(TileTargetCursorState.ILLEGAL, model.targetCursorState)
+        assertTrue(model.targetHighlights.any { highlight -> highlight.tile == com.ktome.core.map.Point(0, 0) && highlight.state == TileTargetCursorState.LEGAL })
+        assertTrue(model.targetHighlights.any { highlight -> highlight.tile == com.ktome.core.map.Point(0, 1) && highlight.state == TileTargetCursorState.ILLEGAL })
 
         val canvas = RecordingTileCanvas()
-        TileRenderer.renderToCanvas(
-            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
-            visualResolver = sampleResolver(),
-            snapshot = snapshot,
-            overlayState = overlayState,
-            canvas = canvas,
-            cellWidth = 32f,
-            cellHeight = 32f,
-        )
+        val diagnostics =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = overlayState,
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+        assertNull(diagnostics.overlayFrame.overlayModel.activeModal)
+        assertNull(diagnostics.overlayFrame.overlayModel.modalBackdrop)
+        assertTrue(canvas.flushes.contains(TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS))
         val invalidCursorColor = UiDesignTokens.color.telegraph.high.color().toString()
         assertTrue(canvas.rectDraws.any { draw -> draw.color.toString() == invalidCursorColor })
     }
@@ -1281,6 +1406,73 @@ class TileRendererCanvasTest {
         assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == "item.short_sword.icon" })
         assertTrue(canvas.textDraws.any { draw -> draw.text == "9+" })
         assertTrue(canvas.textDraws.any { draw -> draw.text == "\u25C6\u25C6" })
+    }
+
+    @Test
+    fun drawsGroundLootMarkerAboveTerrainAndBelowBlockingActorBadge() {
+        val canvas = RecordingTileCanvas()
+        val rareItem =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                qualityTierId = "RARE",
+            )
+        val base =
+            sampleSnapshot(
+                width = 2,
+                cells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                        MapCellSnapshot(
+                            x = 1,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.forest_edge.ground_01",
+                            actorEntityId = 2,
+                            items = listOf(rareItem),
+                        ),
+                    ),
+            )
+        val snapshot =
+            base.copy(
+                actors =
+                    base.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 1,
+                            y = 0,
+                            visualKey = "actor.arcanist",
+                            nameKey = "profession.arcanist.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.GENERIC,
+                        ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val terrainIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "tileset.forest_edge.ground_01" }
+        val actorIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "actor.arcanist" }
+        val lootMarkerIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "item.short_sword.icon" }
+        assertTrue(terrainIndex in 0 until actorIndex)
+        assertTrue(actorIndex in 0 until lootMarkerIndex)
+        assertTrue(canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS) < canvas.flushes.indexOf(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS))
     }
 
     @Test
@@ -1522,6 +1714,154 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun keepsBossTelegraphReadableWhenActorOccupiesCell() {
+        val canvas = RecordingTileCanvas()
+        val base =
+            sampleSnapshot(
+                width = 2,
+                cells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                        MapCellSnapshot(
+                            x = 1,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.forest_edge.ground_01",
+                            actorEntityId = 2,
+                        ),
+                    ),
+                overlays =
+                    listOf(
+                        OverlayRenderSnapshot(
+                            id = "boss:warning",
+                            visualKey = "vfx.boss.warning.sigil_01",
+                            previewTurns = 1,
+                            dangerLevel = 3,
+                            shape = OverlayShapeSnapshot.SINGLE_TILE,
+                            sourceAbilityId = "boss_warning",
+                            cells = listOf(GridPointSnapshot(1, 0)),
+                        ),
+                        OverlayRenderSnapshot(
+                            id = "ordinary:vfx",
+                            visualKey = "vfx.zone.effect.void_pressure_01",
+                            previewTurns = 1,
+                            dangerLevel = 1,
+                            shape = OverlayShapeSnapshot.SINGLE_TILE,
+                            sourceAbilityId = "zone_pressure",
+                            cells = listOf(GridPointSnapshot(1, 0)),
+                        ),
+                    ),
+            )
+        val snapshot =
+            base.copy(
+                actors =
+                    base.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 1,
+                            y = 0,
+                            visualKey = "actor.boss.ashgate_warden",
+                            nameKey = "boss.ashgate_warden.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.BOSS,
+                        ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val ordinaryIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "vfx.zone.effect.void_pressure_01" }
+        val bossWarningIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "vfx.boss.warning.sigil_01" }
+        val bossActorIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "actor.boss.ashgate_warden" }
+        assertTrue(ordinaryIndex in 0 until bossWarningIndex)
+        assertTrue(bossWarningIndex in 0 until bossActorIndex)
+        assertTrue(canvas.flushes.indexOf(TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS) < canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS))
+    }
+
+    @Test
+    fun rendersPr05InteractablePropsWithDarkManifestEntries() {
+        val canvas = RecordingTileCanvas()
+        val snapshot =
+            sampleSnapshot().copy(
+                props =
+                    listOf(
+                        PropRenderSnapshot(
+                            id = "stairs:up:test",
+                            x = 0,
+                            y = 0,
+                            propTypeId = "stairs",
+                            stairDirectionId = "UP",
+                            visualKey = "prop.stairs.up",
+                        ),
+                    ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val propDraw = canvas.assetDraws.single { draw -> draw.asset.resolvedKey == "prop.stairs.up" }
+        assertEquals("dark-v1/props/prop_stairs_up.png", propDraw.asset.entry.rawOutputPath)
+        assertFalse(propDraw.asset.fallbackUsed)
+    }
+
+    @Test
+    fun keepsPr05ActorSpritesReadableOnDarkMap() {
+        val canvas = RecordingTileCanvas()
+        val base = sampleSnapshot()
+        val snapshot =
+            base.copy(
+                actors =
+                    base.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 0,
+                            y = 0,
+                            visualKey = "actor.arcanist",
+                            nameKey = "profession.arcanist.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.GENERIC,
+                        ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val actorDraw = canvas.assetDraws.single { draw -> draw.asset.resolvedKey == "actor.arcanist" }
+        assertEquals("dark-v1/actors/actor_arcanist.png", actorDraw.asset.entry.rawOutputPath)
+        assertFalse(actorDraw.asset.fallbackUsed)
+        assertTrue(actorDraw.width >= 32f)
+        assertTrue(actorDraw.height >= 32f)
+    }
+
+    @Test
     fun `render canvas keeps three gauge stack clear of the title line for dual resource classes`() {
         val canvas = RecordingTileCanvas()
         val baseSnapshot = sampleSnapshot()
@@ -1751,6 +2091,7 @@ class TileRendererCanvasTest {
                 TileLayerFlushReason.MAP_PLAYER_INDICATOR,
                 TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS,
                 TileLayerFlushReason.MAP_FOG_VEILS,
+                TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS,
                 TileLayerFlushReason.MAP_ACTIVE_CURSOR,
                 TileLayerFlushReason.MAP_COMBAT_FEEDBACK,
                 TileLayerFlushReason.MAP_WARM_OVERLAY,
@@ -2911,10 +3252,34 @@ class TileRendererCanvasTest {
                                 footprint = "1x1",
                             ),
                             VisualManifestEntry(
+                                key = "tileset.forest_edge.ground_01",
+                                category = "tile_ground",
+                                rawOutputPath = "dark-v1/tiles/tileset_forest_edge_ground_01.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
                                 key = "actor.vanguard",
                                 category = "actor_sprite",
                                 rawOutputPath = "phase2/p2-b/actor_vanguard.png",
                                 footprint = "2x1",
+                            ),
+                            VisualManifestEntry(
+                                key = "actor.arcanist",
+                                category = "actor_sprite",
+                                rawOutputPath = "dark-v1/actors/actor_arcanist.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = "actor.boss.ashgate_warden",
+                                category = "actor_sprite",
+                                rawOutputPath = "dark-v1/actors/actor_boss_ashgate_warden.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = "prop.stairs.up",
+                                category = "prop_interactable",
+                                rawOutputPath = "dark-v1/props/prop_stairs_up.png",
+                                footprint = "1x1",
                             ),
                             VisualManifestEntry(
                                 key = "item.short_sword.icon",
@@ -3000,6 +3365,18 @@ class TileRendererCanvasTest {
                                 rawOutputPath = "phase4/pr06/boss_variant_molten_glass.png",
                                 footprint = "1x1",
                                 tintColorHex = "#FF7A3C",
+                            ),
+                            VisualManifestEntry(
+                                key = "vfx.zone.effect.void_pressure_01",
+                                category = "tile_decal",
+                                rawOutputPath = "dark-v1/vfx/vfx_zone_effect_void_pressure_01.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = "vfx.boss.warning.sigil_01",
+                                category = "vfx_plate",
+                                rawOutputPath = "dark-v1/vfx/vfx_boss_warning_sigil_01.png",
+                                footprint = "overlay",
                             ),
                         ) + pr04ReferenceIconKeys().map { key ->
                             VisualManifestEntry(

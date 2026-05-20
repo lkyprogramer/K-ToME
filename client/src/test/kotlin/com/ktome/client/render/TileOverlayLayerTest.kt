@@ -62,6 +62,24 @@ class TileOverlayLayerTest {
     }
 
     @Test
+    fun combatDecisionFrameDoesNotCreateBlockingModal() {
+        val model =
+            overlayModel(
+                overlayState =
+                    OverlayState(
+                        mode = UiMode.TARGETING,
+                        targetingCursor = Point(1, 1),
+                        modalFrames = listOf(ModalFrame(ModalFrameKind.COMBAT_DECISION)),
+                    ),
+                projection = projection(TileViewportFocusMode.TARGETING, Point(1, 1)),
+            )
+
+        assertNull(model.activeModal)
+        assertNull(model.modalBackdrop)
+        assertNotNull(model.selectedTooltip)
+    }
+
+    @Test
     fun hidesTooltipWhenAnchorLeavesVisibleRange() {
         val model =
             overlayModel(
