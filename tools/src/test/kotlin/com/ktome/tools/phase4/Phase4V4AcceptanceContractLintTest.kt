@@ -2,6 +2,9 @@ package com.ktome.tools.phase4
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.MessageDigest
+import javax.imageio.ImageIO
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
@@ -51,6 +54,7 @@ class Phase4V4AcceptanceContractLintTest {
         uiPrDocs.forEach { prDoc ->
             assertPrDocContract(root, prDoc)
         }
+        assertUiPr05InventoryReferenceArtifacts(root)
 
         val pr03 = read(root, prDocs.first { doc -> doc.requirementPrefix == "PR03" }.path)
         assertContains(pr03, "canary", "PR03 doc")
@@ -115,10 +119,60 @@ class Phase4V4AcceptanceContractLintTest {
         assertFalse(Regex("[A-Za-z]:\\\\").containsMatchIn(value), "$owner must not contain Windows absolute paths: $value")
     }
 
+    private fun assertUiPr05InventoryReferenceArtifacts(root: Path) {
+        assertPngArtifact(
+            root,
+            PngArtifact(
+                relativePath = "UI/dark-uiux-pr03-inventory-page-reference.png",
+                expectedWidth = 1672,
+                expectedHeight = 941,
+                expectedSha256 = "af7ce7992be1838ee75116d89d2284f8c81f48345a46cbe53bb7f50f64e71837",
+            ),
+        )
+        assertTextArtifactHasNoMachinePath(root, "UI/dark-uiux-pr03-inventory-page-reference.prompt.txt")
+        assertTextArtifactHasNoMachinePath(root, "UI/manual-records/dark-uiux-pr05-1-inventory-page-workbench.md")
+    }
+
+    private fun assertPngArtifact(
+        root: Path,
+        artifact: PngArtifact,
+    ) {
+        val path = root.resolve(artifact.relativePath)
+        assertTrue(Files.exists(path), "${artifact.relativePath} must exist.")
+
+        val image = ImageIO.read(path.toFile())
+        assertTrue(image != null, "${artifact.relativePath} must be a readable PNG.")
+        if (image != null) {
+            assertEquals(artifact.expectedWidth, image.width, "${artifact.relativePath} width must stay stable.")
+            assertEquals(artifact.expectedHeight, image.height, "${artifact.relativePath} height must stay stable.")
+        }
+        assertEquals(artifact.expectedSha256, sha256(path), "${artifact.relativePath} sha256 must stay stable.")
+    }
+
+    private fun assertTextArtifactHasNoMachinePath(
+        root: Path,
+        relativePath: String,
+    ) {
+        val markdown = read(root, relativePath)
+        markdown.lineSequence().forEach { line -> assertNoMachinePath(line, relativePath) }
+    }
+
+    private fun sha256(path: Path): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path))
+        return digest.joinToString("") { byte -> "%02x".format(byte) }
+    }
+
     private data class PrDoc(
         val requirementPrefix: String,
         val path: String,
         val minimumRows: Int,
+    )
+
+    private data class PngArtifact(
+        val relativePath: String,
+        val expectedWidth: Int,
+        val expectedHeight: Int,
+        val expectedSha256: String,
     )
 
     private companion object {
@@ -191,6 +245,11 @@ class Phase4V4AcceptanceContractLintTest {
                     requirementPrefix = "UI05",
                     path = "UI/pr/dark-uiux-pr05-map-actor-portrait-replacement.md",
                     minimumRows = 5,
+                ),
+                PrDoc(
+                    requirementPrefix = "UI05-1",
+                    path = "UI/pr/dark-uiux-pr05-1-inventory-page-workbench.md",
+                    minimumRows = 8,
                 ),
                 PrDoc(
                     requirementPrefix = "UI06",

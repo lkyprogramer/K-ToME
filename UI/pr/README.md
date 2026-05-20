@@ -15,21 +15,22 @@
 | 4 | [PR-04 Profession Tree UI](dark-uiux-pr04-profession-tree-ui.md) | P0 | L | ToME 式天赋分配面板、树状列表、技能图标、当前等级详情、主动槽 modal | 仅为唯一参考图新增 PR04 reference-crop 证据资源；正式全量 rebaseline 归 PR-06 |
 | 4.1 | [PR-04-01 Playable Profession Passive Talents](dark-uiux-pr04-01-playable-profession-passive-talents.md) | P0 | XL | 6 个可玩职业每职业至少 2 个明确被动；被动不占主动槽，右侧详情展示当前/下一级收益，统一装备/天赋 passive resolver | 不生成正式资源 |
 | 5 | [PR-05 Map Actor Portrait Replacement](dark-uiux-pr05-map-actor-portrait-replacement.md) | P1 | XL | Tile、prop、VFX、actor、portrait 统一替换 | Round 2-6 |
+| 5.1 | [PR-05-1 Inventory Page Workbench](dark-uiux-pr05-1-inventory-page-workbench.md) | P1 | L | 全屏背包 workbench：9-slot 视觉装备区、6x4 背包 grid、typed detail/compare、键盘优先输入 | 不生成正式资源 |
 | 6 | [PR-06 Skills Status Quest Full Manifest](dark-uiux-pr06-skills-status-quest-full-manifest.md) | P1 | XL | 技能、状态、任务、fallback、全 manifest 收口 | Round 8-9 + 返修 |
 | 7 | [PR-07 Golden Whitebox Polish](dark-uiux-pr07-golden-whitebox-polish.md) | P1 | M | 全 UI 面 golden/白盒、验证模式、结算/错误页、性能与 atlas 决策 | 不新增资源，允许返修 |
 
 ## 依赖规则
 
-1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-04-01 -> PR-05 -> PR-06 -> PR-07`。
+1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-04-01 -> PR-05 -> PR-05-1 -> PR-06 -> PR-07`。
 2. 每个 PR 必须先读 [UI/PLAN.md](../PLAN.md)、[UI/ART_STYLE_BIBLE.md](../ART_STYLE_BIBLE.md) 和本 PR 文档。
 3. 每个 PR 完成后必须做一次 doc-vs-implementation self-audit。
-4. 每个 PR 的 golden label 默认使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1` 是合法细分特例，必须使用 `dark-uiux-pr01-1-*`。`PR-02-1` 的 demo parity 主证据已经固定为 `ui-demo-new-*` label，路径和 manual record 仍归 `dark-uiux-pr02-1` owner；后续 PR 不得再引用旧 `dark-uiux-pr02-1-demo-*` label 作为必填 evidence。
+4. 每个 PR 的 golden label 默认使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1`、`PR-02-1`、`PR-05-1` 是合法细分特例，分别使用 `dark-uiux-pr01-1-*`、`dark-uiux-pr02-1-*` / 已冻结的 `ui-demo-new-*` 和 `dark-uiux-pr05-1-*`。`PR-02-1` 的 demo parity 主证据已经固定为 `ui-demo-new-*` label，路径和 manual record 仍归 `dark-uiux-pr02-1` owner；后续 PR 不得再引用旧 `dark-uiux-pr02-1-demo-*` label 作为必填 evidence。
 5. 新增图片、manifest、sheet plan、contact sheet 或 runtime PNG 的 PR 必须补跑 `assetLint styleLint manifestLint`。
 6. 新增或改中文 UI 文案、locale token、presentation token 的 PR 必须补跑 `localeLint contractLint`。
 7. 修改 Kotlin 文件数 `>= 5`、新增 public presentation model、或重排 renderer 共享组件的 PR 必须补跑 `maintainabilityLint`。
 8. 修改 Gradle、bootstrap、processResources、lint task 接线或依赖的 PR 必须补跑 `./scripts/verify-bootstrap.sh`。
 9. PR-00 关闭前必须让 `verifyChanged` impact routing 命中 dark-v1 相关变更时触发 dark gate；PR-02 以后不得只依赖人工记忆执行资源 gate。
-10. `ownerPr` 字符串固定使用 `PR-00`、`PR-02` 或 `PR-02-1` 这种格式；禁止混用 `pr02`、`PR02`。若新增细分 PR owner，必须同步更新 dark sprite pipeline 的 ownerPr regex 和脚本回归测试。
+10. `ownerPr` 字符串固定使用 `PR-00`、`PR-02` 或 `PR-02-1` 这种格式；禁止混用 `pr02`、`PR02`。若新增细分 PR owner，必须同步更新 dark sprite pipeline 的 ownerPr regex 和脚本回归测试。`PR-05-1` 不生成正式资源，因此不新增 sprite `ownerPr`；若未来把 PR05-1 参考图资源化，必须另行更新 regex 和脚本回归测试。
 11. 所有 PR 必须遵守 [development-governance.md](./development-governance.md)，并包含 `## 0. 开发治理与验收矩阵`。
 12. `acceptanceContractLint` 是 dark UI/UX PR 的文档合同快路径；它只检查 PR 文档是否可执行，不替代 resource gate、golden、白盒或 `verifyChanged`。
 13. Gate ladder 固定为 `acceptanceContractLint -> fast lane -> resource gate -> client evidence -> maintainabilityLint -> verifyChanged`；PR-07 追加 packaged app 白盒。
@@ -245,6 +246,7 @@ prompt 文件头必须包含：
 | PR-04 | `UI/dark-uiux-pr04-talent-assign-tree-icons-detail-reference.png`、`dark-uiux-pr04-talent-assign-panel-start`、`dark-uiux-pr04-active-slot-choice`、`dark-uiux-pr04-talent-assign-min-window-log-visible`、`dark-uiux-pr04-right-companion-coexistence`、`UI/manual-records/dark-uiux-pr04-profession-tree-ui.md`、`phase4-v4-pr01` scenario evidence |
 | PR-04-01 | `dark-uiux-pr04-01-static-passive-detail`、`dark-uiux-pr04-01-trigger-passive-detail`、`dark-uiux-pr04-01-passive-action-suppression`、`dark-uiux-pr04-01-effective-hp-regen-detail`、`UI/manual-records/dark-uiux-pr04-01-playable-profession-passive-talents.md`、`build/whitebox/dark-uiux-pr04-01-static-passive-detail/cua-runbook.md`、`build/whitebox/dark-uiux-pr04-01-trigger-passive-detail/cua-runbook.md`、`build/whitebox/dark-uiux-pr04-01-passive-action-suppression/cua-runbook.md`、`build/whitebox/dark-uiux-pr04-01-effective-hp-regen-detail/cua-runbook.md` |
 | PR-05 | `dark-uiux-pr05-map-layer-stack`、`dark-uiux-pr05-actor-boss-telegraph`、contact sheet QA |
+| PR-05-1 | design reference `UI/dark-uiux-pr03-inventory-page-reference.png` / `.prompt.txt`；golden labels `dark-uiux-pr05-1-inventory-workbench`、`dark-uiux-pr05-1-inventory-compare`、`dark-uiux-pr05-1-inventory-pagination`、`dark-uiux-pr05-1-inventory-min-window`；manual `UI/manual-records/dark-uiux-pr05-1-inventory-page-workbench.md` |
 | PR-06 | `dark-uiux-pr06-status-quest-skill-overview`、`dark-uiux-pr06-talent-icon-rebaseline`、validation overlay coverage reference、manifest coverage artifact |
 | PR-07 | packaged app command, runtime home, evidence dir, manual record, final doc-vs-implementation checklist, `dark-uiux-pr07-final-all-screens` evidence index |
 
