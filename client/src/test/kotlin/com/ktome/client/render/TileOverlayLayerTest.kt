@@ -195,10 +195,19 @@ class TileOverlayLayerTest {
 
     @Test
     fun usesLayoutModalSafeBoundsWithoutWindowRecalculation() {
-        val model = overlayModel(overlayState = OverlayState(mode = UiMode.INVENTORY, modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY))))
+        val model = overlayModel(overlayState = OverlayState(mode = UiMode.INVENTORY, modalFrames = listOf(ModalFrame(ModalFrameKind.ITEM_DETAIL))))
+        val safeBounds = ModalSafeBounds(12, 1000, 780, 236)
 
         assertNotEquals(1280 / 2 - model.activeModal!!.bounds.width / 2, model.activeModal.bounds.x)
-        assertEquals(ModalSafeBounds(12, 1000, 780, 236).left + (ModalSafeBounds(12, 1000, 780, 236).width - model.activeModal.bounds.width) / 2, model.activeModal.bounds.x)
+        assertEquals(safeBounds.left + (safeBounds.width - model.activeModal.bounds.width) / 2, model.activeModal.bounds.x)
+    }
+
+    @Test
+    fun inventoryModalUsesResolvedWorkbenchLayoutBounds() {
+        val model = overlayModel(overlayState = OverlayState(mode = UiMode.INVENTORY, modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY))))
+        val layout = requireNotNull(model.activeModal?.inventoryWorkbenchLayout)
+
+        assertEquals(layout.root.toRectInt(), model.activeModal!!.bounds)
     }
 
     private fun overlayModel(
