@@ -105,7 +105,6 @@ object Phase4V4WhiteboxScenarioCli {
         appHash: String,
     ): String {
         val appExecutable = repoRelative(repoRoot, paths.appExecutable)
-        val appBundle = repoRelative(repoRoot, paths.appExecutable.parent.parent.parent)
         val runtimeHome = repoRelative(repoRoot, paths.runtimeHome)
         val whiteboxRoot = repoRelative(repoRoot, paths.scenarioRoot)
         val evidenceDir = repoRelative(repoRoot, paths.evidenceDir)
@@ -113,7 +112,15 @@ object Phase4V4WhiteboxScenarioCli {
         val evidence = scenario.evidence
         val manualRecord = evidence.manualRecordPath
         val appExecutableSha256 = repoRelative(repoRoot, paths.appExecutableSha256)
-        val extraLaunchProperties = renderExtraLaunchProperties(repoRoot, scenario)
+        val appBundlePath = resolveAppBundlePath(paths.appExecutable)
+        val appBundle = repoRelative(repoRoot, appBundlePath)
+        val appName = appBundlePath.fileName.toString()
+        val appExecutableName = paths.appExecutable.fileName.toString()
+        val scenarioAppBundle = "$whiteboxRoot/runtime-app/$appName"
+        val scenarioAppExecutable = "$scenarioAppBundle/Contents/MacOS/$appExecutableName"
+        val scenarioAppConfig = "$scenarioAppBundle/Contents/app/$appExecutableName.cfg"
+        val extraLaunchSetup = renderExtraLaunchSetup(repoRoot, scenario)
+        val extraJavaOptionLines = renderExtraJavaOptionLines(scenario)
         val scenarioAppLogName = scenarioAppLogName(scenario)
         return """
             |#!/usr/bin/env bash
@@ -122,8 +129,8 @@ object Phase4V4WhiteboxScenarioCli {
             |REPO_ROOT="$(cd "$(dirname "${'$'}0")/../../.." && pwd)"
             |cd "${'$'}REPO_ROOT"
             |
-            |APP_EXECUTABLE="${'$'}REPO_ROOT/$appExecutable"
             |APP_BUNDLE="${'$'}REPO_ROOT/$appBundle"
+            |APP_EXECUTABLE="${'$'}REPO_ROOT/$appExecutable"
             |APP_EXECUTABLE_SHA256="${'$'}REPO_ROOT/$appExecutableSha256"
             |EXPECTED_HASH="$(awk '{print ${'$'}1}' "${'$'}APP_EXECUTABLE_SHA256")"
             |ACTUAL_HASH="$(shasum -a 256 "${'$'}APP_EXECUTABLE" | awk '{print ${'$'}1}')"
@@ -132,7 +139,12 @@ object Phase4V4WhiteboxScenarioCli {
             |  exit 20
             |fi
             |
-            |mkdir -p "$runtimeHome" "$evidenceDir"
+            |SCENARIO_APP_BUNDLE="${'$'}REPO_ROOT/$scenarioAppBundle"
+            |SCENARIO_APP_EXECUTABLE="${'$'}REPO_ROOT/$scenarioAppExecutable"
+            |SCENARIO_APP_CFG="${'$'}REPO_ROOT/$scenarioAppConfig"
+            |mkdir -p "$runtimeHome" "$evidenceDir" "$(dirname "${'$'}SCENARIO_APP_BUNDLE")"
+            |rm -rf "${'$'}SCENARIO_APP_BUNDLE"
+            |cp -R "${'$'}APP_BUNDLE" "${'$'}SCENARIO_APP_BUNDLE"
             |APP_LOG="$evidenceDir/app.log"
             |SCENARIO_APP_LOG="$evidenceDir/$scenarioAppLogName"
             |{
@@ -145,32 +157,37 @@ object Phase4V4WhiteboxScenarioCli {
             |  echo "floor=${runtime.floor}"
             |} > "${'$'}APP_LOG"
             |cp "${'$'}APP_LOG" "${'$'}SCENARIO_APP_LOG"
-            |BEFORE_PIDS="$(pgrep -f "${'$'}APP_EXECUTABLE" || true)"
-            |$extraLaunchProperties
-            |JAVA_TOOL_OPTIONS="-Duser.home=$runtimeHome -Dktome.validation.scenario=${scenario.id.value} -Dktome.repo.root=${'$'}REPO_ROOT -Dktome.whitebox.root=$whiteboxRoot -Dktome.whitebox.evidenceDir=$evidenceDir -Dktome.whitebox.manualRecord=$manualRecord -Dktome.whitebox.appHash=${'$'}EXPECTED_HASH${'$'}EXTRA_JAVA_TOOL_OPTIONS"
-            |env JAVA_TOOL_OPTIONS="${'$'}JAVA_TOOL_OPTIONS" open -n "${'$'}APP_BUNDLE"
-            |APP_PID=""
-            |for _ in {1..20}; do
-            |  CANDIDATE_PIDS="$(pgrep -f "${'$'}APP_EXECUTABLE" || true)"
-            |  for PID in ${'$'}CANDIDATE_PIDS; do
-            |    if ! printf '%s\n' "${'$'}BEFORE_PIDS" | grep -qx "${'$'}PID"; then
-            |      APP_PID="${'$'}PID"
-            |      break 2
-            |    fi
-            |  done
-            |  sleep 0.5
-            |done
-            |if [ -z "${'$'}APP_PID" ]; then
-            |  echo "APP_LAUNCH_FAILED app=$appExecutable" >&2
+            |$extraLaunchSetup
+            |{
+            |  echo "java-options=-Duser.home=${'$'}REPO_ROOT/$runtimeHome"
+            |  echo "java-options=-Dktome.validation.scenario=${scenario.id.value}"
+            |  echo "java-options=-Dktome.repo.root=${'$'}REPO_ROOT"
+            |  echo "java-options=-Dktome.whitebox.root=${'$'}REPO_ROOT/$whiteboxRoot"
+            |  echo "java-options=-Dktome.whitebox.evidenceDir=${'$'}REPO_ROOT/$evidenceDir"
+            |  echo "java-options=-Dktome.whitebox.manualRecord=$manualRecord"
+            |  echo "java-options=-Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"
+            |$extraJavaOptionLines
+            |} >> "${'$'}SCENARIO_APP_CFG"
+            |"${'$'}SCENARIO_APP_EXECUTABLE" >> "${'$'}SCENARIO_APP_LOG" 2>&1 &
+            |APP_PID="${'$'}!"
+            |sleep 1
+            |if ! kill -0 "${'$'}APP_PID" 2>/dev/null; then
+            |  echo "APP_LAUNCH_FAILED app=$scenarioAppExecutable" >&2
             |  exit 21
             |fi
             |printf '%s\n' "${'$'}APP_PID" > "$evidenceDir/app.pid"
             |echo "pid=${'$'}APP_PID" >> "${'$'}APP_LOG"
-            |cp "${'$'}APP_LOG" "${'$'}SCENARIO_APP_LOG"
+            |echo "pid=${'$'}APP_PID" >> "${'$'}SCENARIO_APP_LOG"
             |echo "Started K-ToME scenario ${scenario.id.value} pid=${'$'}APP_PID"
+            |wait "${'$'}APP_PID"
             |
         """.trimMargin()
     }
+
+    private fun resolveAppBundlePath(appExecutable: Path): Path =
+        generateSequence(appExecutable.parent) { path -> path.parent }
+            .firstOrNull { path -> path.fileName?.toString()?.endsWith(".app") == true }
+            ?: throw IllegalArgumentException("Expected macOS .app bundle parent for executable: $appExecutable")
 
     private fun scenarioAppLogName(scenario: ValidationScenarioDef): String =
         scenario.evidence.requiredEvidenceFiles
@@ -178,7 +195,7 @@ object Phase4V4WhiteboxScenarioCli {
             ?.removePrefix("evidence/")
             ?: "${scenario.id.value}-app.log"
 
-    private fun renderExtraLaunchProperties(
+    private fun renderExtraLaunchSetup(
         repoRoot: Path,
         scenario: ValidationScenarioDef,
     ): String =
@@ -189,10 +206,19 @@ object Phase4V4WhiteboxScenarioCli {
             """
                 |PR06_PRIMARY_RESULT=$primary
                 |PR06_EVIDENCE_RESULT=$evidence
-                |EXTRA_JAVA_TOOL_OPTIONS=" -D${Phase4V4Pr06WhiteboxProperties.PRIMARY_RESULT}=${'$'}PR06_PRIMARY_RESULT -D${Phase4V4Pr06WhiteboxProperties.EVIDENCE_RESULT}=${'$'}PR06_EVIDENCE_RESULT"
             """.trimMargin()
         } else {
-            "EXTRA_JAVA_TOOL_OPTIONS=\"\""
+            ":"
+        }
+
+    private fun renderExtraJavaOptionLines(scenario: ValidationScenarioDef): String =
+        if (scenario.id.value == "phase4-v4-pr06") {
+            """
+                |  echo "java-options=-D${Phase4V4Pr06WhiteboxProperties.PRIMARY_RESULT}=${'$'}PR06_PRIMARY_RESULT"
+                |  echo "java-options=-D${Phase4V4Pr06WhiteboxProperties.EVIDENCE_RESULT}=${'$'}PR06_EVIDENCE_RESULT"
+            """.trimMargin()
+        } else {
+            ""
         }
 
     private fun renderRunbook(

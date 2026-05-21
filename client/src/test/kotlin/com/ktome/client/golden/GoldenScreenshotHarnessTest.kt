@@ -21,6 +21,9 @@ import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.ShopFocus
 import com.ktome.client.input.UiMode
+import com.ktome.client.render.InventoryWorkbenchCellCoordinate
+import com.ktome.client.render.InventoryWorkbenchGrid
+import com.ktome.client.render.InventoryWorkbenchStacks
 import com.ktome.client.render.TileLayoutMetrics
 import com.ktome.client.render.TileRenderer
 import com.ktome.client.render.layout.GameShellBounds
@@ -158,6 +161,13 @@ class GoldenScreenshotHarnessTest {
             "dark-uiux-pr05-map-layer-stack",
             "dark-uiux-pr05-actor-boss-telegraph",
         )
+    private val darkUiuxPr05_1GoldenEvidenceLabels =
+        listOf(
+            "dark-uiux-pr05-1-inventory-workbench",
+            "dark-uiux-pr05-1-inventory-compare",
+            "dark-uiux-pr05-1-inventory-pagination",
+            "dark-uiux-pr05-1-inventory-min-window",
+        )
 
     @Test
     fun `dark uiux pr01 1 golden evidence labels remain registered`() {
@@ -248,6 +258,19 @@ class GoldenScreenshotHarnessTest {
                 "dark-uiux-pr05-actor-boss-telegraph",
             ),
             darkUiuxPr05GoldenEvidenceLabels,
+        )
+    }
+
+    @Test
+    fun `dark uiux pr05 1 golden evidence labels remain registered`() {
+        assertEquals(
+            listOf(
+                "dark-uiux-pr05-1-inventory-workbench",
+                "dark-uiux-pr05-1-inventory-compare",
+                "dark-uiux-pr05-1-inventory-pagination",
+                "dark-uiux-pr05-1-inventory-min-window",
+            ),
+            darkUiuxPr05_1GoldenEvidenceLabels,
         )
     }
 
@@ -492,6 +515,18 @@ class GoldenScreenshotHarnessTest {
         assertTrue(
             hashes["dark-uiux-pr05-map-layer-stack"] != hashes["dark-uiux-pr05-actor-boss-telegraph"],
             "PR05 boss telegraph evidence must not duplicate the ordinary map layer stack capture.",
+        )
+    }
+
+    @Test
+    fun `dark uiux pr05 1 inventory workbench golden evidence writes canonical artifacts`() {
+        val hashes = captureDarkUiuxPr05_1GoldenEvidence()
+
+        assertEquals(darkUiuxPr05_1GoldenEvidenceLabels, hashes.keys.toList())
+        assertTrue(hashes.values.all { hash -> hash.matches(Regex("[a-f0-9]{64}")) })
+        assertTrue(
+            hashes["dark-uiux-pr05-1-inventory-workbench"] != hashes["dark-uiux-pr05-1-inventory-min-window"],
+            "PR05-1 min-window evidence must be an independent compact viewport capture.",
         )
     }
 
@@ -986,6 +1021,165 @@ class GoldenScreenshotHarnessTest {
         writeDarkUiuxPr05EvidenceIndex(hashes)
         return hashes
     }
+
+    private fun captureDarkUiuxPr05_1GoldenEvidence(): Map<String, String> {
+        val hashes = linkedMapOf<String, String>()
+        hashes += captureDarkUiuxPr05_1WorkbenchEvidence()
+        hashes += captureDarkUiuxPr05_1StandardEvidence()
+        hashes += captureDarkUiuxPr05_1MinWindowEvidence()
+        writeDarkUiuxPr05_1EvidenceIndex(hashes)
+        return hashes
+    }
+
+    private fun captureDarkUiuxPr05_1WorkbenchEvidence(): Map<String, String> =
+        withLwjgl3Context(width = 1672, height = 941) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr05-1-inventory-workbench")),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260521L,
+                            zoneId = "shattered_outpost",
+                            playerProfessionId = "vanguard",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.EN_US,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active PR05-1 inventory workbench session." }
+                seedDarkUiuxPr05_1InventoryFixture(session)
+                linkedMapOf(
+                    "dark-uiux-pr05-1-inventory-workbench" to
+                        captureGoldenArtifact(
+                            label = "dark-uiux-pr05-1-inventory-workbench",
+                            evidenceDir = darkUiuxPr05_1GoldenDir(),
+                        ) {
+                            overlaySource.overlayState =
+                                OverlayState(
+                                    mode = UiMode.INVENTORY,
+                                    inventorySelection = 0,
+                                    inventoryFocusedCell = InventoryWorkbenchCellCoordinate.ORIGIN,
+                                    modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY)),
+                                )
+                            repeat(2) { app.render() }
+                        },
+                )
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureDarkUiuxPr05_1StandardEvidence(): Map<String, String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr05-1-inventory-standard")),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260521L,
+                            zoneId = "shattered_outpost",
+                            playerProfessionId = "vanguard",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.EN_US,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active PR05-1 inventory workbench session." }
+                val compareSelection = seedDarkUiuxPr05_1InventoryFixture(session)
+                val hashes = linkedMapOf<String, String>()
+                hashes["dark-uiux-pr05-1-inventory-compare"] =
+                    captureGoldenArtifact(
+                        label = "dark-uiux-pr05-1-inventory-compare",
+                        evidenceDir = darkUiuxPr05_1GoldenDir(),
+                    ) {
+                        overlaySource.overlayState =
+                            OverlayState(
+                                mode = UiMode.INVENTORY,
+                                inventorySelection = compareSelection,
+                                inventoryFocusedCell = InventoryWorkbenchCellCoordinate(column = 1, row = 0),
+                                modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY)),
+                            )
+                        repeat(2) { app.render() }
+                    }
+                hashes["dark-uiux-pr05-1-inventory-pagination"] =
+                    captureGoldenArtifact(
+                        label = "dark-uiux-pr05-1-inventory-pagination",
+                        evidenceDir = darkUiuxPr05_1GoldenDir(),
+                    ) {
+                        overlaySource.overlayState =
+                            OverlayState(
+                                mode = UiMode.INVENTORY,
+                                inventorySelection = 31,
+                                inventoryPageIndex = 1,
+                                inventoryFocusedCell = InventoryWorkbenchCellCoordinate(column = 0, row = 0),
+                                modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY)),
+                            )
+                        repeat(2) { app.render() }
+                    }
+                hashes
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureDarkUiuxPr05_1MinWindowEvidence(): Map<String, String> =
+        withLwjgl3Context(width = 1024, height = 768) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr05-1-inventory-min-window")),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260521L,
+                            zoneId = "shattered_outpost",
+                            playerProfessionId = "vanguard",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active PR05-1 min-window session." }
+                seedDarkUiuxPr05_1InventoryFixture(session, potionCount = 6, firstAffixBaseId = "hunter_bow")
+                linkedMapOf(
+                    "dark-uiux-pr05-1-inventory-min-window" to
+                        captureGoldenArtifact(
+                            label = "dark-uiux-pr05-1-inventory-min-window",
+                            evidenceDir = darkUiuxPr05_1GoldenDir(),
+                        ) {
+                            overlaySource.overlayState =
+                                OverlayState(
+                                    mode = UiMode.INVENTORY,
+                                    inventorySelection = 0,
+                                    inventoryFocusedCell = InventoryWorkbenchCellCoordinate.ORIGIN,
+                                    modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY)),
+                                )
+                            repeat(2) { app.render() }
+                        },
+                )
+            } finally {
+                app.dispose()
+            }
+        }
 
     private fun captureDarkUiuxPr05MapLayerStack(): Map<String, String> =
         withLwjgl3Context(width = 1280, height = 800) {
@@ -2031,6 +2225,19 @@ class GoldenScreenshotHarnessTest {
         Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
     }
 
+    private fun writeDarkUiuxPr05_1EvidenceIndex(hashes: Map<String, String>) {
+        val evidenceDir = darkUiuxPr05_1GoldenDir()
+        Files.createDirectories(evidenceDir)
+        val rows =
+            buildString {
+                appendLine("label\thash\tartifact")
+                hashes.forEach { (label, hash) ->
+                    appendLine("$label\t$hash\tclient/build/reports/golden/dark-uiux-pr05-1/$label.png")
+                }
+            }
+        Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
+    }
+
     private fun writePhase4UiuxPr05EvidenceIndex(hashes: Map<String, String>) {
         val evidenceDir = phase4UiuxPr05GoldenDir()
         Files.createDirectories(evidenceDir)
@@ -2061,6 +2268,43 @@ class GoldenScreenshotHarnessTest {
 
     private fun darkUiuxPr05GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr05")
+
+    private fun seedDarkUiuxPr05_1InventoryFixture(
+        session: FoundationGameSession,
+        potionCount: Int = 8,
+        firstAffixBaseId: String = "long_sword",
+    ): Int {
+        clearInventoryFixture(session)
+        repeat(potionCount) {
+            addInventoryFixtureItem(session, buildBaseItem("healing_potion"))
+        }
+        val firstAffixSelection = addInventoryFixtureItem(session, buildAffixItem(baseId = firstAffixBaseId, affixId = "briarhook"))
+        addInventoryFixtureItem(session, buildBaseItem("chain_mail"))
+        addInventoryFixtureItem(session, buildBaseItem("scroll_teleport"))
+        addInventoryFixtureItem(session, buildBaseItem("mana_potion"))
+        addInventoryFixtureItem(session, buildBaseItem("seal_reliquary"))
+        addInventoryFixtureItem(session, buildBaseItem("artifact_deepcurrent_crown"))
+        addInventoryFixtureItem(session, buildBaseItem("bandit_trophy"))
+        repeat(18) { index ->
+            addInventoryFixtureItem(
+                session,
+                buildAffixItem(
+                    baseId = if (index % 2 == 0) "hunter_bow" else "emerald_charm",
+                    affixId = if (index % 3 == 0) "briarhook" else "starforged",
+                ),
+            )
+        }
+        invalidateGoldenFixtureSnapshot(session)
+        val workbenchGroups = InventoryWorkbenchStacks.groups(session.renderSnapshot().uiState.inventory)
+        assertTrue(
+            workbenchGroups.drop(InventoryWorkbenchGrid.PAGE_SIZE).isNotEmpty(),
+            "PR05-1 pagination golden must capture a populated second workbench page.",
+        )
+        return firstAffixSelection
+    }
+
+    private fun darkUiuxPr05_1GoldenDir(): Path =
+        repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr05-1")
 
     private fun phase4UiuxPr05GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/phase4-uiux-pr05")
@@ -2239,6 +2483,24 @@ class GoldenScreenshotHarnessTest {
             resourceTypeId = base.resourceTypeId,
             magnitude = base.magnitude,
             passive = affix.passive ?: base.passive,
+        )
+    }
+
+    private fun buildBaseItem(baseId: String): ItemInstance {
+        val base = requireNotNull(optPr03ItemBundle.baseItems.firstOrNull { item -> item.id == baseId }) { "Unknown base item '$baseId'." }
+        return ItemInstance(
+            baseId = base.id,
+            name = base.name,
+            type = base.type,
+            slot = base.slot,
+            glyph = base.glyph,
+            colorHex = base.colorHex,
+            quality = RarityTier.NORMAL,
+            stats = base.baseStats,
+            effect = base.effect,
+            resourceTypeId = base.resourceTypeId,
+            magnitude = base.magnitude,
+            passive = base.passive,
         )
     }
 

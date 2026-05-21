@@ -575,14 +575,6 @@ class TileRenderer(
             )
         }
 
-        private fun GameShellBounds.toRectInt(): RectInt =
-            RectInt(
-                x = x.roundToInt(),
-                y = y.roundToInt(),
-                width = width.roundToInt().coerceAtLeast(1),
-                height = height.roundToInt().coerceAtLeast(1),
-            )
-
         private fun buildShellTextLayout(
             model: TileRenderModel,
             layout: TileLayoutMetrics,
@@ -901,6 +893,10 @@ class TileRenderer(
                 drawTalentAssignModal(canvas, modal, panel, chromeAssets)
                 return
             }
+            modal.inventoryWorkbench?.let { workbench ->
+                drawInventoryWorkbenchModal(canvas, modal, workbench, chromeAssets)
+                return
+            }
             val bounds = modal.bounds
             canvas.drawRect(
                 tileBounds(bounds.x.toFloat(), bounds.y.toFloat(), bounds.width.toFloat(), bounds.height.toFloat()),
@@ -927,6 +923,195 @@ class TileRenderer(
             modal.footerHintLines.take(2).forEachIndexed { index, line ->
                 val fitted = TileTextMetrics.truncateTextToWidth(line.text, content.width, TileTextStyle.SMALL)
                 canvas.drawText(TileTextStyle.SMALL, fitted, tilePosition(content.x, content.y + 12f + index * 22f), tone(line.tone))
+            }
+        }
+
+        private fun drawInventoryWorkbenchModal(
+            canvas: TileCanvas,
+            modal: TileModalModel,
+            workbench: InventoryWorkbenchPresentation,
+            chromeAssets: TileChromeAssets?,
+        ) {
+            val layout = requireNotNull(modal.inventoryWorkbenchLayout) { "Inventory workbench modal requires resolved layout." }
+            canvas.drawRect(
+                tileBounds(layout.root.x, layout.root.y, layout.root.width, layout.root.height),
+                color("05070A", 0.94f),
+            )
+            chromeAssets?.let { chrome ->
+                drawChromeFrame(
+                    canvas = canvas,
+                    assets = chrome.frameAssets.copy(body = chrome.modalBody),
+                    bounds = layout.root,
+                    fillColor = color("05070A", 0.94f),
+                    borderColor = UiDesignTokens.color.quality.rare.color(),
+                    alpha = 0.90f,
+                )
+            }
+            drawInventoryWorkbenchColumn(canvas, layout.equipmentColumn)
+            drawInventoryWorkbenchColumn(canvas, layout.backpackColumn)
+            drawInventoryWorkbenchColumn(canvas, layout.detailColumn)
+            drawFittedText(canvas, workbench.title, layout.content.x, layout.root.top - 24f, layout.content.width, TileTextStyle.UI, tone(TileTextTone.GOLD))
+            drawInventoryWorkbenchEquipment(canvas, workbench, layout.equipmentColumn, layout.equipmentSlotBounds)
+            drawInventoryWorkbenchGrid(canvas, workbench, layout.backpackColumn, layout.backpackCellBounds)
+            drawInventoryWorkbenchDetail(canvas, workbench, layout.detailColumn, layout.detailMaxLines)
+            drawInventoryWorkbenchFooter(canvas, workbench, layout.footer)
+        }
+
+        private fun drawInventoryWorkbenchColumn(
+            canvas: TileCanvas,
+            bounds: GameShellBounds,
+        ) {
+            canvas.drawRect(tileBounds(bounds.x, bounds.y, bounds.width, bounds.height), color("080A0E", 0.82f))
+            canvas.drawRect(tileBounds(bounds.x, bounds.top - 2f, bounds.width, 2f), color("B89B68", 0.46f))
+            canvas.drawRect(tileBounds(bounds.x, bounds.y, 1f, bounds.height), color("5D4A31", 0.42f))
+            canvas.drawRect(tileBounds(bounds.right - 1f, bounds.y, 1f, bounds.height), color("5D4A31", 0.36f))
+        }
+
+        private fun drawInventoryWorkbenchEquipment(
+            canvas: TileCanvas,
+            workbench: InventoryWorkbenchPresentation,
+            column: GameShellBounds,
+            slotBounds: List<GameShellBounds>,
+        ) {
+            drawFittedText(canvas, workbench.equipmentTitle, column.x + 14f, column.top - 24f, column.width - 28f, TileTextStyle.SMALL, tone(TileTextTone.GOLD))
+            workbench.equipmentSockets.zip(slotBounds).forEach { (slot, bounds) ->
+                val alpha = if (slot.enabled) 1f else 0.38f
+                canvas.drawAsset(slot.frame, tileBounds(bounds.x, bounds.y, bounds.width, bounds.height), alpha)
+                slot.itemIcon?.let { icon ->
+                    canvas.drawAsset(icon, tileBounds(bounds.x + 7f, bounds.y + 7f, bounds.width - 14f, bounds.height - 14f), alpha)
+                }
+                if (slot.selected || slot.targetCue) {
+                    drawThinRect(canvas, bounds, UiDesignTokens.color.focus.ring.color(), 2f)
+                }
+                if (slot.visualOnly) {
+                    canvas.drawRect(tileBounds(bounds.x + bounds.width * 0.42f, bounds.y + bounds.height * 0.42f, bounds.width * 0.16f, bounds.height * 0.16f), color("6B5A42", 0.42f))
+                }
+                if (!slot.visualOnly && slot.label.isNotBlank()) {
+                    drawFittedText(canvas, slot.label, bounds.x, bounds.y - 8f, bounds.width, TileTextStyle.SMALL, tone(TileTextTone.LIGHT_GRAY))
+                }
+            }
+        }
+
+        private fun drawInventoryWorkbenchGrid(
+            canvas: TileCanvas,
+            workbench: InventoryWorkbenchPresentation,
+            column: GameShellBounds,
+            cellBounds: List<GameShellBounds>,
+        ) {
+            drawFittedText(canvas, workbench.backpackTitle, column.x + 14f, column.top - 24f, column.width * 0.52f, TileTextStyle.SMALL, tone(TileTextTone.GOLD))
+            drawFittedText(canvas, workbench.grid.capacityText, column.x + column.width * 0.52f, column.top - 24f, column.width * 0.42f, TileTextStyle.SMALL, tone(TileTextTone.LIGHT_GRAY))
+            workbench.grid.cells.zip(cellBounds).forEach { (cell, bounds) ->
+                canvas.drawAsset(cell.frame, tileBounds(bounds.x, bounds.y, bounds.width, bounds.height), if (cell.empty) 0.70f else 1f)
+                cell.itemIcon?.let { icon ->
+                    val iconPadding =
+                        when {
+                            bounds.width >= 64f -> 8f
+                            bounds.width >= 58f -> 6f
+                            else -> 5f
+                        }
+                    canvas.drawAsset(icon, tileBounds(bounds.x + iconPadding, bounds.y + iconPadding, bounds.width - iconPadding * 2f, bounds.height - iconPadding * 2f))
+                }
+                if (cell.focused) {
+                    drawThinRect(canvas, bounds, UiDesignTokens.color.focus.ring.color(), 2f)
+                }
+                if (cell.hovered && !cell.focused) {
+                    drawThinRect(canvas, bounds, color("1CB7C8", 0.50f), 1f)
+                }
+                cell.quantityText?.let { quantity ->
+                    val badgeWidth = (quantity.length * 8 + 12).toFloat()
+                    canvas.drawRect(tileBounds(bounds.right - badgeWidth, bounds.y + 2f, badgeWidth, 18f), color("05070A", 0.88f))
+                    drawFittedText(canvas, quantity, bounds.right - badgeWidth + 5f, bounds.y + 15f, badgeWidth - 8f, TileTextStyle.SMALL, tone(TileTextTone.GOLD))
+                }
+            }
+            drawFittedText(canvas, workbench.grid.pageLabel, column.x + 14f, column.y + 22f, column.width - 28f, TileTextStyle.SMALL, tone(TileTextTone.LIGHT_GRAY))
+        }
+
+        private fun drawInventoryWorkbenchDetail(
+            canvas: TileCanvas,
+            workbench: InventoryWorkbenchPresentation,
+            column: GameShellBounds,
+            detailMaxLines: Int,
+        ) {
+            drawFittedText(canvas, workbench.detailTitle, column.x + 14f, column.top - 24f, column.width - 28f, TileTextStyle.SMALL, tone(TileTextTone.GOLD))
+            val iconSize = 54f
+            workbench.selectedItemIcon?.let { icon ->
+                canvas.drawRect(tileBounds(column.x + 14f, column.top - 92f, iconSize, iconSize), color("05070A", 0.82f))
+                canvas.drawAsset(icon, tileBounds(column.x + 20f, column.top - 86f, iconSize - 12f, iconSize - 12f))
+            }
+            val titleX = if (workbench.selectedItemIcon == null) column.x + 14f else column.x + 82f
+            drawFittedText(canvas, workbench.selectedItemTitle, titleX, column.top - 56f, column.right - titleX - 14f, TileTextStyle.UI, tone(workbench.selectedItemTone))
+            var baseline = column.top - 112f
+            workbench.detailRows.take(detailMaxLines).forEach { row ->
+                drawFittedText(canvas, row.value, column.x + 14f, baseline, column.width - 28f, TileTextStyle.SMALL, tone(row.tone))
+                baseline -= 22f
+            }
+            val actionY = column.y + 86f
+            val actionsTitleBaseline = actionY + 48f
+            val compareLineHeight = 22f
+            baseline -= 8f
+            drawFittedText(canvas, workbench.compareTitle, column.x + 14f, baseline, column.width - 28f, TileTextStyle.SMALL, tone(TileTextTone.GOLD))
+            baseline -= 24f
+            val fittingCompareRows = ((baseline - actionsTitleBaseline - compareLineHeight) / compareLineHeight).toInt().coerceIn(0, 5)
+            workbench.compareRows.take(fittingCompareRows).forEach { row ->
+                drawFittedText(canvas, row.value, column.x + 14f, baseline, column.width - 28f, TileTextStyle.SMALL, tone(row.tone))
+                baseline -= compareLineHeight
+            }
+            drawFittedText(canvas, workbench.actionsTitle, column.x + 14f, actionsTitleBaseline, column.width - 28f, TileTextStyle.SMALL, tone(TileTextTone.GOLD))
+            var actionX = column.x + 14f
+            var actionRowY = actionY
+            val rowStartX = actionX
+            val rowRight = column.right - 14f
+            workbench.actions.forEach { action ->
+                val keyWidth = (action.shortcutText.length * 8 + 22).toFloat().coerceAtLeast(34f)
+                val preferredLabelWidth = 96f
+                var labelWidth = minOf(preferredLabelWidth, rowRight - actionX - keyWidth - 8f).coerceAtLeast(34f)
+                if (actionX + keyWidth + 6f + labelWidth > rowRight && actionX > rowStartX) {
+                    actionX = rowStartX
+                    actionRowY -= 29f
+                    labelWidth = minOf(preferredLabelWidth, rowRight - actionX - keyWidth - 8f).coerceAtLeast(34f)
+                }
+                val actionTone = if (action.enabled) tone(TileTextTone.WHITE) else tone(TileTextTone.GRAY)
+                canvas.drawRect(tileBounds(actionX, actionRowY, keyWidth, 24f), color("111820", if (action.enabled) 0.88f else 0.42f))
+                drawFittedText(canvas, action.shortcutText, actionX + 8f, actionRowY + 16f, keyWidth - 16f, TileTextStyle.SMALL, actionTone)
+                drawFittedText(canvas, action.label, actionX + keyWidth + 6f, actionRowY + 16f, labelWidth, TileTextStyle.SMALL, actionTone)
+                actionX += keyWidth + labelWidth + 16f
+            }
+        }
+
+        private fun drawInventoryWorkbenchFooter(
+            canvas: TileCanvas,
+            workbench: InventoryWorkbenchPresentation,
+            footer: GameShellBounds,
+        ) {
+            canvas.drawRect(tileBounds(footer.x, footer.y, footer.width, footer.height), color("07090B", 0.86f))
+            var cursorX = footer.x + 14f
+            val baseline = footer.y + 31f
+            val hintGap = 14f
+            val footerBudget = footer.width - 28f
+            val fullHintWidths =
+                workbench.footerHints.map { hint ->
+                    val keyWidth = (TileTextMetrics.approximateTextWidth(hint.keyText, TileTextStyle.SMALL) + 20f).coerceAtLeast(34f)
+                    val labelWidth = (TileTextMetrics.approximateTextWidth(hint.label, TileTextStyle.SMALL) + 18f).coerceIn(58f, 116f)
+                    keyWidth + labelWidth
+                }
+            val compact = fullHintWidths.sum() + hintGap * (workbench.footerHints.size - 1).coerceAtLeast(0) > footerBudget
+            for (hint in workbench.footerHints) {
+                val keyWidth = (TileTextMetrics.approximateTextWidth(hint.keyText, TileTextStyle.SMALL) + 20f).coerceAtLeast(34f)
+                val labelWidth =
+                    if (compact) {
+                        0f
+                    } else {
+                        (TileTextMetrics.approximateTextWidth(hint.label, TileTextStyle.SMALL) + 18f).coerceIn(58f, 116f)
+                    }
+                if (cursorX + keyWidth + labelWidth > footer.right - 14f) {
+                    break
+                }
+                canvas.drawRect(tileBounds(cursorX, baseline - 18f, keyWidth, 25f), color("111820", 0.86f))
+                drawFittedText(canvas, hint.keyText, cursorX + 8f, baseline, keyWidth - 16f, TileTextStyle.SMALL, tone(TileTextTone.WHITE))
+                if (!compact) {
+                    drawFittedText(canvas, hint.label, cursorX + keyWidth + 8f, baseline, labelWidth, TileTextStyle.SMALL, tone(TileTextTone.LIGHT_GRAY))
+                }
+                cursorX += keyWidth + labelWidth + hintGap
             }
         }
 
@@ -1619,6 +1804,18 @@ class TileRenderer(
             alpha: Float,
         ) {
             canvas.drawRect(tileBounds(bounds.x, bounds.y, bounds.width, bounds.height), color("1A0E04", alpha))
+        }
+
+        private fun drawThinRect(
+            canvas: TileCanvas,
+            bounds: GameShellBounds,
+            color: Color,
+            thickness: Float,
+        ) {
+            canvas.drawRect(tileBounds(bounds.x, bounds.y, bounds.width, thickness), color)
+            canvas.drawRect(tileBounds(bounds.x, bounds.top - thickness, bounds.width, thickness), color)
+            canvas.drawRect(tileBounds(bounds.x, bounds.y, thickness, bounds.height), color)
+            canvas.drawRect(tileBounds(bounds.right - thickness, bounds.y, thickness, bounds.height), color)
         }
 
         private fun chromeContentBounds(

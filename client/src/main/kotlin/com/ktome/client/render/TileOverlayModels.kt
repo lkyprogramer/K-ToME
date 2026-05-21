@@ -3,6 +3,9 @@ package com.ktome.client.render
 import com.badlogic.gdx.graphics.Color
 import com.ktome.client.input.OverlayState
 import com.ktome.client.render.layout.GameShellBounds
+import com.ktome.client.render.layout.InventoryWorkbenchLayout
+import com.ktome.client.render.layout.InventoryWorkbenchLayoutRequest
+import com.ktome.client.render.layout.InventoryWorkbenchLayoutSolver
 import com.ktome.client.render.layout.ModalSafeBounds
 import com.ktome.client.render.layout.RectInt
 import com.ktome.client.ui.layout.ModalFrameKind
@@ -186,6 +189,8 @@ internal data class TileModalModel(
     val bodyLines: List<TileTextLine>,
     val footerHintLines: List<TileTextLine>,
     val talentAssignPanel: TileTalentAssignPanelRenderModel? = null,
+    val inventoryWorkbench: InventoryWorkbenchPresentation? = null,
+    val inventoryWorkbenchLayout: InventoryWorkbenchLayout? = null,
 )
 
 internal data class TileToastModel(
@@ -225,7 +230,13 @@ internal object TileOverlayModelBuilder {
             topModal
                 ?.takeUnless { frame -> frame.kind == ModalFrameKind.COMBAT_DECISION }
                 ?.let { frame ->
-                    val bounds = modalBounds(frame.kind, request)
+                    val inventoryWorkbenchLayout =
+                        if (frame.kind == ModalFrameKind.INVENTORY) {
+                            inventoryWorkbenchLayout(request)
+                        } else {
+                            null
+                        }
+                    val bounds = inventoryWorkbenchLayout?.root?.toRectInt() ?: modalBounds(frame.kind, request)
                     TileModalModel(
                         frameKind = frame.kind,
                         bounds = bounds,
@@ -247,6 +258,10 @@ internal object TileOverlayModelBuilder {
                         talentAssignPanel =
                             request.renderModel.talentAssignPanel
                                 ?.takeIf { frame.kind == ModalFrameKind.TALENT_ASSIGN || frame.kind == ModalFrameKind.ACTIVE_TALENT_SLOT_CHOICE },
+                        inventoryWorkbench =
+                            request.renderModel.inventoryWorkbench
+                                ?.takeIf { frame.kind == ModalFrameKind.INVENTORY },
+                        inventoryWorkbenchLayout = inventoryWorkbenchLayout,
                     )
                 }
         val passiveTooltip = passiveTooltip(request)
@@ -395,18 +410,34 @@ internal object TileOverlayModelBuilder {
     }
 
     private fun talentAssignVisualBounds(request: TileOverlayModelRequest): RectInt {
-        val viewportRight = request.viewportBounds.right.roundToInt()
-        val viewportTop = request.viewportBounds.top.roundToInt()
+        val viewportWidth = request.viewportBounds.width.roundToInt()
+        val viewportHeight = request.viewportBounds.height.roundToInt()
         val horizontalPadding = 0
         val verticalPadding = 0
         return RectInt(
             x = horizontalPadding,
             y = verticalPadding,
-            width = (viewportRight - horizontalPadding * 2).coerceAtLeast(720),
-            height = (viewportTop - verticalPadding * 2).coerceAtLeast(520),
+            width = (viewportWidth - horizontalPadding * 2).coerceAtLeast(720),
+            height = (viewportHeight - verticalPadding * 2).coerceAtLeast(520),
         )
     }
+
+    private fun inventoryWorkbenchLayout(request: TileOverlayModelRequest): InventoryWorkbenchLayout =
+        InventoryWorkbenchLayoutSolver.resolve(
+            InventoryWorkbenchLayoutRequest(
+                viewportWidth = request.viewportBounds.width.roundToInt(),
+                viewportHeight = request.viewportBounds.height.roundToInt(),
+            ),
+        )
 
     private fun modalTitle(kind: ModalFrameKind): String =
         kind.name.lowercase().split('_').joinToString(" ") { word -> word.replaceFirstChar(Char::titlecase) }
 }
+
+internal fun GameShellBounds.toRectInt(): RectInt =
+    RectInt(
+        x = x.roundToInt(),
+        y = y.roundToInt(),
+        width = width.roundToInt().coerceAtLeast(1),
+        height = height.roundToInt().coerceAtLeast(1),
+    )

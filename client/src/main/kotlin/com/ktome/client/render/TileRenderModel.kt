@@ -521,6 +521,7 @@ internal data class TileRenderModel(
     val combatFeedback: List<TileCombatFeedbackModel>,
     val sidebar: TileSidebarModel,
     val talentAssignPanel: TileTalentAssignPanelRenderModel? = null,
+    val inventoryWorkbench: InventoryWorkbenchPresentation? = null,
     val shell: TileShellModel,
     val panelTooltip: TilePanelTooltipModel? = null,
     val playerTile: com.ktome.core.map.Point,
@@ -695,6 +696,7 @@ internal object TileRenderModelBuilder {
                 talentAssignPanelModel,
             )
         val shell = buildShell(localizer, visualResolver, snapshot, overlayState, hud, sidebar, messageLines)
+        val inventoryWorkbench = buildInventoryWorkbench(localizer, visualResolver, snapshot, overlayState)
         return TileRenderModel(
             terrainTiles = terrainTiles,
             propTiles = propTiles,
@@ -747,6 +749,7 @@ internal object TileRenderModelBuilder {
             combatFeedback = buildCombatFeedback(localizer, snapshot.metadata.width, overlayCells, snapshot.combatFeedbackEvents),
             sidebar = sidebar,
             talentAssignPanel = talentAssignPanelModel?.let { panel -> TileTalentAssignPanelRenderModel.from(panel, visualResolver) },
+            inventoryWorkbench = inventoryWorkbench,
             shell = shell,
             panelTooltip = panelTooltip(localizer, snapshot, overlayState, shell),
             playerTile = point(player.x, player.y),
@@ -982,7 +985,12 @@ internal object TileRenderModelBuilder {
     ): TileDemoShellModel {
         val status = snapshot.uiState.playerStatus
         val operationHints = demoOperationHints(localizer, overlayState)
-        val effectiveInventorySelection = overlayState.hoveredInventoryIndex ?: overlayState.inventorySelection
+        val effectiveInventorySelection =
+            if (overlayState.mode == UiMode.INVENTORY) {
+                overlayState.inventorySelection
+            } else {
+                overlayState.hoveredInventoryIndex ?: overlayState.inventorySelection
+            }
         val equipmentInventory =
             EquipmentInventoryPresenter.present(
                 EquipmentInventoryPresenterRequest(
@@ -1028,6 +1036,29 @@ internal object TileRenderModelBuilder {
                     "${localizer.text("ui.hud.attack.short")} ${status.attack}",
                     "${localizer.text("ui.hud.defense.short")} ${status.defense}",
                 ),
+        )
+    }
+
+    private fun buildInventoryWorkbench(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+    ): InventoryWorkbenchPresentation? {
+        if (overlayState.mode != UiMode.INVENTORY || overlayState.activeModalKind != ModalFrameKind.INVENTORY) {
+            return null
+        }
+        return InventoryWorkbenchPresenter.present(
+            InventoryWorkbenchPresenterRequest(
+                localizer = localizer,
+                visualResolver = visualResolver,
+                equipment = snapshot.uiState.equipment,
+                inventory = snapshot.uiState.inventory,
+                selectedEntryId = overlayState.inventorySelection.takeIf { selection -> selection >= 0 },
+                focusedCell = overlayState.inventoryFocusedCell,
+                hoveredCell = overlayState.hoveredInventoryCell,
+                pageIndex = overlayState.inventoryPageIndex,
+            ),
         )
     }
 
@@ -2501,7 +2532,7 @@ internal object TileRenderModelBuilder {
         snapshot: RenderSnapshot,
         overlayState: OverlayState,
     ): ItemRenderSnapshot? {
-        val selectedIndex = overlayState.hoveredInventoryIndex ?: overlayState.inventorySelection
+        val selectedIndex = overlayState.inventorySelection
         return snapshot.uiState.inventory.firstOrNull { entry -> entry.index == selectedIndex }?.item
     }
 
@@ -2524,6 +2555,9 @@ internal object TileRenderModelBuilder {
         overlayState: OverlayState,
         shell: TileShellModel,
     ): TilePanelTooltipModel? {
+        if (overlayState.mode == UiMode.INVENTORY && overlayState.activeModalKind == ModalFrameKind.INVENTORY) {
+            return null
+        }
         overlayState.hoveredEquipmentSlotId?.let { slotId ->
             val anchorIndex = typedEquipmentSlotOrder.indexOf(slotId).takeIf { index -> index >= 0 } ?: return@let
             return equipmentTooltip(localizer, snapshot, slotId, anchorIndex)

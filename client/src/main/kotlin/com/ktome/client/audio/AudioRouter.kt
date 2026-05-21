@@ -184,6 +184,8 @@ class AudioRouter(
 
         val selectionChanged =
             previous.inventorySelection != current.inventorySelection ||
+                previous.inventoryPageIndex != current.inventoryPageIndex ||
+                previous.inventoryFocusedCell != current.inventoryFocusedCell ||
                 previous.shopOfferSelection != current.shopOfferSelection ||
                 previous.inscriptionReplacementHotkeySelection != current.inscriptionReplacementHotkeySelection ||
                 previous.routeSelection != current.routeSelection ||

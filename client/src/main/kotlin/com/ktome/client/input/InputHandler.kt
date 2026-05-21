@@ -3,9 +3,16 @@ package com.ktome.client.input
 import com.badlogic.gdx.Input.Buttons
 import com.badlogic.gdx.Input.Keys
 import com.ktome.client.render.DemoNavRailButtonLayout
+import com.ktome.client.render.EQUIPMENT_INVENTORY_COMPANION_PAGE_SIZE
+import com.ktome.client.render.InventoryWorkbenchCellCoordinate
+import com.ktome.client.render.InventoryWorkbenchGrid
+import com.ktome.client.render.InventoryWorkbenchStackGroup
+import com.ktome.client.render.InventoryWorkbenchStacks
 import com.ktome.client.render.layout.DemoShellLayoutRequest
 import com.ktome.client.render.layout.DemoShellLayoutSolver
 import com.ktome.client.render.layout.GameShellBounds
+import com.ktome.client.render.layout.InventoryWorkbenchLayoutRequest
+import com.ktome.client.render.layout.InventoryWorkbenchLayoutSolver
 import com.ktome.client.render.typedEquipmentSlotOrder
 import com.ktome.client.ui.chrome.ChromeFrameBounds
 import com.ktome.client.ui.combat.CombatDecisionFeedbackKeys
@@ -77,15 +84,19 @@ private enum class DemoNavRailAction {
 }
 
 private const val INSCRIPTION_HOTKEY_START = 5
+private const val NO_INVENTORY_SELECTION = -1
 
 data class OverlayState(
     val mode: UiMode,
     val modalFrames: List<ModalFrame> = emptyList(),
     val paneFocusAnchor: PaneFocusAnchor = PaneFocusAnchor.WORLD,
     val inventorySelection: Int = 0,
+    val inventoryPageIndex: Int = 0,
+    val inventoryFocusedCell: InventoryWorkbenchCellCoordinate = InventoryWorkbenchCellCoordinate.ORIGIN,
     val hoveredEquipmentSlotId: String? = null,
     val hoveredInscriptionHotkey: Int? = null,
     val hoveredInventoryIndex: Int? = null,
+    val hoveredInventoryCell: InventoryWorkbenchCellCoordinate? = null,
     val shopOfferSelection: Int = 0,
     val inscriptionReplacementHotkeySelection: Int? = null,
     val routeSelection: Int = 0,
@@ -119,7 +130,7 @@ class InputHandler(
     private val validationScenarioId: ValidationScenarioId? = null,
 ) {
     private val uiMessageDisplayFrames = 90
-    private val inventoryPageSize = 8
+    private val rightPanelBackpackPageSize = EQUIPMENT_INVENTORY_COMPANION_PAGE_SIZE
     private val talentTreePageStep = 6
     private val overlayCloseBindings = listOf(Keys.F)
     private val repeatInitialDelayFrames = 12
@@ -161,9 +172,13 @@ class InputHandler(
     private val waitBindings = listOf(Keys.PERIOD, Keys.SPACE, Keys.NUMPAD_5)
     private var mode: UiMode = UiMode.MAP
     private var inventorySelection: Int = 0
+    private var inventoryPageIndex: Int = 0
+    private var inventoryFocusedCell: InventoryWorkbenchCellCoordinate = InventoryWorkbenchCellCoordinate.ORIGIN
+    private var inventoryGroupSignature: List<List<Int>> = emptyList()
     private var hoveredEquipmentSlotId: String? = null
     private var hoveredInscriptionHotkey: Int? = null
     private var hoveredInventoryIndex: Int? = null
+    private var hoveredInventoryCell: InventoryWorkbenchCellCoordinate? = null
     private var shopOfferSelection: Int = 0
     private var inscriptionReplacementHotkeySelection: Int? = null
     private var routeSelection: Int = 0
@@ -199,9 +214,12 @@ class InputHandler(
             modalFrames = modalStack.frames(),
             paneFocusAnchor = paneFocusController.currentAnchor,
             inventorySelection = inventorySelection,
+            inventoryPageIndex = inventoryPageIndex,
+            inventoryFocusedCell = inventoryFocusedCell,
             hoveredEquipmentSlotId = hoveredEquipmentSlotId,
             hoveredInscriptionHotkey = hoveredInscriptionHotkey,
             hoveredInventoryIndex = hoveredInventoryIndex,
+            hoveredInventoryCell = hoveredInventoryCell,
             shopOfferSelection = shopOfferSelection,
             inscriptionReplacementHotkeySelection = inscriptionReplacementHotkeySelection,
             routeSelection = routeSelection,
@@ -385,11 +403,12 @@ class InputHandler(
             UiMode.SHOP,
             UiMode.WORLD_MAP,
             UiMode.MAP,
-            UiMode.INVENTORY,
             UiMode.TARGETING,
             UiMode.INSPECT,
             UiMode.VALIDATION,
             -> Unit
+
+            UiMode.INVENTORY -> reconcileInventoryCursor(snapshot)
         }
 
         if (mode == UiMode.VALIDATION) {
@@ -440,7 +459,7 @@ class InputHandler(
             return PlayerCommand.Ascend
         }
 
-        if (pollBackpackPaging(snapshot)) {
+        if (pollMapBackpackPagingNoop()) {
             return null
         }
 
@@ -506,19 +525,12 @@ class InputHandler(
         return null
     }
 
-    private fun pollBackpackPaging(snapshot: RenderSnapshot): Boolean {
-        val inventorySize = snapshot.uiState.inventory.size
+    private fun pollMapBackpackPagingNoop(): Boolean {
         if (input.isKeyJustPressed(Keys.PAGE_UP)) {
-            if (inventorySize > 0) {
-                inventorySelection = previousInventoryPageStart(snapshot)
-            }
             resetMovementRepeat()
             return true
         }
         if (input.isKeyJustPressed(Keys.PAGE_DOWN)) {
-            if (inventorySize > 0) {
-                inventorySelection = nextInventoryPageStart(snapshot)
-            }
             resetMovementRepeat()
             return true
         }
@@ -849,7 +861,7 @@ class InputHandler(
             else -> Unit
         }
 
-        val inventorySize = snapshot.uiState.inventory.size
+        val groups = InventoryWorkbenchStacks.groups(snapshot.uiState.inventory)
         if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
             closeAllModalFrames()
             return null
@@ -863,31 +875,46 @@ class InputHandler(
             return null
         }
 
-        if (inventorySize == 0) {
+        if (groups.isEmpty()) {
             return null
         }
 
-        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
-            inventorySelection = moveInventorySelection(snapshot, step = -1)
-            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+        if (input.isButtonJustPressed(Buttons.LEFT)) {
+            val clickedCell = hoveredInventoryCell
+            if (clickedCell != null) {
+                inventoryFocusedCell = InventoryWorkbenchGrid.coerce(clickedCell)
+                commitFocusedInventoryCell(groups)
+                return null
+            }
+        }
+
+        if (input.isKeyJustPressed(Keys.UP)) {
+            moveInventoryFocus(deltaColumn = 0, deltaRow = -1)
             return null
         }
 
-        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
-            inventorySelection = moveInventorySelection(snapshot, step = 1)
-            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+        if (input.isKeyJustPressed(Keys.DOWN)) {
+            moveInventoryFocus(deltaColumn = 0, deltaRow = 1)
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.LEFT)) {
+            moveInventoryFocus(deltaColumn = -1, deltaRow = 0)
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.RIGHT)) {
+            moveInventoryFocus(deltaColumn = 1, deltaRow = 0)
             return null
         }
 
         if (input.isKeyJustPressed(Keys.PAGE_UP)) {
-            inventorySelection = previousInventoryPageStart(snapshot)
-            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+            pageInventory(groups, step = -1)
             return null
         }
 
         if (input.isKeyJustPressed(Keys.PAGE_DOWN)) {
-            inventorySelection = nextInventoryPageStart(snapshot)
-            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+            pageInventory(groups, step = 1)
             return null
         }
 
@@ -895,58 +922,106 @@ class InputHandler(
             input.isKeyJustPressed(Keys.ENTER) ||
             input.isKeyJustPressed(Keys.SPACE)
         ) {
-            pushItemDetailFrame()
+            commitFocusedInventoryCell(groups)
             return null
         }
 
         if (input.isKeyJustPressed(Keys.E)) {
-            return PlayerCommand.ActivateInventoryItem(inventorySelection)
+            return selectedInventoryEntry(snapshot)?.takeIf { entry -> inventoryActionIsAvailable(entry.item) }?.let { entry ->
+                PlayerCommand.ActivateInventoryItem(entry.index)
+            }
         }
 
         if (input.isKeyJustPressed(Keys.D)) {
-            return PlayerCommand.DropInventoryItem(inventorySelection)
+            return selectedInventoryEntry(snapshot)?.let { entry -> PlayerCommand.DropInventoryItem(entry.index) }
         }
 
         return null
     }
 
-    private fun moveInventorySelection(
-        snapshot: RenderSnapshot,
+    private fun moveInventoryFocus(
+        deltaColumn: Int,
+        deltaRow: Int,
+    ) {
+        inventoryFocusedCell =
+            InventoryWorkbenchCellCoordinate(
+                column = (inventoryFocusedCell.column + deltaColumn).coerceIn(0, InventoryWorkbenchGrid.COLUMNS - 1),
+                row = (inventoryFocusedCell.row + deltaRow).coerceIn(0, InventoryWorkbenchGrid.ROWS - 1),
+            )
+    }
+
+    private fun pageInventory(
+        groups: List<InventoryWorkbenchStackGroup>,
         step: Int,
-    ): Int {
-        val entries = sortedInventory(snapshot)
-        if (entries.isEmpty()) {
-            return 0
-        }
-        val nextPosition = (selectedInventoryPosition(entries) + step).coerceIn(0, entries.size - 1)
-        return entries[nextPosition].index
+    ) {
+        val pageCount = InventoryWorkbenchStacks.pageCount(groups)
+        inventoryPageIndex = (inventoryPageIndex + step).coerceIn(0, pageCount - 1)
+        commitFocusedInventoryCell(groups)
     }
 
-    private fun previousInventoryPageStart(snapshot: RenderSnapshot): Int {
-        val entries = sortedInventory(snapshot)
-        if (entries.isEmpty()) {
-            return 0
-        }
-        val nextPosition = (((selectedInventoryPosition(entries) / inventoryPageSize) - 1).coerceAtLeast(0)) * inventoryPageSize
-        return entries[nextPosition].index
-    }
-
-    private fun nextInventoryPageStart(snapshot: RenderSnapshot): Int {
-        val entries = sortedInventory(snapshot)
-        if (entries.isEmpty()) {
-            return 0
-        }
-        val nextPageStart = ((selectedInventoryPosition(entries) / inventoryPageSize) + 1) * inventoryPageSize
-        return entries[nextPageStart.coerceAtMost(entries.size - 1)].index
+    private fun commitFocusedInventoryCell(groups: List<InventoryWorkbenchStackGroup>) {
+        inventorySelection =
+            InventoryWorkbenchStacks.groupAt(groups, inventoryPageIndex, inventoryFocusedCell)
+                ?.representative
+                ?.index
+                ?: NO_INVENTORY_SELECTION
+        updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
     }
 
     private fun sortedInventory(snapshot: RenderSnapshot): List<InventoryEntrySnapshot> =
         snapshot.uiState.inventory.sortedBy(InventoryEntrySnapshot::index)
 
+    private fun selectedInventoryEntry(snapshot: RenderSnapshot): InventoryEntrySnapshot? =
+        snapshot.uiState.inventory.firstOrNull { entry -> entry.index == inventorySelection }
+
+    private fun inventoryActionIsAvailable(item: com.ktome.core.snapshot.ItemRenderSnapshot): Boolean =
+        item.slotId != null || (item.typeId == "CONSUMABLE" && item.effectTypeId != null)
+
     private fun selectedInventoryPosition(entries: List<InventoryEntrySnapshot>): Int =
         entries.indexOfFirst { entry -> entry.index == inventorySelection }
             .takeIf { index -> index >= 0 }
             ?: inventorySelection.coerceIn(0, entries.size - 1)
+
+    private fun reconcileInventoryCursor(snapshot: RenderSnapshot) {
+        val groups = InventoryWorkbenchStacks.groups(snapshot.uiState.inventory)
+        val groupSignature = inventoryGroupSignature(groups)
+        if (groups.isEmpty()) {
+            inventorySelection = NO_INVENTORY_SELECTION
+            inventoryPageIndex = 0
+            inventoryFocusedCell = InventoryWorkbenchCellCoordinate.ORIGIN
+            inventoryGroupSignature = groupSignature
+            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+            return
+        }
+        val pageCount = InventoryWorkbenchStacks.pageCount(groups)
+        val selectedGroupIndex = groups.indexOfFirst { group -> inventorySelection in group.entryIds }
+        if (selectedGroupIndex >= 0) {
+            val selectedPageIndex = selectedGroupIndex / InventoryWorkbenchGrid.PAGE_SIZE
+            if (inventoryGroupSignature != groupSignature || inventoryPageIndex != selectedPageIndex) {
+                inventoryPageIndex = selectedPageIndex.coerceIn(0, pageCount - 1)
+                inventoryFocusedCell =
+                    InventoryWorkbenchGrid.coordinateForVisualIndex(selectedGroupIndex % InventoryWorkbenchGrid.PAGE_SIZE)
+            } else {
+                inventoryPageIndex = inventoryPageIndex.coerceIn(0, pageCount - 1)
+                inventoryFocusedCell = InventoryWorkbenchGrid.coerce(inventoryFocusedCell)
+            }
+        } else {
+            inventoryPageIndex = inventoryPageIndex.coerceIn(0, pageCount - 1)
+            inventoryFocusedCell = InventoryWorkbenchGrid.coerce(inventoryFocusedCell)
+            if (inventorySelection != NO_INVENTORY_SELECTION) {
+                val focusedGroupIndex = inventoryPageIndex * InventoryWorkbenchGrid.PAGE_SIZE + inventoryFocusedCell.visualIndex()
+                val fallbackGroupIndex = focusedGroupIndex.takeIf(groups.indices::contains) ?: 0
+                inventorySelection = groups[fallbackGroupIndex].representative.index
+                inventoryPageIndex = fallbackGroupIndex / InventoryWorkbenchGrid.PAGE_SIZE
+                inventoryFocusedCell = InventoryWorkbenchGrid.coordinateForVisualIndex(fallbackGroupIndex % InventoryWorkbenchGrid.PAGE_SIZE)
+            }
+        }
+        inventoryGroupSignature = groupSignature
+        updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+    }
+
+    private fun inventoryGroupSignature(groups: List<InventoryWorkbenchStackGroup>): List<List<Int>> =
+        groups.map { group -> group.entryIds }
 
     private fun pollItemDetailCommand(snapshot: RenderSnapshot): PlayerCommand? {
         if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
@@ -1695,6 +1770,12 @@ class InputHandler(
             ).rightPanelLayout
         val pointerX = input.pointerX().toFloat()
         val pointerY = input.pointerY().toFloat()
+        if (mode == UiMode.INVENTORY && modalStack.top()?.kind == ModalFrameKind.INVENTORY) {
+            hoveredEquipmentSlotId = null
+            hoveredInscriptionHotkey = null
+            updateInventoryWorkbenchHover(snapshot, pointerX, pointerY)
+            return
+        }
         hoveredEquipmentSlotId =
             layout.equipmentSlots.slotBounds
                 .indexOfFirst { bounds -> bounds.contains(pointerX, pointerY) }
@@ -1708,11 +1789,35 @@ class InputHandler(
                 .takeIf { index -> index >= 0 }
                 ?.let { index -> INSCRIPTION_HOTKEY_START + index }
         hoveredInventoryIndex = resolveHoveredInventoryIndex(snapshot, layout.backpackSlots.slotBounds, pointerX, pointerY)
-        val hoveredInventory = hoveredInventoryIndex
-        if (mode == UiMode.INVENTORY && hoveredInventory != null) {
-            inventorySelection = hoveredInventory
-            updateTopModalState { state -> state.copy(inventorySelection = inventorySelection) }
+        hoveredInventoryCell = null
+    }
+
+    private fun updateInventoryWorkbenchHover(
+        snapshot: RenderSnapshot,
+        pointerX: Float,
+        pointerY: Float,
+    ) {
+        val layout =
+            InventoryWorkbenchLayoutSolver.resolve(
+                InventoryWorkbenchLayoutRequest(
+                    viewportWidth = input.viewportWidth(),
+                    viewportHeight = input.viewportHeight(),
+                ),
+            )
+        val cellIndex = layout.backpackCellBounds.indexOfFirst { bounds -> bounds.contains(pointerX, pointerY) }
+        if (cellIndex < 0) {
+            hoveredInventoryIndex = null
+            hoveredInventoryCell = null
+            return
         }
+        val coordinate = InventoryWorkbenchGrid.coordinateForVisualIndex(cellIndex)
+        hoveredInventoryCell = coordinate
+        hoveredInventoryIndex =
+            InventoryWorkbenchStacks.groupAt(
+                InventoryWorkbenchStacks.groups(snapshot.uiState.inventory),
+                inventoryPageIndex,
+                coordinate,
+            )?.representative?.index
     }
 
     private fun inscriptionHitBounds(
@@ -1743,7 +1848,7 @@ class InputHandler(
             return null
         }
         val selectedPosition = selectedInventoryPosition(sortedInventory)
-        val pageStart = (selectedPosition / inventoryPageSize) * inventoryPageSize
+        val pageStart = (selectedPosition / rightPanelBackpackPageSize) * rightPanelBackpackPageSize
         return sortedInventory.getOrNull(pageStart + slotIndex)?.index
     }
 
@@ -1821,7 +1926,20 @@ class InputHandler(
     }
 
     private fun enterInventory(snapshot: RenderSnapshot) {
-        inventorySelection = inventorySelection.coerceAtMost((snapshot.uiState.inventory.size - 1).coerceAtLeast(0))
+        val groups = InventoryWorkbenchStacks.groups(snapshot.uiState.inventory)
+        inventoryGroupSignature = inventoryGroupSignature(groups)
+        if (groups.isEmpty()) {
+            inventorySelection = NO_INVENTORY_SELECTION
+            inventoryPageIndex = 0
+            inventoryFocusedCell = InventoryWorkbenchCellCoordinate.ORIGIN
+        } else {
+            val selectedGroup =
+                groups.firstOrNull { group -> inventorySelection in group.entryIds }
+                    ?: groups.first()
+            inventorySelection = selectedGroup.representative.index
+            inventoryPageIndex = InventoryWorkbenchStacks.pageIndexForEntry(groups, inventorySelection) ?: 0
+            inventoryFocusedCell = InventoryWorkbenchStacks.coordinateForEntry(groups, inventorySelection) ?: InventoryWorkbenchCellCoordinate.ORIGIN
+        }
         openModalFrame(
             ModalFrame(
                 kind = ModalFrameKind.INVENTORY,

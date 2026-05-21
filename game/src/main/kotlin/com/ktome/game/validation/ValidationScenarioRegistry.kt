@@ -1085,6 +1085,83 @@ object ValidationScenarioRegistry {
                     ),
             ),
             ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr05-1-inventory-page-workbench"),
+                prId = "PR-05-1",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.LOOT_LAB,
+                        seed = 20260521L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "vanguard",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/dark-uiux-pr05-1-inventory-workbench-open.png",
+                                "evidence/dark-uiux-pr05-1-inventory-compare-selection.png",
+                                "evidence/dark-uiux-pr05-1-inventory-consumable-selection.png",
+                                "evidence/dark-uiux-pr05-1-inventory-empty-cell-selection.png",
+                                "evidence/dark-uiux-pr05-1-inventory-pagination-page-two.png",
+                                "evidence/dark-uiux-pr05-1-inventory-min-window-1024x768.png",
+                                "evidence/dark-uiux-pr05-1-inventory-escape-return-map.png",
+                                "evidence/dark-uiux-pr05-1-inventory-page-workbench-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "I",
+                                    expectedVisibleResult = "Full-page inventory workbench opens with 9-slot visual equipment area, 6x4 backpack grid, selected item detail, typed compare/action rows, footer hints, and low-light shell context.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-1-inventory-workbench-open.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (inventory UI mode)",
+                                    input = "Right, Enter",
+                                    expectedVisibleResult = "Committed selection moves to an equippable item and the detail pane shows the current equipment compare cue from typed item data.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-1-inventory-compare-selection.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (inventory UI mode)",
+                                    input = "Right, Right, Enter",
+                                    expectedVisibleResult = "Committed selection moves to a consumable or material-like item without changing the workbench layout or showing fake equip-only compare rows.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-1-inventory-consumable-selection.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (inventory UI mode)",
+                                    input = "PgDn",
+                                    expectedVisibleResult = "Empty cell selection keeps the 6x4 grid stable and shows an empty selection/action state without placeholder item text.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-1-inventory-empty-cell-selection.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (inventory UI mode)",
+                                    input = "Left, Left, Left, Enter",
+                                    expectedVisibleResult = "Inventory remains on page 2 with a committed item selection while footer/page/capacity text stays visible.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-1-inventory-pagination-page-two.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Manual resize",
+                                    input = "Resize packaged window to 1024x768",
+                                    expectedVisibleResult = "All three workbench columns, 6x4 grid, selected detail, and footer remain readable without major overlap.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-1-inventory-min-window-1024x768.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (inventory UI mode)",
+                                    input = "Esc",
+                                    expectedVisibleResult = "Inventory workbench closes and returns to the in-run map shell.",
+                                    evidenceFile = "evidence/dark-uiux-pr05-1-inventory-escape-return-map.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/dark-uiux-pr05-1-inventory-page-workbench.md",
+                        scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr05-1-inventory-page-workbench.evidence.summary_note",
+                    ),
+            ),
+            ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 prId = "PR-06",
                 runtime =
