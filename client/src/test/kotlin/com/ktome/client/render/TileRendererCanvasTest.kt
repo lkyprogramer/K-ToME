@@ -19,6 +19,8 @@ import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.client.render.layout.DemoSlotGridLayout
 import com.ktome.client.render.layout.GameShellBounds
+import com.ktome.client.render.layout.InventoryWorkbenchLayoutRequest
+import com.ktome.client.render.layout.InventoryWorkbenchLayoutSolver
 import com.ktome.client.ui.combat.CombatAffordanceResourceKeys
 import com.ktome.client.ui.combat.CombatDecisionFrame
 import com.ktome.client.ui.combat.CombatDecisionFrameState
@@ -346,6 +348,7 @@ class TileRendererCanvasTest {
                 mode = UiMode.INVENTORY,
                 modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY)),
                 inventorySelection = 3,
+                hoveredInventoryCell = InventoryWorkbenchCellCoordinate(column = 2, row = 0),
             )
         val snapshot =
             sampleSnapshot(
@@ -375,9 +378,93 @@ class TileRendererCanvasTest {
         assertTrue(model.sidebar.rows.any { row -> row.text == "Equipped: Long Sword" })
         assertTrue(model.sidebar.rows.any { row -> row.text == "ATK +3" && row.tone == TileTextTone.GREEN })
         assertTrue(model.sidebar.rows.any { row -> row.text == "DEF -1" && row.tone == TileTextTone.RED })
-        val tooltip = requireNotNull(diagnostics.overlayFrame.overlayModel.selectedTooltip)
-        assertTrue(tooltip.titleLine.text.contains("Hunter Bow"))
-        assertTrue(tooltip.bodyLines.any { line -> line.text == "ATK +3" && line.tone == TileTextTone.GREEN })
+        val workbench = requireNotNull(model.inventoryWorkbench)
+        assertEquals(6, workbench.grid.columns)
+        assertEquals(4, workbench.grid.rows)
+        assertTrue(workbench.selectedItemTitle.contains("Hunter Bow"))
+        assertTrue(workbench.compareRows.any { row -> row.statId == "attack" && row.deltaValue == "+3" && row.tone == TileTextTone.GREEN })
+        assertTrue(workbench.compareRows.any { row -> row.statId == "defense" && row.deltaValue == "-1" && row.tone == TileTextTone.RED })
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 2, row = 0), workbench.grid.hoveredCell)
+        assertTrue(workbench.grid.cells.first { cell -> cell.coordinate == InventoryWorkbenchCellCoordinate(column = 2, row = 0) }.hovered)
+        val activeModal = requireNotNull(diagnostics.overlayFrame.overlayModel.activeModal)
+        assertNotNull(activeModal.inventoryWorkbench)
+        assertNull(diagnostics.overlayFrame.overlayModel.selectedTooltip)
+    }
+
+    @Test
+    fun `compact inventory workbench clamps detail rows and keeps action footer keys visible`() {
+        val candidate =
+            ItemRenderSnapshot(
+                baseItemId = "hunter_bow",
+                nameKey = "item.hunter_bow.name",
+                typeId = "WEAPON",
+                iconKey = "item.hunter_bow.icon",
+                slotId = "WEAPON",
+                qualityTierId = "RARE",
+                qualityNameKey = "item.quality.rare",
+                affixNameKeys =
+                    listOf(
+                        "affix.sharp.name",
+                        "affix.sturdy.name",
+                        "affix.swift.name",
+                        "affix.of_strength.name",
+                    ),
+                stats = ItemStatModifierSnapshot(attack = 4, defense = 3, accuracy = 2),
+            )
+        val snapshot =
+            sampleSnapshot(
+                inventory = listOf(InventoryEntrySnapshot(index = 0, item = candidate)),
+            )
+        val overlayState =
+            OverlayState(
+                mode = UiMode.INVENTORY,
+                modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY)),
+                inventorySelection = 0,
+            )
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = overlayState,
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+            shellWorldWidth = 1024f,
+            shellWorldHeight = 768f,
+        )
+
+        val layout =
+            InventoryWorkbenchLayoutSolver.resolve(
+                InventoryWorkbenchLayoutRequest(viewportWidth = 1024, viewportHeight = 768),
+            )
+        val detailTexts =
+            canvas.textDraws
+                .filter { draw -> draw.x >= layout.detailColumn.x && draw.x <= layout.detailColumn.right }
+                .map(RecordingTileCanvas.TextDraw::text)
+        assertTrue(detailTexts.contains("Slot Weapon"))
+        assertTrue(detailTexts.contains("Quality Rare"))
+        assertTrue(detailTexts.contains("Affix Sharp"))
+        assertTrue(detailTexts.contains("Affix Sturdy"))
+        assertTrue(detailTexts.contains("Affix Swift"))
+        assertFalse(detailTexts.contains("Affix of Strength"))
+
+        val actionKeyTexts =
+            canvas.textDraws
+                .filter { draw -> draw.x >= layout.detailColumn.x && draw.x <= layout.detailColumn.right && draw.y >= layout.detailColumn.y && draw.y <= layout.detailColumn.top }
+                .map(RecordingTileCanvas.TextDraw::text)
+        listOf("Enter", "E", "D", "Esc").forEach { keyText ->
+            assertTrue(actionKeyTexts.contains(keyText), "Missing compact action key $keyText")
+        }
+
+        val footerKeyTexts =
+            canvas.textDraws
+                .filter { draw -> draw.x >= layout.footer.x && draw.x <= layout.footer.right && draw.y >= layout.footer.y && draw.y <= layout.footer.top }
+                .map(RecordingTileCanvas.TextDraw::text)
+        listOf("Arrows", "Enter", "E", "D", "PgUp/PgDn", "Esc").forEach { keyText ->
+            assertTrue(footerKeyTexts.contains(keyText), "Missing compact footer key $keyText")
+        }
     }
 
     @Test
@@ -2200,7 +2287,7 @@ class TileRendererCanvasTest {
                 localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
                 visualResolver = sampleResolver(),
                 snapshot = sampleSnapshot(),
-                overlayState = OverlayState(mode = UiMode.INVENTORY, modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY))),
+                overlayState = OverlayState(mode = UiMode.INVENTORY, modalFrames = listOf(ModalFrame(ModalFrameKind.ITEM_DETAIL))),
                 canvas = RecordingTileCanvas(),
                 cellWidth = 32f,
                 cellHeight = 32f,

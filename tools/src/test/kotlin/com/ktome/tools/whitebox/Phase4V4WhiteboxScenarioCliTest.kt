@@ -48,20 +48,22 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(Files.isDirectory(paths.evidenceDir))
 
         val launchScript = paths.launchScript.readText()
-        assertTrue(launchScript.contains("JAVA_TOOL_OPTIONS=\"-Duser.home=build/whitebox/phase4-v4-pr00-selftest/runtime-home"))
+        assertTrue(launchScript.contains("SCENARIO_APP_BUNDLE=\"${'$'}REPO_ROOT/build/whitebox/phase4-v4-pr00-selftest/runtime-app/K-ToME.app\""))
+        assertTrue(launchScript.contains("SCENARIO_APP_CFG=\"${'$'}REPO_ROOT/build/whitebox/phase4-v4-pr00-selftest/runtime-app/K-ToME.app/Contents/app/K-ToME.cfg\""))
+        assertTrue(launchScript.contains("cp -R \"${'$'}APP_BUNDLE\" \"${'$'}SCENARIO_APP_BUNDLE\""))
+        assertTrue(launchScript.contains("java-options=-Duser.home=${'$'}REPO_ROOT/build/whitebox/phase4-v4-pr00-selftest/runtime-home"))
         assertTrue(launchScript.contains("-Dktome.validation.scenario=phase4-v4-pr00-selftest"))
-        assertTrue(launchScript.contains("-Dktome.whitebox.root=build/whitebox/phase4-v4-pr00-selftest"))
-        assertTrue(launchScript.contains("-Dktome.whitebox.evidenceDir=build/whitebox/phase4-v4-pr00-selftest/evidence"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.root=${'$'}REPO_ROOT/build/whitebox/phase4-v4-pr00-selftest"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.evidenceDir=${'$'}REPO_ROOT/build/whitebox/phase4-v4-pr00-selftest/evidence"))
         assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=docs/review/phase4/v4-pr/manual-records/phase4-v4-pr00-selftest.md"))
         assertTrue(launchScript.contains("APP_EXECUTABLE_SHA256=\"${'$'}REPO_ROOT/build/whitebox/phase4-v4-pr00-selftest/app-executable.sha256\""))
-        assertTrue(launchScript.contains("APP_BUNDLE=\"${'$'}REPO_ROOT/client/build/release/K-ToME.app\""))
         assertTrue(launchScript.contains("EXPECTED_HASH=\"$(awk '{print ${'$'}1}' \"${'$'}APP_EXECUTABLE_SHA256\")\""))
-        assertTrue(launchScript.contains("BEFORE_PIDS=\"$(pgrep -f \"${'$'}APP_EXECUTABLE\" || true)\""))
-        assertTrue(launchScript.contains("EXTRA_JAVA_TOOL_OPTIONS=\"\""))
         assertTrue(launchScript.contains("-Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"))
-        assertTrue(launchScript.contains("env JAVA_TOOL_OPTIONS=\"${'$'}JAVA_TOOL_OPTIONS\" open -n \"${'$'}APP_BUNDLE\""))
-        assertTrue(launchScript.contains("CANDIDATE_PIDS=\"$(pgrep -f \"${'$'}APP_EXECUTABLE\" || true)\""))
+        assertTrue(launchScript.contains("\"${'$'}SCENARIO_APP_EXECUTABLE\" >> \"${'$'}SCENARIO_APP_LOG\" 2>&1 &"))
+        assertTrue(launchScript.contains("APP_PID=\"${'$'}!\""))
+        assertTrue(launchScript.contains("kill -0 \"${'$'}APP_PID\""))
         assertTrue(launchScript.contains("printf '%s\\n' \"${'$'}APP_PID\" > \"build/whitebox/phase4-v4-pr00-selftest/evidence/app.pid\""))
+        assertTrue(launchScript.contains("wait \"${'$'}APP_PID\""))
         assertTrue(launchScript.contains("APP_HASH_MISMATCH"))
         assertTrue(launchScript.contains("APP_LAUNCH_FAILED"))
         assertFalseMachinePath(launchScript)
@@ -82,6 +84,23 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertFalseMachinePath(expectedEvidence)
 
         assertEquals(result.appHash, paths.appExecutableSha256.readText().substringBefore("  "))
+    }
+
+    @Test
+    fun `invalid packaged executable path outside app bundle fails fast`() {
+        val config = baseConfig(scenarioId = "phase4-v4-pr00-selftest")
+        val appExecutable = config.repoRoot.resolve("client/build/release/K-ToME")
+        Files.createDirectories(appExecutable.parent)
+        appExecutable.writeText("fake packaged executable")
+
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                Phase4V4WhiteboxScenarioCli.run(
+                    config.copy(appExecutable = appExecutable),
+                )
+            }
+
+        assertTrue(exception.message?.contains("Expected macOS .app bundle parent") == true)
     }
 
     @Test
@@ -212,8 +231,8 @@ class Phase4V4WhiteboxScenarioCliTest {
         val launchScript = paths.launchScript.readText()
         assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence/ui-demo-new-app.log\""))
         assertTrue(launchScript.contains("-Dktome.validation.scenario=dark-uiux-pr02-1-demo-shell-foundation"))
-        assertTrue(launchScript.contains("-Dktome.whitebox.root=build/whitebox/dark-uiux-pr02-1-demo-shell-foundation"))
-        assertTrue(launchScript.contains("-Dktome.whitebox.evidenceDir=build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.root=${'$'}REPO_ROOT/build/whitebox/dark-uiux-pr02-1-demo-shell-foundation"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.evidenceDir=${'$'}REPO_ROOT/build/whitebox/dark-uiux-pr02-1-demo-shell-foundation/evidence"))
         assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/ui-demo-new-visual-parity.md"))
 
         val runbook = paths.runbook.readText()
@@ -302,6 +321,42 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(expectedEvidence.contains("dark-uiux-pr03-app.log"))
         assertTrue(expectedEvidence.contains("log.validation.item.pr03_showcase"))
         assertTrue(expectedEvidence.contains("dark-uiux-pr03-shop-full-slot-replace.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
+    fun `dark uiux pr05 1 scenario generates inventory workbench evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr05-1-inventory-page-workbench"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/dark-uiux-pr05-1-inventory-page-workbench/evidence/dark-uiux-pr05-1-inventory-page-workbench-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=dark-uiux-pr05-1-inventory-page-workbench"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/dark-uiux-pr05-1-inventory-page-workbench.md"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("- window: `1280x800`"))
+        assertTrue(runbook.contains("dark-uiux-pr05-1-inventory-workbench-open.png"))
+        assertTrue(runbook.contains("dark-uiux-pr05-1-inventory-compare-selection.png"))
+        assertTrue(runbook.contains("dark-uiux-pr05-1-inventory-consumable-selection.png"))
+        assertTrue(runbook.contains("dark-uiux-pr05-1-inventory-empty-cell-selection.png"))
+        assertTrue(runbook.contains("dark-uiux-pr05-1-inventory-pagination-page-two.png"))
+        assertTrue(runbook.contains("dark-uiux-pr05-1-inventory-min-window-1024x768.png"))
+        assertTrue(runbook.contains("dark-uiux-pr05-1-inventory-escape-return-map.png"))
+        assertTrue(runbook.contains("Right, Right, Enter"))
+        assertTrue(runbook.contains("PgDn"))
+        assertTrue(runbook.contains("Left, Left, Left, Enter"))
+        assertTrue(runbook.contains("Full-page inventory workbench opens"))
+        assertTrue(runbook.contains("UI/manual-records/dark-uiux-pr05-1-inventory-page-workbench.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr05-1-inventory-page-workbench\""))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr05-1-inventory-page-workbench-app.log"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr05-1-inventory-pagination-page-two.png.sha256"))
         assertFalseMachinePath(expectedEvidence)
     }
 
@@ -439,6 +494,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: phase4-v4-pr05
             |  - id: dark-uiux-pr05-map-layer-stack
             |  - id: dark-uiux-pr05-actor-boss-telegraph
+            |  - id: dark-uiux-pr05-1-inventory-page-workbench
             |  - id: phase4-v4-pr06
             |  - id: phase4-v4-pr07
             |

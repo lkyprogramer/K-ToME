@@ -375,6 +375,51 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `dark uiux pr05 inventory workbench secondary scene materializes page two marker`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr05-1-inventory-page-workbench"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr05-1-workbench")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        val primaryBaseIds = inventoryBaseIds(session)
+        assertTrue(primaryBaseIds.size > 24, "PR05-1 primary scene must seed enough groups for page two navigation.")
+        assertFalse("war_maul" in primaryBaseIds)
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        val secondaryBaseIds = inventoryBaseIds(session)
+        assertEquals(primaryBaseIds.size + 1, secondaryBaseIds.size)
+        assertEquals("war_maul", secondaryBaseIds.last())
+        assertTrue(
+            session.renderSnapshot().logEvents.any { event ->
+                event.message.arguments.any { argument -> argument.name == "result" && argument.value == "inventory_workbench_page_two_ready" }
+            },
+        )
+    }
+
+    @Test
     fun `validation boss telegraph action materializes an active runtime overlay`() {
         val session =
             GameModule.newValidationSession(

@@ -15,5 +15,6 @@ scenarios:
   - id: phase4-v4-pr05
   - id: dark-uiux-pr05-map-layer-stack
   - id: dark-uiux-pr05-actor-boss-telegraph
+  - id: dark-uiux-pr05-1-inventory-page-workbench
   - id: phase4-v4-pr06
   - id: phase4-v4-pr07

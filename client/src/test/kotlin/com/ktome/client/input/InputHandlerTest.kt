@@ -1,9 +1,13 @@
 package com.ktome.client.input
 
+import com.badlogic.gdx.Input.Buttons
 import com.badlogic.gdx.Input.Keys
 import com.ktome.client.render.DemoNavRailButtonLayout
+import com.ktome.client.render.InventoryWorkbenchCellCoordinate
 import com.ktome.client.render.layout.DemoShellLayoutRequest
 import com.ktome.client.render.layout.DemoShellLayoutSolver
+import com.ktome.client.render.layout.InventoryWorkbenchLayoutRequest
+import com.ktome.client.render.layout.InventoryWorkbenchLayoutSolver
 import com.ktome.client.replay.ReplayInputSource
 import com.ktome.client.ui.layout.ModalFrame
 import com.ktome.client.ui.layout.ModalFrameKind
@@ -1210,7 +1214,7 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `inventory mode opens item detail and uses escape as full close`() {
+    fun `inventory workbench moves focus separately from committed selected item`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val snapshot =
@@ -1219,11 +1223,11 @@ class InputHandlerTest {
                     listOf(
                         InventoryEntrySnapshot(
                             index = 0,
-                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON", slotId = "WEAPON"),
                         ),
                         InventoryEntrySnapshot(
                             index = 1,
-                            item = ItemRenderSnapshot(baseItemId = "healing_potion", nameKey = "item.healing_potion.name", typeId = "CONSUMABLE"),
+                            item = ItemRenderSnapshot(baseItemId = "healing_potion", nameKey = "item.healing_potion.name", typeId = "CONSUMABLE", effectTypeId = "HEAL"),
                         ),
                     ),
             )
@@ -1231,22 +1235,25 @@ class InputHandlerTest {
         input.frame(justPressed = setOf(Keys.I))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        assertEquals(ModalFrameKind.INVENTORY, handler.overlayState().activeModalKind)
+        assertEquals(0, handler.overlayState().inventorySelection)
+        assertEquals(InventoryWorkbenchCellCoordinate.ORIGIN, handler.overlayState().inventoryFocusedCell)
         input.clear()
 
-        input.frame(justPressed = setOf(Keys.X))
+        input.frame(justPressed = setOf(Keys.RIGHT))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(0, handler.overlayState().inventorySelection)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 1, row = 0), handler.overlayState().inventoryFocusedCell)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(1, handler.overlayState().inventorySelection)
         assertEquals(ModalFrameKind.INVENTORY, handler.overlayState().activeModalKind)
         input.clear()
 
-        input.frame(justPressed = setOf(Keys.SPACE))
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(ModalFrameKind.ITEM_DETAIL, handler.overlayState().activeModalKind)
-        input.clear()
-
-        input.frame(justPressed = setOf(Keys.BACKSPACE))
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(ModalFrameKind.INVENTORY, handler.overlayState().activeModalKind)
+        input.frame(justPressed = setOf(Keys.D))
+        assertEquals(PlayerCommand.DropInventoryItem(1), handler.pollCommand(snapshot))
         assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
         input.clear()
 
@@ -1261,29 +1268,8 @@ class InputHandlerTest {
         assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
         input.clear()
 
-        input.frame(justPressed = setOf(Keys.D))
-        assertEquals(PlayerCommand.DropInventoryItem(0), handler.pollCommand(snapshot))
-        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
-        input.clear()
-
-        input.frame(justPressed = setOf(Keys.ENTER))
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(ModalFrameKind.ITEM_DETAIL, handler.overlayState().activeModalKind)
-        input.clear()
-
-        input.frame(justPressed = setOf(Keys.X))
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(ModalFrameKind.ITEM_COMPARE, handler.overlayState().activeModalKind)
-        input.clear()
-
         input.frame(justPressed = setOf(Keys.E))
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(ModalFrameKind.ITEM_COMPARE, handler.overlayState().activeModalKind)
-        input.clear()
-
-        input.frame(justPressed = setOf(Keys.BACKSPACE))
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(ModalFrameKind.ITEM_DETAIL, handler.overlayState().activeModalKind)
+        assertEquals(PlayerCommand.ActivateInventoryItem(1), handler.pollCommand(snapshot))
         input.clear()
 
         input.frame(justPressed = setOf(Keys.ESCAPE))
@@ -1303,7 +1289,7 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `map page keys page backpack instead of moving the actor`() {
+    fun `map page keys do not mutate hidden backpack selection`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val snapshot =
@@ -1319,7 +1305,7 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.PAGE_DOWN))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals(8, handler.overlayState().inventorySelection)
+        assertEquals(0, handler.overlayState().inventorySelection)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.PAGE_UP))
@@ -1386,11 +1372,37 @@ class InputHandlerTest {
         assertNull(handler.pollCommand(snapshot))
         input.clear()
 
-        val backpackBounds = layout.backpackSlots.slotBounds[1]
+        val workbenchLayout =
+            InventoryWorkbenchLayoutSolver.resolve(
+                InventoryWorkbenchLayoutRequest(viewportWidth = 1280, viewportHeight = 800),
+            )
+        val backpackBounds = workbenchLayout.backpackCellBounds[1]
         input.frame(pointerX = (backpackBounds.x + 2f).roundToInt(), pointerY = (backpackBounds.y + 2f).roundToInt())
         assertNull(handler.pollCommand(snapshot))
         assertEquals(7, handler.overlayState().hoveredInventoryIndex)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 1, row = 0), handler.overlayState().hoveredInventoryCell)
+        assertEquals(3, handler.overlayState().inventorySelection)
+        input.clear()
+
+        input.frame(
+            justPressedButtons = setOf(Buttons.LEFT),
+            pointerX = (backpackBounds.x + 2f).roundToInt(),
+            pointerY = (backpackBounds.y + 2f).roundToInt(),
+        )
+        assertNull(handler.pollCommand(snapshot))
         assertEquals(7, handler.overlayState().inventorySelection)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 1, row = 0), handler.overlayState().inventoryFocusedCell)
+        input.clear()
+
+        val emptyBounds = workbenchLayout.backpackCellBounds[2]
+        input.frame(
+            justPressedButtons = setOf(Buttons.LEFT),
+            pointerX = (emptyBounds.x + 2f).roundToInt(),
+            pointerY = (emptyBounds.y + 2f).roundToInt(),
+        )
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(-1, handler.overlayState().inventorySelection)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 2, row = 0), handler.overlayState().inventoryFocusedCell)
     }
 
     @Test
@@ -1441,13 +1453,13 @@ class InputHandlerTest {
     }
 
     @Test
-    fun `inventory page up and page down jump to page first slots while map mode keeps diagonal movement`() {
+    fun `inventory page up and page down use workbench page size and stable focus`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
         val snapshot =
             snapshotWithLoadout(
                 inventory =
-                    List(17) { index ->
+                    List(30) { index ->
                         InventoryEntrySnapshot(
                             index = index,
                             item =
@@ -1466,26 +1478,25 @@ class InputHandlerTest {
         assertEquals(0, handler.overlayState().inventorySelection)
         input.clear()
 
-        repeat(3) {
-            input.frame(justPressed = setOf(Keys.DOWN))
+        repeat(2) {
+            input.frame(justPressed = setOf(Keys.RIGHT))
             assertNull(handler.pollCommand(snapshot))
             input.clear()
         }
-        assertEquals(3, handler.overlayState().inventorySelection)
+        assertEquals(0, handler.overlayState().inventorySelection)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 2, row = 0), handler.overlayState().inventoryFocusedCell)
 
         input.frame(justPressed = setOf(Keys.PAGE_DOWN))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals(8, handler.overlayState().inventorySelection)
-        input.clear()
-
-        input.frame(justPressed = setOf(Keys.PAGE_DOWN))
-        assertNull(handler.pollCommand(snapshot))
-        assertEquals(16, handler.overlayState().inventorySelection)
+        assertEquals(26, handler.overlayState().inventorySelection)
+        assertEquals(1, handler.overlayState().inventoryPageIndex)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 2, row = 0), handler.overlayState().inventoryFocusedCell)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.PAGE_UP))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals(8, handler.overlayState().inventorySelection)
+        assertEquals(2, handler.overlayState().inventorySelection)
+        assertEquals(0, handler.overlayState().inventoryPageIndex)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.ESCAPE))
@@ -1495,7 +1506,185 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.PAGE_DOWN))
         assertNull(handler.pollCommand(snapshot))
-        assertEquals(16, handler.overlayState().inventorySelection)
+        assertEquals(2, handler.overlayState().inventorySelection)
+    }
+
+    @Test
+    fun `inventory reconcile keeps selected entry visible when groups shift pages`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    List(30) { index ->
+                        InventoryEntrySnapshot(
+                            index = index,
+                            item =
+                                ItemRenderSnapshot(
+                                    baseItemId = "test_item_$index",
+                                    nameKey = "item.healing_potion.name",
+                                    typeId = "CONSUMABLE",
+                                ),
+                        )
+                    },
+            )
+        val shiftedSnapshot =
+            snapshotWithLoadout(
+                inventory =
+                    (26..29).map { index ->
+                        InventoryEntrySnapshot(
+                            index = index,
+                            item =
+                                ItemRenderSnapshot(
+                                    baseItemId = "test_item_$index",
+                                    nameKey = "item.healing_potion.name",
+                                    typeId = "CONSUMABLE",
+                                ),
+                        )
+                    },
+            )
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        repeat(2) {
+            input.frame(justPressed = setOf(Keys.RIGHT))
+            assertNull(handler.pollCommand(snapshot))
+            input.clear()
+        }
+        input.frame(justPressed = setOf(Keys.PAGE_DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(26, handler.overlayState().inventorySelection)
+        assertEquals(1, handler.overlayState().inventoryPageIndex)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 2, row = 0), handler.overlayState().inventoryFocusedCell)
+        input.clear()
+
+        input.frame()
+        assertNull(handler.pollCommand(shiftedSnapshot))
+
+        assertEquals(26, handler.overlayState().inventorySelection)
+        assertEquals(0, handler.overlayState().inventoryPageIndex)
+        assertEquals(InventoryWorkbenchCellCoordinate.ORIGIN, handler.overlayState().inventoryFocusedCell)
+    }
+
+    @Test
+    fun `inventory reconcile tracks selected entry when same page slot shifts`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    List(4) { index ->
+                        InventoryEntrySnapshot(
+                            index = index,
+                            item =
+                                ItemRenderSnapshot(
+                                    baseItemId = "test_item_$index",
+                                    nameKey = "item.long_sword.name",
+                                    typeId = "WEAPON",
+                                ),
+                        )
+                    },
+            )
+        val shiftedSnapshot =
+            snapshotWithLoadout(
+                inventory =
+                    listOf(0, 2, 3).map { index ->
+                        InventoryEntrySnapshot(
+                            index = index,
+                            item =
+                                ItemRenderSnapshot(
+                                    baseItemId = "test_item_$index",
+                                    nameKey = "item.long_sword.name",
+                                    typeId = "WEAPON",
+                                ),
+                        )
+                    },
+            )
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        repeat(2) {
+            input.frame(justPressed = setOf(Keys.RIGHT))
+            assertNull(handler.pollCommand(snapshot))
+            input.clear()
+        }
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(2, handler.overlayState().inventorySelection)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 2, row = 0), handler.overlayState().inventoryFocusedCell)
+        input.clear()
+
+        input.frame()
+        assertNull(handler.pollCommand(shiftedSnapshot))
+
+        assertEquals(2, handler.overlayState().inventorySelection)
+        assertEquals(0, handler.overlayState().inventoryPageIndex)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 1, row = 0), handler.overlayState().inventoryFocusedCell)
+    }
+
+    @Test
+    fun `inventory page change to empty focused cell commits empty selection state`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    List(25) { index ->
+                        InventoryEntrySnapshot(
+                            index = index,
+                            item =
+                                ItemRenderSnapshot(
+                                    baseItemId = "test_item_$index",
+                                    nameKey = "item.healing_potion.name",
+                                    typeId = "CONSUMABLE",
+                                ),
+                        )
+                    },
+            )
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        repeat(2) {
+            input.frame(justPressed = setOf(Keys.RIGHT))
+            assertNull(handler.pollCommand(snapshot))
+            input.clear()
+        }
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 2, row = 0), handler.overlayState().inventoryFocusedCell)
+
+        input.frame(justPressed = setOf(Keys.PAGE_DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(-1, handler.overlayState().inventorySelection)
+        assertEquals(1, handler.overlayState().inventoryPageIndex)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 2, row = 0), handler.overlayState().inventoryFocusedCell)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.E))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.D))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.LEFT))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.LEFT))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(24, handler.overlayState().inventorySelection)
+        assertEquals(1, handler.overlayState().inventoryPageIndex)
+        assertEquals(InventoryWorkbenchCellCoordinate(column = 0, row = 0), handler.overlayState().inventoryFocusedCell)
     }
 
     @Test

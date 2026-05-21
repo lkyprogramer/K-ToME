@@ -13,6 +13,11 @@ internal enum class EquipmentInventoryOverflowPolicy {
     PAGED,
 }
 
+internal const val EQUIPMENT_INVENTORY_COMPANION_COLUMNS: Int = 4
+internal const val EQUIPMENT_INVENTORY_COMPANION_VISIBLE_ROWS: Int = 2
+internal const val EQUIPMENT_INVENTORY_COMPANION_PAGE_SIZE: Int =
+    EQUIPMENT_INVENTORY_COMPANION_COLUMNS * EQUIPMENT_INVENTORY_COMPANION_VISIBLE_ROWS
+
 internal data class EquipmentSlotCellModel(
     val slotId: String?,
     val labelKey: String?,
@@ -56,8 +61,8 @@ internal data class EquipmentInventoryPresentation(
                 equipmentSlots = emptyList(),
                 inventoryGrid =
                     InventoryGridModel(
-                        columns = 4,
-                        visibleRows = 2,
+                        columns = EQUIPMENT_INVENTORY_COMPANION_COLUMNS,
+                        visibleRows = EQUIPMENT_INVENTORY_COMPANION_VISIBLE_ROWS,
                         cellSizePx = 128,
                         gapPx = 6,
                         overflowPolicy = EquipmentInventoryOverflowPolicy.NONE,
@@ -76,8 +81,8 @@ internal data class EquipmentInventoryPresenterRequest(
     val inventory: List<InventoryEntrySnapshot>,
     val inventorySelection: Int,
     val selectedEquipmentSlotId: String? = null,
-    val inventoryColumns: Int = 4,
-    val inventoryVisibleRows: Int = 2,
+    val inventoryColumns: Int = EQUIPMENT_INVENTORY_COMPANION_COLUMNS,
+    val inventoryVisibleRows: Int = EQUIPMENT_INVENTORY_COMPANION_VISIBLE_ROWS,
     val cellSizePx: Int = 128,
     val gapPx: Int = 6,
 )
@@ -177,7 +182,12 @@ internal object EquipmentInventoryPresenter {
             cells = cells,
             pageLabel =
                 if (pageCount > 1) {
-                    "${pageIndex + 1}/$pageCount  PgUp/PgDn"
+                    request.localizer.text(
+                        "ui.inventory.companion.page_hint",
+                        "current" to pageIndex + 1,
+                        "total" to pageCount,
+                        "shortcut" to request.localizer.text("ui.key.page_up_down"),
+                    )
                 } else {
                     ""
                 },

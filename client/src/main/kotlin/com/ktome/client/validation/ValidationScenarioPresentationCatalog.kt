@@ -120,6 +120,12 @@ internal object ValidationScenarioPresentationCatalog {
                 initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
             ),
             ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr05-1-inventory-page-workbench"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr05-1-inventory-page-workbench.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 titleKey = "validation.phase4.v4.phase4-v4-pr06.title",
                 startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,

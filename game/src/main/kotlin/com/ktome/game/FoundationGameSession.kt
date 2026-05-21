@@ -865,6 +865,7 @@ class FoundationGameSession internal constructor(
         ensurePlayerInscriptions()
         prepareDarkUiuxPr02_2LaunchSceneIfNeeded()
         prepareDarkUiuxPr03LaunchSceneIfNeeded()
+        prepareDarkUiuxPr05_1LaunchSceneIfNeeded()
         restorePendingZoneAdvanceIfNeeded()
         restorePendingZoneRuntimeHookEffects()
         refreshFov()
@@ -1966,6 +1967,10 @@ class FoundationGameSession internal constructor(
                 prepareDarkUiuxPr03EmptyInventorySurface()
                 "empty_inventory_surface_ready"
             }
+            "dark-uiux-pr05-1-inventory-page-workbench" -> {
+                prepareDarkUiuxPr05_1InventoryWorkbenchSurface()
+                "inventory_workbench_surface_ready"
+            }
             "phase4-v4-pr03" -> {
                 preparePhase4V4Pr03PrimaryScene()
                 "build_identity_reward_showcase_ready"
@@ -2007,6 +2012,10 @@ class FoundationGameSession internal constructor(
             "dark-uiux-pr03-equipment-inventory-items" -> {
                 prepareDarkUiuxPr03StackedInventorySurface()
                 "stacked_inventory_surface_ready"
+            }
+            "dark-uiux-pr05-1-inventory-page-workbench" -> {
+                prepareDarkUiuxPr05_1InventoryWorkbenchPageTwoSurface()
+                "inventory_workbench_page_two_ready"
             }
             "phase4-v4-pr03" -> {
                 preparePhase4V4Pr03SecondaryScene()
@@ -2526,6 +2535,13 @@ class FoundationGameSession internal constructor(
         spawnPr03ItemShowcase()
     }
 
+    private fun prepareDarkUiuxPr05_1LaunchSceneIfNeeded() {
+        if (validationSessionOptions?.scenarioId?.value != "dark-uiux-pr05-1-inventory-page-workbench") {
+            return
+        }
+        prepareDarkUiuxPr05_1InventoryWorkbenchSurface()
+    }
+
     private fun prepareDarkUiuxPr03EmptyInventorySurface() {
         activeShopId = null
         pendingInscriptionReplacementPurchase = null
@@ -2549,6 +2565,53 @@ class FoundationGameSession internal constructor(
                     ?: error("PR03 inventory fixture item '${spec.baseItemId}' is not present in official content.")
             inventory.itemIds += itemFactory.createCarriedItem(world, item)
         }
+        invalidateRenderSnapshot()
+    }
+
+    private fun prepareDarkUiuxPr05_1InventoryWorkbenchSurface() {
+        activeShopId = null
+        pendingInscriptionReplacementPurchase = null
+        val inventory = requireNotNull(world.get<Inventory>(playerId)) { "Missing Inventory for $playerId" }
+        val itemFactory = ItemFactory()
+        inventory.itemIds.clear()
+
+        val specs =
+            buildList {
+                repeat(8) {
+                    add(ValidationShowcaseItemSpec(baseItemId = "healing_potion"))
+                }
+                add(ValidationShowcaseItemSpec(baseItemId = "long_sword"))
+                add(ValidationShowcaseItemSpec(baseItemId = "chain_mail"))
+                add(ValidationShowcaseItemSpec(baseItemId = "scroll_teleport"))
+                add(ValidationShowcaseItemSpec(baseItemId = "mana_potion"))
+                add(ValidationShowcaseItemSpec(baseItemId = "seal_reliquary"))
+                add(ValidationShowcaseItemSpec(baseItemId = "artifact_deepcurrent_crown", quality = RarityTier.RARE))
+                add(ValidationShowcaseItemSpec(baseItemId = "bandit_trophy"))
+                repeat(18) { index ->
+                    add(
+                        ValidationShowcaseItemSpec(
+                            baseItemId = if (index % 2 == 0) "hunter_bow" else "emerald_charm",
+                            quality = if (index % 3 == 0) RarityTier.RARE else RarityTier.NORMAL,
+                        ),
+                    )
+                }
+            }
+        specs.forEach { spec ->
+            val item =
+                validationShowcaseItem(spec)
+                    ?: error("PR05-1 inventory fixture item '${spec.baseItemId}' is not present in official content.")
+            inventory.itemIds += itemFactory.createCarriedItem(world, item)
+        }
+        invalidateRenderSnapshot()
+    }
+
+    private fun prepareDarkUiuxPr05_1InventoryWorkbenchPageTwoSurface() {
+        prepareDarkUiuxPr05_1InventoryWorkbenchSurface()
+        val inventory = requireNotNull(world.get<Inventory>(playerId)) { "Missing Inventory for $playerId" }
+        val pageTwoMarker =
+            validationShowcaseItem(ValidationShowcaseItemSpec(baseItemId = "war_maul", quality = RarityTier.RARE))
+                ?: error("PR05-1 inventory page-two marker 'war_maul' is not present in official content.")
+        inventory.itemIds += ItemFactory().createCarriedItem(world, pageTwoMarker)
         invalidateRenderSnapshot()
     }
 
