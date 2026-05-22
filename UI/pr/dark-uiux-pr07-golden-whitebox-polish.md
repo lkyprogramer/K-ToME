@@ -76,6 +76,7 @@ Rejected cell 处理规则：
 2. PR-07 只允许返修 PR-06 coverage artifact 中记录的非玩家可见 rejected/polish cell。若发现玩家可见 rejected cell，说明 PR-06 final-full 未完成，必须回到 PR-06 或单独资源修复 PR。
 3. PR-07 返修 rejected cell 时，必须修订 PR-06 产出的 coverage artifact，记录原 cell hash、新 cell hash、替换原因和对应 golden/manual evidence。
 4. 如返修数量超过少量单点，应回到 PR-06 或新开资源 PR，不在 PR-07 扩成新资源批次。
+5. PR-07 不接收 PR-06 应冻结的 disposition 决策：frozen profession visibility/hover tooltip/cross-surface disposition、dev playable banner、missing/debug/hidden visual semantics、validation overlay compact/detailed mode、same-screen accent budget、status fold behavior、telegraph actor-anchored ownership、quest activate/complete accent、talent four-state accessibility、content-pack style fallback、resource rework PR ownership 和 `UI07-quest-typed-icon-mapping`。若 PR-07 发现这些仍未决，结论应回指 PR-06 或新开 contract PR，而不是在 final polish 中静默改规则。
 
 ## 4. 完成定义
 

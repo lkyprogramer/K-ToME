@@ -283,7 +283,7 @@ object StatusDefinitions {
                 def(
                     type = StatusEffectType.SHIELD,
                     nameKey = "status.shield",
-                    iconKey = "icon.skill.templar.divine_intervention",
+                    iconKey = "icon.status.shield",
                     stackingRule = StackingRule.KEEP_STRONGEST,
                 ),
             StatusEffectType.REGEN to
@@ -362,7 +362,7 @@ object StatusDefinitions {
                 def(
                     type = StatusEffectType.INVULNERABLE,
                     nameKey = "status.invulnerable",
-                    iconKey = "icon.skill.templar.divine_intervention",
+                    iconKey = "icon.status.invulnerable",
                     stackingRule = StackingRule.KEEP_STRONGEST,
                     dispellable = false,
                 ),
@@ -370,7 +370,7 @@ object StatusDefinitions {
                 def(
                     type = StatusEffectType.STEALTH,
                     nameKey = "status.stealth",
-                    iconKey = "icon.skill.rogue.shadowstep",
+                    iconKey = "icon.status.stealth",
                     stackingRule = StackingRule.REFRESH_DURATION,
                     dispellable = false,
                     breaksOnActualDamage = true,
@@ -414,7 +414,7 @@ object StatusDefinitions {
                 def(
                     type = StatusEffectType.HOLY_SHIELD_BUFF,
                     nameKey = "status.holy_shield_buff",
-                    iconKey = "icon.skill.templar.divine_intervention",
+                    iconKey = "icon.status.holy_shield_buff",
                     stackingRule = StackingRule.KEEP_STRONGEST,
                 ),
             StatusEffectType.DEVOTION_BUFF to

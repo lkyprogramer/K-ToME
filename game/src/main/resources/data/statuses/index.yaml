@@ -91,8 +91,8 @@ statuses:
     effectType: SHIELD
     nameKey: status.shield
     descKey: status.shield.desc
-    visualKey: icon.skill.templar.divine_intervention
-    iconKey: icon.skill.templar.divine_intervention
+    visualKey: icon.status.shield
+    iconKey: icon.status.shield
     audioProfile: audio.monster.default
     schemaVersion: 1
     tags: [buff, strongest, actor]
@@ -201,8 +201,8 @@ statuses:
     effectType: INVULNERABLE
     nameKey: status.invulnerable
     descKey: status.invulnerable.desc
-    visualKey: icon.skill.templar.divine_intervention
-    iconKey: icon.skill.templar.divine_intervention
+    visualKey: icon.status.invulnerable
+    iconKey: icon.status.invulnerable
     audioProfile: audio.monster.default
     schemaVersion: 1
     tags: [buff, locked, actor]
@@ -212,8 +212,8 @@ statuses:
     effectType: STEALTH
     nameKey: status.stealth
     descKey: status.stealth.desc
-    visualKey: icon.skill.rogue.shadowstep
-    iconKey: icon.skill.rogue.shadowstep
+    visualKey: icon.status.stealth
+    iconKey: icon.status.stealth
     audioProfile: audio.monster.default
     schemaVersion: 1
     tags: [buff, locked, actor]
@@ -312,8 +312,8 @@ statuses:
     effectType: HOLY_SHIELD_BUFF
     nameKey: status.holy_shield_buff
     descKey: status.holy_shield_buff.desc
-    visualKey: icon.skill.templar.divine_intervention
-    iconKey: icon.skill.templar.divine_intervention
+    visualKey: icon.status.holy_shield_buff
+    iconKey: icon.status.holy_shield_buff
     audioProfile: audio.monster.default
     schemaVersion: 1
     tags: [buff, strongest, actor]

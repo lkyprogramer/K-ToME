@@ -1,5 +1,6 @@
 package com.ktome.game.data
 
+import com.ktome.game.GameModule
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -21,6 +22,7 @@ class ProfessionSchemaTest {
             assertEquals("profession.${profession.id}.name", profession.nameKey)
             assertEquals("profession.${profession.id}.desc", profession.descKey)
             assertEquals("profession.${profession.id}.resource_hint", profession.resourceHintKey)
+            assertTrue(profession.iconKey.startsWith("icon.profession."))
             assertTrue(profession.baseStats.str + profession.baseStats.dex + profession.baseStats.con + profession.baseStats.wil > 0)
             assertTrue(profession.statGrowth.str + profession.statGrowth.dex + profession.statGrowth.con + profession.statGrowth.wil > 0)
             assertTrue(profession.resourceProfiles.isNotEmpty())
@@ -76,5 +78,18 @@ class ProfessionSchemaTest {
             listOf("healing_light", "phase_door"),
             catalog.professions.first { it.id == "rogue" }.startingInscriptions,
         )
+    }
+
+    @Test
+    fun `player creation profession options expose canonical profession icons`() {
+        val catalog = DataLoader().loadSchemaCatalog()
+        val schemaIconByProfessionId =
+            catalog.professions.associate { profession -> profession.id to profession.iconKey }
+        val creationState = GameModule.playerCreationState()
+
+        creationState.professionOptions.forEach { option ->
+            assertEquals(schemaIconByProfessionId.getValue(option.id), option.iconKey)
+            assertTrue(option.iconKey.startsWith("icon.profession."))
+        }
     }
 }

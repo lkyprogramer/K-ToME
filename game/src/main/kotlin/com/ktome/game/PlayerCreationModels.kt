@@ -20,12 +20,16 @@ data class ProfessionPlayerCreationOption(
     override val playabilityState: ClassPlayabilityState,
     val tier: ProfessionTier,
     val resourceHintKey: String,
+    val iconKey: String = "icon.profession.$id",
 ) : PlayerCreationOption {
     init {
         require(id.isNotBlank()) { "Profession player creation option id must not be blank." }
         require(displayNameKey.isNotBlank()) { "Profession player creation option '$id' displayNameKey must not be blank." }
         require(descriptionKey.isNotBlank()) { "Profession player creation option '$id' descriptionKey must not be blank." }
         require(resourceHintKey.isNotBlank()) { "Profession player creation option '$id' resourceHintKey must not be blank." }
+        require(iconKey.startsWith("icon.profession.")) {
+            "Profession player creation option '$id' iconKey must use icon.profession.*."
+        }
     }
 }
 

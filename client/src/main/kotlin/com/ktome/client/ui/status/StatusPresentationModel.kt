@@ -36,6 +36,8 @@ internal data class TelegraphStatusPresentationRequest(
 )
 
 internal object StatusPresentationBuilder {
+    private const val BADGE_OVERFLOW_LIMIT: Int = 99
+
     fun build(effect: StatusEffectRenderSnapshot): StatusPresentationModel {
         val group = effect.category.toPresentationGroup()
         return StatusPresentationModel(
@@ -78,9 +80,14 @@ internal object StatusPresentationBuilder {
 
     fun statusBadge(effect: StatusEffectRenderSnapshot): String =
         buildList {
+            val stackCap = effect.stackCap
             when {
-                effect.stackCount > 1 && effect.stackCap != null -> add("${effect.stackCount}/${effect.stackCap}")
-                effect.stackCount > 1 -> add("x${effect.stackCount}")
+                effect.stackCount > 1 &&
+                    stackCap != null &&
+                    effect.stackCount <= BADGE_OVERFLOW_LIMIT &&
+                    stackCap <= BADGE_OVERFLOW_LIMIT ->
+                    add("${effect.stackCount}/$stackCap")
+                effect.stackCount > 1 -> add("x${badgeCount(effect.stackCount)}")
             }
             turnBadge(effect.remainingTurns).takeIf(String::isNotBlank)?.let(::add)
         }.joinToString(" ")
@@ -114,10 +121,17 @@ internal object StatusPresentationBuilder {
         previewTurnsRemaining?.let { turns -> max(0, 5 - turns) } ?: 0
 
     private fun turnBadge(remainingTurns: Int): String =
-        if (remainingTurns > 0) {
-            "${remainingTurns}t"
+        when {
+            remainingTurns > BADGE_OVERFLOW_LIMIT -> "${BADGE_OVERFLOW_LIMIT}+"
+            remainingTurns > 0 -> "${remainingTurns}t"
+            else -> ""
+        }
+
+    private fun badgeCount(value: Int): String =
+        if (value > BADGE_OVERFLOW_LIMIT) {
+            "${BADGE_OVERFLOW_LIMIT}+"
         } else {
-            ""
+            value.toString()
         }
 
     private fun StatusEffectCategorySnapshot.toPresentationGroup(): StatusPresentationGroup =

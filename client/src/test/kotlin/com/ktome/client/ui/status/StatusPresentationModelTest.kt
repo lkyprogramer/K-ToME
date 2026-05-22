@@ -31,11 +31,48 @@ class StatusPresentationModelTest {
 
         assertEquals("3/5 4t", stacked.badgeText)
         assertEquals("2t", single.badgeText)
-        assertEquals(stacked.badgeText, StatusHudRenderer.renderCompact(StatusEffectRenderSnapshot("guard", 4, stackCount = 3, stackCap = 5, category = StatusEffectCategorySnapshot.BUFF)))
+        assertEquals(
+            stacked.badgeText,
+            StatusHudRenderer.renderCompact(
+                StatusEffectRenderSnapshot(
+                    typeId = "guard",
+                    remainingTurns = 4,
+                    stackCount = 3,
+                    stackCap = 5,
+                    category = StatusEffectCategorySnapshot.BUFF,
+                ),
+            ),
+        )
     }
 
     @Test
-    fun `telegraph priority outranks debuff while zone effect keeps lower weight`() {
+    fun `status badge formatter caps large stacks and long durations`() {
+        val stacked =
+            StatusPresentationBuilder.build(
+                StatusEffectRenderSnapshot(
+                    typeId = "bleed",
+                    remainingTurns = 128,
+                    stackCount = 184,
+                    stackCap = 240,
+                    category = StatusEffectCategorySnapshot.DEBUFF,
+                ),
+            )
+        val longDuration =
+            StatusPresentationBuilder.build(
+                StatusEffectRenderSnapshot(
+                    typeId = "ward",
+                    remainingTurns = 120,
+                    stackCount = 1,
+                    category = StatusEffectCategorySnapshot.BUFF,
+                ),
+            )
+
+        assertEquals("x99+ 99+", stacked.badgeText)
+        assertEquals("99+", longDuration.badgeText)
+    }
+
+    @Test
+    fun `telegraph overlay priority outranks debuff while zone effect keeps lower weight`() {
         val telegraph =
             StatusPresentationBuilder.buildTelegraph(
                 TelegraphStatusPresentationRequest(

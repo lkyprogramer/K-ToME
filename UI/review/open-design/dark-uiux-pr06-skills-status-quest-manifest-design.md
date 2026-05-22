@@ -107,8 +107,11 @@ PR06 needs visual families that share the dark-v1 era while remaining functional
 | Talent/tree icons | progression identity and node subject | crest, branch, rune node, class motif | restrained cyan/gold/green based on state frame, not icon subject alone | skill command button |
 | Status icons | active condition affecting actor | simple condition symbol, wound, shield, flame, frost, curse | small state color and strong silhouette | quest marker or skill icon |
 | Damage/status type icons | damage channel or condition type | elemental or physical silhouette with hard outline | color tied to type but low saturation | active effect badge |
+| Telegraph (enemy intent) | enemy action preview or danger cue | ranged arc, aim line, impact marker, directional strike shape anchored at actor/map tile | danger-linked ember/red/violet restraint; not focus cyan | player buff/debuff, selected row, or status HUD item |
 | Quest markers | objective and direction | marker, sigil pin, banner, route glyph, objective frame | ember/gold or muted cyan only when active | status icon, map prop, debug marker |
 | Profession/tree identity | class family and tree branch | class crest, weapon/tool motif, tree emblem | domain accent, not rare-item glow | quest marker or reward icon |
+| Talent portrait visual | larger talent identity or narrative visual | half-figure, scene fragment, mood lighting, larger crest composition | subdued narrative lighting; no command-button frame | enlarged skill icon |
+| Frozen profession panel header | dev/debug-only frozen profession context | muted crest or fallback frame with dev-only marker | gray/iron with restrained warning edge | playable profession identity |
 | Fallback/missing visuals | absent, unresolved, or intentionally missing visual | cracked placeholder, empty frame, masked eye, broken rune | warning-muted red/gold edge, no hero polish | approved gameplay content |
 | Hidden/secret/debug visuals | special/internal visibility state | veiled sigil, low-contrast marker, debug-safe outline | quiet cyan or gray, never primary gold | quest objective or reward |
 | Validation overlay icons | report/warning state | row marker, compact alert, coverage/fallback badge | red/gold for severity, gray for metadata | gameplay status |
@@ -125,6 +128,12 @@ All families should keep:
 6. no clean vector sticker look;
 7. no bright mobile-RPG rarity frame unless the owning surface explicitly needs rarity.
 
+Outline/silhouette pixel budget:
+
+1. At 32px source resolution, primary outline should be at least 2px and the main silhouette should occupy at least 60% of the bounding box.
+2. Sub-32px runtime paths must preserve at least a 1px readable outline after downscale; cells that rely on soft antialiasing instead of hard outline must be regenerated or given a size-specific variant.
+3. Contact-sheet QA must include the runtime scales named by the PR06 sheet contract, not only the 32px reference.
+
 ### 4.2 Separation Rules
 
 Use shape first, color second:
@@ -134,6 +143,10 @@ Use shape first, color second:
 | Skill vs status | skill is an action subject; status is a condition badge with simpler symbol and tighter frame |
 | Skill vs talent | skill reads as usable action; talent reads as progression node or passive identity |
 | Quest vs status | quest marker carries direction/objective grammar; status carries actor condition grammar |
+| Status vs mutation | status uses transient/open condition badge language; mutation uses closed scar/etching or permanent body-change framing |
+| Status vs damage type | status reads as active actor condition; damage type reads as elemental/physical channel with hard outline and no timed badge frame |
+| Mutation vs damage type | mutation reads as permanent body-change/scar; damage type reads as reusable combat channel symbol |
+| Telegraph vs status | telegraph reads as enemy intent / impact preview; status reads as actor-owned condition |
 | Quest vs fallback | quest marker is intentional objective; fallback is intentionally unresolved or missing |
 | Debug vs player-facing | debug/hidden marker is subdued and utility-like; player-facing markers get clearer hierarchy |
 | Talent state vs focus | learned/learnable/locked state must remain visible when focus highlight is present |
@@ -151,9 +164,32 @@ State badges should be reviewable as a system, not as one-off overlays.
 | Learnable | cyan affordance separated from focus ring | learnable and focused become the same glow |
 | Learned active | green/state marker distinct from selection | selected row is mistaken for learned state |
 | Quest active | objective marker with warmer route/goal accent | looks like damage/status icon |
+| Quest activate | brief ember confirmation, shorter than complete, then muted marker | reads the same as progress or steals rare-item attention |
+| Quest advance | short row pulse without ember/cyan accent | reads as completion or generic progress |
+| Quest complete | short ember-gold completion accent, then returns to muted objective marker | completion reads the same as activate/progress or becomes rare-item glow |
+| Cooldown | desaturated skill icon plus ring/badge overlay showing remaining turns | skill disappears, becomes unreadable, or looks locked forever |
 | Missing/fallback | broken/empty placeholder with warning restraint | too polished, too bright, or too crude for dark-v1 |
+| Mutation | closed frame, scar/etching, body-change motif | reads as a temporary buff/debuff or removable status |
+| Damage type | elemental/physical silhouette with hard outline | reads as an active status, skill cooldown, or quest marker |
 
 Do not require these exact state names in implementation. The point is to preserve visual separation for whatever typed states PR06 already owns.
+
+### 5.1 Fallback, Missing, Hidden, And Debug Semantics
+
+These four buckets must not collapse into one visual language:
+
+| Bucket | Required read | Visual rule |
+| --- | --- | --- |
+| `missing_visual` | unresolved development fallback | include text-marked or unmistakable sentinel treatment; do not rely on color alone |
+| fallback visual | deliberate replacement path | restrained warning treatment, reportable through manifest/fallback evidence |
+| hidden / secret | gameplay discovery | dark-fantasy valid secret language, not a broken placeholder |
+| debug-only | development utility | subdued utility/debug treatment; packaged app should not expose it as player content |
+
+Dark fantasy ornament can make cracked frames and broken runes look like approved content. When the intended meaning is "missing" or "debug", use a secondary marker or textual sentinel in the runtime-facing resource/evidence path rather than expecting visual mood alone to carry the contract.
+
+### 5.2 Accent Priority
+
+Same-screen reviews should treat ember-gold, cold-cyan, and danger telegraph tones as attention budget, not decoration. Ember quest markers, rare/reserve states, and titles should not all compete at full strength in one frame; cyan focus/learnable state must remain distinct from actor-anchored danger telegraph indicators. If a PR06 overview sample shows more than four strength-2-or-higher attention cues at once, send it back to sheet QA or tone balancing before cutting runtime cells.
 
 ## 6. Prompt Variant Kit
 
@@ -223,7 +259,10 @@ Use this rubric before accepting raw cells into the cut/manifest path.
 | Check | Pass | Revise | Block |
 | --- | --- | --- | --- |
 | Taxonomy | family identity is obvious without labels | family is readable only with nearby context | skill/status/quest/fallback are interchangeable |
+| Status / mutation / damage separation | transient badge, body-change marker, and channel symbol stay distinct | two families need nearby context | all three collapse into the same small badge |
+| Cross-sheet family weight | r08 skill, r09 status/mutation, and r09 damage cells keep distinct silhouette weight side-by-side | one family pair needs redraw | cross-sheet cells look like a single generic icon family |
 | 32px readability | subject silhouette survives at 32px | major subject survives but detail is noisy | icon becomes a blob, smear, or random texture |
+| Sub-32px readability | 12/16/24px runtime samples preserve family identity and outline | one runtime size needs outline reinforcement | tooltip/log/floating-text size collapses into unreadable noise |
 | Same-era consistency | dark-v1 materials and lighting match nearby families | minor accent or perspective drift | looks like another game, era, or art source |
 | State badge clarity | state is separate from focus/selection | state works only at large size | state can be mistaken for focus, rarity, or quest marker |
 | Quest marker function | objective/direction read is clear | marker is clear but too similar to UI badge | marker looks like status, damage type, reward, or debug |
@@ -317,3 +356,26 @@ This file does not:
 6. replace `goldenScreenshot`, `clientSmoke`, or PR06 manual evidence;
 7. permit direct runtime resource edits outside the established resource pipeline;
 8. authorize any player-visible missing/rejected cell to ship because it looks acceptable in Open Design.
+
+## 12. Difficulty Visual Roadmap
+
+Future `difficulty.<id>.icon` keys should remain inside the dark-v1 era. Difficulty escalation should use material complexity and accent shape, not brighter red, heavier gore, or mobile-RPG shine.
+
+Suggested progression language:
+
+| Difficulty tier | Visual escalation |
+| --- | --- |
+| normal | plain worn stone or iron mark |
+| hard | single crack, thorn, or edge notch |
+| nightmare | cursed iron, ember crack, or double-spike motif |
+| madness / insane | ringed or fractured sigil with controlled accent; still low saturation |
+
+This is guidance for later design review only. It does not add PR06 keys or change the manifest contract.
+
+Contrast budget for future difficulty tiers:
+
+1. Across all difficulty tiers, total contrast delta must stay within one stop (roughly 1:4 luminance ratio).
+2. Silhouette and outline weight must remain a dark-v1 era constant inside the same tier.
+3. Escalation uses accent shape, fracture, ring, thorn, or material detail; it must not use hue rotation or saturation escalation as the primary difficulty signal.
+
+`difficulty.<id>.icon` key introduction condition: only add a new difficulty key when `core` or `game` introduces a new player-visible difficulty value and that value appears in character selection, dungeon entry, validation setup, or another player-visible surface. Do not pre-create unused difficulty icon keys.

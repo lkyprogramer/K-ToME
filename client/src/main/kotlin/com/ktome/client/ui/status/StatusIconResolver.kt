@@ -17,18 +17,22 @@ internal data class StatusHudIconModel(
 }
 
 internal object StatusIconResolver {
+    private const val STATUS_ICON_KEY_PREFIX: String = "icon.status."
+
     fun resolveIcons(
         visualResolver: VisualManifestResolver,
         effects: List<StatusEffectRenderSnapshot>,
     ): List<StatusHudIconModel> =
         StatusPresentationBuilder
             .sorted(effects.map(StatusPresentationBuilder::build))
-            .mapNotNull { presentation ->
-                presentation.iconKey?.let(visualResolver::resolve)?.let { asset ->
-                    StatusHudIconModel(
-                        asset = asset,
-                        presentation = presentation,
+            .map { presentation ->
+                val asset =
+                    visualResolver.resolve(
+                        presentation.iconKey ?: STATUS_ICON_KEY_PREFIX + presentation.typeId,
                     )
-                }
+                StatusHudIconModel(
+                    asset = asset,
+                    presentation = presentation,
+                )
             }
 }

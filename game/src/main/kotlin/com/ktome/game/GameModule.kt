@@ -112,6 +112,7 @@ object GameModule {
                     playabilityState = ClassAvailabilityResolver.resolve(unlockState = unlockState, context = context),
                     tier = profession.tier,
                     resourceHintKey = profession.resourceHintKey,
+                    iconKey = profession.iconKey,
                 )
             }
         val raceOptions =

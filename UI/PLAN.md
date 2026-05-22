@@ -316,7 +316,11 @@ row 0 col 2: focused target reticle over a worn stone tile.
 | 9 | `r09-fallback-debug` | `icon-sheet` | 64 | missing、hidden、debug、fallback、locked/placeholder |
 | 9 | `r09-rejected-polish` | `large-sheet` | 16 | PR-03/05/06 rejected cell 与高风险返修资源 |
 
-Round 9 专门用于 resource fallback / debug resource 收口与返修。`r09-fallback-debug` 先覆盖 current manifest 中所有 `missing_visual`、hidden、resource-debug、fallback、locked/placeholder 相关 key；不包含 client ASCII renderer、ASCII manifest 字段或 ASCII 可玩/调试路径，这些已从 client 合同删除。`r09-rejected-polish` 只承接已写入 coverage artifact 的 rejected cell，避免 fallback sheet 容量被返修资源挤占。
+Round 9 专门用于 resource fallback / debug resource 收口与返修。`r09-status-damage` 必须同时区分 status / mutation / damage type 三套 visual grammar；actor status runtime/schema 不得复用 `icon.skill.*`，来自技能的 buff/debuff 也必须落到 dedicated `icon.status.*` key。`r09-fallback-debug` 先覆盖 current manifest 中所有 `missing_visual`、hidden、resource-debug、fallback、locked/placeholder 相关 key；不包含 client ASCII renderer、ASCII manifest 字段或 ASCII 可玩/调试路径，这些已从 client 合同删除。`r09-rejected-polish` 只承接已写入 coverage artifact 的 rejected cell，避免 fallback sheet 容量被返修资源挤占。任一 sheet 命中两轮 rejection 或两次以上 player-visible reject 时，必须按 PR-06 rework PR 合同先拆资源修复 PR，再允许 PR-06 close。
+
+PR-06 的 quest summary 最小路径是 generic `icon.quest.objective_marker`。typed quest icon mapping（例如 activate / progress / advance / complete 或 key/封印专用 icon）命名为 `UI07-quest-typed-icon-mapping` 后续项；它不能在 PR-07 中静默改变 `RenderSnapshot`、quest schema 或 `WorldProgress`，必须作为单独 public contract change 处理。quest `complete` 的 transient accent 属于 PR-06 quest row tone 合同；若 PR-06 未落地，必须显式记录 `UI07-quest-complete-accent` outstanding finding，不能由 PR-07 final polish 静默吸收。
+
+Round-3 review 后新增的命名后续项统一记录如下，避免 PR-07 静默接管 PR-06 owner：`UI07-telegraph-actor-anchored-indicator`、`UI07-quest-activate-accent`、`UI07-objective-token-emission-audit`、`UI07-status-fold-expand`、`UI07-profession-icon-character-sheet`、`UI07-profession-icon-save-slot`、`UI07-profession-icon-death-summary`、`UI07-frozen-profession-cross-surface-audit`、`UI07-dev-playable-banner`、`UI07-content-pack-style-certification`、`UI07-third-party-fallback-key-namespace`、`UI07-color-blind-runtime-toggle`、`UI07-profession-onboarding-hint`、`UI07-status-tooltip-detail`、`UI07-replay-frozen-profession`、`UI-FOLLOWUP-race-icon-family-contract`。这些项不得改变 PR-06 的 final-full 分母，只能作为后续有 owner 的 contract/implementation work；race icon 当前不得借 `icon.profession.*` 或 `icon.monster.*` 计入 profession/monster coverage。
 
 容量矩阵是 prompt index、coverage artifact 和生图批次的单一总量真源：
 

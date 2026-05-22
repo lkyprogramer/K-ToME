@@ -3,6 +3,7 @@ package com.ktome.game.data
 import com.ktome.core.status.StatusDefinitions
 import com.ktome.core.status.StatusEffectType
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class StatusSchemaContractTest {
@@ -26,5 +27,21 @@ class StatusSchemaContractTest {
             assertEquals(definition.category.name, schema.category)
             assertEquals(definition.carrierKind.name, schema.carrierKind)
         }
+    }
+
+    @Test
+    fun `status schema visual keys stay in the status icon family`() {
+        val offFamilyKeys =
+            loader.loadSchemaCatalog().statuses.flatMap { schema ->
+                listOf(
+                    "${schema.id}.visualKey" to schema.visualKey,
+                    "${schema.id}.iconKey" to schema.iconKey,
+                ).filterNot { (_, key) -> key.startsWith("icon.status.") }
+            }
+
+        assertTrue(
+            offFamilyKeys.isEmpty(),
+            "Status visual/icon keys must use icon.status.* keys: $offFamilyKeys",
+        )
     }
 }
