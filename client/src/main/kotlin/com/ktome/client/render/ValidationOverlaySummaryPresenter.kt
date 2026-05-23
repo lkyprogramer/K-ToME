@@ -4,6 +4,8 @@ import com.ktome.client.bossVariantModeLabelKey
 import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.game.contentpack.ContentPackVisibilityComparisonSummary
+import com.ktome.game.contentpack.ContentPackVisibilityStateSummary
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.Localizer
 import kotlin.math.floor
@@ -141,6 +143,9 @@ internal object ValidationOverlaySummaryPresenter {
                         ),
                         TileTextTone.WHITE,
                     ),
+                ) +
+                packVisibilityComparisonRows(localizer, summary.packVisibilityComparison) +
+                listOf(
                     TileTextRow(
                         localizer.text(
                             "ui.validation.entry.boss_variant_mode",
@@ -198,6 +203,35 @@ internal object ValidationOverlaySummaryPresenter {
         }
     }
 
+    private fun packVisibilityComparisonRows(
+        localizer: Localizer,
+        comparison: ContentPackVisibilityComparisonSummary?,
+    ): List<TileTextRow> {
+        comparison ?: return emptyList()
+        return listOf(
+            TileTextRow(
+                text = visibilityStateText(localizer, "ui.validation.pack.no_pack_state", comparison.noPackState),
+                tone = TileTextTone.WHITE,
+            ),
+            TileTextRow(
+                text = visibilityStateText(localizer, "ui.validation.pack.active_sample_state", comparison.activeSamplePackState),
+                tone = TileTextTone.WHITE,
+            ),
+        )
+    }
+
+    private fun visibilityStateText(
+        localizer: Localizer,
+        key: String,
+        state: ContentPackVisibilityStateSummary,
+    ): String =
+        localizer.text(
+            key,
+            "active" to ValidationPackSummaryText.activePackIds(localizer, state.activePackIds),
+            "ops" to ValidationPackSummaryText.overlayOps(localizer, state.activePackSummaries),
+            "touched" to ValidationPackSummaryText.touchedContentIds(localizer, state.touchedContentIds),
+        )
+
     private fun renderTextToken(
         localizer: Localizer,
         token: RenderTextTokenSnapshot,
@@ -224,7 +258,19 @@ internal object ValidationOverlaySummaryPresenter {
         if (visualColumns(value) <= limit) {
             return value
         }
-        return keepTail(value, limit)
+        return keepHead(value, limit)
+    }
+
+    private fun keepHead(
+        value: String,
+        limit: Int,
+    ): String {
+        val marker = "..."
+        var head = value
+        while (head.isNotEmpty() && visualColumns(head + marker) > limit) {
+            head = head.dropLast(1)
+        }
+        return head + marker
     }
 
     private fun keepTail(

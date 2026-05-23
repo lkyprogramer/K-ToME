@@ -3,6 +3,9 @@ package com.ktome.client.render
 import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.core.map.Point
 import com.ktome.game.contentpack.ContentPackKeyResolutionSummary
+import com.ktome.game.contentpack.ContentPackOverlaySummary
+import com.ktome.game.contentpack.ContentPackVisibilityComparisonSummary
+import com.ktome.game.contentpack.ContentPackVisibilityStateSummary
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
@@ -99,6 +102,26 @@ class ValidationOverlaySummaryPresenterTest {
     }
 
     @Test
+    fun detailedModePreservesPackVisibilityComparisonRows() {
+        val rows =
+            ValidationOverlaySummaryPresenter.present(
+                localizer = localizer(),
+                panel = panel(longLists = false, includePackVisibilityComparison = true),
+                displayMode = ValidationOverlayDisplayMode.DETAILED,
+                visibleOverlayRows = 48,
+            )
+        val text = rows.joinToString("\n") { row -> row.text }
+
+        assertTrue(text.contains("No-pack state: active=n/a, ops=empty, touched=empty"), text)
+        assertTrue(
+            rows.any { row ->
+                row.text.startsWith("Active sample pack state: active=sample.flooded_relics, ops=sample.flooded_relics:ADD=5")
+            },
+            text,
+        )
+    }
+
+    @Test
     fun compactPathKeepsCjkFileNameWhenDroppingDeepSegments() {
         val compacted =
             ValidationOverlaySummaryPresenter.compactPath(
@@ -112,7 +135,10 @@ class ValidationOverlaySummaryPresenterTest {
         assertFalse(compacted.startsWith("...色"), compacted)
     }
 
-    private fun panel(longLists: Boolean): ValidationOverlayPanelState =
+    private fun panel(
+        longLists: Boolean,
+        includePackVisibilityComparison: Boolean = false,
+    ): ValidationOverlayPanelState =
         ValidationOverlayPanelState(
             summary =
                 ValidationSummarySnapshot(
@@ -142,6 +168,27 @@ class ValidationOverlaySummaryPresenterTest {
                             appExecutableSha256Path = "build/reports/app.sha256",
                             appExecutableSha256 = null,
                         ),
+                    packVisibilityComparison =
+                        if (includePackVisibilityComparison) {
+                            ContentPackVisibilityComparisonSummary(
+                                noPackState = ContentPackVisibilityStateSummary(activePackIds = emptyList()),
+                                activeSamplePackState =
+                                    ContentPackVisibilityStateSummary(
+                                        activePackIds = listOf("sample.flooded_relics"),
+                                        activePackSummaries =
+                                            listOf(
+                                                ContentPackOverlaySummary(
+                                                    packId = "sample.flooded_relics",
+                                                    namespace = "sample",
+                                                    opCounts = mapOf("ADD" to 5),
+                                                ),
+                                            ),
+                                        touchedContentIds = listOf("item.sample"),
+                                    ),
+                            )
+                        } else {
+                            null
+                        },
                 ),
             zoneNameKey = "zone.test",
             inspectCursor = Point(1, 2),
@@ -185,6 +232,8 @@ class ValidationOverlaySummaryPresenterTest {
             "ui.validation.pack.touched_ids" to "Touched: {value}",
             "ui.validation.pack.key_resolution" to "Keys: {visual}/{audio}/{locale}/{overrides}/{warnings}",
             "ui.validation.pack.key_warnings" to "Warnings: visual={visual}, audio={audio}, locale={locale}",
+            "ui.validation.pack.no_pack_state" to "No-pack state: active={active}, ops={ops}, touched={touched}",
+            "ui.validation.pack.active_sample_state" to "Active sample pack state: active={active}, ops={ops}, touched={touched}",
             "ui.validation.empty" to "empty",
             "ui.validation.not_available" to "n/a",
             "ui.validation.none" to "none",
