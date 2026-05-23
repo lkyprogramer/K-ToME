@@ -1,0 +1,203 @@
+{
+  "reviewedAt": "2026-05-23T18:27:10+08:00",
+  "reviewer": "Codex visual QA",
+  "schemaVersion": "dark-uiux-pr06-sheet-art-acceptance-v1",
+  "seed": "dark-uiux-pr06-art-random-qa-v1",
+  "sheets": [
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r07-items-base-contact.png",
+      "decision": "PASS",
+      "note": "PR06 backpack/equipment regression fix: R07 base item icons are now regenerated, sampled, and accepted under the PR06 art gate.",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/008-r07-items-base.prompt.txt",
+      "rawSheetGitHash": "ead242c2ea8b9a1d0f41887da12b52115cc3bd02",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-base.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "item.basic_shield.icon",
+        "item.chain_mail.icon",
+        "item.consecrated_oil.icon",
+        "item.energy_tonic.icon",
+        "item.healing_potion.icon",
+        "item.long_sword.icon",
+        "item.mana_potion.icon",
+        "item.scroll_teleport.icon",
+        "item.leather_armor.icon",
+        "item.bandit_trophy.icon",
+        "item.war_maul.icon",
+        "item.abyssal_heartstone.icon"
+      ],
+      "sheetId": "r07-items-base"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r07-items-unique-artifact-contact.png",
+      "decision": "PASS",
+      "note": "PR06 backpack/equipment regression fix: unique/artifact item icons are now regenerated, sampled, and accepted under the PR06 art gate.",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/009-r07-items-unique-artifact.prompt.txt",
+      "rawSheetGitHash": "74250eba55348d1d2be5711f5b025d23c6fbc5e4",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-unique-artifact.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "item.unique.furnace_plate.icon",
+        "item.unique.greenwood_watcher_blade.icon",
+        "item.artifact.eclipsed_relic.icon",
+        "item.unique.deepcurrent_lens.icon",
+        "item.artifact.forge_oath.icon",
+        "item.unique.voidlit_seal.icon"
+      ],
+      "sheetId": "r07-items-unique-artifact"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r07-items-affix-material-contact.png",
+      "decision": "PASS",
+      "note": "PR06 backpack/equipment regression fix: material, affix, and shop marker icons are now regenerated, sampled, and accepted under the PR06 art gate.",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/007-r07-items-affix-material.prompt.txt",
+      "rawSheetGitHash": "d14069f4ea739f1c1caf7dd20cd59053d0450040",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-affix-material.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "affix.sharp.icon",
+        "affix.sturdy.icon",
+        "material.iron.icon",
+        "material.steel.icon",
+        "ui.shop.inscription.marker",
+        "ui.shop.price.affordable",
+        "ui.shop.price.unaffordable",
+        "affix.of_strength.icon",
+        "material.mithril.icon",
+        "affix.of_life.icon"
+      ],
+      "sheetId": "r07-items-affix-material"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r08-skills-vanguard-berserker-contact.png",
+      "decision": "PASS",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/028-r08-skills-vanguard-berserker.prompt.txt",
+      "rawSheetGitHash": "30752c26f701563cee40f48b2e325166bdc292ba",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-vanguard-berserker.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "icon.skill.vanguard.guard_stance",
+        "icon.skill.vanguard.power_strike",
+        "icon.skill.vanguard.shield_bash",
+        "talent.berserker.pain_fuel.icon",
+        "talent.vanguard.charge.visual",
+        "talent.berserker.fault_line.icon",
+        "icon.skill.vanguard.earthshaker",
+        "talent.vanguard.battlefield_command.visual",
+        "talent.vanguard.bulwark_march.icon",
+        "talent.berserker.slaughter_drive.visual",
+        "talent.berserker.riven_edge.icon"
+      ],
+      "sheetId": "r08-skills-vanguard-berserker"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r08-skills-templar-rogue-contact.png",
+      "decision": "PASS",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/027-r08-skills-templar-rogue.prompt.txt",
+      "rawSheetGitHash": "41cf61a4c9a8bda70d97281e91641751b78496d7",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-templar-rogue.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "icon.skill.templar.holy_light",
+        "icon.skill.templar.holy_shield",
+        "talent.rogue.crippling_strike.visual",
+        "icon.skill.templar.absolution",
+        "icon.skill.rogue.dusk_shroud",
+        "icon.skill.rogue.crippling_strike",
+        "icon.skill.templar.holy_strike",
+        "talent.rogue.shadow_bind.icon",
+        "icon.skill.templar.ritual_break",
+        "icon.skill.rogue.eviscerate"
+      ],
+      "sheetId": "r08-skills-templar-rogue"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r08-skills-arcanist-spellblade-contact.png",
+      "decision": "PASS",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/026-r08-skills-arcanist-spellblade.prompt.txt",
+      "rawSheetGitHash": "15189fbc5b6b4a7aa0ca7a9baf9fa0b7c71ce053",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-arcanist-spellblade.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "talent.arcanist.arcane_shield.visual",
+        "icon.skill.spellblade.blink_strike",
+        "icon.skill.spellblade.sunder_sigil",
+        "talent.spellblade.counter_seal.icon",
+        "icon.skill.arcanist.blink",
+        "icon.skill.arcanist.glacial_seal",
+        "talent.spellblade.blink_strike.visual",
+        "icon.skill.arcanist.shard_storm"
+      ],
+      "sheetId": "r08-skills-arcanist-spellblade"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r09-status-damage-contact.png",
+      "decision": "PASS",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/032-r09-status-damage.prompt.txt",
+      "rawSheetGitHash": "0c0f0a1b5b443f70387543995713d03a072ddf46",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-status-damage.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "icon.damage_type.fire",
+        "icon.damage_type.physical",
+        "icon.status.burn",
+        "icon.status.cursed",
+        "icon.status.guard_stance_buff",
+        "icon.mutation.war_caller",
+        "icon.mutation.hunt_protocol",
+        "icon.mutation.dread_aura",
+        "icon.status.stunned",
+        "icon.status.armor_break"
+      ],
+      "sheetId": "r09-status-damage"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r09-quest-zone-profession-contact.png",
+      "decision": "PASS",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/030-r09-quest-zone-profession.prompt.txt",
+      "rawSheetGitHash": "442c2cea26d6672830a1f49d3710d656f276f7d4",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-quest-zone-profession.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "icon.profession.vanguard",
+        "icon.quest.armory_key",
+        "icon.quest.objective_marker",
+        "icon.tree.vanguard_shield",
+        "zone.shattered_outpost.icon",
+        "icon.tree.rogue_subtlety",
+        "zone.secret.deep_iron_slag_cache.icon",
+        "icon.tree.rogue_agility",
+        "zone.secret.greenwood_hidden_cache.icon",
+        "icon.tree.arcanist_arcane",
+        "zone.deep_iron_pit.icon"
+      ],
+      "sheetId": "r09-quest-zone-profession"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r09-fallback-debug-contact.png",
+      "decision": "PASS",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/029-r09-fallback-debug.prompt.txt",
+      "rawSheetGitHash": "0be017e09d378c3072029b6b92a94fb3732e3bdc",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-fallback-debug.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "missing_visual",
+        "tile.hidden"
+      ],
+      "sheetId": "r09-fallback-debug"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r09-rejected-polish-contact.png",
+      "decision": "PASS",
+      "note": "Reserved sheet currently has no player-visible cells; blank reserved evidence is accepted only as no-op reserve, not as completed polish content.",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/031-r09-rejected-polish.prompt.txt",
+      "rawSheetGitHash": "1e4798300e2555ddbc123ace1871f8a0d9f963bc",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-rejected-polish.png",
+      "rejectReasons": [],
+      "sampleKeys": [
+        "rejected.polish.reserved_slot_0_0"
+      ],
+      "sheetId": "r09-rejected-polish"
+    }
+  ]
+}

@@ -2519,7 +2519,7 @@ class TileRendererCanvasTest {
     }
 
     @Test
-    fun `shell quest summary consumes latest objective log token when available`() {
+    fun shellQuestSummaryCarriesGenericQuestMarkerForObjectiveLog() {
         val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
         val model =
             TileRenderer.buildRenderModel(
@@ -2546,10 +2546,97 @@ class TileRendererCanvasTest {
 
         assertTrue(
             model.shell.leftRail.rows.any { row ->
-                row.text == "Objective updated: Breach The Outpost. You break into the outpost's inner yard."
+                row.text == "Objective updated: Breach The Outpost. You break into the outpost's inner yard." &&
+                    row.icon?.requestedKey == "icon.quest.objective_marker"
             },
         )
-        assertFalse(model.shell.leftRail.rows.any { row -> row.text == "No active quest summary." })
+        assertFalse(model.shell.leftRail.rows.any { row -> row.text == "No tracked quest in this zone." })
+    }
+
+    @Test
+    fun shellQuestSummaryUsesObjectiveTokenToneBudget() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+
+        mapOf(
+            "log.objective.activate" to TileTextTone.GOLD,
+            "log.objective.progress" to TileTextTone.LIGHT_GRAY,
+            "log.objective.advance" to TileTextTone.WHITE,
+            "log.objective.complete" to TileTextTone.GOLD,
+        ).forEach { (tokenKey, expectedTone) ->
+            val model =
+                TileRenderer.buildRenderModel(
+                    localizer = localizer,
+                    visualResolver = sampleResolver(),
+                    snapshot =
+                        sampleSnapshot(
+                            logEvents =
+                                listOf(
+                                    RenderLogEventSnapshot(
+                                        RenderTextTokenSnapshot(
+                                            key = tokenKey,
+                                            arguments =
+                                                listOf(
+                                                    RenderTextArgumentSnapshot(name = "objective", valueKey = "objective.shattered_outpost_breach.name"),
+                                                    RenderTextArgumentSnapshot(name = "step", valueKey = "objective.shattered_outpost_breach.step.inner_breach"),
+                                                ),
+                                        ),
+                                    ),
+                                ),
+                        ),
+                    overlayState = OverlayState(mode = UiMode.MAP),
+                )
+
+            val objectiveRow =
+                model.shell.leftRail.rows.single { row -> row.icon?.requestedKey == "icon.quest.objective_marker" }
+            assertEquals(expectedTone, objectiveRow.tone, tokenKey)
+        }
+    }
+
+    @Test
+    fun shellQuestSummaryRejectsUnknownObjectiveTextKeyForIcon() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        logEvents =
+                            listOf(
+                                RenderLogEventSnapshot(
+                                    RenderTextTokenSnapshot(
+                                        key = "log.objective.unregistered_stage",
+                                        arguments =
+                                            listOf(
+                                                RenderTextArgumentSnapshot(name = "objective", value = "Unknown objective"),
+                                            ),
+                                    ),
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        val objectiveRow =
+            model.shell.leftRail.rows.single { row -> row.text.contains("log.objective.unregistered_stage") }
+        assertNull(objectiveRow.icon)
+        assertEquals(TileTextTone.LIGHT_GRAY, objectiveRow.tone)
+    }
+
+    @Test
+    fun shellQuestSummaryDoesNotUseQuestIconForEmptyState() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(logEvents = emptyList()),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        val emptyQuestRow =
+            model.shell.leftRail.rows.single { row -> row.text == "No tracked quest in this zone." }
+        assertNull(emptyQuestRow.icon)
     }
 
     @Test
@@ -2718,7 +2805,7 @@ class TileRendererCanvasTest {
                                     typeId = "ARMOR_BREAK",
                                     remainingTurns = 3,
                                     nameKey = "status.armor_break",
-                                    iconKey = "missing_visual",
+                                    iconKey = "icon.status.armor_break",
                                     stackCount = 2,
                                     stackCap = 3,
                                     category = StatusEffectCategorySnapshot.DEBUFF,
@@ -3444,6 +3531,18 @@ class TileRendererCanvasTest {
                                 key = CombatAffordanceResourceKeys.INVALID_ICON,
                                 category = "icon",
                                 rawOutputPath = "dark-v1/ui/ui_combat_invalid_icon.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "icon.quest.objective_marker",
+                                category = "icon_quest",
+                                rawOutputPath = "dark-v1/icons/icon_quest_objective_marker.png",
+                                footprint = "ui",
+                            ),
+                            VisualManifestEntry(
+                                key = "icon.status.armor_break",
+                                category = "icon_status",
+                                rawOutputPath = "dark-v1/icons/icon_status_armor_break.png",
                                 footprint = "ui",
                             ),
                             VisualManifestEntry(

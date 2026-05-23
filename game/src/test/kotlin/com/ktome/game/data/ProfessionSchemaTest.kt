@@ -66,6 +66,10 @@ class ProfessionSchemaTest {
         assertEquals(0, catalog.talentTrees.first { tree -> tree.id == "warden_nature_guard" }.nodes.size)
         assertEquals("DEV_UNLOCKED", catalog.professions.first { it.id == "berserker" }.initialUnlockState.name)
         assertEquals("LOCKED", catalog.professions.first { it.id == "shadowblade" }.initialUnlockState.name)
+        assertEquals("icon.profession.berserker", catalog.professions.first { it.id == "berserker" }.iconKey)
+        assertEquals("icon.profession.spellblade", catalog.professions.first { it.id == "spellblade" }.iconKey)
+        assertEquals("icon.profession.rogue", catalog.professions.first { it.id == "shadowblade" }.iconKey)
+        assertEquals("icon.profession.templar", catalog.professions.first { it.id == "warden" }.iconKey)
         assertEquals(
             listOf("long_sword", "basic_shield", "chain_mail", "healing_potion"),
             catalog.professions.first { it.id == "vanguard" }.startingKit,

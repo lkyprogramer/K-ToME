@@ -881,7 +881,9 @@ sheets:
   styleTag: ktome-dark-fantasy-sprite-ui-v1
   rawSheetPath: assets-src/image/raw/sheets/dark-v1/r07-items-base.png
   outputRoot: client/src/main/resources
-  promptBase: Dark fantasy roguelike base item icon sheet, no text, transparent background
+  promptBase: Dark fantasy roguelike inventory item sheet, isolated still-life items on transparent
+    background, hand-painted dark metal and worn material surfaces, no circular badge frames, no
+    clean vector stickers, no text, no people
   grid:
     columns: 8
     rows: 8
@@ -893,37 +895,43 @@ sheets:
     targetKey: item.short_sword.icon
     category: icon_item
     outputName: dark-v1/items/item_short_sword_icon.png
-    subject: short iron sword, worn leather grip, no text
+    subject: short chipped iron sword angled upright with worn leather grip and brass pommel, hard
+      black outline readable at 24px 32px 48px, forged dungeon metal surface, no text, no people
   - row: 0
     col: 1
     targetKey: item.long_sword.icon
     category: icon_item
     outputName: dark-v1/items/item_long_sword_icon.png
-    subject: long steel sword, straight blade, no text
+    subject: long straight steel sword with nicked bright edge and dark leather crossguard wrap,
+      hard black outline readable at 24px 32px 48px, medieval forged metal, no text, no people
   - row: 0
     col: 2
     targetKey: item.arcane_staff.icon
     category: icon_item
     outputName: dark-v1/items/item_arcane_staff_icon.png
-    subject: dark wooden staff with small arcane crystal, no text
+    subject: crooked dark wood arcane staff capped with cracked cyan crystal and bronze wire,
+      hard black outline readable at 24px 32px 48px, worn rune-carved surface, no text, no people
   - row: 0
     col: 3
     targetKey: item.hunter_bow.icon
     category: icon_item
     outputName: dark-v1/items/item_hunter_bow_icon.png
-    subject: compact hunter bow, wrapped limbs, no text
+    subject: compact hunter bow with bent dark wood limbs, frayed leather grip, and taut sinew string,
+      hard black outline readable at 24px 32px 48px, rugged forest weapon material, no text, no people
   - row: 0
     col: 4
     targetKey: item.war_maul.icon
     category: icon_item
     outputName: dark-v1/items/item_war_maul_icon.png
-    subject: heavy iron maul with ember wear, no text
+    subject: heavy square iron war maul with dented head, ember-scorched striking face, and short
+      leather haft, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 0
     col: 5
     targetKey: item.forgebreaker_pick.icon
     category: icon_item
     outputName: dark-v1/items/item_forgebreaker_pick_icon.png
-    subject: mining war pick with dark forge metal, no text
+    subject: forgebreaker mining war pick with hooked black-iron beak, chipped steel point, and
+      soot-stained wooden handle, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 0
     col: 6
     reserved: true
@@ -937,25 +945,29 @@ sheets:
     targetKey: item.basic_shield.icon
     category: icon_item
     outputName: dark-v1/items/item_basic_shield_icon.png
-    subject: battered round shield, iron rim, no text
+    subject: battered kite shield with dark wood face, dented iron rim, and small brass boss, hard
+      black outline readable at 24px 32px 48px, dungeon-worn defensive gear, no text, no people
   - row: 1
     col: 1
     targetKey: item.chain_mail.icon
     category: icon_item
     outputName: dark-v1/items/item_chain_mail_icon.png
-    subject: folded chain mail armor, no text
+    subject: folded chain mail shirt with interlocked dark steel rings, torn leather collar, and
+      cold highlights, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 1
     col: 2
     targetKey: item.leather_armor.icon
     category: icon_item
     outputName: dark-v1/items/item_leather_armor_icon.png
-    subject: dark leather armor vest, no text
+    subject: dark leather armor vest with stitched shoulder plates, scratched iron buckles, and
+      worn cloth lining, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 1
     col: 3
     targetKey: item.apprentice_robe.icon
     category: icon_item
     outputName: dark-v1/items/item_apprentice_robe_icon.png
-    subject: folded apprentice robe with muted arcane trim, no text
+    subject: folded apprentice robe in charcoal cloth with faded blue rune trim and small brass clasp,
+      hard black outline readable at 24px 32px 48px, no text, no people
   - row: 1
     col: 4
     reserved: true
@@ -977,31 +989,36 @@ sheets:
     targetKey: item.healing_potion.icon
     category: icon_item
     outputName: dark-v1/items/item_healing_potion_icon.png
-    subject: red healing vial, wax seal, no text
+    subject: squat red healing potion vial with cloudy glass, cork stopper, wax seal, and leather
+      tie, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 2
     col: 1
     targetKey: item.mana_potion.icon
     category: icon_item
     outputName: dark-v1/items/item_mana_potion_icon.png
-    subject: blue mana vial, dim glow, no text
+    subject: narrow blue mana vial with dark glass shoulders, silver wire cage, and dim inner glow,
+      hard black outline readable at 24px 32px 48px, no text, no people
   - row: 2
     col: 2
     targetKey: item.energy_tonic.icon
     category: icon_item
     outputName: dark-v1/items/item_energy_tonic_icon.png
-    subject: teal tonic bottle, no text
+    subject: teal energy tonic bottle with chipped glass, brass cap, and worn cloth band around the
+      neck, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 2
     col: 3
     targetKey: item.scroll_teleport.icon
     category: icon_item
     outputName: dark-v1/items/item_scroll_teleport_icon.png
-    subject: sealed teleport scroll with dark rune band, no text
+    subject: rolled teleport scroll bound by black leather strap and bronze rune clasp, parchment
+      ends visible, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 2
     col: 4
     targetKey: item.consecrated_oil.icon
     category: icon_item
     outputName: dark-v1/items/item_consecrated_oil_icon.png
-    subject: small golden oil flask, no text
+    subject: small consecrated oil flask in tarnished gold metal with waxed cork and warm holy
+      ember glow, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 2
     col: 5
     reserved: true
@@ -1019,31 +1036,36 @@ sheets:
     targetKey: item.bandit_trophy.icon
     category: icon_item
     outputName: dark-v1/items/item_bandit_trophy_icon.png
-    subject: rough trophy charm and knife notch, no text
+    subject: bandit trophy charm made of notched bone, torn leather thong, and tiny rusted knife
+      shard, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 3
     col: 1
     targetKey: item.emerald_charm.icon
     category: icon_item
     outputName: dark-v1/items/item_emerald_charm_icon.png
-    subject: emerald charm pendant, no text
+    subject: emerald charm pendant with cracked green stone set in tarnished brass claws, hard
+      black outline readable at 24px 32px 48px, no text, no people
   - row: 3
     col: 2
     targetKey: item.seal_reliquary.icon
     category: icon_item
     outputName: dark-v1/items/item_seal_reliquary_icon.png
-    subject: small reliquary seal box, no text
+    subject: small reliquary seal box in dark iron with cracked ivory inset and brass hinge, hard
+      black outline readable at 24px 32px 48px, no text, no people
   - row: 3
     col: 3
     targetKey: item.sanctified_seal.icon
     category: icon_item
     outputName: dark-v1/items/item_sanctified_seal_icon.png
-    subject: sanctified brass seal, no text
+    subject: sanctified brass seal medallion with hammered metal face, pale wax edge, and worn
+      leather cord, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 3
     col: 4
     targetKey: item.abyssal_heartstone.icon
     category: icon_item
     outputName: dark-v1/items/item_abyssal_heartstone_icon.png
-    subject: dark heartstone talisman, violet core, no text
+    subject: abyssal heartstone talisman with jagged obsidian shell, violet crystal core, and black
+      iron chain, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 3
     col: 5
     reserved: true
@@ -1190,7 +1212,9 @@ sheets:
   styleTag: ktome-dark-fantasy-sprite-ui-v1
   rawSheetPath: assets-src/image/raw/sheets/dark-v1/r07-items-unique-artifact.png
   outputRoot: client/src/main/resources
-  promptBase: Dark fantasy roguelike unique and artifact item icon sheet, no text, transparent background
+  promptBase: Dark fantasy roguelike unique and artifact inventory sheet, isolated relic still-life
+    items on transparent background, heavier silhouette and aged material detail, no circular badge
+    frames, no clean vector stickers, no text, no people
   grid:
     columns: 8
     rows: 8
@@ -1202,37 +1226,43 @@ sheets:
     targetKey: item.unique.greenwood_watcher_blade.icon
     category: icon_item
     outputName: dark-v1/items/item_unique_greenwood_watcher_blade_icon.png
-    subject: unique greenwood sword with thorn guard, no text
+    subject: greenwood watcher blade with leaf-shaped steel edge, thorn-wrapped guard, and dark
+      wood grip, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 0
     col: 1
     targetKey: item.unique.briarbound_bow.icon
     category: icon_item
     outputName: dark-v1/items/item_unique_briarbound_bow_icon.png
-    subject: briarbound bow, thorn string, no text
+    subject: briarbound bow with twisted vine limbs, hooked thorn tips, and leather-wrapped grip,
+      hard black outline readable at 24px 32px 48px, forest relic material, no text, no people
   - row: 0
     col: 2
     targetKey: item.unique.furnace_plate.icon
     category: icon_item
     outputName: dark-v1/items/item_unique_furnace_plate_icon.png
-    subject: furnace-worn chest plate, no text
+    subject: furnace plate cuirass with blackened steel ribs, orange slag scars, and heavy iron
+      shoulder rim, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 0
     col: 3
     targetKey: item.unique.voidlit_seal.icon
     category: icon_item
     outputName: dark-v1/items/item_unique_voidlit_seal_icon.png
-    subject: voidlit seal relic, purple edge glow, no text
+    subject: voidlit seal relic with obsidian disk, cracked silver clamps, and restrained purple
+      edge glow, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 0
     col: 4
     targetKey: item.unique.cinderveil_plate.icon
     category: icon_item
     outputName: dark-v1/items/item_unique_cinderveil_plate_icon.png
-    subject: cinderveil plate armor, ashen trim, no text
+    subject: cinderveil plate armor folded as a chest icon with ashen cloth trim, black steel face,
+      and ember burn marks, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 0
     col: 5
     targetKey: item.unique.deepcurrent_lens.icon
     category: icon_item
     outputName: dark-v1/items/item_unique_deepcurrent_lens_icon.png
-    subject: deepcurrent lens, dark water glass, no text
+    subject: deepcurrent lens with dark water glass, brass ring, and cracked blue crystal center,
+      hard black outline readable at 24px 32px 48px, no text, no people
   - row: 0
     col: 6
     reserved: true
@@ -1246,25 +1276,29 @@ sheets:
     targetKey: item.artifact.briar_heart.icon
     category: icon_item
     outputName: dark-v1/items/item_artifact_briar_heart_icon.png
-    subject: artifact thorn heart, no text
+    subject: briar heart artifact with thorn cage around a deep red crystal, black vine roots, and
+      chipped bone pins, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 1
     col: 1
     targetKey: item.artifact.forge_oath.icon
     category: icon_item
     outputName: dark-v1/items/item_artifact_forge_oath_icon.png
-    subject: artifact forge oath weapon seal, no text
+    subject: forge oath artifact seal shaped like a broken iron anvil and bound steel oath ring,
+      ember slag cracks, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 1
     col: 2
     targetKey: item.artifact.river_echo.icon
     category: icon_item
     outputName: dark-v1/items/item_artifact_river_echo_icon.png
-    subject: artifact river echo charm, no text
+    subject: river echo artifact charm with shell-like silver frame, dark water crystal, and worn
+      blue cloth tie, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 1
     col: 3
     targetKey: item.artifact.eclipsed_relic.icon
     category: icon_item
     outputName: dark-v1/items/item_artifact_eclipsed_relic_icon.png
-    subject: eclipsed relic medallion, no text
+    subject: eclipsed relic medallion with black moon disk over pale silver rim and cracked obsidian
+      chain, hard black outline readable at 24px 32px 48px, no text, no people
   - row: 1
     col: 4
     reserved: true
@@ -1479,7 +1513,9 @@ sheets:
   styleTag: ktome-dark-fantasy-sprite-ui-v1
   rawSheetPath: assets-src/image/raw/sheets/dark-v1/r07-items-affix-material.png
   outputRoot: client/src/main/resources
-  promptBase: Dark fantasy roguelike affix material and shop marker icon sheet, no text, transparent background
+  promptBase: Dark fantasy roguelike material, affix, and shop utility sheet, isolated dark-fantasy
+    still-life symbols on transparent background, no circular badge frames, no clean vector stickers,
+    no text, no people
   grid:
     columns: 8
     rows: 8
@@ -1491,25 +1527,29 @@ sheets:
     targetKey: material.iron.icon
     category: icon
     outputName: dark-v1/items/material_iron_icon.png
-    subject: dark iron ingot material, no text
+    subject: dark iron ingot stack with chipped corners, soot dust, and heavy black outline readable
+      at 16px 24px 32px 48px, forged material token, no text, no people
   - row: 0
     col: 1
     targetKey: material.steel.icon
     category: icon
     outputName: dark-v1/items/material_steel_icon.png
-    subject: polished steel ingot material, no text
+    subject: polished steel ingot pair with cold edge highlights, scratched surface, and hard black
+      outline readable at 16px 24px 32px 48px, crafted material token, no text, no people
   - row: 0
     col: 2
     targetKey: material.mithril.icon
     category: icon
     outputName: dark-v1/items/material_mithril_icon.png
-    subject: pale mithril shard material, no text
+    subject: pale mithril shard cluster with blue-white crystal metal sheen and black base shadow,
+      hard outline readable at 16px 24px 32px 48px, rare material token, no text, no people
   - row: 0
     col: 3
     targetKey: material.adamantite.icon
     category: icon
     outputName: dark-v1/items/material_adamantite_icon.png
-    subject: black adamantite bar material, no text
+    subject: black adamantite bar with obsidian metal facets, tiny red ember cracks, and hard outline
+      readable at 16px 24px 32px 48px, endgame material token, no text, no people
   - row: 0
     col: 4
     reserved: true
@@ -1531,25 +1571,29 @@ sheets:
     targetKey: affix.sharp.icon
     category: icon
     outputName: dark-v1/items/affix_sharp_icon.png
-    subject: sharp edge affix marker, no text
+    subject: sharp affix symbol as a single jagged steel blade edge cutting a dark stone chip, hard
+      black outline readable at 16px 24px 32px 48px, no text, no people
   - row: 1
     col: 1
     targetKey: affix.sturdy.icon
     category: icon
     outputName: dark-v1/items/affix_sturdy_icon.png
-    subject: sturdy armor rivet affix marker, no text
+    subject: sturdy affix symbol as crossed iron rivets on a dented shield plate, hard black outline
+      readable at 16px 24px 32px 48px, no text, no people
   - row: 1
     col: 2
     targetKey: affix.of_strength.icon
     category: icon
     outputName: dark-v1/items/affix_of_strength_icon.png
-    subject: strength sigil affix marker, no text
+    subject: strength affix symbol as a clenched iron gauntlet over cracked stone, bronze knuckles,
+      hard black outline readable at 16px 24px 32px 48px, no text, no people
   - row: 1
     col: 3
     targetKey: affix.of_life.icon
     category: icon
     outputName: dark-v1/items/affix_of_life_icon.png
-    subject: life drop affix marker, no text
+    subject: life affix symbol as a deep red blood drop inside thorned brass crescent, hard black
+      outline readable at 16px 24px 32px 48px, no text, no people
   - row: 1
     col: 4
     reserved: true
@@ -1571,25 +1615,29 @@ sheets:
     targetKey: ui.shop.price.affordable
     category: icon
     outputName: dark-v1/ui/ui_shop_price_affordable.png
-    subject: coin marker with readable silhouette, no text
+    subject: affordable shop symbol as three tarnished gold coins tied by a small green cord, hard
+      black outline readable at 16px 24px 32px, no text, no people
   - row: 2
     col: 1
     targetKey: ui.shop.price.unaffordable
     category: icon
     outputName: dark-v1/ui/ui_shop_price_unaffordable.png
-    subject: cracked coin marker, no text
+    subject: unaffordable shop symbol as a single cracked dull gold coin with red wax slash, hard
+      black outline readable at 16px 24px 32px, no text, no people
   - row: 2
     col: 2
     targetKey: ui.shop.inscription.marker
     category: icon
     outputName: dark-v1/ui/ui_shop_inscription_marker.png
-    subject: small inscription rune marker, no text
+    subject: inscription shop symbol as a small dark stone tablet with carved blank rune grooves and
+      brass corner pins, hard outline readable at 16px 24px 32px, no text, no people
   - row: 2
     col: 3
     targetKey: ui.shop.replacement.slot_marker
     category: icon
     outputName: dark-v1/ui/ui_shop_replacement_slot_marker.png
-    subject: replacement slot marker, no text or digits
+    subject: replacement slot shop symbol as an empty black-iron socket with two brass arrows carved
+      into the metal frame, hard outline readable at 16px 24px 32px, no text, no people
   - row: 2
     col: 4
     reserved: true
@@ -3048,3 +3096,2136 @@ sheets:
     outputName: dark-v1/portraits/zone_underground_river_visual.png
     subject: zone underground river visual identity portrait, dark fantasy iron stone ember era, restrained
       background, no text
+- sheetId: r08-skills-vanguard-berserker
+  round: 8
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r08-skills-vanguard-berserker.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy skill and talent icon sheet for Vanguard and Berserker, transparent background, no text
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: icon.skill.berserker.aftershock
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_berserker_aftershock.png
+    subject: "berserker action-command icon for aftershock: cracked two-handed maul slamming a stone floor with echo fracture rings, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 1
+    targetKey: icon.skill.berserker.fault_line
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_berserker_fault_line.png
+    subject: "berserker action-command icon for fault line: iron axe head splitting a jagged obsidian ground crack, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 2
+    targetKey: icon.skill.berserker.pain_fuel
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_berserker_pain_fuel.png
+    subject: "berserker action-command icon for pain fuel: blood-red ember heart clamped inside a cracked iron gauntlet, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 3
+    targetKey: icon.skill.berserker.pursuit_drive
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_berserker_pursuit_drive.png
+    subject: "berserker action-command icon for pursuit drive: forward-leaning boot and hook chain scraping sparks from black stone, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 4
+    targetKey: icon.skill.berserker.riven_edge
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_berserker_riven_edge.png
+    subject: "berserker action-command icon for riven edge: notched execution blade tearing through a broken shield plate, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 5
+    targetKey: icon.skill.berserker.slaughter_drive
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_berserker_slaughter_drive.png
+    subject: "berserker action-command icon for slaughter drive: spiked war cleaver with ember trail over scored iron, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 6
+    targetKey: talent.berserker.aftershock.icon
+    category: icon
+    outputName: dark-v1/icons/talent_berserker_aftershock_icon.png
+    subject: "progression-emblem node for berserker aftershock: cracked two-handed maul slamming a stone floor with echo fracture rings inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 0
+    col: 7
+    targetKey: talent.berserker.fault_line.icon
+    category: icon
+    outputName: dark-v1/icons/talent_berserker_fault_line_icon.png
+    subject: "progression-emblem node for berserker fault line: iron axe head splitting a jagged obsidian ground crack inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 0
+    targetKey: talent.berserker.pain_fuel.icon
+    category: icon
+    outputName: dark-v1/icons/talent_berserker_pain_fuel_icon.png
+    subject: "progression-emblem node for berserker pain fuel: blood-red ember heart clamped inside a cracked iron gauntlet inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 1
+    targetKey: talent.berserker.pursuit_drive.icon
+    category: icon
+    outputName: dark-v1/icons/talent_berserker_pursuit_drive_icon.png
+    subject: "progression-emblem node for berserker pursuit drive: forward-leaning boot and hook chain scraping sparks from black stone inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 2
+    targetKey: talent.berserker.riven_edge.icon
+    category: icon
+    outputName: dark-v1/icons/talent_berserker_riven_edge_icon.png
+    subject: "progression-emblem node for berserker riven edge: notched execution blade tearing through a broken shield plate inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 3
+    targetKey: talent.berserker.slaughter_drive.icon
+    category: icon
+    outputName: dark-v1/icons/talent_berserker_slaughter_drive_icon.png
+    subject: "progression-emblem node for berserker slaughter drive: spiked war cleaver with ember trail over scored iron inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 4
+    targetKey: talent.berserker.aftershock.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_berserker_aftershock_visual.png
+    subject: "larger progression visual for berserker aftershock: cracked two-handed maul slamming a stone floor with echo fracture rings as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 1
+    col: 5
+    targetKey: talent.berserker.fault_line.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_berserker_fault_line_visual.png
+    subject: "larger progression visual for berserker fault line: iron axe head splitting a jagged obsidian ground crack as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 1
+    col: 6
+    targetKey: talent.berserker.pain_fuel.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_berserker_pain_fuel_visual.png
+    subject: "larger progression visual for berserker pain fuel: blood-red ember heart clamped inside a cracked iron gauntlet as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 1
+    col: 7
+    targetKey: talent.berserker.pursuit_drive.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_berserker_pursuit_drive_visual.png
+    subject: "larger progression visual for berserker pursuit drive: forward-leaning boot and hook chain scraping sparks from black stone as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 0
+    targetKey: talent.berserker.riven_edge.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_berserker_riven_edge_visual.png
+    subject: "larger progression visual for berserker riven edge: notched execution blade tearing through a broken shield plate as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 1
+    targetKey: talent.berserker.slaughter_drive.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_berserker_slaughter_drive_visual.png
+    subject: "larger progression visual for berserker slaughter drive: spiked war cleaver with ember trail over scored iron as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 2
+    targetKey: icon.skill.vanguard.battlefield_command
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_vanguard_battlefield_command.png
+    subject: "vanguard action-command icon for battlefield command: raised command banner spear crossing a battered tower shield, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 2
+    col: 3
+    targetKey: icon.skill.vanguard.bulwark_march
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_vanguard_bulwark_march.png
+    subject: "vanguard action-command icon for bulwark march: three overlapping tower shields pushing through ash and sparks, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 2
+    col: 4
+    targetKey: icon.skill.vanguard.earthshaker
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_vanguard_earthshaker.png
+    subject: "vanguard action-command icon for earthshaker: warhammer head striking stone with radial fracture wedges, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 2
+    col: 5
+    targetKey: icon.skill.vanguard.guard_stance
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_vanguard_guard_stance.png
+    subject: "vanguard action-command icon for guard stance: front-facing chipped tower shield locked in a low defensive brace, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 2
+    col: 6
+    targetKey: icon.skill.vanguard.linebreaker
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_vanguard_linebreaker.png
+    subject: "vanguard action-command icon for linebreaker: shield wedge ramming through a splintered gate bar, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 2
+    col: 7
+    targetKey: icon.skill.vanguard.power_strike
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_vanguard_power_strike.png
+    subject: "vanguard action-command icon for power strike: heavy sword impact burst against cracked black stone, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 0
+    targetKey: icon.skill.vanguard.shield_bash
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_vanguard_shield_bash.png
+    subject: "vanguard action-command icon for shield bash: round iron shield smashing into a broken doorway hinge, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 1
+    targetKey: icon.skill.vanguard.war_cry
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_vanguard_war_cry.png
+    subject: "vanguard action-command icon for war cry: spiked horn and shockwave ring over a dark iron mask, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 2
+    targetKey: talent.vanguard.battlefield_command.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_battlefield_command_icon.png
+    subject: "progression-emblem node for vanguard battlefield command: raised command banner spear crossing a battered tower shield inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 3
+    col: 3
+    targetKey: talent.vanguard.bulwark_march.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_bulwark_march_icon.png
+    subject: "progression-emblem node for vanguard bulwark march: three overlapping tower shields pushing through ash and sparks inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 3
+    col: 4
+    targetKey: talent.vanguard.charge.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_charge_icon.png
+    subject: "progression-emblem node for vanguard charge: iron boot and lowered spear driving across cracked stone inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 3
+    col: 5
+    targetKey: talent.vanguard.earthshaker.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_earthshaker_icon.png
+    subject: "progression-emblem node for vanguard earthshaker: warhammer head striking stone with radial fracture wedges inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 3
+    col: 6
+    targetKey: talent.vanguard.guard_stance.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_guard_stance_icon.png
+    subject: "progression-emblem node for vanguard guard stance: front-facing chipped tower shield locked in a low defensive brace inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 3
+    col: 7
+    targetKey: talent.vanguard.intimidation.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_intimidation_icon.png
+    subject: "progression-emblem node for vanguard intimidation: jagged war horn wrapped in black leather and ember scratches inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 4
+    col: 0
+    targetKey: talent.vanguard.linebreaker.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_linebreaker_icon.png
+    subject: "progression-emblem node for vanguard linebreaker: shield wedge ramming through a splintered gate bar inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 4
+    col: 1
+    targetKey: talent.vanguard.power_strike.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_power_strike_icon.png
+    subject: "progression-emblem node for vanguard power strike: heavy sword impact burst against cracked black stone inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 4
+    col: 2
+    targetKey: talent.vanguard.shield_bash.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_shield_bash_icon.png
+    subject: "progression-emblem node for vanguard shield bash: round iron shield smashing into a broken doorway hinge inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 4
+    col: 3
+    targetKey: talent.vanguard.sunder_armor.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_sunder_armor_icon.png
+    subject: "progression-emblem node for vanguard sunder armor: split breastplate plate under a hooked axe bite inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 4
+    col: 4
+    targetKey: talent.vanguard.sweeping_strike.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_sweeping_strike_icon.png
+    subject: "progression-emblem node for vanguard sweeping strike: wide crescent sword arc cutting through ash chips inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 4
+    col: 5
+    targetKey: talent.vanguard.unyielding.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_unyielding_icon.png
+    subject: "progression-emblem node for vanguard unyielding: anchored tower shield with iron roots gripping cracked stone inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 4
+    col: 6
+    targetKey: talent.vanguard.war_cry.icon
+    category: icon
+    outputName: dark-v1/icons/talent_vanguard_war_cry_icon.png
+    subject: "progression-emblem node for vanguard war cry: spiked horn and shockwave ring over a dark iron mask inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 4
+    col: 7
+    targetKey: talent.vanguard.battlefield_command.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_battlefield_command_visual.png
+    subject: "larger progression visual for vanguard battlefield command: raised command banner spear crossing a battered tower shield as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 0
+    targetKey: talent.vanguard.bulwark_march.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_bulwark_march_visual.png
+    subject: "larger progression visual for vanguard bulwark march: three overlapping tower shields pushing through ash and sparks as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 1
+    targetKey: talent.vanguard.charge.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_charge_visual.png
+    subject: "larger progression visual for vanguard charge: iron boot and lowered spear driving across cracked stone as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 2
+    targetKey: talent.vanguard.earthshaker.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_earthshaker_visual.png
+    subject: "larger progression visual for vanguard earthshaker: warhammer head striking stone with radial fracture wedges as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 3
+    targetKey: talent.vanguard.guard_stance.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_guard_stance_visual.png
+    subject: "larger progression visual for vanguard guard stance: front-facing chipped tower shield locked in a low defensive brace as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 4
+    targetKey: talent.vanguard.intimidation.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_intimidation_visual.png
+    subject: "larger progression visual for vanguard intimidation: jagged war horn wrapped in black leather and ember scratches as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 5
+    targetKey: talent.vanguard.linebreaker.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_linebreaker_visual.png
+    subject: "larger progression visual for vanguard linebreaker: shield wedge ramming through a splintered gate bar as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 6
+    targetKey: talent.vanguard.power_strike.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_power_strike_visual.png
+    subject: "larger progression visual for vanguard power strike: heavy sword impact burst against cracked black stone as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 7
+    targetKey: talent.vanguard.shield_bash.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_shield_bash_visual.png
+    subject: "larger progression visual for vanguard shield bash: round iron shield smashing into a broken doorway hinge as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 0
+    targetKey: talent.vanguard.sunder_armor.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_sunder_armor_visual.png
+    subject: "larger progression visual for vanguard sunder armor: split breastplate plate under a hooked axe bite as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 1
+    targetKey: talent.vanguard.sweeping_strike.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_sweeping_strike_visual.png
+    subject: "larger progression visual for vanguard sweeping strike: wide crescent sword arc cutting through ash chips as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 2
+    targetKey: talent.vanguard.unyielding.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_unyielding_visual.png
+    subject: "larger progression visual for vanguard unyielding: anchored tower shield with iron roots gripping cracked stone as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 3
+    targetKey: talent.vanguard.war_cry.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_vanguard_war_cry_visual.png
+    subject: "larger progression visual for vanguard war cry: spiked horn and shockwave ring over a dark iron mask as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-06 r08-skills-vanguard-berserker expansion slot
+- sheetId: r08-skills-templar-rogue
+  round: 8
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r08-skills-templar-rogue.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy skill and talent icon sheet for Templar and Rogue, transparent background, no text
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: icon.skill.rogue.backstab
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_backstab.png
+    subject: "rogue action-command icon for backstab: black dagger angled behind a cracked shield shadow, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 1
+    targetKey: icon.skill.rogue.blade_flurry
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_blade_flurry.png
+    subject: "rogue action-command icon for blade flurry: three curved knives spinning in a tight steel fan, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 2
+    targetKey: icon.skill.rogue.crippling_strike
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_crippling_strike.png
+    subject: "rogue action-command icon for crippling strike: hooked dagger cutting a red tendon mark on black leather, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 3
+    targetKey: icon.skill.rogue.deathblow
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_deathblow.png
+    subject: "rogue action-command icon for deathblow: downward stiletto piercing a fractured skull-shaped iron token, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 4
+    targetKey: icon.skill.rogue.dusk_shroud
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_dusk_shroud.png
+    subject: "rogue action-command icon for dusk shroud: torn dusk cloak wrapping a crescent dagger silhouette, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 5
+    targetKey: icon.skill.rogue.eviscerate
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_eviscerate.png
+    subject: "rogue action-command icon for eviscerate: serrated knife pulling an ember slash across dark hide, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 6
+    targetKey: icon.skill.rogue.mark_prey
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_mark_prey.png
+    subject: "rogue action-command icon for mark prey: notched arrowhead over a scratched hunter target ring, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 7
+    targetKey: icon.skill.rogue.poison_blade
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_poison_blade.png
+    subject: "rogue action-command icon for poison blade: green-black venom drop sliding along a chipped dagger edge, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 1
+    col: 0
+    targetKey: icon.skill.rogue.ricochet_knives
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_ricochet_knives.png
+    subject: "rogue action-command icon for ricochet knives: two throwing knives rebounding from a cracked iron wall, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 1
+    col: 1
+    targetKey: icon.skill.rogue.roll
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_roll.png
+    subject: "rogue action-command icon for roll: low tumbling cloak buckle with dust crescent and dagger glint, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 1
+    col: 2
+    targetKey: icon.skill.rogue.shadow_bind
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_shadow_bind.png
+    subject: "rogue action-command icon for shadow bind: black chain loop pinning a small shadow spike to stone, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 1
+    col: 3
+    targetKey: icon.skill.rogue.shadowstep
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_shadowstep.png
+    subject: "rogue action-command icon for shadowstep: half-visible boot print dissolving into black smoke crescent, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 1
+    col: 4
+    targetKey: icon.skill.rogue.smoke_bomb
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_smoke_bomb.png
+    subject: "rogue action-command icon for smoke bomb: round smoke bomb bursting into charcoal cloud and brass fuse, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 1
+    col: 5
+    targetKey: icon.skill.rogue.stealth
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_rogue_stealth.png
+    subject: "rogue action-command icon for stealth: hooded cloak clasp silhouette fading behind an obsidian shard, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 1
+    col: 6
+    targetKey: talent.rogue.crippling_strike.icon
+    category: icon
+    outputName: dark-v1/icons/talent_rogue_crippling_strike_icon.png
+    subject: "progression-emblem node for rogue crippling strike: hooked dagger cutting a red tendon mark on black leather inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 7
+    targetKey: talent.rogue.dusk_shroud.icon
+    category: icon
+    outputName: dark-v1/icons/talent_rogue_dusk_shroud_icon.png
+    subject: "progression-emblem node for rogue dusk shroud: torn dusk cloak wrapping a crescent dagger silhouette inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 0
+    targetKey: talent.rogue.eviscerate.icon
+    category: icon
+    outputName: dark-v1/icons/talent_rogue_eviscerate_icon.png
+    subject: "progression-emblem node for rogue eviscerate: serrated knife pulling an ember slash across dark hide inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 1
+    targetKey: talent.rogue.ricochet_knives.icon
+    category: icon
+    outputName: dark-v1/icons/talent_rogue_ricochet_knives_icon.png
+    subject: "progression-emblem node for rogue ricochet knives: two throwing knives rebounding from a cracked iron wall inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 2
+    targetKey: talent.rogue.shadow_bind.icon
+    category: icon
+    outputName: dark-v1/icons/talent_rogue_shadow_bind_icon.png
+    subject: "progression-emblem node for rogue shadow bind: black chain loop pinning a small shadow spike to stone inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 3
+    targetKey: talent.rogue.crippling_strike.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_rogue_crippling_strike_visual.png
+    subject: "larger progression visual for rogue crippling strike: hooked dagger cutting a red tendon mark on black leather as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 4
+    targetKey: talent.rogue.dusk_shroud.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_rogue_dusk_shroud_visual.png
+    subject: "larger progression visual for rogue dusk shroud: torn dusk cloak wrapping a crescent dagger silhouette as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 5
+    targetKey: talent.rogue.eviscerate.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_rogue_eviscerate_visual.png
+    subject: "larger progression visual for rogue eviscerate: serrated knife pulling an ember slash across dark hide as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 6
+    targetKey: talent.rogue.ricochet_knives.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_rogue_ricochet_knives_visual.png
+    subject: "larger progression visual for rogue ricochet knives: two throwing knives rebounding from a cracked iron wall as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 7
+    targetKey: talent.rogue.shadow_bind.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_rogue_shadow_bind_visual.png
+    subject: "larger progression visual for rogue shadow bind: black chain loop pinning a small shadow spike to stone as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 0
+    targetKey: icon.skill.templar.absolution
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_absolution.png
+    subject: "templar action-command icon for absolution: broken black shackle under a small brass sun seal, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 1
+    targetKey: icon.skill.templar.beacon_of_zeal
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_beacon_of_zeal.png
+    subject: "templar action-command icon for beacon of zeal: lit brass beacon cup throwing restrained holy rays, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 2
+    targetKey: icon.skill.templar.consecration
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_consecration.png
+    subject: "templar action-command icon for consecration: worn stone floor sigil with brass inlay and ember halo, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 3
+    targetKey: icon.skill.templar.devotion
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_devotion.png
+    subject: "templar action-command icon for devotion: clasped iron gauntlets around a chipped sun medallion, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 4
+    targetKey: icon.skill.templar.divine_intervention
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_divine_intervention.png
+    subject: "templar action-command icon for divine intervention: descending brass shield wing blocking a dark spear point, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 5
+    targetKey: icon.skill.templar.holy_aura
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_holy_aura.png
+    subject: "templar action-command icon for holy aura: thin sun ring around a battered iron reliquary, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 6
+    targetKey: icon.skill.templar.holy_light
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_holy_light.png
+    subject: "templar action-command icon for holy light: small brass lantern pouring warm light onto cracked stone, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 3
+    col: 7
+    targetKey: icon.skill.templar.holy_shield
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_holy_shield.png
+    subject: "templar action-command icon for holy shield: sun-etched kite shield with chipped silver rim, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 0
+    targetKey: icon.skill.templar.holy_strike
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_holy_strike.png
+    subject: "templar action-command icon for holy strike: mace head and brass ray striking a black stone mark, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 1
+    targetKey: icon.skill.templar.judgment_hammer
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_judgment_hammer.png
+    subject: "templar action-command icon for judgment hammer: square templar hammer over a fractured guilty seal, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 2
+    targetKey: icon.skill.templar.purify
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_purify.png
+    subject: "templar action-command icon for purify: silver flame washing soot from an iron chalice, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 3
+    targetKey: icon.skill.templar.radiant_lance
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_radiant_lance.png
+    subject: "templar action-command icon for radiant lance: narrow brass lance of light piercing an obsidian plate, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 4
+    targetKey: icon.skill.templar.ritual_break
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_ritual_break.png
+    subject: "templar action-command icon for ritual break: snapped ritual chain crossing a cracked rune circle, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 5
+    targetKey: icon.skill.templar.sanctuary
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_sanctuary.png
+    subject: "templar action-command icon for sanctuary: small chapel arch shielded by a brass ward ring, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 6
+    targetKey: icon.skill.templar.smite
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_templar_smite.png
+    subject: "templar action-command icon for smite: mace and vertical sun slash over broken black stone, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 7
+    targetKey: talent.templar.absolution.icon
+    category: icon
+    outputName: dark-v1/icons/talent_templar_absolution_icon.png
+    subject: "progression-emblem node for templar absolution: broken black shackle under a small brass sun seal inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 0
+    targetKey: talent.templar.beacon_of_zeal.icon
+    category: icon
+    outputName: dark-v1/icons/talent_templar_beacon_of_zeal_icon.png
+    subject: "progression-emblem node for templar beacon of zeal: lit brass beacon cup throwing restrained holy rays inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 1
+    targetKey: talent.templar.consecration.icon
+    category: icon
+    outputName: dark-v1/icons/talent_templar_consecration_icon.png
+    subject: "progression-emblem node for templar consecration: worn stone floor sigil with brass inlay and ember halo inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 2
+    targetKey: talent.templar.radiant_lance.icon
+    category: icon
+    outputName: dark-v1/icons/talent_templar_radiant_lance_icon.png
+    subject: "progression-emblem node for templar radiant lance: narrow brass lance of light piercing an obsidian plate inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 3
+    targetKey: talent.templar.ritual_break.icon
+    category: icon
+    outputName: dark-v1/icons/talent_templar_ritual_break_icon.png
+    subject: "progression-emblem node for templar ritual break: snapped ritual chain crossing a cracked rune circle inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 4
+    targetKey: talent.templar.sanctuary.icon
+    category: icon
+    outputName: dark-v1/icons/talent_templar_sanctuary_icon.png
+    subject: "progression-emblem node for templar sanctuary: small chapel arch shielded by a brass ward ring inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 5
+    targetKey: talent.templar.absolution.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_templar_absolution_visual.png
+    subject: "larger progression visual for templar absolution: broken black shackle under a small brass sun seal as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 6
+    targetKey: talent.templar.beacon_of_zeal.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_templar_beacon_of_zeal_visual.png
+    subject: "larger progression visual for templar beacon of zeal: lit brass beacon cup throwing restrained holy rays as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 7
+    targetKey: talent.templar.consecration.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_templar_consecration_visual.png
+    subject: "larger progression visual for templar consecration: worn stone floor sigil with brass inlay and ember halo as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 0
+    targetKey: talent.templar.radiant_lance.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_templar_radiant_lance_visual.png
+    subject: "larger progression visual for templar radiant lance: narrow brass lance of light piercing an obsidian plate as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 1
+    targetKey: talent.templar.ritual_break.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_templar_ritual_break_visual.png
+    subject: "larger progression visual for templar ritual break: snapped ritual chain crossing a cracked rune circle as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 2
+    targetKey: talent.templar.sanctuary.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_templar_sanctuary_visual.png
+    subject: "larger progression visual for templar sanctuary: small chapel arch shielded by a brass ward ring as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-06 r08-skills-templar-rogue expansion slot
+- sheetId: r08-skills-arcanist-spellblade
+  round: 8
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r08-skills-arcanist-spellblade.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy skill and talent icon sheet for Arcanist and Spellblade, transparent background, no text
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: icon.skill.arcanist.blink
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_arcanist_blink.png
+    subject: "arcanist action-command icon for blink: empty bootprint and cyan afterimage shard on cracked stone, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 1
+    targetKey: icon.skill.arcanist.cinder_burst
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_arcanist_cinder_burst.png
+    subject: "arcanist action-command icon for cinder burst: charcoal orb bursting into compact ember wedges, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 2
+    targetKey: icon.skill.arcanist.fire_bolt
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_arcanist_fire_bolt.png
+    subject: "arcanist action-command icon for fire bolt: single ember bolt with iron tail fins and soot trail, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 3
+    targetKey: icon.skill.arcanist.glacial_seal
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_arcanist_glacial_seal.png
+    subject: "arcanist action-command icon for glacial seal: blue-white seal plate frozen onto cracked obsidian, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 4
+    targetKey: icon.skill.arcanist.inferno_orb
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_arcanist_inferno_orb.png
+    subject: "arcanist action-command icon for inferno orb: heavy ember orb with molten cracks and black iron band, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 5
+    targetKey: icon.skill.arcanist.shard_storm
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_arcanist_shard_storm.png
+    subject: "arcanist action-command icon for shard storm: spiral of sharp crystal shards around a dark core, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 6
+    targetKey: icon.skill.arcanist.void_breach
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_arcanist_void_breach.png
+    subject: "arcanist action-command icon for void breach: black tear in space edged by restrained cyan sparks, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 0
+    col: 7
+    targetKey: talent.arcanist.arcane_shield.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_arcane_shield_icon.png
+    subject: "progression-emblem node for arcanist arcane shield: cyan rune shield plate locked over a dark iron core inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 0
+    targetKey: talent.arcanist.blink.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_blink_icon.png
+    subject: "progression-emblem node for arcanist blink: empty bootprint and cyan afterimage shard on cracked stone inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 1
+    targetKey: talent.arcanist.cinder_burst.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_cinder_burst_icon.png
+    subject: "progression-emblem node for arcanist cinder burst: charcoal orb bursting into compact ember wedges inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 2
+    targetKey: talent.arcanist.fireball.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_fireball_icon.png
+    subject: "progression-emblem node for arcanist fireball: round cinder sphere wrapped by a tight brass rune ring inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 3
+    targetKey: talent.arcanist.flame_wall.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_flame_wall_icon.png
+    subject: "progression-emblem node for arcanist flame wall: short wall of ember bricks rising from blackened stone inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 4
+    targetKey: talent.arcanist.frost_nova.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_frost_nova_icon.png
+    subject: "progression-emblem node for arcanist frost nova: radial frost shard ring over a dark iron disk inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 5
+    targetKey: talent.arcanist.glacial_seal.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_glacial_seal_icon.png
+    subject: "progression-emblem node for arcanist glacial seal: blue-white seal plate frozen onto cracked obsidian inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 6
+    targetKey: talent.arcanist.ice_bolt.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_ice_bolt_icon.png
+    subject: "progression-emblem node for arcanist ice bolt: jagged ice spike launched from a small cyan rune inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 1
+    col: 7
+    targetKey: talent.arcanist.ice_prison.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_ice_prison_icon.png
+    subject: "progression-emblem node for arcanist ice prison: iron shackle trapped inside clear frost pillars inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 0
+    targetKey: talent.arcanist.inferno_orb.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_inferno_orb_icon.png
+    subject: "progression-emblem node for arcanist inferno orb: heavy ember orb with molten cracks and black iron band inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 1
+    targetKey: talent.arcanist.mana_surge.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_mana_surge_icon.png
+    subject: "progression-emblem node for arcanist mana surge: cyan liquid arc surging through a cracked crystal vial inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 2
+    targetKey: talent.arcanist.shard_storm.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_shard_storm_icon.png
+    subject: "progression-emblem node for arcanist shard storm: spiral of sharp crystal shards around a dark core inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 3
+    targetKey: talent.arcanist.void_breach.icon
+    category: icon
+    outputName: dark-v1/icons/talent_arcanist_void_breach_icon.png
+    subject: "progression-emblem node for arcanist void breach: black tear in space edged by restrained cyan sparks inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 2
+    col: 4
+    targetKey: talent.arcanist.arcane_shield.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_arcane_shield_visual.png
+    subject: "larger progression visual for arcanist arcane shield: cyan rune shield plate locked over a dark iron core as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 5
+    targetKey: talent.arcanist.blink.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_blink_visual.png
+    subject: "larger progression visual for arcanist blink: empty bootprint and cyan afterimage shard on cracked stone as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 6
+    targetKey: talent.arcanist.cinder_burst.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_cinder_burst_visual.png
+    subject: "larger progression visual for arcanist cinder burst: charcoal orb bursting into compact ember wedges as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 2
+    col: 7
+    targetKey: talent.arcanist.fireball.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_fireball_visual.png
+    subject: "larger progression visual for arcanist fireball: round cinder sphere wrapped by a tight brass rune ring as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 0
+    targetKey: talent.arcanist.flame_wall.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_flame_wall_visual.png
+    subject: "larger progression visual for arcanist flame wall: short wall of ember bricks rising from blackened stone as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 1
+    targetKey: talent.arcanist.frost_nova.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_frost_nova_visual.png
+    subject: "larger progression visual for arcanist frost nova: radial frost shard ring over a dark iron disk as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 2
+    targetKey: talent.arcanist.glacial_seal.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_glacial_seal_visual.png
+    subject: "larger progression visual for arcanist glacial seal: blue-white seal plate frozen onto cracked obsidian as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 3
+    targetKey: talent.arcanist.ice_bolt.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_ice_bolt_visual.png
+    subject: "larger progression visual for arcanist ice bolt: jagged ice spike launched from a small cyan rune as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 4
+    targetKey: talent.arcanist.ice_prison.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_ice_prison_visual.png
+    subject: "larger progression visual for arcanist ice prison: iron shackle trapped inside clear frost pillars as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 5
+    targetKey: talent.arcanist.inferno_orb.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_inferno_orb_visual.png
+    subject: "larger progression visual for arcanist inferno orb: heavy ember orb with molten cracks and black iron band as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 6
+    targetKey: talent.arcanist.mana_surge.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_mana_surge_visual.png
+    subject: "larger progression visual for arcanist mana surge: cyan liquid arc surging through a cracked crystal vial as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 3
+    col: 7
+    targetKey: talent.arcanist.shard_storm.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_shard_storm_visual.png
+    subject: "larger progression visual for arcanist shard storm: spiral of sharp crystal shards around a dark core as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 4
+    col: 0
+    targetKey: talent.arcanist.void_breach.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_arcanist_void_breach_visual.png
+    subject: "larger progression visual for arcanist void breach: black tear in space edged by restrained cyan sparks as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 4
+    col: 1
+    targetKey: icon.skill.spellblade.balance_point
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_spellblade_balance_point.png
+    subject: "spellblade action-command icon for balance point: split blade balanced on a tiny brass fulcrum stone, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 2
+    targetKey: icon.skill.spellblade.blink_strike
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_spellblade_blink_strike.png
+    subject: "spellblade action-command icon for blink strike: short sword emerging from a cyan afterimage slash, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 3
+    targetKey: icon.skill.spellblade.counter_seal
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_spellblade_counter_seal.png
+    subject: "spellblade action-command icon for counter seal: parry blade crossing a closed rune seal, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 4
+    targetKey: icon.skill.spellblade.flux_reversal
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_spellblade_flux_reversal.png
+    subject: "spellblade action-command icon for flux reversal: two opposed cyan current arrows around an iron sigil, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 5
+    targetKey: icon.skill.spellblade.runic_edge
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_spellblade_runic_edge.png
+    subject: "spellblade action-command icon for runic edge: straight sword edge etched with cyan runes and soot chips, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 6
+    targetKey: icon.skill.spellblade.sunder_sigil
+    category: icon_skill
+    outputName: dark-v1/icons/icon_skill_spellblade_sunder_sigil.png
+    subject: "spellblade action-command icon for sunder sigil: cracked rune disk split by a dark steel blade, forged iron and worn stone surfaces, hard black outline readable at 24px and 32px, transparent background, no text, no people"
+  - row: 4
+    col: 7
+    targetKey: talent.spellblade.balance_point.icon
+    category: icon
+    outputName: dark-v1/icons/talent_spellblade_balance_point_icon.png
+    subject: "progression-emblem node for spellblade balance point: split blade balanced on a tiny brass fulcrum stone inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 0
+    targetKey: talent.spellblade.blink_strike.icon
+    category: icon
+    outputName: dark-v1/icons/talent_spellblade_blink_strike_icon.png
+    subject: "progression-emblem node for spellblade blink strike: short sword emerging from a cyan afterimage slash inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 1
+    targetKey: talent.spellblade.counter_seal.icon
+    category: icon
+    outputName: dark-v1/icons/talent_spellblade_counter_seal_icon.png
+    subject: "progression-emblem node for spellblade counter seal: parry blade crossing a closed rune seal inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 2
+    targetKey: talent.spellblade.flux_reversal.icon
+    category: icon
+    outputName: dark-v1/icons/talent_spellblade_flux_reversal_icon.png
+    subject: "progression-emblem node for spellblade flux reversal: two opposed cyan current arrows around an iron sigil inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 3
+    targetKey: talent.spellblade.runic_edge.icon
+    category: icon
+    outputName: dark-v1/icons/talent_spellblade_runic_edge_icon.png
+    subject: "progression-emblem node for spellblade runic edge: straight sword edge etched with cyan runes and soot chips inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 4
+    targetKey: talent.spellblade.sunder_sigil.icon
+    category: icon
+    outputName: dark-v1/icons/talent_spellblade_sunder_sigil_icon.png
+    subject: "progression-emblem node for spellblade sunder sigil: cracked rune disk split by a dark steel blade inside a chipped iron socket, worn brass rim, hard black outline readable at 24px and 32px, no text, no people"
+  - row: 5
+    col: 5
+    targetKey: talent.spellblade.balance_point.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_spellblade_balance_point_visual.png
+    subject: "larger progression visual for spellblade balance point: split blade balanced on a tiny brass fulcrum stone as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 6
+    targetKey: talent.spellblade.blink_strike.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_spellblade_blink_strike_visual.png
+    subject: "larger progression visual for spellblade blink strike: short sword emerging from a cyan afterimage slash as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 5
+    col: 7
+    targetKey: talent.spellblade.counter_seal.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_spellblade_counter_seal_visual.png
+    subject: "larger progression visual for spellblade counter seal: parry blade crossing a closed rune seal as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 0
+    targetKey: talent.spellblade.flux_reversal.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_spellblade_flux_reversal_visual.png
+    subject: "larger progression visual for spellblade flux reversal: two opposed cyan current arrows around an iron sigil as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 1
+    targetKey: talent.spellblade.runic_edge.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_spellblade_runic_edge_visual.png
+    subject: "larger progression visual for spellblade runic edge: straight sword edge etched with cyan runes and soot chips as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 2
+    targetKey: talent.spellblade.sunder_sigil.visual
+    category: icon_skill
+    outputName: dark-v1/icons/talent_spellblade_sunder_sigil_visual.png
+    subject: "larger progression visual for spellblade sunder sigil: cracked rune disk split by a dark steel blade as one centered forged-metal emblem, worn stone chips, ember and cyan edge, hard black outline readable at 32px and 48px, no text, no people"
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-06 r08-skills-arcanist-spellblade expansion slot
+- sheetId: r09-status-damage
+  round: 9
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r09-status-damage.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy status, mutation, and damage type icon sheet, transparent background, no text
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: icon.damage_type.cold
+    category: icon_damage_type
+    outputName: dark-v1/icons/icon_damage_type_cold.png
+    subject: "damage-channel glyph for cold: jagged frost shard over a black steel crack, elemental material on a cracked iron disk, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 0
+    col: 1
+    targetKey: icon.damage_type.fire
+    category: icon_damage_type
+    outputName: dark-v1/icons/icon_damage_type_fire.png
+    subject: "damage-channel glyph for fire: ember flame claw rising from a soot-black iron disk, elemental material on a cracked iron disk, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 0
+    col: 2
+    targetKey: icon.damage_type.holy
+    category: icon_damage_type
+    outputName: dark-v1/icons/icon_damage_type_holy.png
+    subject: "damage-channel glyph for holy: worn brass sunburst embedded in chapel stone, elemental material on a cracked iron disk, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 0
+    col: 3
+    targetKey: icon.damage_type.lightning
+    category: icon_damage_type
+    outputName: dark-v1/icons/icon_damage_type_lightning.png
+    subject: "damage-channel glyph for lightning: forked cyan bolt striking a dark iron nail, elemental material on a cracked iron disk, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 0
+    col: 4
+    targetKey: icon.damage_type.physical
+    category: icon_damage_type
+    outputName: dark-v1/icons/icon_damage_type_physical.png
+    subject: "damage-channel glyph for physical: chipped axe head denting a round shield plate, elemental material on a cracked iron disk, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 0
+    col: 5
+    targetKey: icon.damage_type.shadow
+    category: icon_damage_type
+    outputName: dark-v1/icons/icon_damage_type_shadow.png
+    subject: "damage-channel glyph for shadow: black smoke crescent curling around an obsidian eye notch, elemental material on a cracked iron disk, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 0
+    col: 6
+    targetKey: icon.mutation.battle_drill
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_battle_drill.png
+    subject: "elite mutation scar for battle drill: crossed drill spear and command notch carved into old brass, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 0
+    col: 7
+    targetKey: icon.mutation.corrosion_cloud
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_corrosion_cloud.png
+    subject: "elite mutation scar for corrosion cloud: acid-pitted iron mask venting green-black vapor, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 1
+    col: 0
+    targetKey: icon.mutation.dread_aura
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_dread_aura.png
+    subject: "elite mutation scar for dread aura: spiked obsidian halo pressing into a cracked skull token, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 1
+    col: 1
+    targetKey: icon.mutation.emberblood
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_emberblood.png
+    subject: "elite mutation scar for emberblood: molten vein pattern crossing a black iron heart, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 1
+    col: 2
+    targetKey: icon.mutation.frostbound
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_frostbound.png
+    subject: "elite mutation scar for frostbound: frozen chain clamp biting into a dark stone wrist, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 1
+    col: 3
+    targetKey: icon.mutation.hunt_protocol
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_hunt_protocol.png
+    subject: "elite mutation scar for hunt protocol: predator eye notch inside a brass tracking ring, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 1
+    col: 4
+    targetKey: icon.mutation.ironhide
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_ironhide.png
+    subject: "elite mutation scar for ironhide: layered riveted plates forming a thick hide scale, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 1
+    col: 5
+    targetKey: icon.mutation.phase_runner
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_phase_runner.png
+    subject: "elite mutation scar for phase runner: split boot silhouette sliding through a cyan tear, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 1
+    col: 6
+    targetKey: icon.mutation.stonehide
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_stonehide.png
+    subject: "elite mutation scar for stonehide: granite scale plates fused over a dark iron rivet, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 1
+    col: 7
+    targetKey: icon.mutation.tidebound
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_tidebound.png
+    subject: "elite mutation scar for tidebound: water-dark chain loop around a chipped river stone, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 2
+    col: 0
+    targetKey: icon.mutation.void_mirror
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_void_mirror.png
+    subject: "elite mutation scar for void mirror: black mirror shard reflecting a cyan rim crack, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 2
+    col: 1
+    targetKey: icon.mutation.war_caller
+    category: icon_status
+    outputName: dark-v1/icons/icon_mutation_war_caller.png
+    subject: "elite mutation scar for war caller: war horn nailed to a cracked command plate, warped obsidian and old brass veins, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 2
+    col: 2
+    targetKey: icon.status.arcane_shield_buff
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_arcane_shield_buff.png
+    subject: "actor status badge for arcane shield buff: cyan rune shield plate over a dark iron coin, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 2
+    col: 3
+    targetKey: icon.status.armor_break
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_armor_break.png
+    subject: "actor status badge for armor break: split breastplate fragment with jagged red crack, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 2
+    col: 4
+    targetKey: icon.status.burn
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_burn.png
+    subject: "actor status badge for burn: charred handprint ringed by ember flecks, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 2
+    col: 5
+    targetKey: icon.status.consecration
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_consecration.png
+    subject: "actor status badge for consecration: brass floor sigil glowing on worn chapel stone, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 2
+    col: 6
+    targetKey: icon.status.cursed
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_cursed.png
+    subject: "actor status badge for cursed: black thorn halo biting into a cracked silver charm, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 2
+    col: 7
+    targetKey: icon.status.guard_stance_buff
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_guard_stance_buff.png
+    subject: "actor status badge for guard stance buff: tower shield locked into a black iron brace, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 3
+    col: 0
+    targetKey: icon.status.mana_surge_buff
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_mana_surge_buff.png
+    subject: "actor status badge for mana surge buff: cyan vial overflow spilling into a rune channel, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 3
+    col: 1
+    targetKey: icon.status.stunned
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_stunned.png
+    subject: "actor status badge for stunned: dented helm struck by a small brass impact star, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 3
+    col: 2
+    targetKey: icon.status.unyielding_buff
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_unyielding_buff.png
+    subject: "actor status badge for unyielding buff: iron root clamp gripping a shield base, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 3
+    col: 3
+    targetKey: icon.status.war_cry_buff
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_war_cry_buff.png
+    subject: "actor status badge for war cry buff: upward horn shockwave with ember edge, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 3
+    col: 4
+    targetKey: icon.status.war_cry_debuff
+    category: icon_status
+    outputName: dark-v1/icons/icon_status_war_cry_debuff.png
+    subject: "actor status badge for war cry debuff: cracked fear mask under a muted horn wave, black iron coin with chipped enamel, hard black outline readable at 16px and 24px, no text, no people"
+  - row: 3
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 3
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 3
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 4
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 4
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 4
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 4
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 4
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 4
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 4
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 4
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 5
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 5
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 5
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 5
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 5
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 5
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 5
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 5
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 6
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 6
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 6
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-status-damage expansion slot
+- sheetId: r09-quest-zone-profession
+  round: 9
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r09-quest-zone-profession.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy quest, zone, profession, tree, and difficulty icon sheet, transparent background, no text
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: difficulty.normal.icon
+    category: icon
+    outputName: dark-v1/icons/difficulty_normal_icon.png
+    subject: "difficulty state badge for normal mode: balanced iron compass marker over a worn stone disk, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 0
+    col: 1
+    targetKey: icon.profession.arcanist
+    category: icon
+    outputName: dark-v1/icons/icon_profession_arcanist.png
+    subject: "profession identity crest for arcanist: cracked crystal focus above a small cyan rune disk, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people"
+  - row: 0
+    col: 2
+    targetKey: icon.profession.rogue
+    category: icon
+    outputName: dark-v1/icons/icon_profession_rogue.png
+    subject: "profession identity crest for rogue: paired black daggers crossing a torn dusk cloak clasp, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people"
+  - row: 0
+    col: 3
+    targetKey: icon.profession.templar
+    category: icon
+    outputName: dark-v1/icons/icon_profession_templar.png
+    subject: "profession identity crest for templar: sun-etched kite shield and square brass mace head, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people"
+  - row: 0
+    col: 4
+    targetKey: icon.profession.vanguard
+    category: icon
+    outputName: dark-v1/icons/icon_profession_vanguard.png
+    subject: "profession identity crest for vanguard: tower shield crest with a dented steel face, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people"
+  - row: 0
+    col: 5
+    targetKey: icon.quest.armory_key
+    category: icon_quest
+    outputName: dark-v1/icons/icon_quest_armory_key.png
+    subject: "quest objective item for armory key: heavy armory key with chipped brass teeth and black iron bow, worn brass and black iron surfaces, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 0
+    col: 6
+    targetKey: icon.quest.objective_marker
+    category: icon_quest
+    outputName: dark-v1/icons/icon_quest_objective_marker.png
+    subject: "quest objective item for objective marker: iron map pin stabbed into a cracked parchment shard, worn brass and black iron surfaces, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 0
+    col: 7
+    targetKey: icon.quest.seal_key
+    category: icon_quest
+    outputName: dark-v1/icons/icon_quest_seal_key.png
+    subject: "quest objective item for seal key: round ward key with broken brass seal teeth, worn brass and black iron surfaces, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 1
+    col: 0
+    targetKey: icon.tree.arcanist_arcane
+    category: icon
+    outputName: dark-v1/icons/icon_tree_arcanist_arcane.png
+    subject: "talent tree header crest for arcanist arcane: cyan rune spiral around a cracked crystal focus, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 1
+    col: 1
+    targetKey: icon.tree.arcanist_flame
+    category: icon
+    outputName: dark-v1/icons/icon_tree_arcanist_flame.png
+    subject: "talent tree header crest for arcanist flame: cinder branch rising from a blackened spellbook clasp, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 1
+    col: 2
+    targetKey: icon.tree.arcanist_frost
+    category: icon
+    outputName: dark-v1/icons/icon_tree_arcanist_frost.png
+    subject: "talent tree header crest for arcanist frost: frost crystal branch locked in dark iron, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 1
+    col: 3
+    targetKey: icon.tree.rogue_agility
+    category: icon
+    outputName: dark-v1/icons/icon_tree_rogue_agility.png
+    subject: "talent tree header crest for rogue agility: hooked boot wing and narrow dagger over black leather, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 1
+    col: 4
+    targetKey: icon.tree.rogue_assassination
+    category: icon
+    outputName: dark-v1/icons/icon_tree_rogue_assassination.png
+    subject: "talent tree header crest for rogue assassination: stiletto point over a scratched target scar, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 1
+    col: 5
+    targetKey: icon.tree.rogue_subtlety
+    category: icon
+    outputName: dark-v1/icons/icon_tree_rogue_subtlety.png
+    subject: "talent tree header crest for rogue subtlety: half-hidden cloak pin behind an obsidian crescent, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 1
+    col: 6
+    targetKey: icon.tree.templar_faith
+    category: icon
+    outputName: dark-v1/icons/icon_tree_templar_faith.png
+    subject: "talent tree header crest for templar faith: small brass sun reliquary on chapel stone, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 1
+    col: 7
+    targetKey: icon.tree.templar_grace
+    category: icon
+    outputName: dark-v1/icons/icon_tree_templar_grace.png
+    subject: "talent tree header crest for templar grace: curved silver ward ribbon around a chipped chalice, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 2
+    col: 0
+    targetKey: icon.tree.templar_smite
+    category: icon
+    outputName: dark-v1/icons/icon_tree_templar_smite.png
+    subject: "talent tree header crest for templar smite: square hammer and vertical sun crack, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 2
+    col: 1
+    targetKey: icon.tree.vanguard_arms
+    category: icon
+    outputName: dark-v1/icons/icon_tree_vanguard_arms.png
+    subject: "talent tree header crest for vanguard arms: crossed heavy sword and spear on black iron, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 2
+    col: 2
+    targetKey: icon.tree.vanguard_shield
+    category: icon
+    outputName: dark-v1/icons/icon_tree_vanguard_shield.png
+    subject: "talent tree header crest for vanguard shield: stacked tower shields with worn brass bolts, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 2
+    col: 3
+    targetKey: icon.tree.vanguard_warcry
+    category: icon
+    outputName: dark-v1/icons/icon_tree_vanguard_warcry.png
+    subject: "talent tree header crest for vanguard warcry: spiked horn over a cracked command mask, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 2
+    col: 4
+    targetKey: zone.abyssal_heart.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_abyssal_heart_icon.png
+    subject: "zone route landmark for abyssal heart: black heart monolith split by a cyan fissure, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 2
+    col: 5
+    targetKey: zone.abyssal_temple.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_abyssal_temple_icon.png
+    subject: "zone route landmark for abyssal temple: sunken temple arch with obsidian steps, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 2
+    col: 6
+    targetKey: zone.crystal_cavern.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_crystal_cavern_icon.png
+    subject: "zone route landmark for crystal cavern: cluster of jagged cyan crystals in a dark cave mouth, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 2
+    col: 7
+    targetKey: zone.deep_iron_pit.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_deep_iron_pit_icon.png
+    subject: "zone route landmark for deep iron pit: deep mine shaft pulley over slag-black stone, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 3
+    col: 0
+    targetKey: zone.greenwood_fringe.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_greenwood_fringe_icon.png
+    subject: "zone route landmark for greenwood fringe: gnarled green-black branch over a broken trail stone, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 3
+    col: 1
+    targetKey: zone.grey_gate_depths.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_grey_gate_depths_icon.png
+    subject: "zone route landmark for grey gate depths: massive grey gate slab descending into shadow, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 3
+    col: 2
+    targetKey: zone.secret.abyssal_temple_warded_archive.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_secret_abyssal_temple_warded_archive_icon.png
+    subject: "zone route landmark for secret abyssal temple warded archive: sealed archive door with brass ward bars, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 3
+    col: 3
+    targetKey: zone.secret.deep_iron_slag_cache.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_secret_deep_iron_slag_cache_icon.png
+    subject: "zone route landmark for secret deep iron slag cache: slag cache chest half buried in black ore, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 3
+    col: 4
+    targetKey: zone.secret.deep_iron_smuggler_stash.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_secret_deep_iron_smuggler_stash_icon.png
+    subject: "zone route landmark for secret deep iron smuggler stash: hidden crate behind bent iron rails, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 3
+    col: 5
+    targetKey: zone.secret.greenwood_ambush_hideout.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_secret_greenwood_ambush_hideout_icon.png
+    subject: "zone route landmark for secret greenwood ambush hideout: thorn blind and snapped arrow under dark leaves, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 3
+    col: 6
+    targetKey: zone.secret.greenwood_hidden_cache.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_secret_greenwood_hidden_cache_icon.png
+    subject: "zone route landmark for secret greenwood hidden cache: mossy cache stone marked by a small brass notch, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 3
+    col: 7
+    targetKey: zone.secret.underground_river_crystal_rift.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_secret_underground_river_crystal_rift_icon.png
+    subject: "zone route landmark for secret underground river crystal rift: river rift with cyan crystal bridge shard, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 4
+    col: 0
+    targetKey: zone.shattered_outpost.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_shattered_outpost_icon.png
+    subject: "zone route landmark for shattered outpost: broken watchtower over a cracked stone gate, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 4
+    col: 1
+    targetKey: zone.underground_river.icon
+    category: icon_quest
+    outputName: dark-v1/icons/zone_underground_river_icon.png
+    subject: "zone route landmark for underground river: dark river bend under a worn stone arch, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people"
+  - row: 4
+    col: 2
+    targetKey: icon.profession.berserker
+    category: icon
+    outputName: dark-v1/icons/icon_profession_berserker.png
+    subject: "profession identity crest for berserker: spiked cleaver and broken chain over an ember scar, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people"
+  - row: 4
+    col: 3
+    targetKey: icon.profession.spellblade
+    category: icon
+    outputName: dark-v1/icons/icon_profession_spellblade.png
+    subject: "profession identity crest for spellblade: straight sword wrapped by a tight cyan rune ribbon, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people"
+  - row: 4
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 4
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 4
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 4
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 5
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 5
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 5
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 5
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 5
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 5
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 5
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 5
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 6
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 6
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 6
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-quest-zone-profession expansion slot
+- sheetId: r09-fallback-debug
+  round: 9
+  type: icon-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r09-fallback-debug.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy fallback, hidden, and debug sentinel icon sheet, transparent background
+  grid:
+    columns: 8
+    rows: 8
+    cellWidth: 128
+    cellHeight: 128
+  cells:
+  - row: 0
+    col: 0
+    targetKey: missing_visual
+    category: debug
+    outputName: dark-v1/debug/missing_visual.png
+    subject: "missing visual sentinel: broken square aperture with a red ember cross-shaped void, black iron frame, hard black outline readable at 16px and 32px, no text, no people"
+  - row: 0
+    col: 1
+    targetKey: tile.hidden
+    category: debug
+    outputName: dark-v1/debug/tile_hidden.png
+    subject: "hidden tile sentinel: sealed black stone slab with a shuttered iron eye notch, hard black outline readable at 16px and 32px, no text, no people"
+  - row: 0
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 0
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 0
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 0
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 0
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 0
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 1
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 1
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 1
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 1
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 1
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 1
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 1
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 1
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 2
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 2
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 2
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 2
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 2
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 2
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 2
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 2
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 3
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 3
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 3
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 3
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 3
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 3
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 3
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 3
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 4
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 4
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 4
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 4
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 4
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 4
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 4
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 4
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 5
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 5
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 5
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 5
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 5
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 5
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 5
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 5
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 6
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 6
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 6
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 6
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 6
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 6
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 6
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 6
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 7
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 7
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 7
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 7
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 7
+    col: 4
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 7
+    col: 5
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 7
+    col: 6
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+  - row: 7
+    col: 7
+    reserved: true
+    note: reserved PR-06 r09-fallback-debug expansion slot
+- sheetId: r09-rejected-polish
+  round: 9
+  type: large-sheet
+  styleTag: ktome-dark-fantasy-sprite-ui-v1
+  rawSheetPath: assets-src/image/raw/sheets/dark-v1/r09-rejected-polish.png
+  outputRoot: client/src/main/resources
+  promptBase: Dark fantasy rejected-cell polish reserve sheet, transparent background, no text
+  grid:
+    columns: 4
+    rows: 4
+    cellWidth: 256
+    cellHeight: 256
+  cells:
+  - row: 0
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 0
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 0
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 0
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 1
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 1
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 1
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 1
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 2
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 2
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 2
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 2
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 3
+    col: 0
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 3
+    col: 1
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 3
+    col: 2
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot
+  - row: 3
+    col: 3
+    reserved: true
+    note: reserved PR-06 r09-rejected-polish expansion slot

@@ -5,11 +5,15 @@ import com.ktome.game.contentpack.ContentPackOverlaySummary
 import com.ktome.game.i18n.Localizer
 
 internal object ValidationPackSummaryText {
+    private const val MAX_INLINE_ITEMS: Int = 8
+
     fun activePackIds(
         localizer: Localizer,
         activePackIds: List<String>,
     ): String =
         activePackIds
+            .sorted()
+            .bounded(localizer)
             .ifEmpty { listOf(localizer.text("ui.validation.not_available")) }
             .joinToString(", ")
 
@@ -19,6 +23,8 @@ internal object ValidationPackSummaryText {
     ): String =
         summaries
             .map { summary -> "${summary.packId}:${summary.namespace}" }
+            .sorted()
+            .bounded(localizer)
             .ifEmpty { listOf(localizer.text("ui.validation.empty")) }
             .joinToString(", ")
 
@@ -31,11 +37,14 @@ internal object ValidationPackSummaryText {
                 val opText =
                     summary.opCounts
                         .filterValues { count -> count > 0 }
+                        .toSortedMap()
                         .entries
                         .joinToString("/") { (op, count) -> "$op=$count" }
                 val normalizedOpText = opText.ifBlank { localizer.text("ui.validation.empty") }
                 "${summary.packId}:$normalizedOpText"
             }
+            .sorted()
+            .bounded(localizer)
             .ifEmpty { listOf(localizer.text("ui.validation.empty")) }
             .joinToString(", ")
 
@@ -44,6 +53,8 @@ internal object ValidationPackSummaryText {
         touchedContentIds: List<String>,
     ): String =
         touchedContentIds
+            .sorted()
+            .bounded(localizer)
             .ifEmpty { listOf(localizer.text("ui.validation.empty")) }
             .joinToString(", ")
 
@@ -63,6 +74,15 @@ internal object ValidationPackSummaryText {
         keys: List<String>,
     ): String =
         keys
+            .sorted()
+            .bounded(localizer)
             .ifEmpty { listOf(localizer.text("ui.validation.empty")) }
             .joinToString(", ")
+
+    private fun List<String>.bounded(localizer: Localizer): List<String> {
+        if (size <= MAX_INLINE_ITEMS) {
+            return this
+        }
+        return take(MAX_INLINE_ITEMS) + localizer.text("ui.validation.fold.more", "count" to (size - MAX_INLINE_ITEMS))
+    }
 }

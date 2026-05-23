@@ -1617,14 +1617,16 @@
     {
       "key": "difficulty.normal.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_damage_type_physical.png",
+      "rawOutputPath": "dark-v1/icons/difficulty_normal_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-opt",
-        "difficulty"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "difficulty",
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -1643,91 +1645,91 @@
     {
       "key": "icon.damage_type.cold",
       "category": "icon_damage_type",
-      "rawOutputPath": "phase2/p2-b/icon_damage_type_cold.png",
+      "rawOutputPath": "dark-v1/icons/icon_damage_type_cold.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "damage-type",
-        "cold"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "damage",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.damage_type.fire",
       "category": "icon_damage_type",
-      "rawOutputPath": "phase2/p2-b/icon_damage_type_fire.png",
+      "rawOutputPath": "dark-v1/icons/icon_damage_type_fire.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "damage-type",
-        "fire"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "damage",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.damage_type.holy",
       "category": "icon_damage_type",
-      "rawOutputPath": "phase2/p2-b/icon_damage_type_holy.png",
+      "rawOutputPath": "dark-v1/icons/icon_damage_type_holy.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "damage-type",
-        "holy"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "damage",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.damage_type.lightning",
       "category": "icon_damage_type",
-      "rawOutputPath": "phase2/p2-b/icon_damage_type_lightning.png",
+      "rawOutputPath": "dark-v1/icons/icon_damage_type_lightning.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "damage-type",
-        "lightning"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "damage",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.damage_type.physical",
       "category": "icon_damage_type",
-      "rawOutputPath": "phase2/p2-b/icon_damage_type_physical.png",
+      "rawOutputPath": "dark-v1/icons/icon_damage_type_physical.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "damage-type",
-        "physical"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "damage",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.damage_type.shadow",
       "category": "icon_damage_type",
-      "rawOutputPath": "phase2/p2-b/icon_damage_type_shadow.png",
+      "rawOutputPath": "dark-v1/icons/icon_damage_type_shadow.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "damage-type",
-        "shadow"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "damage",
+        "r09-status-damage"
       ]
     },
     {
@@ -2475,1393 +2477,1557 @@
     {
       "key": "icon.mutation.battle_drill",
       "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_battle_drill.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_battle_drill.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
         "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.corrosion_cloud",
       "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_corrosion_cloud.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_corrosion_cloud.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
-        "pr02",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.dread_aura",
       "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_dread_aura.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_dread_aura.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
         "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.emberblood",
       "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_emberblood.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_emberblood.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
         "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.frostbound",
       "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_frostbound.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_frostbound.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
-        "pr02",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.hunt_protocol",
       "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_hunt_protocol.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_hunt_protocol.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
         "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.ironhide",
       "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_ironhide.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_ironhide.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
-        "pr02",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.phase_runner",
       "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_phase_runner.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_phase_runner.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
-        "pr02",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.stonehide",
       "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_stonehide.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_stonehide.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
         "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.tidebound",
       "category": "icon_status",
-      "rawOutputPath": "phase4/pr06/icon_mutation_tidebound.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_tidebound.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
+        "dark-v1",
+        "uiux",
         "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.void_mirror",
       "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_void_mirror.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_void_mirror.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
-        "pr02",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.mutation.war_caller",
       "category": "icon_status",
-      "rawOutputPath": "phase4/opt_pr02/icon_mutation_war_caller.png",
+      "rawOutputPath": "dark-v1/icons/icon_mutation_war_caller.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
-        "pr02",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "mutation",
-        "icon"
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.profession.arcanist",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_profession_arcanist.png",
+      "rawOutputPath": "dark-v1/icons/icon_profession_arcanist.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "profession",
-        "arcanist"
+        "r09-quest-zone-profession"
+      ]
+    },
+    {
+      "key": "icon.profession.berserker",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/icon_profession_berserker.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "profession",
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.profession.rogue",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_profession_rogue.png",
+      "rawOutputPath": "dark-v1/icons/icon_profession_rogue.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "profession",
-        "rogue"
+        "r09-quest-zone-profession"
+      ]
+    },
+    {
+      "key": "icon.profession.spellblade",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/icon_profession_spellblade.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "profession",
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.profession.templar",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_profession_templar.png",
+      "rawOutputPath": "dark-v1/icons/icon_profession_templar.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "profession",
-        "templar"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.profession.vanguard",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_profession_vanguard.png",
+      "rawOutputPath": "dark-v1/icons/icon_profession_vanguard.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "profession",
-        "vanguard"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.quest.armory_key",
       "category": "icon_quest",
-      "rawOutputPath": "phase2/p2-b/icon_quest_armory_key.png",
+      "rawOutputPath": "dark-v1/icons/icon_quest_armory_key.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "quest"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "quest",
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.quest.seal_key",
       "category": "icon_quest",
-      "rawOutputPath": "phase2/p2-c/icon_quest_seal_key.png",
+      "rawOutputPath": "dark-v1/icons/icon_quest_seal_key.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "quest"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "quest",
+        "r09-quest-zone-profession"
+      ]
+    },
+    {
+      "key": "icon.quest.objective_marker",
+      "category": "icon_quest",
+      "rawOutputPath": "dark-v1/icons/icon_quest_objective_marker.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "quest",
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.skill.arcanist.blink",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/icon_skill_arcanist_blink.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_arcanist_blink.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "icon.skill.arcanist.cinder_burst",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_cinder_burst.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_arcanist_cinder_burst.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "icon.skill.arcanist.fire_bolt",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/icon_skill_arcanist_fire_bolt.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_arcanist_fire_bolt.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "icon.skill.arcanist.glacial_seal",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_glacial_seal.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_arcanist_glacial_seal.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "icon.skill.arcanist.inferno_orb",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_inferno_orb.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_arcanist_inferno_orb.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "icon.skill.arcanist.shard_storm",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_shard_storm.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_arcanist_shard_storm.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "icon.skill.arcanist.void_breach",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_void_breach.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_arcanist_void_breach.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "icon.skill.berserker.aftershock",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_aftershock.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_berserker_aftershock.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "icon.skill.berserker.fault_line",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_fault_line.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_berserker_fault_line.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "icon.skill.berserker.pain_fuel",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_pain_fuel.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_berserker_pain_fuel.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "icon.skill.berserker.pursuit_drive",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_pursuit_drive.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_berserker_pursuit_drive.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "icon.skill.berserker.riven_edge",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_riven_edge.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_berserker_riven_edge.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "icon.skill.berserker.slaughter_drive",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_slaughter_drive.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_berserker_slaughter_drive.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "icon.skill.rogue.backstab",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_mark_prey.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_backstab.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.blade_flurry",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_blade_flurry.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.crippling_strike",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_crippling_strike.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_crippling_strike.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.deathblow",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_mark_prey.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_deathblow.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.dusk_shroud",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_dusk_shroud.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_dusk_shroud.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.eviscerate",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_eviscerate.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_eviscerate.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.mark_prey",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_mark_prey.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_mark_prey.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.poison_blade",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_status_cursed.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_poison_blade.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.ricochet_knives",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_ricochet_knives.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_ricochet_knives.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.roll",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_roll.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.shadow_bind",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_shadow_bind.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_shadow_bind.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.shadowstep",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_shadowstep.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.smoke_bomb",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_status_cursed.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_smoke_bomb.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.rogue.stealth",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_rogue_stealth.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "icon.skill.spellblade.balance_point",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_balance_point.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_spellblade_balance_point.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "icon.skill.spellblade.blink_strike",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_blink_strike.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_spellblade_blink_strike.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "icon.skill.spellblade.counter_seal",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_counter_seal.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_spellblade_counter_seal.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "icon.skill.spellblade.flux_reversal",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_flux_reversal.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_spellblade_flux_reversal.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "icon.skill.spellblade.runic_edge",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_runic_edge.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_spellblade_runic_edge.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "icon.skill.spellblade.sunder_sigil",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_sunder_sigil.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_spellblade_sunder_sigil.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "icon.skill.templar.absolution",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_absolution.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_absolution.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.beacon_of_zeal",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_beacon_of_zeal.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_beacon_of_zeal.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.consecration",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_consecration.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_consecration.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.devotion",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_devotion.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.divine_intervention",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_templar_divine_intervention.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_divine_intervention.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.holy_aura",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_holy_aura.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.holy_light",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_holy_light.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.holy_shield",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_templar_divine_intervention.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_holy_shield.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.holy_strike",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_templar_smite.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_holy_strike.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.judgment_hammer",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_templar_smite.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_judgment_hammer.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.purify",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_purify.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.radiant_lance",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_radiant_lance.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_radiant_lance.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.ritual_break",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_ritual_break.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_ritual_break.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.sanctuary",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_sanctuary.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_sanctuary.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.templar.smite",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-c/icon_skill_templar_smite.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_templar_smite.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "icon.skill.vanguard.battlefield_command",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_vanguard_battlefield_command.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_vanguard_battlefield_command.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "icon.skill.vanguard.bulwark_march",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_vanguard_bulwark_march.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_vanguard_bulwark_march.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "icon.skill.vanguard.earthshaker",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_vanguard_earthshaker.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_vanguard_earthshaker.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "icon.skill.vanguard.guard_stance",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_guard_stance.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_vanguard_guard_stance.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "icon.skill.vanguard.linebreaker",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_vanguard_linebreaker.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_vanguard_linebreaker.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "skill",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "icon.skill.vanguard.power_strike",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_power_strike.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_vanguard_power_strike.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "icon.skill.vanguard.shield_bash",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_shield_bash.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_vanguard_shield_bash.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "icon.skill.vanguard.war_cry",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_war_cry.png",
+      "rawOutputPath": "dark-v1/icons/icon_skill_vanguard_war_cry.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "skill",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "icon.status.arcane_shield_buff",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_arcane_shield.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_arcane_shield_buff.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.armor_break",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/icon_status_armor_break.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_armor_break.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.burn",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/icon_status_burn.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_burn.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.consecration",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_consecration.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.cursed",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-c/icon_status_cursed.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_cursed.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.guard_stance_buff",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_guard_stance.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_guard_stance_buff.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.mana_surge_buff",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_mana_surge.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_mana_surge_buff.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.stunned",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_shield_bash.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_stunned.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.unyielding_buff",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_unyielding.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_unyielding_buff.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.war_cry_buff",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_war_cry.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_war_cry_buff.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.status.war_cry_debuff",
       "category": "icon_status",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_intimidation.png",
+      "rawOutputPath": "dark-v1/icons/icon_status_war_cry_debuff.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
-        "icon",
-        "status"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "status",
+        "r09-status-damage"
       ]
     },
     {
       "key": "icon.tree.arcanist_arcane",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_tree_arcanist_arcane.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_arcanist_arcane.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "arcanist"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.arcanist_flame",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_tree_arcanist_flame.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_arcanist_flame.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "arcanist"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.arcanist_frost",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_tree_arcanist_frost.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_arcanist_frost.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "arcanist"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.rogue_agility",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_rogue_agility.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "rogue"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.rogue_assassination",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_mark_prey.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_rogue_assassination.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "rogue"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.rogue_subtlety",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_rogue_subtlety.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "rogue"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.templar_faith",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_skill_templar_divine_intervention.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_templar_faith.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "templar"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.templar_grace",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_templar_grace.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "templar"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.templar_smite",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-c/icon_skill_templar_smite.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_templar_smite.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "templar"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.vanguard_arms",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_tree_vanguard_arms.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_vanguard_arms.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "vanguard"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.vanguard_shield",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_tree_vanguard_shield.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_vanguard_shield.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "vanguard"
+        "r09-quest-zone-profession"
       ]
     },
     {
       "key": "icon.tree.vanguard_warcry",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_tree_vanguard_warcry.png",
+      "rawOutputPath": "dark-v1/icons/icon_tree_vanguard_warcry.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "tree",
-        "vanguard"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -5495,13 +5661,16 @@
     {
       "key": "missing_visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "dark-v1/debug/missing_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
+        "dark-v1",
+        "uiux",
+        "pr06",
         "fallback",
-        "phase2"
+        "r09-fallback-debug"
       ]
     },
     {
@@ -5793,1393 +5962,1585 @@
     },
     {
       "key": "talent.arcanist.arcane_shield.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_arcane_shield.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_arcane_shield_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.arcane_shield.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_arcane_shield.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_arcane_shield_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.blink.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_blink.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_blink_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.blink.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_blink.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_blink_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.cinder_burst.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_cinder_burst.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_cinder_burst_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.cinder_burst.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_arcanist_cinder_burst_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_cinder_burst_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.fireball.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_fireball.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_fireball_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.fireball.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_fireball.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_fireball_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.flame_wall.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_flame_wall.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_flame_wall_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.flame_wall.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_flame_wall.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_flame_wall_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.frost_nova.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_frost_nova.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_frost_nova_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.frost_nova.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_frost_nova.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_frost_nova_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.glacial_seal.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_glacial_seal.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_glacial_seal_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.glacial_seal.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_arcanist_glacial_seal_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_glacial_seal_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.ice_bolt.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_ice_bolt.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_ice_bolt_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.ice_bolt.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_ice_bolt.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_ice_bolt_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.ice_prison.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_ice_prison.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_ice_prison_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.ice_prison.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_ice_prison.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_ice_prison_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.inferno_orb.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_inferno_orb.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_inferno_orb_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.inferno_orb.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_arcanist_inferno_orb_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_inferno_orb_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.mana_surge.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_mana_surge.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_mana_surge_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.mana_surge.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_arcanist_mana_surge.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_mana_surge_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.shard_storm.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_shard_storm.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_shard_storm_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.shard_storm.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_arcanist_shard_storm_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_shard_storm_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.void_breach.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_arcanist_void_breach.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_void_breach_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.arcanist.void_breach.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_arcanist_void_breach_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_arcanist_void_breach_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "arcanist"
       ]
     },
     {
       "key": "talent.berserker.aftershock.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_aftershock.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_aftershock_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.aftershock.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_berserker_aftershock_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_aftershock_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.fault_line.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_fault_line.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_fault_line_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.fault_line.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_berserker_fault_line_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_fault_line_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.pain_fuel.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_pain_fuel.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_pain_fuel_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.pain_fuel.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_berserker_pain_fuel_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_pain_fuel_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.pursuit_drive.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_pursuit_drive.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_pursuit_drive_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.pursuit_drive.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_berserker_pursuit_drive_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_pursuit_drive_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.riven_edge.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_riven_edge.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_riven_edge_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.riven_edge.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_berserker_riven_edge_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_riven_edge_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.slaughter_drive.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_slaughter_drive.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_slaughter_drive_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.berserker.slaughter_drive.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_berserker_slaughter_drive_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_berserker_slaughter_drive_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "berserker"
       ]
     },
     {
       "key": "talent.rogue.crippling_strike.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_crippling_strike.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_crippling_strike_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.crippling_strike.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_rogue_crippling_strike_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_crippling_strike_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.dusk_shroud.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_dusk_shroud.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_dusk_shroud_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.dusk_shroud.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_rogue_dusk_shroud_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_dusk_shroud_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.eviscerate.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_eviscerate.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_eviscerate_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.eviscerate.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_rogue_eviscerate_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_eviscerate_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.ricochet_knives.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_ricochet_knives.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_ricochet_knives_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.ricochet_knives.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_rogue_ricochet_knives_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_ricochet_knives_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.shadow_bind.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_shadow_bind.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_shadow_bind_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.rogue.shadow_bind.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_rogue_shadow_bind_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_rogue_shadow_bind_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "rogue"
       ]
     },
     {
       "key": "talent.spellblade.balance_point.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_balance_point.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_balance_point_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.balance_point.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_spellblade_balance_point_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_balance_point_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.blink_strike.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_blink_strike.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_blink_strike_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.blink_strike.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_spellblade_blink_strike_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_blink_strike_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.counter_seal.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_counter_seal.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_counter_seal_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.counter_seal.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_spellblade_counter_seal_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_counter_seal_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.flux_reversal.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_flux_reversal.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_flux_reversal_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.flux_reversal.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_spellblade_flux_reversal_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_flux_reversal_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.runic_edge.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_runic_edge.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_runic_edge_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.runic_edge.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_spellblade_runic_edge_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_runic_edge_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.sunder_sigil.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_sunder_sigil.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_sunder_sigil_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.spellblade.sunder_sigil.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_spellblade_sunder_sigil_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_spellblade_sunder_sigil_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-arcanist-spellblade",
         "spellblade"
       ]
     },
     {
       "key": "talent.templar.absolution.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_absolution.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_absolution_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.absolution.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_templar_absolution_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_absolution_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.beacon_of_zeal.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_beacon_of_zeal.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_beacon_of_zeal_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.beacon_of_zeal.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_templar_beacon_of_zeal_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_beacon_of_zeal_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.consecration.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_consecration.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_consecration_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.consecration.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_templar_consecration_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_consecration_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.radiant_lance.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_radiant_lance.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_radiant_lance_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.radiant_lance.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_templar_radiant_lance_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_radiant_lance_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.ritual_break.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_ritual_break.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_ritual_break_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.ritual_break.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_templar_ritual_break_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_ritual_break_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.sanctuary.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_templar_sanctuary.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_sanctuary_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.templar.sanctuary.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_templar_sanctuary_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_templar_sanctuary_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-templar-rogue",
         "templar"
       ]
     },
     {
       "key": "talent.vanguard.battlefield_command.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_vanguard_battlefield_command.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_battlefield_command_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.battlefield_command.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_vanguard_battlefield_command_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_battlefield_command_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.bulwark_march.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_vanguard_bulwark_march.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_bulwark_march_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.bulwark_march.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_vanguard_bulwark_march_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_bulwark_march_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.charge.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_charge.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_charge_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "vanguard",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
+        "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.charge.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_charge_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_charge_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.earthshaker.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_vanguard_earthshaker.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_earthshaker_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.earthshaker.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_vanguard_earthshaker_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_earthshaker_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.guard_stance.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_guard_stance.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_guard_stance_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.guard_stance.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_guard_stance.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_guard_stance_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.intimidation.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_intimidation.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_intimidation_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.intimidation.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_intimidation.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_intimidation_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.linebreaker.icon",
       "category": "icon",
-      "rawOutputPath": "phase3/p3-followup/icon_skill_vanguard_linebreaker.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_linebreaker_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.linebreaker.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase3/p3-followup/talent_vanguard_linebreaker_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_linebreaker_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.power_strike.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_power_strike.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_power_strike_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "vanguard",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
+        "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.power_strike.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_power_strike_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_power_strike_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "vanguard",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
+        "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.shield_bash.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_shield_bash.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_shield_bash_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "vanguard",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
+        "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.shield_bash.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_shield_bash_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_shield_bash_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "vanguard",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
+        "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.sunder_armor.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_sunder_armor.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_sunder_armor_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.sunder_armor.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_sunder_armor.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_sunder_armor_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.sweeping_strike.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_sweeping_strike.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_sweeping_strike_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.sweeping_strike.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_sweeping_strike.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_sweeping_strike_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.unyielding.icon",
-      "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_unyielding.png",
+      "category": "icon",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_unyielding_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.unyielding.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_unyielding.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_unyielding_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
         "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.war_cry.icon",
       "category": "icon",
-      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_war_cry.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_war_cry_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "vanguard",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-icon",
+        "r08-skills-vanguard-berserker",
+        "vanguard"
       ]
     },
     {
       "key": "talent.vanguard.war_cry.visual",
       "category": "icon_skill",
-      "rawOutputPath": "phase2/p2-b/talent_vanguard_war_cry_visual.png",
+      "rawOutputPath": "dark-v1/icons/talent_vanguard_war_cry_visual.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "vanguard",
-        "official_slice"
+        "dark-v1",
+        "uiux",
+        "pr06",
+        "talent-visual",
+        "r08-skills-vanguard-berserker",
+        "vanguard"
       ]
     },
     {
       "key": "tile.hidden",
       "category": "debug",
-      "rawOutputPath": "debug/hidden_tile.png",
-      "footprint": "1x1",
+      "rawOutputPath": "dark-v1/debug/tile_hidden.png",
+      "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
+        "dark-v1",
+        "uiux",
+        "pr06",
         "fallback",
-        "phase2"
+        "r09-fallback-debug"
       ]
     },
     {
@@ -7823,15 +8184,16 @@
     {
       "key": "zone.abyssal_heart.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_abyssal_heart_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_abyssal_heart_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "abyssal"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -7854,15 +8216,16 @@
     {
       "key": "zone.abyssal_temple.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_abyssal_temple_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_abyssal_temple_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "abyssal"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -7885,15 +8248,16 @@
     {
       "key": "zone.crystal_cavern.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_crystal_cavern_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_crystal_cavern_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "crystal"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -7916,15 +8280,16 @@
     {
       "key": "zone.deep_iron_pit.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase2/p2-c/zone_deep_iron_pit_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_deep_iron_pit_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "mine"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -7947,15 +8312,16 @@
     {
       "key": "zone.greenwood_fringe.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase2/p2-c/zone_greenwood_fringe_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_greenwood_fringe_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "forest-edge"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -7978,15 +8344,16 @@
     {
       "key": "zone.grey_gate_depths.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase2/p2-c/zone_grey_gate_depths_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_grey_gate_depths_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "shadow-depths"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -8009,16 +8376,16 @@
     {
       "key": "zone.secret.abyssal_temple_warded_archive.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase4/pr07/zone_secret_abyssal_temple_warded_archive_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_secret_abyssal_temple_warded_archive_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr07",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "abyssal",
-        "secret"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -8043,16 +8410,16 @@
     {
       "key": "zone.secret.deep_iron_slag_cache.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase4/pr07/zone_secret_deep_iron_slag_cache_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_secret_deep_iron_slag_cache_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr07",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "mine",
-        "secret"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -8077,17 +8444,16 @@
     {
       "key": "zone.secret.deep_iron_smuggler_stash.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase4/opt_pr05/zone_secret_deep_iron_smuggler_stash_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_secret_deep_iron_smuggler_stash_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "opt",
-        "pr05",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "mine",
-        "secret"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -8112,18 +8478,16 @@
     {
       "key": "zone.secret.greenwood_ambush_hideout.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_secret_greenwood_ambush_hideout_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "v3",
-        "pr03",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "greenwood",
-        "secret",
-        "ambush"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -8150,16 +8514,16 @@
     {
       "key": "zone.secret.greenwood_hidden_cache.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase4/pr07/zone_secret_greenwood_hidden_cache_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_secret_greenwood_hidden_cache_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr07",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "greenwood",
-        "secret"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -8184,16 +8548,16 @@
     {
       "key": "zone.secret.underground_river_crystal_rift.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase4/pr07/zone_secret_underground_river_crystal_rift_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_secret_underground_river_crystal_rift_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase4",
-        "pr07",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "river",
-        "secret"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -8218,15 +8582,16 @@
     {
       "key": "zone.shattered_outpost.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase2/p2-c/zone_shattered_outpost_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_shattered_outpost_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-c",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "ruins"
+        "r09-quest-zone-profession"
       ]
     },
     {
@@ -8249,15 +8614,16 @@
     {
       "key": "zone.underground_river.icon",
       "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_underground_river_icon.png",
+      "rawOutputPath": "dark-v1/icons/zone_underground_river_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase3",
-        "followup",
+        "dark-v1",
+        "uiux",
+        "pr06",
         "zone",
-        "river"
+        "r09-quest-zone-profession"
       ]
     },
     {

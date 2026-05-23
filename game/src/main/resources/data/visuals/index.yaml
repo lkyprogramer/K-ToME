@@ -17,7 +17,9 @@ visuals:
   - id: actor.boss.ashgate_warden
   - id: icon.profession.vanguard
   - id: icon.profession.arcanist
+  - id: icon.profession.berserker
   - id: icon.profession.rogue
+  - id: icon.profession.spellblade
   - id: icon.profession.templar
   - id: tree.vanguard_arms
   - id: tree.vanguard_shield

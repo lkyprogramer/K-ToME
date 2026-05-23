@@ -49,6 +49,152 @@ QA_OUTPUT_FIELDS = {
     "reviewedAt",
     "rejectionReason",
 }
+SUBJECT_QUALITY_PREFIXES = (
+    "icon.skill.",
+    "talent.",
+    "icon.status.",
+    "icon.damage_type.",
+    "icon.mutation.",
+    "icon.quest.",
+    "icon.profession.",
+    "icon.tree.",
+    "difficulty.",
+    "item.",
+    "material.",
+    "affix.",
+    "ui.shop.",
+)
+SUBJECT_QUALITY_EXACT_KEYS = {"missing_visual", "tile.hidden"}
+SUBJECT_GENERIC_PHRASES = (
+    "active skill icon",
+    "talent node icon",
+    "talent visual motif",
+    "readable silhouette",
+    "compact badge silhouette",
+    "elemental shape language",
+    "unnatural rune silhouette",
+    "playable profession identity icon",
+    "quest marker or objective item icon",
+    "talent tree header icon",
+    "zone route icon",
+    "landmark silhouette",
+    "difficulty badge icon",
+    "sharp edge affix marker",
+    "sturdy armor rivet affix marker",
+    "strength sigil affix marker",
+    "life drop affix marker",
+    "replacement slot marker",
+)
+SUBJECT_GENERIC_WORDS = {
+    "accent",
+    "active",
+    "actor",
+    "and",
+    "as",
+    "at",
+    "background",
+    "badge",
+    "cell",
+    "centered",
+    "compact",
+    "dark",
+    "damage",
+    "dev",
+    "difficulty",
+    "elemental",
+    "expansion",
+    "fantasy",
+    "for",
+    "grid",
+    "icon",
+    "identity",
+    "language",
+    "marker",
+    "motif",
+    "node",
+    "no",
+    "objective",
+    "one",
+    "playable",
+    "people",
+    "profession",
+    "quest",
+    "readable",
+    "rim",
+    "route",
+    "sheet",
+    "shape",
+    "silhouette",
+    "skill",
+    "slot",
+    "socket",
+    "status",
+    "subject",
+    "talent",
+    "text",
+    "transparent",
+    "tree",
+    "type",
+    "ui",
+    "unnatural",
+    "visual",
+    "with",
+    "zone",
+}
+SUBJECT_SMALL_SIZE_MARKERS = (
+    "12px",
+    "16px",
+    "24px",
+    "32px",
+    "48px",
+    "small size",
+    "small-size",
+    "hard outline",
+    "black outline",
+    "sub-32px",
+    "thumbnail",
+)
+SUBJECT_MATERIAL_MARKERS = (
+    "ash",
+    "black",
+    "brass",
+    "chain",
+    "charcoal",
+    "chipped",
+    "cloth",
+    "cracked",
+    "crystal",
+    "dented",
+    "ember",
+    "forged",
+    "frosted",
+    "glass",
+    "gold",
+    "iron",
+    "leather",
+    "metal",
+    "obsidian",
+    "rune",
+    "scar",
+    "silver",
+    "slag",
+    "steel",
+    "stone",
+    "thorn",
+    "vine",
+    "worn",
+    "wax",
+    "wood",
+)
+SUBJECT_FORBIDDEN_TEXT_MARKERS = (
+    "lettered",
+    "letters",
+    "label",
+    "text-marked",
+    "typography",
+    "watermark",
+    "wordmark",
+)
 
 
 @dataclass(frozen=True)
@@ -143,6 +289,61 @@ def safe_int(value: Any, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def target_key_tokens(target_key: str) -> set[str]:
+    return {
+        token
+        for token in re.split(r"[^a-z0-9]+", target_key.lower())
+        if token and token not in {"icon", "visual", "skill", "talent", "status", "damage", "type"}
+    }
+
+
+def subject_quality_applies(target_key: str) -> bool:
+    return (
+        target_key in SUBJECT_QUALITY_EXACT_KEYS
+        or target_key.startswith(SUBJECT_QUALITY_PREFIXES)
+        or (target_key.startswith("zone.") and target_key.endswith(".icon"))
+    )
+
+
+def subject_quality_error(target_key: str, subject: str, owner: str) -> str | None:
+    if not subject_quality_applies(target_key):
+        return None
+
+    normalized = re.sub(r"\s+", " ", subject.lower()).strip()
+    words = [word for word in re.split(r"[^a-z0-9]+", normalized) if word]
+    key_tokens = target_key_tokens(target_key)
+    detail_tokens = [
+        word
+        for word in words
+        if word not in key_tokens and word not in SUBJECT_GENERIC_WORDS and not word.isdigit()
+    ]
+    generic_hits = [phrase for phrase in SUBJECT_GENERIC_PHRASES if phrase in normalized]
+
+    if "no text" not in normalized:
+        return f"{owner} subject for {target_key} must explicitly include 'no text'."
+    if "no people" not in normalized:
+        return f"{owner} subject for {target_key} must explicitly include 'no people'."
+    forbidden_hit = next((marker for marker in SUBJECT_FORBIDDEN_TEXT_MARKERS if marker in normalized), None)
+    if forbidden_hit:
+        return f"{owner} subject for {target_key} contains forbidden text marker '{forbidden_hit}'."
+    if not any(marker in normalized for marker in SUBJECT_SMALL_SIZE_MARKERS):
+        return f"{owner} subject for {target_key} must specify small-size silhouette/outline readability."
+    if not any(marker in normalized for marker in SUBJECT_MATERIAL_MARKERS):
+        return f"{owner} subject for {target_key} must name concrete material or dark-fantasy surface detail."
+    if generic_hits:
+        return (
+            f"{owner} subject for {target_key} is too generic; replace prompt-template fragments with "
+            f"a concrete subject/action/state. Generic fragments: {', '.join(generic_hits)}."
+        )
+    if len(set(detail_tokens)) < 4:
+        suffix = f" Generic fragments: {', '.join(generic_hits)}." if generic_hits else ""
+        return (
+            f"{owner} subject for {target_key} is too generic; name a concrete subject/action/state beyond the key."
+            f"{suffix}"
+        )
+    return None
 
 
 def load_sheet_plan(path: pathlib.Path) -> tuple[list[SheetPlan], list[PlanCell], list[str]]:
@@ -283,6 +484,10 @@ def load_sheet_plan(path: pathlib.Path) -> tuple[list[SheetPlan], list[PlanCell]
                     errors.append(error)
                 if not subject:
                     errors.append(f"{cell_owner} subject is required.")
+                else:
+                    subject_error = subject_quality_error(target_key, subject, cell_owner)
+                    if subject_error:
+                        errors.append(subject_error)
                 cells.append(
                     PlanCell(
                         sheet_id=sheet_id,

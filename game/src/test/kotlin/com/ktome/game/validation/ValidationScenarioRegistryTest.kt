@@ -341,6 +341,45 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `dark uiux pr06 status quest skill scenario matches fixed evidence contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr06-status-quest-skill-overview"))
+
+        assertEquals("PR-06", scenario.prId)
+        assertEquals(ValidationPreset.MAPGEN_DIFF, scenario.runtime.preset)
+        assertEquals(20260523L, scenario.runtime.seed)
+        assertEquals(GameLocale.ZH_CN, scenario.runtime.locale)
+        assertEquals("vanguard", scenario.runtime.professionId)
+        assertEquals("human", scenario.runtime.raceId)
+        assertEquals("greenwood_fringe", scenario.runtime.zoneId)
+        assertEquals(1, scenario.runtime.floor)
+        assertEquals(-1, scenario.runtime.routeIndex)
+        assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+        assertEquals(
+            listOf(
+                "evidence/dark-uiux-pr06-status-quest-skill-overview-live.png",
+                "evidence/dark-uiux-pr06-status-overflow-fold.png",
+                "evidence/dark-uiux-pr06-quest-marker-row.png",
+                "evidence/dark-uiux-pr06-validation-overlay-compact.png",
+                "evidence/dark-uiux-pr06-status-quest-skill-overview-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals("UI/manual-records/dark-uiux-pr06-status-quest-skill-overview.md", scenario.evidence.manualRecordPath)
+        assertEquals(
+            listOf("log.objective.progress", "log.validation.phase4_v4.action"),
+            scenario.evidence.requiredLogEventKeys,
+        )
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr06-status-quest-skill-overview.evidence.summary_note",
+            scenario.evidence.scenarioNoteLabelKey,
+        )
+        assertEquals(
+            scenario.evidence.requiredEvidenceFiles.filter { file -> file.endsWith(".png") },
+            scenario.evidence.cuaSteps.map { step -> step.evidenceFile },
+        )
+    }
+
+    @Test
     fun `pr07 sample pack visibility scenario matches fixed phase4 v4 contract`() {
         val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr07"))
 

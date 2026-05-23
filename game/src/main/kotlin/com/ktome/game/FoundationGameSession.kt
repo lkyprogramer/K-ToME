@@ -866,6 +866,7 @@ class FoundationGameSession internal constructor(
         prepareDarkUiuxPr02_2LaunchSceneIfNeeded()
         prepareDarkUiuxPr03LaunchSceneIfNeeded()
         prepareDarkUiuxPr05_1LaunchSceneIfNeeded()
+        prepareDarkUiuxPr06LaunchSceneIfNeeded()
         restorePendingZoneAdvanceIfNeeded()
         restorePendingZoneRuntimeHookEffects()
         refreshFov()
@@ -1971,6 +1972,7 @@ class FoundationGameSession internal constructor(
                 prepareDarkUiuxPr05_1InventoryWorkbenchSurface()
                 "inventory_workbench_surface_ready"
             }
+            "dark-uiux-pr06-status-quest-skill-overview" -> prepareDarkUiuxPr06StatusQuestSkillOverviewSurface()
             "phase4-v4-pr03" -> {
                 preparePhase4V4Pr03PrimaryScene()
                 "build_identity_reward_showcase_ready"
@@ -2016,6 +2018,10 @@ class FoundationGameSession internal constructor(
             "dark-uiux-pr05-1-inventory-page-workbench" -> {
                 prepareDarkUiuxPr05_1InventoryWorkbenchPageTwoSurface()
                 "inventory_workbench_page_two_ready"
+            }
+            "dark-uiux-pr06-status-quest-skill-overview" -> {
+                validationScenarioEvidenceSummaryOpen = true
+                "dark_uiux_pr06_validation_overlay_compact_ready"
             }
             "phase4-v4-pr03" -> {
                 preparePhase4V4Pr03SecondaryScene()
@@ -2540,6 +2546,57 @@ class FoundationGameSession internal constructor(
             return
         }
         prepareDarkUiuxPr05_1InventoryWorkbenchSurface()
+    }
+
+    private fun prepareDarkUiuxPr06LaunchSceneIfNeeded() {
+        if (validationSessionOptions?.scenarioId?.value != "dark-uiux-pr06-status-quest-skill-overview") {
+            return
+        }
+        prepareDarkUiuxPr06StatusQuestSkillOverviewSurface()
+    }
+
+    private fun prepareDarkUiuxPr06StatusQuestSkillOverviewSurface(): String {
+        activeShopId = null
+        pendingInscriptionReplacementPurchase = null
+        resetPlayerInscriptionsForValidation(starterInscriptionIdsForCurrentProfession())
+        world.get<EffectTracker>(playerId)?.effects?.removeAll { effect -> effect.id.startsWith("dark_uiux_pr06_") }
+        listOf(
+            StatusEffectType.ARMOR_BREAK,
+            StatusEffectType.BURN,
+            StatusEffectType.CURSE,
+            StatusEffectType.POISON,
+            StatusEffectType.MARKED,
+            StatusEffectType.WEAKEN,
+            StatusEffectType.TAUNT,
+            StatusEffectType.GUARD,
+            StatusEffectType.REGEN,
+            StatusEffectType.HASTE,
+            StatusEffectType.SLOW,
+            StatusEffectType.GUARD_STANCE_BUFF,
+            StatusEffectType.ARCANE_SHIELD_BUFF,
+            StatusEffectType.UNYIELDING_BUFF,
+            StatusEffectType.MANA_SURGE_BUFF,
+        ).forEachIndexed { index, statusType ->
+            StatusLifecycle.applyEffect(
+                world,
+                playerId,
+                StatusLifecycle.createInstance(
+                    type = statusType,
+                    effectId = "dark_uiux_pr06_${statusType.schemaId.lowercase()}",
+                    duration = 8 + index,
+                    skipNextDecay = true,
+                ),
+            )
+        }
+        currentObjectiveSetSchema()?.let { objective ->
+            addMessage(
+                "log.objective.progress",
+                keyArg("objective", objective.nameKey),
+                keyArg("step", objective.descKey),
+            )
+        }
+        invalidateRenderSnapshot()
+        return "dark_uiux_pr06_status_quest_skill_overview_ready"
     }
 
     private fun prepareDarkUiuxPr03EmptyInventorySurface() {

@@ -361,6 +361,42 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `dark uiux pr06 scenario generates status quest and skill overview evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr06-status-quest-skill-overview"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(
+            launchScript.contains(
+                "SCENARIO_APP_LOG=\"build/whitebox/dark-uiux-pr06-status-quest-skill-overview/evidence/dark-uiux-pr06-status-quest-skill-overview-app.log\"",
+            ),
+        )
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=dark-uiux-pr06-status-quest-skill-overview"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/dark-uiux-pr06-status-quest-skill-overview.md"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("- window: `1280x800`"))
+        assertTrue(runbook.contains("dark-uiux-pr06-status-quest-skill-overview-live.png"))
+        assertTrue(runbook.contains("dark-uiux-pr06-status-overflow-fold.png"))
+        assertTrue(runbook.contains("dark-uiux-pr06-quest-marker-row.png"))
+        assertTrue(runbook.contains("dark-uiux-pr06-validation-overlay-compact.png"))
+        assertTrue(runbook.contains("status HUD row shows capped status icons and a fold badge"))
+        assertTrue(runbook.contains("quest summary row shows the generic objective marker icon"))
+        assertTrue(runbook.contains("validation overlay summary stays compact"))
+        assertTrue(runbook.contains("UI/manual-records/dark-uiux-pr06-status-quest-skill-overview.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr06-status-quest-skill-overview\""))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr06-status-quest-skill-overview-app.log"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr06-validation-overlay-compact.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `pr04 scenario generates hidden search hook evidence names from the typed registry`() {
         val result =
             Phase4V4WhiteboxScenarioCli.run(
@@ -495,6 +531,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: dark-uiux-pr05-map-layer-stack
             |  - id: dark-uiux-pr05-actor-boss-telegraph
             |  - id: dark-uiux-pr05-1-inventory-page-workbench
+            |  - id: dark-uiux-pr06-status-quest-skill-overview
             |  - id: phase4-v4-pr06
             |  - id: phase4-v4-pr07
             |

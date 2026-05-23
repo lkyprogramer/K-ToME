@@ -65,3 +65,18 @@ Screenshot sidecar audit:
 
 - Manual evidence uses one `zh-CN` window size and one selected replacement hotkey. Focused tests cover the remaining replacement hotkey range and fallback behavior.
 - `phase4-v4-pr02` is intentionally reused for shop and full-slot replacement states, matching the PR03 manual white-box table.
+
+## PR06 R07 Art Refresh Addendum
+
+On 2026-05-23, the R07 item/material/affix/shop-marker sheets were regenerated and promoted as part of the PR06 full-manifest art QA fix. This supersedes the older PR03 visual evidence for icon art style while preserving the PR03 layout/interaction contract.
+
+| Check | Evidence | SHA-256 | Result |
+| --- | --- | --- | --- |
+| PR06 packaged backpack crop | `build/whitebox/dark-uiux-pr06-status-quest-skill-overview/evidence/dark-uiux-pr06-r07-backpack-live-crop.png` | `3c258a7c37407ac57c47f58ba1c8cecccf664e73b061b56570b638bdd93af46b` | `PASS`: backpack item icons are regenerated dark-fantasy still-life silhouettes, not the old circular/vector badge set. |
+| PR06 packaged equipment crop | `build/whitebox/dark-uiux-pr06-status-quest-skill-overview/evidence/dark-uiux-pr06-r07-equipment-live-crop.png` | `f4ccbbe76bb8d49574f9742dd6852314be2dd0f3a4da3266feb6edc630cb7d4b` | `PASS`: equipped weapon, shield, and armor slots use accepted R07 runtime PNGs. |
+
+Supporting resource gates:
+
+- `darkArtRandomQa`: `PASS`, default sheet set now includes `r07-items-base`, `r07-items-unique-artifact`, and `r07-items-affix-material`.
+- `darkManifestCoverageLint final-full`: `PASS`, expected keys = 487.
+- `spriteSheetMapLint --require-reviewed-qa`: `PASS` for R07/R08/R09 accepted sheet set.
