@@ -126,6 +126,12 @@ internal object ValidationScenarioPresentationCatalog {
                 initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
             ),
             ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr06-status-quest-skill-overview"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr06-status-quest-skill-overview.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 titleKey = "validation.phase4.v4.phase4-v4-pr06.title",
                 startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,

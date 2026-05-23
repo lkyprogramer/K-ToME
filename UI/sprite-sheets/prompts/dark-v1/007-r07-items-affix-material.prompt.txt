@@ -13,16 +13,16 @@ Every listed non-reserved cell contains exactly one centered subject, no text, n
 Only render the cells listed below; leave every unlisted grid slot transparent and empty.
 Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
 Cell list:
-row 0 col 0 targetKey material.iron.icon: dark iron ingot material, no text.
-row 0 col 1 targetKey material.steel.icon: polished steel ingot material, no text.
-row 0 col 2 targetKey material.mithril.icon: pale mithril shard material, no text.
-row 0 col 3 targetKey material.adamantite.icon: black adamantite bar material, no text.
-row 1 col 0 targetKey affix.sharp.icon: sharp edge affix marker, no text.
-row 1 col 1 targetKey affix.sturdy.icon: sturdy armor rivet affix marker, no text.
-row 1 col 2 targetKey affix.of_strength.icon: strength sigil affix marker, no text.
-row 1 col 3 targetKey affix.of_life.icon: life drop affix marker, no text.
-row 2 col 0 targetKey ui.shop.price.affordable: coin marker with readable silhouette, no text.
-row 2 col 1 targetKey ui.shop.price.unaffordable: cracked coin marker, no text.
-row 2 col 2 targetKey ui.shop.inscription.marker: small inscription rune marker, no text.
-row 2 col 3 targetKey ui.shop.replacement.slot_marker: replacement slot marker, no text or digits.
+row 0 col 0 targetKey material.iron.icon: dark iron ingot stack with chipped corners, soot dust, and heavy black outline readable at 16px 24px 32px 48px, forged material token, no text, no people.
+row 0 col 1 targetKey material.steel.icon: polished steel ingot pair with cold edge highlights, scratched surface, and hard black outline readable at 16px 24px 32px 48px, crafted material token, no text, no people.
+row 0 col 2 targetKey material.mithril.icon: pale mithril shard cluster with blue-white crystal metal sheen and black base shadow, hard outline readable at 16px 24px 32px 48px, rare material token, no text, no people.
+row 0 col 3 targetKey material.adamantite.icon: black adamantite bar with obsidian metal facets, tiny red ember cracks, and hard outline readable at 16px 24px 32px 48px, endgame material token, no text, no people.
+row 1 col 0 targetKey affix.sharp.icon: sharp affix symbol as a single jagged steel blade edge cutting a dark stone chip, hard black outline readable at 16px 24px 32px 48px, no text, no people.
+row 1 col 1 targetKey affix.sturdy.icon: sturdy affix symbol as crossed iron rivets on a dented shield plate, hard black outline readable at 16px 24px 32px 48px, no text, no people.
+row 1 col 2 targetKey affix.of_strength.icon: strength affix symbol as a clenched iron gauntlet over cracked stone, bronze knuckles, hard black outline readable at 16px 24px 32px 48px, no text, no people.
+row 1 col 3 targetKey affix.of_life.icon: life affix symbol as a deep red blood drop inside thorned brass crescent, hard black outline readable at 16px 24px 32px 48px, no text, no people.
+row 2 col 0 targetKey ui.shop.price.affordable: affordable shop symbol as three tarnished gold coins tied by a small green cord, hard black outline readable at 16px 24px 32px, no text, no people.
+row 2 col 1 targetKey ui.shop.price.unaffordable: unaffordable shop symbol as a single cracked dull gold coin with red wax slash, hard black outline readable at 16px 24px 32px, no text, no people.
+row 2 col 2 targetKey ui.shop.inscription.marker: inscription shop symbol as a small dark stone tablet with carved blank rune grooves and brass corner pins, hard outline readable at 16px 24px 32px, no text, no people.
+row 2 col 3 targetKey ui.shop.replacement.slot_marker: replacement slot shop symbol as an empty black-iron socket with two brass arrows carved into the metal frame, hard outline readable at 16px 24px 32px, no text, no people.
 Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

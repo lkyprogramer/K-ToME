@@ -1162,6 +1162,67 @@ object ValidationScenarioRegistry {
                     ),
             ),
             ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr06-status-quest-skill-overview"),
+                prId = "PR-06",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.MAPGEN_DIFF,
+                        seed = 20260523L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "vanguard",
+                        raceId = "human",
+                        zoneId = "greenwood_fringe",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/dark-uiux-pr06-status-quest-skill-overview-live.png",
+                                "evidence/dark-uiux-pr06-status-overflow-fold.png",
+                                "evidence/dark-uiux-pr06-quest-marker-row.png",
+                                "evidence/dark-uiux-pr06-validation-overlay-compact.png",
+                                "evidence/dark-uiux-pr06-status-quest-skill-overview-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "No input after scenario launch",
+                                    expectedVisibleResult = "Status, quest, and skill overview shell is visible with PR06 dark UI assets loaded.",
+                                    evidenceFile = "evidence/dark-uiux-pr06-status-quest-skill-overview-live.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "No input after scenario launch",
+                                    expectedVisibleResult = "status HUD row shows capped status icons and a fold badge without resizing the shell.",
+                                    evidenceFile = "evidence/dark-uiux-pr06-status-overflow-fold.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "No input after scenario launch",
+                                    expectedVisibleResult = "quest summary row shows the generic objective marker icon and localized objective text.",
+                                    evidenceFile = "evidence/dark-uiux-pr06-quest-marker-row.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "F9, Right, Enter",
+                                    expectedVisibleResult = "validation overlay summary stays compact and keeps repo-relative evidence paths readable.",
+                                    evidenceFile = "evidence/dark-uiux-pr06-validation-overlay-compact.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/dark-uiux-pr06-status-quest-skill-overview.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.objective.progress",
+                                "log.validation.phase4_v4.action",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr06-status-quest-skill-overview.evidence.summary_note",
+                    ),
+            ),
+            ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 prId = "PR-06",
                 runtime =

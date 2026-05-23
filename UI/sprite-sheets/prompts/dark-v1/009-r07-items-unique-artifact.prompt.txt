@@ -13,14 +13,14 @@ Every listed non-reserved cell contains exactly one centered subject, no text, n
 Only render the cells listed below; leave every unlisted grid slot transparent and empty.
 Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
 Cell list:
-row 0 col 0 targetKey item.unique.greenwood_watcher_blade.icon: unique greenwood sword with thorn guard, no text.
-row 0 col 1 targetKey item.unique.briarbound_bow.icon: briarbound bow, thorn string, no text.
-row 0 col 2 targetKey item.unique.furnace_plate.icon: furnace-worn chest plate, no text.
-row 0 col 3 targetKey item.unique.voidlit_seal.icon: voidlit seal relic, purple edge glow, no text.
-row 0 col 4 targetKey item.unique.cinderveil_plate.icon: cinderveil plate armor, ashen trim, no text.
-row 0 col 5 targetKey item.unique.deepcurrent_lens.icon: deepcurrent lens, dark water glass, no text.
-row 1 col 0 targetKey item.artifact.briar_heart.icon: artifact thorn heart, no text.
-row 1 col 1 targetKey item.artifact.forge_oath.icon: artifact forge oath weapon seal, no text.
-row 1 col 2 targetKey item.artifact.river_echo.icon: artifact river echo charm, no text.
-row 1 col 3 targetKey item.artifact.eclipsed_relic.icon: eclipsed relic medallion, no text.
+row 0 col 0 targetKey item.unique.greenwood_watcher_blade.icon: greenwood watcher blade with leaf-shaped steel edge, thorn-wrapped guard, and dark wood grip, hard black outline readable at 24px 32px 48px, no text, no people.
+row 0 col 1 targetKey item.unique.briarbound_bow.icon: briarbound bow with twisted vine limbs, hooked thorn tips, and leather-wrapped grip, hard black outline readable at 24px 32px 48px, forest relic material, no text, no people.
+row 0 col 2 targetKey item.unique.furnace_plate.icon: furnace plate cuirass with blackened steel ribs, orange slag scars, and heavy iron shoulder rim, hard black outline readable at 24px 32px 48px, no text, no people.
+row 0 col 3 targetKey item.unique.voidlit_seal.icon: voidlit seal relic with obsidian disk, cracked silver clamps, and restrained purple edge glow, hard black outline readable at 24px 32px 48px, no text, no people.
+row 0 col 4 targetKey item.unique.cinderveil_plate.icon: cinderveil plate armor folded as a chest icon with ashen cloth trim, black steel face, and ember burn marks, hard black outline readable at 24px 32px 48px, no text, no people.
+row 0 col 5 targetKey item.unique.deepcurrent_lens.icon: deepcurrent lens with dark water glass, brass ring, and cracked blue crystal center, hard black outline readable at 24px 32px 48px, no text, no people.
+row 1 col 0 targetKey item.artifact.briar_heart.icon: briar heart artifact with thorn cage around a deep red crystal, black vine roots, and chipped bone pins, hard black outline readable at 24px 32px 48px, no text, no people.
+row 1 col 1 targetKey item.artifact.forge_oath.icon: forge oath artifact seal shaped like a broken iron anvil and bound steel oath ring, ember slag cracks, hard black outline readable at 24px 32px 48px, no text, no people.
+row 1 col 2 targetKey item.artifact.river_echo.icon: river echo artifact charm with shell-like silver frame, dark water crystal, and worn blue cloth tie, hard black outline readable at 24px 32px 48px, no text, no people.
+row 1 col 3 targetKey item.artifact.eclipsed_relic.icon: eclipsed relic medallion with black moon disk over pale silver rim and cracked obsidian chain, hard black outline readable at 24px 32px 48px, no text, no people.
 Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

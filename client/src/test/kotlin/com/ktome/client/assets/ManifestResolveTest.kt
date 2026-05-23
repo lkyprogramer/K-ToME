@@ -30,6 +30,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -298,6 +299,39 @@ class ManifestResolveTest {
     }
 
     @Test
+    fun darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        mapOf(
+            "icon.skill.templar.smite" to "icon_skill",
+            "talent.vanguard.charge.icon" to "icon",
+            "talent.vanguard.charge.visual" to "icon_skill",
+            "icon.status.burn" to "icon_status",
+            "icon.mutation.ironhide" to "icon_status",
+            "icon.damage_type.fire" to "icon_damage_type",
+            "icon.quest.objective_marker" to "icon_quest",
+            "zone.greenwood_fringe.icon" to "icon_quest",
+            "icon.profession.berserker" to "icon",
+            "icon.profession.spellblade" to "icon",
+            "icon.profession.vanguard" to "icon",
+            "icon.tree.vanguard_arms" to "icon",
+            "difficulty.normal.icon" to "icon",
+            "missing_visual" to "debug",
+            "tile.hidden" to "debug",
+        ).forEach { (key, expectedCategory) ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals(expectedCategory, resolved.entry.category, key)
+            assertTrue(resolved.entry.rawOutputPath.startsWith("dark-v1/"), key)
+            assertTrue(resolved.entry.tags.contains("pr06"), key)
+            assertFalse(resolved.fallbackUsed, key)
+            assertFalse(resolved.matchedByPrefix, key)
+            assertNotNull(javaClass.classLoader.getResource(resolved.entry.rawOutputPath), key)
+        }
+    }
+
+    @Test
     fun `current monster actor keys resolve to visible runtime sprites instead of debug placeholders`() {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 
@@ -319,13 +353,13 @@ class ManifestResolveTest {
 
         listOf(
             "zone.shattered_outpost.visual" to "dark-v1/portraits/zone_shattered_outpost_visual.png",
-            "zone.shattered_outpost.icon" to "phase2/p2-c/zone_shattered_outpost_icon.png",
+            "zone.shattered_outpost.icon" to "dark-v1/icons/zone_shattered_outpost_icon.png",
             "zone.greenwood_fringe.visual" to "dark-v1/portraits/zone_greenwood_fringe_visual.png",
-            "zone.greenwood_fringe.icon" to "phase2/p2-c/zone_greenwood_fringe_icon.png",
+            "zone.greenwood_fringe.icon" to "dark-v1/icons/zone_greenwood_fringe_icon.png",
             "zone.deep_iron_pit.visual" to "dark-v1/portraits/zone_deep_iron_pit_visual.png",
-            "zone.deep_iron_pit.icon" to "phase2/p2-c/zone_deep_iron_pit_icon.png",
+            "zone.deep_iron_pit.icon" to "dark-v1/icons/zone_deep_iron_pit_icon.png",
             "zone.grey_gate_depths.visual" to "dark-v1/portraits/zone_grey_gate_depths_visual.png",
-            "zone.grey_gate_depths.icon" to "phase2/p2-c/zone_grey_gate_depths_icon.png",
+            "zone.grey_gate_depths.icon" to "dark-v1/icons/zone_grey_gate_depths_icon.png",
         ).forEach { (key, expectedPath) ->
             val resolved = resolver.resolve(key)
             assertEquals(expectedPath, resolved.entry.rawOutputPath)

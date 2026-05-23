@@ -420,6 +420,49 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `dark uiux pr06 validation session stages status quest and skill overview surface`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr06-status-quest-skill-overview"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr06-status-quest-skill-overview")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        val playerActor = session.renderSnapshot().actors.single { actor -> actor.entityId == session.playerId.value }
+        val statusTypeIds = playerActor.statusEffects.map { status -> status.typeId }
+        assertTrue(statusTypeIds.size >= 10, "PR06 launch surface must stage enough status icons for fold coverage: $statusTypeIds")
+        assertFalse(StatusEffectType.SHIELD.schemaId in statusTypeIds, "PR06 whitebox must not stage unregistered icon.status.shield")
+        listOf(
+            StatusEffectType.ARMOR_BREAK,
+            StatusEffectType.BURN,
+            StatusEffectType.POISON,
+            StatusEffectType.GUARD_STANCE_BUFF,
+            StatusEffectType.MANA_SURGE_BUFF,
+        ).forEach { statusType ->
+            assertTrue(statusType.schemaId in statusTypeIds, "missing ${statusType.schemaId} from $statusTypeIds")
+        }
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+                    ),
+                ),
+            ),
+        )
+        assertTrue(
+            session.validationSummarySnapshot()?.lastResult?.arguments?.any { argument ->
+                argument.name == "result" && argument.value == "dark_uiux_pr06_validation_overlay_compact_ready"
+            } == true,
+        )
+    }
+
+    @Test
     fun `validation boss telegraph action materializes an active runtime overlay`() {
         val session =
             GameModule.newValidationSession(

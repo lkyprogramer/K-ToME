@@ -1864,3 +1864,1550 @@ entries:
   fallbackKey: missing_visual
   consumer: zone / route / hidden content UI
   consumerTest: ManifestResolveTest.darkUiuxPr05ZoneVisualKeysResolveThroughExactEntries
+- targetKey: icon.skill.berserker.aftershock
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.berserker.fault_line
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.berserker.pain_fuel
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.berserker.pursuit_drive
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.berserker.riven_edge
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.berserker.slaughter_drive
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.aftershock.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.fault_line.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.pain_fuel.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.pursuit_drive.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.riven_edge.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.slaughter_drive.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.aftershock.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.fault_line.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.pain_fuel.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.pursuit_drive.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.riven_edge.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.berserker.slaughter_drive.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.vanguard.battlefield_command
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.vanguard.bulwark_march
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.vanguard.earthshaker
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.vanguard.guard_stance
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.vanguard.linebreaker
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.vanguard.power_strike
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.vanguard.shield_bash
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.vanguard.war_cry
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.battlefield_command.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.bulwark_march.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.charge.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.earthshaker.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.guard_stance.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.intimidation.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.linebreaker.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.power_strike.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.shield_bash.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.sunder_armor.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.sweeping_strike.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.unyielding.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.war_cry.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.battlefield_command.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.bulwark_march.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.charge.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.earthshaker.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.guard_stance.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.intimidation.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.linebreaker.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.power_strike.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.shield_bash.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.sunder_armor.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.sweeping_strike.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.unyielding.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.vanguard.war_cry.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-vanguard-berserker
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.backstab
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.blade_flurry
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.crippling_strike
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.deathblow
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.dusk_shroud
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.eviscerate
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.mark_prey
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.poison_blade
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.ricochet_knives
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.roll
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.shadow_bind
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.shadowstep
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.smoke_bomb
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.rogue.stealth
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.crippling_strike.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.dusk_shroud.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.eviscerate.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.ricochet_knives.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.shadow_bind.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.crippling_strike.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.dusk_shroud.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.eviscerate.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.ricochet_knives.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.rogue.shadow_bind.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.absolution
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.beacon_of_zeal
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.consecration
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.devotion
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.divine_intervention
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.holy_aura
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.holy_light
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.holy_shield
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.holy_strike
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.judgment_hammer
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.purify
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.radiant_lance
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.ritual_break
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.sanctuary
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.templar.smite
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.absolution.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.beacon_of_zeal.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.consecration.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.radiant_lance.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.ritual_break.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.sanctuary.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.absolution.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.beacon_of_zeal.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.consecration.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.radiant_lance.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.ritual_break.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.templar.sanctuary.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-templar-rogue
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.arcanist.blink
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.arcanist.cinder_burst
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.arcanist.fire_bolt
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.arcanist.glacial_seal
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.arcanist.inferno_orb
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.arcanist.shard_storm
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.arcanist.void_breach
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.arcane_shield.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.blink.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.cinder_burst.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.fireball.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.flame_wall.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.frost_nova.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.glacial_seal.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.ice_bolt.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.ice_prison.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.inferno_orb.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.mana_surge.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.shard_storm.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.void_breach.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.arcane_shield.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.blink.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.cinder_burst.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.fireball.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.flame_wall.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.frost_nova.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.glacial_seal.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.ice_bolt.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.ice_prison.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.inferno_orb.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.mana_surge.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.shard_storm.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.arcanist.void_breach.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.spellblade.balance_point
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.spellblade.blink_strike
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.spellblade.counter_seal
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.spellblade.flux_reversal
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.spellblade.runic_edge
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.skill.spellblade.sunder_sigil
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: skill bars, talent rows, inscription offers, and active ability icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.balance_point.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.blink_strike.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.counter_seal.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.flux_reversal.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.runic_edge.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.sunder_sigil.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter node icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.balance_point.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.blink_strike.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.counter_seal.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.flux_reversal.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.runic_edge.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: talent.spellblade.sunder_sigil.visual
+  category: icon_skill
+  ownerPr: PR-06
+  sheetId: r08-skills-arcanist-spellblade
+  fallbackKey: missing_visual
+  consumer: Talent detail visual
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.damage_type.cold
+  category: icon_damage_type
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: damage tooltip, damage float, and resistance panel consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.damage_type.fire
+  category: icon_damage_type
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: damage tooltip, damage float, and resistance panel consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.damage_type.holy
+  category: icon_damage_type
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: damage tooltip, damage float, and resistance panel consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.damage_type.lightning
+  category: icon_damage_type
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: damage tooltip, damage float, and resistance panel consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.damage_type.physical
+  category: icon_damage_type
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: damage tooltip, damage float, and resistance panel consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.damage_type.shadow
+  category: icon_damage_type
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: damage tooltip, damage float, and resistance panel consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.battle_drill
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.corrosion_cloud
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.dread_aura
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.emberblood
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.frostbound
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.hunt_protocol
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.ironhide
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.phase_runner
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.stonehide
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.tidebound
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.void_mirror
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.mutation.war_caller
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: actor mutation inspect and target card icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.arcane_shield_buff
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.armor_break
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.burn
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.consecration
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.cursed
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.guard_stance_buff
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.mana_surge_buff
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.stunned
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.unyielding_buff
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.war_cry_buff
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.status.war_cry_debuff
+  category: icon_status
+  ownerPr: PR-06
+  sheetId: r09-status-damage
+  fallbackKey: missing_visual
+  consumer: StatusIconResolver actor status HUD row
+  consumerTest: StatusIconResolverTest.resolvesActorStatusIcons, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: difficulty.normal.icon
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: validation setup difficulty display
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.profession.arcanist
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: profession selection, talent header, and profession identity surfaces
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.profession.berserker
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: dev playable profession selection, talent header, and profession identity surfaces
+  consumerTest: ProfessionSchemaTest.profession skeletons and starter contracts are fixed, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.profession.rogue
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: profession selection, talent header, and profession identity surfaces
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.profession.spellblade
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: dev playable profession selection, talent header, and profession identity surfaces
+  consumerTest: ProfessionSchemaTest.profession skeletons and starter contracts are fixed, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.profession.templar
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: profession selection, talent header, and profession identity surfaces
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.profession.vanguard
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: profession selection, talent header, and profession identity surfaces
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.quest.armory_key
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: ui.hud.quest_marker.icon
+  consumer: QuestSummaryIconResolver and quest item surfaces
+  consumerTest: TileRendererCanvasTest.shellQuestSummaryCarriesGenericQuestMarkerForObjectiveLog, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.quest.objective_marker
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: ui.hud.quest_marker.icon
+  consumer: QuestSummaryIconResolver and quest item surfaces
+  consumerTest: TileRendererCanvasTest.shellQuestSummaryCarriesGenericQuestMarkerForObjectiveLog, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.quest.seal_key
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: ui.hud.quest_marker.icon
+  consumer: QuestSummaryIconResolver and quest item surfaces
+  consumerTest: TileRendererCanvasTest.shellQuestSummaryCarriesGenericQuestMarkerForObjectiveLog, ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.arcanist_arcane
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.arcanist_flame
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.arcanist_frost
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.rogue_agility
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.rogue_assassination
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.rogue_subtlety
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.templar_faith
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.templar_grace
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.templar_smite
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.vanguard_arms
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.vanguard_shield
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: icon.tree.vanguard_warcry
+  category: icon
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: TalentSidebarPresenter tree header icon
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.abyssal_heart.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.abyssal_temple.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.crystal_cavern.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.deep_iron_pit.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.greenwood_fringe.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.grey_gate_depths.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.secret.abyssal_temple_warded_archive.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.secret.deep_iron_slag_cache.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.secret.deep_iron_smuggler_stash.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.secret.greenwood_ambush_hideout.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.secret.greenwood_hidden_cache.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.secret.underground_river_crystal_rift.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.shattered_outpost.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: zone.underground_river.icon
+  category: icon_quest
+  ownerPr: PR-06
+  sheetId: r09-quest-zone-profession
+  fallbackKey: missing_visual
+  consumer: route, zone inspect, and validation scenario zone icon consumers
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: missing_visual
+  category: debug
+  ownerPr: PR-06
+  sheetId: r09-fallback-debug
+  fallbackKey: ui.hud.warning.icon
+  consumer: development fallback and hidden visual sentinel surfaces
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries
+- targetKey: tile.hidden
+  category: debug
+  ownerPr: PR-06
+  sheetId: r09-fallback-debug
+  fallbackKey: missing_visual
+  consumer: development fallback and hidden visual sentinel surfaces
+  consumerTest: ManifestResolveTest.darkUiuxPr06FinalFullKeyFamiliesResolveThroughDarkEntries

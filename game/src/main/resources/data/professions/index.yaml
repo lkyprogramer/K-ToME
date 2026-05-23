@@ -137,7 +137,7 @@ professions:
     descKey: profession.berserker.desc
     resourceHintKey: profession.berserker.resource_hint
     visualKey: actor.vanguard
-    iconKey: icon.profession.vanguard
+    iconKey: icon.profession.berserker
     audioProfile: audio.profession.vanguard
     schemaVersion: 3
     tags: [profession, advanced, playable]
@@ -178,7 +178,7 @@ professions:
     descKey: profession.spellblade.desc
     resourceHintKey: profession.spellblade.resource_hint
     visualKey: actor.arcanist
-    iconKey: icon.profession.arcanist
+    iconKey: icon.profession.spellblade
     audioProfile: audio.profession.arcanist
     schemaVersion: 3
     tags: [profession, advanced, playable]

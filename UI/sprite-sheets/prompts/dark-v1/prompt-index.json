@@ -112,7 +112,7 @@
         "rows": 8
       },
       "gridCapacity": 64,
-      "promptHash": "f85d10eea48b7d46366b32ada9bee239297142ae49c057faba598efea0326878",
+      "promptHash": "afdc285e1d612830f468be9f810a889da5f9d12b08ca8a69e54cec9769140964",
       "promptId": "007-r07-items-affix-material",
       "promptPath": "UI/sprite-sheets/prompts/dark-v1/007-r07-items-affix-material.prompt.txt",
       "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-affix-material.png",
@@ -129,7 +129,7 @@
         "rows": 8
       },
       "gridCapacity": 64,
-      "promptHash": "f415e446b5d34046e4447df275a25352eaf94ab7b152dc2704f631126094caee",
+      "promptHash": "d063ee6de550fc34404f05779c977367bc2e5ff09aff70cb5a8938783150c0ae",
       "promptId": "008-r07-items-base",
       "promptPath": "UI/sprite-sheets/prompts/dark-v1/008-r07-items-base.prompt.txt",
       "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-base.png",
@@ -146,7 +146,7 @@
         "rows": 8
       },
       "gridCapacity": 64,
-      "promptHash": "1ed25f75250bea070d598c84e7828d64c983db2bc2233fc742005966d952565f",
+      "promptHash": "79b2bbb49b614be0ccbd91b6893a72819e19d1dd00b6bda149e871439625f2ea",
       "promptId": "009-r07-items-unique-artifact",
       "promptPath": "UI/sprite-sheets/prompts/dark-v1/009-r07-items-unique-artifact.prompt.txt",
       "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-unique-artifact.png",
@@ -424,6 +424,125 @@
       "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r06-portraits-zones.png",
       "round": 6,
       "sheetId": "r06-portraits-zones"
+    },
+    {
+      "cellCount": 51,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "82d23101247f5416bda5fd80c49f3e78c3e26c7daf53e2e40f7e76c35fc1861f",
+      "promptId": "026-r08-skills-arcanist-spellblade",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/026-r08-skills-arcanist-spellblade.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-arcanist-spellblade.png",
+      "round": 8,
+      "sheetId": "r08-skills-arcanist-spellblade"
+    },
+    {
+      "cellCount": 51,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "4a4fde2ed9e8d95f46a2cc0c77401305dad03619b6008141223ca8b24c8fc465",
+      "promptId": "027-r08-skills-templar-rogue",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/027-r08-skills-templar-rogue.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-templar-rogue.png",
+      "round": 8,
+      "sheetId": "r08-skills-templar-rogue"
+    },
+    {
+      "cellCount": 52,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "f05a3e708677ee3b00cab2e507fb2992b15c56f30cdfaeb9785b6da17d9e750d",
+      "promptId": "028-r08-skills-vanguard-berserker",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/028-r08-skills-vanguard-berserker.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-vanguard-berserker.png",
+      "round": 8,
+      "sheetId": "r08-skills-vanguard-berserker"
+    },
+    {
+      "cellCount": 2,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "03b11b36e681c73f78e48e71a41d8a86f7a44d35c1027159e3a27c4748467b6a",
+      "promptId": "029-r09-fallback-debug",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/029-r09-fallback-debug.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-fallback-debug.png",
+      "round": 9,
+      "sheetId": "r09-fallback-debug"
+    },
+    {
+      "cellCount": 36,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "40b016d242f539038cb98b4a33cdb47b0824e60309e7360712ffe9280710a14d",
+      "promptId": "030-r09-quest-zone-profession",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/030-r09-quest-zone-profession.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-quest-zone-profession.png",
+      "round": 9,
+      "sheetId": "r09-quest-zone-profession"
+    },
+    {
+      "cellCount": 0,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 256,
+        "cellWidth": 256,
+        "columns": 4,
+        "rows": 4
+      },
+      "gridCapacity": 16,
+      "promptHash": "c1beccca5b40190c60e3f29346d81d6203e7d5a3f1e31482582753852d05ba1c",
+      "promptId": "031-r09-rejected-polish",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/031-r09-rejected-polish.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-rejected-polish.png",
+      "round": 9,
+      "sheetId": "r09-rejected-polish"
+    },
+    {
+      "cellCount": 29,
+      "cellCountScope": "non-reserved-cells",
+      "grid": {
+        "cellHeight": 128,
+        "cellWidth": 128,
+        "columns": 8,
+        "rows": 8
+      },
+      "gridCapacity": 64,
+      "promptHash": "155d84bf6f50c860ed31a9451eee9296502ca11e4b43ed142fc3e86b4d19a978",
+      "promptId": "032-r09-status-damage",
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/032-r09-status-damage.prompt.txt",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-status-damage.png",
+      "round": 9,
+      "sheetId": "r09-status-damage"
     }
   ],
   "schemaVersion": "dark-prompt-index-v1"

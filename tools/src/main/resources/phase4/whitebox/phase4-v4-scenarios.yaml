@@ -16,5 +16,6 @@ scenarios:
   - id: dark-uiux-pr05-map-layer-stack
   - id: dark-uiux-pr05-actor-boss-telegraph
   - id: dark-uiux-pr05-1-inventory-page-workbench
+  - id: dark-uiux-pr06-status-quest-skill-overview
   - id: phase4-v4-pr06
   - id: phase4-v4-pr07

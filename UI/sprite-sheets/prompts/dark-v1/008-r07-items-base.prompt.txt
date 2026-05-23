@@ -13,24 +13,24 @@ Every listed non-reserved cell contains exactly one centered subject, no text, n
 Only render the cells listed below; leave every unlisted grid slot transparent and empty.
 Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
 Cell list:
-row 0 col 0 targetKey item.short_sword.icon: short iron sword, worn leather grip, no text.
-row 0 col 1 targetKey item.long_sword.icon: long steel sword, straight blade, no text.
-row 0 col 2 targetKey item.arcane_staff.icon: dark wooden staff with small arcane crystal, no text.
-row 0 col 3 targetKey item.hunter_bow.icon: compact hunter bow, wrapped limbs, no text.
-row 0 col 4 targetKey item.war_maul.icon: heavy iron maul with ember wear, no text.
-row 0 col 5 targetKey item.forgebreaker_pick.icon: mining war pick with dark forge metal, no text.
-row 1 col 0 targetKey item.basic_shield.icon: battered round shield, iron rim, no text.
-row 1 col 1 targetKey item.chain_mail.icon: folded chain mail armor, no text.
-row 1 col 2 targetKey item.leather_armor.icon: dark leather armor vest, no text.
-row 1 col 3 targetKey item.apprentice_robe.icon: folded apprentice robe with muted arcane trim, no text.
-row 2 col 0 targetKey item.healing_potion.icon: red healing vial, wax seal, no text.
-row 2 col 1 targetKey item.mana_potion.icon: blue mana vial, dim glow, no text.
-row 2 col 2 targetKey item.energy_tonic.icon: teal tonic bottle, no text.
-row 2 col 3 targetKey item.scroll_teleport.icon: sealed teleport scroll with dark rune band, no text.
-row 2 col 4 targetKey item.consecrated_oil.icon: small golden oil flask, no text.
-row 3 col 0 targetKey item.bandit_trophy.icon: rough trophy charm and knife notch, no text.
-row 3 col 1 targetKey item.emerald_charm.icon: emerald charm pendant, no text.
-row 3 col 2 targetKey item.seal_reliquary.icon: small reliquary seal box, no text.
-row 3 col 3 targetKey item.sanctified_seal.icon: sanctified brass seal, no text.
-row 3 col 4 targetKey item.abyssal_heartstone.icon: dark heartstone talisman, violet core, no text.
+row 0 col 0 targetKey item.short_sword.icon: short chipped iron sword angled upright with worn leather grip and brass pommel, hard black outline readable at 24px 32px 48px, forged dungeon metal surface, no text, no people.
+row 0 col 1 targetKey item.long_sword.icon: long straight steel sword with nicked bright edge and dark leather crossguard wrap, hard black outline readable at 24px 32px 48px, medieval forged metal, no text, no people.
+row 0 col 2 targetKey item.arcane_staff.icon: crooked dark wood arcane staff capped with cracked cyan crystal and bronze wire, hard black outline readable at 24px 32px 48px, worn rune-carved surface, no text, no people.
+row 0 col 3 targetKey item.hunter_bow.icon: compact hunter bow with bent dark wood limbs, frayed leather grip, and taut sinew string, hard black outline readable at 24px 32px 48px, rugged forest weapon material, no text, no people.
+row 0 col 4 targetKey item.war_maul.icon: heavy square iron war maul with dented head, ember-scorched striking face, and short leather haft, hard black outline readable at 24px 32px 48px, no text, no people.
+row 0 col 5 targetKey item.forgebreaker_pick.icon: forgebreaker mining war pick with hooked black-iron beak, chipped steel point, and soot-stained wooden handle, hard black outline readable at 24px 32px 48px, no text, no people.
+row 1 col 0 targetKey item.basic_shield.icon: battered kite shield with dark wood face, dented iron rim, and small brass boss, hard black outline readable at 24px 32px 48px, dungeon-worn defensive gear, no text, no people.
+row 1 col 1 targetKey item.chain_mail.icon: folded chain mail shirt with interlocked dark steel rings, torn leather collar, and cold highlights, hard black outline readable at 24px 32px 48px, no text, no people.
+row 1 col 2 targetKey item.leather_armor.icon: dark leather armor vest with stitched shoulder plates, scratched iron buckles, and worn cloth lining, hard black outline readable at 24px 32px 48px, no text, no people.
+row 1 col 3 targetKey item.apprentice_robe.icon: folded apprentice robe in charcoal cloth with faded blue rune trim and small brass clasp, hard black outline readable at 24px 32px 48px, no text, no people.
+row 2 col 0 targetKey item.healing_potion.icon: squat red healing potion vial with cloudy glass, cork stopper, wax seal, and leather tie, hard black outline readable at 24px 32px 48px, no text, no people.
+row 2 col 1 targetKey item.mana_potion.icon: narrow blue mana vial with dark glass shoulders, silver wire cage, and dim inner glow, hard black outline readable at 24px 32px 48px, no text, no people.
+row 2 col 2 targetKey item.energy_tonic.icon: teal energy tonic bottle with chipped glass, brass cap, and worn cloth band around the neck, hard black outline readable at 24px 32px 48px, no text, no people.
+row 2 col 3 targetKey item.scroll_teleport.icon: rolled teleport scroll bound by black leather strap and bronze rune clasp, parchment ends visible, hard black outline readable at 24px 32px 48px, no text, no people.
+row 2 col 4 targetKey item.consecrated_oil.icon: small consecrated oil flask in tarnished gold metal with waxed cork and warm holy ember glow, hard black outline readable at 24px 32px 48px, no text, no people.
+row 3 col 0 targetKey item.bandit_trophy.icon: bandit trophy charm made of notched bone, torn leather thong, and tiny rusted knife shard, hard black outline readable at 24px 32px 48px, no text, no people.
+row 3 col 1 targetKey item.emerald_charm.icon: emerald charm pendant with cracked green stone set in tarnished brass claws, hard black outline readable at 24px 32px 48px, no text, no people.
+row 3 col 2 targetKey item.seal_reliquary.icon: small reliquary seal box in dark iron with cracked ivory inset and brass hinge, hard black outline readable at 24px 32px 48px, no text, no people.
+row 3 col 3 targetKey item.sanctified_seal.icon: sanctified brass seal medallion with hammered metal face, pale wax edge, and worn leather cord, hard black outline readable at 24px 32px 48px, no text, no people.
+row 3 col 4 targetKey item.abyssal_heartstone.icon: abyssal heartstone talisman with jagged obsidian shell, violet crystal core, and black iron chain, hard black outline readable at 24px 32px 48px, no text, no people.
 Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

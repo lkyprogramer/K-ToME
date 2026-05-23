@@ -12,7 +12,28 @@ import org.junit.jupiter.api.Test
 
 class StatusIconResolverTest {
     @Test
-    fun `null status icon uses visual fallback instead of dropping status`() {
+    fun resolvesActorStatusIcons() {
+        val icons =
+            StatusIconResolver.resolveIcons(
+                visualResolver = sampleResolver(),
+                effects =
+                    listOf(
+                        StatusEffectRenderSnapshot(
+                            typeId = "guard",
+                            remainingTurns = 3,
+                            iconKey = "icon.status.guard",
+                        ),
+                    ),
+            )
+
+        val icon = icons.single()
+        assertEquals("guard", icon.presentation.typeId)
+        assertEquals("icon.status.guard", icon.asset.requestedKey)
+        assertEquals("icon.status.guard", icon.asset.resolvedKey)
+    }
+
+    @Test
+    fun nullIconStatusUsesDocumentedStatusFamilyFallback() {
         val fallbackMessages = mutableListOf<String>()
         val icons =
             StatusIconResolver.resolveIcons(
@@ -45,7 +66,7 @@ class StatusIconResolverTest {
     }
 
     @Test
-    fun `unknown status icon uses manifest fallback without dropping status`() {
+    fun unknownStatusIconUsesRegisteredFallback() {
         val fallbackMessages = mutableListOf<String>()
         val icons =
             StatusIconResolver.resolveIcons(
@@ -69,7 +90,32 @@ class StatusIconResolverTest {
         assertTrue(fallbackMessages.single().contains("icon.status.unknown"))
     }
 
-    private fun sampleResolver(log: (String) -> Unit): VisualManifestResolver =
+    @Test
+    fun nonStatusActorIconKeyUsesDocumentedStatusFamilyFallback() {
+        val fallbackMessages = mutableListOf<String>()
+        val icons =
+            StatusIconResolver.resolveIcons(
+                visualResolver = sampleResolver(fallbackMessages::add),
+                effects =
+                    listOf(
+                        StatusEffectRenderSnapshot(
+                            typeId = "from_skill",
+                            remainingTurns = 1,
+                            iconKey = "icon.skill.guard",
+                        ),
+                    ),
+            )
+
+        val icon = icons.single()
+        assertEquals("from_skill", icon.presentation.typeId)
+        assertEquals("icon.status.from_skill", icon.asset.requestedKey)
+        assertEquals("missing_visual", icon.asset.resolvedKey)
+        assertTrue(icon.asset.matchedByPrefix)
+        assertTrue(icon.asset.fallbackUsed)
+        assertTrue(fallbackMessages.single().contains("icon.status.from_skill"))
+    }
+
+    private fun sampleResolver(log: (String) -> Unit = {}): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
                 VisualManifest(

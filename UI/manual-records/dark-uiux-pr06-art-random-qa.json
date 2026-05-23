@@ -1,0 +1,2252 @@
+{
+  "failCriteria": [
+    "subject unreadable at required size",
+    "same-family icons collapse into a shared generic shape",
+    "clean vector sticker look",
+    "overbright neon or glassmorphism",
+    "cross-cell bleed",
+    "text, watermark, or label inside asset",
+    "outline collapses below 32px"
+  ],
+  "planPath": "UI/sprite-sheets/sheet-plan.yaml",
+  "promptIndexPath": "UI/sprite-sheets/prompts/dark-v1/prompt-index.json",
+  "sampleRule": {
+    "mandatorySamples": "added on top of random selection",
+    "randomCount": "max(4, ceil(playerVisibleCells * 15%)), capped at 12; if fewer than 4 cells, inspect all"
+  },
+  "schemaVersion": "dark-art-random-qa-v1",
+  "seed": "dark-uiux-pr06-art-random-qa-v1",
+  "sheets": [
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r07-items-base-contact.png",
+      "mandatoryKeysPresent": [
+        "item.basic_shield.icon",
+        "item.chain_mail.icon",
+        "item.consecrated_oil.icon",
+        "item.energy_tonic.icon",
+        "item.healing_potion.icon",
+        "item.long_sword.icon",
+        "item.mana_potion.icon",
+        "item.scroll_teleport.icon"
+      ],
+      "playerVisibleCells": 20,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/008-r07-items-base.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 4,
+      "rawSheetHash": "e50db4dd08a211067178613ac01f842ae265bb7cf5fb6323e101d971a5cdb078",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-base.png",
+      "round": 7,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r07-items-base-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "item.basic_shield.icon",
+        "item.chain_mail.icon",
+        "item.consecrated_oil.icon",
+        "item.energy_tonic.icon",
+        "item.healing_potion.icon",
+        "item.long_sword.icon",
+        "item.mana_potion.icon",
+        "item.scroll_teleport.icon",
+        "item.leather_armor.icon",
+        "item.bandit_trophy.icon",
+        "item.war_maul.icon",
+        "item.abyssal_heartstone.icon"
+      ],
+      "samples": [
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 128
+          },
+          "col": 0,
+          "outputName": "dark-v1/items/item_basic_shield_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "mandatory",
+          "targetKey": "item.basic_shield.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 128
+          },
+          "col": 1,
+          "outputName": "dark-v1/items/item_chain_mail_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "mandatory",
+          "targetKey": "item.chain_mail.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 256
+          },
+          "col": 4,
+          "outputName": "dark-v1/items/item_consecrated_oil_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "item.consecrated_oil.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 256
+          },
+          "col": 2,
+          "outputName": "dark-v1/items/item_energy_tonic_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "item.energy_tonic.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 256
+          },
+          "col": 0,
+          "outputName": "dark-v1/items/item_healing_potion_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "item.healing_potion.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 0
+          },
+          "col": 1,
+          "outputName": "dark-v1/items/item_long_sword_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "item.long_sword.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 256
+          },
+          "col": 1,
+          "outputName": "dark-v1/items/item_mana_potion_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "item.mana_potion.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 256
+          },
+          "col": 3,
+          "outputName": "dark-v1/items/item_scroll_teleport_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "item.scroll_teleport.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 128
+          },
+          "col": 2,
+          "outputName": "dark-v1/items/item_leather_armor_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "item.leather_armor.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 384
+          },
+          "col": 0,
+          "outputName": "dark-v1/items/item_bandit_trophy_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "random",
+          "targetKey": "item.bandit_trophy.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 0
+          },
+          "col": 4,
+          "outputName": "dark-v1/items/item_war_maul_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "item.war_maul.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 384
+          },
+          "col": 4,
+          "outputName": "dark-v1/items/item_abyssal_heartstone_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "random",
+          "targetKey": "item.abyssal_heartstone.icon"
+        }
+      ],
+      "sheetId": "r07-items-base"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r07-items-unique-artifact-contact.png",
+      "mandatoryKeysPresent": [
+        "item.unique.furnace_plate.icon",
+        "item.unique.greenwood_watcher_blade.icon"
+      ],
+      "playerVisibleCells": 10,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/009-r07-items-unique-artifact.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 4,
+      "rawSheetHash": "16a5d2bb1d7770ac4d37e578a805353cb7734a8594ecdfb5a333c3f721774656",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-unique-artifact.png",
+      "round": 7,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r07-items-unique-artifact-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "item.unique.furnace_plate.icon",
+        "item.unique.greenwood_watcher_blade.icon",
+        "item.artifact.eclipsed_relic.icon",
+        "item.unique.deepcurrent_lens.icon",
+        "item.artifact.forge_oath.icon",
+        "item.unique.voidlit_seal.icon"
+      ],
+      "samples": [
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 0
+          },
+          "col": 2,
+          "outputName": "dark-v1/items/item_unique_furnace_plate_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "item.unique.furnace_plate.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 0
+          },
+          "col": 0,
+          "outputName": "dark-v1/items/item_unique_greenwood_watcher_blade_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "item.unique.greenwood_watcher_blade.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 128
+          },
+          "col": 3,
+          "outputName": "dark-v1/items/item_artifact_eclipsed_relic_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "item.artifact.eclipsed_relic.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 640,
+            "y": 0
+          },
+          "col": 5,
+          "outputName": "dark-v1/items/item_unique_deepcurrent_lens_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "item.unique.deepcurrent_lens.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 128
+          },
+          "col": 1,
+          "outputName": "dark-v1/items/item_artifact_forge_oath_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "item.artifact.forge_oath.icon"
+        },
+        {
+          "category": "icon_item",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 0
+          },
+          "col": 3,
+          "outputName": "dark-v1/items/item_unique_voidlit_seal_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            24,
+            32,
+            48,
+            64
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "item.unique.voidlit_seal.icon"
+        }
+      ],
+      "sheetId": "r07-items-unique-artifact"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r07-items-affix-material-contact.png",
+      "mandatoryKeysPresent": [
+        "affix.sharp.icon",
+        "affix.sturdy.icon",
+        "material.iron.icon",
+        "material.steel.icon",
+        "ui.shop.inscription.marker",
+        "ui.shop.price.affordable"
+      ],
+      "playerVisibleCells": 12,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/007-r07-items-affix-material.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 4,
+      "rawSheetHash": "ea147fb40fcbd07c588296d4b3910cd439be1796482da83ed0e25a8c5c43f67c",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r07-items-affix-material.png",
+      "round": 7,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r07-items-affix-material-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "affix.sharp.icon",
+        "affix.sturdy.icon",
+        "material.iron.icon",
+        "material.steel.icon",
+        "ui.shop.inscription.marker",
+        "ui.shop.price.affordable",
+        "ui.shop.price.unaffordable",
+        "affix.of_strength.icon",
+        "material.mithril.icon",
+        "affix.of_life.icon"
+      ],
+      "samples": [
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 128
+          },
+          "col": 0,
+          "outputName": "dark-v1/items/affix_sharp_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "mandatory",
+          "targetKey": "affix.sharp.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 128
+          },
+          "col": 1,
+          "outputName": "dark-v1/items/affix_sturdy_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "mandatory",
+          "targetKey": "affix.sturdy.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 0
+          },
+          "col": 0,
+          "outputName": "dark-v1/items/material_iron_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "material.iron.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 0
+          },
+          "col": 1,
+          "outputName": "dark-v1/items/material_steel_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "material.steel.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 256
+          },
+          "col": 2,
+          "outputName": "dark-v1/ui/ui_shop_inscription_marker.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "ui.shop.inscription.marker"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 256
+          },
+          "col": 0,
+          "outputName": "dark-v1/ui/ui_shop_price_affordable.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "ui.shop.price.affordable"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 256
+          },
+          "col": 1,
+          "outputName": "dark-v1/ui/ui_shop_price_unaffordable.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "ui.shop.price.unaffordable"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 128
+          },
+          "col": 2,
+          "outputName": "dark-v1/items/affix_of_strength_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "affix.of_strength.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 0
+          },
+          "col": 2,
+          "outputName": "dark-v1/items/material_mithril_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "material.mithril.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 128
+          },
+          "col": 3,
+          "outputName": "dark-v1/items/affix_of_life_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T18:27:10+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "affix.of_life.icon"
+        }
+      ],
+      "sheetId": "r07-items-affix-material"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r08-skills-vanguard-berserker-contact.png",
+      "mandatoryKeysPresent": [
+        "icon.skill.vanguard.guard_stance",
+        "icon.skill.vanguard.power_strike",
+        "icon.skill.vanguard.shield_bash"
+      ],
+      "playerVisibleCells": 52,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/028-r08-skills-vanguard-berserker.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 8,
+      "rawSheetHash": "94bdf071f175a5f051845a085c8a2351acfba3fd4b9de6868d0d1b3189d63dad",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-vanguard-berserker.png",
+      "round": 8,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r08-skills-vanguard-berserker-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "icon.skill.vanguard.guard_stance",
+        "icon.skill.vanguard.power_strike",
+        "icon.skill.vanguard.shield_bash",
+        "talent.berserker.pain_fuel.icon",
+        "talent.vanguard.charge.visual",
+        "talent.berserker.fault_line.icon",
+        "icon.skill.vanguard.earthshaker",
+        "talent.vanguard.battlefield_command.visual",
+        "talent.vanguard.bulwark_march.icon",
+        "talent.berserker.slaughter_drive.visual",
+        "talent.berserker.riven_edge.icon"
+      ],
+      "samples": [
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 640,
+            "y": 256
+          },
+          "col": 5,
+          "outputName": "dark-v1/icons/icon_skill_vanguard_guard_stance.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "icon.skill.vanguard.guard_stance"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 896,
+            "y": 256
+          },
+          "col": 7,
+          "outputName": "dark-v1/icons/icon_skill_vanguard_power_strike.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "icon.skill.vanguard.power_strike"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 384
+          },
+          "col": 0,
+          "outputName": "dark-v1/icons/icon_skill_vanguard_shield_bash.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "mandatory",
+          "targetKey": "icon.skill.vanguard.shield_bash"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 128
+          },
+          "col": 0,
+          "outputName": "dark-v1/icons/talent_berserker_pain_fuel_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "talent.berserker.pain_fuel.icon"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 640
+          },
+          "col": 1,
+          "outputName": "dark-v1/icons/talent_vanguard_charge_visual.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 5,
+          "selection": "random",
+          "targetKey": "talent.vanguard.charge.visual"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 896,
+            "y": 0
+          },
+          "col": 7,
+          "outputName": "dark-v1/icons/talent_berserker_fault_line_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "talent.berserker.fault_line.icon"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 256
+          },
+          "col": 4,
+          "outputName": "dark-v1/icons/icon_skill_vanguard_earthshaker.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "icon.skill.vanguard.earthshaker"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 896,
+            "y": 512
+          },
+          "col": 7,
+          "outputName": "dark-v1/icons/talent_vanguard_battlefield_command_visual.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 4,
+          "selection": "random",
+          "targetKey": "talent.vanguard.battlefield_command.visual"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 384
+          },
+          "col": 3,
+          "outputName": "dark-v1/icons/talent_vanguard_bulwark_march_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "random",
+          "targetKey": "talent.vanguard.bulwark_march.icon"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 256
+          },
+          "col": 1,
+          "outputName": "dark-v1/icons/talent_berserker_slaughter_drive_visual.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "talent.berserker.slaughter_drive.visual"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 128
+          },
+          "col": 2,
+          "outputName": "dark-v1/icons/talent_berserker_riven_edge_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "talent.berserker.riven_edge.icon"
+        }
+      ],
+      "sheetId": "r08-skills-vanguard-berserker"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r08-skills-templar-rogue-contact.png",
+      "mandatoryKeysPresent": [
+        "icon.skill.templar.holy_light",
+        "icon.skill.templar.holy_shield"
+      ],
+      "playerVisibleCells": 51,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/027-r08-skills-templar-rogue.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 8,
+      "rawSheetHash": "98ad4ac127bd21ec4bee838df384cc02611f07e79aacb74b67db6c1fadac2cf4",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-templar-rogue.png",
+      "round": 8,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r08-skills-templar-rogue-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "icon.skill.templar.holy_light",
+        "icon.skill.templar.holy_shield",
+        "talent.rogue.crippling_strike.visual",
+        "icon.skill.templar.absolution",
+        "icon.skill.rogue.dusk_shroud",
+        "icon.skill.rogue.crippling_strike",
+        "icon.skill.templar.holy_strike",
+        "talent.rogue.shadow_bind.icon",
+        "icon.skill.templar.ritual_break",
+        "icon.skill.rogue.eviscerate"
+      ],
+      "samples": [
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 768,
+            "y": 384
+          },
+          "col": 6,
+          "outputName": "dark-v1/icons/icon_skill_templar_holy_light.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "mandatory",
+          "targetKey": "icon.skill.templar.holy_light"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 896,
+            "y": 384
+          },
+          "col": 7,
+          "outputName": "dark-v1/icons/icon_skill_templar_holy_shield.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "mandatory",
+          "targetKey": "icon.skill.templar.holy_shield"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 256
+          },
+          "col": 3,
+          "outputName": "dark-v1/icons/talent_rogue_crippling_strike_visual.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "talent.rogue.crippling_strike.visual"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 384
+          },
+          "col": 0,
+          "outputName": "dark-v1/icons/icon_skill_templar_absolution.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "random",
+          "targetKey": "icon.skill.templar.absolution"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 0
+          },
+          "col": 4,
+          "outputName": "dark-v1/icons/icon_skill_rogue_dusk_shroud.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "icon.skill.rogue.dusk_shroud"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 0
+          },
+          "col": 2,
+          "outputName": "dark-v1/icons/icon_skill_rogue_crippling_strike.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "icon.skill.rogue.crippling_strike"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 512
+          },
+          "col": 0,
+          "outputName": "dark-v1/icons/icon_skill_templar_holy_strike.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 4,
+          "selection": "random",
+          "targetKey": "icon.skill.templar.holy_strike"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 256
+          },
+          "col": 2,
+          "outputName": "dark-v1/icons/talent_rogue_shadow_bind_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "talent.rogue.shadow_bind.icon"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 512
+          },
+          "col": 4,
+          "outputName": "dark-v1/icons/icon_skill_templar_ritual_break.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 4,
+          "selection": "random",
+          "targetKey": "icon.skill.templar.ritual_break"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 640,
+            "y": 0
+          },
+          "col": 5,
+          "outputName": "dark-v1/icons/icon_skill_rogue_eviscerate.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "icon.skill.rogue.eviscerate"
+        }
+      ],
+      "sheetId": "r08-skills-templar-rogue"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r08-skills-arcanist-spellblade-contact.png",
+      "mandatoryKeysPresent": [],
+      "playerVisibleCells": 51,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/026-r08-skills-arcanist-spellblade.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 8,
+      "rawSheetHash": "819c9da6e93c5429ddcbe77eb062e256577a9c57c9a8311e848cb02182acad2e",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-arcanist-spellblade.png",
+      "round": 8,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r08-skills-arcanist-spellblade-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "talent.arcanist.arcane_shield.visual",
+        "icon.skill.spellblade.blink_strike",
+        "icon.skill.spellblade.sunder_sigil",
+        "talent.spellblade.counter_seal.icon",
+        "icon.skill.arcanist.blink",
+        "icon.skill.arcanist.glacial_seal",
+        "talent.spellblade.blink_strike.visual",
+        "icon.skill.arcanist.shard_storm"
+      ],
+      "samples": [
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 256
+          },
+          "col": 4,
+          "outputName": "dark-v1/icons/talent_arcanist_arcane_shield_visual.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "talent.arcanist.arcane_shield.visual"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 512
+          },
+          "col": 2,
+          "outputName": "dark-v1/icons/icon_skill_spellblade_blink_strike.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 4,
+          "selection": "random",
+          "targetKey": "icon.skill.spellblade.blink_strike"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 768,
+            "y": 512
+          },
+          "col": 6,
+          "outputName": "dark-v1/icons/icon_skill_spellblade_sunder_sigil.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 4,
+          "selection": "random",
+          "targetKey": "icon.skill.spellblade.sunder_sigil"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 640
+          },
+          "col": 1,
+          "outputName": "dark-v1/icons/talent_spellblade_counter_seal_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 5,
+          "selection": "random",
+          "targetKey": "talent.spellblade.counter_seal.icon"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 0
+          },
+          "col": 0,
+          "outputName": "dark-v1/icons/icon_skill_arcanist_blink.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "icon.skill.arcanist.blink"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 0
+          },
+          "col": 3,
+          "outputName": "dark-v1/icons/icon_skill_arcanist_glacial_seal.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "icon.skill.arcanist.glacial_seal"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 768,
+            "y": 640
+          },
+          "col": 6,
+          "outputName": "dark-v1/icons/talent_spellblade_blink_strike_visual.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 5,
+          "selection": "random",
+          "targetKey": "talent.spellblade.blink_strike.visual"
+        },
+        {
+          "category": "icon_skill",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 640,
+            "y": 0
+          },
+          "col": 5,
+          "outputName": "dark-v1/icons/icon_skill_arcanist_shard_storm.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "random",
+          "targetKey": "icon.skill.arcanist.shard_storm"
+        }
+      ],
+      "sheetId": "r08-skills-arcanist-spellblade"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r09-status-damage-contact.png",
+      "mandatoryKeysPresent": [
+        "icon.damage_type.fire",
+        "icon.damage_type.physical",
+        "icon.status.burn",
+        "icon.status.cursed",
+        "icon.status.guard_stance_buff"
+      ],
+      "playerVisibleCells": 29,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/032-r09-status-damage.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 5,
+      "rawSheetHash": "9d29336e69b1d6a3ce233b70ebc9c55ac1eafad66ad1a41086907a6fa50522af",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-status-damage.png",
+      "round": 9,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r09-status-damage-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "icon.damage_type.fire",
+        "icon.damage_type.physical",
+        "icon.status.burn",
+        "icon.status.cursed",
+        "icon.status.guard_stance_buff",
+        "icon.mutation.war_caller",
+        "icon.mutation.hunt_protocol",
+        "icon.mutation.dread_aura",
+        "icon.status.stunned",
+        "icon.status.armor_break"
+      ],
+      "samples": [
+        {
+          "category": "icon_damage_type",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 0
+          },
+          "col": 1,
+          "outputName": "dark-v1/icons/icon_damage_type_fire.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "icon.damage_type.fire"
+        },
+        {
+          "category": "icon_damage_type",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 0
+          },
+          "col": 4,
+          "outputName": "dark-v1/icons/icon_damage_type_physical.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "icon.damage_type.physical"
+        },
+        {
+          "category": "icon_status",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 256
+          },
+          "col": 4,
+          "outputName": "dark-v1/icons/icon_status_burn.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "icon.status.burn"
+        },
+        {
+          "category": "icon_status",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 768,
+            "y": 256
+          },
+          "col": 6,
+          "outputName": "dark-v1/icons/icon_status_cursed.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "icon.status.cursed"
+        },
+        {
+          "category": "icon_status",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 896,
+            "y": 256
+          },
+          "col": 7,
+          "outputName": "dark-v1/icons/icon_status_guard_stance_buff.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "icon.status.guard_stance_buff"
+        },
+        {
+          "category": "icon_status",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 256
+          },
+          "col": 1,
+          "outputName": "dark-v1/icons/icon_mutation_war_caller.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "icon.mutation.war_caller"
+        },
+        {
+          "category": "icon_status",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 128
+          },
+          "col": 3,
+          "outputName": "dark-v1/icons/icon_mutation_hunt_protocol.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "icon.mutation.hunt_protocol"
+        },
+        {
+          "category": "icon_status",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 128
+          },
+          "col": 0,
+          "outputName": "dark-v1/icons/icon_mutation_dread_aura.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "icon.mutation.dread_aura"
+        },
+        {
+          "category": "icon_status",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 384
+          },
+          "col": 1,
+          "outputName": "dark-v1/icons/icon_status_stunned.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "random",
+          "targetKey": "icon.status.stunned"
+        },
+        {
+          "category": "icon_status",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 256
+          },
+          "col": 3,
+          "outputName": "dark-v1/icons/icon_status_armor_break.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "icon.status.armor_break"
+        }
+      ],
+      "sheetId": "r09-status-damage"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r09-quest-zone-profession-contact.png",
+      "mandatoryKeysPresent": [
+        "icon.profession.vanguard",
+        "icon.quest.armory_key",
+        "icon.quest.objective_marker",
+        "icon.tree.vanguard_shield",
+        "zone.shattered_outpost.icon"
+      ],
+      "playerVisibleCells": 36,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/030-r09-quest-zone-profession.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 6,
+      "rawSheetHash": "4e438166645900be42a9f255a062de0cf275224d96a10e130495ae24475758e6",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-quest-zone-profession.png",
+      "round": 9,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r09-quest-zone-profession-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "icon.profession.vanguard",
+        "icon.quest.armory_key",
+        "icon.quest.objective_marker",
+        "icon.tree.vanguard_shield",
+        "zone.shattered_outpost.icon",
+        "icon.tree.rogue_subtlety",
+        "zone.secret.deep_iron_slag_cache.icon",
+        "icon.tree.rogue_agility",
+        "zone.secret.greenwood_hidden_cache.icon",
+        "icon.tree.arcanist_arcane",
+        "zone.deep_iron_pit.icon"
+      ],
+      "samples": [
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 512,
+            "y": 0
+          },
+          "col": 4,
+          "outputName": "dark-v1/icons/icon_profession_vanguard.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            128,
+            48,
+            24
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "icon.profession.vanguard"
+        },
+        {
+          "category": "icon_quest",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 640,
+            "y": 0
+          },
+          "col": 5,
+          "outputName": "dark-v1/icons/icon_quest_armory_key.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "icon.quest.armory_key"
+        },
+        {
+          "category": "icon_quest",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 768,
+            "y": 0
+          },
+          "col": 6,
+          "outputName": "dark-v1/icons/icon_quest_objective_marker.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "icon.quest.objective_marker"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 256,
+            "y": 256
+          },
+          "col": 2,
+          "outputName": "dark-v1/icons/icon_tree_vanguard_shield.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "mandatory",
+          "targetKey": "icon.tree.vanguard_shield"
+        },
+        {
+          "category": "icon_quest",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 512
+          },
+          "col": 0,
+          "outputName": "dark-v1/icons/zone_shattered_outpost_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 4,
+          "selection": "mandatory",
+          "targetKey": "zone.shattered_outpost.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 640,
+            "y": 128
+          },
+          "col": 5,
+          "outputName": "dark-v1/icons/icon_tree_rogue_subtlety.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "icon.tree.rogue_subtlety"
+        },
+        {
+          "category": "icon_quest",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 384
+          },
+          "col": 3,
+          "outputName": "dark-v1/icons/zone_secret_deep_iron_slag_cache_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "random",
+          "targetKey": "zone.secret.deep_iron_slag_cache.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 384,
+            "y": 128
+          },
+          "col": 3,
+          "outputName": "dark-v1/icons/icon_tree_rogue_agility.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "icon.tree.rogue_agility"
+        },
+        {
+          "category": "icon_quest",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 768,
+            "y": 384
+          },
+          "col": 6,
+          "outputName": "dark-v1/icons/zone_secret_greenwood_hidden_cache_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 3,
+          "selection": "random",
+          "targetKey": "zone.secret.greenwood_hidden_cache.icon"
+        },
+        {
+          "category": "icon",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 128
+          },
+          "col": 0,
+          "outputName": "dark-v1/icons/icon_tree_arcanist_arcane.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 1,
+          "selection": "random",
+          "targetKey": "icon.tree.arcanist_arcane"
+        },
+        {
+          "category": "icon_quest",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 896,
+            "y": 256
+          },
+          "col": 7,
+          "outputName": "dark-v1/icons/zone_deep_iron_pit_icon.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            12,
+            16,
+            24,
+            32
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 2,
+          "selection": "random",
+          "targetKey": "zone.deep_iron_pit.icon"
+        }
+      ],
+      "sheetId": "r09-quest-zone-profession"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r09-fallback-debug-contact.png",
+      "mandatoryKeysPresent": [
+        "missing_visual",
+        "tile.hidden"
+      ],
+      "playerVisibleCells": 2,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/029-r09-fallback-debug.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 2,
+      "rawSheetHash": "c6ab2d3e6dfdf1b99e5fcba9b3b8bd160c8865f2ea2ac9c04b4327c8782ba55d",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-fallback-debug.png",
+      "round": 9,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r09-fallback-debug-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "missing_visual",
+        "tile.hidden"
+      ],
+      "samples": [
+        {
+          "category": "debug",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 0,
+            "y": 0
+          },
+          "col": 0,
+          "outputName": "dark-v1/debug/missing_visual.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "missing_visual"
+        },
+        {
+          "category": "debug",
+          "cellRect": {
+            "height": 128,
+            "width": 128,
+            "x": 128,
+            "y": 0
+          },
+          "col": 1,
+          "outputName": "dark-v1/debug/tile_hidden.png",
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            16,
+            24,
+            32,
+            48
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory",
+          "targetKey": "tile.hidden"
+        }
+      ],
+      "sheetId": "r09-fallback-debug"
+    },
+    {
+      "contactSheetPath": "assets-src/image/contact-sheets/dark-v1/r09-rejected-polish-contact.png",
+      "mandatoryKeysPresent": [],
+      "playerVisibleCells": 0,
+      "promptPath": "UI/sprite-sheets/prompts/dark-v1/031-r09-rejected-polish.prompt.txt",
+      "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
+      "randomSampleRuleCount": 0,
+      "rawSheetHash": "265149d454822c2c808720c61f5a4317c0bfda56fc96598ea7b19b6ea52c5dd1",
+      "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r09-rejected-polish.png",
+      "round": 9,
+      "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r09-rejected-polish-random-qa.png",
+      "sampleSheetRender": "WRITTEN",
+      "sampledKeys": [
+        "rejected.polish.reserved_slot_0_0"
+      ],
+      "samples": [
+        {
+          "category": "reserved",
+          "cellRect": {
+            "height": 256,
+            "width": 256,
+            "x": 0,
+            "y": 0
+          },
+          "col": 0,
+          "outputName": null,
+          "qaDecision": "PASS",
+          "rejectReason": null,
+          "requiredSizesPx": [
+            32,
+            48,
+            128
+          ],
+          "reviewedAt": "2026-05-23T14:56:03+08:00",
+          "reviewer": "Codex visual QA",
+          "row": 0,
+          "selection": "mandatory_reserved_polish",
+          "targetKey": "rejected.polish.reserved_slot_0_0"
+        }
+      ],
+      "sheetId": "r09-rejected-polish"
+    }
+  ]
+}

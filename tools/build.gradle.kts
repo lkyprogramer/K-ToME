@@ -556,6 +556,19 @@ val darkSpriteMapRequireReviewedQa =
 val darkSpriteMapReportSheetIds =
     rootProject.providers.gradleProperty("ktome.darkUiux.spriteMapReportSheetIds")
         .orElse("")
+val darkArtRandomQaSheetIds =
+    rootProject.providers.gradleProperty("ktome.darkUiux.artRandomQaSheetIds")
+        .orElse(
+            "r07-items-base,r07-items-unique-artifact,r07-items-affix-material," +
+                "r08-skills-vanguard-berserker,r08-skills-templar-rogue,r08-skills-arcanist-spellblade," +
+                "r09-status-damage,r09-quest-zone-profession,r09-fallback-debug,r09-rejected-polish",
+        )
+val darkArtRandomQaOut =
+    rootProject.providers.gradleProperty("ktome.darkUiux.artRandomQaOut")
+        .orElse("UI/manual-records/dark-uiux-pr06-art-random-qa.json")
+val darkArtRandomQaSampleRoot =
+    rootProject.providers.gradleProperty("ktome.darkUiux.artRandomQaSampleRoot")
+        .orElse("build/reports/verification/dark-uiux/random-qa")
 
 tasks.register<Exec>("spriteSheetMapLint") {
     group = "verification"
@@ -596,6 +609,40 @@ tasks.register<Exec>("spriteSheetMapLint") {
     inputs.property("ktome.darkUiux.requireReviewedQa", darkSpriteMapRequireReviewedQa)
     inputs.property("ktome.darkUiux.spriteMapReportSheetIds", darkSpriteMapReportSheetIds)
     outputs.file(rootProject.layout.projectDirectory.file(darkSpriteMapReportPath.get()))
+}
+
+tasks.register<Exec>("darkArtRandomQa") {
+    group = "verification"
+    description = "Writes deterministic random art QA samples for PR06 dark-v1 sprite sheets."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3",
+        "scripts/generate_dark_art_random_qa.py",
+        "--sheet-ids",
+        darkArtRandomQaSheetIds.get(),
+        "--out",
+        darkArtRandomQaOut.get(),
+        "--sample-root",
+        darkArtRandomQaSampleRoot.get(),
+        "--overwrite",
+    )
+    inputs.files(
+        rootProject.files(
+            "scripts/generate_dark_art_random_qa.py",
+            "scripts/dark_sprite_sheet_contract.py",
+            "scripts/asset_pipeline_common.py",
+            "UI/sprite-sheets/sheet-plan.yaml",
+            "UI/sprite-sheets/prompts/dark-v1/prompt-index.json",
+        ),
+        rootProject.fileTree("assets-src/image/raw/sheets/dark-v1") {
+            include("*.png")
+        },
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property("ktome.darkUiux.artRandomQaSheetIds", darkArtRandomQaSheetIds)
+    inputs.property("ktome.darkUiux.artRandomQaOut", darkArtRandomQaOut)
+    inputs.property("ktome.darkUiux.artRandomQaSampleRoot", darkArtRandomQaSampleRoot)
+    outputs.file(rootProject.layout.projectDirectory.file(darkArtRandomQaOut.get()))
+    outputs.dir(rootProject.layout.projectDirectory.dir(darkArtRandomQaSampleRoot.get()))
 }
 
 fun registerDarkManifestCoverageTask(
@@ -647,6 +694,12 @@ val darkCoverageMode = rootProject.providers.gradleProperty("ktome.darkUiux.cove
 val darkCoverageOwnerPr = rootProject.providers.gradleProperty("ktome.darkUiux.ownerPr").orElse("")
 val darkCoverageRequiredOwnerSheetIds =
     rootProject.providers.gradleProperty("ktome.darkUiux.requiredOwnerSheetIds").orElse("")
+val darkCoverageExpectedInventory = rootProject.providers.gradleProperty("ktome.darkUiux.expectedInventory").orElse("")
+val darkCoveragePackagedSentinelEvidence =
+    rootProject.providers.gradleProperty("ktome.darkUiux.packagedSentinelEvidence").orElse("")
+val darkCoverageArtRandomQaRecord =
+    rootProject.providers.gradleProperty("ktome.darkUiux.artRandomQaRecord")
+        .orElse("UI/manual-records/dark-uiux-pr06-art-random-qa.json")
 
 tasks.register<Exec>("darkManifestCoverageLint") {
     group = "verification"
@@ -670,25 +723,52 @@ tasks.register<Exec>("darkManifestCoverageLint") {
     if (darkUiuxOwnerContract.get().isNotBlank()) {
         command += listOf("--owner-contract", darkUiuxOwnerContract.get())
     }
+    if (darkCoverageExpectedInventory.get().isNotBlank()) {
+        command += listOf("--expected-inventory", darkCoverageExpectedInventory.get())
+    }
+    if (darkCoverageArtRandomQaRecord.get().isNotBlank()) {
+        command += listOf("--art-random-qa-record", darkCoverageArtRandomQaRecord.get())
+    }
+    if (darkCoveragePackagedSentinelEvidence.get().isNotBlank()) {
+        command += listOf("--packaged-sentinel-evidence", darkCoveragePackagedSentinelEvidence.get())
+    }
     commandLine(command)
     inputs.files(
         rootProject.files(
             "scripts/verify_dark_manifest_coverage.py",
+            "scripts/generate_dark_final_full_inventory.py",
             "scripts/dark_sprite_sheet_contract.py",
             "scripts/asset_pipeline_common.py",
             "UI/sprite-sheets/key-registry.yaml",
             "UI/sprite-sheets/sheet-plan.yaml",
             "assets-src/image/manifests/phase2-visual-manifest.json",
             "client/src/main/resources/manifests/visual-manifest.json",
+            "UI/pr/screen-coverage-matrix.md",
         ),
         rootProject.fileTree("UI/sprite-sheets/owner-contracts") {
             include("*.yaml")
         },
     ).withPathSensitivity(PathSensitivity.RELATIVE)
+    if (darkCoverageExpectedInventory.get().isNotBlank()) {
+        inputs.file(rootProject.file(darkCoverageExpectedInventory.get())).withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+    if (darkCoverageArtRandomQaRecord.get().isNotBlank()) {
+        inputs.file(rootProject.file(darkCoverageArtRandomQaRecord.get())).withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+    darkCoveragePackagedSentinelEvidence.get()
+        .split(",")
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .forEach { evidencePath ->
+            inputs.file(rootProject.file(evidencePath)).withPathSensitivity(PathSensitivity.RELATIVE)
+        }
     inputs.property("ktome.darkUiux.coverageMode", darkCoverageMode)
     inputs.property("ktome.darkUiux.ownerPr", darkCoverageOwnerPr)
     inputs.property("ktome.darkUiux.requiredOwnerSheetIds", darkCoverageRequiredOwnerSheetIds)
     inputs.property("ktome.darkUiux.ownerContract", darkUiuxOwnerContract)
+    inputs.property("ktome.darkUiux.expectedInventory", darkCoverageExpectedInventory)
+    inputs.property("ktome.darkUiux.artRandomQaRecord", darkCoverageArtRandomQaRecord)
+    inputs.property("ktome.darkUiux.packagedSentinelEvidence", darkCoveragePackagedSentinelEvidence)
     outputs.file(darkUiuxReportDir.map { dir -> dir.file("dark-v1-manifest-coverage.json") })
 }
 

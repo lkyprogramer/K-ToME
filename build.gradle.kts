@@ -93,6 +93,7 @@ val verifyChangedTaskPaths =
         ":tools:darkKeyRegistryLint",
         ":tools:darkSpriteSheetLint",
         ":tools:spriteSheetMapLint",
+        ":tools:darkArtRandomQa",
         ":tools:resourcePipelineLint",
         ":tools:darkManifestCoveragePr02OwnerScope",
         ":tools:darkManifestCoveragePr02_1OwnerScope",
@@ -465,6 +466,12 @@ tasks.register("spriteSheetMapLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates dark-v1 raw sheet mapping, contact sheet, hashes, and manifest paths."
     dependsOn(":tools:spriteSheetMapLint")
+}
+
+tasks.register("darkArtRandomQa") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Writes deterministic random art QA samples for PR06 dark-v1 sprite sheets."
+    dependsOn(":tools:darkArtRandomQa")
 }
 
 tasks.register("darkManifestCoverageLint") {

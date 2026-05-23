@@ -4,6 +4,8 @@ import java.awt.image.BufferedImage
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.MessageDigest
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.imageio.ImageIO
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -429,6 +431,242 @@ class DarkSpriteSheetPipelineScriptTest {
 
         assertEquals(1, result.exitCode, result.output)
         assertTrue(result.output.contains("unsupported fields: anchor, safeMarginPx"), result.output)
+    }
+
+    @Test
+    fun `sheet plan lint rejects generic player visible prompt subjects`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        writeText(
+            plan,
+            largeSheetPlan(
+                "r97-generic-subject",
+                """
+                - { row: 0, col: 0, targetKey: icon.skill.vanguard.power_strike, category: icon_skill, outputName: dark-v1/icons/icon_skill_vanguard_power_strike.png, subject: "vanguard power strike active skill icon, forged iron rim, readable at 32px, no text, no people" }
+                - { row: 0, col: 1, targetKey: ui.generic.subject.a, category: icon, outputName: debug/missing_visual.png, subject: support icon a }
+                - { row: 0, col: 2, targetKey: ui.generic.subject.b, category: icon, outputName: debug/missing_visual.png, subject: support icon b }
+                """.trimIndent(),
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "sheet-plan",
+                "--plan",
+                plan.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("subject for icon.skill.vanguard.power_strike is too generic"), result.output)
+    }
+
+    @Test
+    fun `sheet plan lint rejects generic inventory item prompt subjects`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        writeText(
+            plan,
+            largeSheetPlan(
+                "r97-generic-item-subject",
+                """
+                - { row: 0, col: 0, targetKey: item.short_sword.icon, category: icon_item, outputName: dark-v1/items/item_short_sword_icon.png, subject: "short sword item icon, iron rim, readable silhouette at 32px, no text, no people" }
+                - { row: 0, col: 1, targetKey: ui.generic.subject.a, category: icon, outputName: debug/missing_visual.png, subject: support icon a }
+                - { row: 0, col: 2, targetKey: ui.generic.subject.b, category: icon, outputName: debug/missing_visual.png, subject: support icon b }
+                """.trimIndent(),
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "sheet-plan",
+                "--plan",
+                plan.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("subject for item.short_sword.icon is too generic"), result.output)
+    }
+
+    @Test
+    fun `sheet plan lint accepts concrete player visible prompt subjects`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        writeText(
+            plan,
+            largeSheetPlan(
+                "r97-concrete-subject",
+                """
+                - { row: 0, col: 0, targetKey: icon.skill.vanguard.power_strike, category: icon_skill, outputName: dark-v1/icons/icon_skill_vanguard_power_strike.png, subject: "front-facing chipped tower shield smashing into cracked stone doorway, dented steel rim, ember sparks, hard black outline, readable at 24px, no text, no people" }
+                - { row: 0, col: 1, targetKey: item.short_sword.icon, category: icon_item, outputName: dark-v1/items/item_short_sword_icon.png, subject: "short chipped iron sword angled upright with worn leather grip and brass pommel, hard black outline readable at 24px 32px 48px, forged dungeon metal surface, no text, no people" }
+                - { row: 0, col: 2, targetKey: ui.concrete.subject.a, category: icon, outputName: debug/missing_visual.png, subject: support icon a }
+                - { row: 0, col: 3, targetKey: ui.concrete.subject.b, category: icon, outputName: debug/missing_visual.png, subject: support icon b }
+                """.trimIndent(),
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_sprite_sheet_map.py",
+                "--check",
+                "sheet-plan",
+                "--plan",
+                plan.toString(),
+            )
+
+        assertEquals(0, result.exitCode, result.output)
+    }
+
+    @Test
+    fun `random art qa samples are deterministic and include mandatory keys`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val promptIndex = tempDir.resolve("prompt-index.json")
+        val report = tempDir.resolve("random-qa.json")
+        writeText(
+            plan,
+            largeSheetPlan(
+                "r97-random-qa",
+                """
+                - { row: 0, col: 0, targetKey: icon.skill.vanguard.power_strike, category: icon_skill, outputName: dark-v1/icons/icon_skill_vanguard_power_strike.png, subject: "front-facing chipped tower shield smashing into cracked stone doorway, dented steel rim, ember sparks, hard black outline, readable at 24px, no text, no people" }
+                - { row: 0, col: 1, targetKey: icon.status.burn, category: icon_status, outputName: dark-v1/icons/icon_status_burn.png, subject: "ember burn condition badge as a charred handprint on cracked black iron, hard black outline, readable at 16px, no text, no people" }
+                - { row: 0, col: 2, targetKey: icon.quest.armory_key, category: icon_quest, outputName: dark-v1/icons/icon_quest_armory_key.png, subject: "heavy armory key with chipped brass teeth and black iron bow, hard black outline, readable at 12px, no text, no people" }
+                - { row: 0, col: 3, targetKey: icon.profession.vanguard, category: icon, outputName: dark-v1/icons/icon_profession_vanguard.png, subject: "tower shield profession crest with dented steel face and worn brass notch, hard black outline, readable at 24px, no text, no people" }
+                - { row: 1, col: 0, targetKey: zone.shattered_outpost.icon, category: icon_quest, outputName: dark-v1/icons/zone_shattered_outpost_icon.png, subject: "broken watchtower landmark over cracked stone gate and ash flags, hard black outline, readable at 12px, no text, no people" }
+                """.trimIndent(),
+            ),
+        )
+        writeText(
+            promptIndex,
+            """
+            {
+              "schemaVersion": "dark-prompt-index-v1",
+              "prompts": [
+                {
+                  "promptId": "001-r97-random-qa",
+                  "promptPath": "UI/sprite-sheets/prompts/dark-v1/001-r97-random-qa.prompt.txt",
+                  "sheetId": "r97-random-qa"
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val first =
+            runScript(
+                "scripts/generate_dark_art_random_qa.py",
+                "--plan",
+                plan.toString(),
+                "--prompt-index",
+                promptIndex.toString(),
+                "--sheet-ids",
+                "r97-random-qa",
+                "--out",
+                report.toString(),
+                "--skip-images",
+                "--overwrite",
+            )
+        val firstReport = Files.readString(report)
+        val second =
+            runScript(
+                "scripts/generate_dark_art_random_qa.py",
+                "--plan",
+                plan.toString(),
+                "--prompt-index",
+                promptIndex.toString(),
+                "--sheet-ids",
+                "r97-random-qa",
+                "--out",
+                report.toString(),
+                "--skip-images",
+                "--overwrite",
+            )
+        val secondReport = Files.readString(report)
+
+        assertEquals(0, first.exitCode, first.output)
+        assertEquals(0, second.exitCode, second.output)
+        assertEquals(firstReport, secondReport)
+        assertTrue(firstReport.contains("\"seed\": \"dark-uiux-pr06-art-random-qa-v1\""), firstReport)
+        assertTrue(firstReport.contains("\"selection\": \"mandatory\""), firstReport)
+        assertTrue(firstReport.contains("\"targetKey\": \"icon.skill.vanguard.power_strike\""), firstReport)
+        assertTrue(firstReport.contains("\"requiredSizesPx\": ["), firstReport)
+        assertTrue(firstReport.contains("16,\n            24,\n            32,\n            48"), firstReport)
+    }
+
+    @Test
+    fun `dark art random qa preserves reviewed decisions when samples and raw hash are unchanged`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val promptIndex = tempDir.resolve("prompt-index.json")
+        val report = tempDir.resolve("random-qa.json")
+        writeText(
+            plan,
+            largeSheetPlan(
+                "r97-random-qa",
+                """
+                - { row: 0, col: 0, targetKey: icon.skill.vanguard.power_strike, category: icon_skill, outputName: dark-v1/icons/icon_skill_vanguard_power_strike.png, subject: "front-facing chipped tower shield smashing into cracked stone doorway, dented steel rim, ember sparks, hard black outline, readable at 24px, no text, no people" }
+                - { row: 0, col: 1, targetKey: icon.status.burn, category: icon_status, outputName: dark-v1/icons/icon_status_burn.png, subject: "ember burn condition badge as a charred handprint on cracked black iron, hard black outline, readable at 16px, no text, no people" }
+                - { row: 0, col: 2, targetKey: icon.quest.armory_key, category: icon_quest, outputName: dark-v1/icons/icon_quest_armory_key.png, subject: "heavy armory key with chipped brass teeth and black iron bow, hard black outline, readable at 12px, no text, no people" }
+                - { row: 0, col: 3, targetKey: icon.profession.vanguard, category: icon, outputName: dark-v1/icons/icon_profession_vanguard.png, subject: "tower shield profession crest with dented steel face and worn brass notch, hard black outline, readable at 24px, no text, no people" }
+                """.trimIndent(),
+            ),
+        )
+        writeText(
+            promptIndex,
+            """
+            {
+              "schemaVersion": "dark-prompt-index-v1",
+              "prompts": [
+                {
+                  "promptId": "001-r97-random-qa",
+                  "promptPath": "UI/sprite-sheets/prompts/dark-v1/001-r97-random-qa.prompt.txt",
+                  "sheetId": "r97-random-qa"
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+        val first =
+            runScript(
+                "scripts/generate_dark_art_random_qa.py",
+                "--plan",
+                plan.toString(),
+                "--prompt-index",
+                promptIndex.toString(),
+                "--sheet-ids",
+                "r97-random-qa",
+                "--out",
+                report.toString(),
+                "--skip-images",
+                "--overwrite",
+            )
+        assertEquals(0, first.exitCode, first.output)
+        writeText(
+            report,
+            Files.readString(report).replace(
+                "\"qaDecision\": \"MANUAL_REVIEW_REQUIRED\",\n          \"rejectReason\": null",
+                "\"qaDecision\": \"PASS\",\n          \"rejectReason\": null,\n          \"reviewer\": \"Codex visual QA\",\n          \"reviewedAt\": \"2026-05-23T12:00:00+08:00\"",
+            ),
+        )
+
+        val second =
+            runScript(
+                "scripts/generate_dark_art_random_qa.py",
+                "--plan",
+                plan.toString(),
+                "--prompt-index",
+                promptIndex.toString(),
+                "--sheet-ids",
+                "r97-random-qa",
+                "--out",
+                report.toString(),
+                "--skip-images",
+                "--overwrite",
+            )
+
+        val secondReport = Files.readString(report)
+        assertEquals(0, second.exitCode, second.output)
+        assertTrue(secondReport.contains("\"qaDecision\": \"PASS\""), secondReport)
+        assertTrue(secondReport.contains("\"reviewer\": \"Codex visual QA\""), secondReport)
+        assertFalse(secondReport.contains("\"qaDecision\": \"MANUAL_REVIEW_REQUIRED\""), secondReport)
     }
 
     @Test
@@ -901,10 +1139,12 @@ class DarkSpriteSheetPipelineScriptTest {
         val registry = tempDir.resolve("key-registry.yaml")
         val manifest = tempDir.resolve("manifest.json")
         val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("final-full-inventory.json")
         writeText(plan, largeSheetPlan("r95-coverage", defaultCells()))
         writeText(registry, registry("r95-coverage", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
         writeText(manifest, manifest("ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
         writeText(runtimeManifest, manifest("ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(inventory, finalFullInventory("upstream registered dark-v1 key", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
 
         val ownerMissing =
             runScript(
@@ -927,6 +1167,8 @@ class DarkSpriteSheetPipelineScriptTest {
                 "scripts/verify_dark_manifest_coverage.py",
                 "--coverage-mode",
                 "final-full",
+                "--expected-inventory",
+                inventory.toString(),
                 "--plan",
                 plan.toString(),
                 "--registry",
@@ -1100,6 +1342,641 @@ class DarkSpriteSheetPipelineScriptTest {
         assertTrue(result.output.contains("ui.contract.missing"), result.output)
         assertTrue(reportText.contains("\"ownerMissingRequiredKeys\": ["), reportText)
         assertTrue(reportText.contains("\"requiredOwnerKeys\": ["), reportText)
+    }
+
+    @Test
+    fun `final full uses inventory as expected key set source`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("inventory.json")
+        val report = tempDir.resolve("inventory-report.json")
+        writeText(plan, largeSheetPlan("r95-inventory", defaultCells()))
+        writeText(registry, registry("r95-inventory", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(
+            manifest,
+            manifestWithRawPaths(
+                "ui.test.a" to "dark-v1/ui/test_a.png",
+                "ui.test.b" to "dark-v1/ui/test_b.png",
+            ),
+        )
+        writeText(runtimeManifest, Files.readString(manifest))
+        writeText(inventory, finalFullInventory("upstream registered dark-v1 key", "ui.test.a", "ui.test.b"))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(0, result.exitCode, result.output)
+        assertTrue(reportText.contains("\"expectedKeySetSource\": \"${inventory.toString().replace("\\", "\\\\")}\""), reportText)
+        assertTrue(reportText.contains("\"expectedKeySet\": ["), reportText)
+        assertTrue(reportText.contains("\"ui.test.a\""), reportText)
+        assertTrue(reportText.contains("\"ui.test.b\""), reportText)
+        assertFalse(reportText.contains("\"ui.test.c\""), reportText)
+    }
+
+    @Test
+    fun `final full fails when inventory key is missing from registry`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("missing-registry-inventory.json")
+        writeText(plan, largeSheetPlan("r95-missing-registry", defaultCells()))
+        writeText(registry, registry("r95-missing-registry", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(manifest, manifestWithRawPaths("ui.test.a" to "dark-v1/ui/test_a.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+        writeText(inventory, finalFullInventory("upstream registered dark-v1 key", "ui.test.a", "ui.test.unregistered"))
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                tempDir.resolve("missing-registry-report.json").toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("final-full inventory keys missing from key registry"), result.output)
+        assertTrue(result.output.contains("ui.test.unregistered"), result.output)
+    }
+
+    @Test
+    fun `final full rejects stale inventory source digest`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("stale-inventory.json")
+        writeText(plan, largeSheetPlan("r95-stale-inventory", defaultCells()))
+        writeText(registry, registry("r95-stale-inventory", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(manifest, manifestWithRawPaths("ui.test.a" to "dark-v1/ui/test_a.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+        writeText(
+            inventory,
+            finalFullInventory(
+                "upstream registered dark-v1 key",
+                "ui.test.a",
+                digestOverrides = mapOf("UI/pr/screen-coverage-matrix.md" to "not-the-current-digest"),
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                tempDir.resolve("stale-report.json").toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("final-full inventory source digest is stale"), result.output)
+    }
+
+    @Test
+    fun `final full inventory generation is deterministic`() {
+        val first = tempDir.resolve("first-inventory.json")
+        val second = tempDir.resolve("second-inventory.json")
+
+        val firstResult =
+            runScript(
+                "scripts/generate_dark_final_full_inventory.py",
+                "--out",
+                first.toString(),
+            )
+        val secondResult =
+            runScript(
+                "scripts/generate_dark_final_full_inventory.py",
+                "--out",
+                second.toString(),
+            )
+
+        assertEquals(0, firstResult.exitCode, firstResult.output)
+        assertEquals(0, secondResult.exitCode, secondResult.output)
+        assertEquals(Files.readString(first), Files.readString(second))
+    }
+
+    @Test
+    fun `final full inventory generation classifies upstream registry families explicitly`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("upstream-family-inventory.json")
+        val keys = listOf("actor.test.a", "actor.test.b", "actor.test.c", "actor.test.d")
+        writeText(plan, largeSheetPlan("r95-upstream-family", cellsForKeys(keys)))
+        writeText(registry, registry("r95-upstream-family", *keys.toTypedArray()))
+        writeText(manifest, manifestWithRawPaths("tile.hidden" to "dark-v1/tiles/hidden.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+
+        val result =
+            runScript(
+                "scripts/generate_dark_final_full_inventory.py",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--out",
+                inventory.toString(),
+            )
+        val inventoryText = Files.readString(inventory)
+
+        assertEquals(0, result.exitCode, result.output)
+        assertTrue(inventoryText.contains("\"family\": \"actor visual\""), inventoryText)
+        assertTrue(inventoryText.contains("\"key\": \"actor.test.a\""), inventoryText)
+        assertTrue(inventoryText.contains("\"key\": \"tile.hidden\""), inventoryText)
+        assertTrue(inventoryText.contains("\"ownerPr\": \"UNKNOWN\""), inventoryText)
+        assertFalse(inventoryText.contains("upstream registered dark-v1 key"), inventoryText)
+    }
+
+    @Test
+    fun `final full inventory generation rejects unknown registry families`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("unknown-family-inventory.json")
+        val keys = listOf("unclassified.test.a", "unclassified.test.b", "unclassified.test.c", "unclassified.test.d")
+        writeText(plan, largeSheetPlan("r95-unknown-family", cellsForKeys(keys)))
+        writeText(registry, registry("r95-unknown-family", *keys.toTypedArray()))
+        writeText(manifest, manifestWithRawPaths("unclassified.test.a" to "dark-v1/unknown/a.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+
+        val result =
+            runScript(
+                "scripts/generate_dark_final_full_inventory.py",
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--out",
+                inventory.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("final-full inventory key has no family rule: unclassified.test.a"), result.output)
+    }
+
+    @Test
+    fun `final full rejects malformed manual override`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("malformed-override-inventory.json")
+        writeText(plan, largeSheetPlan("r95-malformed-override", defaultCells()))
+        writeText(registry, registry("r95-malformed-override", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(manifest, manifestWithRawPaths("ui.test.a" to "dark-v1/ui/test_a.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+        writeText(
+            inventory,
+            finalFullInventory(
+                family = "upstream registered dark-v1 key",
+                keys = arrayOf("ui.test.a"),
+                extraFieldsByKey = mapOf("ui.test.a" to "\"manualOverrideReason\": \"\""),
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                tempDir.resolve("malformed-override-report.json").toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("manualOverrideReason must be a non-empty string"), result.output)
+    }
+
+    @Test
+    fun `final full reports allowed frozen profession exclusions`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("profession-exclusion-inventory.json")
+        val report = tempDir.resolve("profession-exclusion-report.json")
+        val keys =
+            listOf(
+                "icon.profession.shadowblade",
+                "icon.profession.fallback",
+                "ui.test.c",
+                "ui.test.d",
+            )
+        writeText(plan, largeSheetPlan("r95-profession-exclusion", professionExclusionCellsForKeys(keys)))
+        writeText(registry, registry("r95-profession-exclusion", *keys.toTypedArray()))
+        writeText(manifest, manifestWithRawPaths("icon.profession.fallback" to "dark-v1/icons/profession_fallback.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+        writeText(
+            inventory,
+            finalFullInventory(
+                family = "profession icon",
+                keys = arrayOf("icon.profession.shadowblade"),
+                extraFieldsByKey =
+                    mapOf(
+                        "icon.profession.shadowblade" to
+                            """
+                            "coverageExclusion": {
+                              "key": "icon.profession.shadowblade",
+                              "family": "profession icon",
+                              "reason": "frozen-profession-not-player-visible",
+                              "visibleFallbackKey": "icon.profession.fallback",
+                              "evidencePath": "UI/pr/dark-uiux-pr06-skills-status-quest-full-manifest.md",
+                              "removalOwner": "PR-07",
+                              "expiresAfterPr": "PR-07"
+                            }
+                            """.trimIndent(),
+                    ),
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+        val reportText = Files.readString(report)
+
+        assertEquals(0, result.exitCode, result.output)
+        assertTrue(reportText.contains("\"allowedCoverageExclusions\": ["), reportText)
+        assertTrue(reportText.contains("\"icon.profession.shadowblade\""), reportText)
+        assertTrue(reportText.contains("\"allowedExcludedKeySet\": ["), reportText)
+    }
+
+    @Test
+    fun `final full rejects malformed coverage exclusion`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("malformed-exclusion-inventory.json")
+        val keys = listOf("icon.profession.shadowblade", "icon.profession.fallback", "ui.test.c", "ui.test.d")
+        writeText(plan, largeSheetPlan("r95-malformed-exclusion", professionExclusionCellsForKeys(keys)))
+        writeText(registry, registry("r95-malformed-exclusion", *keys.toTypedArray()))
+        writeText(manifest, manifestWithRawPaths("icon.profession.fallback" to "dark-v1/icons/profession_fallback.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+        writeText(
+            inventory,
+            finalFullInventory(
+                family = "profession icon",
+                keys = arrayOf("icon.profession.shadowblade"),
+                extraFieldsByKey =
+                    mapOf(
+                        "icon.profession.shadowblade" to
+                            """
+                            "coverageExclusion": {
+                              "key": "icon.profession.shadowblade",
+                              "family": "profession icon",
+                              "reason": "frozen-profession-not-player-visible",
+                              "visibleFallbackKey": "icon.profession.fallback",
+                              "evidencePath": "/tmp/local-only.md",
+                              "expiresAfterPr": "PR-07"
+                            }
+                            """.trimIndent(),
+                    ),
+            ),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                tempDir.resolve("malformed-exclusion-report.json").toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("coverageExclusion for icon.profession.shadowblade"), result.output)
+        assertTrue(result.output.contains("must be repo-relative"), result.output)
+    }
+
+    @Test
+    fun `packaged sentinel audit reports deferred clean and missing visual evidence`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("sentinel-inventory.json")
+        val cleanEvidence = Path.of("build/tmp/dark-uiux-pr06-clean-sentinel-evidence.txt")
+        val dirtyEvidence = Path.of("build/tmp/dark-uiux-pr06-dirty-sentinel-evidence.txt")
+        writeText(plan, largeSheetPlan("r95-sentinel", defaultCells()))
+        writeText(registry, registry("r95-sentinel", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(manifest, manifestWithRawPaths("ui.test.a" to "dark-v1/ui/test_a.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+        writeText(inventory, finalFullInventory("upstream registered dark-v1 key", "ui.test.a"))
+        writeText(repoRoot().resolve(cleanEvidence), "packaged app visual smoke contains no sentinel")
+        writeText(repoRoot().resolve(dirtyEvidence), "packaged app leaked missing_visual")
+
+        val deferredReport = tempDir.resolve("sentinel-deferred-report.json")
+        val deferred =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                deferredReport.toString(),
+            )
+        val cleanReport = tempDir.resolve("sentinel-clean-report.json")
+        val clean =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--packaged-sentinel-evidence",
+                cleanEvidence.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                cleanReport.toString(),
+            )
+        val dirty =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--packaged-sentinel-evidence",
+                dirtyEvidence.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                tempDir.resolve("sentinel-dirty-report.json").toString(),
+            )
+
+        assertEquals(0, deferred.exitCode, deferred.output)
+        assertTrue(Files.readString(deferredReport).contains("\"packagedSentinelAuditStatus\": \"deferred-to-pr07\""))
+        assertEquals(0, clean.exitCode, clean.output)
+        assertTrue(Files.readString(cleanReport).contains("\"packagedSentinelAuditStatus\": \"pass\""))
+        assertEquals(1, dirty.exitCode, dirty.output)
+        assertTrue(dirty.output.contains("packaged sentinel evidence references missing_visual"), dirty.output)
+    }
+
+    @Test
+    fun `final full rejects pending art random qa samples when record is provided`() {
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val registry = tempDir.resolve("key-registry.yaml")
+        val manifest = tempDir.resolve("manifest.json")
+        val runtimeManifest = tempDir.resolve("runtime-manifest.json")
+        val inventory = tempDir.resolve("art-random-qa-inventory.json")
+        val report = tempDir.resolve("art-random-qa-report.json")
+        val qaRecord = Path.of("build/tmp/dark-uiux-pr06-art-random-qa-test.json")
+        writeText(plan, largeSheetPlan("r95-art-random-qa", defaultCells()))
+        writeText(registry, registry("r95-art-random-qa", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
+        writeText(manifest, manifestWithRawPaths("ui.test.a" to "dark-v1/ui/test_a.png"))
+        writeText(runtimeManifest, Files.readString(manifest))
+        writeText(inventory, finalFullInventory("upstream registered dark-v1 key", "ui.test.a"))
+        writeText(
+            repoRoot().resolve(qaRecord),
+            """
+            {
+              "schemaVersion": "dark-art-random-qa-v1",
+              "sheets": [
+                {
+                  "sheetId": "r08-skills-vanguard-berserker",
+                  "samples": [
+                    {
+                      "targetKey": "icon.skill.vanguard.power_strike",
+                      "selection": "mandatory",
+                      "qaDecision": "MANUAL_REVIEW_REQUIRED",
+                      "rejectReason": null
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val result =
+            runScript(
+                "scripts/verify_dark_manifest_coverage.py",
+                "--coverage-mode",
+                "final-full",
+                "--expected-inventory",
+                inventory.toString(),
+                "--art-random-qa-record",
+                qaRecord.toString(),
+                "--plan",
+                plan.toString(),
+                "--registry",
+                registry.toString(),
+                "--manifest",
+                manifest.toString(),
+                "--runtime-manifest",
+                runtimeManifest.toString(),
+                "--report",
+                report.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("final-full artRandomQaPendingSamples are not empty"), result.output)
+        assertTrue(Files.readString(report).contains("\"artRandomQaPendingSamples\": ["), result.output)
+    }
+
+    @Test
+    fun `apply dark sheet art acceptance promotes hash matched records`() {
+        val rawSheet = tempDir.resolve("r08-test.png")
+        val inputReport = tempDir.resolve("candidate-map.jsonl")
+        val acceptance = tempDir.resolve("acceptance.json")
+        val outputReport = tempDir.resolve("accepted-map.jsonl")
+        writeText(rawSheet, "accepted raw sheet")
+        writeText(
+            inputReport,
+            """
+            {"schemaVersion":"dark-sprite-map-report-v1","sheetId":"r08-test","targetKey":"icon.skill.test.power","rawSheetPath":"${rawSheet.toString().replace("\\", "\\\\")}","qaStatus":"DRY_RUN","reviewer":null,"reviewedAt":null,"rejectionReason":null,"slicedOutputRequired":true}
+            """.trimIndent() + "\n",
+        )
+        writeText(
+            acceptance,
+            """
+            {
+              "schemaVersion": "dark-uiux-pr06-sheet-art-acceptance-v1",
+              "reviewedAt": "2026-05-23T12:00:00+08:00",
+              "reviewer": "Codex visual QA",
+              "sheets": [
+                {
+                  "sheetId": "r08-test",
+                  "decision": "PASS",
+                  "rawSheetPath": "${rawSheet.toString().replace("\\", "\\\\")}",
+                  "rawSheetGitHash": "${gitHashObject(rawSheet)}"
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val result =
+            runScript(
+                "scripts/apply_dark_sheet_art_acceptance.py",
+                "--input-report",
+                inputReport.toString(),
+                "--acceptance",
+                acceptance.toString(),
+                "--out",
+                outputReport.toString(),
+            )
+
+        assertEquals(0, result.exitCode, result.output)
+        val output = Files.readString(outputReport)
+        assertTrue(output.contains("\"qaStatus\": \"ACCEPTED\""), output)
+        assertTrue(output.contains("\"reviewer\": \"Codex visual QA\""), output)
+        assertTrue(output.contains("\"rejectionReason\": null"), output)
+    }
+
+    @Test
+    fun `apply dark sheet art acceptance rejects stale raw sheet hash`() {
+        val rawSheet = tempDir.resolve("r08-test.png")
+        val inputReport = tempDir.resolve("candidate-map.jsonl")
+        val acceptance = tempDir.resolve("acceptance.json")
+        val outputReport = tempDir.resolve("accepted-map.jsonl")
+        writeText(rawSheet, "accepted raw sheet")
+        writeText(
+            inputReport,
+            """
+            {"schemaVersion":"dark-sprite-map-report-v1","sheetId":"r08-test","targetKey":"icon.skill.test.power","rawSheetPath":"${rawSheet.toString().replace("\\", "\\\\")}","qaStatus":"DRY_RUN","reviewer":null,"reviewedAt":null,"rejectionReason":null,"slicedOutputRequired":true}
+            """.trimIndent() + "\n",
+        )
+        writeText(
+            acceptance,
+            """
+            {
+              "schemaVersion": "dark-uiux-pr06-sheet-art-acceptance-v1",
+              "reviewedAt": "2026-05-23T12:00:00+08:00",
+              "reviewer": "Codex visual QA",
+              "sheets": [
+                {
+                  "sheetId": "r08-test",
+                  "decision": "PASS",
+                  "rawSheetPath": "${rawSheet.toString().replace("\\", "\\\\")}",
+                  "rawSheetGitHash": "deadbeef"
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val result =
+            runScript(
+                "scripts/apply_dark_sheet_art_acceptance.py",
+                "--input-report",
+                inputReport.toString(),
+                "--acceptance",
+                acceptance.toString(),
+                "--out",
+                outputReport.toString(),
+            )
+
+        assertEquals(1, result.exitCode, result.output)
+        assertTrue(result.output.contains("rawSheetGitHash is stale"), result.output)
+        assertFalse(Files.exists(outputReport), result.output)
     }
 
     @Test
@@ -1471,6 +2348,7 @@ class DarkSpriteSheetPipelineScriptTest {
         val manifest = tempDir.resolve("manifest.json")
         val runtimeManifest = tempDir.resolve("runtime-manifest.json")
         val report = tempDir.resolve("coverage-split.json")
+        val inventory = tempDir.resolve("coverage-split-inventory.json")
         writeText(plan, largeSheetPlan("r95-coverage-split", defaultCells()))
         writeText(registry, registry("r95-coverage-split", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
         val manifestText =
@@ -1491,12 +2369,15 @@ class DarkSpriteSheetPipelineScriptTest {
             """.trimIndent()
         writeText(manifest, manifestText)
         writeText(runtimeManifest, manifestText)
+        writeText(inventory, finalFullInventory("upstream registered dark-v1 key", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
 
         val result =
             runScript(
                 "scripts/verify_dark_manifest_coverage.py",
                 "--coverage-mode",
                 "final-full",
+                "--expected-inventory",
+                inventory.toString(),
                 "--plan",
                 plan.toString(),
                 "--registry",
@@ -1526,6 +2407,7 @@ class DarkSpriteSheetPipelineScriptTest {
         val manifest = tempDir.resolve("manifest.json")
         val runtimeManifest = tempDir.resolve("runtime-manifest.json")
         val report = tempDir.resolve("runtime-coverage.json")
+        val inventory = tempDir.resolve("runtime-coverage-inventory.json")
         writeText(plan, largeSheetPlan("r95-runtime-coverage", defaultCells()))
         writeText(registry, registry("r95-runtime-coverage", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
         writeText(
@@ -1546,12 +2428,15 @@ class DarkSpriteSheetPipelineScriptTest {
                 "ui.test.d" to "dark-v1/test/d.png",
             ),
         )
+        writeText(inventory, finalFullInventory("upstream registered dark-v1 key", "ui.test.a", "ui.test.b", "ui.test.c", "ui.test.d"))
 
         val result =
             runScript(
                 "scripts/verify_dark_manifest_coverage.py",
                 "--coverage-mode",
                 "final-full",
+                "--expected-inventory",
+                inventory.toString(),
                 "--plan",
                 plan.toString(),
                 "--registry",
@@ -1890,14 +2775,18 @@ class DarkSpriteSheetPipelineScriptTest {
             .forEach { (key, value) -> environment[key] = value }
         val process =
             processBuilder.start()
+        val outputFuture =
+            CompletableFuture.supplyAsync {
+                process.inputStream.bufferedReader().readText()
+            }
         val completed = process.waitFor(30, TimeUnit.SECONDS)
         if (!completed) {
             process.destroyForcibly()
             process.waitFor(5, TimeUnit.SECONDS)
-            val output = process.inputStream.bufferedReader().readText()
+            val output = outputFuture.get(5, TimeUnit.SECONDS)
             return ScriptResult(-1, "Timed out after 30s: python3 ${args.joinToString(" ")}\n$output")
         }
-        val output = process.inputStream.bufferedReader().readText()
+        val output = outputFuture.get(5, TimeUnit.SECONDS)
         return ScriptResult(process.exitValue(), output)
     }
 
@@ -1905,6 +2794,107 @@ class DarkSpriteSheetPipelineScriptTest {
         System.getProperty("ktome.repo.root")
             ?.let(Path::of)
             ?: Path.of("").toAbsolutePath().normalize()
+
+    private fun finalFullInventory(
+        family: String,
+        vararg keys: String,
+        digestOverrides: Map<String, String> = emptyMap(),
+        extraFieldsByKey: Map<String, String> = emptyMap(),
+    ): String {
+        val sourceDigestLines =
+            finalFullInventorySourcePaths()
+                .joinToString(",\n") { path ->
+                    val digest = digestOverrides[path] ?: sha256(repoRoot().resolve(path))
+                    "    \"$path\": \"$digest\""
+                }
+        val sourcePathLines =
+            finalFullInventorySourcePaths()
+                .joinToString(",\n") { path -> "    \"$path\"" }
+        val keyLines =
+            keys
+                .joinToString(",\n") { key ->
+                    val extraFields = extraFieldsByKey[key]
+                    val extra =
+                        if (extraFields.isNullOrBlank()) {
+                            ""
+                        } else {
+                            ",\n" + extraFields.lineSequence().joinToString("\n") { line -> "        $line" }
+                        }
+                    val coverageExclusion =
+                        if (extraFields?.contains("\"coverageExclusion\"") == true) {
+                            ""
+                        } else {
+                            ",\n          \"coverageExclusion\": null"
+                        }
+                    """
+                    {
+                      "key": "$key",
+                      "consumer": "test consumer",
+                      "consumerTest": "test consumer gate",
+                      "historicalSheetIds": []$coverageExclusion$extra
+                    }
+                    """.trimIndent()
+                        .lineSequence()
+                        .joinToString("\n") { line -> "        $line" }
+                }
+        return """
+        {
+          "schemaVersion": "dark-v1-final-full-inventory-v1",
+          "schemaOwner": "PR-06",
+          "generatedBy": "test-generator",
+          "generatedFrom": [
+        $sourcePathLines
+          ],
+          "sourceDigests": {
+        $sourceDigestLines
+          },
+          "families": [
+            {
+              "family": "$family",
+              "expectedCount": ${keys.size},
+              "keys": [
+        $keyLines
+              ]
+            }
+          ]
+        }
+        """.trimIndent()
+    }
+
+    private fun finalFullInventorySourcePaths(): List<String> =
+        listOf(
+            "UI/pr/screen-coverage-matrix.md",
+            "UI/sprite-sheets/dark-v1-pr06-handoff-inventory.json",
+            "scripts/verify_dark_manifest_coverage.py",
+        )
+
+    private fun sha256(path: Path): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        Files.newInputStream(path).use { input ->
+            val buffer = ByteArray(8192)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) {
+                    break
+                }
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+    }
+
+    private fun gitHashObject(path: Path): String {
+        val process =
+            ProcessBuilder("git", "hash-object", path.toString())
+                .directory(repoRoot().toFile())
+                .redirectErrorStream(true)
+                .start()
+        val output = process.inputStream.bufferedReader().readText().trim()
+        val completed = process.waitFor(5, TimeUnit.SECONDS)
+        assertTrue(completed, "git hash-object timed out for $path")
+        assertEquals(0, process.exitValue(), output)
+        return output
+    }
 
     private fun fakePillowPythonPath(): Path {
         val moduleRoot = tempDir.resolve("python-modules")
@@ -2124,6 +3114,15 @@ class DarkSpriteSheetPipelineScriptTest {
         """
         - { row: 0, col: 0, targetKey: ${keys[0]}, category: icon, outputName: debug/missing_visual.png, subject: action icon }
         - { row: 0, col: 1, targetKey: ${keys[1]}, category: icon, outputName: debug/missing_visual.png, subject: method icon, aliasOf: ${keys[0]} }
+        - { row: 0, col: 2, targetKey: ${keys[2]}, category: icon, outputName: debug/missing_visual.png, subject: target icon }
+        - { row: 0, col: 3, targetKey: ${keys[3]}, category: icon, outputName: debug/missing_visual.png, subject: lock icon }
+        - { row: 3, col: 3, reserved: true, note: reserved }
+        """.trimIndent()
+
+    private fun professionExclusionCellsForKeys(keys: List<String>): String =
+        """
+        - { row: 0, col: 0, targetKey: ${keys[0]}, category: icon, outputName: debug/missing_visual.png, subject: "frozen profession crest with cracked iron mask and worn brass rim, hard black outline readable at 24px and 128px, no text, no people" }
+        - { row: 0, col: 1, targetKey: ${keys[1]}, category: icon, outputName: debug/missing_visual.png, subject: "fallback profession crest with blank iron shield and worn brass notch, hard black outline readable at 24px and 128px, no text, no people", aliasOf: ${keys[0]} }
         - { row: 0, col: 2, targetKey: ${keys[2]}, category: icon, outputName: debug/missing_visual.png, subject: target icon }
         - { row: 0, col: 3, targetKey: ${keys[3]}, category: icon, outputName: debug/missing_visual.png, subject: lock icon }
         - { row: 3, col: 3, reserved: true, note: reserved }

@@ -1,0 +1,52 @@
+Prompt ID: 030-r09-quest-zone-profession
+Sheet ID: r09-quest-zone-profession
+Expected output file: assets-src/image/raw/sheets/dark-v1/r09-quest-zone-profession.png
+Canvas: 1024x1024
+Grid: 8 columns x 8 rows
+Cell: 128x128
+Style tag: ktome-dark-fantasy-sprite-ui-v1
+
+Create a 1024x1024 transparent-background sprite sheet for K-ToME.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Grid: 8 columns x 8 rows, each cell is 128x128.
+Every listed non-reserved cell contains exactly one centered subject, no text, no numbers, no labels, no watermark, no merged cells.
+Only render the cells listed below; leave every unlisted grid slot transparent and empty.
+Visual style: dark fantasy roguelike, charcoal black panels, forged iron, worn stone, ember highlights, restrained cyan edge glow, readable at 32px.
+Cell list:
+row 0 col 0 targetKey difficulty.normal.icon: difficulty state badge for normal mode: balanced iron compass marker over a worn stone disk, hard black outline readable at 12px and 24px, no text, no people.
+row 0 col 1 targetKey icon.profession.arcanist: profession identity crest for arcanist: cracked crystal focus above a small cyan rune disk, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people.
+row 0 col 2 targetKey icon.profession.rogue: profession identity crest for rogue: paired black daggers crossing a torn dusk cloak clasp, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people.
+row 0 col 3 targetKey icon.profession.templar: profession identity crest for templar: sun-etched kite shield and square brass mace head, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people.
+row 0 col 4 targetKey icon.profession.vanguard: profession identity crest for vanguard: tower shield crest with a dented steel face, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people.
+row 0 col 5 targetKey icon.quest.armory_key: quest objective item for armory key: heavy armory key with chipped brass teeth and black iron bow, worn brass and black iron surfaces, hard black outline readable at 12px and 24px, no text, no people.
+row 0 col 6 targetKey icon.quest.objective_marker: quest objective item for objective marker: iron map pin stabbed into a cracked parchment shard, worn brass and black iron surfaces, hard black outline readable at 12px and 24px, no text, no people.
+row 0 col 7 targetKey icon.quest.seal_key: quest objective item for seal key: round ward key with broken brass seal teeth, worn brass and black iron surfaces, hard black outline readable at 12px and 24px, no text, no people.
+row 1 col 0 targetKey icon.tree.arcanist_arcane: talent tree header crest for arcanist arcane: cyan rune spiral around a cracked crystal focus, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 1 col 1 targetKey icon.tree.arcanist_flame: talent tree header crest for arcanist flame: cinder branch rising from a blackened spellbook clasp, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 1 col 2 targetKey icon.tree.arcanist_frost: talent tree header crest for arcanist frost: frost crystal branch locked in dark iron, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 1 col 3 targetKey icon.tree.rogue_agility: talent tree header crest for rogue agility: hooked boot wing and narrow dagger over black leather, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 1 col 4 targetKey icon.tree.rogue_assassination: talent tree header crest for rogue assassination: stiletto point over a scratched target scar, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 1 col 5 targetKey icon.tree.rogue_subtlety: talent tree header crest for rogue subtlety: half-hidden cloak pin behind an obsidian crescent, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 1 col 6 targetKey icon.tree.templar_faith: talent tree header crest for templar faith: small brass sun reliquary on chapel stone, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 1 col 7 targetKey icon.tree.templar_grace: talent tree header crest for templar grace: curved silver ward ribbon around a chipped chalice, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 2 col 0 targetKey icon.tree.templar_smite: talent tree header crest for templar smite: square hammer and vertical sun crack, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 2 col 1 targetKey icon.tree.vanguard_arms: talent tree header crest for vanguard arms: crossed heavy sword and spear on black iron, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 2 col 2 targetKey icon.tree.vanguard_shield: talent tree header crest for vanguard shield: stacked tower shields with worn brass bolts, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 2 col 3 targetKey icon.tree.vanguard_warcry: talent tree header crest for vanguard warcry: spiked horn over a cracked command mask, carved stone and forged iron emblem, hard black outline readable at 12px and 24px, no text, no people.
+row 2 col 4 targetKey zone.abyssal_heart.icon: zone route landmark for abyssal heart: black heart monolith split by a cyan fissure, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 2 col 5 targetKey zone.abyssal_temple.icon: zone route landmark for abyssal temple: sunken temple arch with obsidian steps, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 2 col 6 targetKey zone.crystal_cavern.icon: zone route landmark for crystal cavern: cluster of jagged cyan crystals in a dark cave mouth, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 2 col 7 targetKey zone.deep_iron_pit.icon: zone route landmark for deep iron pit: deep mine shaft pulley over slag-black stone, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 3 col 0 targetKey zone.greenwood_fringe.icon: zone route landmark for greenwood fringe: gnarled green-black branch over a broken trail stone, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 3 col 1 targetKey zone.grey_gate_depths.icon: zone route landmark for grey gate depths: massive grey gate slab descending into shadow, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 3 col 2 targetKey zone.secret.abyssal_temple_warded_archive.icon: zone route landmark for secret abyssal temple warded archive: sealed archive door with brass ward bars, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 3 col 3 targetKey zone.secret.deep_iron_slag_cache.icon: zone route landmark for secret deep iron slag cache: slag cache chest half buried in black ore, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 3 col 4 targetKey zone.secret.deep_iron_smuggler_stash.icon: zone route landmark for secret deep iron smuggler stash: hidden crate behind bent iron rails, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 3 col 5 targetKey zone.secret.greenwood_ambush_hideout.icon: zone route landmark for secret greenwood ambush hideout: thorn blind and snapped arrow under dark leaves, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 3 col 6 targetKey zone.secret.greenwood_hidden_cache.icon: zone route landmark for secret greenwood hidden cache: mossy cache stone marked by a small brass notch, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 3 col 7 targetKey zone.secret.underground_river_crystal_rift.icon: zone route landmark for secret underground river crystal rift: river rift with cyan crystal bridge shard, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 4 col 0 targetKey zone.shattered_outpost.icon: zone route landmark for shattered outpost: broken watchtower over a cracked stone gate, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 4 col 1 targetKey zone.underground_river.icon: zone route landmark for underground river: dark river bend under a worn stone arch, cracked stone silhouette with muted ember and cyan accent, hard black outline readable at 12px and 24px, no text, no people.
+row 4 col 2 targetKey icon.profession.berserker: profession identity crest for berserker: spiked cleaver and broken chain over an ember scar, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people.
+row 4 col 3 targetKey icon.profession.spellblade: profession identity crest for spellblade: straight sword wrapped by a tight cyan rune ribbon, forged iron badge with worn brass edge, hard black outline readable at 24px and 128px, no text, no people.
+Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern icons, franchise symbols.

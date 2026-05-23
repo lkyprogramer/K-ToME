@@ -280,24 +280,24 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "dark-uiux-pr01-1-viewport-deadzone-still" to "d1663670cec01a697ecebb377ef07e7acf8bf036514e69b934a45ed6087f94ac",
-                "dark-uiux-pr01-1-viewport-deadzone-scroll" to "933e669bd96773355bc58732b34fddf66d0ca1795cc35a413964608b352ab226",
-                "dark-uiux-pr01-1-viewport-edge-clamp-top-left" to "94dcedf53c74ffa4028b65ca505f8983c66042ffa7f7a55eded60ba4b3fd1309",
-                "dark-uiux-pr01-1-viewport-edge-clamp-bottom-right" to "0b52b046f25b79e884e784bb6123c6ae842655b22ec5f335c002b2d861445b0d",
-                "dark-uiux-pr01-1-inspect-tooltip-layer" to "19aa22cc4736a22dab701493d3cde5b8789ca428ad8dacb8d810aff86c28a17b",
-                "dark-uiux-pr01-1-item-modal-layer" to "6a87265f7edec921d6f5108005125e99acb3121e2bd5ab26ca6193a872806469",
-                "dark-uiux-pr01-1-overlay-conflict-fixture" to "55a0d1e8377641571bbdd0404db7e25f76c4824adef55b1294b07f2fe6913251",
-                "dark-uiux-pr01-1-targeting-cursor-viewport" to "c16f3286501b810ad8da352114fdeb96d16ad61a7b28a629a4be6690ce533098",
-                "dark-uiux-pr01-1-focus-projection-resolution" to "19aa22cc4736a22dab701493d3cde5b8789ca428ad8dacb8d810aff86c28a17b",
-                "dark-uiux-pr01-1-foundation-viewport-fixed-world" to "ac62f98c007d137bf46e82c8b6913a364dabeaac86a876f74e4bd7cb49339f45",
-                "dark-uiux-pr01-1-map-sublayer-order" to "ac62f98c007d137bf46e82c8b6913a364dabeaac86a876f74e4bd7cb49339f45",
-                "dark-uiux-pr01-1-modal-backdrop-stack" to "6a87265f7edec921d6f5108005125e99acb3121e2bd5ab26ca6193a872806469",
-                "dark-uiux-pr01-1-combat-feedback-with-modal" to "25c6783829c2ab3a611f1458138723556fbd60bee757593d83c3457ee1cd1bcb",
-                "dark-uiux-pr01-1-tooltip-flip-corners" to "30cb5aed6b06c865eb294838f3b86cddbd9cddc4c726a901f6f8cbb429ecfc72",
-                "dark-uiux-pr01-1-item-tooltip-vs-modal-parity" to "65e435c12d77261665feb5480f5a429ef75245a1f569ae969f38ef6f276017fb",
-                "dark-uiux-pr01-1-ascii-deletion-scan" to "ac62f98c007d137bf46e82c8b6913a364dabeaac86a876f74e4bd7cb49339f45",
-                "dark-uiux-pr01-1-tome-layout-reference" to "ac62f98c007d137bf46e82c8b6913a364dabeaac86a876f74e4bd7cb49339f45",
-                "dark-uiux-pr01-1-shell-min-window" to "089d73d73f3c6d78e4976db9b1c0327c9d9d29f1c616c7206db00c357b9b72bb",
+                "dark-uiux-pr01-1-viewport-deadzone-still" to "526c41e3766313da7d4112cbc8f860a16b8da872801ef946dbd29c9ecc7dae65",
+                "dark-uiux-pr01-1-viewport-deadzone-scroll" to "abc8259791538663178601144c850deffe25b4775180fc1a5974d6bfe6925fc8",
+                "dark-uiux-pr01-1-viewport-edge-clamp-top-left" to "55bafe672206307a4e257aa3f682dae9fecdc0a56b682c7675a39773cdf7c1a5",
+                "dark-uiux-pr01-1-viewport-edge-clamp-bottom-right" to "00beeb8e70f8049eac526333ecf001eac7cd702a03a71f082ff6755eda808563",
+                "dark-uiux-pr01-1-inspect-tooltip-layer" to "1d5847e8c4f329062d8b34324840d1920f0cffd7819714bc7b3fc4ed03977329",
+                "dark-uiux-pr01-1-item-modal-layer" to "2bb9c9cbb2682b50c32eb1006a9b4c66eddd3fbfd12bdcbea9d53301ff6a6a6f",
+                "dark-uiux-pr01-1-overlay-conflict-fixture" to "4b289550364fc4f379a186325db74c28b3b1f2fb91a8ad6ae37d41f4dc947dc1",
+                "dark-uiux-pr01-1-targeting-cursor-viewport" to "f9d4a74aee3e32cfb777ba7a9763650b20dfc72ce49a1e7df3a7c5d63bc1cc20",
+                "dark-uiux-pr01-1-focus-projection-resolution" to "1d5847e8c4f329062d8b34324840d1920f0cffd7819714bc7b3fc4ed03977329",
+                "dark-uiux-pr01-1-foundation-viewport-fixed-world" to "e307db2e29b4185675349346a45b5f8f9b2183af8a30e6fefe0da45929eeef99",
+                "dark-uiux-pr01-1-map-sublayer-order" to "e307db2e29b4185675349346a45b5f8f9b2183af8a30e6fefe0da45929eeef99",
+                "dark-uiux-pr01-1-modal-backdrop-stack" to "2bb9c9cbb2682b50c32eb1006a9b4c66eddd3fbfd12bdcbea9d53301ff6a6a6f",
+                "dark-uiux-pr01-1-combat-feedback-with-modal" to "1f84143989e73417ae5d8dd5bd63ac2f91f6487d805103df40e1d79d51be1ecf",
+                "dark-uiux-pr01-1-tooltip-flip-corners" to "d07365771b9f404100fb3c519520bf0334b91d20b38d18efb4c6ba8e469d4457",
+                "dark-uiux-pr01-1-item-tooltip-vs-modal-parity" to "7955c399945d36dcd7ec94e8d2645b9feb9400ce4ac176341f1e2e16e8558a60",
+                "dark-uiux-pr01-1-ascii-deletion-scan" to "e307db2e29b4185675349346a45b5f8f9b2183af8a30e6fefe0da45929eeef99",
+                "dark-uiux-pr01-1-tome-layout-reference" to "e307db2e29b4185675349346a45b5f8f9b2183af8a30e6fefe0da45929eeef99",
+                "dark-uiux-pr01-1-shell-min-window" to "b708bb872e3a4cedc174250edcb827ed916c0472d90ae5edd401c9a3908c4c4d",
             ),
             hashes,
         )
@@ -309,8 +309,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "dark-uiux-pr02-round1-chrome" to "d6da14059a379e5cf463b1c7497f07f95e3719ab343426590df77827eea3ba5c",
-                "dark-uiux-pr02-hud-icons-pilot" to "464a750cd40009bdf6c9c7f82c69e3ad62b207340e36208be8bc161084d3408a",
+                "dark-uiux-pr02-round1-chrome" to "d89055fe0fec435f40ecd503c1638a2199d83b9747b7e6d2bb3ab4f3dcd5443a",
+                "dark-uiux-pr02-hud-icons-pilot" to "f222bcef2ea3817c4bf04d0a145c8a8e1939fa3afbc020aa05de5123bdbf72a9",
                 "dark-uiux-pr02-standalone-screen-chrome" to "11cd74c8765a1f8017b72042381480379cbb89989e8b75351df5e0baf663ea8b",
             ),
             hashes,
@@ -323,12 +323,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "ui-demo-new-parity-1672x941" to "340e61c8eb3a65e838d4b1a47b6d923aeca15d2608eee189381b9c1d346e2c07",
-                "ui-demo-new-parity-1280x800" to "44af6cccabcb1d4349055afc1d4b4c648e1bdbf93248d3f6b9550c999e8c6076",
-                "ui-demo-new-right-panel-grid" to "97694b6d053b199a4ac1cdaf9d2cffd1f2af230e872f31fb0a6dc596ec045b4d",
-                "ui-demo-new-bottom-deck-no-command-hints" to "7d6e8294a344b3e3855e3fa74f3b77c96a8b5b1d55bbc249fd6807377053743a",
-                "ui-demo-new-inventory-page-1" to "5e245777a23ed90626e4747cbbf04dd429a375b3da9a45c45265c4f54a5bd767",
-                "ui-demo-new-inventory-page-2" to "f3acb92f2bd0dbfba6350265413b466f99de809f888777d0fb19939c2a7d39a7",
+                "ui-demo-new-parity-1672x941" to "ee79064bf760a56b840074d14753de4d303aba366545b4f35adb1fb13812608d",
+                "ui-demo-new-parity-1280x800" to "6b371bb99a3d91d72f4f4441a6f0b6a63413e67aa65c1e466264053de23fd7d5",
+                "ui-demo-new-right-panel-grid" to "0a79eeee3e573285d35b3e6e609c162802703fe2b183dd89b9ed98b06dc368ed",
+                "ui-demo-new-bottom-deck-no-command-hints" to "e6341278f0817fe528298ecbbcb24eab4fc0318ad083d8d3bd27877bb383a083",
+                "ui-demo-new-inventory-page-1" to "b2b949eb73116d037a6965b863a35b042329035e963873c8f70e825bfe27f4a6",
+                "ui-demo-new-inventory-page-2" to "f318781d839aaeb90d75bc8e26518398cef593e1a69d4c11e79521d92b3e40ca",
                 "ui-demo-new-nav-rail-crop" to "c52f8db795b5e932c91fb5d5084fc113ea134f685f416ce08e7e8e89947d4f03",
                 "ui-demo-new-map-stage-crop" to "8ff35a68fa746ad2b38ad165110030e0ae694f8c30b589bbd3ac63454bb5022c",
             ),
@@ -344,15 +344,15 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "1af8c316e586fd46bc9d46805e26913e7866b4ea5eb9b798b433a73a098a5aa2",
-                "d1663670cec01a697ecebb377ef07e7acf8bf036514e69b934a45ed6087f94ac",
-                "6d66afe88b2c9b06719653563b231ad42d75672e6a44f4611731877d1188f1bb",
-                "5398319ee53e99f7b99588ac4bffef0224545ebc2d5113381313bf6b4def5204",
-                "6c93b038bac7e1f7dca170a885dec607219de06975c1431e6cc9d952e2f601a5",
+                "526c41e3766313da7d4112cbc8f860a16b8da872801ef946dbd29c9ecc7dae65",
+                "c69f8d2ead8bb670ac43aadd18b3e6b0dd6ad92de420349cf3373029aac5e7b6",
+                "8ab34e5291f7b6b068d125d9089dbca6147f2b726defd9fa48117e2337174a81",
+                "2742b1547d386903eace8d0fd7be8c26830ab1dad597946dc7f5ccd07c3e4c54",
                 "f45cfa16a929281374a59033fcdfc24a135646f8bec5d111dc635177ce86d3ff",
-                "3fa600120c5b401bf998db7d7e0e58a164e21ec9a533dee3625441f93b8c0ef4",
-                "6e6ab16592b6b57e69d6c23fbe1939ef31b4913f0a808787827d507032e6bd18",
-                "b6905d6031e25d76c62146ed7ea1f37ea07ae25af00d358eb6dc80ab5ca39791",
-                "951f08437d9adcf0ee05844a8df7714c8bffa220d1db2866a83ecc801fd4ed8b",
+                "d97ceaa0867c0ca4dbdde38608671e17657fc9424c0e75540073c15ce9436e5a",
+                "4afe6157d4fc047e40a803d1b312400585536e123dcc3559c71adaecc011623c",
+                "a9d063689dd705436bbb7f39745623d74df0d603cb7e3a00330f2135e337064f",
+                "8f6c738b4b28ba76419382872e9839f6ea0419f26433a8bcfab78a5329defd59",
             ),
             english + chinese,
         )
@@ -365,8 +365,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "9e2bb81775c9ca461baf31a139202df9ea9be34ead8ff11eeaa05c8159fab077",
-                "addc0b2b927cb6c8c0b137925339aa537441ff801c467efc9cdbb725136d8b41",
+                "cbd1e4036b60983bf82a14fe26310480375ee1844f69578497995f5deb36719f",
+                "a7261e7ecd9666f706fa3192b32e37164eb07070a62ab035e29c676f756f17fb",
             ),
             listOf(english, chinese),
         )
@@ -379,12 +379,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "2e747f096139305f222487d9e0b806e2110d3e6752eff5ef951366e8c242cd82",
-                "f79b3dc841fbf6a0b57f2012d56a7390ce6a104a12f83a0080f97ea74d27afe4",
-                "923995822732a418f418f90a3fbe4094a8c3ae09671f3707e7b57093db4b31d0",
-                "462d1dba4258bf6bf71013eafb627c023d94a9c9414ff750e11b381a1c3cdce9",
-                "ad84dda690753f48a60b40d712147bcee9056f1127c2434094616f267193aad8",
-                "1ef7db225a116c4dbc018f9f9938496d5e21106ca96777e2efc859d9661d9a6b",
+                "7a6cbde051eb885b3ad89539e242bef56cdc89df9673b6487fd5592f6ee1b916",
+                "0965c4ce38139cce4d78e68b285baaf059669fb2a8884341813848a3b6ed6ad1",
+                "c8286f0ccbe8989fa094bc7172919f342474533754c2d31bcf850dc7cdf0c710",
+                "db974a8cc30d64216b6bdd5d3a40437cab954d8c88461d9eb5869c396c4a79df",
+                "b95a1d7f4383c41f3f8e7eac01517cdb8ad4a49d550dc67ab49845f548697a39",
+                "e2608174f755aee824aa79210d08a3ee0260535777dddd7101ac43e009db9e23",
             ),
             english + chinese,
         )
@@ -422,12 +422,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "2f02361e4c8eabd645e04a2ced04afee0d724b3a4d633dad858026e77c94de07",
-                "a6dfc8e7e4ac1eaf228a5e1b2ce7d66a4c59befb4b4100814ddee148edfef27b",
-                "a876965c00bd78356ddd8044fa1540278b44211f2d96e0c7d6cfaffa3861fe5e",
-                "eedfaa1e2e204bd1ad360a4dbab71a0867908f49f0a6c5ea31b0311c00630563",
-                "0f44f22ecca8ea2d33c3baa3253455bdd59f92e1714503b11fcbdd9eb5896636",
-                "47374c02e39b746d5e3a3f22f24418160416069fe1ba7fb143d4e262ac6aadfe",
+                "cf1d799e24e675fd4d9c11bd3330fbd7369e426991dc561f5be0e0838c8ec1d0",
+                "2a04cc0394c9bd8bcecdb890142e7e166b6c2a898b5ffddb55dcdf873d59152b",
+                "0f629a435779d431463f8db34ff0f92b440a634457f0bfe38cc010495e81e2dd",
+                "c79de3367e669dafe649458317157bfa43b8a07e1b5543f4991b95f26d8b9b6c",
+                "06f541ec15fa818c904259c7003db309c2e26a802804205276910770ca39306f",
+                "67a925ec7ba9618374b7b907d44885102f86fbec67f2dcf897f3f2990fa8b0ae",
             ),
             english + chinese,
         )
@@ -441,9 +441,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "d4a3377e11cbbf220d0f90a4d8fd394a8345db2b0053dd7daf1d862edd0b8ab9",
-                "8e8e0fe6b9de4c157952c3a194c1dbef52c27d38fdadbbb08d8e3a12b62b2a10",
+                "ae67c4545fcd4a00878b6a0d7a4e03761194b330ba4cf83da09e9b2757a866a0",
                 "b01b5396109cd8f53c9eca4ad98cb109191f4d27d4b5f2d938d5af03ed325202",
-                "204c71f95a93ef96199ff2aa7033ba373e015826707c7a06d8d2a1a94069893b",
+                "fbd768a5f3559f90986a2e67cc8368b79143731deaa7b242d089915636f7f8e4",
             ),
             english + chinese,
         )
@@ -453,7 +453,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("78d6df625c0dfc024fe1510e4f4feb410968a808477fe9ad445b928fe81a151b", hash)
+        assertEquals("b272ecd89b38100389b002ac3eb0e58c87aa6a4576ad40ac3e640ba73f0ab61d", hash)
     }
 
     @Test
@@ -463,16 +463,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "63f73a07d92b527852539661b4e3388df64f9c618397aaa76c700ef295c45b17",
-                "8272ba138ab8c14734775be5e9342c66f0a17d94968f0db51ea8cc4f8579c7da",
-                "81cbf8f14df818dee9ee0ddcea6d791b9ecaa6465d6bb1e7d565faa2cf6a1a0f",
-                "f90ce47716244d4b265f29c4ea031f6a3d958389550787f79fdb89dc8cd6602a",
-                "9bfa1678c71f5ce1ed5d9219e745dea2a1a0839b4c869f6f8298370b02691aef",
-                "13e45f8177d7155970d4829c78088137448228083b61dfd056579396cd46efe4",
-                "a6ab3209738af9c2f629eadeb3b099edd4808c21a5b949464a6f8b17006b55da",
-                "0912688a9dba9c784b6ef65870736433bf27a632b25c6198bff4367507958d58",
-                "a3fe75d99ec402c78aa571d199c246d2ed817060e38b917b8a21bec54d9a2784",
-                "d3fa2829f56ff061a0fdf9fcf9a3019886321a659d1ad9b5b5ce56067c3b6cf8",
+                "b4ac495bd872d3ada788c0a08caf2b45cb9635a05460b08873fa92c34283f06b",
+                "b9fe237460f0b58e9b39283019670068d70fc53d28ed0edbf59ea0fdd37a3234",
+                "a457919932884b7be755ae5b66327c7f043ed8f8bd8b06caeb625763d1bc4f52",
+                "cd1cee12aa02ad2eb80d86b8edc26616f6dc7a0dfe8d2339a30b56388ad922f0",
+                "12a988149e01004317f223c1f6fb543d0b8dc5694fd9e484d4a4a6dada8f296c",
+                "a47167cec4f3a5430cfacd35c726106f62005a67504c6febd60c4c55d375a265",
+                "99103be8ca7dd04871de78461e52f279056fda79ca0c56fe8e414dcfc6cb821d",
+                "be8da3caa7029f3d5d8aafe652f9404823bd2d884eb96b561b00917c9f20b63d",
+                "1d846dd83dab92259c2ba02bbc25bc45bca724b242e4499a7960b4ea1b669a27",
+                "3580222040af4dead64b811e44f7d556d6297d874ae61332be858277e604889f",
             ),
             english + chinese,
         )
@@ -484,11 +484,11 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "dark-uiux-pr03-equipment-slots" to "2c928166f3d87736bf8a7370fcd4e5f0e0ba442d9a41f3dcad2dbfde326430ca",
-                "dark-uiux-pr03-inventory-empty" to "33c34425a3318460972d8829763c644ef9f22eca2fe845cb62e7a03ec4fba3ef",
-                "dark-uiux-pr03-inventory-stacked" to "6bfc775be7f1700488ad2df23509bde43ce6c046cc3ac92da5ffea750df6a85e",
-                "dark-uiux-pr03-inscription-shop" to "1d7e2bc54e1ff526a789bba13d3bf1efe9293e3bf1608a92735631136465471f",
-                "dark-uiux-pr03-shop-full-slot-replace" to "faeb990d01e122b1dd6506ad0942d90ce6676893b59f390f7919527af4f8f3e9",
+                "dark-uiux-pr03-equipment-slots" to "8afc6ca318410347cc872a814356302aafcc09c28d2f982c17ababa9b5c9a6c4",
+                "dark-uiux-pr03-inventory-empty" to "2bfeb57902eeef1608084efb03132941969905c4c4b4f28c69e31ec29d1f2fff",
+                "dark-uiux-pr03-inventory-stacked" to "dc86f04d9d47902b02f93e28f13c03f1ede159c0c6be2df798b381c91d1e0fff",
+                "dark-uiux-pr03-inscription-shop" to "3cf466530e9df62279569a2466723d9d4e0665768c70ad968d40df49308662da",
+                "dark-uiux-pr03-shop-full-slot-replace" to "896d7495833bfd5b7628ac657156e10ab94e8bfc923e23884f7145cb1ccae151",
             ),
             hashes,
         )
@@ -547,12 +547,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "phase4-uiux-pr05-telegraph-triple-surface" to "20697ade71cf36730cc55b8a3dc66fdca70b813116a9f3bbd6e37978831d480d",
-                "phase4-uiux-pr05-combat-action" to "d7dd2091cf88a42b21084ac6133556319ac5e87c7fbbcbcb3582938162fa3c51",
-                "phase4-uiux-pr05-combat-method" to "eb1356b564ea1e543ad4e5929a881ee6651e3ab1fa2ec5fd6a70313c954bceba",
-                "phase4-uiux-pr05-combat-target" to "7547bbda9a24446e4665fcce5dd4f9fe4b41e3b548ebfca03d18a09e7a0b3e5d",
-                "phase4-uiux-pr05-combat-disabled-resource" to "d7dd2091cf88a42b21084ac6133556319ac5e87c7fbbcbcb3582938162fa3c51",
-                "phase4-uiux-pr05-combat-illegal-target" to "01eca8da44674318ebee3546be153c99502c60100aabf304e85bb42a825b1490",
+                "phase4-uiux-pr05-telegraph-triple-surface" to "2fbc2d69ee3295a2261621850daea33380f562c3db2f61f8cc9cb4dd985640cf",
+                "phase4-uiux-pr05-combat-action" to "259afae2c6755e2806ca4f181b5d2ad8e4eb64189ae867298c0eb9aa5f248dc8",
+                "phase4-uiux-pr05-combat-method" to "7d00246d90e499bbdd29dca6e5d948530f542ce63034d1255cd2ccb368271664",
+                "phase4-uiux-pr05-combat-target" to "59dc64779c5b3a895a71185bdc0cadf43fad7e21cf8227c97b53e20b353fec2d",
+                "phase4-uiux-pr05-combat-disabled-resource" to "259afae2c6755e2806ca4f181b5d2ad8e4eb64189ae867298c0eb9aa5f248dc8",
+                "phase4-uiux-pr05-combat-illegal-target" to "5541288ac1fbd0a9dbe041617b81788a933141a798aebe700ef6f96151d84809",
             ),
             hashes,
         )
@@ -569,9 +569,9 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "phase4-v4-pr05-molten-glass-phase-override-warning" to "f72af717173251321e827dcc85bbec3b3352e6f0dbb8d692ffe9fb11734c3653",
-                "phase4-v4-pr05-grey-crown-phase-override-warning" to "8abe9c0cf1ca8a104cf1f71d4a24fbe4d82d3ba081467f746fa5645eedf7742b",
-                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "8a2698e90e710da7450b8af0ee4eec6ede4ae8b63d505f274d74377100e37308",
+                "phase4-v4-pr05-molten-glass-phase-override-warning" to "376cfeb7f1e66a1f9c78062cd60490bf5c492923d6e3d9bb9affaf2b04d74698",
+                "phase4-v4-pr05-grey-crown-phase-override-warning" to "376cfeb7f1e66a1f9c78062cd60490bf5c492923d6e3d9bb9affaf2b04d74698",
+                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "376cfeb7f1e66a1f9c78062cd60490bf5c492923d6e3d9bb9affaf2b04d74698",
             ),
             hashes,
         )

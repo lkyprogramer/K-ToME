@@ -30,6 +30,8 @@ import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationCommandSource
 import com.ktome.client.input.ValidationOverlayAvailability
 import com.ktome.client.render.TileRenderer
+import com.ktome.client.render.ValidationOverlayDisplayMode
+import com.ktome.client.render.ValidationOverlaySummaryPresenter
 import com.ktome.client.ui.combat.CombatDecisionValidationSurface
 import com.ktome.client.ui.layout.ModalFrameKind
 import com.ktome.core.dungeon.StairDirection
@@ -421,10 +423,19 @@ class ClientSmokeHarnessTest {
                         localizer,
                         session.renderSnapshot(),
                         ValidationCommandSource(session, smokeSource).overlayState(),
-                    )
+                )
                 assertEquals(localizer.text("ui.sidebar.validation"), capture.title)
                 assertTrue(capture.rows.any { row -> row == localizer.text("ui.validation.overlay.summary") })
-                assertTrue(capture.rows.any { row -> row.contains(localizer.text("ui.validation.section.travel")) })
+                assertTrue(
+                    capture.rows.firstOrNull()?.isNotBlank() == true,
+                    capture.rows.joinToString("\n"),
+                )
+                assertTrue(
+                    capture.rows.any { row ->
+                        row == localizer.text("ui.validation.entry.seed", "value" to session.config.seed)
+                    },
+                    capture.rows.joinToString("\n"),
+                )
             } finally {
                 app.dispose()
             }
@@ -567,6 +578,7 @@ class ClientSmokeHarnessTest {
                 captureValidationOverlay(
                     name = "validation-hidden-content-overlay",
                     options = com.ktome.game.validation.validationSessionOptionsForPreset(com.ktome.game.validation.ValidationPreset.HIDDEN_CONTENT),
+                    displayMode = ValidationOverlayDisplayMode.DETAILED,
                 )
             assertTrue(
                 hiddenSnapshot.capture.rows.any { row ->
@@ -602,6 +614,7 @@ class ClientSmokeHarnessTest {
                             preset = com.ktome.game.validation.ValidationPreset.CONTENT_PACK,
                             contentPackSelection = ContentPackSelection.EMPTY,
                         ),
+                    displayMode = ValidationOverlayDisplayMode.DETAILED,
                 )
             assertTrue(
                 noPackSnapshot.capture.rows.any { row ->
@@ -627,6 +640,7 @@ class ClientSmokeHarnessTest {
                             preset = com.ktome.game.validation.ValidationPreset.CONTENT_PACK,
                             contentPackSelection = samplePackSelection(),
                         ),
+                    displayMode = ValidationOverlayDisplayMode.DETAILED,
                 )
             assertTrue(
                 contentPackSnapshot.capture.rows.any { row ->
@@ -663,8 +677,9 @@ class ClientSmokeHarnessTest {
             )
             assertTrue(
                 contentPackSnapshot.capture.rows.any { row ->
-                    row.contains(contentPackSnapshot.localizer.text("ui.validation.action.travel.secret_reward"))
+                    row.contains(contentPackSnapshot.localizer.text("ui.validation.phase4.quick.pack.sample_secret_route"))
                 },
+                contentPackSnapshot.capture.rows.joinToString("\n"),
             )
             assertTrue(
                 contentPackSnapshot.capture.rows.any { row ->
@@ -1600,6 +1615,7 @@ class ClientSmokeHarnessTest {
     private fun captureValidationOverlay(
         name: String,
         options: com.ktome.game.validation.ValidationSessionOptions,
+        displayMode: ValidationOverlayDisplayMode = ValidationOverlayDisplayMode.COMPACT,
     ): ValidationOverlaySnapshot {
         val smokeSource =
             SmokeCommandSource(
@@ -1623,18 +1639,33 @@ class ClientSmokeHarnessTest {
             }
             val session = requireNotNull(app.activeSessionOrNull())
             val localizer = session.localizer()
+            val overlayState = ValidationCommandSource(session, smokeSource).overlayState()
             ValidationOverlaySnapshot(
                 localizer = localizer,
                 capture =
-                    captureOverlay(
-                        localizer,
-                        session.renderSnapshot(),
-                        ValidationCommandSource(session, smokeSource).overlayState(),
-                    ),
+                    captureOverlay(localizer, session.renderSnapshot(), overlayState)
+                        .withValidationRows(localizer, overlayState, displayMode),
             )
         } finally {
             app.dispose()
         }
+    }
+
+    private fun OverlayCapture.withValidationRows(
+        localizer: Localizer,
+        overlayState: OverlayState,
+        displayMode: ValidationOverlayDisplayMode,
+    ): OverlayCapture {
+        if (displayMode == ValidationOverlayDisplayMode.COMPACT) {
+            return this
+        }
+        val panel = overlayState.validationPanel ?: return this
+        return copy(
+            rows =
+                ValidationOverlaySummaryPresenter
+                    .present(localizer, panel, displayMode = displayMode)
+                    .map { row -> row.text },
+        )
     }
 
     private fun assertPr05BossVariantWarningVisible(

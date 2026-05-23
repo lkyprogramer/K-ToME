@@ -430,7 +430,8 @@ internal object DemoShellRenderer {
         }
         val statLines = frame.model.shell.demo.heroSummaryLines.drop(3).take(2)
         if (statLines.isNotEmpty()) {
-            drawBoundedText(canvas, statLines.joinToString("   "), gaugeX, content.y + 20f, gaugeWidth, TileTextTone.LIGHT_GRAY)
+            val statsBaselineY = if (frame.model.hud.statusIcons.isEmpty()) content.y + 20f else content.y + 7f
+            drawBoundedText(canvas, statLines.joinToString("   "), gaugeX, statsBaselineY, gaugeWidth, TileTextTone.LIGHT_GRAY)
         }
         val gauges = listOf(frame.model.hud.hpGauge, frame.model.hud.resourceGauge)
         val gaugeHeight = 14f
@@ -451,6 +452,13 @@ internal object DemoShellRenderer {
             drawGauge(canvas, gauge, drawX, y, barWidth, gaugeHeight, showSummary = false)
             drawBoundedText(canvas, gauge.summary, drawX + 6f, y + gaugeHeight - 3f, barWidth - 12f, TileTextTone.WHITE)
         }
+        renderStatusIcons(
+            canvas = canvas,
+            frame = frame,
+            content = content,
+            startX = gaugeX,
+            iconY = content.y + 24f,
+        )
     }
 
     private fun renderActionDeck(
@@ -691,22 +699,40 @@ internal object DemoShellRenderer {
         frame: ShellRenderFrame,
         content: GameShellBounds,
         startX: Float,
+        iconY: Float,
     ) {
-        val iconStride = 30f
+        val iconSide = 20f
+        val iconStride = 34f
         val requiredWidth = frame.model.hud.statusIcons.size * iconStride - 2f
         var statusX = minOf(startX, content.right - requiredWidth).coerceAtLeast(content.x)
-        val iconY = content.y + 4f
         frame.model.hud.statusIcons.forEach { icon ->
-            if (statusX + 28f > content.right || iconY + 32f > content.top) {
+            if (statusX + iconSide + 2f > content.right || iconY + iconSide + 6f > content.top) {
                 return@forEach
             }
-            canvas.drawRect(tileBounds(statusX - 1f, iconY, 28f, 28f), StatusHudRenderer.accentColor(icon.category))
-            canvas.drawAsset(icon.asset, tileBounds(statusX, iconY + 1f, 26f, 26f))
+            val nonInteractiveFold = icon.isFoldBadge && icon.foldInteraction?.interactive == false
+            val accentColor =
+                if (nonInteractiveFold) {
+                    UiDesignTokens.color.text.disabled.color()
+                } else {
+                    StatusHudRenderer.accentColor(icon.category)
+                }
+            canvas.drawRect(tileBounds(statusX - 1f, iconY - 1f, iconSide + 2f, iconSide + 2f), accentColor)
+            canvas.drawAsset(
+                icon.asset,
+                tileBounds(statusX, iconY, iconSide, iconSide),
+                alpha = if (nonInteractiveFold) 0.52f else 1f,
+            )
+            val badgeText =
+                if (icon.isFoldBadge) {
+                    "+${icon.hiddenPresentations.size}"
+                } else {
+                    icon.badgeText
+                }
             canvas.drawText(
                 TileTextStyle.SMALL,
-                icon.badgeText,
-                tilePosition(statusX, iconY - 6f),
-                StatusHudRenderer.badgeColor(icon.category),
+                badgeText,
+                tilePosition(statusX, iconY - 4f),
+                if (nonInteractiveFold) UiDesignTokens.color.text.disabled.color() else StatusHudRenderer.badgeColor(icon.category),
             )
             statusX += iconStride
         }
