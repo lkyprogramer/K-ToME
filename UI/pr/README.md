@@ -18,22 +18,23 @@
 | 5.1 | [PR-05-1 Inventory Page Workbench](dark-uiux-pr05-1-inventory-page-workbench.md) | P1 | L | 全屏背包 workbench：9-slot 视觉装备区、6x4 背包 grid、typed detail/compare、键盘优先输入 | 不生成正式资源 |
 | 6 | [PR-06 Skills Status Quest Full Manifest](dark-uiux-pr06-skills-status-quest-full-manifest.md) | P1 | XL | 技能、状态、任务、fallback、全 manifest 收口 | Round 8-9 + 返修 |
 | 7 | [PR-07 Golden Whitebox Polish](dark-uiux-pr07-golden-whitebox-polish.md) | P1 | M | 全 UI 面 golden/白盒、验证模式、结算/错误页、性能与 atlas 决策 | 不新增资源，允许返修 |
+| 8 | [PR-08 Director Grade Asset Reset](dark-uiux-pr08-director-grade-asset-reset.md) | P1 | XL | PR-07 完结后，对 map-stage、shell chrome、right panel、bottom HUD 做 director-grade 质感重置 | 按 subtractive spike / target comp 结论生成或迁移资源 |
 
 ## 依赖规则
 
-1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-04-01 -> PR-05 -> PR-05-1 -> PR-06 -> PR-07`。
+1. 串行推进：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-04-01 -> PR-05 -> PR-05-1 -> PR-06 -> PR-07 -> PR-08`。PR-08 必须在 PR-07 close artifacts 存在后执行。
 2. 每个 PR 必须先读 [UI/PLAN.md](../PLAN.md)、[UI/ART_STYLE_BIBLE.md](../ART_STYLE_BIBLE.md) 和本 PR 文档。
 3. 每个 PR 完成后必须做一次 doc-vs-implementation self-audit。
-4. 每个 PR 的 golden label 默认使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1`、`PR-02-1`、`PR-05-1` 是合法细分特例，分别使用 `dark-uiux-pr01-1-*`、`dark-uiux-pr02-1-*` / 已冻结的 `ui-demo-new-*` 和 `dark-uiux-pr05-1-*`。`PR-02-1` 的 demo parity 主证据已经固定为 `ui-demo-new-*` label，路径和 manual record 仍归 `dark-uiux-pr02-1` owner；后续 PR 不得再引用旧 `dark-uiux-pr02-1-demo-*` label 作为必填 evidence。
+4. 每个 PR 的 golden label 默认使用 `dark-uiux-prNN-*` 前缀；不复用旧 `phase4-uiux-prNN-*` label。`PR-01-1`、`PR-02-1`、`PR-05-1` 是合法细分特例，分别使用 `dark-uiux-pr01-1-*`、`dark-uiux-pr02-1-*` / 已冻结的 `ui-demo-new-*` 和 `dark-uiux-pr05-1-*`。`PR-02-1` 的 demo parity 主证据已经固定为 `ui-demo-new-*` label，路径和 manual record 仍归 `dark-uiux-pr02-1` owner；后续 PR 不得再引用旧 `dark-uiux-pr02-1-demo-*` label 作为必填 evidence。PR-08 的 director-grade evidence 固定使用 `dark-uiux-pr08-director-*`。
 5. 新增图片、manifest、sheet plan、contact sheet 或 runtime PNG 的 PR 必须补跑 `assetLint styleLint manifestLint`。
 6. 新增或改中文 UI 文案、locale token、presentation token 的 PR 必须补跑 `localeLint contractLint`。
 7. 修改 Kotlin 文件数 `>= 5`、新增 public presentation model、或重排 renderer 共享组件的 PR 必须补跑 `maintainabilityLint`。
 8. 修改 Gradle、bootstrap、processResources、lint task 接线或依赖的 PR 必须补跑 `./scripts/verify-bootstrap.sh`。
 9. PR-00 关闭前必须让 `verifyChanged` impact routing 命中 dark-v1 相关变更时触发 dark gate；PR-02 以后不得只依赖人工记忆执行资源 gate。
-10. `ownerPr` 字符串固定使用 `PR-00`、`PR-02` 或 `PR-02-1` 这种格式；禁止混用 `pr02`、`PR02`。若新增细分 PR owner，必须同步更新 dark sprite pipeline 的 ownerPr regex 和脚本回归测试。`PR-05-1` 不生成正式资源，因此不新增 sprite `ownerPr`；若未来把 PR05-1 参考图资源化，必须另行更新 regex 和脚本回归测试。
+10. `ownerPr` 字符串固定使用 `PR-00`、`PR-02` 或 `PR-02-1` 这种格式；禁止混用 `pr02`、`PR02`。若新增细分 PR owner，必须同步更新 dark sprite pipeline 的 ownerPr regex 和脚本回归测试。`PR-05-1` 不生成正式资源，因此不新增 sprite `ownerPr`；若未来把 PR05-1 参考图资源化，必须另行更新 regex 和脚本回归测试。PR-08 使用 `ownerPr=PR-08`；首次提交 PR-08 resource artifact 前必须补 ownerPr regex / coverage task / script regression。
 11. 所有 PR 必须遵守 [development-governance.md](./development-governance.md)，并包含 `## 0. 开发治理与验收矩阵`。
 12. `acceptanceContractLint` 是 dark UI/UX PR 的文档合同快路径；它只检查 PR 文档是否可执行，不替代 resource gate、golden、白盒或 `verifyChanged`。
-13. Gate ladder 固定为 `acceptanceContractLint -> fast lane -> resource gate -> client evidence -> maintainabilityLint -> verifyChanged`；PR-07 追加 packaged app 白盒。
+13. Gate ladder 固定为 `acceptanceContractLint -> fast lane -> resource gate -> client evidence -> maintainabilityLint -> verifyChanged`；PR-07 和 PR-08 追加 packaged app 白盒。
 14. 同一重型 gate 失败超过 2 次或单轮验证超过 90 分钟时，必须先写复盘并补 focused test / resource lint，再继续重跑。
 15. 所有玩家可见或验证可见 UI 面必须映射到 [screen-coverage-matrix.md](./screen-coverage-matrix.md)。PR-07 关闭前，矩阵中 `Required` / `Conditional` 面不得存在 `missing` 或无证据的 `partial`。
 
@@ -54,6 +55,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 3. PR-02-1 必须把局内主 shell 从 text-first 三栏提升为 demo-like 结构；PR-03/05/06 只在这个 shell 上替换资源和细分面板，不再重推主框架。
 4. PR-03 必须把铭文商店、buy/sell、满槽替换 modal、价格/affordability marker 和购买失败反馈纳入装备/背包同一 UX family；pre-rendered disabled reason 只有在同 PR 新增 typed source 时才是 blocking 状态。
 5. PR-07 必须输出 `dark-uiux-pr07-final-all-screens` evidence index，逐项引用矩阵中每个 Required/Conditional 面的 golden、manual record、focused test 和 packaged app evidence。
+6. PR-08 在 PR-07 之后重置 director-grade 视觉质量；PR-08 不能降低 PR-07 覆盖结论，只能用新的 `dark-uiux-pr08-director-*` evidence supersede map-stage / shell visual baseline。
 
 ## SheetId Ownership
 
@@ -107,6 +109,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | PR-03 | item / equipment / affix / material / shop | `item.*`, item quality marker, inventory-specific UI key, `ui.shop.price.*`, `ui.shop.inscription.marker`, `ui.shop.replacement.slot_marker`; `ui.shop.offer.frame` alias 到 PR-02 `ui.frame.panel.body`，`ui.shop.offer.disabled` 默认 deferred |
 | PR-05 | tile / prop / VFX / actor / portrait | Round 2-6 全部 player-visible key |
 | PR-06 | skill / talent / status / mutation / quest / profession / tree / fallback | Round 8-9、PR-03/05 rejected cell、allowed fallback/exclusion |
+| PR-08 | director-grade map-stage / shell / panel reset | PR-07 后的 director-grade 资源迁移、runtime compositor reset、PR-08 owner coverage 和 packaged whitebox |
 
 职业覆盖使用 `releasePlayable=[vanguard, arcanist, rogue, templar]`、`devPlayable=[berserker, spellblade]`、`excludedFrozen=[shadowblade, warden]`。PR-06 必须把 frozen 排除写入 coverage artifact，不能把它们显示成 missing。
 
@@ -251,6 +254,7 @@ prompt 文件头必须包含：
 | PR-05-1 | design reference `UI/dark-uiux-pr03-inventory-page-reference.png` / `.prompt.txt`；golden labels `dark-uiux-pr05-1-inventory-workbench`、`dark-uiux-pr05-1-inventory-compare`、`dark-uiux-pr05-1-inventory-pagination`、`dark-uiux-pr05-1-inventory-min-window`；manual `UI/manual-records/dark-uiux-pr05-1-inventory-page-workbench.md` |
 | PR-06 | `dark-uiux-pr06-status-quest-skill-overview`、`dark-uiux-pr06-talent-icon-rebaseline`、validation overlay coverage reference、manifest coverage artifact |
 | PR-07 | packaged app command, runtime home, evidence dir, manual record, final doc-vs-implementation checklist, `dark-uiux-pr07-final-all-screens` evidence index |
+| PR-08 | `dark-uiux-pr08-director-parity-1672x941`、`dark-uiux-pr08-director-map-stage-crop`、`dark-uiux-pr08-director-right-panel-crop`、`dark-uiux-pr08-director-bottom-deck-crop`、`dark-uiux-pr08-director-telegraph-combat-crop`、`UI/manual-records/dark-uiux-director-grade-target-comp.md`、`UI/manual-records/dark-uiux-director-grade-runtime-parity.md`、packaged app whitebox |
 
 ## 职业树专用规则
 

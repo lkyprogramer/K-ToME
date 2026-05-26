@@ -167,6 +167,28 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `validation overlay supports v toggle for packaged whitebox automation`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-overlay-ctrl-v-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.V))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.V))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+    }
+
+    @Test
     fun `validation overlay navigation emits typed validation commands`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)

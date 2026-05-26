@@ -115,6 +115,16 @@ class ValidationCommandSourceTest {
     }
 
     @Test
+    fun `dark uiux pr07 final ui scenario exposes presentation title key`() {
+        val scenarioId = ValidationScenarioId("dark-uiux-pr07-final-ui")
+
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr07-final-ui.title",
+            ValidationScenarioPresentationCatalog.require(scenarioId).titleKey,
+        )
+    }
+
+    @Test
     fun `phase4 v4 fast section emits typed scenario actions`() {
         val scenarioId = ValidationScenarioId("phase4-v4-pr00-selftest")
         val action =
@@ -133,6 +143,30 @@ class ValidationCommandSourceTest {
             ValidationAction.Phase4V4ScenarioAction(
                 scenarioId = scenarioId,
                 actionId = ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+            ),
+            action,
+        )
+    }
+
+    @Test
+    fun `pr07 final ui fast section exposes deterministic surface setup actions`() {
+        val scenarioId = ValidationScenarioId("dark-uiux-pr07-final-ui")
+        val action =
+            validationOverlayAction(
+                ValidationOverlaySelection(
+                    preset = com.ktome.game.validation.ValidationPreset.MAPGEN_DIFF,
+                    restartNextSeedEnabled = false,
+                    scenarioId = scenarioId,
+                    section = ValidationOverlaySection.PHASE4_V4_FAST,
+                    index = 3,
+                    inspectCursor = Point.ZERO,
+                ),
+            )
+
+        assertEquals(
+            ValidationAction.Phase4V4ScenarioAction(
+                scenarioId = scenarioId,
+                actionId = ValidationScenarioActionId.PREPARE_SHOP_REPLACEMENT,
             ),
             action,
         )

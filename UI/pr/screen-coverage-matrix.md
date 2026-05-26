@@ -20,6 +20,8 @@
 
 禁止把“在 PR-07 最后看一眼”当作覆盖。PR-07 只能收口证据和轻量 polish；如果发现本矩阵 Required 面没有 owner PR，必须回到对应 PR 补合同或新开修订 PR。
 
+PR-08 是 PR-07 完结后的 director-grade reset。PR-07 负责关闭当前全 screen coverage；PR-08 只用 `dark-uiux-pr08-director-*` evidence 重新验收 map-stage、shell chrome、right panel 和 bottom HUD 的视觉品质，不反向改变 PR-07 的关闭定义。
+
 ## 2. Screen / Surface Coverage Matrix
 
 | UI 面 | 代码 / 合同入口 | 必须替换的 UX 内容 | Owner PR | 必填证据 |
@@ -30,13 +32,13 @@
 | 验证模式入口 | `MainMenuAction.ValidationMode`、`GameApp.showValidationSetup` | 主菜单中验证模式入口必须与正式操作同风格，不能像 debug 链接或临时按钮 | PR-01 + PR-07 | `dark-uiux-pr01-validation-entry`；`GameAppLifecycleTest` validation entry case |
 | 验证模式 Setup 页 | `ValidationSetupScreen`、`ValidationSetupController`、`ValidationScenarioPresentationCatalog` | preset/scenario 列表、active pack summary、locale 文案、选中态、禁用态、返回/启动操作、长 scenario 描述、窗口缩放 | PR-01 + PR-02 + PR-02-1 + PR-07 | `dark-uiux-pr07-validation-setup`；`dark-uiux-pr02-1-demo-validation-setup`；`ValidationSetupControllerTest`；`ClientSmokeHarnessTest` validation setup smoke；packaged app evidence |
 | 验证模式运行时 overlay | validation scenario runtime、`ValidationPackSummaryText`、whitebox scenario | 验证标识、content pack summary、scenario evidence、overlay 不遮挡 HUD/日志/地图/任务 | PR-06 + PR-07 | `dark-uiux-pr07-validation-overlay`；validation overlay smoke/golden；`dark-uiux-pr07-final-ui` scenario evidence |
-| 局内主 shell | `FoundationGameScreen`、`TileRenderer`、`GameShellLayout`、`DemoShellLayout`、`DemoShellRenderer` | 左侧 icon rail、dominant map stage、右侧地面物品/装备/铭刻/背包 grid scaffold、底部 hero/action/command/log/stats deck、地图视口、窗口缩放 | PR-01 + PR-02 + PR-02-1 + PR-07 | `dark-uiux-pr01-shell-1280x800`、`dark-uiux-pr01-shell-min-window`、`dark-uiux-pr02-1-demo-shell-1280x800`、`dark-uiux-pr02-1-demo-shell-inventory-open`、`dark-uiux-pr02-1-demo-shell-right-panel-grid`、`DemoShellLayoutTest`、`DemoShellRendererTest`、`GameShellLayoutTest`、`TileRendererCanvasTest` |
+| 局内主 shell | `FoundationGameScreen`、`TileRenderer`、`GameShellLayout`、`DemoShellLayout`、`DemoShellRenderer` | 左侧 icon rail、dominant map stage、右侧地面物品/装备/铭刻/背包 grid scaffold、底部 hero/action/command/log/stats deck、地图视口、窗口缩放 | PR-01 + PR-02 + PR-02-1 + PR-07；PR-08 post-close director reset | `dark-uiux-pr01-shell-1280x800`、`dark-uiux-pr01-shell-min-window`、`dark-uiux-pr02-1-demo-shell-1280x800`、`dark-uiux-pr02-1-demo-shell-inventory-open`、`dark-uiux-pr02-1-demo-shell-right-panel-grid`、`DemoShellLayoutTest`、`DemoShellRendererTest`、`GameShellLayoutTest`、`TileRendererCanvasTest`；PR-08: `dark-uiux-pr08-director-parity-1672x941`、`dark-uiux-pr08-director-right-panel-crop`、`dark-uiux-pr08-director-bottom-deck-crop` |
 | Loading / runtime error state | `UiLoadingState`、`UiErrorState`、`FoundationGameScreen.renderLoadingState`、`FoundationGameScreen.renderErrorState` | loading 文案、recoverable/unrecoverable error、返回/退出动作、debug detail 折叠/复制、暗黑 token 背景 | PR-01 + PR-02 + PR-07 | `dark-uiux-pr07-runtime-loading`、`dark-uiux-pr07-runtime-error`；`UiLoadingStateTest`、`UiErrorPayloadTest` |
 | 全局错误页 | `UiErrorScreen` | asset/manifest/runtime 启动错误页、错误标题、详情、返回/退出动作、复制路径；不能保留旧红底临时页 | PR-01 + PR-02 + PR-07 | `dark-uiux-pr07-ui-error-screen`；manual record；asset failure injection record |
 | 胜利结算页 | `VictoryScreen`、`OutcomeSummaryPresenter` | 胜利标题、run summary、奖励/历史、返回主菜单、继续流程、中文/英文布局 | PR-01 + PR-07 | `dark-uiux-pr07-outcome-victory`；`OutcomeSummaryPresenterTest`；golden outcome set |
 | 失败结算页 | `GameOverScreen`、`OutcomeSummaryPresenter` | 死因、floor、run summary、重开/返回、失败语气和可读性；不能保留旧红色占位风格 | PR-01 + PR-07 | `dark-uiux-pr07-outcome-defeat`；`OutcomeSummaryPresenterTest`；golden outcome set |
-| 装备面板 | `TileRenderModel` equipment section、`EquipmentSlotLabels`、PR05-1 workbench presentation | 装备 slot、已装备/空/选中态、quality frame、hover tooltip、固定 hitbox；背包装备候选要直接显示同槽属性差异；PR05-1 只允许 visual-only disabled socket 表达当前无 typed 规则的装备位 | PR-03 + PR-05-1 + PR-07 | `dark-uiux-pr03-equipment-slots`、`dark-uiux-pr05-1-inventory-workbench`、`dark-uiux-pr05-1-inventory-compare`；`EquipmentInventoryPresenterTest` / `InventoryWorkbenchPresenterTest`；`TileRendererCanvasTest` |
-| 背包 grid | inventory snapshot / renderer、PR05-1 workbench presentation | 空态、满格、quality、hover tooltip、`PageUp/PageDown` 翻页；committed selected item 驱动 detail pane，hover 只预览 tooltip 且不提交 selection，`Enter`/click 才提交 selection；PR05-1 全屏页使用 6x4 grid、typed detail/compare、footer hints；同类可堆叠物品必须合并为一个 cell 并显示数量 badge；disabled 只有在 typed snapshot 或 presentation field 存在时才作为 blocking 状态 | PR-03 + PR-05-1 + PR-07 | `dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked`、`dark-uiux-pr05-1-inventory-workbench`、`dark-uiux-pr05-1-inventory-pagination`、`dark-uiux-pr05-1-inventory-min-window` |
+| 装备面板 | `TileRenderModel` equipment section、`EquipmentSlotLabels`、PR05-1 workbench presentation | 装备 slot、已装备/空/选中态、quality frame、hover tooltip、固定 hitbox；背包装备候选要直接显示同槽属性差异；PR05-1 只允许 visual-only disabled socket 表达当前无 typed 规则的装备位 | PR-03 + PR-05-1 + PR-07；PR-08 post-close right-panel material reset | `dark-uiux-pr03-equipment-slots`、`dark-uiux-pr05-1-inventory-workbench`、`dark-uiux-pr05-1-inventory-compare`；`EquipmentInventoryPresenterTest` / `InventoryWorkbenchPresenterTest`；`TileRendererCanvasTest`；PR-08: `dark-uiux-pr08-director-right-panel-crop` |
+| 背包 grid | inventory snapshot / renderer、PR05-1 workbench presentation | 空态、满格、quality、hover tooltip、`PageUp/PageDown` 翻页；committed selected item 驱动 detail pane，hover 只预览 tooltip 且不提交 selection，`Enter`/click 才提交 selection；PR05-1 全屏页使用 6x4 grid、typed detail/compare、footer hints；同类可堆叠物品必须合并为一个 cell 并显示数量 badge；disabled 只有在 typed snapshot 或 presentation field 存在时才作为 blocking 状态 | PR-03 + PR-05-1 + PR-07；PR-08 post-close right-panel material reset | `dark-uiux-pr03-inventory-empty`、`dark-uiux-pr03-inventory-stacked`、`dark-uiux-pr05-1-inventory-workbench`、`dark-uiux-pr05-1-inventory-pagination`、`dark-uiux-pr05-1-inventory-min-window`；PR-08: `dark-uiux-pr08-director-right-panel-crop` |
 | 铭文商店 / Shop buy-sell | `UiMode.SHOP`、`ShopPanelSnapshot`、`ShopOfferSnapshot`、`DescriptionPresenter.presentShopItemLines` | shop header、buy/sell 双列、offer card、price/affordability、inscription tag、购买失败/金币不足反馈、空商店、tooltip；pre-rendered disabled reason 仅在 typed source 存在时要求 | PR-03 + PR-07 | `dark-uiux-pr03-inscription-shop`；`InputHandlerTest` shop cases；`DescriptionPresenterTest` shop item lines；manual record |
 | 铭文满槽替换 modal | `inscriptionReplacementPrompt`、`ShopFocus`、`PlayerCommand.BuyShopOffer` replacement hotkey | 满槽提示、候选槽位、`5-8`/取消、购买前确认、不会吞金币/碎片、焦点和返回路径 | PR-03 + PR-07 | `dark-uiux-pr03-shop-full-slot-replace`；`InputHandlerTest` replacement prompt cases；manual record |
 | 天赋分配面板 | `TalentSidebarPresenter`、`TalentTreeNodeSnapshot`、`TalentAssignPanelModel` | 唯一参考图 `UI/dark-uiux-pr04-talent-assign-tree-icons-detail-reference.png`；三系树状列表、四态 marker、PR04 reference-crop 技能图标、前置 connector、当前等级详情、下一等级预览、PASSIVE 当前/下级收益、PASSIVE action suppression、active slot modal、长描述截断、最小窗口不遮挡最新日志反馈 | PR-04 + PR-04-01 + PR-06 + PR-07 | `dark-uiux-pr04-talent-assign-panel-start`、`dark-uiux-pr04-talent-assign-min-window-log-visible`、`dark-uiux-pr04-right-companion-coexistence`、`dark-uiux-pr04-01-static-passive-detail`、`dark-uiux-pr04-01-trigger-passive-detail`、`dark-uiux-pr04-01-passive-action-suppression`、`dark-uiux-pr04-01-effective-hp-regen-detail`、`dark-uiux-pr06-talent-icon-rebaseline` |
@@ -47,7 +49,7 @@
 | 世界路线 / route selection | `UiMode.WORLD_MAP`、route preview/reward presentation | route options、reward preview、locked/unavailable、zone portrait、路线焦点 | PR-05 + PR-06 + PR-07 | `dark-uiux-pr07-world-route-selection`；`RoutePreviewTextTest`；manual record |
 | 属性分配 / stat assign | `UiMode.STAT_ASSIGN` | 属性卡、可分配点数、确认/取消、禁用态、不会与 HUD 重叠 | PR-01 + PR-07 | `dark-uiux-pr07-stat-assign`；manual record |
 | 被动 / reward / frontstage 选择 | reward presentation、frontstage presentation | passive、reward、milestone、route reward 的卡片化、可选/已选/不可选状态 | PR-03 + PR-06 + PR-07 | `dark-uiux-pr07-reward-frontstage`；reward focused tests/manual |
-| 地图 / tile / actor / portrait / VFX | tile/actor/portrait/telegraph render path | 地面、墙、prop、interactable、actor、boss、portrait、telegraph、层级和遮挡 | PR-05 + PR-07 | `dark-uiux-pr05-map-layer-stack`、`dark-uiux-pr05-actor-boss-telegraph` |
+| 地图 / tile / actor / portrait / VFX | tile/actor/portrait/telegraph render path | 地面、墙、prop、interactable、actor、boss、portrait、telegraph、层级和遮挡 | PR-05 + PR-07；PR-08 post-close map-stage director reset | `dark-uiux-pr05-map-layer-stack`、`dark-uiux-pr05-actor-boss-telegraph`；PR-08: `dark-uiux-pr08-director-map-stage-crop`、`dark-uiux-pr08-director-telegraph-combat-crop` |
 | 设置 / 无障碍 | `AccessibilityToggle`、相关设置入口 | toggle、选中态、说明、compact layout、不会依赖颜色唯一传达信息 | PR-01 + PR-07 | `dark-uiux-pr07-accessibility-settings`；`AccessibilityToggleTest` |
 | Desktop title / launcher visible text | `DesktopLauncherTitleFormatter` | 窗口标题、版本/locale 简洁表达；不写 raw 本机路径 | PR-01 + PR-07 | `DesktopLauncherTitleFormatterTest`；manual screenshot metadata |
 
@@ -99,6 +101,11 @@
 | `dark-uiux-pr07-ui-error-screen` | PR-07 | 独立错误页 |
 | `dark-uiux-pr07-accessibility-settings` | PR-07 | 设置/无障碍 surface |
 | `dark-uiux-pr07-final-all-screens` | PR-07 | 本矩阵所有 Required/Conditional 面的最终索引证据 |
+| `dark-uiux-pr08-director-parity-1672x941` | PR-08 | PR-07 后 director-grade 首屏整体验收 |
+| `dark-uiux-pr08-director-map-stage-crop` | PR-08 | 地图舞台、ruins floor/wall、暗场与 visibility/fog 层级 |
+| `dark-uiux-pr08-director-right-panel-crop` | PR-08 | 右栏装备、铭刻、背包 grid 的统一材质系统 |
+| `dark-uiux-pr08-director-bottom-deck-crop` | PR-08 | hero/action/log bottom HUD 作为统一控制台 |
+| `dark-uiux-pr08-director-telegraph-combat-crop` | PR-08 | actor/loot/telegraph/selection 在艺术重置后仍高可读 |
 
 ## 4. PR-07 Final Audit Rules
 
@@ -113,3 +120,11 @@ PR-07 的最终 `UI/review/dark-uiux-final-doc-implementation-audit.md` 必须�
 | `not-applicable` | 当前版本没有入口或已被上游正式删除 | 必须引用删除/冻结合同 |
 
 `dark-uiux-pr07-final-all-screens` 不是一张万能截图，而是一个 evidence index：它必须列出每个 Required/Conditional 面对应的 golden label、manual record、focused test、coverage artifact 和 packaged app evidence 路径。
+
+## 5. PR-08 Post-Close Director Reset Rules
+
+PR-08 只能在 PR-07 close artifacts 存在后执行。PR-08 关闭时必须额外满足：
+
+1. `dark-uiux-pr08-director-*` labels 不替换 PR-07 evidence index，而是作为 post-close quality reset evidence。
+2. map-stage / shell / right panel / bottom HUD 的 target comp、runtime parity record 和 packaged app whitebox 均为必填。
+3. PR-08 如 supersede `ui-demo-new-*` 的视觉 baseline，必须记录 PR-02-1 / PR-02-2 upstream evidence、PR-08 replacement evidence 和 rollback path。

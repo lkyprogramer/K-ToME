@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
@@ -768,6 +769,53 @@ class DarkSpriteSheetPipelineScriptTest {
         assertEquals(1, second.exitCode, second.output)
         assertTrue(second.output.contains("absent from sheet-plan.yaml"), second.output)
         assertTrue(second.output.contains("r96-prompt-stable"), second.output)
+    }
+
+    @Test
+    fun `repack script keeps tile cells full bleed while preserving icon padding`() {
+        assumeTrue(hasPillow(), "repack_generated_sheet.py requires Pillow image inspection")
+        val plan = tempDir.resolve("sheet-plan.yaml")
+        val rawRoot = tempDir.resolve("raw")
+        val sheetId = "r96-repack-padding"
+        writeText(
+            plan,
+            """
+            schemaVersion: dark-sprite-sheet-plan-v1
+            styleTag: ktome-dark-fantasy-sprite-ui-v1
+            sheets:
+              - sheetId: $sheetId
+                round: 1
+                type: large-sheet
+                styleTag: ktome-dark-fantasy-sprite-ui-v1
+                rawSheetPath: assets-src/image/raw/sheets/dark-v1/$sheetId.png
+                outputRoot: client/src/main/resources
+                promptBase: repack padding sheet
+                grid: { columns: 4, rows: 4, cellWidth: 256, cellHeight: 256 }
+                cells:
+                  - { row: 0, col: 0, targetKey: tile.repack.ground, category: tile_ground, outputName: dark-v1/test/repack_ground.png, subject: full bleed rough stone ground tile with no border }
+                  - { row: 0, col: 1, targetKey: ui.repack.icon, category: icon, outputName: dark-v1/test/repack_icon.png, subject: padded ui icon }
+            """.trimIndent(),
+        )
+        val rawSheet = rawRoot.resolve("$sheetId.png")
+        writeRepackSubjectsImage(rawSheet)
+
+        val result =
+            runScript(
+                "scripts/repack_generated_sheet.py",
+                "--plan",
+                plan.toString(),
+                "--sheet-id",
+                sheetId,
+                "--raw-root",
+                rawRoot.toString(),
+                "--overwrite",
+            )
+
+        assertEquals(0, result.exitCode, result.output)
+        val output = ImageIO.read(rawSheet.toFile())
+        assertEquals(255, output.getRGB(0, 0).ushr(24), "tile cell should fill the cell edge")
+        assertEquals(0, output.getRGB(256, 0).ushr(24), "icon cell should keep the default edge padding")
+        assertEquals(255, output.getRGB(384, 128).ushr(24), "icon subject should remain centered after padding")
     }
 
     @Test
@@ -2795,6 +2843,16 @@ class DarkSpriteSheetPipelineScriptTest {
             ?.let(Path::of)
             ?: Path.of("").toAbsolutePath().normalize()
 
+    private fun hasPillow(): Boolean {
+        val process =
+            ProcessBuilder("python3", "-c", "import PIL")
+                .directory(repoRoot().toFile())
+                .redirectErrorStream(true)
+                .start()
+        val completed = process.waitFor(5, TimeUnit.SECONDS)
+        return completed && process.exitValue() == 0
+    }
+
     private fun finalFullInventory(
         family: String,
         vararg keys: String,
@@ -2922,20 +2980,27 @@ class DarkSpriteSheetPipelineScriptTest {
 
                     def __getitem__(self, key):
                         x, y = key
+                        if self.image.channel == "A":
+                            return self.image.pixels[y][x][3]
                         return self.image.pixels[y][x]
 
                     def __setitem__(self, key, value):
                         x, y = key
-                        self.image.pixels[y][x] = tuple(value)
+                        if self.image.channel == "A":
+                            red, green, blue, _ = self.image.pixels[y][x]
+                            self.image.pixels[y][x] = (red, green, blue, int(value))
+                        else:
+                            self.image.pixels[y][x] = tuple(value)
 
                 class FakeImage:
-                    def __init__(self, path=None, size=None, rect=None, color=(255, 51, 102, 255), pixels=None):
+                    def __init__(self, path=None, size=None, rect=None, color=(255, 51, 102, 255), pixels=None, channel=None):
                         self.path = str(path or "")
                         source_size = size or read_png_size(path) or (1024, 1024)
                         self.rect = tuple(rect or (0, 0, source_size[0], source_size[1]))
                         self.width = max(1, self.rect[2] - self.rect[0])
                         self.height = max(1, self.rect[3] - self.rect[1])
                         self.size = (self.width, self.height)
+                        self.channel = channel
                         if pixels is None:
                             self.pixels = [
                                 [tuple(color) for _ in range(self.width)]
@@ -2957,10 +3022,35 @@ class DarkSpriteSheetPipelineScriptTest {
                         left, top, right, bottom = rect
                         width = max(1, right - left)
                         height = max(1, bottom - top)
-                        return FakeImage(self.path, size=(width, height), rect=(0, 0, width, height))
+                        pixels = []
+                        for y in range(top, bottom):
+                            row = []
+                            for x in range(left, right):
+                                if 0 <= x < self.width and 0 <= y < self.height:
+                                    row.append(self.pixels[y][x])
+                                else:
+                                    row.append((0, 0, 0, 0))
+                            pixels.append(row)
+                        return FakeImage(self.path, size=(width, height), rect=(0, 0, width, height), pixels=pixels, channel=self.channel)
 
                     def getbbox(self):
-                        return (0, 0, self.size[0], self.size[1])
+                        left = self.width
+                        top = self.height
+                        right = 0
+                        bottom = 0
+                        for y, row in enumerate(self.pixels):
+                            for x, pixel in enumerate(row):
+                                if pixel[3] > 0:
+                                    left = min(left, x)
+                                    top = min(top, y)
+                                    right = max(right, x + 1)
+                                    bottom = max(bottom, y + 1)
+                        if right <= left or bottom <= top:
+                            return None
+                        return (left, top, right, bottom)
+
+                    def getchannel(self, name):
+                        return FakeImage(self.path, size=self.size, pixels=self.pixels, channel=name)
 
                     def tobytes(self):
                         return b"".join(
@@ -2972,7 +3062,16 @@ class DarkSpriteSheetPipelineScriptTest {
                         return PixelAccess(self)
 
                     def resize(self, size, resample=None):
-                        return FakeImage(self.path, size=size)
+                        width, height = size
+                        pixels = []
+                        for y in range(height):
+                            source_y = min(self.height - 1, int(y * self.height / height))
+                            row = []
+                            for x in range(width):
+                                source_x = min(self.width - 1, int(x * self.width / width))
+                                row.append(self.pixels[source_y][source_x])
+                            pixels.append(row)
+                        return FakeImage(self.path, size=size, pixels=pixels, channel=self.channel)
 
                     def alpha_composite(self, image, dest):
                         dest_x, dest_y = dest
@@ -3043,6 +3142,22 @@ class DarkSpriteSheetPipelineScriptTest {
         for (x in 32 until 224) {
             for (y in 32 until 224) {
                 image.setRGB(x, y, 0xFF1CB7C8.toInt())
+            }
+        }
+        ImageIO.write(image, "png", path.toFile())
+    }
+
+    private fun writeRepackSubjectsImage(path: Path) {
+        Files.createDirectories(path.parent)
+        val image = BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB)
+        for (x in 16 until 316) {
+            for (y in 16 until 316) {
+                image.setRGB(x, y, 0xFF1B2330.toInt())
+            }
+        }
+        for (x in 408 until 648) {
+            for (y in 24 until 264) {
+                image.setRGB(x, y, 0xFFB88A3B.toInt())
             }
         }
         ImageIO.write(image, "png", path.toFile())

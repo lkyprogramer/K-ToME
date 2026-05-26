@@ -291,7 +291,7 @@ object Phase4V4WhiteboxScenarioCli {
             appendLine("## 4. Starting state assertions")
             appendLine()
             appendLine("- The session is validation-only and does not expose the standard player entry.")
-            appendLine("- F9 opens `PHASE4_V4_FAST` with `${scenario.id.value}`, `${runtime.preset}`, and `${runtime.seed}` visible.")
+            appendLine("- F9 or V opens `PHASE4_V4_FAST` with `${scenario.id.value}`, `${runtime.preset}`, and `${runtime.seed}` visible.")
             appendLine()
             appendLine("## 5. Input sequence")
             appendLine()

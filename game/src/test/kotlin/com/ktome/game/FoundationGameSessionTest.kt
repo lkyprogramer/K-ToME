@@ -71,6 +71,8 @@ import com.ktome.core.resource.StaminaPools
 import com.ktome.core.race.RaceTalentPointBank
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveRestoreException
+import com.ktome.core.snapshot.ActorRoleKindSnapshot
+import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
 import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
@@ -311,6 +313,68 @@ class FoundationGameSessionTest {
         assertTrue(inventoryBaseIds.size > 8, "PR-02-2 evidence requires a real backpack page 2.")
         assertEquals(inventoryBaseIds.size, snapshotInventory.size)
         assertNotNull(snapshotInventory.getOrNull(8), "Backpack index 8 must exist for ui-demo-new-inventory-page-2.")
+    }
+
+    @Test
+    fun `dark uiux pr02 2 launch scene starts from staged ruins map composition`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr02-1-demo-shell-foundation"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr02-2-map-density")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        val snapshot = session.renderSnapshot()
+        val density = visibleMapDensity(session)
+        val visibleGroundItems = snapshot.mapCells.flatMap { cell -> cell.items }.map { item -> item.baseItemId }.toSet()
+        val visibleProps = snapshot.props.map { prop -> prop.visualKey }.toSet()
+        val equippedBaseIds = snapshot.uiState.equipment.mapNotNull { slot -> slot.item?.baseItemId }.toSet()
+
+        assertEquals("shattered_outpost", snapshot.metadata.zoneId)
+        assertEquals("tileset.ruins", snapshot.metadata.tilesetKey)
+        assertTrue(density.floorCells >= 55, "ui-demo-new launch must not start from a sparse room: $density")
+        assertTrue(density.wallCells >= 28, "ui-demo-new launch must expose a readable ruins wall frame: $density")
+        assertTrue(density.boundingBoxWidth in 11..18, "ui-demo-new launch must avoid a cavernous rectangular hall: $density")
+        assertTrue(density.boundingBoxHeight in 7..13, "ui-demo-new launch must keep a composed ruins chamber: $density")
+        assertTrue("unique_briarbound_bow" in visibleGroundItems, "ui-demo-new launch must stage real ground loot.")
+        assertTrue("prop.alarm_bonfire" in visibleProps, "ui-demo-new launch must stage an authored torchlit prop.")
+        assertTrue("prop.supply_crate" in visibleProps, "ui-demo-new launch must stage a readable cache prop.")
+        assertTrue("prop.ritual_altar" in visibleProps, "ui-demo-new launch must stage a dark focal prop to break the rectangular room read.")
+        assertTrue(setOf("long_sword", "basic_shield", "chain_mail").all(equippedBaseIds::contains), "ui-demo-new launch must present every real equipment slot.")
+        assertTrue(snapshot.actors.any { actor -> actor.roleKind == ActorRoleKindSnapshot.MONSTER }, "ui-demo-new launch must include a real visible monster.")
+    }
+
+    @Test
+    fun `dark uiux pr07 launch scene reuses staged ui demo map composition`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr07-final-ui"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr07-map-density")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        val snapshot = session.renderSnapshot()
+        val density = visibleMapDensity(session)
+        val visibleGroundItems = snapshot.mapCells.flatMap { cell -> cell.items }.map { item -> item.baseItemId }.toSet()
+        val visibleProps = snapshot.props.map { prop -> prop.visualKey }.toSet()
+        val equippedBaseIds = snapshot.uiState.equipment.mapNotNull { slot -> slot.item?.baseItemId }.toSet()
+
+        assertEquals("shattered_outpost", snapshot.metadata.zoneId)
+        assertEquals("tileset.ruins", snapshot.metadata.tilesetKey)
+        assertTrue(density.floorCells >= 55, "PR07 packaged shell must not start from a sparse room: $density")
+        assertTrue(density.wallCells >= 28, "PR07 packaged shell must expose a readable ruins wall frame: $density")
+        assertTrue(density.boundingBoxWidth in 11..18, "PR07 packaged shell must avoid a cavernous rectangular hall: $density")
+        assertTrue(density.boundingBoxHeight in 7..13, "PR07 packaged shell must keep a composed ruins chamber: $density")
+        assertTrue("unique_briarbound_bow" in visibleGroundItems, "PR07 packaged shell must stage real ground loot.")
+        assertTrue("prop.alarm_bonfire" in visibleProps, "PR07 packaged shell must stage an authored torchlit prop.")
+        assertTrue("prop.supply_crate" in visibleProps, "PR07 packaged shell must stage a readable cache prop.")
+        assertTrue("prop.ritual_altar" in visibleProps, "PR07 packaged shell must stage a dark focal prop to break the rectangular room read.")
+        assertTrue(setOf("long_sword", "basic_shield", "chain_mail").all(equippedBaseIds::contains), "PR07 packaged shell must present every real equipment slot.")
+        assertTrue(snapshot.actors.any { actor -> actor.roleKind == ActorRoleKindSnapshot.MONSTER }, "PR07 packaged shell must include a real visible monster.")
     }
 
     @Test
@@ -8043,6 +8107,35 @@ class FoundationGameSessionTest {
             magnitude = base.magnitude,
             passive = passiveOverride ?: base.passive,
             specialTemplateId = template.id,
+        )
+    }
+
+    private data class VisibleMapDensity(
+        val floorCells: Int,
+        val wallCells: Int,
+        val boundingBoxWidth: Int,
+        val boundingBoxHeight: Int,
+    )
+
+    private fun visibleMapDensity(session: FoundationGameSession): VisibleMapDensity {
+        val visibleCells = session.renderSnapshot().mapCells.filter { cell -> cell.visibility == CellVisibilitySnapshot.VISIBLE }
+        val width =
+            if (visibleCells.isEmpty()) {
+                0
+            } else {
+                visibleCells.maxOf { cell -> cell.x } - visibleCells.minOf { cell -> cell.x } + 1
+            }
+        val height =
+            if (visibleCells.isEmpty()) {
+                0
+            } else {
+                visibleCells.maxOf { cell -> cell.y } - visibleCells.minOf { cell -> cell.y } + 1
+            }
+        return VisibleMapDensity(
+            floorCells = visibleCells.count { cell -> cell.terrainTypeId == "floor" },
+            wallCells = visibleCells.count { cell -> cell.terrainTypeId == "wall" },
+            boundingBoxWidth = width,
+            boundingBoxHeight = height,
         )
     }
 

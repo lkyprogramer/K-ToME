@@ -140,19 +140,38 @@ enum class ValidationScenarioActionId(
     PREPARE_PRIMARY_SCENE("prepare-primary-scene"),
     PREPARE_SECONDARY_SCENE("prepare-secondary-scene"),
     SHOW_EVIDENCE_SUMMARY("show-evidence-summary"),
+    PREPARE_SHOP_SURFACE("prepare-shop-surface"),
+    PREPARE_SHOP_REPLACEMENT("prepare-shop-replacement"),
+    PREPARE_ACTIVE_SLOT_MODAL("prepare-active-slot-modal"),
+    PREPARE_ROUTE_SELECTION("prepare-route-selection"),
+    PREPARE_STAT_ASSIGN("prepare-stat-assign"),
+    PREPARE_REWARD_FRONTSTAGE("prepare-reward-frontstage"),
+    PREPARE_MAP_TELEGRAPH("prepare-map-telegraph"),
+    PREPARE_VICTORY_OUTCOME("prepare-victory-outcome"),
+    PREPARE_DEFEAT_OUTCOME("prepare-defeat-outcome"),
     RESET_SCENARIO("reset-scenario"),
     ;
 }
+
+val DEFAULT_VALIDATION_SCENARIO_ACTION_IDS: List<ValidationScenarioActionId> =
+    listOf(
+        ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+        ValidationScenarioActionId.PREPARE_SECONDARY_SCENE,
+        ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY,
+        ValidationScenarioActionId.RESET_SCENARIO,
+    )
 
 data class ValidationScenarioDef(
     val id: ValidationScenarioId,
     val prId: String,
     val runtime: ValidationScenarioRuntimeSpec,
     val evidence: ValidationScenarioEvidenceSpec,
+    val actionIds: List<ValidationScenarioActionId> = DEFAULT_VALIDATION_SCENARIO_ACTION_IDS,
     val talentSetup: ValidationScenarioTalentSetupSpec? = null,
 ) {
     init {
         require(prId.isNotBlank()) { "Validation scenario ${id.value} must declare prId." }
+        require(actionIds.isNotEmpty()) { "Validation scenario ${id.value} must declare at least one validation action." }
     }
 
     fun toSessionOptions(

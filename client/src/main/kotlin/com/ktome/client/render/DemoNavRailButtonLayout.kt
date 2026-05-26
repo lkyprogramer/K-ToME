@@ -14,7 +14,7 @@ internal object DemoNavRailButtonLayout {
             return emptyList()
         }
         val content = contentBounds(navRail)
-        val slotSide = (content.width - 10f).coerceIn(40f, 52f)
+        val slotSide = (content.width + 28f).coerceIn(46f, 52f)
         val gap = 10f
         val totalHeight = itemCount * slotSide + (itemCount - 1).coerceAtLeast(0) * gap
         val startY = content.top - ((content.height - totalHeight) / 2f).coerceAtLeast(0f) - slotSide

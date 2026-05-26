@@ -833,17 +833,19 @@ sheets:
     targetKey: tileset.ruins.ground_01
     category: tile_ground
     outputName: dark-v1/tiles/tileset_ruins_ground_01.png
-    subject: orthographic single 128px dark dungeon floor tile, top-down square stone slab cluster, varied
-      cracked flagstones, subtle moss and soot, warm amber grime in seams, readable at 32px, seamless
-      edges, no grass, no modern grid, no letters
+    subject: orthographic single 128px dark dungeon floor tile, fills the full cell with seamless worn
+      stone slabs, no decorative border frame, no transparent edge, no black outline at tile edges, varied
+      softened cracks with two readable directions at 32px, subtle moss and soot, warm amber grime in
+      seams, 4x tiling must not show checkerboard seams, no grass, no modern grid, no letters
   - row: 0
     col: 1
     targetKey: tileset.ruins.wall_01
     category: tile_wall
     outputName: dark-v1/tiles/tileset_ruins_wall_01.png
-    subject: orthographic single 128px raised ruined dungeon wall tile, top-down blocking wall cap with
-      thick dark stone rim, carved chipped face, warm torch highlights on upper edge, matches floor material,
-      readable at 32px, no horizontal brick stripe, no modern grid, no letters
+    subject: orthographic single 128px raised ruined dungeon wall tile, fills the full cell with a readable
+      top-down blocking stone mass, thick chipped cap and side shadow, no transparent border, no black
+      rectangular frame, warm torch highlights on upper edge, matches floor material, readable at 32px,
+      no periodic horizontal brick stripe, no modern grid, no letters
 - sheetId: r03-ui-demo-actor-props
   round: 3
   type: large-sheet

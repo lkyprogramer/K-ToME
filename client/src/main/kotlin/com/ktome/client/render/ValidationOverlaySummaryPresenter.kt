@@ -197,8 +197,34 @@ internal object ValidationOverlaySummaryPresenter {
                             )
                         }
                 }
+        val selectedControlRows =
+            panel.sections
+                .firstOrNull { section -> section.selected }
+                ?.let { section ->
+                    val selectedAction = section.actions.firstOrNull { action -> action.selected }
+                    listOf(TileTextRow(localizer.text("ui.controls.validation"), TileTextTone.LIGHT_GRAY)) +
+                        listOf(
+                            TileTextRow(
+                                text = localizer.text(section.titleKey),
+                                tone = TileTextTone.GOLD,
+                                selected = true,
+                            ),
+                        ) +
+                            listOfNotNull(selectedAction).map { action ->
+                                TileTextRow(
+                                    text = "  ${localizer.text(action.labelKey)}",
+                                    tone = if (action.selected) TileTextTone.CYAN else TileTextTone.LIGHT_GRAY,
+                                    selected = action.selected,
+                                )
+                            }
+                }.orEmpty()
         return when (displayMode) {
-            ValidationOverlayDisplayMode.COMPACT -> warningRows + evidenceRows + primaryRows + guideRows + controlRows
+            ValidationOverlayDisplayMode.COMPACT ->
+                if (selectedControlRows.isNotEmpty()) {
+                    selectedControlRows + evidenceRows + warningRows + primaryRows + guideRows
+                } else {
+                    warningRows + evidenceRows + primaryRows + guideRows
+                }
             ValidationOverlayDisplayMode.DETAILED -> evidenceRows + warningRows + primaryRows + guideRows + controlRows
         }
     }

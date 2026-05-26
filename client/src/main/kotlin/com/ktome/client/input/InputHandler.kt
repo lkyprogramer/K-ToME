@@ -767,7 +767,7 @@ class InputHandler(
     }
 
     private fun pollValidationCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.F9)) {
+        if (input.isKeyJustPressed(Keys.ESCAPE) || isValidationToggleBinding()) {
             clearValidation()
             return null
         }
@@ -2390,7 +2390,7 @@ class InputHandler(
         }
 
     private fun toggleValidationModeIfRequested(snapshot: RenderSnapshot): Boolean {
-        if (input.isKeyJustPressed(Keys.F9).not()) {
+        if (isValidationToggleBinding().not()) {
             return false
         }
         if (validationOverlayAvailability != ValidationOverlayAvailability.ENABLED) {
@@ -2455,6 +2455,11 @@ class InputHandler(
     private fun isDescendBinding(): Boolean = shiftPressed() && input.isKeyJustPressed(Keys.PERIOD)
 
     private fun isAscendBinding(): Boolean = shiftPressed() && input.isKeyJustPressed(Keys.COMMA)
+
+    private fun isValidationToggleBinding(): Boolean =
+        input.isKeyJustPressed(Keys.F9) ||
+            input.isKeyJustPressed(Keys.V) ||
+            (controlPressed() && input.isKeyJustPressed(Keys.V))
 
     private fun controlPressed(): Boolean =
         input.isKeyPressed(Keys.CONTROL_LEFT) ||

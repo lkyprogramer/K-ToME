@@ -27,6 +27,7 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(exception.message?.contains("phase4-v4-pr02") == true)
         assertTrue(exception.message?.contains("dark-uiux-pr02-ui-chrome-sprite-pilot") == true)
         assertTrue(exception.message?.contains("dark-uiux-pr03-equipment-inventory-items") == true)
+        assertTrue(exception.message?.contains("dark-uiux-pr07-final-ui") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr03") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr04") == true)
     }
@@ -397,6 +398,45 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `dark uiux pr07 final ui scenario generates all screen evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr07-final-ui"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/dark-uiux-pr07-final-ui/evidence/dark-uiux-pr07-final-ui-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=dark-uiux-pr07-final-ui"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/dark-uiux-pr07-packaged-app.md"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("- window: `1280x800`"))
+        assertTrue(runbook.contains("dark-uiux-pr07-main-menu.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-validation-setup.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-validation-overlay.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-ui-demo-new-shell.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-inventory-workbench.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-inscription-shop.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-combat-decision.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-look-inspect.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-world-route-selection.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-outcome-victory.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-runtime-error.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-ui-error-screen.png"))
+        assertTrue(runbook.contains("dark-uiux-pr07-accessibility-settings.png"))
+        assertTrue(runbook.contains("UI/manual-records/dark-uiux-pr07-packaged-app.md"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr07-final-ui\""))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr07-final-ui-app.log"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr07-main-menu.png.sha256"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr07-accessibility-settings.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
     fun `pr04 scenario generates hidden search hook evidence names from the typed registry`() {
         val result =
             Phase4V4WhiteboxScenarioCli.run(
@@ -532,6 +572,7 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: dark-uiux-pr05-actor-boss-telegraph
             |  - id: dark-uiux-pr05-1-inventory-page-workbench
             |  - id: dark-uiux-pr06-status-quest-skill-overview
+            |  - id: dark-uiux-pr07-final-ui
             |  - id: phase4-v4-pr06
             |  - id: phase4-v4-pr07
             |

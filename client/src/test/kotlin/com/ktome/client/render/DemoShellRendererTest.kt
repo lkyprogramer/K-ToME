@@ -63,11 +63,17 @@ class DemoShellRendererTest {
                 .filter { draw -> draw.key == DarkUiChromeVisualKeys.SLOT_EMPTY || draw.key == DarkUiChromeVisualKeys.SLOT_EQUIPPED }
                 .filter { draw -> equipmentBounds.contains(draw) }
         assertTrue(equipmentSlotDraws.size >= 9, "Expected icon-first equipment sockets in the top right panel.")
-        assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Ctrl+S Save") && operationBounds.contains(draw) }, "Right operation hints must keep action labels.")
-        assertTrue(canvas.textDraws.any { draw -> draw.text.contains("5-8 Use rune") && operationBounds.contains(draw) }, "Right operation hints must keep inscription labels.")
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Ctrl+S" && operationBounds.contains(draw) }, "Right operation hints must keep save shortcut.")
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Save" && operationBounds.contains(draw) }, "Right operation hints must keep save label.")
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "5-8" && operationBounds.contains(draw) }, "Right operation hints must keep inscription shortcut.")
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "Use rune" && operationBounds.contains(draw) }, "Right operation hints must keep inscription label.")
         assertTrue(canvas.textDraws.none { draw -> draw.text.contains("Ctrl+S") && bottomBounds.contains(draw) }, "Bottom deck must not render command hints.")
         val logBody = logBodyRegion(frame.layout.demoShell.bottomDeck.logDeck)
         assertTrue(canvas.rectDraws.any { draw -> logBody.covers(draw) }, "Log deck must cover the decorative body with one continuous surface.")
+        assertTrue(
+            canvas.rectDraws.any { draw -> logBody.contains(draw) && draw.width == 3f && draw.height > logBody.height * 0.68f },
+            "Log deck should keep a narrow signal rail for scanability without turning every log line into a card.",
+        )
         assertFalse(
             canvas.rectDraws.any { draw -> logBody.contains(draw) && draw.height in 17f..19f && draw.width >= logBody.width - 8f },
             "Log deck must not split content into stacked row plates.",

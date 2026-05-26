@@ -144,6 +144,7 @@ import com.ktome.core.mapgen.GeneratedEntrance
 import com.ktome.core.mapgen.GeneratedFloor
 import com.ktome.core.mapgen.PathClass
 import com.ktome.core.mapgen.RoomInstance
+import com.ktome.core.mapgen.RoomShape
 import com.ktome.core.mapgen.TerrainOverride
 import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.mapgen.center
@@ -1930,6 +1931,49 @@ class FoundationGameSession internal constructor(
                 )
             }
 
+            ValidationScenarioActionId.PREPARE_SHOP_SURFACE -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                prepareDarkUiuxPr07ShopSurface()
+            }
+
+            ValidationScenarioActionId.PREPARE_SHOP_REPLACEMENT -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                prepareDarkUiuxPr07ShopReplacementSurface()
+            }
+
+            ValidationScenarioActionId.PREPARE_ACTIVE_SLOT_MODAL -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                preparePhase4V4Pr01ReserveChoiceTarget()
+                "dark_uiux_pr07_active_slot_modal_ready"
+            }
+
+            ValidationScenarioActionId.PREPARE_ROUTE_SELECTION -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                prepareDarkUiuxPr07RouteSelectionSurface()
+            }
+
+            ValidationScenarioActionId.PREPARE_STAT_ASSIGN -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                val experience = requireNotNull(world.get<Experience>(playerId))
+                experience.unspentStatPoints = maxOf(experience.unspentStatPoints, 4)
+                invalidateRenderSnapshot()
+                "dark_uiux_pr07_stat_assign_ready"
+            }
+
+            ValidationScenarioActionId.PREPARE_REWARD_FRONTSTAGE -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                prepareDarkUiuxPr07RewardFrontstageSurface()
+            }
+
+            ValidationScenarioActionId.PREPARE_MAP_TELEGRAPH -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                preparePhase4V4Pr05PrimaryScene()
+                "dark_uiux_pr07_map_telegraph_ready"
+            }
+
+            ValidationScenarioActionId.PREPARE_VICTORY_OUTCOME -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                finalizeVictory()
+                "dark_uiux_pr07_victory_outcome_ready"
+            }
+
+            ValidationScenarioActionId.PREPARE_DEFEAT_OUTCOME -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
+                automationForceDefeatPlayer()
+                "dark_uiux_pr07_defeat_outcome_ready"
+            }
+
             ValidationScenarioActionId.RESET_SCENARIO ->
                 queueValidationRestart(
                     options =
@@ -2488,9 +2532,10 @@ class FoundationGameSession internal constructor(
     }
 
     private fun prepareDarkUiuxPr02_2LaunchSceneIfNeeded() {
-        if (validationSessionOptions?.scenarioId?.value != "dark-uiux-pr02-1-demo-shell-foundation") {
+        if (validationSessionOptions?.scenarioId?.value !in DARK_UIUX_DEMO_SHELL_LAUNCH_SCENARIO_IDS) {
             return
         }
+        prepareDarkUiuxDemoMapStageAnchor()
         resetPlayerInscriptionsForValidation(
             listOf(
                 "healing_light",
@@ -2531,7 +2576,259 @@ class FoundationGameSession internal constructor(
             validationShowcaseItem(ValidationShowcaseItemSpec(baseItemId = baseItemId))
                 ?.let { item -> inventory.itemIds += itemFactory.createCarriedItem(world, item) }
         }
+        equipDarkUiuxDemoLoadout(inventory, itemFactory)
         invalidateRenderSnapshot()
+    }
+
+    private fun equipDarkUiuxDemoLoadout(
+        inventory: Inventory,
+        itemFactory: ItemFactory,
+    ) {
+        val equipment = world.get<Equipment>(playerId) ?: Equipment().also { world.add(playerId, it) }
+        listOf("long_sword", "basic_shield", "chain_mail").forEach { baseItemId ->
+            val itemId =
+                inventory.itemIds.firstOrNull { inventoryItemId -> world.get<ItemInstance>(inventoryItemId)?.baseId == baseItemId }
+                    ?: validationShowcaseItem(ValidationShowcaseItemSpec(baseItemId = baseItemId))
+                        ?.let { item -> itemFactory.createCarriedItem(world, item) }
+                    ?: return@forEach
+            val item = world.get<ItemInstance>(itemId) ?: return@forEach
+            val slot = item.slot ?: return@forEach
+            equipment.slots[slot] = itemId
+        }
+        refreshActorDerivedStats(playerId)
+    }
+
+    private fun prepareDarkUiuxDemoMapStageAnchor() {
+        val anchor =
+            darkUiuxDemoStageRoom()
+                ?.let { room -> room to darkUiuxDemoStageVisualAnchor(room) }
+            ?: return
+        val (room, point) = anchor
+        if (map.isInBounds(point.x, point.y) && !map[point].blocksMovement) {
+            automationMovePlayerTo(point)
+            prepareDarkUiuxDemoMapStageDressing(room, point)
+        }
+    }
+
+    private fun darkUiuxDemoStageRoom(): RoomInstance? =
+        darkUiuxDemoPreferredStageRooms().ifEmpty { activeFloorState.generatedFloor.rooms }
+            .maxWithOrNull(
+                compareBy<RoomInstance> { room -> darkUiuxDemoStageRoomScore(room) }
+                    .thenBy { room -> room.width * room.height }
+                    .thenBy { room -> room.nodeId.value },
+            )
+
+    private fun darkUiuxDemoPreferredStageRooms(): List<RoomInstance> =
+        activeFloorState.generatedFloor.rooms.filter { room ->
+            room.shape != RoomShape.RECT &&
+                room.width in 10..18 &&
+                room.height in 7..13 &&
+                room.width * room.height in 72..170
+        }
+
+    private fun darkUiuxDemoStageRoomScore(room: RoomInstance): Int {
+        val area = room.width * room.height
+        val targetArea = 96
+        var score = 220 - abs(area - targetArea)
+        when (room.shape) {
+            RoomShape.IRREGULAR -> score += 84
+            RoomShape.L_SHAPE -> score += 76
+            RoomShape.ROUND -> score += 42
+            RoomShape.RECT -> score -= 10
+        }
+        if (room.pathClass == PathClass.CRITICAL_PATH) {
+            score += 8
+        }
+        if (room.width in 12..18) {
+            score += 34
+        }
+        if (room.height in 7..11) {
+            score += 30
+        }
+        if (room.width > 20) {
+            score -= 36
+        }
+        if (room.height > 13) {
+            score -= 30
+        }
+        if (area > 180) {
+            score -= 64
+        }
+        if (area < 56) {
+            score -= 32
+        }
+        return score
+    }
+
+    private fun darkUiuxDemoStageVisualAnchor(room: RoomInstance): Point {
+        val points = roomWalkablePoints(room)
+        if (points.isEmpty()) {
+            return room.center
+        }
+        val targetX = (room.center.x - 5).coerceIn(points.minOf(Point::x), points.maxOf(Point::x))
+        val targetY = room.center.y.coerceIn(points.minOf(Point::y), points.maxOf(Point::y))
+        return points.minWithOrNull(
+            compareBy<Point> { point -> abs(point.x - targetX) * 2 + abs(point.y - targetY) }
+                .thenBy { point -> abs(point.y - targetY) }
+                .thenByDescending(Point::x)
+                .thenBy(Point::y),
+        ) ?: points.first()
+    }
+
+    private fun prepareDarkUiuxDemoMapStageDressing(
+        room: RoomInstance,
+        anchor: Point,
+    ) {
+        val points = darkUiuxDemoDressingPoints(room, anchor)
+        if (points.isEmpty()) {
+            return
+        }
+        val existingBaseIds =
+            world.entitiesWith(ItemInstance::class)
+                .mapNotNull { entityId -> world.get<ItemInstance>(entityId)?.baseId }
+                .toMutableSet()
+        val itemFactory = ItemFactory()
+        val itemPoints = points.take(4)
+        listOf(
+            ValidationShowcaseItemSpec(
+                baseItemId = "unique_briarbound_bow",
+                specialTemplateId = "unique.briarbound_bow",
+                quality = RarityTier.RARE,
+            ),
+            ValidationShowcaseItemSpec(baseItemId = "healing_potion"),
+            ValidationShowcaseItemSpec(baseItemId = "bandit_trophy"),
+            ValidationShowcaseItemSpec(baseItemId = "scroll_teleport"),
+        ).zip(itemPoints).forEach { (spec, point) ->
+            if (!existingBaseIds.add(spec.baseItemId)) {
+                return@forEach
+            }
+            validationShowcaseItem(spec)?.let { item ->
+                itemFactory.createGroundItem(world, item, point)
+            }
+        }
+        listOf("alarm_bonfire", "supply_crate", "ritual_altar")
+            .zip(points.drop(itemPoints.size))
+            .forEach { (interactableId, point) ->
+                createDarkUiuxDemoInteractable(interactableId, point)
+            }
+        spawnDarkUiuxDemoStageMonster(room, anchor, points.toSet())
+        invalidateRenderSnapshot()
+    }
+
+    private fun createDarkUiuxDemoInteractable(
+        interactableId: String,
+        point: Point,
+    ) {
+        if (
+            world.entitiesWith(Interactable::class, Position::class)
+                .mapNotNull { entityId -> world.get<Position>(entityId)?.toPoint() }
+                .any { existingPoint -> existingPoint == point }
+        ) {
+            return
+        }
+        val schema =
+            content.schemaCatalog.interactables.firstOrNull { interactable -> interactable.id == interactableId }
+                ?: return
+        val entityId = world.createEntity()
+        world.add(entityId, Position(point.x, point.y))
+        world.add(entityId, Interactable(interactableId))
+        world.add(
+            entityId,
+            Glyph(
+                when (interactableId) {
+                    "alarm_bonfire" -> '^'
+                    "supply_crate" -> '&'
+                    else -> '&'
+                },
+            ),
+        )
+        world.add(
+            entityId,
+            DisplayColor(
+                when (interactableId) {
+                    "alarm_bonfire" -> "#FF8A3D"
+                    "supply_crate" -> "#D6C977"
+                    else -> "#D6C977"
+                },
+            ),
+        )
+        world.add(entityId, Name(content.localizer.text(schema.nameKey)))
+    }
+
+    private fun darkUiuxDemoDressingPoints(
+        room: RoomInstance,
+        anchor: Point,
+    ): List<Point> {
+        val preferred =
+            listOf(
+                Point(anchor.x - 3, anchor.y + 1),
+                Point(anchor.x + 3, anchor.y),
+                Point(anchor.x - 2, anchor.y - 2),
+                Point(anchor.x + 2, anchor.y + 2),
+                Point(anchor.x, anchor.y + 3),
+                Point(anchor.x + 3, anchor.y - 2),
+                Point(anchor.x - 4, anchor.y - 1),
+                Point(anchor.x + 4, anchor.y + 2),
+            )
+        val occupied = occupiedBlockingTiles(excluding = playerId) + anchor
+        val fallback =
+            roomWalkablePoints(room)
+                .asSequence()
+                .filter { point -> point != anchor && point !in occupied }
+                .sortedWith(
+                    compareBy<Point> { point -> abs(point.chebyshevDistanceTo(anchor) - 3) }
+                        .thenBy(Point::y)
+                        .thenBy(Point::x),
+                )
+                .toList()
+        return (preferred + fallback)
+            .filter { point ->
+                map.isInBounds(point.x, point.y) &&
+                    room.contains(point) &&
+                    !map[point].blocksMovement &&
+                    point !in occupied
+            }.distinct()
+            .take(7)
+    }
+
+    private fun spawnDarkUiuxDemoStageMonster(
+        room: RoomInstance,
+        anchor: Point,
+        reservedPoints: Set<Point>,
+    ) {
+        val alreadyVisibleDemoMonster =
+            world.entitiesWith(MonsterTemplateId::class, Position::class)
+                .mapNotNull { entityId -> world.get<Position>(entityId)?.toPoint() }
+                .any { point -> point.chebyshevDistanceTo(anchor) <= 5 }
+        if (alreadyVisibleDemoMonster) {
+            return
+        }
+        val template =
+            currentZoneSchema().monsterPools
+                .asSequence()
+                .mapNotNull(content::monsterCatalogTemplate)
+                .firstOrNull()
+                ?: return
+        val occupied = occupiedBlockingTiles(excluding = playerId) + reservedPoints + anchor
+        val spawnPoint =
+            (
+                listOf(
+                    Point(anchor.x - 4, anchor.y + 1),
+                    Point(anchor.x + 4, anchor.y + 1),
+                    Point(anchor.x - 3, anchor.y - 2),
+                    Point(anchor.x + 3, anchor.y - 2),
+                ) +
+                    roomWalkablePoints(room)
+                        .filter { point -> point.chebyshevDistanceTo(anchor) in 3..5 }
+                        .sortedWith(compareBy<Point> { point -> point.y }.thenBy(Point::x))
+            ).firstOrNull { point ->
+                map.isInBounds(point.x, point.y) &&
+                    room.contains(point) &&
+                    !map[point].blocksMovement &&
+                    point !in occupied
+            } ?: return
+        val monsterId = EntityFactory().createMonster(world = world, template = template, position = spawnPoint)
+        refreshActorDerivedStats(monsterId)
     }
 
     private fun prepareDarkUiuxPr03LaunchSceneIfNeeded() {
@@ -2677,6 +2974,88 @@ class FoundationGameSession internal constructor(
         activeShopId = shop.id
         markShopVisited(shop.id)
         automationInteractablePoint("merchant_stall")?.let { point -> automationMovePlayerTo(point) }
+    }
+
+    private fun acceptDarkUiuxPr07FinalAction(
+        scenario: ValidationScenarioDef,
+        actionId: ValidationScenarioActionId,
+        prepare: () -> String,
+    ): CommandResolution =
+        if (scenario.id.value == "dark-uiux-pr07-final-ui") {
+            acceptValidationScenarioAction(
+                scenarioId = scenario.id.value,
+                actionId = actionId.value,
+                result = prepare(),
+            )
+        } else {
+            rejectValidationScenarioAction(
+                scenarioId = scenario.id.value,
+                actionId = actionId.value,
+                result = "unsupported_action_for_scenario",
+            )
+        }
+
+    private fun prepareDarkUiuxPr07ShopSurface(): String {
+        switchValidationScenarioZone(zoneId = "greenwood_fringe", floor = 1)
+        preparePhase4V4Pr02PrimaryScene()
+        return if (activeShopId == null) {
+            "dark_uiux_pr07_shop_missing"
+        } else {
+            "dark_uiux_pr07_shop_surface_ready"
+        }
+    }
+
+    private fun prepareDarkUiuxPr07ShopReplacementSurface(): String {
+        switchValidationScenarioZone(zoneId = "greenwood_fringe", floor = 1)
+        preparePhase4V4Pr02ReplacementScene()
+        val shop = currentShopNode() ?: return "dark_uiux_pr07_shop_missing"
+        val offerIndex = availableShopOffers().indexOfFirst { offer -> offer.inscriptionId != null }
+        if (offerIndex < 0) {
+            return "dark_uiux_pr07_shop_inscription_offer_missing"
+        }
+        val offer = availableShopOffers()[offerIndex]
+        val result =
+            buyShopOffer(
+                index = offerIndex,
+                offerFingerprint = shopOfferFingerprint(shop = shop, index = offerIndex, offer = offer),
+                replacementHotkey = null,
+            )
+        invalidateRenderSnapshot()
+        return if (result.accepted && pendingInscriptionReplacementPurchase != null) {
+            "dark_uiux_pr07_shop_replacement_ready"
+        } else {
+            "dark_uiux_pr07_shop_replacement_not_available"
+        }
+    }
+
+    private fun prepareDarkUiuxPr07RouteSelectionSurface(): String {
+        switchValidationScenarioZone(zoneId = "greenwood_fringe", floor = 2)
+        activeShopId = null
+        pendingInscriptionReplacementPurchase = null
+        pendingRouteSelection = availableRouteAdvanceOptions()
+        invalidateRenderSnapshot()
+        return if (pendingRouteSelection.isEmpty()) {
+            "dark_uiux_pr07_route_selection_missing"
+        } else {
+            "dark_uiux_pr07_route_selection_ready; optionCount=${pendingRouteSelection.size}"
+        }
+    }
+
+    private fun prepareDarkUiuxPr07RewardFrontstageSurface(): String {
+        val result =
+            presentValidationReward(
+                ValidationAction.PresentReward(
+                    profileIds = emptyList(),
+                    fallbackBaseId = "healing_potion",
+                    sourceId = "dark-uiux-pr07.reward-frontstage",
+                ),
+            )
+        invalidateRenderSnapshot()
+        return if (result.accepted) {
+            "dark_uiux_pr07_reward_frontstage_ready"
+        } else {
+            "dark_uiux_pr07_reward_frontstage_missing"
+        }
     }
 
     private fun acceptValidationScenarioAction(
@@ -16268,6 +16647,12 @@ class FoundationGameSession internal constructor(
 
         private val MILESTONE_REPLACEMENT_SLOT_PRIORITY: List<EquipSlot> =
             listOf(EquipSlot.OFF_HAND, EquipSlot.ARMOR, EquipSlot.WEAPON)
+
+        private val DARK_UIUX_DEMO_SHELL_LAUNCH_SCENARIO_IDS: Set<String> =
+            setOf(
+                "dark-uiux-pr02-1-demo-shell-foundation",
+                "dark-uiux-pr07-final-ui",
+            )
 
         private const val MAX_MILESTONE_REWARD_SCORE_SAMPLES_PER_RUN: Int = 120
 

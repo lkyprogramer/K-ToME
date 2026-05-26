@@ -237,25 +237,31 @@ internal object DemoShellLayoutSolver {
     ): DemoRightPanelLayout {
         val sectionGap = 6f
         val isLargeStandardBounds = profile == DemoShellProfile.STANDARD && bounds.width >= 400f
-        val slotSide =
+        val utilitySlotSide =
             when (profile) {
                 DemoShellProfile.MINIMUM -> 38f
                 DemoShellProfile.STANDARD -> if (isLargeStandardBounds) 52f else 42f
                 DemoShellProfile.DEMO_ASPECT -> 56f
             }
+        val equipmentSlotSide =
+            when (profile) {
+                DemoShellProfile.MINIMUM -> utilitySlotSide
+                DemoShellProfile.STANDARD -> if (isLargeStandardBounds) 60f else 50f
+                DemoShellProfile.DEMO_ASPECT -> 64f
+            }
         val backpackRows = 2
         val availableSectionHeight = (bounds.height - sectionGap * 3f).coerceAtLeast(1f)
         val equipmentHeight =
             (availableSectionHeight * 0.42f)
-                .coerceAtLeast(RIGHT_SECTION_TITLE_HEIGHT + slotSide * 5f + 8f * 4f + 12f)
+                .coerceAtLeast(RIGHT_SECTION_TITLE_HEIGHT + equipmentSlotSide * 5f + 8f * 4f + 12f)
         val inscriptionHeight =
             (availableSectionHeight * 0.26f)
-                .coerceAtLeast(RIGHT_SECTION_TITLE_HEIGHT + slotSide * 4f + sectionGap * 3f + 10f)
+                .coerceAtLeast(RIGHT_SECTION_TITLE_HEIGHT + utilitySlotSide * 4f + sectionGap * 3f + 10f)
         val backpackHeight =
             (availableSectionHeight * 0.15f)
                 .coerceAtLeast(
             RIGHT_SECTION_TITLE_HEIGHT +
-                slotSide * backpackRows +
+                utilitySlotSide * backpackRows +
                 sectionGap * (backpackRows - 1) +
                 RIGHT_BACKPACK_PAGER_HEIGHT +
                 10f,
@@ -290,9 +296,9 @@ internal object DemoShellLayoutSolver {
             backpack = backpack,
             backpackPager = backpackPager,
             operationHints = operation,
-            equipmentSlots = equipmentSlotGrid(equipment = equipment, slotSide = slotSide),
-            inscriptionSlots = inscriptionSlotGrid(inscriptions, slotSide = slotSide),
-            backpackSlots = slotGrid(backpack, columns = 4, rows = backpackRows, slotSide = slotSide, bottomInset = RIGHT_BACKPACK_PAGER_HEIGHT),
+            equipmentSlots = equipmentSlotGrid(equipment = equipment, slotSide = equipmentSlotSide),
+            inscriptionSlots = inscriptionSlotGrid(inscriptions, slotSide = utilitySlotSide),
+            backpackSlots = slotGrid(backpack, columns = 4, rows = backpackRows, slotSide = utilitySlotSide, bottomInset = RIGHT_BACKPACK_PAGER_HEIGHT),
         )
     }
 

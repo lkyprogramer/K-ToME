@@ -194,6 +194,12 @@ def average_center_y(row: list[Component]) -> float:
     return sum(component.center_y for component in row) / len(row)
 
 
+def cell_padding(cell, sheet) -> int:
+    if cell.category.startswith("tile_"):
+        return 0
+    return max(6, min(sheet.grid["cellWidth"], sheet.grid["cellHeight"]) // 12)
+
+
 def repack_sheet(sheet, cells, raw_path: pathlib.Path, overwrite: bool) -> list[str]:
     if raw_path.exists() and not overwrite:
         return [f"Raw sheet already exists; pass --overwrite to repack: {raw_path.as_posix()}."]
@@ -234,8 +240,8 @@ def repack_sheet(sheet, cells, raw_path: pathlib.Path, overwrite: bool) -> list[
     output = Image.new("RGBA", expected_size, (0, 0, 0, 0))
     cell_width = sheet.grid["cellWidth"]
     cell_height = sheet.grid["cellHeight"]
-    padding = max(6, min(cell_width, cell_height) // 12)
     for cell, piece in zip(direct_cells, pieces):
+        padding = cell_padding(cell, sheet)
         crop = source.crop(expand_box(piece, source.size, 2))
         crop = keep_largest_alpha_component(crop)
         crop = trim_alpha(crop)
@@ -258,8 +264,8 @@ def repack_from_existing_grid(source: Image.Image, sheet, direct_cells) -> Image
     output = Image.new("RGBA", sheet.canvas_size, (0, 0, 0, 0))
     cell_width = sheet.grid["cellWidth"]
     cell_height = sheet.grid["cellHeight"]
-    padding = max(6, min(cell_width, cell_height) // 12)
     for cell in direct_cells:
+        padding = cell_padding(cell, sheet)
         crop = source.crop(cell_box(sheet, cell))
         crop = keep_largest_alpha_component(crop)
         crop = trim_alpha(crop)

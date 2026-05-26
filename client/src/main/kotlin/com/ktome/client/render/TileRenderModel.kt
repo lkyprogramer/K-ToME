@@ -4,6 +4,7 @@ import com.ktome.client.assets.DarkUiChromeVisualKeys
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
+import com.ktome.client.input.ShopFocus
 import com.ktome.client.input.UiMode
 import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.client.telegraph.TelegraphPresentationModel
@@ -58,6 +59,7 @@ import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
+import com.ktome.core.snapshot.InscriptionReplacementPromptSnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.ItemStatModifierSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
@@ -68,6 +70,8 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
+import com.ktome.core.snapshot.RouteSelectionSnapshot
+import com.ktome.core.snapshot.ShopPanelSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
@@ -118,6 +122,25 @@ internal data class TileFogPlacement(
     val x: Int,
     val y: Int,
     val alpha: Float,
+    val visibility: CellVisibilitySnapshot,
+)
+
+internal enum class TileMapCellMaterialKind {
+    FLOOR,
+    WALL,
+    HAZARD,
+}
+
+internal data class TileMapCellMaterialModel(
+    val x: Int,
+    val y: Int,
+    val kind: TileMapCellMaterialKind,
+    val visibility: CellVisibilitySnapshot,
+    val variant: Int,
+    val northOcclusion: Boolean,
+    val southOcclusion: Boolean,
+    val westOcclusion: Boolean,
+    val eastOcclusion: Boolean,
 )
 
 internal data class TileTextRow(
@@ -343,6 +366,7 @@ internal data class TileDemoShellModel(
     val backpackPageLabel: String,
     val operationHints: List<String>,
     val heroSummaryLines: List<String>,
+    val heroLevelText: String = "",
     val equipmentInventory: EquipmentInventoryPresentation = EquipmentInventoryPresentation.empty(),
     val operationRows: List<TileTextRow> = operationHints.map { hint -> TileTextRow(hint, TileTextTone.LIGHT_GRAY) },
 ) {
@@ -360,11 +384,47 @@ internal data class TileDemoShellModel(
                 backpackPageLabel = "",
             operationHints = emptyList(),
             heroSummaryLines = emptyList(),
+            heroLevelText = "",
             equipmentInventory = EquipmentInventoryPresentation.empty(),
             operationRows = emptyList(),
         )
     }
 }
+
+internal enum class TileFrontstageSurfaceKind {
+    SHOP,
+    SHOP_REPLACEMENT,
+    ROUTE_SELECTION,
+    STAT_ASSIGN,
+    REWARD,
+}
+
+internal data class TileFrontstageCardModel(
+    val title: String,
+    val tone: TileTextTone,
+    val summary: String? = null,
+    val detailRows: List<TileTextRow> = emptyList(),
+    val icon: ResolvedVisualAsset? = null,
+    val stateIcon: ResolvedVisualAsset? = null,
+    val typeIcon: ResolvedVisualAsset? = null,
+    val frame: ResolvedVisualAsset? = null,
+    val selected: Boolean = false,
+    val disabled: Boolean = false,
+)
+
+internal data class TileFrontstageColumnModel(
+    val title: String,
+    val cards: List<TileFrontstageCardModel>,
+)
+
+internal data class TileFrontstageSurfaceModel(
+    val kind: TileFrontstageSurfaceKind,
+    val title: String,
+    val eyebrow: String?,
+    val summary: String?,
+    val columns: List<TileFrontstageColumnModel>,
+    val footerRows: List<TileTextRow>,
+)
 
 internal enum class TilePanelTooltipAnchorKind {
     EQUIPMENT_SLOT,
@@ -505,6 +565,7 @@ internal data class TileChromeAssets(
 
 internal data class TileRenderModel(
     val terrainTiles: List<TileVisualPlacement>,
+    val mapCellMaterials: List<TileMapCellMaterialModel> = emptyList(),
     val propTiles: List<TileVisualPlacement>,
     val overlayTiles: List<TileVisualPlacement>,
     val groundLootMarkers: List<TileGroundLootMarkerModel>,
@@ -523,6 +584,7 @@ internal data class TileRenderModel(
     val talentAssignPanel: TileTalentAssignPanelRenderModel? = null,
     val inventoryWorkbench: InventoryWorkbenchPresentation? = null,
     val shell: TileShellModel,
+    val frontstageSurface: TileFrontstageSurfaceModel? = null,
     val panelTooltip: TilePanelTooltipModel? = null,
     val playerTile: com.ktome.core.map.Point,
     val mapDimensions: TileMapDimensions,
@@ -532,7 +594,7 @@ internal data class TileRenderModel(
 internal object TileRenderModelBuilder {
     private const val DEMO_BACKPACK_PAGE_SIZE = 8
     private const val EXPLORED_FOG_ALPHA = 0.42f
-    private const val HIDDEN_STAGE_FOG_ALPHA = 0.50f
+    private const val HIDDEN_STAGE_FOG_ALPHA = 0.34f
 
     fun build(
         localizer: Localizer,
@@ -561,12 +623,13 @@ internal object TileRenderModelBuilder {
                         alpha = if (cell.visibility == CellVisibilitySnapshot.EXPLORED) 0.72f else 1f,
                     )
                 }
+        val mapCellMaterials = buildMapCellMaterials(snapshot.mapCells)
         val fogTiles =
             snapshot.mapCells.mapNotNull { cell ->
                 when (cell.visibility) {
                     CellVisibilitySnapshot.VISIBLE -> null
-                    CellVisibilitySnapshot.EXPLORED -> TileFogPlacement(x = cell.x, y = cell.y, alpha = EXPLORED_FOG_ALPHA)
-                    CellVisibilitySnapshot.HIDDEN -> TileFogPlacement(x = cell.x, y = cell.y, alpha = HIDDEN_STAGE_FOG_ALPHA)
+                    CellVisibilitySnapshot.EXPLORED -> TileFogPlacement(x = cell.x, y = cell.y, alpha = EXPLORED_FOG_ALPHA, visibility = cell.visibility)
+                    CellVisibilitySnapshot.HIDDEN -> TileFogPlacement(x = cell.x, y = cell.y, alpha = HIDDEN_STAGE_FOG_ALPHA, visibility = cell.visibility)
                 }
             }
         val propTiles =
@@ -697,8 +760,10 @@ internal object TileRenderModelBuilder {
             )
         val shell = buildShell(localizer, visualResolver, snapshot, overlayState, hud, sidebar, messageLines)
         val inventoryWorkbench = buildInventoryWorkbench(localizer, visualResolver, snapshot, overlayState)
+        val frontstageSurface = buildFrontstageSurface(localizer, visualResolver, snapshot, overlayState)
         return TileRenderModel(
             terrainTiles = terrainTiles,
+            mapCellMaterials = mapCellMaterials,
             propTiles = propTiles,
             overlayTiles = overlayTiles,
             groundLootMarkers = groundLootMarkers,
@@ -751,6 +816,7 @@ internal object TileRenderModelBuilder {
             talentAssignPanel = talentAssignPanelModel?.let { panel -> TileTalentAssignPanelRenderModel.from(panel, visualResolver) },
             inventoryWorkbench = inventoryWorkbench,
             shell = shell,
+            frontstageSurface = frontstageSurface,
             panelTooltip = panelTooltip(localizer, snapshot, overlayState, shell),
             playerTile = point(player.x, player.y),
             mapDimensions = TileMapDimensions(snapshot.metadata.width, snapshot.metadata.height),
@@ -1020,10 +1086,10 @@ internal object TileRenderModelBuilder {
             rightInscriptionsTitle = localizer.text("ui.sidebar.inscriptions"),
             rightBackpackTitle = localizer.text("ui.sidebar.inventory"),
             rightOperationHintsTitle =
-                if (snapshot.uiState.activeShop != null && overlayState.mode == UiMode.SHOP) {
-                    localizer.text("ui.sidebar.shop")
-                } else {
-                    localizer.text("ui.shell.operation_hints")
+                when {
+                    overlayState.mode == UiMode.VALIDATION -> localizer.text("ui.sidebar.validation")
+                    snapshot.uiState.activeShop != null && overlayState.mode == UiMode.SHOP -> localizer.text("ui.sidebar.shop")
+                    else -> localizer.text("ui.shell.operation_hints")
                 },
             equipmentSlots = equipmentInventory.equipmentSlots.map(::equipmentSlot),
             inscriptionSlots = inscriptionSlotModels(localizer, visualResolver, snapshot, overlayState),
@@ -1040,6 +1106,7 @@ internal object TileRenderModelBuilder {
                     "${localizer.text("ui.hud.attack.short")} ${status.attack}",
                     "${localizer.text("ui.hud.defense.short")} ${status.defense}",
                 ),
+            heroLevelText = "${localizer.text("ui.hud.level.short")} ${status.level}",
         )
     }
 
@@ -1066,6 +1133,354 @@ internal object TileRenderModelBuilder {
         )
     }
 
+    private fun buildMapCellMaterials(cells: List<MapCellSnapshot>): List<TileMapCellMaterialModel> {
+        val cellByPoint = cells.associateBy { cell -> point(cell.x, cell.y) }
+        return cells
+            .filter { cell -> cell.visibility != CellVisibilitySnapshot.HIDDEN }
+            .map { cell ->
+                val kind = cell.materialKind()
+                TileMapCellMaterialModel(
+                    x = cell.x,
+                    y = cell.y,
+                    kind = kind,
+                    visibility = cell.visibility,
+                    variant = materialVariant(cell.x, cell.y, cell.terrainVisualKey),
+                    northOcclusion = kind == TileMapCellMaterialKind.FLOOR && cellByPoint[point(cell.x, cell.y + 1)].isOccludingMaterial(),
+                    southOcclusion = kind == TileMapCellMaterialKind.FLOOR && cellByPoint[point(cell.x, cell.y - 1)].isOccludingMaterial(),
+                    westOcclusion = kind == TileMapCellMaterialKind.FLOOR && cellByPoint[point(cell.x - 1, cell.y)].isOccludingMaterial(),
+                    eastOcclusion = kind == TileMapCellMaterialKind.FLOOR && cellByPoint[point(cell.x + 1, cell.y)].isOccludingMaterial(),
+                )
+            }
+    }
+
+    private fun MapCellSnapshot?.isOccludingMaterial(): Boolean =
+        this == null ||
+            visibility == CellVisibilitySnapshot.HIDDEN ||
+            materialKind() == TileMapCellMaterialKind.WALL
+
+    private fun MapCellSnapshot.materialKind(): TileMapCellMaterialKind =
+        when {
+            terrainTypeId.contains("wall", ignoreCase = true) ||
+                terrainVisualKey.contains("wall", ignoreCase = true) ->
+                TileMapCellMaterialKind.WALL
+            terrainTypeId.contains("lava", ignoreCase = true) ||
+                terrainTypeId.contains("water", ignoreCase = true) ||
+                terrainTypeId.contains("acid", ignoreCase = true) ||
+                terrainVisualKey.contains("lava", ignoreCase = true) ||
+                terrainVisualKey.contains("water", ignoreCase = true) ->
+                TileMapCellMaterialKind.HAZARD
+            else -> TileMapCellMaterialKind.FLOOR
+        }
+
+    private fun materialVariant(
+        x: Int,
+        y: Int,
+        key: String,
+    ): Int {
+        var hash = 17
+        hash = hash * 31 + x
+        hash = hash * 31 + y
+        key.forEach { char -> hash = hash * 31 + char.code }
+        return hash and Int.MAX_VALUE
+    }
+
+    private fun buildFrontstageSurface(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+    ): TileFrontstageSurfaceModel? {
+        val shop = snapshot.uiState.activeShop
+        if (shop != null && overlayState.mode == UiMode.SHOP) {
+            return shop.inscriptionReplacementPrompt?.let { prompt ->
+                buildShopReplacementFrontstage(localizer, visualResolver, snapshot, overlayState, shop, prompt)
+            } ?: buildShopFrontstage(localizer, visualResolver, snapshot, overlayState, shop)
+        }
+        val routeSelection = snapshot.uiState.activeRouteSelection
+        if (routeSelection != null && overlayState.mode == UiMode.WORLD_MAP) {
+            return buildRouteFrontstage(localizer, visualResolver, routeSelection, overlayState)
+        }
+        if (overlayState.mode == UiMode.STAT_ASSIGN && snapshot.uiState.playerStatus.statPoints > 0) {
+            return buildStatAssignFrontstage(localizer, snapshot)
+        }
+        if (
+            snapshot.uiState.recentRewards.isNotEmpty() &&
+            (overlayState.mode == UiMode.VALIDATION || overlayState.paneFocusAnchor == PaneFocusAnchor.CONTEXT)
+        ) {
+            return buildRewardFrontstage(localizer, visualResolver, snapshot)
+        }
+        return null
+    }
+
+    private fun buildShopFrontstage(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+        shop: ShopPanelSnapshot,
+    ): TileFrontstageSurfaceModel {
+        val buyCards =
+            shop.offers.take(5).map { offer ->
+                val card = ModalCardModel.shopOffer(shop.shopId, offer, shardBalance = snapshot.uiState.shardBalance)
+                TileFrontstageCardModel(
+                    title = renderTextToken(localizer, card.title),
+                    tone = if (overlayState.shopFocus == ShopFocus.BUY && overlayState.shopOfferSelection == offer.index) TileTextTone.CYAN else TileTextTone.WHITE,
+                    summary = card.costLines.firstOrNull()?.let { token -> renderTextToken(localizer, token) },
+                    detailRows =
+                        card.detailLines.take(2).map { token ->
+                            TileTextRow(renderTextToken(localizer, token), TileTextTone.LIGHT_GRAY)
+                        },
+                    icon = card.iconKey?.let { key -> resolveVisual(visualResolver, key) },
+                    stateIcon = card.stateIconKey?.let { key -> resolveVisual(visualResolver, key) },
+                    typeIcon = card.typeIconKey?.let { key -> resolveVisual(visualResolver, key) },
+                    frame = card.frameKey?.let { key -> resolveVisual(visualResolver, key) },
+                    selected = overlayState.shopFocus == ShopFocus.BUY && overlayState.shopOfferSelection == offer.index,
+                )
+            }
+        val sellCards =
+            shop.sellEntries.take(5).mapIndexed { displayIndex, sellEntry ->
+                val inventoryEntry = snapshot.uiState.inventory.firstOrNull { entry -> entry.index == sellEntry.inventoryIndex }
+                val card =
+                    ModalCardModel.shopSellEntry(
+                        shopId = shop.shopId,
+                        displayIndex = displayIndex,
+                        item = inventoryEntry?.item,
+                        price = sellEntry.price,
+                    )
+                TileFrontstageCardModel(
+                    title = renderTextToken(localizer, card.title),
+                    tone = if (overlayState.shopFocus == ShopFocus.SELL && overlayState.inventorySelection == displayIndex) TileTextTone.CYAN else TileTextTone.WHITE,
+                    summary = card.rewardLines.firstOrNull()?.let { token -> renderTextToken(localizer, token) },
+                    detailRows =
+                        card.detailLines.take(1).map { token ->
+                            TileTextRow(renderTextToken(localizer, token), TileTextTone.LIGHT_GRAY)
+                        },
+                    icon = card.iconKey?.let { key -> resolveVisual(visualResolver, key) },
+                    selected = overlayState.shopFocus == ShopFocus.SELL && overlayState.inventorySelection == displayIndex,
+                    disabled = inventoryEntry == null,
+                )
+            }
+        val detailCards =
+            selectedShopDescriptionRows(localizer, shop, snapshot, overlayState)
+                .take(5)
+                .mapIndexed { index, line ->
+                    TileFrontstageCardModel(
+                        title = if (index == 0) line.text else " ",
+                        tone = descriptionTone(line),
+                        detailRows = if (index == 0) emptyList() else listOf(TileTextRow(line.text, descriptionTone(line))),
+                    )
+                }
+        return TileFrontstageSurfaceModel(
+            kind = TileFrontstageSurfaceKind.SHOP,
+            title = localizer.text(shop.shopNameKey),
+            eyebrow = localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance),
+            summary = shop.hintLabelKeys.joinToString("  ") { key -> localizer.text(key) }.ifBlank { null },
+            columns =
+                listOf(
+                    TileFrontstageColumnModel(localizer.text("ui.shop.buy"), buyCards),
+                    TileFrontstageColumnModel(localizer.text("ui.shop.sell"), sellCards),
+                    TileFrontstageColumnModel(localizer.text("ui.frontstage.shop.detail"), detailCards),
+                ),
+            footerRows = listOf(TileTextRow(localizer.text("ui.controls.shop"), TileTextTone.LIGHT_GRAY)),
+        )
+    }
+
+    private fun buildShopReplacementFrontstage(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+        shop: ShopPanelSnapshot,
+        prompt: InscriptionReplacementPromptSnapshot,
+    ): TileFrontstageSurfaceModel {
+        val candidateCard =
+            TileFrontstageCardModel(
+                title = localizer.text(prompt.candidate.nameKey),
+                tone = TileTextTone.GOLD,
+                summary =
+                    listOf(
+                        localizer.text(prompt.candidate.categoryLabelKey.ifBlank { "ui.sidebar.inscriptions" }),
+                        localizer.text("ui.modal.card.cost.shards", "amount" to prompt.price),
+                    ).joinToString("  "),
+                detailRows =
+                    listOfNotNull(
+                        prompt.candidate.descKey.takeIf(String::isNotBlank)?.let { key ->
+                            TileTextRow(localizer.text(key), TileTextTone.LIGHT_GRAY)
+                        },
+                    ) +
+                        prompt.candidate.effectTagLabelKeys.take(2).map { key ->
+                            TileTextRow(localizer.text(key), TileTextTone.CYAN)
+                        },
+                icon = resolveVisual(visualResolver, prompt.candidate.iconKey),
+                selected = true,
+            )
+        val slotCards =
+            prompt.currentSlots.map { slot ->
+                val selected = slot.hotkey == overlayState.inscriptionReplacementHotkeySelection
+                TileFrontstageCardModel(
+                    title = listOfNotNull(slot.hotkey?.toString(), localizer.text(slot.nameKey)).joinToString(". "),
+                    tone = if (selected) TileTextTone.CYAN else TileTextTone.WHITE,
+                    summary = localizer.text(slot.categoryLabelKey.ifBlank { "ui.sidebar.inscriptions" }),
+                    detailRows = slot.effectTagLabelKeys.take(2).map { key -> TileTextRow(localizer.text(key), TileTextTone.LIGHT_GRAY) },
+                    icon = resolveVisual(visualResolver, slot.iconKey),
+                    selected = selected,
+                )
+            }
+        val routingCards =
+            prompt.categoryChanges.map { change ->
+                TileFrontstageCardModel(
+                    title = localizer.text(change.categoryLabelKey.ifBlank { "ui.sidebar.inscriptions" }),
+                    tone = if (change.afterCount > change.limit) TileTextTone.RED else TileTextTone.GOLD,
+                    summary = "${change.beforeCount} -> ${change.afterCount} / ${change.limit}",
+                    detailRows =
+                        listOfNotNull(
+                            change.targetHotkey?.let { hotkey ->
+                                TileTextRow(localizer.text("ui.frontstage.shop.replace_hotkey", "hotkey" to hotkey), TileTextTone.LIGHT_GRAY)
+                            },
+                        ),
+                )
+            } +
+                listOfNotNull(
+                    prompt.rejectedReasonKey?.let { key ->
+                        TileFrontstageCardModel(
+                            title = localizer.text(key),
+                            tone = TileTextTone.RED,
+                        )
+                    },
+                )
+        return TileFrontstageSurfaceModel(
+            kind = TileFrontstageSurfaceKind.SHOP_REPLACEMENT,
+            title = localizer.text("ui.frontstage.shop.replacement_title"),
+            eyebrow = localizer.text(shop.shopNameKey),
+            summary = localizer.text("ui.frontstage.shop.replacement_summary"),
+            columns =
+                listOf(
+                    TileFrontstageColumnModel(localizer.text("ui.frontstage.shop.candidate"), listOf(candidateCard)),
+                    TileFrontstageColumnModel(localizer.text("ui.frontstage.shop.current_slots"), slotCards),
+                    TileFrontstageColumnModel(localizer.text("ui.frontstage.shop.routing"), routingCards),
+                ),
+            footerRows = listOf(TileTextRow(localizer.text("ui.controls.shop"), TileTextTone.LIGHT_GRAY)),
+        )
+    }
+
+    private fun buildRouteFrontstage(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        routeSelection: RouteSelectionSnapshot,
+        overlayState: OverlayState,
+    ): TileFrontstageSurfaceModel {
+        val routeCards =
+            routeSelection.options.map { option ->
+                val card = RoutePreviewText.modalCardModel(option)
+                TileFrontstageCardModel(
+                    title = renderTextToken(localizer, card.title),
+                    tone = if (overlayState.routeSelection == option.index) TileTextTone.CYAN else TileTextTone.WHITE,
+                    summary = card.summary?.let { token -> renderTextToken(localizer, token) },
+                    detailRows =
+                        (
+                            card.detailLines.take(2).map { token -> TileTextRow(renderTextToken(localizer, token), TileTextTone.LIGHT_GRAY) } +
+                                card.rewardLines.take(2).map { token -> TileTextRow(renderTextToken(localizer, token), modalCardRewardTone(token)) } +
+                                listOfNotNull(RoutePreviewText.traitLine(localizer, option)?.let { traits -> TileTextRow(traits, TileTextTone.BLUE) })
+                        ).take(4),
+                    icon = resolveVisual(visualResolver, DarkUiChromeVisualKeys.SHELL_NAV_COMPASS),
+                    selected = overlayState.routeSelection == option.index,
+                )
+            }
+        return TileFrontstageSurfaceModel(
+            kind = TileFrontstageSurfaceKind.ROUTE_SELECTION,
+            title = localizer.text("ui.frontstage.route.title"),
+            eyebrow = localizer.text("ui.world_map.current_zone", "zone" to localizer.text(routeSelection.currentZoneNameKey)),
+            summary = localizer.text("ui.frontstage.route.summary"),
+            columns = listOf(TileFrontstageColumnModel(localizer.text("ui.frontstage.route.options"), routeCards)),
+            footerRows = listOf(TileTextRow(localizer.text("ui.controls.world_map"), TileTextTone.LIGHT_GRAY)),
+        )
+    }
+
+    private fun buildStatAssignFrontstage(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+    ): TileFrontstageSurfaceModel {
+        val status = snapshot.uiState.playerStatus
+        val cards =
+            listOf(
+                TileFrontstageCardModel(
+                    title = "1. ${localizer.text("ui.stat.str")}",
+                    tone = TileTextTone.GOLD,
+                    summary = localizer.text("ui.frontstage.stat.str_summary"),
+                    detailRows = listOf(TileTextRow("${localizer.text("ui.hud.attack.short")} ${status.attack}", TileTextTone.WHITE)),
+                    selected = true,
+                ),
+                TileFrontstageCardModel(
+                    title = "2. ${localizer.text("ui.stat.dex")}",
+                    tone = TileTextTone.WHITE,
+                    summary = localizer.text("ui.frontstage.stat.dex_summary"),
+                    detailRows =
+                        listOf(
+                            TileTextRow("${localizer.text("ui.hud.accuracy.short")} ${status.accuracy}", TileTextTone.LIGHT_GRAY),
+                            TileTextRow("${localizer.text("ui.hud.evasion.short")} ${status.evasion}", TileTextTone.LIGHT_GRAY),
+                        ),
+                ),
+                TileFrontstageCardModel(
+                    title = "3. ${localizer.text("ui.stat.con")}",
+                    tone = TileTextTone.WHITE,
+                    summary = localizer.text("ui.frontstage.stat.con_summary"),
+                    detailRows =
+                        listOf(
+                            TileTextRow("${localizer.text("ui.hud.hp.short")} ${status.currentHp}/${status.maxHp}", TileTextTone.LIGHT_GRAY),
+                            TileTextRow("${localizer.text("ui.hud.defense.short")} ${status.defense}", TileTextTone.LIGHT_GRAY),
+                        ),
+                ),
+                TileFrontstageCardModel(
+                    title = "4. ${localizer.text("ui.stat.wil")}",
+                    tone = TileTextTone.WHITE,
+                    summary = localizer.text("ui.frontstage.stat.wil_summary"),
+                    detailRows =
+                        listOf(
+                            TileTextRow("${localizer.text(status.resourceLabelKey)} ${status.currentResource}/${status.maxResource}", TileTextTone.LIGHT_GRAY),
+                            TileTextRow("${localizer.text("ui.hud.speed.short")} ${status.speed}", TileTextTone.LIGHT_GRAY),
+                        ),
+                ),
+            )
+        return TileFrontstageSurfaceModel(
+            kind = TileFrontstageSurfaceKind.STAT_ASSIGN,
+            title = localizer.text("ui.sidebar.assign_stats"),
+            eyebrow = localizer.text("ui.sidebar.points", "value" to status.statPoints),
+            summary = localizer.text("ui.frontstage.stat.summary"),
+            columns = listOf(TileFrontstageColumnModel(localizer.text("ui.frontstage.stat.options"), cards)),
+            footerRows = listOf(TileTextRow(localizer.text("ui.controls.stat_assign"), TileTextTone.LIGHT_GRAY)),
+        )
+    }
+
+    private fun buildRewardFrontstage(
+        localizer: Localizer,
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+    ): TileFrontstageSurfaceModel {
+        val rewardCards =
+            snapshot.uiState.recentRewards.asReversed().take(4).mapIndexed { index, entry ->
+                val card = ModalCardModel.rewardPresentation(index, entry)
+                TileFrontstageCardModel(
+                    title = renderTextToken(localizer, card.title),
+                    tone = rewardPresentationTone(entry.source),
+                    summary = card.summary?.let { token -> renderTextToken(localizer, token) },
+                    detailRows =
+                        card.detailLines.take(4).map { token ->
+                            TileTextRow(renderTextToken(localizer, token), TileTextTone.LIGHT_GRAY)
+                        },
+                    icon = card.iconKey?.let { key -> resolveVisual(visualResolver, key) },
+                    selected = index == 0,
+                )
+            }
+        return TileFrontstageSurfaceModel(
+            kind = TileFrontstageSurfaceKind.REWARD,
+            title = localizer.text("ui.frontstage.reward.title"),
+            eyebrow = localizer.text("ui.sidebar.recent_rewards"),
+            summary = localizer.text("ui.frontstage.reward.summary"),
+            columns = listOf(TileFrontstageColumnModel(localizer.text("ui.frontstage.reward.claimed"), rewardCards)),
+            footerRows = listOf(TileTextRow(localizer.text("ui.controls.map.inventory"), TileTextTone.LIGHT_GRAY)),
+        )
+    }
+
     private fun demoOperationRows(
         localizer: Localizer,
         visualResolver: VisualManifestResolver,
@@ -1073,6 +1488,16 @@ internal object TileRenderModelBuilder {
         overlayState: OverlayState,
         fallbackHints: List<String>,
     ): List<TileTextRow> {
+        if (overlayState.mode == UiMode.VALIDATION) {
+            return overlayState.validationPanel?.let { panel ->
+                ValidationOverlaySummaryPresenter.present(
+                    localizer = localizer,
+                    panel = panel,
+                    displayMode = ValidationOverlayDisplayMode.COMPACT,
+                    visibleOverlayRows = 28,
+                )
+            } ?: fallbackHints.map { hint -> TileTextRow(hint, TileTextTone.LIGHT_GRAY) }
+        }
         val shop = snapshot.uiState.activeShop
         if (shop == null || overlayState.mode != UiMode.SHOP) {
             return fallbackHints.map { hint -> TileTextRow(hint, TileTextTone.LIGHT_GRAY) }

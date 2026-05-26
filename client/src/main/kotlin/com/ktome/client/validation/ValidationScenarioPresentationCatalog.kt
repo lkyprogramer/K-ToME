@@ -132,6 +132,12 @@ internal object ValidationScenarioPresentationCatalog {
                 initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
             ),
             ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr07-final-ui"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr07-final-ui.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 titleKey = "validation.phase4.v4.phase4-v4-pr06.title",
                 startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,

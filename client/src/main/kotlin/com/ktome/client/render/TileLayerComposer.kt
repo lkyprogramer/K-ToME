@@ -19,6 +19,7 @@ internal data class TilePlayerIndicatorModel(
 
 internal data class TileMapLayerPlan(
     val terrainBase: List<TileVisualPlacement>,
+    val cellMaterials: List<TileMapCellMaterialModel>,
     val propsAndDecals: List<TileVisualPlacement>,
     val spriteOverlaysAndTelegraphs: List<TileVisualPlacement>,
     val actors: List<TileVisualPlacement>,
@@ -37,6 +38,7 @@ internal object TileLayerComposer {
     ): TileMapLayerPlan =
         TileMapLayerPlan(
             terrainBase = model.terrainTiles,
+            cellMaterials = model.mapCellMaterials,
             propsAndDecals = model.propTiles,
             spriteOverlaysAndTelegraphs = orderedOverlays(model.overlayTiles),
             actors = model.actorTiles,

@@ -1,6 +1,8 @@
 package com.ktome.client.render
 
+import com.ktome.client.input.ValidationOverlayActionState
 import com.ktome.client.input.ValidationOverlayPanelState
+import com.ktome.client.input.ValidationOverlaySectionState
 import com.ktome.core.map.Point
 import com.ktome.game.contentpack.ContentPackKeyResolutionSummary
 import com.ktome.game.contentpack.ContentPackOverlaySummary
@@ -86,6 +88,24 @@ class ValidationOverlaySummaryPresenterTest {
             )
 
         assertCompactWarningAndEvidenceRows(rows, localizer(GameLocale.ZH_CN))
+    }
+
+    @Test
+    fun compactModePrioritizesSelectedValidationActions() {
+        val rows =
+            ValidationOverlaySummaryPresenter.present(
+                localizer = localizer(),
+                panel = panelWithSelectedActions(),
+                displayMode = ValidationOverlayDisplayMode.COMPACT,
+                visibleOverlayRows = 48,
+            )
+        val text = rows.joinToString("\n") { row -> row.text }
+
+        assertEquals("Controls", rows[0].text, text)
+        assertEquals("Fast actions", rows[1].text, text)
+        assertTrue(rows.take(4).any { row -> row.text.contains("Prepare shop") }, text)
+        assertTrue(rows.take(6).any { row -> row.text == "Evidence" }, text)
+        assertTrue(rows.take(8).any { row -> row.text.contains("Root: UI/manual-records/root") }, text)
     }
 
     @Test
@@ -202,6 +222,28 @@ class ValidationOverlaySummaryPresenterTest {
             sections = emptyList(),
         )
 
+    private fun panelWithSelectedActions(): ValidationOverlayPanelState =
+        panel(longLists = true).copy(
+            sections =
+                listOf(
+                    ValidationOverlaySectionState(
+                        titleKey = "section.fast",
+                        selected = true,
+                        actions =
+                            listOf(
+                                ValidationOverlayActionState(labelKey = "action.evidence", selected = false),
+                                ValidationOverlayActionState(labelKey = "action.shop", selected = true),
+                                ValidationOverlayActionState(labelKey = "action.route", selected = false),
+                            ),
+                    ),
+                    ValidationOverlaySectionState(
+                        titleKey = "section.other",
+                        selected = false,
+                        actions = listOf(ValidationOverlayActionState(labelKey = "action.hidden", selected = false)),
+                    ),
+                ),
+        )
+
     private fun localizer(locale: GameLocale = GameLocale.EN_US) =
         LocalizationBundle.fromMaps(
             mapOf(
@@ -259,6 +301,12 @@ class ValidationOverlaySummaryPresenterTest {
             "ui.controls.validation" to "Controls",
             "ui.validation.fold.more" to "+{count} more",
             "zone.test" to "Test zone",
+            "section.fast" to "Fast actions",
+            "section.other" to "Other actions",
+            "action.evidence" to "Show evidence",
+            "action.shop" to "Prepare shop",
+            "action.route" to "Prepare route",
+            "action.hidden" to "Hidden action",
         ) + (1..5).flatMap { index ->
             listOf(
                 "target.$index" to "Target $index",

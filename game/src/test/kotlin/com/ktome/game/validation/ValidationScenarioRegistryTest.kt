@@ -380,6 +380,82 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `dark uiux pr07 final ui scenario maps all screen evidence contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr07-final-ui"))
+
+        assertEquals("PR-07", scenario.prId)
+        assertEquals(ValidationPreset.MAPGEN_DIFF, scenario.runtime.preset)
+        assertEquals(2026051102L, scenario.runtime.seed)
+        assertEquals(GameLocale.ZH_CN, scenario.runtime.locale)
+        assertEquals("vanguard", scenario.runtime.professionId)
+        assertEquals("human", scenario.runtime.raceId)
+        assertEquals("shattered_outpost", scenario.runtime.zoneId)
+        assertEquals(1, scenario.runtime.floor)
+        assertEquals(0, scenario.runtime.routeIndex)
+        assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+        assertEquals(
+            listOf(
+                ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY,
+                ValidationScenarioActionId.PREPARE_SHOP_SURFACE,
+                ValidationScenarioActionId.PREPARE_SHOP_REPLACEMENT,
+                ValidationScenarioActionId.PREPARE_ACTIVE_SLOT_MODAL,
+                ValidationScenarioActionId.PREPARE_ROUTE_SELECTION,
+                ValidationScenarioActionId.PREPARE_STAT_ASSIGN,
+                ValidationScenarioActionId.PREPARE_REWARD_FRONTSTAGE,
+                ValidationScenarioActionId.PREPARE_MAP_TELEGRAPH,
+                ValidationScenarioActionId.PREPARE_VICTORY_OUTCOME,
+                ValidationScenarioActionId.PREPARE_DEFEAT_OUTCOME,
+                ValidationScenarioActionId.RESET_SCENARIO,
+            ),
+            scenario.actionIds,
+        )
+        assertEquals("UI/manual-records/dark-uiux-pr07-packaged-app.md", scenario.evidence.manualRecordPath)
+        assertEquals(listOf("log.validation.phase4_v4.action"), scenario.evidence.requiredLogEventKeys)
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr07-final-ui.evidence.summary_note",
+            scenario.evidence.scenarioNoteLabelKey,
+        )
+        listOf(
+            "evidence/dark-uiux-pr07-main-menu.png",
+            "evidence/dark-uiux-pr07-character-creation.png",
+            "evidence/dark-uiux-pr07-continue-unavailable.png",
+            "evidence/dark-uiux-pr07-validation-setup.png",
+            "evidence/dark-uiux-pr07-validation-overlay.png",
+            "evidence/dark-uiux-pr07-ui-demo-new-shell.png",
+            "evidence/dark-uiux-pr07-inventory-workbench.png",
+            "evidence/dark-uiux-pr07-inscription-shop.png",
+            "evidence/dark-uiux-pr07-shop-replacement-modal.png",
+            "evidence/dark-uiux-pr07-talent-assign.png",
+            "evidence/dark-uiux-pr07-active-slot-modal.png",
+            "evidence/dark-uiux-pr07-status-quest-skill-overview.png",
+            "evidence/dark-uiux-pr07-combat-decision.png",
+            "evidence/dark-uiux-pr07-look-inspect.png",
+            "evidence/dark-uiux-pr07-world-route-selection.png",
+            "evidence/dark-uiux-pr07-stat-assign.png",
+            "evidence/dark-uiux-pr07-reward-frontstage.png",
+            "evidence/dark-uiux-pr07-map-layer-telegraph.png",
+            "evidence/dark-uiux-pr07-outcome-victory.png",
+            "evidence/dark-uiux-pr07-outcome-defeat.png",
+            "evidence/dark-uiux-pr07-runtime-loading.png",
+            "evidence/dark-uiux-pr07-runtime-error.png",
+            "evidence/dark-uiux-pr07-ui-error-screen.png",
+            "evidence/dark-uiux-pr07-accessibility-settings.png",
+            "evidence/dark-uiux-pr07-final-ui-app.log",
+        ).forEach { evidenceFile ->
+            assertTrue(evidenceFile in scenario.evidence.requiredEvidenceFiles, evidenceFile)
+        }
+        assertEquals(
+            scenario.evidence.requiredEvidenceFiles.filter { file -> file.endsWith(".png") },
+            scenario.evidence.cuaSteps.map { step -> step.evidenceFile },
+        )
+        val runbookText = scenario.evidence.cuaSteps.joinToString("\n") { step -> step.expectedVisibleResult }
+        assertTrue(runbookText.contains("ui-demo-new"))
+        assertTrue(runbookText.contains("Validation setup"))
+        assertTrue(runbookText.contains("UiErrorScreen"))
+    }
+
+    @Test
     fun `pr07 sample pack visibility scenario matches fixed phase4 v4 contract`() {
         val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr07"))
 

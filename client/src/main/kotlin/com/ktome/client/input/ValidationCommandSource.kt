@@ -10,8 +10,8 @@ import com.ktome.game.validation.ValidationAction
 import com.ktome.game.validation.ValidationOverlaySection
 import com.ktome.game.validation.ValidationPhase4Guide
 import com.ktome.game.validation.ValidationPreset
-import com.ktome.game.validation.ValidationScenarioActionId
 import com.ktome.game.validation.ValidationScenarioId
+import com.ktome.game.validation.ValidationScenarioRegistry
 import com.ktome.game.validation.ValidationSummarySnapshot
 import com.ktome.game.validation.hasMeaningfulNextSeedRestart
 import com.ktome.game.validation.validationHiddenBindingForPreset
@@ -443,7 +443,7 @@ private fun buildValidationOverlayActionDescriptors(
 
         ValidationOverlaySection.PHASE4_V4_FAST ->
             scope.scenarioId?.let { scenarioId ->
-                ValidationScenarioActionId.entries.map { actionId ->
+                ValidationScenarioRegistry.require(scenarioId).actionIds.map { actionId ->
                     ValidationOverlayActionDescriptor(
                         labelKey = "ui.validation.action.phase4_v4.${actionId.value}",
                         buildAction = {

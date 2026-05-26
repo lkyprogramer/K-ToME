@@ -11,6 +11,7 @@ internal object TileTextMetrics {
             TileTextStyle.TITLE -> 22f
             TileTextStyle.UI -> 15f
             TileTextStyle.SMALL -> 12f
+            TileTextStyle.CAPTION -> 10f
         }
 
     fun approximateLineHeight(style: TileTextStyle): Float =
@@ -18,6 +19,7 @@ internal object TileTextMetrics {
             TileTextStyle.TITLE -> 38f
             TileTextStyle.UI -> 24f
             TileTextStyle.SMALL -> 19f
+            TileTextStyle.CAPTION -> 16f
         }
 
     fun maxCharsForWidth(
