@@ -1,0 +1,26 @@
+[
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-v07a-wall-bleed5-rejected/ui-demo-new-parity-1672x941.png",
+    "sha256": "851328941e6dae8bb47b0081df91a7c0e97b76857880768477b40d8000426df6"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-v07a-wall-bleed5-rejected/ui-demo-new-parity-1280x800.png",
+    "sha256": "e5be835fb622aa93b11f58ead0f4f4958fd69eb8a5d9e9c78a9a1d33a6c7fcff"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-v07a-wall-bleed5-rejected/ui-demo-new-map-stage-crop.png",
+    "sha256": "cbfc1b1e4939081a59492a5408f6eae03166255d3072808ff4dc2980bca4bae3"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-v07a-wall-bleed5-rejected/ui-demo-new-right-panel-grid.png",
+    "sha256": "417dc27fb77b5f7dd633cab0ca3e377dc82894c17bee9b4bc6676d841a6ff79f"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-v07a-wall-bleed5-rejected/ui-demo-new-bottom-deck-no-command-hints.png",
+    "sha256": "b5bf7bd1840e2f34bc2f0e7ebbb1e4c39cd92f1bbd170e157b5eb297a093f4cf"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/pr08-room-enclosure-lattice-v07a-runtime-comparison-board.png",
+    "sha256": "a4a2f1202ab8c63360e3260c9ce5c53259266e75c37ad08495c96c2be53a9a77"
+  }
+]

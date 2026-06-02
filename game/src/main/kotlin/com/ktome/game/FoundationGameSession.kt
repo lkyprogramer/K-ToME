@@ -384,6 +384,8 @@ private const val TALENT_MULTI_TREE_INVESTMENT_THRESHOLD: Int = 3
 private const val HIDDEN_ENTRANCE_PROP_TYPE_ID: String = "hidden_entrance"
 private const val SECRET_REWARD_PROP_TYPE_ID: String = "secret_reward"
 private const val SECRET_RETURN_PROP_TYPE_ID: String = "secret_return"
+private const val DARK_UIUX_PR07_FINAL_SCENARIO_ID: String = "dark-uiux-pr07-final-ui"
+private const val DARK_UIUX_PR08_DIRECTOR_SCENARIO_ID: String = "dark-uiux-pr08-director-grade"
 private const val ZONE_HOOK_TRIGGERED_TAG_PREFIX: String = "zoneHookTriggered."
 private const val ZONE_RUNTIME_HOOK_EFFECT_TAG_PREFIX: String = "zone.runtime_hook.effect."
 private const val TRAIL_PRESSURE_LEAD_MULTIPLIER_TAG_PREFIX: String =
@@ -1959,10 +1961,8 @@ class FoundationGameSession internal constructor(
                 prepareDarkUiuxPr07RewardFrontstageSurface()
             }
 
-            ValidationScenarioActionId.PREPARE_MAP_TELEGRAPH -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
-                preparePhase4V4Pr05PrimaryScene()
-                "dark_uiux_pr07_map_telegraph_ready"
-            }
+            ValidationScenarioActionId.PREPARE_MAP_TELEGRAPH ->
+                acceptDarkUiuxMapTelegraphAction(scenario, action.actionId)
 
             ValidationScenarioActionId.PREPARE_VICTORY_OUTCOME -> acceptDarkUiuxPr07FinalAction(scenario, action.actionId) {
                 finalizeVictory()
@@ -2981,7 +2981,7 @@ class FoundationGameSession internal constructor(
         actionId: ValidationScenarioActionId,
         prepare: () -> String,
     ): CommandResolution =
-        if (scenario.id.value == "dark-uiux-pr07-final-ui") {
+        if (scenario.id.value == DARK_UIUX_PR07_FINAL_SCENARIO_ID) {
             acceptValidationScenarioAction(
                 scenarioId = scenario.id.value,
                 actionId = actionId.value,
@@ -2994,6 +2994,47 @@ class FoundationGameSession internal constructor(
                 result = "unsupported_action_for_scenario",
             )
         }
+
+    private fun acceptDarkUiuxMapTelegraphAction(
+        scenario: ValidationScenarioDef,
+        actionId: ValidationScenarioActionId,
+    ): CommandResolution {
+        return when (scenario.id.value) {
+            DARK_UIUX_PR07_FINAL_SCENARIO_ID -> {
+                preparePhase4V4Pr05PrimaryScene()
+                acceptValidationScenarioAction(
+                    scenarioId = scenario.id.value,
+                    actionId = actionId.value,
+                    result = "dark_uiux_pr07_map_telegraph_ready",
+                )
+            }
+
+            DARK_UIUX_PR08_DIRECTOR_SCENARIO_ID -> {
+                val telegraph = triggerBossTelegraphForValidation()
+                if (!telegraph.accepted) {
+                    return rejectValidationScenarioAction(
+                        scenarioId = scenario.id.value,
+                        actionId = actionId.value,
+                        result = "boss_telegraph_unavailable",
+                    )
+                }
+                recentRewardEntries.clear()
+                invalidateRenderSnapshot()
+                acceptValidationScenarioAction(
+                    scenarioId = scenario.id.value,
+                    actionId = actionId.value,
+                    result = "dark_uiux_pr08_map_telegraph_ready",
+                )
+            }
+
+            else ->
+                rejectValidationScenarioAction(
+                    scenarioId = scenario.id.value,
+                    actionId = actionId.value,
+                    result = "unsupported_action_for_scenario",
+                )
+        }
+    }
 
     private fun prepareDarkUiuxPr07ShopSurface(): String {
         switchValidationScenarioZone(zoneId = "greenwood_fringe", floor = 1)

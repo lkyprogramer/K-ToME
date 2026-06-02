@@ -798,7 +798,7 @@
       "promptPath": "UI/sprite-sheets/prompts/dark-v1/028-r08-skills-vanguard-berserker.prompt.txt",
       "qaGate": "BLOCK_RUNTIME_SLICE_IF_ANY_PLAYER_VISIBLE_SAMPLE_FAILS",
       "randomSampleRuleCount": 8,
-      "rawSheetHash": "94bdf071f175a5f051845a085c8a2351acfba3fd4b9de6868d0d1b3189d63dad",
+      "rawSheetHash": "b102ae4b49d13fadc14d1a65142e809a9ae06f31af605e3774a54b74e006e675",
       "rawSheetPath": "assets-src/image/raw/sheets/dark-v1/r08-skills-vanguard-berserker.png",
       "round": 8,
       "sampleSheetPath": "build/reports/verification/dark-uiux/random-qa/r08-skills-vanguard-berserker-random-qa.png",
@@ -827,7 +827,7 @@
           },
           "col": 5,
           "outputName": "dark-v1/icons/icon_skill_vanguard_guard_stance.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -835,8 +835,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 2,
           "selection": "mandatory",
           "targetKey": "icon.skill.vanguard.guard_stance"
@@ -851,7 +849,7 @@
           },
           "col": 7,
           "outputName": "dark-v1/icons/icon_skill_vanguard_power_strike.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -859,8 +857,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 2,
           "selection": "mandatory",
           "targetKey": "icon.skill.vanguard.power_strike"
@@ -875,7 +871,7 @@
           },
           "col": 0,
           "outputName": "dark-v1/icons/icon_skill_vanguard_shield_bash.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -883,8 +879,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 3,
           "selection": "mandatory",
           "targetKey": "icon.skill.vanguard.shield_bash"
@@ -899,7 +893,7 @@
           },
           "col": 0,
           "outputName": "dark-v1/icons/talent_berserker_pain_fuel_icon.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -907,8 +901,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 1,
           "selection": "random",
           "targetKey": "talent.berserker.pain_fuel.icon"
@@ -923,7 +915,7 @@
           },
           "col": 1,
           "outputName": "dark-v1/icons/talent_vanguard_charge_visual.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -931,8 +923,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 5,
           "selection": "random",
           "targetKey": "talent.vanguard.charge.visual"
@@ -947,7 +937,7 @@
           },
           "col": 7,
           "outputName": "dark-v1/icons/talent_berserker_fault_line_icon.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -955,8 +945,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 0,
           "selection": "random",
           "targetKey": "talent.berserker.fault_line.icon"
@@ -971,7 +959,7 @@
           },
           "col": 4,
           "outputName": "dark-v1/icons/icon_skill_vanguard_earthshaker.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -979,8 +967,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 2,
           "selection": "random",
           "targetKey": "icon.skill.vanguard.earthshaker"
@@ -995,7 +981,7 @@
           },
           "col": 7,
           "outputName": "dark-v1/icons/talent_vanguard_battlefield_command_visual.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -1003,8 +989,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 4,
           "selection": "random",
           "targetKey": "talent.vanguard.battlefield_command.visual"
@@ -1019,7 +1003,7 @@
           },
           "col": 3,
           "outputName": "dark-v1/icons/talent_vanguard_bulwark_march_icon.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -1027,8 +1011,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 3,
           "selection": "random",
           "targetKey": "talent.vanguard.bulwark_march.icon"
@@ -1043,7 +1025,7 @@
           },
           "col": 1,
           "outputName": "dark-v1/icons/talent_berserker_slaughter_drive_visual.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -1051,8 +1033,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 2,
           "selection": "random",
           "targetKey": "talent.berserker.slaughter_drive.visual"
@@ -1067,7 +1047,7 @@
           },
           "col": 2,
           "outputName": "dark-v1/icons/talent_berserker_riven_edge_icon.png",
-          "qaDecision": "PASS",
+          "qaDecision": "MANUAL_REVIEW_REQUIRED",
           "rejectReason": null,
           "requiredSizesPx": [
             16,
@@ -1075,8 +1055,6 @@
             32,
             48
           ],
-          "reviewedAt": "2026-05-23T14:56:03+08:00",
-          "reviewer": "Codex visual QA",
           "row": 1,
           "selection": "random",
           "targetKey": "talent.berserker.riven_edge.icon"

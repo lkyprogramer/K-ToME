@@ -16,6 +16,7 @@ import com.ktome.game.validation.ValidationScenarioDef
 import com.ktome.game.validation.ValidationScenarioEvidenceSummary
 import com.ktome.game.validation.ValidationScenarioId
 import com.ktome.game.validation.ValidationScenarioRegistry
+import com.ktome.game.validation.ValidationScenarioStartupSurface
 import com.ktome.game.validation.ValidationSessionOptions
 import java.nio.file.Path
 
@@ -25,6 +26,7 @@ internal enum class ValidationScenarioBootstrapErrorCode(
     UNKNOWN_PHASE4_V4_SCENARIO("UNKNOWN_PHASE4_V4_SCENARIO"),
     MISSING_PHASE4_V4_SCENARIO_PRESENTATION("MISSING_PHASE4_V4_SCENARIO_PRESENTATION"),
     INVALID_PHASE4_V4_SCENARIO_STARTUP_MODE("INVALID_PHASE4_V4_SCENARIO_STARTUP_MODE"),
+    INVALID_PHASE4_V4_STARTUP_SURFACE("INVALID_PHASE4_V4_STARTUP_SURFACE"),
 }
 
 internal sealed interface ValidationScenarioBootstrapResult {
@@ -53,6 +55,7 @@ internal object ValidationScenarioBootstrap {
     const val EVIDENCE_DIR_PROPERTY: String = "ktome.whitebox.evidenceDir"
     const val MANUAL_RECORD_PROPERTY: String = "ktome.whitebox.manualRecord"
     const val APP_HASH_PROPERTY: String = "ktome.whitebox.appHash"
+    const val STARTUP_SURFACE_PROPERTY: String = "ktome.validation.startupSurface"
 
     fun resolve(
         propertyProvider: (String) -> String? = System::getProperty,
@@ -69,6 +72,7 @@ internal object ValidationScenarioBootstrap {
                 EVIDENCE_DIR_PROPERTY to propertyProvider(EVIDENCE_DIR_PROPERTY),
                 MANUAL_RECORD_PROPERTY to propertyProvider(MANUAL_RECORD_PROPERTY),
                 APP_HASH_PROPERTY to propertyProvider(APP_HASH_PROPERTY),
+                STARTUP_SURFACE_PROPERTY to propertyProvider(STARTUP_SURFACE_PROPERTY),
             )
         return try {
             val scenario = ValidationScenarioRegistry.require(scenarioId, startupProperties)
@@ -90,12 +94,27 @@ internal object ValidationScenarioBootstrap {
                             "and cannot be started directly.",
                 )
             }
+            val startupSurface =
+                if (startupProperties[STARTUP_SURFACE_PROPERTY].isNullOrBlank()) {
+                    null
+                } else {
+                    startupSurface(startupProperties)
+                        ?: return errorResult(
+                            scenarioId = scenario.id.value,
+                            startupProperties = startupProperties,
+                            errorCode = ValidationScenarioBootstrapErrorCode.INVALID_PHASE4_V4_STARTUP_SURFACE,
+                            detailMessage =
+                                "Validation startupSurface=${startupProperties[STARTUP_SURFACE_PROPERTY]} is not supported. " +
+                                    "Legal startup surfaces: ${ValidationScenarioStartupSurface.entries.joinToString(", ") { it.propertyValue }}.",
+                        )
+                }
             ValidationScenarioBootstrapResult.Start(
                 scenario = scenario,
                 options =
                     scenario.toSessionOptions(
                         samplePackSelection = samplePackSelection,
                         evidenceSummary = scenarioEvidenceSummary(scenario, startupProperties),
+                        startupSurface = startupSurface,
                     ),
             )
         } catch (exception: UnknownValidationScenarioException) {
@@ -144,6 +163,15 @@ internal object ValidationScenarioBootstrap {
 
     private fun expectedEvidencePath(startupProperties: Map<String, String?>): String? =
         resolveWhiteboxPaths(startupProperties)?.expectedEvidencePath
+
+    private fun startupSurface(
+        startupProperties: Map<String, String?>,
+    ): ValidationScenarioStartupSurface? =
+        startupProperties[STARTUP_SURFACE_PROPERTY]
+            ?.takeIf(String::isNotBlank)
+            ?.let { rawSurface ->
+                ValidationScenarioStartupSurface.entries.firstOrNull { surface -> surface.propertyValue == rawSurface }
+            }
 
     private fun resolveWhiteboxPaths(startupProperties: Map<String, String?>): StartupWhiteboxPaths? {
         val evidenceDir =

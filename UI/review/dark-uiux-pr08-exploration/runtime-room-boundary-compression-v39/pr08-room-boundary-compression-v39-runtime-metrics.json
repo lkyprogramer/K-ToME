@@ -1,0 +1,96 @@
+{
+  "artifactHashes": {
+    "pr08-room-boundary-compression-v39-comparison-board.png": "846669ef711d29286135c3b5d51dd27a9b7e5a47b541790165c8994bb7693b49",
+    "pr08-room-boundary-compression-v39-dark-uiux-pr02-1-demo-main-menu.png": "7134d961071c37d18b5ee504331fa1c70db1773f6e5f40b65a68a90ae6a626cf",
+    "pr08-room-boundary-compression-v39-dark-uiux-pr02-1-demo-shell-1280x800.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "pr08-room-boundary-compression-v39-dark-uiux-pr02-1-demo-shell-inventory-open.png": "5f380674c11becc39068da388f81235435fab68257f9f961bd7e1f6f0727fd84",
+    "pr08-room-boundary-compression-v39-dark-uiux-pr02-1-demo-shell-right-panel-grid.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "pr08-room-boundary-compression-v39-dark-uiux-pr02-1-demo-validation-setup.png": "fe1270a0e2acbac3fced17fd13c3ef75f0914bc6ea753d6cad3c93c07b0b5a09",
+    "pr08-room-boundary-compression-v39-evidence-index.tsv": "d9d7bd053cf1767ad393cfd5434d939deb9649131f1bd6f5aadb269740e4692b",
+    "pr08-room-boundary-compression-v39-reference-map-crop.png": "b8860c59c4482b1ddf3e726e0d7ece6a75637bcef5d4203fd2fd4733ad2eea2f",
+    "pr08-room-boundary-compression-v39-ui-demo-new-bottom-deck-no-command-hints.png": "f9b22db39ff64fb45768d66feccf6d6bf69ae0a69cdc77ec2432f092be429907",
+    "pr08-room-boundary-compression-v39-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "pr08-room-boundary-compression-v39-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "pr08-room-boundary-compression-v39-ui-demo-new-map-stage-crop.png": "dc880beb7c79992c65c2e54f224f13bff434260f21638dfa5e0e293324315fde",
+    "pr08-room-boundary-compression-v39-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "pr08-room-boundary-compression-v39-ui-demo-new-parity-1280x800.png": "a150ff528dde717e9e818addd859996b9e0511dcbe8ff1fc48eee25789cc8d8c",
+    "pr08-room-boundary-compression-v39-ui-demo-new-parity-1672x941.png": "7fec15d182923dc3b196727c508d53e4dc2a1c167ddcdbddde53c8525a0a59dd",
+    "pr08-room-boundary-compression-v39-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "pr08-room-boundary-compression-v39-v38-room-closeup.png": "9976edd3d0c51ff31b99b03bec4342dc2ef835de01663e061cbaabd5436098a0",
+    "pr08-room-boundary-compression-v39-v38-ui-demo-new-map-stage-crop.png": "a1953d0d0903883113ad923acc504f461a6b3e9890987872bb3bb39e449db0d9",
+    "pr08-room-boundary-compression-v39-v38-ui-demo-new-parity-1672x941.png": "f6ecef33ff41c6863d2a5255d3568822e3924c7015ca898cd4181bee312db611",
+    "pr08-room-boundary-compression-v39-v39-room-closeup.png": "cc9c72b5ecc69dfa763c8ebe82a20e80816bbbe103a3de3ef61e6a3067f682bc",
+    "pr08-room-boundary-compression-v39-v39-v38-full-diff.png": "0ac4a79f5a9ab1bf8741642d404a1bd1e0ee37318c48d71db81494f55f34e67d",
+    "pr08-room-boundary-compression-v39-v39-v38-map-stage-diff.png": "3b444935154f2b8cb92d1bfd398df3a3b6fbb1175c3fcb0c078577c130f35766",
+    "pr08-room-boundary-compression-v39-v39-v38-room-closeup-diff.png": "9af078d38e17a7b5b1335cfc0a79b4f084a0a2b912ebe3700bd5e06724139efe"
+  },
+  "goldenActualHashes": {
+    "ui-demo-new-bottom-deck-no-command-hints": "9a64b9de43f0d8526d48e2bd5e9705c266599d3002c9b924305f7c2bf5aacdcd",
+    "ui-demo-new-inventory-page-1": "23905f61e56675bd4736eb0a9f47a200012d9899584e1be5c1b613c84952b8bd",
+    "ui-demo-new-inventory-page-2": "63bbaecf273cd14cbdea001954c8d4a50691e29207140bf3067332e18d9cc94a",
+    "ui-demo-new-map-stage-crop": "33fc0f4a2b33ab84befeb673261f90d951403b21b52431b52b98f3b741ddc9cb",
+    "ui-demo-new-nav-rail-crop": "c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6",
+    "ui-demo-new-parity-1280x800": "909a06248417de6802eca42b8f19bbe24c6bf57e9dc963414e79a7672e335630",
+    "ui-demo-new-parity-1672x941": "df28ecec271b075e5cbfc0e2e27b353ff6450149ec329218553c30189d79ed2f",
+    "ui-demo-new-right-panel-grid": "4fc73bb307d123267bef293e925fd0f1449b4dd3437b92ffc315d3f9ada6c5f8"
+  },
+  "v38VsReferenceMapResized": {
+    "changedRatio": 0.9999070400398674,
+    "maxAbsRgbDiff": [
+      250,
+      249,
+      232
+    ],
+    "meanAbsRgbDiff": 15.575196621496431
+  },
+  "v39VsReferenceMapResized": {
+    "changedRatio": 0.9999075192149196,
+    "maxAbsRgbDiff": [
+      250,
+      249,
+      232
+    ],
+    "meanAbsRgbDiff": 15.568107226598688
+  },
+  "v39VsV38FullScreen": {
+    "changedRatio": 0.009096343348468747,
+    "maxAbsRgbDiff": [
+      9,
+      8,
+      6
+    ],
+    "meanAbsRgbDiff": 0.011519725613424925
+  },
+  "v39VsV38MapStage": {
+    "changedRatio": 0.020001725030188027,
+    "maxAbsRgbDiff": [
+      9,
+      8,
+      6
+    ],
+    "meanAbsRgbDiff": 0.025554884710482433
+  },
+  "v39VsV38RoomCloseup": {
+    "changedRatio": 0.05643462190050824,
+    "maxAbsRgbDiff": [
+      9,
+      8,
+      6
+    ],
+    "meanAbsRgbDiff": 0.07160069818779198
+  },
+  "validation": [
+    {
+      "command": "source \"$HOME/.sdkman/bin/sdkman-init.sh\" && sdk env && ./gradlew :client:test --tests 'com.ktome.client.render.TileRendererCanvasTest.render canvas compresses visible room boundary with thick interior stone shoulders'",
+      "status": "passed"
+    },
+    {
+      "command": "source \"$HOME/.sdkman/bin/sdkman-init.sh\" && sdk env && ./gradlew :client:test --tests com.ktome.client.render.TileRendererCanvasTest --tests com.ktome.client.assets.ManifestResolveTest :client:clientSmoke maintainabilityLint",
+      "status": "passed; clientSmoke kept 3 existing skips"
+    },
+    {
+      "command": "source \"$HOME/.sdkman/bin/sdkman-init.sh\" && sdk env && ./gradlew :client:goldenScreenshot --tests 'com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts'",
+      "status": "failed as expected because V39 changes canonical visual hashes"
+    }
+  ]
+}

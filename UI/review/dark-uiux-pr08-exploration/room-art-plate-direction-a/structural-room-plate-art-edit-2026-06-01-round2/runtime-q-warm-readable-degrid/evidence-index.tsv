@@ -1,0 +1,5 @@
+artifact	sha256	source
+ui-demo-new-map-stage-crop	b1a998c2a8529a6a1f183a2c70454deb3bb3bfc8cb9456f7da37e9ac50a81d54	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-map-stage-crop.png
+ui-demo-new-parity-1280x800	8ec570de0cc956da33ad853335cd03704d818f310b736006b30ad03ed7e1a0b5	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1280x800.png
+ui-demo-new-parity-1672x941	a14308f407cd0d70938c9678b8a620797f893ed86c40891f2e12bb7ddac89908	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1672x941.png
+gradleExit	1	expected-fail-without-golden-rebaseline

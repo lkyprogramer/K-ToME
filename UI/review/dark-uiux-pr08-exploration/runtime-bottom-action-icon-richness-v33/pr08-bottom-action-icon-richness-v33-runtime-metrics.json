@@ -1,0 +1,291 @@
+{
+  "action_diff": "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v33-v32-action-deck-diff.png",
+  "bottom_diff": "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v33-v32-bottom-deck-diff.png",
+  "comparison_board": "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-comparison-board.png",
+  "copied_artifacts": [
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-main-menu.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-shell-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-shell-inventory-open.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-shell-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-validation-setup.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-evidence-index.tsv",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-bottom-deck-no-command-hints.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-inventory-page-1.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-inventory-page-2.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-map-stage-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-nav-rail-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-parity-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-parity-1672x941.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v33-v32-bottom-deck-diff.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-reference-action-deck-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v32-action-deck-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v33-action-deck-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v33-v32-action-deck-diff.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-comparison-board.png"
+  ],
+  "hashes": {
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-comparison-board.png": "19fca31ad4d2aa19cdf6129420f6f3e58f01e28d26173252bccc23fafa68a641",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-main-menu.png": "7134d961071c37d18b5ee504331fa1c70db1773f6e5f40b65a68a90ae6a626cf",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-shell-1280x800.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-shell-inventory-open.png": "5f380674c11becc39068da388f81235435fab68257f9f961bd7e1f6f0727fd84",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-shell-right-panel-grid.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-dark-uiux-pr02-1-demo-validation-setup.png": "fe1270a0e2acbac3fced17fd13c3ef75f0914bc6ea753d6cad3c93c07b0b5a09",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-evidence-index.tsv": "5e27fed4c75943b77865adae7461d3525b248d6a8a2ff22cd5cbfc162577f165",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-reference-action-deck-crop.png": "9c55b259960f4836a50a40db1cc732855b1f8eab92e37fd5d2010322def9e1ff",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-bottom-deck-no-command-hints.png": "e259e62708d4f9f74f8b1371bcc6c05dcf9f12781f2d0eed1460f4475fabe62b",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-map-stage-crop.png": "b07adf8da68253006bdce2af1a2657f870fe6f31d65d35aa355485102895b6a8",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-parity-1280x800.png": "74ffe3adecabab8709f459898749f1ff911d90bfe44ed184bfd0fab29eeaf064",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-parity-1672x941.png": "c73512c55ab5965e7d2ac96f2e52b15ca8e11e826c9bf289980483c4cf61d657",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v32-action-deck-crop.png": "816700dec0ea0fe82196bbfe3849171e9d8f799077c3e5bb3e771bb120f3d0af",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v33-action-deck-crop.png": "c5481bb4f630e4076a63a54a70572b297027d322ccbb653d46579d97af1c6696",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v33-v32-action-deck-diff.png": "1a5e0652227b67ec4c7d5647033642f6badeced5d9924f2748c88c5c64bd255b",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-action-icon-richness-v33/pr08-bottom-action-icon-richness-v33-v33-v32-bottom-deck-diff.png": "bc80e2d2e5ede47e1d83b57fd1455645152d5c40e819177e4ae6f9753d4952f8"
+  },
+  "v32_vs_reference_action_deck_resized": {
+    "changed_ratio": 0.998840579710145,
+    "channel_extrema": [
+      [
+        0,
+        248
+      ],
+      [
+        0,
+        241
+      ],
+      [
+        0,
+        230
+      ]
+    ],
+    "mean_abs_diff": 17.67738414743246,
+    "size": [
+      405,
+      230
+    ]
+  },
+  "v33_vs_reference_action_deck_resized": {
+    "changed_ratio": 0.998840579710145,
+    "channel_extrema": [
+      [
+        0,
+        248
+      ],
+      [
+        0,
+        241
+      ],
+      [
+        0,
+        230
+      ]
+    ],
+    "mean_abs_diff": 17.994499910538558,
+    "size": [
+      405,
+      230
+    ]
+  },
+  "v33_vs_v32_action_deck_crop": {
+    "changed_ratio": 0.14309876543209876,
+    "channel_extrema": [
+      [
+        0,
+        244
+      ],
+      [
+        0,
+        198
+      ],
+      [
+        0,
+        177
+      ]
+    ],
+    "mean_abs_diff": 3.280267489711934,
+    "size": [
+      675,
+      360
+    ]
+  },
+  "v33_vs_v32_bottom_deck": {
+    "changed_ratio": 0.052410019895098574,
+    "channel_extrema": [
+      [
+        0,
+        244
+      ],
+      [
+        0,
+        198
+      ],
+      [
+        0,
+        177
+      ]
+    ],
+    "mean_abs_diff": 1.2014001929221678,
+    "size": [
+      1843,
+      360
+    ]
+  },
+  "v33_vs_v32_full_1280x800": {
+    "changed_ratio": 0.008489501953125,
+    "channel_extrema": [
+      [
+        0,
+        244
+      ],
+      [
+        0,
+        198
+      ],
+      [
+        0,
+        177
+      ]
+    ],
+    "mean_abs_diff": 0.194605712890625,
+    "size": [
+      2560,
+      1600
+    ]
+  },
+  "v33_vs_v32_full_1672x941": {
+    "changed_ratio": 0.007654676130961158,
+    "channel_extrema": [
+      [
+        0,
+        228
+      ],
+      [
+        0,
+        192
+      ],
+      [
+        0,
+        168
+      ]
+    ],
+    "mean_abs_diff": 0.17520681958010667,
+    "size": [
+      3344,
+      1882
+    ]
+  },
+  "v33_vs_v32_inventory_page_1": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  },
+  "v33_vs_v32_inventory_page_2": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  },
+  "v33_vs_v32_map_stage": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v33_vs_v32_nav_rail": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      112,
+      1240
+    ]
+  },
+  "v33_vs_v32_right_panel": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  }
+}

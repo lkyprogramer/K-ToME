@@ -1,0 +1,84 @@
+{
+  "artifactHashes": {
+    "pr08-ground-relief-authority-v37-comparison-board.png": "7b03ea986feacf737a4dcec51e34f3ff4391ec39c9b4652542ac278c8bbe92a2",
+    "pr08-ground-relief-authority-v37-dark-uiux-pr02-1-demo-main-menu.png": "7134d961071c37d18b5ee504331fa1c70db1773f6e5f40b65a68a90ae6a626cf",
+    "pr08-ground-relief-authority-v37-dark-uiux-pr02-1-demo-shell-1280x800.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "pr08-ground-relief-authority-v37-dark-uiux-pr02-1-demo-shell-inventory-open.png": "5f380674c11becc39068da388f81235435fab68257f9f961bd7e1f6f0727fd84",
+    "pr08-ground-relief-authority-v37-dark-uiux-pr02-1-demo-shell-right-panel-grid.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "pr08-ground-relief-authority-v37-dark-uiux-pr02-1-demo-validation-setup.png": "fe1270a0e2acbac3fced17fd13c3ef75f0914bc6ea753d6cad3c93c07b0b5a09",
+    "pr08-ground-relief-authority-v37-evidence-index.tsv": "3ee6d0ed045494494c24291ef777b14b5caa6da5b477c3baa254bdbaa7766e13",
+    "pr08-ground-relief-authority-v37-reference-map-crop.png": "b8860c59c4482b1ddf3e726e0d7ece6a75637bcef5d4203fd2fd4733ad2eea2f",
+    "pr08-ground-relief-authority-v37-ui-demo-new-bottom-deck-no-command-hints.png": "f9b22db39ff64fb45768d66feccf6d6bf69ae0a69cdc77ec2432f092be429907",
+    "pr08-ground-relief-authority-v37-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "pr08-ground-relief-authority-v37-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "pr08-ground-relief-authority-v37-ui-demo-new-map-stage-crop.png": "2dc5d7177d00b7add9aee81575f2a5b3e9684f597aaa79f8d579121a584327ae",
+    "pr08-ground-relief-authority-v37-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "pr08-ground-relief-authority-v37-ui-demo-new-parity-1280x800.png": "d936562c35a35ee2b1158f4a5f85bd580b8fc09784fa9e8cf27f05450ac69478",
+    "pr08-ground-relief-authority-v37-ui-demo-new-parity-1672x941.png": "7d9f075161ba2ff7047548dea402f4eacf56e267727940a2a3e5f769450d964e",
+    "pr08-ground-relief-authority-v37-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "pr08-ground-relief-authority-v37-v36-room-closeup.png": "3c0541824dc5e5670557fe2e9f3d87560c75341ab911ea58c27f5c32608702c0",
+    "pr08-ground-relief-authority-v37-v37-room-closeup.png": "75a9b9f8e896e70dfe06bdf02bc3d37ff24d0c3755528811ebebc9e2b3002164",
+    "pr08-ground-relief-authority-v37-v37-v36-full-diff.png": "e6f9ac1bc08ac3c8603040c4e3c160c768476ff43d6d73b727ea75f112203b90",
+    "pr08-ground-relief-authority-v37-v37-v36-map-stage-diff.png": "21ae7ad6b14d15854b769aff10a217b321b2991b2c72ad62a93f5ddd6f460bd5"
+  },
+  "goldenActualHashes": {
+    "ui-demo-new-bottom-deck-no-command-hints": "9a64b9de43f0d8526d48e2bd5e9705c266599d3002c9b924305f7c2bf5aacdcd",
+    "ui-demo-new-inventory-page-1": "23905f61e56675bd4736eb0a9f47a200012d9899584e1be5c1b613c84952b8bd",
+    "ui-demo-new-inventory-page-2": "63bbaecf273cd14cbdea001954c8d4a50691e29207140bf3067332e18d9cc94a",
+    "ui-demo-new-map-stage-crop": "6e8a067678d8b31f158708dab61ab35c57d0ba7989775dea932f74b6cf22dcd3",
+    "ui-demo-new-nav-rail-crop": "c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6",
+    "ui-demo-new-parity-1280x800": "5cbc2d4fd0531eb979698eefcdc269a10033f7a22b629956965a578396f74645",
+    "ui-demo-new-parity-1672x941": "fc0c4eb700c1d46ce130d9204c3a23acc3e1d5c3b865e851f93c4353a5176ce7",
+    "ui-demo-new-right-panel-grid": "4fc73bb307d123267bef293e925fd0f1449b4dd3437b92ffc315d3f9ada6c5f8"
+  },
+  "groundFamilyRestamps": {
+    "v36ExpectedFromRed": 60,
+    "v37ExpectedFromGreen": 0
+  },
+  "v36RoomLatticeMetric": {
+    "maxDarkLineContrast": 14.138682105960278,
+    "meanDarkLineContrast": 4.290575236343592,
+    "samples": 19
+  },
+  "v36VsReferenceMapResized": {
+    "changedRatio": 0.9999089567400763,
+    "maxAbsRgbDiff": [
+      250,
+      249,
+      232
+    ],
+    "meanAbsRgbDiff": 15.910307374823503
+  },
+  "v37RoomLatticeMetric": {
+    "maxDarkLineContrast": 14.74974282119205,
+    "meanDarkLineContrast": 4.702899353810177,
+    "samples": 19
+  },
+  "v37VsReferenceMapResized": {
+    "changedRatio": 0.9999118317903897,
+    "maxAbsRgbDiff": [
+      250,
+      249,
+      232
+    ],
+    "meanAbsRgbDiff": 15.49837559657294
+  },
+  "v37VsV36FullScreen": {
+    "changedRatio": 0.11094481718013514,
+    "maxAbsRgbDiff": [
+      35,
+      30,
+      26
+    ],
+    "meanAbsRgbDiff": 0.2676077360099117
+  },
+  "v37VsV36MapStage": {
+    "changedRatio": 0.24177112682805282,
+    "maxAbsRgbDiff": [
+      31,
+      25,
+      20
+    ],
+    "meanAbsRgbDiff": 0.5827528926200652
+  }
+}

@@ -1,0 +1,24 @@
+PR-08 Direction A Candidate C canonical runtime prototype
+Date: 2026-05-31
+
+Command:
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts" --rerun-tasks --no-configuration-cache
+
+Result:
+Exit code: 1
+Expected reason: golden baseline was not rebaselined during PR-08 exploration.
+
+Observed hash drift:
+ui-demo-new-map-stage-crop expected=94372439d8aeecf969ee3e2429321a12f2551cd1042f125a6759f1832ed08ad5 actual=6888a04886486601b3ee826a0f6b92a9db7275a7bbd91e691fd0493d63865d04
+ui-demo-new-parity-1672x941 expected=085c7093020c9810d4dc6978e23424c63d6bd6b85ae63e90314579cfc9fa6f29 actual=cf1cb8695c05609e74af2bd3e0b2fc213d501d97ac0b3637c38674620dccda84
+ui-demo-new-parity-1280x800 expected=1cc9a4b609f1675122d6e869e8766ee2619bb21b3146bcde3ecdbd821ecd665c actual=ce612de06d4e592e01761552a22d2a818667b96d5b3e2416b7c8bdeae673ed5e
+
+Evidence files:
+- ui-demo-new-map-stage-crop.png
+- ui-demo-new-parity-1672x941.png
+- ui-demo-new-parity-1280x800.png
+
+Visual read:
+The room plate is now present in the runtime map-stage layer, but this is not a final visual closure. The old grid/decorative compositor family still dominates first read, and the authored room plate is partially flattened by existing tactical overlays and legacy room passes. This supports the conditional route: keep the client-only room art plate prototype, evaluate marker readability next, and only then decide whether to delete or sharply attenuate the old large decorative TileRenderer passes.

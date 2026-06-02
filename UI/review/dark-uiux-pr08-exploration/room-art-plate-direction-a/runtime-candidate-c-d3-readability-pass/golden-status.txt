@@ -1,0 +1,35 @@
+D3-readability runtime evidence: Candidate C room art plate with D4 pass suppression plus narrow grid/marker/edge readability overlay.
+
+Command:
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts" --rerun-tasks --no-configuration-cache
+
+Result:
+FAILED as expected. No golden rebaseline was approved or performed.
+
+Expected hashes remained:
+ui-demo-new-parity-1672x941=085c7093020c9810d4dc6978e23424c63d6bd6b85ae63e90314579cfc9fa6f29
+ui-demo-new-parity-1280x800=1cc9a4b609f1675122d6e869e8766ee2619bb21b3146bcde3ecdbd821ecd665c
+ui-demo-new-right-panel-grid=748654a4e56e061135191ac0f13aba7cc1ca3dec7e27be940baab05024c20430
+ui-demo-new-bottom-deck-no-command-hints=6bf2380371c23586c38737409e70fb487c903b82b89ed989fc80c0f8e837a142
+ui-demo-new-inventory-page-1=8daeeb8b6b652ffe191640546680ee6ae2b14632d4bb73ea3d104fcba40ebd5d
+ui-demo-new-inventory-page-2=11a311d07b9f660f0e98ffe9286b46af3783c51243a5db9c8dce5097efb08553
+ui-demo-new-nav-rail-crop=c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6
+ui-demo-new-map-stage-crop=94372439d8aeecf969ee3e2429321a12f2551cd1042f125a6759f1832ed08ad5
+
+Observed hashes after D3-readability:
+ui-demo-new-parity-1672x941=c69334eb1c8a811bb0e83d237b59c1b7ddbcca2185d74b02f6d46656fc8f85a3
+ui-demo-new-parity-1280x800=08cad799df8a9a02a9ff246caa787772316cb1beaf15207348202f07ddb1ccdf
+ui-demo-new-right-panel-grid=36e9b06dc1aba326458cd9c907e02062130d7fb5321007f13483fd18e96ccfcc
+ui-demo-new-bottom-deck-no-command-hints=6bf2380371c23586c38737409e70fb487c903b82b89ed989fc80c0f8e837a142
+ui-demo-new-nav-rail-crop=c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6
+ui-demo-new-map-stage-crop=5a63fbcb70f943cb9033d3a2075a46999a18c5e8e08b449f233e934980ec530b
+ui-demo-new-inventory-page-1=021a21d9494e20ad4374d4209e2e66d38b7e0280d55f1845ca01b33377c039cf
+ui-demo-new-inventory-page-2=3f93fa09695715e8ab612fbd28d62675e82f1a8a6b8dc0e1ba8430ce8a3a7a8f
+
+Archived artifacts:
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-c-d3-readability-pass/ui-demo-new-map-stage-crop.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-c-d3-readability-pass/ui-demo-new-parity-1672x941.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-c-d3-readability-pass/ui-demo-new-parity-1280x800.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-c-d3-readability-pass/evidence-index.tsv

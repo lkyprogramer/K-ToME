@@ -1,0 +1,82 @@
+Command: ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts" --rerun-tasks --no-configuration-cache
+Intent: archive Q runtime evidence; expected failure because PR-02-1 golden baseline is not rebaselined
+
+
+> Task :build-logic:compileJava
+Note: build-logic/src/main/java/com/ktome/build/testperf/TestPerfPlugin.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :build-logic:pluginDescriptors
+> Task :build-logic:processResources
+> Task :build-logic:classes
+> Task :build-logic:jar
+> Task :game:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :client:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :client:processTestResources NO-SOURCE
+> Task :game:processResources
+
+> Task :syncPhase2Manifests
+[synced] assets-src/image/manifests/phase2-visual-manifest.json -> client/src/main/resources/manifests/visual-manifest.json
+[synced] assets-src/audio/manifests/phase2-audio-manifest.json -> client/src/main/resources/manifests/audio-manifest.json
+
+> Task :core:processResources NO-SOURCE
+> Task :client:processResources
+> Task :core:compileKotlin
+> Task :core:compileJava NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar
+> Task :game:compileKotlin
+> Task :game:compileJava NO-SOURCE
+> Task :game:classes
+> Task :game:jar
+> Task :client:compileKotlin
+> Task :client:compileJava NO-SOURCE
+> Task :client:classes
+> Task :client:jar
+
+> Task :client:compileTestKotlin
+w: file://<repo>/client/src/test/kotlin/com/ktome/client/ClientSmokeHarnessTest.kt:1423:34 'static fun getFrameBufferPixmap(p0: Int, p1: Int, p2: Int, p3: Int): Pixmap!' is deprecated. Deprecated in Java.
+w: file://<repo>/client/src/test/kotlin/com/ktome/client/golden/GoldenScreenshotHarnessTest.kt:2074:36 'static fun getFrameBufferPixmap(p0: Int, p1: Int, p2: Int, p3: Int): Pixmap!' is deprecated. Deprecated in Java.
+w: file://<repo>/client/src/test/kotlin/com/ktome/client/golden/GoldenScreenshotHarnessTest.kt:2096:29 'static fun getFrameBufferPixmap(p0: Int, p1: Int, p2: Int, p3: Int): Pixmap!' is deprecated. Deprecated in Java.
+w: file://<repo>/client/src/test/kotlin/com/ktome/client/golden/GoldenScreenshotHarnessTest.kt:2098:29 'static fun getFrameBufferPixmap(p0: Int, p1: Int, p2: Int, p3: Int): Pixmap!' is deprecated. Deprecated in Java.
+w: file://<repo>/client/src/test/kotlin/com/ktome/client/golden/GoldenScreenshotHarnessTest.kt:2385:36 'static fun getFrameBufferPixmap(p0: Int, p1: Int, p2: Int, p3: Int): Pixmap!' is deprecated. Deprecated in Java.
+
+> Task :client:compileTestJava NO-SOURCE
+> Task :client:testClasses UP-TO-DATE
+
+> Task :client:goldenScreenshot
+
+GoldenScreenshotHarnessTest > dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts() FAILED
+    org.opentest4j.AssertionFailedError: expected: <{ui-demo-new-parity-1672x941=085c7093020c9810d4dc6978e23424c63d6bd6b85ae63e90314579cfc9fa6f29, ui-demo-new-parity-1280x800=1cc9a4b609f1675122d6e869e8766ee2619bb21b3146bcde3ecdbd821ecd665c, ui-demo-new-right-panel-grid=748654a4e56e061135191ac0f13aba7cc1ca3dec7e27be940baab05024c20430, ui-demo-new-bottom-deck-no-command-hints=6bf2380371c23586c38737409e70fb487c903b82b89ed989fc80c0f8e837a142, ui-demo-new-inventory-page-1=8daeeb8b6b652ffe191640546680ee6ae2b14632d4bb73ea3d104fcba40ebd5d, ui-demo-new-inventory-page-2=11a311d07b9f660f0e98ffe9286b46af3783c51243a5db9c8dce5097efb08553, ui-demo-new-nav-rail-crop=c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6, ui-demo-new-map-stage-crop=94372439d8aeecf969ee3e2429321a12f2551cd1042f125a6759f1832ed08ad5}> but was: <{ui-demo-new-parity-1672x941=e1f42774ab4fb6000d18179246512b3b03d5167532c572d3c6278e7339206c59, ui-demo-new-parity-1280x800=86d0940e4ae2ab148b1990c83f8d511ea56a401cd8a6fee89440b570c7373787, ui-demo-new-right-panel-grid=36e9b06dc1aba326458cd9c907e02062130d7fb5321007f13483fd18e96ccfcc, ui-demo-new-bottom-deck-no-command-hints=6bf2380371c23586c38737409e70fb487c903b82b89ed989fc80c0f8e837a142, ui-demo-new-nav-rail-crop=c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6, ui-demo-new-map-stage-crop=0f748ee34e09bf545cf1a3b27864ed7f688c916eab089e838f0d5a40c6fcc873, ui-demo-new-inventory-page-1=021a21d9494e20ad4374d4209e2e66d38b7e0280d55f1845ca01b33377c039cf, ui-demo-new-inventory-page-2=3f93fa09695715e8ab612fbd28d62675e82f1a8a6b8dc0e1ba8430ce8a3a7a8f}>
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at app//org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at app//org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+        at app//org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+        at app//org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+        at app//org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1141)
+        at app//com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts(GoldenScreenshotHarnessTest.kt:324)
+
+1 test completed, 1 failed
+
+> Task :client:goldenScreenshot FAILED
+
+[Incubating] Problems report is available at: file://<repo>/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':client:goldenScreenshot'.
+> There were failing tests. See the report at: file://<repo>/client/build/reports/tests/goldenScreenshot/index.html
+
+* Try:
+> Run with --scan to get full insights.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 30s
+15 actionable tasks: 15 executed

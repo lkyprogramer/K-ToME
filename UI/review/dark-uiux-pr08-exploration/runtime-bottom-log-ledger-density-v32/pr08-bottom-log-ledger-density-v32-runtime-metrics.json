@@ -1,0 +1,260 @@
+{
+  "bottom_diff": "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-v32-v31-bottom-deck-diff.png",
+  "comparison_board": "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-comparison-board.png",
+  "copied_artifacts": [
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-main-menu.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-shell-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-shell-inventory-open.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-shell-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-validation-setup.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-evidence-index.tsv",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-bottom-deck-no-command-hints.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-inventory-page-1.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-inventory-page-2.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-map-stage-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-nav-rail-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-parity-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-parity-1672x941.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-v32-v31-bottom-deck-diff.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-comparison-board.png"
+  ],
+  "hashes": {
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-comparison-board.png": "42145383b8fd4b33f80a8e491f597998fac750e628a0c085a926dfbd2b67e6e0",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-main-menu.png": "7134d961071c37d18b5ee504331fa1c70db1773f6e5f40b65a68a90ae6a626cf",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-shell-1280x800.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-shell-inventory-open.png": "5f380674c11becc39068da388f81235435fab68257f9f961bd7e1f6f0727fd84",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-shell-right-panel-grid.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-dark-uiux-pr02-1-demo-validation-setup.png": "fe1270a0e2acbac3fced17fd13c3ef75f0914bc6ea753d6cad3c93c07b0b5a09",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-evidence-index.tsv": "6b113e7e246737b445cea7af1b6b5b227ba7b8d0e93446d482c1f37f5d7c7e56",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-bottom-deck-no-command-hints.png": "d905e4bc68a52fc15e508d25f33813487b8dc306f9a838fc0cde21d5e7a4a225",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-map-stage-crop.png": "b07adf8da68253006bdce2af1a2657f870fe6f31d65d35aa355485102895b6a8",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-parity-1280x800.png": "00d1e7b6046bb8869007142a31df9990fdef96b40180d6389174616a09a4776a",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-parity-1672x941.png": "e0d649261c81b1e4856c83abe4e73c55a2117e8e859aacda9d1e977264969654",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "UI/review/dark-uiux-pr08-exploration/runtime-bottom-log-ledger-density-v32/pr08-bottom-log-ledger-density-v32-v32-v31-bottom-deck-diff.png": "4a138c074bd234127ea7d2cd73a9f73ab62f2671b1a7f2e5fab82d3795b59b89"
+  },
+  "v31_vs_reference_bottom_deck_resized": {
+    "changed_ratio": 0.9990488021295475,
+    "channel_extrema": [
+      [
+        0,
+        254
+      ],
+      [
+        0,
+        251
+      ],
+      [
+        0,
+        248
+      ]
+    ],
+    "mean_abs_diff": 20.76284412895593,
+    "size": [
+      1225,
+      230
+    ]
+  },
+  "v32_vs_reference_bottom_deck_resized": {
+    "changed_ratio": 0.9990523513753328,
+    "channel_extrema": [
+      [
+        0,
+        254
+      ],
+      [
+        0,
+        251
+      ],
+      [
+        0,
+        248
+      ]
+    ],
+    "mean_abs_diff": 20.796913339248743,
+    "size": [
+      1225,
+      230
+    ]
+  },
+  "v32_vs_v31_bottom_deck": {
+    "changed_ratio": 0.10863628142521252,
+    "channel_extrema": [
+      [
+        0,
+        45
+      ],
+      [
+        0,
+        33
+      ],
+      [
+        0,
+        14
+      ]
+    ],
+    "mean_abs_diff": 0.14352454733626738,
+    "size": [
+      1843,
+      360
+    ]
+  },
+  "v32_vs_v31_full_1280x800": {
+    "changed_ratio": 0.01759716796875,
+    "channel_extrema": [
+      [
+        0,
+        45
+      ],
+      [
+        0,
+        33
+      ],
+      [
+        0,
+        14
+      ]
+    ],
+    "mean_abs_diff": 0.023248453776041667,
+    "size": [
+      2560,
+      1600
+    ]
+  },
+  "v32_vs_v31_full_1672x941": {
+    "changed_ratio": 0.01598037184304593,
+    "channel_extrema": [
+      [
+        0,
+        44
+      ],
+      [
+        0,
+        33
+      ],
+      [
+        0,
+        14
+      ]
+    ],
+    "mean_abs_diff": 0.02092522842949321,
+    "size": [
+      3344,
+      1882
+    ]
+  },
+  "v32_vs_v31_inventory_page_1": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  },
+  "v32_vs_v31_inventory_page_2": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  },
+  "v32_vs_v31_map_stage": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v32_vs_v31_nav_rail": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      112,
+      1240
+    ]
+  },
+  "v32_vs_v31_right_panel": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  }
+}

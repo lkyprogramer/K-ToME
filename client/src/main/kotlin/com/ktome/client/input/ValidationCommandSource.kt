@@ -192,6 +192,13 @@ internal object ValidationOverlayDescriptorPlanCache {
         plans.computeIfAbsent(scope) { key -> ValidationOverlayDescriptorPlan.build(key) }
 }
 
+private fun validationInitialMode(session: FoundationGameSession): UiMode =
+    if (session.validationSummarySnapshot()?.scenarioEvidenceSummary != null) {
+        UiMode.VALIDATION
+    } else {
+        UiMode.MAP
+    }
+
 class ValidationCommandSource(
     private val session: FoundationGameSession,
     private val delegate: CommandSource =
@@ -203,6 +210,7 @@ class ValidationCommandSource(
                     validationRestartNextSeedEnabled =
                         requireNotNull(session.validationSummarySnapshot()).hasMeaningfulNextSeedRestart(),
                     validationScenarioId = requireNotNull(session.validationSummarySnapshot()).scenarioId,
+                    initialMode = validationInitialMode(session),
                 ),
         ),
 ) : CommandSource by delegate, AudioRouterAwareCommandSource {

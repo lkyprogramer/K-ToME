@@ -1,0 +1,13 @@
+Canvas: 1672x941
+Use case: ui-mockup
+Asset type: K-ToME PR-08 first-screen target comp candidate, design evidence only
+Primary request: Create a sliceable director-grade dark fantasy roguelike first-screen UI target comp for K-ToME.
+Layout: exact game-like shell with a narrow left navigation rail, a dominant center orthographic tile-map stage, a right equipment/inscription/backpack panel, and a bottom hero/action/log HUD.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Critical map constraint: the center map must be orthographic top-down, not isometric, not perspective, not a single painted ruin scene. It must visibly be decomposable into repeatable 32px floor tiles, repeatable 32px wall tiles, separate actor sprites, separate prop sprites, separate telegraph markers, and deterministic light/dark overlays.
+Tile truth: floor and wall material should look hand-authored and dark fantasy but remain repeatable at 32px without obvious checkerboard seams. Use multiple visual variants conceptually, but do not depend on a full-screen paintover.
+Map composition: rectangular dungeon rooms and corridors are allowed, but break the silhouette with non-rectangular darkness, chipped wall edges, small props, torch pools, and subtle fog that do not hide actors, loot, telegraphs, or selection.
+UI chrome: forged iron, worn stone, old leather, weathered brass, charcoal black panels, restrained ember accents, restrained cyan edge highlights. Right panel and bottom HUD should feel like one cohesive character console.
+Text policy: no baked Chinese text, English text, numbers, hotkeys, labels, watermarks, logos, row/column marks, or manifest keys anywhere in the image.
+Sliceability policy: the comp must look decomposable into tile floor, tile wall, map-stage backdrop, panel chrome, slot chrome, bottom deck chrome, actor, prop, and light/dark compositor families. Avoid any visual element that requires atlas/region schema, a new manifest schema, or full-screen map art.
+Avoid: isometric board, 3D perspective room, full-scene illustration, sci-fi HUD, neon cyberpunk, anime, glossy plastic, bright glassmorphism, modern flat icons, high-saturation purple theme, pure black empty map, repeated obvious checkerboard floor.

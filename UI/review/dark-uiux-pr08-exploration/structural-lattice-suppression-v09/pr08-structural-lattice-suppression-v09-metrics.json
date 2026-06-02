@@ -1,0 +1,40 @@
+{
+  "source": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-map-stage-crop.png",
+  "runtime": "UI/review/dark-uiux-pr08-exploration/structural-lattice-suppression-v09/runtime-slice-a-lattice-suppression/ui-demo-new-map-stage-crop.png",
+  "candidates": {
+    "W05i baseline": {
+      "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-map-stage-crop.png",
+      "sha256": "c89d6142f7796fc1a9fab4d655e5868a08af18433a27525417cc6b8b9179b4ab",
+      "edgeScore": {
+        "meanEdge": 1.873,
+        "p90Edge": 5
+      }
+    },
+    "V08 diagnostic D": {
+      "path": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-d_degrid_only-map-stage-crop.png",
+      "sha256": "2aeedc7f96b8613d847e3d40817c82ed7084e3463bf7714b3cf64527244f1b8d",
+      "edgeScore": {
+        "meanEdge": 1.76,
+        "p90Edge": 5
+      }
+    },
+    "V09 runtime A": {
+      "path": "UI/review/dark-uiux-pr08-exploration/structural-lattice-suppression-v09/runtime-slice-a-lattice-suppression/ui-demo-new-map-stage-crop.png",
+      "sha256": "622a75e88692171a7c422a7af2316443382268350dcdb782a00c4b15e0107578",
+      "edgeScore": {
+        "meanEdge": 1.866,
+        "p90Edge": 5
+      }
+    },
+    "Reference crop": {
+      "path": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-reference-map-crop-from-ui-demo-new.png",
+      "sha256": "9b221fcf78d1bb6392a38a705fabde2e82c9f75e070d32f1a1cce05d43b7f6fa",
+      "edgeScore": {
+        "meanEdge": 8.768,
+        "p90Edge": 22
+      }
+    }
+  },
+  "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/structural-lattice-suppression-v09/pr08-structural-lattice-suppression-v09-runtime-comparison-board.png",
+  "comparisonBoardSha256": "684aa59243ed07271bf348eaa8eafb8ae4b5053209ebc2ad7df7f1283afc10e3"
+}

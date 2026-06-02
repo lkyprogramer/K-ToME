@@ -1,0 +1,83 @@
+{
+  "goldenActualHashes": {
+    "ui-demo-new-parity-1672x941": "22a380bfbe2aefeec40a969e50c7d15fcf54549065e2460b0d36ff3efe35f97a",
+    "ui-demo-new-parity-1280x800": "03df3a3869707f74bfaf0f91c3874d8c67095e97e164a9816e8e981fd0db6c1e",
+    "ui-demo-new-right-panel-grid": "4fc73bb307d123267bef293e925fd0f1449b4dd3437b92ffc315d3f9ada6c5f8",
+    "ui-demo-new-bottom-deck-no-command-hints": "9a64b9de43f0d8526d48e2bd5e9705c266599d3002c9b924305f7c2bf5aacdcd",
+    "ui-demo-new-nav-rail-crop": "c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6",
+    "ui-demo-new-map-stage-crop": "39155e93b614bd11c08dcd2a056fa400683d7b7bf3d90f188d01ac73f119132f",
+    "ui-demo-new-inventory-page-1": "23905f61e56675bd4736eb0a9f47a200012d9899584e1be5c1b613c84952b8bd",
+    "ui-demo-new-inventory-page-2": "63bbaecf273cd14cbdea001954c8d4a50691e29207140bf3067332e18d9cc94a"
+  },
+  "v41VsV40FullScreen": {
+    "changedRatio": 0.24834700054406134,
+    "maxAbsRgbDiff": [
+      247,
+      214,
+      216
+    ],
+    "meanAbsRgbDiff": 2.6298510017677756
+  },
+  "v41VsV40MapStage": {
+    "changedRatio": 0.5414409752170662,
+    "maxAbsRgbDiff": [
+      247,
+      213,
+      212
+    ],
+    "meanAbsRgbDiff": 5.72072991138456
+  },
+  "v41VsV40RoomCloseup": {
+    "changedRatio": 0.9548390574464808,
+    "maxAbsRgbDiff": [
+      247,
+      213,
+      212
+    ],
+    "meanAbsRgbDiff": 12.182358437291441
+  },
+  "v40VsReferenceMapResized": {
+    "changedRatio": 0.9999170399867264,
+    "maxAbsRgbDiff": [
+      250,
+      246,
+      222
+    ],
+    "meanAbsRgbDiff": 15.501569326917759
+  },
+  "v41VsReferenceMapResized": {
+    "changedRatio": 0.9998988924838228,
+    "maxAbsRgbDiff": [
+      250,
+      246,
+      219
+    ],
+    "meanAbsRgbDiff": 15.069590488634477
+  },
+  "roomCloseupCrop": {
+    "x": 600,
+    "y": 140,
+    "width": 755,
+    "height": 860
+  },
+  "artifactHashes": {
+    "pr08-runtime-map-scale-v41-comparison-board.png": "78c0b0c7768041c6e9455329a0d536053346d2d26a935b41f6376951daac8222",
+    "pr08-runtime-map-scale-v41-evidence-index.tsv": "2d564c033b2b5006878b545a37a500b9ffb67a1060328389b31607c708b1379c",
+    "pr08-runtime-map-scale-v41-reference-map-crop.png": "b8860c59c4482b1ddf3e726e0d7ece6a75637bcef5d4203fd2fd4733ad2eea2f",
+    "pr08-runtime-map-scale-v41-ui-demo-new-bottom-deck-no-command-hints.png": "f9b22db39ff64fb45768d66feccf6d6bf69ae0a69cdc77ec2432f092be429907",
+    "pr08-runtime-map-scale-v41-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "pr08-runtime-map-scale-v41-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "pr08-runtime-map-scale-v41-ui-demo-new-map-stage-crop.png": "0ec0a8befb6787031cc4d0920c9b0e8a575e725f8fe98335db91d674716dd927",
+    "pr08-runtime-map-scale-v41-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "pr08-runtime-map-scale-v41-ui-demo-new-parity-1280x800.png": "6fb91fbf9bfa62f82228499a055f699549b57a8f3fed79fc063f04b176ea5afd",
+    "pr08-runtime-map-scale-v41-ui-demo-new-parity-1672x941.png": "195f1881322fdacf0ce5bbe0dec7b19db193c10e68cd8fd06727afe392a3cac4",
+    "pr08-runtime-map-scale-v41-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "pr08-runtime-map-scale-v41-v40-room-closeup.png": "104b94ef09d3d5908783bba4ca0027c022d3dba5cff4e26fe2e35e2a1ca775a3",
+    "pr08-runtime-map-scale-v41-v40-ui-demo-new-map-stage-crop.png": "907a5fad4cb2e4facd8373722ec3f0996b4fc13db973bf24a54ef9502dc8b8a0",
+    "pr08-runtime-map-scale-v41-v40-ui-demo-new-parity-1672x941.png": "4c3dfab48625812fdacc42752e91fc437b17638db0070402a72140f2ff2b3cd8",
+    "pr08-runtime-map-scale-v41-v41-room-closeup.png": "040ac57839f18305c68dbaa3d6f7df191c0dd4e574ca00bfb0a23809503f03af",
+    "pr08-runtime-map-scale-v41-v41-v40-full-diff.png": "3df11cd7351dd14532c7954307460d8cf717e8ffcde9f92dbb8a1ce35aaca2e7",
+    "pr08-runtime-map-scale-v41-v41-v40-map-stage-diff.png": "dba17cc058132a0eaf229e237a8a54226039fb2d39ba30c05d38cd064dfd2817",
+    "pr08-runtime-map-scale-v41-v41-v40-room-closeup-diff.png": "49d24e0ead439427806bb44b488215d15fcce1315fa71116e60c4474c6b70752"
+  }
+}

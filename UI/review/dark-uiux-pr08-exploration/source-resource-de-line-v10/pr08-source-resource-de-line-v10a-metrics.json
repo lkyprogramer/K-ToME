@@ -1,0 +1,46 @@
+{
+  "candidateSheet": "UI/review/dark-uiux-pr08-exploration/source-resource-de-line-v10/r02-ui-demo-ruins-tiles-v10a-source-de-line.png",
+  "candidateSheetSha256": "85856189d952af6ddb1ee41b0d22d0902df1fc0d2ac2cc81073d2a6ddf3f9ee7",
+  "contactBoard": "UI/review/dark-uiux-pr08-exploration/source-resource-de-line-v10/pr08-source-resource-de-line-v10a-contact-board.png",
+  "contactBoardSha256": "f82c0e755b7f8224d34f46319ada7f77339679bc120906f9b015b31e31ae1b7e",
+  "floorCells": [
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      2
+    ],
+    [
+      0,
+      3
+    ],
+    [
+      0,
+      4
+    ]
+  ],
+  "wallCells": [
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      0
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      1,
+      3
+    ]
+  ]
+}

@@ -7621,7 +7621,67 @@
         "tile_ground",
         "dark-v1",
         "ui-demo-new",
-        "pr02-2"
+        "pr08",
+        "pr02-2",
+        "terrain_variant_family:tileset.ruins.ground_01",
+        "terrain_variant_index:0"
+      ]
+    },
+    {
+      "key": "tileset.ruins.ground_01.variant_1",
+      "category": "tile_ground",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_ground_01_variant_1.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "ruins",
+        "tile_ground",
+        "dark-v1",
+        "ui-demo-new",
+        "pr08",
+        "terrain_variant_family:tileset.ruins.ground_01",
+        "terrain_variant_index:1"
+      ]
+    },
+    {
+      "key": "tileset.ruins.ground_01.variant_2",
+      "category": "tile_ground",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_ground_01_variant_2.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "ruins",
+        "tile_ground",
+        "dark-v1",
+        "ui-demo-new",
+        "pr08",
+        "terrain_variant_family:tileset.ruins.ground_01",
+        "terrain_variant_index:2"
+      ]
+    },
+    {
+      "key": "tileset.ruins.ground_01.variant_3",
+      "category": "tile_ground",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_ground_01_variant_3.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "ruins",
+        "tile_ground",
+        "dark-v1",
+        "ui-demo-new",
+        "pr08",
+        "terrain_variant_family:tileset.ruins.ground_01",
+        "terrain_variant_index:3"
       ]
     },
     {
@@ -7638,7 +7698,197 @@
         "tile_wall",
         "dark-v1",
         "ui-demo-new",
-        "pr02-2"
+        "pr08",
+        "terrain_wall_family:tileset.ruins.wall_01",
+        "terrain_wall_piece:base"
+      ]
+    },
+    {
+      "key": "tileset.ruins.wall_01.crown",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_wall_01_crown.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "ruins",
+        "tile_wall",
+        "dark-v1",
+        "ui-demo-new",
+        "pr08",
+        "terrain_wall_family:tileset.ruins.wall_01",
+        "terrain_wall_piece:crown"
+      ]
+    },
+    {
+      "key": "tileset.ruins.wall_01.side",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_wall_01_side.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "ruins",
+        "tile_wall",
+        "dark-v1",
+        "ui-demo-new",
+        "pr08",
+        "terrain_wall_family:tileset.ruins.wall_01",
+        "terrain_wall_piece:side"
+      ]
+    },
+    {
+      "key": "tileset.ruins.wall_01.corner",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_wall_01_corner.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "ruins",
+        "tile_wall",
+        "dark-v1",
+        "ui-demo-new",
+        "pr08",
+        "terrain_wall_family:tileset.ruins.wall_01",
+        "terrain_wall_piece:corner"
+      ]
+    },
+    {
+      "key": "tileset.ruins.wall_01.door_contact",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_wall_01_door_contact.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "ruins",
+        "tile_wall",
+        "dark-v1",
+        "ui-demo-new",
+        "pr08",
+        "terrain_wall_family:tileset.ruins.wall_01",
+        "terrain_wall_piece:door_contact"
+      ]
+    },
+    {
+      "key": "tileset.ruins.room_breakup_01",
+      "category": "tile_decal",
+      "rawOutputPath": "dark-v1/tiles/tileset_ruins_room_breakup_01.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "ruins",
+        "tile_decal",
+        "dark-v1",
+        "ui-demo-new",
+        "pr08",
+        "room_material_breakup",
+        "r02-ui-demo-ruins-tiles"
+      ]
+    },
+    {
+      "key": "ui.map_stage.ruins.room_plate.pr08_demo",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr08",
+        "ruins",
+        "room_art_plate",
+        "dark-v1",
+        "ui-demo-new",
+        "client-only-prototype"
+      ]
+    },
+    {
+      "key": "ui.map_stage.ruins.room_topology_source.pr08_demo",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr08",
+        "ruins",
+        "room_art_plate",
+        "room_topology_source",
+        "topology_fragment_source",
+        "source_region_crop",
+        "dark-v1",
+        "ui-demo-new",
+        "client-only-prototype"
+      ]
+    },
+    {
+      "key": "ui.map_stage.forest_edge.room_plate.pr08_demo",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_map_stage_forest_edge_room_plate_pr08_demo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr08",
+        "forest-edge",
+        "room_art_plate",
+        "dark-v1",
+        "ui-demo-new",
+        "client-only-prototype"
+      ]
+    },
+    {
+      "key": "ui.map_stage.mine.room_plate.pr08_demo",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_map_stage_mine_room_plate_pr08_demo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr08",
+        "mine",
+        "room_art_plate",
+        "dark-v1",
+        "ui-demo-new",
+        "client-only-prototype"
+      ]
+    },
+    {
+      "key": "ui.map_stage.shadow_depths.room_plate.pr08_demo",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_map_stage_shadow_depths_room_plate_pr08_demo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr08",
+        "shadow-depths",
+        "room_art_plate",
+        "dark-v1",
+        "ui-demo-new",
+        "client-only-prototype"
       ]
     },
     {

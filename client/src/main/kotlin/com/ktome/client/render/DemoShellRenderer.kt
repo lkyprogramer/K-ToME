@@ -3,6 +3,7 @@ package com.ktome.client.render
 import com.badlogic.gdx.graphics.Color
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.render.layout.DemoBottomDeckLayout
+import com.ktome.client.render.layout.DemoRightPanelLayout
 import com.ktome.client.render.layout.DemoSlotGridLayout
 import com.ktome.client.render.layout.GameShellBounds
 import com.ktome.client.ui.chrome.ChromeFrameAssetDraw
@@ -23,6 +24,7 @@ internal object DemoShellRenderer {
     private const val OPERATION_LINE_HEIGHT = 15f
     private const val SECTION_TITLE_HEIGHT = 18f
     private const val TEXT_WIDTH_SAFETY = 0.9f
+    private const val BOTTOM_CHILD_FRAME_ALPHA = 0.74f
 
     fun renderOuterFrame(
         canvas: TileCanvas,
@@ -396,6 +398,7 @@ internal object DemoShellRenderer {
         renderActionDeck(canvas, frame)
         canvas.flushLayer(TileLayerFlushReason.SHELL_BOTTOM_ACTION_DECK)
         renderLogAndStats(canvas, frame)
+        drawBottomHudCohesionRails(canvas, frame.layout.demoShell.bottomDeck)
         renderPaneFocus(canvas, frame)
         canvas.flushLayer(TileLayerFlushReason.SHELL_BOTTOM_LOG_DECK)
     }
@@ -433,6 +436,106 @@ internal object DemoShellRenderer {
         }
     }
 
+    private fun drawBottomHudCohesionRails(
+        canvas: TileCanvas,
+        bottom: DemoBottomDeckLayout,
+    ) {
+        val hero = bottom.heroCard
+        val action = bottom.actionDeck
+        val log = bottom.logDeck
+        val railX = (hero.x - 2f).coerceAtLeast(bottom.bounds.x + 4f)
+        val railRight = (log.right + 2f).coerceAtMost(bottom.bounds.right - 4f)
+        val railWidth = (railRight - railX).coerceAtLeast(1f)
+        val topRailY = (hero.top - 8f).coerceIn(bottom.bounds.y + 6f, bottom.bounds.top - 8f)
+        val bottomRailY = (hero.y + 6f).coerceIn(bottom.bounds.y + 4f, bottom.bounds.top - 10f)
+
+        canvas.drawRect(tileBounds(railX, topRailY, railWidth, 5f), color("0B0A08", 0.182f))
+        canvas.drawRect(tileBounds(railX + 24f, topRailY + 4f, (railWidth - 48f).coerceAtLeast(1f), 1f), color("D99A2B", 0.116f))
+        canvas.drawRect(tileBounds(railX + 34f, topRailY + 1f, (railWidth - 68f).coerceAtLeast(1f), 1f), color("1CB7C8", 0.046f))
+        canvas.drawRect(tileBounds(railX, bottomRailY, railWidth, 4f), color("0B0A08", 0.158f))
+        canvas.drawRect(tileBounds(railX + 22f, bottomRailY + 3f, (railWidth - 44f).coerceAtLeast(1f), 1f), color("B8873E", 0.086f))
+
+        drawBottomHudBridgePlates(
+            canvas = canvas,
+            hero = hero,
+            action = action,
+            log = log,
+        )
+        drawBottomHudSeamLockPlates(
+            canvas = canvas,
+            hero = hero,
+            action = action,
+            log = log,
+        )
+        drawBottomHudCommandSpine(
+            canvas = canvas,
+            hero = hero,
+            log = log,
+        )
+
+        listOf((hero.right + action.x) / 2f, (action.right + log.x) / 2f).forEach { seamX ->
+            canvas.drawRect(tileBounds(seamX - 8f, topRailY - 1f, 16f, 7f), color("2A1A0E", 0.146f))
+            canvas.drawRect(tileBounds(seamX - 4f, topRailY + 2f, 8f, 2f), color("D99A2B", 0.102f))
+            canvas.drawRect(tileBounds(seamX - 5f, bottomRailY - 1f, 10f, 6f), color("050604", 0.132f))
+        }
+    }
+
+    private fun drawBottomHudCommandSpine(
+        canvas: TileCanvas,
+        hero: GameShellBounds,
+        log: GameShellBounds,
+    ) {
+        val spineX = hero.x + 18f
+        val spineRight = log.right - 18f
+        val spineWidth = (spineRight - spineX).coerceAtLeast(1f)
+        val spineY = hero.y + 14f
+        val spineHeight = 18f
+        canvas.drawRect(tileBounds(spineX, spineY, spineWidth, spineHeight), color("050604", 0.214f))
+        canvas.drawRect(tileBounds(spineX + 18f, spineY + spineHeight - 3f, (spineWidth - 36f).coerceAtLeast(1f), 2f), color("D99A2B", 0.108f))
+        canvas.drawRect(tileBounds(spineX + 26f, spineY + 4f, (spineWidth - 52f).coerceAtLeast(1f), 1f), color("1CB7C8", 0.052f))
+        canvas.drawRect(tileBounds(spineX + 14f, spineY + 7f, 2f, spineHeight - 10f), color("2B3542", 0.142f))
+        canvas.drawRect(tileBounds(spineRight - 16f, spineY + 7f, 2f, spineHeight - 10f), color("2B3542", 0.142f))
+    }
+
+    private fun drawBottomHudSeamLockPlates(
+        canvas: TileCanvas,
+        hero: GameShellBounds,
+        action: GameShellBounds,
+        log: GameShellBounds,
+    ) {
+        listOf((hero.right + action.x) / 2f, (action.right + log.x) / 2f).forEach { centerX ->
+            val lockWidth = 40f
+            val lockY = hero.y + 12f
+            val lockHeight = (hero.height - 24f).coerceAtLeast(1f)
+            val lockX = centerX - lockWidth / 2f
+            canvas.drawRect(tileBounds(lockX, lockY, lockWidth, lockHeight), color("050604", 0.318f))
+            canvas.drawRect(tileBounds(lockX + 5f, lockY + 8f, lockWidth - 10f, 2f), color("D99A2B", 0.136f))
+            canvas.drawRect(tileBounds(lockX + 5f, lockY + lockHeight - 10f, lockWidth - 10f, 2f), color("D99A2B", 0.136f))
+            canvas.drawRect(tileBounds(centerX - 1f, lockY + 16f, 2f, lockHeight - 32f), color("2B3542", 0.172f))
+            canvas.drawRect(tileBounds(lockX + 9f, lockY + lockHeight * 0.52f, lockWidth - 18f, 1f), color("1CB7C8", 0.072f))
+        }
+    }
+
+    private fun drawBottomHudBridgePlates(
+        canvas: TileCanvas,
+        hero: GameShellBounds,
+        action: GameShellBounds,
+        log: GameShellBounds,
+    ) {
+        listOf((hero.right + action.x) / 2f, (action.right + log.x) / 2f).forEach { centerX ->
+            val bridgeWidth = 36f
+            val bridgeY = hero.y + 16f
+            val bridgeHeight = (hero.height - 32f).coerceAtLeast(1f)
+            val bridgeX = centerX - bridgeWidth / 2f
+            canvas.drawRect(tileBounds(bridgeX, bridgeY, bridgeWidth, bridgeHeight), color("0B0A08", 0.171f))
+            canvas.drawRect(tileBounds(bridgeX + 5f, bridgeY + 8f, bridgeWidth - 10f, 3f), color("D99A2B", 0.109f))
+            canvas.drawRect(tileBounds(bridgeX + 5f, bridgeY + bridgeHeight - 11f, bridgeWidth - 10f, 3f), color("D99A2B", 0.109f))
+            canvas.drawRect(tileBounds(bridgeX + 8f, bridgeY + bridgeHeight * 0.50f, bridgeWidth - 16f, 2f), color("1CB7C8", 0.074f))
+            canvas.drawRect(tileBounds(bridgeX + 4f, bridgeY + 16f, 2f, bridgeHeight - 32f), color("2B3542", 0.122f))
+            canvas.drawRect(tileBounds(bridgeX + bridgeWidth - 6f, bridgeY + 16f, 2f, bridgeHeight - 32f), color("2B3542", 0.122f))
+        }
+    }
+
     private fun renderNavRail(
         canvas: TileCanvas,
         frame: ShellRenderFrame,
@@ -459,7 +562,7 @@ internal object DemoShellRenderer {
             if (selected) {
                 canvas.drawAsset(chrome.demoShell.navButtonActive, bounds.toTileBounds(), alpha = 0.92f)
             }
-            val iconInset = bounds.width * if (selected) 0.11f else 0.13f
+            val iconInset = bounds.width * if (selected) 0.055f else 0.06f
             canvas.drawAsset(
                 chrome.demoShell.navIcon(item.kind),
                 tileBounds(bounds.x + iconInset, bounds.y + iconInset, bounds.width - iconInset * 2f, bounds.height - iconInset * 2f),
@@ -505,6 +608,14 @@ internal object DemoShellRenderer {
     ) {
         if (selected) {
             canvas.drawRect(
+                tileBounds(bounds.x - 5f, bounds.y + 7f, 4f, bounds.height - 14f),
+                color("D99A2B", 0.255f),
+            )
+            canvas.drawRect(
+                tileBounds(bounds.right + 1f, bounds.y + 10f, 2f, bounds.height - 20f),
+                color("1CB7C8", 0.118f),
+            )
+            canvas.drawRect(
                 tileBounds(bounds.x - 3f, bounds.y - 3f, bounds.width + 6f, bounds.height + 6f),
                 color("1CB7C8", 0.08f),
             )
@@ -516,6 +627,18 @@ internal object DemoShellRenderer {
         canvas.drawRect(
             tileBounds(bounds.x + 5f, bounds.y + 5f, bounds.width - 10f, bounds.height - 10f),
             color("1C1711", if (selected) 0.20f else 0.12f),
+        )
+        canvas.drawRect(
+            tileBounds(bounds.x + 5f, bounds.y + 5f, bounds.width - 10f, bounds.height - 10f),
+            color("050604", 0.244f),
+        )
+        canvas.drawRect(
+            tileBounds(bounds.x + 9f, bounds.top - 12f, bounds.width - 18f, 2f),
+            color("D99A2B", if (selected) 0.188f else 0.106f),
+        )
+        canvas.drawRect(
+            tileBounds(bounds.x + 10f, bounds.y + 9f, bounds.width - 20f, 1f),
+            color("1CB7C8", if (selected) 0.082f else 0.044f),
         )
         canvas.drawRect(tileBounds(bounds.x, bounds.top - 2f, bounds.width, 2f), color("D99A2B", if (selected) 0.32f else 0.16f))
         canvas.drawRect(tileBounds(bounds.x + 4f, bounds.y + 2f, bounds.width - 8f, 1f), color("050604", 0.28f))
@@ -550,6 +673,7 @@ internal object DemoShellRenderer {
         )
         canvas.drawRect(tileBounds(bounds.x + 10f, bounds.y + 10f, bounds.width - 20f, bounds.height - 20f), color("0A0806", 0.94f))
         drawRightPanelDepth(canvas, bounds)
+        drawRightUtilityChassis(canvas, layout)
         drawEquipmentSection(
             canvas = canvas,
             chrome = chrome,
@@ -567,6 +691,7 @@ internal object DemoShellRenderer {
             slots = demo.inscriptionSlots,
         )
         drawBackpackSection(canvas, chrome, layout.backpack, demo.rightBackpackTitle, layout.backpackSlots, demo.backpackSlots)
+        drawBackpackOperationBridge(canvas, layout)
         drawBackpackPager(canvas, layout.backpackPager, demo.backpackPageLabel)
         drawOperationHintsSection(canvas, chrome, layout.operationHints, demo.rightOperationHintsTitle, demo.operationRows)
     }
@@ -867,6 +992,16 @@ internal object DemoShellRenderer {
         val materialBottom = body.y + 9f
         val materialTop = body.top - SECTION_TITLE_HEIGHT - 7f
         val materialHeight = (materialTop - materialBottom).coerceAtLeast(1f)
+        val materialWell =
+            GameShellBounds(
+                x = body.x + 4f,
+                y = body.y + 8f,
+                width = (body.width - 8f).coerceAtLeast(1f),
+                height = (body.height - SECTION_TITLE_HEIGHT - 14f).coerceAtLeast(1f),
+            )
+        canvas.drawRect(materialWell.toTileBounds(), color("0A0806", 0.315f))
+        canvas.drawRect(tileBounds(materialWell.x + 6f, materialWell.top - 2f, materialWell.width - 12f, 2f), color("D99A2B", 0.102f))
+        canvas.drawRect(tileBounds(materialWell.x + 8f, materialWell.y + 3f, materialWell.width - 16f, 1f), color("1CB7C8", 0.054f))
         listOf(0.23f, 0.49f, 0.72f).forEachIndexed { index, ratio ->
             val inset = if (index % 2 == 0) 14f else 20f
             canvas.drawRect(
@@ -971,6 +1106,33 @@ internal object DemoShellRenderer {
         }
     }
 
+    private fun drawBackpackOperationBridge(
+        canvas: TileCanvas,
+        layout: DemoRightPanelLayout,
+    ) {
+        val pager = layout.backpackPager
+        val bridgeBottom = layout.operationHints.top - 2f
+        val bridgeTop = pager.top + 2f
+        val bridgeHeight = (bridgeTop - bridgeBottom).coerceAtLeast(1f)
+        val cradle =
+            GameShellBounds(
+                x = pager.x - 4f,
+                y = pager.y - 4f,
+                width = pager.width + 8f,
+                height = pager.height + 8f,
+            )
+        canvas.drawRect(cradle.toTileBounds(), color("050604", 0.205f))
+        canvas.drawRect(tileBounds(cradle.x + 10f, cradle.top - 2f, cradle.width - 20f, 2f), color("D99A2B", 0.134f))
+        canvas.drawRect(tileBounds(cradle.x + 14f, cradle.y + 3f, cradle.width - 28f, 1f), color("1CB7C8", 0.052f))
+        canvas.drawRect(tileBounds(pager.x + 8f, layout.operationHints.top - 3f, pager.width - 16f, 3f), color("0B0A08", 0.126f))
+        listOf(pager.x + 18f, pager.right - 22f).forEach { postX ->
+            canvas.drawRect(tileBounds(postX, bridgeBottom, 4f, bridgeHeight), color("2A1A0E", 0.142f))
+            canvas.drawRect(tileBounds(postX + 1f, bridgeBottom + 6f, 1.5f, (bridgeHeight - 12f).coerceAtLeast(1f)), color("D99A2B", 0.058f))
+            canvas.drawRect(tileBounds(postX - 1f, pager.y - 2f, 6f, 4f), color("C49B61", 0.118f))
+            canvas.drawRect(tileBounds(postX - 1f, layout.operationHints.top - 4f, 6f, 4f), color("C49B61", 0.118f))
+        }
+    }
+
     private fun drawEquipmentRigBackdrop(
         canvas: TileCanvas,
         bounds: GameShellBounds,
@@ -988,17 +1150,29 @@ internal object DemoShellRenderer {
                 .coerceAtLeast(1f)
         val rig =
             GameShellBounds(
-                x = bounds.x + 28f,
+                x = bounds.x + 18f,
                 y = rigY,
-                width = (bounds.width - 56f).coerceAtLeast(1f),
+                width = (bounds.width - 36f).coerceAtLeast(1f),
                 height = rigHeight,
-            )
-        canvas.drawRect(rig.toTileBounds(), color("050604", 0.34f))
-        canvas.drawRect(tileBounds(rig.x + 10f, rig.top - 2f, rig.width - 20f, 2f), color("D99A2B", 0.18f))
-        canvas.drawRect(tileBounds(rig.x + 10f, rig.y + 2f, rig.width - 20f, 1.5f), color("1CB7C8", 0.08f))
-        canvas.drawRect(tileBounds(rig.x + rig.width / 2f - 1f, rig.y + 16f, 2f, rig.height - 32f), color("B8873E", 0.16f))
-        canvas.drawRect(tileBounds(rig.x + 22f, rig.y + rig.height * 0.52f, rig.width - 44f, 2f), color("D99A2B", 0.10f))
-        canvas.drawRect(tileBounds(rig.x + 36f, rig.y + rig.height * 0.26f, rig.width - 72f, 1.5f), color("050604", 0.30f))
+        )
+        canvas.drawRect(rig.toTileBounds(), color("050604", 0.40f))
+        canvas.drawRect(tileBounds(rig.x + 10f, rig.top - 2f, rig.width - 20f, 2f), color("D99A2B", 0.22f))
+        canvas.drawRect(tileBounds(rig.x + 10f, rig.y + 2f, rig.width - 20f, 1.5f), color("1CB7C8", 0.09f))
+        canvas.drawRect(tileBounds(rig.x + rig.width / 2f - 1f, rig.y + 16f, 2f, rig.height - 32f), color("B8873E", 0.18f))
+        canvas.drawRect(tileBounds(rig.x + 22f, rig.y + rig.height * 0.52f, rig.width - 44f, 2f), color("D99A2B", 0.12f))
+        canvas.drawRect(tileBounds(rig.x + 36f, rig.y + rig.height * 0.26f, rig.width - 72f, 1.5f), color("050604", 0.34f))
+        grid.slotBounds.forEach { slot ->
+            val well =
+                GameShellBounds(
+                    x = slot.x - 4f,
+                    y = slot.y - 4f,
+                    width = slot.width + 8f,
+                    height = slot.height + 8f,
+                )
+            canvas.drawRect(well.toTileBounds(), color("0C0906", 0.34f))
+            canvas.drawRect(tileBounds(well.x + 5f, well.top - 2f, well.width - 10f, 2f), color("D99A2B", 0.128f))
+            canvas.drawRect(tileBounds(well.x + 6f, well.y + 3f, well.width - 12f, 1f), color("050604", 0.30f))
+        }
         val slotCentersX = grid.slotBounds.map { slot -> slot.x + slot.width / 2f }.distinct().sorted()
         val slotCentersY = grid.slotBounds.map { slot -> slot.y + slot.height / 2f }.distinct().sorted()
         if (slotCentersX.size >= 2 && slotCentersY.size >= 3) {
@@ -1013,33 +1187,70 @@ internal object DemoShellRenderer {
             val rightSlotEdge = grid.slotBounds.maxOf { slot -> slot.right }
             val scaffoldCenterX = (leftSlotEdge + rightSlotEdge) / 2f
             val shoulderY = (slotCentersY[slotCentersY.lastIndex - 1] - 10f).coerceAtMost(rig.top - 28f)
+            val shoulderWidth =
+                (rightSlotEdge - leftSlotEdge + 32f)
+                    .coerceAtMost(bounds.width * 0.60f)
+            val shoulderX = scaffoldCenterX - shoulderWidth / 2f
+            grid.slotBounds.take(8).chunked(2).forEachIndexed { index, rowSlots ->
+                val rowLeft = rowSlots.minOf { slot -> slot.x } - 8f
+                val rowRight = rowSlots.maxOf { slot -> slot.right } + 8f
+                val rowBottom = rowSlots.minOf { slot -> slot.y } - 4f
+                val bayHeight = grid.slotSide + 8f
+                canvas.drawRect(
+                    tileBounds(
+                        x = rowLeft.coerceAtLeast(bounds.x + 10f),
+                        y = rowBottom.coerceAtLeast(bounds.y + 8f),
+                        width = (rowRight - rowLeft).coerceAtMost(bounds.width - 20f),
+                        height = bayHeight,
+                    ),
+                    color("0B0907", 0.168f),
+                )
+                canvas.drawRect(
+                    tileBounds(
+                        x = rowLeft + 10f,
+                        y = rowBottom + bayHeight - 2f,
+                        width = (rowRight - rowLeft - 20f).coerceAtLeast(1f),
+                        height = 1.5f,
+                    ),
+                    color("D99A2B", if (index == 0) 0.072f else 0.052f),
+                )
+                canvas.drawRect(
+                    tileBounds(
+                        x = rowLeft + 14f,
+                        y = rowBottom + 3f,
+                        width = (rowRight - rowLeft - 28f).coerceAtLeast(1f),
+                        height = 1f,
+                    ),
+                    color("050604", 0.26f),
+                )
+            }
             canvas.drawRect(
-                tileBounds(leftSlotEdge - 16f, shoulderY, rightSlotEdge - leftSlotEdge + 32f, 22f),
-                color("090604", 0.154f),
+                tileBounds(shoulderX, shoulderY, shoulderWidth, 22f),
+                color("090604", 0.218f),
             )
             canvas.drawRect(
-                tileBounds(leftSlotEdge - 4f, shoulderY + 5f, rightSlotEdge - leftSlotEdge + 8f, 1.5f),
-                color("D99A2B", 0.058f),
+                tileBounds(shoulderX + 12f, shoulderY + 5f, shoulderWidth - 24f, 1.5f),
+                color("D99A2B", 0.068f),
             )
             val torsoHeight = (railHeight * 0.44f).coerceAtLeast(72f)
             val torsoY = (railY + railHeight * 0.24f).coerceAtMost(rig.top - torsoHeight - 18f)
             canvas.drawRect(
-                tileBounds(scaffoldCenterX - 23f, torsoY, 46f, torsoHeight),
-                color("080604", 0.168f),
+                tileBounds(scaffoldCenterX - 27f, torsoY, 54f, torsoHeight),
+                color("080604", 0.236f),
             )
             canvas.drawRect(
                 tileBounds(scaffoldCenterX - 1f, torsoY + 7f, 2f, (torsoHeight - 14f).coerceAtLeast(1f)),
-                color("D99A2B", 0.050f),
+                color("D99A2B", 0.062f),
             )
             val sidePlateY = railY + railHeight * 0.18f
             val sidePlateHeight = (railHeight * 0.52f).coerceAtLeast(74f)
-            listOf(leftSlotEdge - 20f, rightSlotEdge + 2f).forEach { plateX ->
-                canvas.drawRect(tileBounds(plateX, sidePlateY, 18f, sidePlateHeight), color("11100C", 0.142f))
-                canvas.drawRect(tileBounds(plateX + 7f, sidePlateY + 10f, 1.5f, sidePlateHeight - 20f), color("B8873E", 0.052f))
+            listOf(leftSlotEdge - 30f, rightSlotEdge + 6f).forEach { plateX ->
+                canvas.drawRect(tileBounds(plateX, sidePlateY, 24f, sidePlateHeight), color("11100C", 0.204f))
+                canvas.drawRect(tileBounds(plateX + 10f, sidePlateY + 10f, 1.5f, sidePlateHeight - 20f), color("B8873E", 0.064f))
             }
             listOf(leftRailX, rightRailX).forEach { railCenterX ->
-                canvas.drawRect(tileBounds(railCenterX - 1.5f, railY, 3f, railHeight), color("0B0A08", 0.118f))
-                canvas.drawRect(tileBounds(railCenterX - 0.5f, railY + 10f, 1f, railHeight - 20f), color("D99A2B", 0.058f))
+                canvas.drawRect(tileBounds(railCenterX - 1.5f, railY, 3f, railHeight), color("0B0A08", 0.144f))
+                canvas.drawRect(tileBounds(railCenterX - 0.5f, railY + 10f, 1f, railHeight - 20f), color("D99A2B", 0.064f))
             }
             slotCentersY.forEach { centerY ->
                 canvas.drawRect(tileBounds(leftSlotEdge + 8f, centerY - 1.5f, rightSlotEdge - leftSlotEdge - 16f, 3f), color("050604", 0.086f))
@@ -1050,6 +1261,33 @@ internal object DemoShellRenderer {
                     canvas.drawRect(tileBounds(railCenterX - 2.5f, centerY - 2.5f, 5f, 5f), color("D99A2B", 0.132f))
                     canvas.drawRect(tileBounds(railCenterX - 1f, centerY - 1f, 2f, 2f), color("050604", 0.20f))
                 }
+            }
+        }
+    }
+
+    private fun drawRightUtilityChassis(
+        canvas: TileCanvas,
+        layout: DemoRightPanelLayout,
+    ) {
+        val top = layout.inscriptions.top
+        val bottom = layout.operationHints.y
+        val height = (top - bottom).coerceAtLeast(1f)
+        val bounds =
+            GameShellBounds(
+                x = layout.inscriptions.x + 12f,
+                y = bottom,
+                width = (layout.inscriptions.width - 24f).coerceAtLeast(1f),
+                height = height,
+            )
+        canvas.drawRect(tileBounds(bounds.x + 2f, bounds.y + 3f, bounds.width - 4f, bounds.height - 6f), color("050604", 0.124f))
+        listOf(bounds.x + 18f, bounds.right - 21f).forEach { railX ->
+            canvas.drawRect(tileBounds(railX, bounds.y + 8f, 3f, bounds.height - 16f), color("2A1A0E", 0.166f))
+            canvas.drawRect(tileBounds(railX + 1f, bounds.y + 18f, 1f, bounds.height - 36f), color("D99A2B", 0.054f))
+        }
+        listOf(layout.inscriptions.y, layout.backpack.top + 2f, layout.operationHints.top - 4f).forEach { railY ->
+            if (railY > bounds.y + 8f && railY < bounds.top - 8f) {
+                canvas.drawRect(tileBounds(bounds.x + 14f, railY, bounds.width - 28f, 3f), color("0B0A08", 0.104f))
+                canvas.drawRect(tileBounds(bounds.x + 28f, railY + 2f, bounds.width - 56f, 1f), color("B8873E", 0.046f))
             }
         }
     }
@@ -1169,7 +1407,19 @@ internal object DemoShellRenderer {
         slotBounds: GameShellBounds,
         visualOnly: Boolean,
     ) {
-        val inset = if (visualOnly) 6f else 6f
+        if (visualOnly) {
+            val authoredPlate =
+                GameShellBounds(
+                    x = slotBounds.x + 3f,
+                    y = slotBounds.y + 3f,
+                    width = (slotBounds.width - 6f).coerceAtLeast(1f),
+                    height = (slotBounds.height - 6f).coerceAtLeast(1f),
+                )
+            canvas.drawRect(authoredPlate.toTileBounds(), color("070605", 0.56f))
+            canvas.drawRect(tileBounds(authoredPlate.x + 4f, authoredPlate.top - 2f, authoredPlate.width - 8f, 2f), color("D99A2B", 0.15f))
+            canvas.drawRect(tileBounds(authoredPlate.x + 5f, authoredPlate.y + 3f, authoredPlate.width - 10f, 1f), color("050604", 0.28f))
+        }
+        val inset = 6f
         val inner =
             GameShellBounds(
                 x = slotBounds.x + inset,
@@ -1197,32 +1447,49 @@ internal object DemoShellRenderer {
         canvas.drawRect(tileBounds(socket.right - 7f, socket.top - 6f, 5f, 2f), color("D99A2B", if (visualOnly) 0.14f else 0.09f))
         canvas.drawRect(tileBounds(socket.x + 2f, socket.y + 4f, 2f, 5f), color("050604", if (visualOnly) 0.30f else 0.18f))
         canvas.drawRect(tileBounds(socket.right - 4f, socket.y + 4f, 2f, 5f), color("050604", if (visualOnly) 0.30f else 0.18f))
-        if (visualOnly || slotBounds.width >= 48f) {
-            val glyphScale = if (visualOnly) 0.78f else 0.46f
-            val backingAlpha = if (visualOnly) 0.42f else 0.18f
-            val outlineAlpha = if (visualOnly) 0.72f else 0.44f
-            val metalAlpha = if (visualOnly) 0.68f else 0.32f
-            val shadowAlpha = if (visualOnly) 0.48f else 0.24f
+        if (visualOnly) {
+            val socketGlyph =
+                GameShellBounds(
+                    x = inner.x + inner.width * 0.22f,
+                    y = inner.y + inner.height * 0.19f,
+                    width = inner.width * 0.56f,
+                    height = inner.height * 0.58f,
+                )
+            canvas.drawRect(socketGlyph.toTileBounds(), color("090806", 0.20f))
+            drawRectOutline(
+                canvas = canvas,
+                bounds = socketGlyph,
+                stroke = 1f,
+                color = color("4F412B", 0.34f),
+            )
+            canvas.drawRect(tileBounds(socketGlyph.x + 4f, socketGlyph.y + 4f, socketGlyph.width - 8f, 1f), color("8A6E3E", 0.17f))
+            canvas.drawRect(tileBounds(socketGlyph.x + 4f, socketGlyph.top - 6f, socketGlyph.width - 8f, 2f), color("050604", 0.30f))
+            canvas.drawRect(tileBounds(socketGlyph.x + 4f, socketGlyph.y + socketGlyph.height * 0.34f, 2f, socketGlyph.height * 0.32f), color("7C6A4A", 0.22f))
+            canvas.drawRect(tileBounds(socketGlyph.right - 6f, socketGlyph.y + socketGlyph.height * 0.34f, 2f, socketGlyph.height * 0.32f), color("7C6A4A", 0.19f))
+            canvas.drawRect(tileBounds(socketGlyph.x + 5f, socketGlyph.top - 9f, 5f, 2f), color("D99A2B", 0.16f))
+            canvas.drawRect(tileBounds(socketGlyph.right - 10f, socketGlyph.top - 9f, 5f, 2f), color("050604", 0.24f))
+            return
+        }
+        if (slotBounds.width >= 48f) {
+            val glyphScale = 0.46f
+            val backingAlpha = 0.18f
+            val outlineAlpha = 0.44f
+            val metalAlpha = 0.32f
+            val shadowAlpha = 0.24f
             val glyphWidth = (inner.width * glyphScale).coerceAtLeast(10f)
             val glyphHeight = (inner.height * glyphScale).coerceAtLeast(10f)
             val glyphX = inner.x + (inner.width - glyphWidth) / 2f
             val glyphY = inner.y + (inner.height - glyphHeight) / 2f
             val motif = ((slotBounds.x / 8f).toInt() + (slotBounds.y / 8f).toInt()) % 4
             canvas.drawRect(tileBounds(glyphX - 2f, glyphY - 2f, glyphWidth + 4f, glyphHeight + 4f), color("0A0806", backingAlpha))
-            canvas.drawRect(tileBounds(glyphX + 2f, glyphY + 2f, glyphWidth - 4f, glyphHeight - 4f), color("1B1710", if (visualOnly) 0.24f else 0.12f))
+            canvas.drawRect(tileBounds(glyphX + 2f, glyphY + 2f, glyphWidth - 4f, glyphHeight - 4f), color("1B1710", 0.12f))
             drawRectOutline(
                 canvas = canvas,
                 bounds = GameShellBounds(glyphX, glyphY, glyphWidth, glyphHeight),
                 stroke = 1f,
                 color = color("7C6A4A", outlineAlpha),
             )
-            canvas.drawRect(tileBounds(glyphX + 2f, glyphY + glyphHeight - 3f, glyphWidth - 4f, 1f), color("D99A2B", if (visualOnly) 0.28f else 0.18f))
-            if (visualOnly) {
-                canvas.drawRect(tileBounds(glyphX + 3f, glyphY + 3f, 3f, 3f), color("D99A2B", 0.28f))
-                canvas.drawRect(tileBounds(glyphX + glyphWidth - 6f, glyphY + 3f, 3f, 3f), color("D99A2B", 0.22f))
-                canvas.drawRect(tileBounds(glyphX + 3f, glyphY + glyphHeight - 6f, 3f, 3f), color("050604", 0.34f))
-                canvas.drawRect(tileBounds(glyphX + glyphWidth - 6f, glyphY + glyphHeight - 6f, 3f, 3f), color("050604", 0.34f))
-            }
+            canvas.drawRect(tileBounds(glyphX + 2f, glyphY + glyphHeight - 3f, glyphWidth - 4f, 1f), color("D99A2B", 0.18f))
             when (motif) {
                 0 -> {
                     canvas.drawRect(tileBounds(glyphX + glyphWidth * 0.46f, glyphY + 4f, 3f, glyphHeight - 8f), color("A88A52", metalAlpha))
@@ -1280,7 +1547,7 @@ internal object DemoShellRenderer {
             bounds = bounds,
             fillColor = demoRaised(),
             borderColor = demoSubtleBorder(),
-            alpha = 0.9f,
+            alpha = BOTTOM_CHILD_FRAME_ALPHA,
         )
         canvas.drawRect(content.toTileBounds(), color("120A04", 0.72f))
         canvas.drawRect(
@@ -1295,6 +1562,12 @@ internal object DemoShellRenderer {
             }.coerceAtMost(content.height - 18f)
         val crestX = content.x + 6f
         val crestY = content.y + (content.height - crestSide) / 2f
+        drawHeroHeraldicPillar(
+            canvas = canvas,
+            content = content,
+            crestX = crestX,
+            crestSide = crestSide,
+        )
         canvas.drawRect(
             tileBounds(crestX - 3f, crestY - 3f, crestSide + 6f, crestSide + 6f),
             color("050604", 0.38f),
@@ -1354,6 +1627,26 @@ internal object DemoShellRenderer {
         )
     }
 
+    private fun drawHeroHeraldicPillar(
+        canvas: TileCanvas,
+        content: GameShellBounds,
+        crestX: Float,
+        crestSide: Float,
+    ) {
+        val pillarX = content.x + 4f
+        val pillarY = content.y + 10f
+        val pillarWidth = (crestX - pillarX + crestSide + 10f).coerceAtMost(content.width * 0.42f)
+        val pillarHeight = (content.height - 20f).coerceAtLeast(1f)
+        val pillar = GameShellBounds(pillarX, pillarY, pillarWidth, pillarHeight)
+        canvas.drawRect(pillar.toTileBounds(), color("050604", 0.54f))
+        canvas.drawRect(tileBounds(pillar.x + 6f, pillar.y + 7f, pillar.width - 12f, pillar.height - 14f), color("1A0D05", 0.30f))
+        canvas.drawRect(tileBounds(pillar.x + 8f, pillar.top - 10f, pillar.width - 16f, 3f), color("D99A2B", 0.18f))
+        canvas.drawRect(tileBounds(pillar.x + 8f, pillar.y + 7f, pillar.width - 16f, 2f), color("050604", 0.34f))
+        canvas.drawRect(tileBounds(pillar.x + 5f, pillar.y + 18f, 2f, pillar.height - 36f), color("2B3542", 0.24f))
+        canvas.drawRect(tileBounds(pillar.right - 7f, pillar.y + 18f, 2f, pillar.height - 36f), color("2B3542", 0.20f))
+        canvas.drawRect(tileBounds(pillar.x + 12f, pillar.y + pillar.height * 0.50f, pillar.width - 24f, 2f), color("1CB7C8", 0.10f))
+    }
+
     private fun drawHeroStatChips(
         canvas: TileCanvas,
         statLines: List<String>,
@@ -1408,7 +1701,7 @@ internal object DemoShellRenderer {
             bounds = deck,
             fillColor = demoRaised(),
             borderColor = demoSubtleBorder(),
-            alpha = 0.88f,
+            alpha = BOTTOM_CHILD_FRAME_ALPHA,
         )
         drawActionDeckSurface(canvas, deck)
         drawActionCommandConsole(
@@ -1436,28 +1729,49 @@ internal object DemoShellRenderer {
                     width = iconSocketSide,
                     height = iconSocketSide,
                 )
-            val slotWellBounds =
+            val socketPadBounds =
                 GameShellBounds(
-                    x = slotBounds.x + 4f,
-                    y = slotBounds.y + 3f,
-                    width = slotBounds.width - 8f,
-                    height = slotBounds.height - 7f,
+                    x = iconSocketBounds.x - 4f,
+                    y = iconSocketBounds.y - 4f,
+                    width = iconSocketBounds.width + 8f,
+                    height = iconSocketBounds.height + 8f,
                 )
-            canvas.drawRect(slotWellBounds.toTileBounds(), color("050604", 0.52f))
-            canvas.drawRect(tileBounds(slotWellBounds.x + 4f, slotWellBounds.top - 2f, slotWellBounds.width - 8f, 2f), color("D99A2B", 0.26f))
-            canvas.drawRect(tileBounds(slotWellBounds.x + 4f, slotWellBounds.y + textPlateHeight + 6f, slotWellBounds.width - 8f, 1f), color("1CB7C8", 0.18f))
+            if (entry != null) {
+                drawActionSlotSilhouetteChrome(canvas, slotBounds, iconSocketBounds)
+            }
+            val isReserveSocket = entry == null
+            canvas.drawRect(socketPadBounds.toTileBounds(), color("050604", if (isReserveSocket) 0.14f else 0.30f))
             canvas.drawRect(
-                tileBounds(
-                    slotBounds.x + slotBounds.width / 2f - 0.5f,
-                    textPlateBounds.top - 1f,
-                    1f,
-                    (iconSocketBounds.y - textPlateBounds.top + 2f).coerceAtLeast(1f),
-                ),
-                color("B8873E", 0.18f),
+                tileBounds(socketPadBounds.x + 4f, socketPadBounds.top - 2f, socketPadBounds.width - 8f, 2f),
+                color("D99A2B", if (isReserveSocket) 0.04f else 0.12f),
             )
-            canvas.drawAsset(if (entry == null) chrome.slotEmpty else chrome.slotEquipped, iconSocketBounds.toTileBounds(), alpha = 0.9f)
+            canvas.drawRect(
+                tileBounds(socketPadBounds.x + 6f, socketPadBounds.y + 3f, socketPadBounds.width - 12f, 1f),
+                color("1CB7C8", if (isReserveSocket) 0.025f else 0.07f),
+            )
+            if (!isReserveSocket) {
+                canvas.drawRect(
+                    tileBounds(
+                        slotBounds.x + slotBounds.width / 2f - 0.5f,
+                        textPlateBounds.top + 1f,
+                        1f,
+                        (iconSocketBounds.y - textPlateBounds.top - 1f).coerceAtLeast(1f),
+                    ),
+                    color("B8873E", 0.07f),
+                )
+            }
+            canvas.drawAsset(
+                if (isReserveSocket) chrome.slotEmpty else chrome.slotEquipped,
+                iconSocketBounds.toTileBounds(),
+                alpha = if (isReserveSocket) 0.36f else 0.9f,
+            )
+            if (entry != null) {
+                drawActionIconSubjectAccents(canvas, iconSocketBounds)
+            } else {
+                drawActionReserveSocketInterior(canvas, iconSocketBounds)
+            }
             entry?.icon?.let { icon ->
-                val iconInset = iconSocketSide * 0.17f
+                val iconInset = iconSocketSide * 0.07f
                 val iconSide = iconSocketSide - iconInset * 2f
                 val iconX = iconSocketBounds.x + iconInset
                 val iconY = iconSocketBounds.y + iconInset
@@ -1499,6 +1813,109 @@ internal object DemoShellRenderer {
                 )
             }
         }
+    }
+
+    private fun drawActionReserveSocketInterior(
+        canvas: TileCanvas,
+        iconSocketBounds: GameShellBounds,
+    ) {
+        val inset = iconSocketBounds.width * 0.24f
+        val socket =
+            GameShellBounds(
+                x = iconSocketBounds.x + inset,
+                y = iconSocketBounds.y + inset,
+                width = (iconSocketBounds.width - inset * 2f).coerceAtLeast(1f),
+                height = (iconSocketBounds.height - inset * 2f).coerceAtLeast(1f),
+            )
+        canvas.drawRect(socket.toTileBounds(), color("050604", 0.18f))
+        drawRectOutline(canvas, socket, stroke = 1f, color = color("4F412B", 0.14f))
+        canvas.drawRect(tileBounds(socket.x + 5f, socket.top - 7f, socket.width - 10f, 2f), color("050604", 0.18f))
+        canvas.drawRect(tileBounds(socket.x + 5f, socket.y + 5f, socket.width - 10f, 1f), color("D99A2B", 0.045f))
+        canvas.drawRect(tileBounds(socket.x + 4f, socket.y + socket.height * 0.36f, 2f, socket.height * 0.28f), color("2B3542", 0.07f))
+        canvas.drawRect(tileBounds(socket.right - 6f, socket.y + socket.height * 0.36f, 2f, socket.height * 0.28f), color("2B3542", 0.07f))
+    }
+
+    private fun drawActionSlotSilhouetteChrome(
+        canvas: TileCanvas,
+        slotBounds: GameShellBounds,
+        iconSocketBounds: GameShellBounds,
+    ) {
+        val stageInsetX = slotBounds.width * 0.08f
+        val stageWidth = (slotBounds.width - stageInsetX * 2f).coerceAtLeast(1f)
+        val stageHeight = (iconSocketBounds.height + 12f).coerceAtMost(slotBounds.height * 0.62f)
+        val stageY =
+            (iconSocketBounds.y - 5f)
+                .coerceAtLeast(slotBounds.y + slotBounds.height * 0.30f)
+                .coerceAtMost(slotBounds.top - stageHeight - 7f)
+        val stage =
+            GameShellBounds(
+                x = slotBounds.x + stageInsetX,
+                y = stageY,
+                width = stageWidth,
+                height = stageHeight,
+            )
+        canvas.drawRect(stage.toTileBounds(), color("050604", 0.236f))
+        val lipInset = stage.width * 0.08f
+        val lipWidth = (stage.width - lipInset * 2f).coerceAtLeast(1f)
+        canvas.drawRect(tileBounds(stage.x + lipInset, stage.y + 5f, lipWidth, 3f), color("D99A2B", 0.174f))
+        canvas.drawRect(tileBounds(stage.x + lipInset, stage.top - 7f, lipWidth, 3f), color("D99A2B", 0.174f))
+        val jambHeight = stage.height * 0.66f
+        val jambY = stage.y + stage.height * 0.17f
+        canvas.drawRect(tileBounds(stage.x + 6f, jambY, 3f, jambHeight), color("2B3542", 0.151f))
+        canvas.drawRect(tileBounds(stage.right - 9f, jambY, 3f, jambHeight), color("2B3542", 0.151f))
+        canvas.drawRect(tileBounds(stage.x + 11f, stage.y + 11f, stage.width - 22f, 1f), color("1CB7C8", 0.076f))
+        canvas.drawRect(tileBounds(stage.x + 11f, stage.top - 12f, stage.width - 22f, 1f), color("D99A2B", 0.092f))
+        canvas.drawRect(tileBounds(stage.x + 8f, stage.top - 10f, 5f, 5f), color("B8873E", 0.138f))
+        canvas.drawRect(tileBounds(stage.right - 13f, stage.top - 10f, 5f, 5f), color("B8873E", 0.138f))
+    }
+
+    private fun drawActionIconSubjectAccents(
+        canvas: TileCanvas,
+        iconSocketBounds: GameShellBounds,
+    ) {
+        val subjectInset = iconSocketBounds.width * 0.15f
+        val subjectX = iconSocketBounds.x + subjectInset
+        val subjectY = iconSocketBounds.y + subjectInset
+        val subjectWidth = (iconSocketBounds.width - subjectInset * 2f).coerceAtLeast(1f)
+        val subjectHeight = (iconSocketBounds.height - subjectInset * 2f).coerceAtLeast(1f)
+        val pedestalX = iconSocketBounds.x + iconSocketBounds.width * 0.08f
+        val pedestalY = iconSocketBounds.y + iconSocketBounds.height * 0.10f
+        val pedestalWidth = iconSocketBounds.width * 0.84f
+        val pedestalHeight = iconSocketBounds.height * 0.68f
+        canvas.drawRect(tileBounds(pedestalX, pedestalY, pedestalWidth, pedestalHeight), color("050604", 0.278f))
+        canvas.drawRect(
+            tileBounds(pedestalX + pedestalWidth * 0.12f, pedestalY + pedestalHeight * 0.76f, pedestalWidth * 0.76f, 4f),
+            color("D99A2B", 0.232f),
+        )
+        canvas.drawRect(
+            tileBounds(pedestalX + pedestalWidth * 0.18f, pedestalY + 6f, pedestalWidth * 0.64f, 2f),
+            color("1CB7C8", 0.082f),
+        )
+        canvas.drawRect(
+            tileBounds(pedestalX + 4f, pedestalY + pedestalHeight * 0.24f, 2f, pedestalHeight * 0.50f),
+            color("2B3542", 0.156f),
+        )
+        canvas.drawRect(
+            tileBounds(pedestalX + pedestalWidth - 6f, pedestalY + pedestalHeight * 0.24f, 2f, pedestalHeight * 0.50f),
+            color("2B3542", 0.156f),
+        )
+        canvas.drawRect(tileBounds(subjectX, subjectY, subjectWidth, subjectHeight), color("050604", 0.184f))
+        canvas.drawRect(
+            tileBounds(subjectX, subjectY + subjectHeight * 0.74f, subjectWidth, 3f),
+            color("D99A2B", 0.286f),
+        )
+        canvas.drawRect(
+            tileBounds(subjectX + subjectWidth * 0.12f, subjectY + subjectHeight * 0.16f, 2f, subjectHeight * 0.68f),
+            color("D99A2B", 0.193f),
+        )
+        canvas.drawRect(
+            tileBounds(subjectX + subjectWidth * 0.84f, subjectY + subjectHeight * 0.18f, 1.5f, subjectHeight * 0.60f),
+            color("1CB7C8", 0.108f),
+        )
+        canvas.drawRect(
+            tileBounds(subjectX + subjectWidth * 0.18f, subjectY + 4f, subjectWidth * 0.64f, 1f),
+            color("D99A2B", 0.106f),
+        )
     }
 
     private fun drawActionCommandConsole(
@@ -1561,7 +1978,7 @@ internal object DemoShellRenderer {
             bounds = log,
             fillColor = demoOverlay(),
             borderColor = demoSubtleBorder(),
-            alpha = 0.86f,
+            alpha = BOTTOM_CHILD_FRAME_ALPHA,
         )
         drawLogDeckSurface(canvas, log)
         val logContent = contentBounds(log, ChromeSurfaceKind.Panel)
@@ -1578,6 +1995,7 @@ internal object DemoShellRenderer {
                     .map { text -> line.copy(text = text) }
             }
             .take(rowCount)
+        drawLogEventRowPlates(canvas, logContent, visibleLines)
         drawLogLedgerGutter(canvas, logContent, visibleLines)
         visibleLines.forEachIndexed { index, line ->
             val baselineY = logContent.top - 8f - index * CAPTION_LINE_HEIGHT
@@ -1617,6 +2035,30 @@ internal object DemoShellRenderer {
         canvas.drawRect(tileBounds(body.x + 12f, body.y + 12f, 3f, body.height - 24f), color("050604", 0.34f))
         canvas.drawRect(tileBounds(body.x + 13f, body.y + 20f, 1f, body.height - 40f), color("1CB7C8", 0.10f))
         canvas.drawRect(tileBounds(body.x + 16f, body.top - 36f, 1f, 24f), color("D99A2B", 0.34f))
+    }
+
+    private fun drawLogEventRowPlates(
+        canvas: TileCanvas,
+        content: GameShellBounds,
+        lines: List<TileMessageLine>,
+    ) {
+        if (lines.isEmpty()) {
+            return
+        }
+        val rowX = content.x + 22f
+        val rowWidth = (content.width - 38f).coerceAtLeast(1f)
+        lines.forEachIndexed { index, line ->
+            val baselineY = content.top - 8f - index * CAPTION_LINE_HEIGHT
+            val rowY = baselineY - 13f
+            val rowHeight = 16f
+            canvas.drawRect(tileBounds(rowX, rowY, rowWidth, rowHeight), color("050604", 0.327f))
+            canvas.drawRect(tileBounds(rowX, rowY + 2f, 3f, rowHeight - 4f), color(logLedgerAccentHex(line.tone), 0.252f))
+            canvas.drawRect(tileBounds(rowX + 7f, rowY + 3f, (rowWidth - 14f).coerceAtLeast(1f), rowHeight - 5f), color("0B0A08", 0.205f))
+            canvas.drawRect(tileBounds(rowX + rowWidth - 10f, rowY + 3f, 2f, rowHeight - 6f), color("1CB7C8", 0.142f))
+            canvas.drawRect(tileBounds(rowX + 7f, rowY + 2f, (rowWidth - 14f).coerceAtLeast(1f), 1f), color("D99A2B", 0.045f))
+            canvas.drawRect(tileBounds(rowX + 10f, rowY + rowHeight - 4f, (rowWidth - 24f).coerceAtLeast(1f), 1f), color("D99A2B", 0.074f))
+            canvas.drawRect(tileBounds(rowX + 5f, rowY + rowHeight - 1f, (rowWidth - 10f).coerceAtLeast(1f), 1f), color("050604", 0.22f))
+        }
     }
 
     private fun drawLogLedgerGutter(
@@ -1752,8 +2194,17 @@ internal object DemoShellRenderer {
         height: Float,
         showSummary: Boolean = true,
     ) {
+        canvas.drawRect(tileBounds(x - 3f, y - 2f, width + 6f, height + 4f), color("050604", 0.345f))
+        canvas.drawRect(tileBounds(x - 1f, y - 1f, width + 2f, 1f), color("050604", 0.42f))
+        canvas.drawRect(tileBounds(x + 4f, y + height + 1f, (width - 8f).coerceAtLeast(1f), 2f), color("D99A2B", 0.18f))
+        canvas.drawRect(tileBounds(x + 5f, y + 2f, (width - 10f).coerceAtLeast(1f), 1f), color("1CB7C8", 0.08f))
+        val gaugeAccent = Color(gaugeColor(gauge)).also { color -> color.a = 0.24f }
+        canvas.drawRect(tileBounds(x - 6f, y + 3f, 2f, height - 6f), gaugeAccent)
         canvas.drawRect(tileBounds(x, y, width, height), UiDesignTokens.color.bar.background.color())
-        canvas.drawRect(tileBounds(x + 2f, y + 2f, (width - 4f) * gauge.percent, height - 4f), gaugeColor(gauge))
+        val fillWidth = (width - 4f) * gauge.percent
+        canvas.drawRect(tileBounds(x + 2f, y + 2f, fillWidth, height - 4f), gaugeColor(gauge))
+        canvas.drawRect(tileBounds(x + 4f, y + 3f, (fillWidth - 6f).coerceAtLeast(1f), 1f), color("E7E1D3", 0.09f))
+        canvas.drawRect(tileBounds(x + 3f, y + height - 3f, (width - 6f).coerceAtLeast(1f), 2f), color("050604", 0.18f))
         if (showSummary) {
             drawBoundedText(canvas, gauge.summary, x + 4f, y + height + 13f, width - 8f, TileTextTone.WHITE)
         }

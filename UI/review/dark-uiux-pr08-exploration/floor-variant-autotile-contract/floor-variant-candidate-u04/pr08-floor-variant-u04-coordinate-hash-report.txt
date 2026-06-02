@@ -1,0 +1,2 @@
+pr08-floor-variant-u04-coordinate-hash-current-vs-mixed-8x-board.png 1048x546 sha256=9fadfafbcb06a71cdf45629d5f03cf8ebdd72b88056eb3d51acbd1f59f3cc40f
+pr08-floor-variant-u04-coordinate-hash-synthetic-room-preview.png 896x640 sha256=d1e5382025e225fa14711111bb211a094775434222135da24ecc151982d3487b

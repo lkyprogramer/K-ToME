@@ -247,12 +247,13 @@ internal object DemoShellLayoutSolver {
             when (profile) {
                 DemoShellProfile.MINIMUM -> utilitySlotSide
                 DemoShellProfile.STANDARD -> if (isLargeStandardBounds) 60f else 50f
-                DemoShellProfile.DEMO_ASPECT -> 64f
+                DemoShellProfile.DEMO_ASPECT -> 58f
             }
         val backpackRows = 2
         val availableSectionHeight = (bounds.height - sectionGap * 3f).coerceAtLeast(1f)
+        val equipmentHeightRatio = if (profile == DemoShellProfile.DEMO_ASPECT) 0.38f else 0.42f
         val equipmentHeight =
-            (availableSectionHeight * 0.42f)
+            (availableSectionHeight * equipmentHeightRatio)
                 .coerceAtLeast(RIGHT_SECTION_TITLE_HEIGHT + equipmentSlotSide * 5f + 8f * 4f + 12f)
         val inscriptionHeight =
             (availableSectionHeight * 0.26f)
@@ -333,18 +334,22 @@ internal object DemoShellLayoutSolver {
         equipment: GameShellBounds,
         slotSide: Float,
     ): DemoSlotGridLayout {
-        val gap = 8f
+        val rowGap = 8f
         val columns = 2
         val rows = 5
         val bounds = equipment
-        val gridWidth = (slotSide * columns + gap).coerceAtMost(bounds.width - 24f)
-        val gridHeight = rows * slotSide + (rows - 1) * gap
+        val maxColumnGap = (bounds.width - 48f - slotSide * columns).coerceAtLeast(slotSide * 0.55f)
+        val columnGap =
+            (bounds.width * 0.31f)
+                .coerceIn(slotSide * 0.55f, minOf(slotSide * 2.08f, maxColumnGap))
+        val gridWidth = slotSide * columns + columnGap
+        val gridHeight = rows * slotSide + (rows - 1) * rowGap
         val top = equipment.top - RIGHT_SECTION_TITLE_HEIGHT - 4f
         val leftX = bounds.x + ((bounds.width - gridWidth) / 2f).coerceAtLeast(8f)
-        val rightX = leftX + slotSide + gap
+        val rightX = leftX + slotSide + columnGap
         val centerX = bounds.x + (bounds.width - slotSide) / 2f
         val startY = (top - gridHeight).coerceAtLeast(bounds.y + 4f)
-        fun rowY(row: Int): Float = startY + (rows - row - 1) * (slotSide + gap)
+        fun rowY(row: Int): Float = startY + (rows - row - 1) * (slotSide + rowGap)
         val slots =
             listOf(
                 GameShellBounds(leftX, rowY(0), slotSide, slotSide),

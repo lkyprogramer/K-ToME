@@ -3,14 +3,14 @@ styleTag: ktome-dark-fantasy-sprite-ui-v1
 entries:
 - targetKey: ui.frame.panel.body
   category: ui_frame
-  ownerPr: PR-02
+  ownerPr: PR-08
   sheetId: r01-ui-chrome
   fallbackKey: missing_visual
   consumer: TileRenderer and StandaloneScreenChrome shared panel chrome
   consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
 - targetKey: ui.frame.panel.focus
   category: ui_frame
-  ownerPr: PR-02
+  ownerPr: PR-08
   sheetId: r01-ui-chrome
   fallbackKey: ui.frame.panel.body
   consumer: TileRenderer focused pane chrome
@@ -73,21 +73,21 @@ entries:
   consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
 - targetKey: ui.frame.slot.empty
   category: ui_frame
-  ownerPr: PR-02
+  ownerPr: PR-08
   sheetId: r01-ui-chrome
   fallbackKey: ui.frame.panel.body
   consumer: TileRenderer hotbar and equipment empty slot
   consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
 - targetKey: ui.frame.slot.equipped
   category: ui_frame
-  ownerPr: PR-02
+  ownerPr: PR-08
   sheetId: r01-ui-chrome
   fallbackKey: ui.frame.slot.empty
   consumer: TileRenderer hotbar equipped slot
   consumerTest: TileRendererCanvasTest.darkUiuxPr02DrawsPanelSlotModalAndHudAssets
 - targetKey: ui.frame.slot.selected
   category: ui_frame
-  ownerPr: PR-02
+  ownerPr: PR-08
   sheetId: r01-ui-chrome
   fallbackKey: ui.frame.slot.empty
   consumer: TileRenderer selected slot
@@ -332,28 +332,28 @@ entries:
   consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
 - targetKey: ui.shell.hero_card.frame
   category: ui_frame
-  ownerPr: PR-02-1
+  ownerPr: PR-08
   sheetId: r01b-ui-shell-chrome
   fallbackKey: ui.frame.panel.body
   consumer: bottom hero card
   consumerTest: InfoSurfaceLayoutTest, TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions
 - targetKey: ui.shell.action_deck.frame
   category: ui_frame
-  ownerPr: PR-02-1
+  ownerPr: PR-08
   sheetId: r01b-ui-shell-chrome
   fallbackKey: ui.frame.panel.body
   consumer: bottom action deck
   consumerTest: InfoSurfaceLayoutTest, TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions
 - targetKey: ui.shell.log_deck.frame
   category: ui_frame
-  ownerPr: PR-02-1
+  ownerPr: PR-08
   sheetId: r01b-ui-shell-chrome
   fallbackKey: ui.frame.tooltip.body
   consumer: bottom log deck
   consumerTest: InfoSurfaceLayoutTest, TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions
 - targetKey: ui.shell.right_section.divider
   category: ui_frame
-  ownerPr: PR-02-1
+  ownerPr: PR-08
   sheetId: r01b-ui-shell-chrome
   fallbackKey: ui.frame.panel.body
   consumer: right panel section divider
@@ -367,7 +367,7 @@ entries:
   consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
 - targetKey: ui.shell.command_hint.plate
   category: ui_frame
-  ownerPr: PR-02-1
+  ownerPr: PR-08
   sheetId: r01b-ui-shell-chrome
   fallbackKey: ui.frame.tooltip.body
   consumer: command hint plate
@@ -409,18 +409,74 @@ entries:
   consumerTest: TileRendererCanvasTest.darkUiuxPr021DrawsShellOwnerKeysInsideTheirConsumerRegions, DemoShellRendererTest.shellKeysBindToConsumerRegionOnly
 - targetKey: tileset.ruins.ground_01
   category: tile_ground
-  ownerPr: PR-02-2
+  ownerPr: PR-08
   sheetId: r02-ui-demo-ruins-tiles
   fallbackKey: missing_visual
-  consumer: UI-demo-new shattered outpost terrain floor
-  consumerTest: ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
+  consumer: PR-08 director shattered outpost terrain floor
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
+- targetKey: tileset.ruins.ground_01.variant_1
+  category: tile_ground
+  ownerPr: PR-08
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: tileset.ruins.ground_01
+  consumer: PR-08 director shattered outpost terrain floor variant family
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
+- targetKey: tileset.ruins.ground_01.variant_2
+  category: tile_ground
+  ownerPr: PR-08
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: tileset.ruins.ground_01
+  consumer: PR-08 director shattered outpost terrain floor variant family
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
+- targetKey: tileset.ruins.ground_01.variant_3
+  category: tile_ground
+  ownerPr: PR-08
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: tileset.ruins.ground_01
+  consumer: PR-08 director shattered outpost terrain floor variant family
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
 - targetKey: tileset.ruins.wall_01
   category: tile_wall
-  ownerPr: PR-02-2
+  ownerPr: PR-08
   sheetId: r02-ui-demo-ruins-tiles
   fallbackKey: missing_visual
-  consumer: UI-demo-new shattered outpost terrain wall
-  consumerTest: ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
+  consumer: PR-08 director shattered outpost terrain wall family base
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold
+- targetKey: tileset.ruins.wall_01.crown
+  category: tile_wall
+  ownerPr: PR-08
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: tileset.ruins.wall_01
+  consumer: PR-08 director shattered outpost terrain wall family crown
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.renderCanvasUsesPr08WallFamilyPiecesForRoomEnclosure
+- targetKey: tileset.ruins.wall_01.side
+  category: tile_wall
+  ownerPr: PR-08
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: tileset.ruins.wall_01
+  consumer: PR-08 director shattered outpost terrain wall family side
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.renderCanvasUsesPr08WallFamilyPiecesForRoomEnclosure
+- targetKey: tileset.ruins.wall_01.corner
+  category: tile_wall
+  ownerPr: PR-08
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: tileset.ruins.wall_01
+  consumer: PR-08 director shattered outpost terrain wall family corner
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.renderCanvasUsesPr08WallFamilyPiecesForRoomEnclosure
+- targetKey: tileset.ruins.wall_01.door_contact
+  category: tile_wall
+  ownerPr: PR-08
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: tileset.ruins.wall_01
+  consumer: PR-08 director shattered outpost terrain wall family door contact
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.renderCanvasUsesPr08WallFamilyPiecesForRoomEnclosure
+- targetKey: tileset.ruins.room_breakup_01
+  category: tile_decal
+  ownerPr: PR-08
+  sheetId: r02-ui-demo-ruins-tiles
+  fallbackKey: missing_visual
+  consumer: PR-08 director shattered outpost room-scale material breakup compositor
+  consumerTest: ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.renderCanvasDrawsPr08RoomMaterialBreakupAsSingleRoomScaleAsset
 - targetKey: actor.vanguard
   category: actor_sprite
   ownerPr: PR-02-2

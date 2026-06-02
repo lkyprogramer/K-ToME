@@ -1,0 +1,172 @@
+{
+  "copied_artifacts": [
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-dark-uiux-pr02-1-demo-main-menu.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-dark-uiux-pr02-1-demo-shell-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-dark-uiux-pr02-1-demo-shell-inventory-open.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-dark-uiux-pr02-1-demo-shell-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-dark-uiux-pr02-1-demo-validation-setup.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-evidence-index.tsv",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-ui-demo-new-bottom-deck-no-command-hints.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-ui-demo-new-inventory-page-1.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-ui-demo-new-inventory-page-2.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-ui-demo-new-map-stage-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-ui-demo-new-nav-rail-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-ui-demo-new-parity-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-ui-demo-new-parity-1672x941.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-room-silhouette-pressure-v28/pr08-room-silhouette-pressure-v28-ui-demo-new-right-panel-grid.png"
+  ],
+  "v27_vs_reference_map_resized": {
+    "changed_ratio": 0.9999362697180534,
+    "channel_extrema": [
+      [
+        0,
+        248
+      ],
+      [
+        0,
+        244
+      ],
+      [
+        0,
+        212
+      ]
+    ],
+    "mean_abs_diff": 17.150591621464486,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v28_vs_reference_map_resized": {
+    "changed_ratio": 0.9999362697180534,
+    "channel_extrema": [
+      [
+        0,
+        248
+      ],
+      [
+        0,
+        244
+      ],
+      [
+        0,
+        212
+      ]
+    ],
+    "mean_abs_diff": 17.07226982027741,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v28_vs_v27_bottom_deck": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      1843,
+      360
+    ]
+  },
+  "v28_vs_v27_full_1280x800": {
+    "changed_ratio": 0.015826416015625,
+    "channel_extrema": [
+      [
+        0,
+        46
+      ],
+      [
+        0,
+        38
+      ],
+      [
+        0,
+        29
+      ]
+    ],
+    "mean_abs_diff": 0.10809277343750001,
+    "size": [
+      2560,
+      1600
+    ]
+  },
+  "v28_vs_v27_full_1672x941": {
+    "changed_ratio": 0.014257299065943285,
+    "channel_extrema": [
+      [
+        0,
+        44
+      ],
+      [
+        0,
+        39
+      ],
+      [
+        0,
+        31
+      ]
+    ],
+    "mean_abs_diff": 0.09782230337945143,
+    "size": [
+      3344,
+      1882
+    ]
+  },
+  "v28_vs_v27_map_stage": {
+    "changed_ratio": 0.031062522760814983,
+    "channel_extrema": [
+      [
+        0,
+        46
+      ],
+      [
+        0,
+        38
+      ],
+      [
+        0,
+        29
+      ]
+    ],
+    "mean_abs_diff": 0.21215379602476378,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v28_vs_v27_right_panel": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  }
+}

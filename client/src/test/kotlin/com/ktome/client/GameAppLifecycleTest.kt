@@ -30,6 +30,7 @@ import com.ktome.client.input.CommandSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.input.ValidationCommandSource
 import com.ktome.client.screen.ContinueAvailability
 import com.ktome.client.screen.ContinueUnavailableReasonCode
 import com.ktome.client.screen.FoundationGameScreen
@@ -60,6 +61,10 @@ import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.ProfessionPlayerCreationOption
 import com.ktome.game.RacePlayerCreationOption
 import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationScenarioEvidenceSummary
+import com.ktome.game.validation.ValidationScenarioId
+import com.ktome.game.validation.ValidationScenarioRegistry
+import com.ktome.game.validation.ValidationScenarioStartupSurface
 import com.ktome.game.validation.ValidationSessionMetadataStore
 import com.ktome.game.validation.validationSessionOptionsForPreset
 import java.nio.file.Files
@@ -586,6 +591,92 @@ class GameAppLifecycleTest {
 
                 assertNull(app.activeSessionOrNull())
                 assertTrue(app.screen is MainMenuScreen)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation startup surface opens evidence summary through typed scenario action`() {
+        withHeadlessGdx {
+            val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr08-director-mine-map-stage"))
+            val evidenceSummary =
+                ValidationScenarioEvidenceSummary(
+                    whiteboxRoot = "build/whitebox/dark-uiux-pr08-director-mine-map-stage",
+                    evidenceDir = "build/whitebox/dark-uiux-pr08-director-mine-map-stage/evidence",
+                    manualRecordPath = scenario.evidence.manualRecordPath,
+                    expectedEvidencePath = "build/whitebox/dark-uiux-pr08-director-mine-map-stage/expected-evidence.json",
+                    runbookPath = "build/whitebox/dark-uiux-pr08-director-mine-map-stage/cua-runbook.md",
+                    appExecutableSha256Path = "build/whitebox/dark-uiux-pr08-director-mine-map-stage/app-executable.sha256",
+                    appExecutableSha256 = "abc123",
+                )
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("startup-surface/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("startup-surface/validation-save")),
+                    profileManager = ProfileManager(tempDir.resolve("startup-surface/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("startup-surface/validation-profile")),
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(
+                    scenario.toSessionOptions(
+                        evidenceSummary = evidenceSummary,
+                        startupSurface = ValidationScenarioStartupSurface.EVIDENCE_SUMMARY,
+                    ),
+                )
+
+                val summary = requireNotNull(requireNotNull(app.activeSessionOrNull()).validationSummarySnapshot())
+                assertEquals(evidenceSummary, summary.scenarioEvidenceSummary)
+                assertTrue(
+                    summary.lastResult?.arguments?.any { argument ->
+                        argument.name == "result" && argument.value == "evidence_summary_opened"
+                    } == true,
+                )
+                val overlayState = ValidationCommandSource(requireNotNull(app.activeSessionOrNull())).overlayState()
+                assertEquals(UiMode.VALIDATION, overlayState.mode)
+                assertEquals(evidenceSummary, overlayState.validationPanel?.summary?.scenarioEvidenceSummary)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation evidence metadata without startup surface keeps map mode`() {
+        withHeadlessGdx {
+            val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr08-director-mine-map-stage"))
+            val evidenceSummary =
+                ValidationScenarioEvidenceSummary(
+                    whiteboxRoot = "build/whitebox/dark-uiux-pr08-director-mine-map-stage",
+                    evidenceDir = "build/whitebox/dark-uiux-pr08-director-mine-map-stage/evidence",
+                    manualRecordPath = scenario.evidence.manualRecordPath,
+                    expectedEvidencePath = "build/whitebox/dark-uiux-pr08-director-mine-map-stage/expected-evidence.json",
+                    runbookPath = "build/whitebox/dark-uiux-pr08-director-mine-map-stage/cua-runbook.md",
+                    appExecutableSha256Path = "build/whitebox/dark-uiux-pr08-director-mine-map-stage/app-executable.sha256",
+                    appExecutableSha256 = "abc123",
+                )
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("startup-surface-map/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("startup-surface-map/validation-save")),
+                    profileManager = ProfileManager(tempDir.resolve("startup-surface-map/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("startup-surface-map/validation-profile")),
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(
+                    scenario.toSessionOptions(
+                        evidenceSummary = evidenceSummary,
+                    ),
+                )
+
+                val overlayState = ValidationCommandSource(requireNotNull(app.activeSessionOrNull())).overlayState()
+                assertEquals(UiMode.MAP, overlayState.mode)
+                assertEquals(null, overlayState.validationPanel?.summary?.scenarioEvidenceSummary)
             } finally {
                 app.dispose()
             }

@@ -3,19 +3,14 @@ ownerPr: PR-02-1
 requiredSheetIds:
   - r01b-ui-shell-chrome
 requiredCellCountsBySheet:
-  r01b-ui-shell-chrome: { direct: 16, alias: 0, reserved: 0, total: 16 }
+  r01b-ui-shell-chrome: { direct: 11, alias: 0, reserved: 0, total: 11 }
 requiredCells:
   - { targetKey: ui.shell.outer_frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
   - { targetKey: ui.shell.map_stage.frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
   - { targetKey: ui.shell.map_stage.backdrop, sheetId: r01b-ui-shell-chrome, category: ui_frame }
   - { targetKey: ui.shell.nav_rail.frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
   - { targetKey: ui.shell.nav_button.active, sheetId: r01b-ui-shell-chrome, category: ui_frame }
-  - { targetKey: ui.shell.hero_card.frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
-  - { targetKey: ui.shell.action_deck.frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
-  - { targetKey: ui.shell.log_deck.frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
-  - { targetKey: ui.shell.right_section.divider, sheetId: r01b-ui-shell-chrome, category: ui_frame }
   - { targetKey: ui.shell.hero_crest.placeholder, sheetId: r01b-ui-shell-chrome, category: icon }
-  - { targetKey: ui.shell.command_hint.plate, sheetId: r01b-ui-shell-chrome, category: ui_frame }
   - { targetKey: ui.shell.nav.compass, sheetId: r01b-ui-shell-chrome, category: icon }
   - { targetKey: ui.shell.nav.bag, sheetId: r01b-ui-shell-chrome, category: icon }
   - { targetKey: ui.shell.nav.scroll, sheetId: r01b-ui-shell-chrome, category: icon }

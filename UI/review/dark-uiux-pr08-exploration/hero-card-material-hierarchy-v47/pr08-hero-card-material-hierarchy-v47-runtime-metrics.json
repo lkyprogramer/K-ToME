@@ -1,0 +1,22 @@
+{
+  "comparison": "v47 hero card material hierarchy vs v46 bottom deck crop",
+  "inputs": {
+    "before": "UI/review/dark-uiux-pr08-exploration/hero-card-material-hierarchy-v47/pr08-hero-card-material-hierarchy-v47-v46-bottom-deck.png",
+    "after": "UI/review/dark-uiux-pr08-exploration/hero-card-material-hierarchy-v47/pr08-hero-card-material-hierarchy-v47-v47-bottom-deck.png"
+  },
+  "outputs": {
+    "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/hero-card-material-hierarchy-v47/pr08-hero-card-material-hierarchy-v47-comparison-board.png"
+  },
+  "imageSize": {
+    "width": 1843,
+    "height": 360
+  },
+  "changedPixelRatio": 0.03633116295894375,
+  "meanAbsDiff": 0.0600847048893712,
+  "maxAbsDiff": 22,
+  "acceptance": [
+    "hero card renders a tall heraldic material pillar behind the crest",
+    "hero crest remains anchored inside the heraldic region",
+    "right panel, nav rail, map-stage, and inventory crops remain unchanged by the V47 golden gate"
+  ]
+}

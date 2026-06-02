@@ -18,5 +18,9 @@ scenarios:
   - id: dark-uiux-pr05-1-inventory-page-workbench
   - id: dark-uiux-pr06-status-quest-skill-overview
   - id: dark-uiux-pr07-final-ui
+  - id: dark-uiux-pr08-director-grade
+  - id: dark-uiux-pr08-director-forest-map-stage
+  - id: dark-uiux-pr08-director-mine-map-stage
+  - id: dark-uiux-pr08-director-shadow-depths-map-stage
   - id: phase4-v4-pr06
   - id: phase4-v4-pr07

@@ -290,6 +290,7 @@ object VerificationTaskRegistry {
                     ":tools:darkManifestCoveragePr02OwnerScope",
                     ":tools:darkManifestCoveragePr02_1OwnerScope",
                     ":tools:darkManifestCoveragePr02_2OwnerScope",
+                    ":tools:darkManifestCoveragePr08OwnerScope",
                 ),
             baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
             cachePolicy =

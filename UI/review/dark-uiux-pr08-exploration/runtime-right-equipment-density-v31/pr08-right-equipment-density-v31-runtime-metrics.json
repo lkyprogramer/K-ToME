@@ -1,0 +1,260 @@
+{
+  "comparison_board": "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-comparison-board.png",
+  "copied_artifacts": [
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-comparison-board.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-main-menu.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-shell-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-shell-inventory-open.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-shell-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-validation-setup.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-evidence-index.tsv",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-bottom-deck-no-command-hints.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-inventory-page-1.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-inventory-page-2.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-map-stage-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-nav-rail-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-parity-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-parity-1672x941.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-v31-v30-right-panel-diff.png"
+  ],
+  "hashes": {
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-comparison-board.png": "0e4bc8a965ed781ed16916182571e78d757c58e9b542f9715d313aba20d827e9",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-main-menu.png": "7134d961071c37d18b5ee504331fa1c70db1773f6e5f40b65a68a90ae6a626cf",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-shell-1280x800.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-shell-inventory-open.png": "5f380674c11becc39068da388f81235435fab68257f9f961bd7e1f6f0727fd84",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-shell-right-panel-grid.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-dark-uiux-pr02-1-demo-validation-setup.png": "fe1270a0e2acbac3fced17fd13c3ef75f0914bc6ea753d6cad3c93c07b0b5a09",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-evidence-index.tsv": "36bec17e2509edf38a0896f670e5794ae603c42439e2bb8865bfcc5ba051e944",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-bottom-deck-no-command-hints.png": "1d3ac3e0b3b67dea66a077aa2afa30f9b47b5bb4318e812f2894ea2534f9d02e",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-map-stage-crop.png": "b07adf8da68253006bdce2af1a2657f870fe6f31d65d35aa355485102895b6a8",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-parity-1280x800.png": "cbfd7eba40800241d8be2401efc45f830c4063abcc3396597481f8e714e4f9d6",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-parity-1672x941.png": "4b8acce290252ca752c53df8aa26e30921fc40dcc38b95e67cf6910a157d00fc",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-v31-v30-right-panel-diff.png": "b0b0352940da3fe442993146ecd91b7bb73eefc41e1a650a6be595e6dc29d908"
+  },
+  "right_panel_diff": "UI/review/dark-uiux-pr08-exploration/runtime-right-equipment-density-v31/pr08-right-equipment-density-v31-v31-v30-right-panel-diff.png",
+  "v30_vs_reference_right_panel_resized": {
+    "changed_ratio": 0.9982984658298466,
+    "channel_extrema": [
+      [
+        0,
+        250
+      ],
+      [
+        0,
+        250
+      ],
+      [
+        0,
+        250
+      ]
+    ],
+    "mean_abs_diff": 13.604931427243143,
+    "size": [
+      717,
+      1600
+    ]
+  },
+  "v31_vs_reference_right_panel_resized": {
+    "changed_ratio": 0.9983045676429567,
+    "channel_extrema": [
+      [
+        0,
+        250
+      ],
+      [
+        0,
+        251
+      ],
+      [
+        0,
+        250
+      ]
+    ],
+    "mean_abs_diff": 13.5746580079033,
+    "size": [
+      717,
+      1600
+    ]
+  },
+  "v31_vs_v30_bottom_deck": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      1843,
+      360
+    ]
+  },
+  "v31_vs_v30_full_1280x800": {
+    "changed_ratio": 0.044655029296875,
+    "channel_extrema": [
+      [
+        0,
+        186
+      ],
+      [
+        0,
+        182
+      ],
+      [
+        0,
+        154
+      ]
+    ],
+    "mean_abs_diff": 0.33764233398437504,
+    "size": [
+      2560,
+      1600
+    ]
+  },
+  "v31_vs_v30_full_1672x941": {
+    "changed_ratio": 0.040147246134367896,
+    "channel_extrema": [
+      [
+        0,
+        199
+      ],
+      [
+        0,
+        181
+      ],
+      [
+        0,
+        151
+      ]
+    ],
+    "mean_abs_diff": 0.3039621775673848,
+    "size": [
+      3344,
+      1882
+    ]
+  },
+  "v31_vs_v30_inventory_page_1": {
+    "changed_ratio": 0.15943776150627614,
+    "channel_extrema": [
+      [
+        0,
+        186
+      ],
+      [
+        0,
+        182
+      ],
+      [
+        0,
+        154
+      ]
+    ],
+    "mean_abs_diff": 1.2055291143654114,
+    "size": [
+      717,
+      1600
+    ]
+  },
+  "v31_vs_v30_inventory_page_2": {
+    "changed_ratio": 0.15943776150627614,
+    "channel_extrema": [
+      [
+        0,
+        186
+      ],
+      [
+        0,
+        182
+      ],
+      [
+        0,
+        154
+      ]
+    ],
+    "mean_abs_diff": 1.2055291143654114,
+    "size": [
+      717,
+      1600
+    ]
+  },
+  "v31_vs_v30_map_stage": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v31_vs_v30_nav_rail": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      112,
+      1240
+    ]
+  },
+  "v31_vs_v30_right_panel": {
+    "changed_ratio": 0.15943776150627614,
+    "channel_extrema": [
+      [
+        0,
+        186
+      ],
+      [
+        0,
+        182
+      ],
+      [
+        0,
+        154
+      ]
+    ],
+    "mean_abs_diff": 1.2055291143654114,
+    "size": [
+      717,
+      1600
+    ]
+  }
+}

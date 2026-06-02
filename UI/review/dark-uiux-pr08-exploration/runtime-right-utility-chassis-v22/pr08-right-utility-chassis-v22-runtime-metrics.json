@@ -1,0 +1,35 @@
+{
+  "candidate": "runtime-right-utility-chassis-v22",
+  "baseline": "runtime-hidden-aperture-masonry-v21",
+  "artifactPaths": {
+    "ui-demo-new-parity-1672x941": "UI/review/dark-uiux-pr08-exploration/runtime-right-utility-chassis-v22/pr08-right-utility-chassis-v22-ui-demo-new-parity-1672x941.png",
+    "ui-demo-new-map-stage-crop": "UI/review/dark-uiux-pr08-exploration/runtime-right-utility-chassis-v22/pr08-right-utility-chassis-v22-ui-demo-new-map-stage-crop.png",
+    "ui-demo-new-right-panel-grid": "UI/review/dark-uiux-pr08-exploration/runtime-right-utility-chassis-v22/pr08-right-utility-chassis-v22-ui-demo-new-right-panel-grid.png",
+    "ui-demo-new-bottom-deck-no-command-hints": "UI/review/dark-uiux-pr08-exploration/runtime-right-utility-chassis-v22/pr08-right-utility-chassis-v22-ui-demo-new-bottom-deck-no-command-hints.png",
+    "ui-demo-new-inventory-page-1": "UI/review/dark-uiux-pr08-exploration/runtime-right-utility-chassis-v22/pr08-right-utility-chassis-v22-ui-demo-new-inventory-page-1.png",
+    "ui-demo-new-inventory-page-2": "UI/review/dark-uiux-pr08-exploration/runtime-right-utility-chassis-v22/pr08-right-utility-chassis-v22-ui-demo-new-inventory-page-2.png"
+  },
+  "artifactSha256": {
+    "ui-demo-new-parity-1672x941": "245e88f1fd5e6be5c6946fdf023b41078cedb960a348b29b6df34c769365cce1",
+    "ui-demo-new-map-stage-crop": "0cfaf9942278db1fe921e2fce933dd3e7a5a476845d2bb687c907d7b2cf2f433",
+    "ui-demo-new-right-panel-grid": "8de82d8abf81c34906ba60e5a8dd7545aa2e883b0c6574e100accd720df4c277",
+    "ui-demo-new-bottom-deck-no-command-hints": "b5bf7bd1840e2f34bc2f0e7ebbb1e4c39cd92f1bbd170e157b5eb297a093f4cf",
+    "ui-demo-new-inventory-page-1": "2dc2ac8cf03dba3693f5d5d6e12a68225a0debeac6e9cc6321f823b1417ddd63",
+    "ui-demo-new-inventory-page-2": "230165e27de1426439671000c82b215cdf15ded3c30d6bd9db1ee32ae77a5b23"
+  },
+  "goldenEvidenceIndexHashes": {
+    "ui-demo-new-parity-1672x941": "d371f83aa0e30a0520ee8aaf216318682cf64aa13c8e213cc71c4a989d6a8216",
+    "ui-demo-new-map-stage-crop": "67daccb1e4b2122ed36d047c3b7d258d3fe869b62c377296439cf26ae7dac7b3",
+    "ui-demo-new-right-panel-grid": "6b85d8516221c04247560fb315391ef5bf898d5bd2408426cf45c15117d357c2",
+    "ui-demo-new-bottom-deck-no-command-hints": "bd25097dd6ae08004c28d3964c09bba46f64ca8fc002630d548fdbc39a8e9453",
+    "ui-demo-new-inventory-page-1": "94911bda55a610dba9b8b4db41d4716a7a2428d70a89b8eee13331e987bae864",
+    "ui-demo-new-inventory-page-2": "015e1b98335aa8a5bf4ae19a18e22a3f157d1446da560654d9e2f198bd914436"
+  },
+  "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/runtime-right-utility-chassis-v22/pr08-right-utility-chassis-v22-comparison-board.png",
+  "comparisonBoardSha256": "1995eb6995b0af0d7ec5c6df4b3bae3cc6c7cfabb68b73d91ee7556ea28a1119",
+  "meanAbsoluteRgbDiffVsV21RightPanelCrop": 1.5578277545327754,
+  "maxRgbDiffVsV21RightPanelCrop": 212,
+  "changedPixelsVsV21RightPanelCrop": 417041,
+  "totalPixels": 1147200,
+  "changedRatioVsV21RightPanelCrop": 0.3635294630404463
+}

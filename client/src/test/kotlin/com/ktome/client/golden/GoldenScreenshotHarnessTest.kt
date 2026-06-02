@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.glutils.HdpiMode
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.ScreenUtils
 import com.ktome.client.GameApp
+import com.ktome.client.assets.DarkUiMapVisualKeys
 import com.ktome.client.assets.ShopOfferTagTokens
 import com.ktome.client.automationWorld
 import com.ktome.client.installReserveTalent
@@ -81,6 +82,7 @@ import com.ktome.game.validation.ValidationScenarioRegistry
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
+import javax.imageio.ImageIO
 import kotlin.math.roundToInt
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -99,6 +101,51 @@ class GoldenScreenshotHarnessTest {
     private val sampleSecretBindingId = SearchBindingId("sample.flooded_relics.search.flooded_reliquary")
 
     private data class GoldenArtifactCrop(
+        val x: Int,
+        val y: Int,
+        val width: Int,
+        val height: Int,
+    )
+
+    private data class Pr08GeneralizationProbe(
+        val labelSuffix: String,
+        val seed: Long,
+        val floor: Int,
+        val professionId: String,
+        val probeIntent: String,
+        val zoneId: String = "shattered_outpost",
+    ) {
+        val label: String = "dark-uiux-pr08-generalization-$labelSuffix"
+    }
+
+    private data class Pr08VisibleTopology(
+        val tilesetKey: String,
+        val visibleMaterialCells: Int,
+        val boundsWidth: Int,
+        val boundsHeight: Int,
+        val fillRatioPermille: Int,
+        val playerOffsetX: Int,
+        val playerOffsetY: Int,
+    ) {
+        val signature: String =
+            "$tilesetKey:${boundsWidth}x$boundsHeight:$fillRatioPermille:${playerOffsetX}_$playerOffsetY:$visibleMaterialCells"
+    }
+
+    private data class Pr08GeneralizationProbeEvidence(
+        val probe: Pr08GeneralizationProbe,
+        val hash: String,
+        val topology: Pr08VisibleTopology,
+    )
+
+    private data class Pr08TopologyMaskProbe(
+        val label: String,
+        val columns: Int,
+        val rows: Int,
+        val visibleCells: Set<Pair<Int, Int>>,
+        val cropBands: List<Pr08TopologyMaskBand>,
+    )
+
+    private data class Pr08TopologyMaskBand(
         val x: Int,
         val y: Int,
         val width: Int,
@@ -168,6 +215,80 @@ class GoldenScreenshotHarnessTest {
             "dark-uiux-pr05-1-inventory-pagination",
             "dark-uiux-pr05-1-inventory-min-window",
         )
+    private val darkUiuxPr08DirectorEvidenceLabels =
+        listOf(
+            "dark-uiux-pr08-director-parity-1672x941",
+            "dark-uiux-pr08-director-map-stage-crop",
+            "dark-uiux-pr08-director-right-panel-crop",
+            "dark-uiux-pr08-director-bottom-deck-crop",
+            "dark-uiux-pr08-director-forest-map-stage-crop",
+            "dark-uiux-pr08-director-mine-map-stage-crop",
+            "dark-uiux-pr08-director-shadow-depths-map-stage-crop",
+            "dark-uiux-pr08-director-telegraph-combat-crop",
+        )
+    private val darkUiuxPr08GeneralizationProbes =
+        listOf(
+            Pr08GeneralizationProbe(
+                labelSuffix = "ruins-proof-baseline",
+                seed = 2026051102L,
+                floor = 1,
+                professionId = "vanguard",
+                probeIntent = "fixed proof crop baseline",
+            ),
+            Pr08GeneralizationProbe(
+                labelSuffix = "ruins-seed-2026060801",
+                seed = 2026060801L,
+                floor = 1,
+                professionId = "vanguard",
+                probeIntent = "compact or near-start room variance",
+            ),
+            Pr08GeneralizationProbe(
+                labelSuffix = "ruins-seed-2026060802",
+                seed = 2026060802L,
+                floor = 1,
+                professionId = "rogue",
+                probeIntent = "wide room or lateral bounds variance",
+            ),
+            Pr08GeneralizationProbe(
+                labelSuffix = "ruins-seed-2026060803",
+                seed = 2026060803L,
+                floor = 1,
+                professionId = "arcanist",
+                probeIntent = "tall room or vertical bounds variance",
+            ),
+            Pr08GeneralizationProbe(
+                labelSuffix = "ruins-seed-2026060804-floor2",
+                seed = 2026060804L,
+                floor = 2,
+                professionId = "vanguard",
+                probeIntent = "corridor-heavy visible-region variance",
+            ),
+            Pr08GeneralizationProbe(
+                labelSuffix = "ruins-seed-2026060805-floor2",
+                seed = 2026060805L,
+                floor = 2,
+                professionId = "templar",
+                probeIntent = "offset or L-like visible-region variance",
+            ),
+            Pr08GeneralizationProbe(
+                labelSuffix = "ruins-seed-2026060806",
+                seed = 2026060806L,
+                floor = 1,
+                professionId = "berserker",
+                probeIntent = "mixed room and corridor visibility variance",
+            ),
+            Pr08GeneralizationProbe(
+                labelSuffix = "ruins-seed-2026060807-floor2",
+                seed = 2026060807L,
+                floor = 2,
+                professionId = "rogue",
+                probeIntent = "alternate procedural room-shape variance",
+            ),
+        )
+    private val darkUiuxPr08GeneralizationEvidenceLabels =
+        darkUiuxPr08GeneralizationProbes.map { probe -> probe.label }
+    private val darkUiuxPr08TopologyMaskEvidenceLabels =
+        listOf("dark-uiux-pr08-topology-source-mask-board")
 
     @Test
     fun `dark uiux pr01 1 golden evidence labels remain registered`() {
@@ -275,29 +396,63 @@ class GoldenScreenshotHarnessTest {
     }
 
     @Test
+    fun `dark uiux pr08 director evidence labels remain registered`() {
+        assertEquals(
+            listOf(
+                "dark-uiux-pr08-director-parity-1672x941",
+                "dark-uiux-pr08-director-map-stage-crop",
+                "dark-uiux-pr08-director-right-panel-crop",
+                "dark-uiux-pr08-director-bottom-deck-crop",
+                "dark-uiux-pr08-director-forest-map-stage-crop",
+                "dark-uiux-pr08-director-mine-map-stage-crop",
+                "dark-uiux-pr08-director-shadow-depths-map-stage-crop",
+                "dark-uiux-pr08-director-telegraph-combat-crop",
+            ),
+            darkUiuxPr08DirectorEvidenceLabels,
+        )
+    }
+
+    @Test
+    fun `dark uiux pr08 generalization evidence labels remain registered`() {
+        assertEquals(
+            listOf(
+                "dark-uiux-pr08-generalization-ruins-proof-baseline",
+                "dark-uiux-pr08-generalization-ruins-seed-2026060801",
+                "dark-uiux-pr08-generalization-ruins-seed-2026060802",
+                "dark-uiux-pr08-generalization-ruins-seed-2026060803",
+                "dark-uiux-pr08-generalization-ruins-seed-2026060804-floor2",
+                "dark-uiux-pr08-generalization-ruins-seed-2026060805-floor2",
+                "dark-uiux-pr08-generalization-ruins-seed-2026060806",
+                "dark-uiux-pr08-generalization-ruins-seed-2026060807-floor2",
+            ),
+            darkUiuxPr08GeneralizationEvidenceLabels,
+        )
+    }
+
+    @Test
     fun `dark uiux pr01 1 golden evidence hashes remain stable and writes canonical artifacts`() {
         val hashes = captureDarkUiuxPr011GoldenEvidence()
 
         assertEquals(
             mapOf(
-                "dark-uiux-pr01-1-viewport-deadzone-still" to "467827562a0d3aafda229d853d0df9f28a3ff9914a37efc75a8dc70f80cd456a",
-                "dark-uiux-pr01-1-viewport-deadzone-scroll" to "b91540f498ed10d3de26e4352ebc83e5f154cc8f886208f1a427b8fb21c42cc5",
-                "dark-uiux-pr01-1-viewport-edge-clamp-top-left" to "01e4fb39f53b4c081e7bbcb64802668423fbfe75823b291eed2ce3c1336b9c33",
-                "dark-uiux-pr01-1-viewport-edge-clamp-bottom-right" to "67aedb2d4c38293091ebbc1c242f279dc8cb330301fb478b937153a7434a8606",
-                "dark-uiux-pr01-1-inspect-tooltip-layer" to "6e6747aa98ab2429df2edf61936dba7dd45a046440579860eeee3f3848ea9233",
-                "dark-uiux-pr01-1-item-modal-layer" to "8c9d0c4b5b74ce83d7f82f7d34830669fbda99f94a25f26850590c7264ad1e30",
-                "dark-uiux-pr01-1-overlay-conflict-fixture" to "dfb9853b82c31901928e4677e6f5021c1ba1af6849196adfbc92a85eb2734663",
-                "dark-uiux-pr01-1-targeting-cursor-viewport" to "d3d2295910efa8f38ab4cac6c0b85eadb8acba8786c4edffc33bb29075fb848f",
-                "dark-uiux-pr01-1-focus-projection-resolution" to "6e6747aa98ab2429df2edf61936dba7dd45a046440579860eeee3f3848ea9233",
-                "dark-uiux-pr01-1-foundation-viewport-fixed-world" to "46ba50d1743e61fe426f2a9db07b5ee37d60571a44dea7b8c1c60390a1b887bd",
-                "dark-uiux-pr01-1-map-sublayer-order" to "46ba50d1743e61fe426f2a9db07b5ee37d60571a44dea7b8c1c60390a1b887bd",
-                "dark-uiux-pr01-1-modal-backdrop-stack" to "8c9d0c4b5b74ce83d7f82f7d34830669fbda99f94a25f26850590c7264ad1e30",
-                "dark-uiux-pr01-1-combat-feedback-with-modal" to "69202c82a3e0dee4b4ff42131f5f8690fe5c2a22dafbab8f5aba03416ad889f9",
-                "dark-uiux-pr01-1-tooltip-flip-corners" to "dae5b65c02a988f9ff1c44a753d22b077d7d42cad57ada9d89732316b20ef9ff",
-                "dark-uiux-pr01-1-item-tooltip-vs-modal-parity" to "8ce89272e7f9f49a65b8be5eff1e0a98e779f6f08042f4d701345b201555eb3e",
-                "dark-uiux-pr01-1-ascii-deletion-scan" to "46ba50d1743e61fe426f2a9db07b5ee37d60571a44dea7b8c1c60390a1b887bd",
-                "dark-uiux-pr01-1-tome-layout-reference" to "46ba50d1743e61fe426f2a9db07b5ee37d60571a44dea7b8c1c60390a1b887bd",
-                "dark-uiux-pr01-1-shell-min-window" to "020b63c680bb1ae954a2311a6ad8d9a4f3aa2ed281a14143fdd01145aebf7b91",
+                "dark-uiux-pr01-1-viewport-deadzone-still" to "e7e918eefd1a86a3d910af6f6655dda8c44da945c834580e806ec806e92ab774",
+                "dark-uiux-pr01-1-viewport-deadzone-scroll" to "df7ca6f611649d5835b8285a14c7f73a9bc6d8481b6629e41788c6c717433904",
+                "dark-uiux-pr01-1-viewport-edge-clamp-top-left" to "7571f5f4af22f87d4dbdb769ab61266191d7ad4767f724bb42fa77f091ac4781",
+                "dark-uiux-pr01-1-viewport-edge-clamp-bottom-right" to "545301677c1cc3ce14701a59aec8db45c9e76aab227f5bab78bf6cdf0481d270",
+                "dark-uiux-pr01-1-inspect-tooltip-layer" to "14d5d015bd847dd9469da0e9a557549b0b4bab8ddf5f9346d5229e92fed52d34",
+                "dark-uiux-pr01-1-item-modal-layer" to "b6f5ae4dcf588a6fd107af4481366184721f306670b93d2934c66ce94a468776",
+                "dark-uiux-pr01-1-overlay-conflict-fixture" to "ac8b60437db1bbedb18c89b65ad66f0e268d02f21e597e78b660b96628168dd4",
+                "dark-uiux-pr01-1-targeting-cursor-viewport" to "1f0c8117277e427e9eb1c3db17e3ad99c3df200c70fbe33e2c2e4b375861c449",
+                "dark-uiux-pr01-1-focus-projection-resolution" to "14d5d015bd847dd9469da0e9a557549b0b4bab8ddf5f9346d5229e92fed52d34",
+                "dark-uiux-pr01-1-foundation-viewport-fixed-world" to "866f4531e36a653d6b94f25be3bbc462a3017e4a89142593022f6eed26471f7c",
+                "dark-uiux-pr01-1-map-sublayer-order" to "866f4531e36a653d6b94f25be3bbc462a3017e4a89142593022f6eed26471f7c",
+                "dark-uiux-pr01-1-modal-backdrop-stack" to "b6f5ae4dcf588a6fd107af4481366184721f306670b93d2934c66ce94a468776",
+                "dark-uiux-pr01-1-combat-feedback-with-modal" to "4882eedb3c6a8b5e423cfe334a91fdad9bc00948596099c463912a36a81b221e",
+                "dark-uiux-pr01-1-tooltip-flip-corners" to "6bc4b3e11fcc8901c14edf6e846571502d2a0060f3358c196fbc94288b365957",
+                "dark-uiux-pr01-1-item-tooltip-vs-modal-parity" to "1aa25035ae6fabcf5f6117f609cb76dbcaf7319afef2ca56dd498640b8632e8a",
+                "dark-uiux-pr01-1-ascii-deletion-scan" to "866f4531e36a653d6b94f25be3bbc462a3017e4a89142593022f6eed26471f7c",
+                "dark-uiux-pr01-1-tome-layout-reference" to "866f4531e36a653d6b94f25be3bbc462a3017e4a89142593022f6eed26471f7c",
+                "dark-uiux-pr01-1-shell-min-window" to "fe30057f59ee4e2e803532a04437cb91f5327bfbb1e957d00cbd59039e47aea7",
             ),
             hashes,
         )
@@ -309,9 +464,9 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "dark-uiux-pr02-round1-chrome" to "b060821dfd2a02c0c08e1e07f5dae095f3f5279de514f9e453a8e7076c5b8792",
-                "dark-uiux-pr02-hud-icons-pilot" to "a5c573f01a46f4ef0851ee9c017b3252d8a94213b651607dd85efdb60c86d383",
-                "dark-uiux-pr02-standalone-screen-chrome" to "9e674c394244f5b7d11a0df1e08bb60c8c9712b696bdef2a195e137b8bc39646",
+                "dark-uiux-pr02-round1-chrome" to "dcf3509f880ffe282a7fba2796679409d9f1b33720cb681592aa2164f80b8685",
+                "dark-uiux-pr02-hud-icons-pilot" to "65e3376a2a8989d54332d055a1ebc631353df9a9a3399e4a2866c04b1a6e0af9",
+                "dark-uiux-pr02-standalone-screen-chrome" to "d02fa07bfd23b82a96751efe4817acf0be83726cf780f90feb6e16f1fb7aac61",
             ),
             hashes,
         )
@@ -323,14 +478,14 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "ui-demo-new-parity-1672x941" to "f6f94cbb3a90df90e309d6e8cbefecf02f0d43c990e323ff5a1537188911aa78",
-                "ui-demo-new-parity-1280x800" to "4eab125f30a3ad2200d34c67ae17e1e7525bb5bf603e06702551363743dda532",
-                "ui-demo-new-right-panel-grid" to "c8bcf38d64bfeb2648b5d26535dea2f7ee4220e024860846fb0159d3f544b5d7",
-                "ui-demo-new-bottom-deck-no-command-hints" to "fbb282fdd9e32821e3bd7b4d08e9df76b70f32d59e8c5bd625171ed72d646b4f",
-                "ui-demo-new-inventory-page-1" to "e98b0311720183d954faa2f60731c332a5750bb10f1ffc358d9411c6b17ede8b",
-                "ui-demo-new-inventory-page-2" to "5acc29cdcb60cba7bd6225a13618a58c70b91c9117e36121b0cc431008515a9c",
-                "ui-demo-new-nav-rail-crop" to "c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6",
-                "ui-demo-new-map-stage-crop" to "070f834b41a5db14c103a46d23d47da2662afc33400c0fda75c761ef5a9fa84d",
+                "ui-demo-new-parity-1672x941" to "e7f65d0f2f205e238909ec1cd9f54387a9eaf365912e1da5710c9df9e72ed936",
+                "ui-demo-new-parity-1280x800" to "eadc93bf5970b986ccef19a5617ce8ecaad997f3ad67d109ff5211c529687d7e",
+                "ui-demo-new-right-panel-grid" to "201645bf13f9824fd95289063b92ea8adc722f9d0f344aca75902a2e99c26c47",
+                "ui-demo-new-bottom-deck-no-command-hints" to "a416b96d21059212a6a7682f8163f0f065dcac3b545bad28b064814f8120cdfd",
+                "ui-demo-new-inventory-page-1" to "8a8f9a409dce5316abdacef86a4107fdadfd84e75e53d6458fba4bb45fd2fb5d",
+                "ui-demo-new-inventory-page-2" to "9f52610441461f31ea0f2cd1ed4d0dbca9d98b1725f7d448b09dc4dbde51dbb5",
+                "ui-demo-new-nav-rail-crop" to "0b80fba591e20e244dc1b71b6f241729f78d57fa5c89f93150f114536cb5f692",
+                "ui-demo-new-map-stage-crop" to "84d2844867a2c287cb1fa217fbb04fc9acc8b1c5418f475163a754c380302676",
             ),
             hashes,
         )
@@ -343,16 +498,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "1ba55ad83fa2cce9f127d1745b9cc79d3bf67e42fb8f3824f9f902392cacd61f",
-                "467827562a0d3aafda229d853d0df9f28a3ff9914a37efc75a8dc70f80cd456a",
-                "9e0801dd67fe5009d8c049a27ae872958e0953f09e4f6da8d11742ec12d3cace",
-                "e3101a84c100a5ef9a74b56dc3307d6d98b99219e3b58ef3e7e4d948535ac430",
-                "d341d681d709b20d9993d4d52501e0b57b410e485542ffa6cb11c4e3f5916a9c",
-                "97642f3d02e22551633362b8377553df60166f1b06d308be01f3fbb7de37b47e",
-                "20d5ff90e08b727b2e762731bacce8b612a1672b624e3712eb6d02f94404b80b",
-                "7cf14f2724e9e291d212f618fb2ca01ab4e9b56da3eefff7950e682070ca5053",
-                "6b4e608cc377aaeff005a07dd740c04ca6fdb6efa96d2e7368a5e0794d694d1f",
-                "4ab357f9879121686398eced95f19fa6f808d5d09f433b0c8515fa489b167776",
+                "8773ba4fcca15646e2b94e176ecd637b201bdea5840903a23f30ba29d7cce50b",
+                "e7e918eefd1a86a3d910af6f6655dda8c44da945c834580e806ec806e92ab774",
+                "da5721244d2c6f3f7dc98dce6b39ddd89f2a1e95db02d5e6c20ef6a4075105d3",
+                "35d02e91ed0f4b6a7cacfdca68ef48e22c0dc47ae6917ae52ea8d77800c52c4d",
+                "719af6ef63e778f6a1a3105287744c6bdf9ebea90472e9733e23253d5070adb4",
+                "713fbe61999468209a3d5b580453b23fd53da64268e53419865ac66301309b7d",
+                "9a25ce2e1379af0c7a04aff198956e442b89c935fcda58c8f2568d6e98a1ceae",
+                "2a10e71edf7d5c7f064b152ceae9291205af6bb494e347f7a60d280f0afa95b5",
+                "dea8a479868492412c837c5944566e2a2bed02cebf56578760b2aee7e0300cd3",
+                "226dc7154b2f195dc31a60fa4cabc18d9e140992c0bd197015519065597417bc",
             ),
             english + chinese,
         )
@@ -365,8 +520,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "585340b2ca2bf9578e92cd6f7ca9a510d278d70fa9a05ffaafd8ee4f8327cbcf",
-                "8fedfb6c12a58fcf5cbdfd0989216de3832b8c5c70260692cdc6f07453580131",
+                "8c0c18648b9c0f9e57410f34f30adefd31ea2172df33b03d59e0fe040af216cb",
+                "7d7abd405e3d72084e95d4f53a2f1d4263f979d16df6a5dce275b865b1d4a245",
             ),
             listOf(english, chinese),
         )
@@ -379,12 +534,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "bc017e7681f51a163050027ea5a80b8ee23d2008a6a806a7c37e5e1be9a85228",
-                "a0a90d26b32de723da7118bc7857c34a820b0dff516d3fe499bd35b624c0fa68",
-                "d63b5bf3de56190beedb382b389d0b0899ffacef83aa44e63354d0e2399eaac7",
-                "97bca3a80a3b7a25719b45b104bcf0b64c04cb84ad8c9356ab7c639548628008",
-                "1c7a1607147767f8dd9533cf417a8716629ac8606a694c743c2f7bbf2ed375fb",
-                "90be55da8432ac0e434ee7d4c1ea90ae874b0b5b6528fe93be7f56981027f862",
+                "8bf483010e61007075df987e47ba8b82d5d140ed446c8304f5922c88a1c7be7f",
+                "cf40c08fc27b1549157dbb6ae526220c09c7701aa632472433c3b63582a13bf7",
+                "35a71263b41831823ef51f23acafa5d2c500579da491799ac7991b2de244512c",
+                "d0ea9d36d87f72033871432a6015c3763a5adc28ae7201ca330ab530e9ea4f96",
+                "5d6d5e131fea66d8a19164a632e09b08657f397720f252fbcb708d38b972c6ec",
+                "c9cf9c4be49c350f53389f358f8b3eecc727952f88c14d5be9bb1d428ee8649d",
             ),
             english + chinese,
         )
@@ -422,12 +577,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "8b986cbd5a2f042fd26cebb413c94a96e8f91a68dbe86e39601d6f1f2d3b5f4a",
-                "4c740d201a32a13832b9dc30ff473f826179ffc48ab27a26af524895b92af65d",
-                "48ce3cf2d04370ed6099757d14a6c41f69fb00d5ac3c6ff98e42df908e409e68",
-                "af7b2031b199951b6c0f61151160f32a6e192384f2a307e50f18ba2f50773df4",
-                "fe2f15d27353d4310e58f82b4b74d90759461966541beddb24ad439fc054a1dd",
-                "2c17eb63800543f4299d16a2fded5a30712f4928be645febd7c0b120d9212a2b",
+                "6b91261c69535ba560ee5ed6cf14c4f1530c6b5fbe3ad526edf181529bc5c064",
+                "f69b78d4b935fdb5ef3125deac04ed788d7d4369943c3179612af69f224a1176",
+                "101f46f7fb912c785b6e9d6213d3934277dfb96a049f11dd5dba20f3fe27d9df",
+                "6eb1d9239f26987875640d45e77c51fb48d70be8ef9100b7455f3eff409cc6e6",
+                "4e9fdd73ed9069059c49594475f2fb1487d9724aabc7a145d2a212d79fc70ab2",
+                "c5724182d749385e538c105509138fa040a525872243707087b6b965fd13515e",
             ),
             english + chinese,
         )
@@ -440,10 +595,10 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "db5304ab71ac33580aadee58d2515825bac27e96d3536a15fc39c1b014531e53",
-                "a9f0d945e69c3c0944e90254555e84f0c37ebfb403b0494eead8620e697dcfd4",
-                "466dbd732272ce2798d017c41d20b8748943ac6e69f2ad6ff711b8c5c387b983",
-                "5336bab71f17b759d701bc052ceb64ca7cd3dc740e58039076e688384c1f692c",
+                "81afad0f947ecc43d9eadca920f5d9ba5d43d3f580eb3c195d3fa27347001245",
+                "e82bd3d82c11c75a6a47f6de0835a209d90d16795df600069f1cbdd7c9772204",
+                "d07e2acb4739abd75852cadcf46f707e82051e29386acbe9e398070fa869dd55",
+                "c35feddae590b0e40559dd3453de6d2c5fbdcacc3541408b6d20ac6306ba033f",
             ),
             english + chinese,
         )
@@ -453,7 +608,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("73151a4fabc21435659bf6b13b5a7d851eee99159dafec5623779d40b7910782", hash)
+        assertEquals("ead38be9f88cabf8f18134a0dad418ca423cf13ede51ded4c25f0e751cb17a66", hash)
     }
 
     @Test
@@ -463,16 +618,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "3149ebb0a557675b658281cfa0069b8b071bacea4371665c3f02a6d6a28feb68",
-                "6e20f4bab45e66acb8d8747ca8174a7bd221b9928ba868261b700292dfcd6d58",
-                "aec2524b6c08de1fd33d0105d481d2d9e78b20722f4267729bc0c8f3c9cd56df",
-                "930ecd075e30124f56d80600e3e976bcae4fb10311f7c63a84b5c0a587bd5d55",
-                "23015521eb72dd5af559155d02cf03d24c06a8cc59c98d5cd8cb63f85320c364",
-                "5ccd125518ee815c307c336e51ef5e1681951f4eb5d863242f8a8d311575ce51",
-                "dc4bb0537f1d0978f867e88eb971fca7f56314ad0569b816ca32b1b91742d297",
-                "3bcf2fa32d30f48d0664ac56c62915f331d4bf0a51084bc0d152be6938c6c180",
-                "70c2386a1e8782f7220c97c70e79656fb4c13c2bf74fe2a7c152aa3f593eb727",
-                "43cb3cae266285b58b26bd7aff1ab567c7c9505eb7f37a41bdd72a020c7b87b7",
+                "c176f8dc30b6aaccf9f86fb88a941e19222ba37c8f5b0dd5b23ec833856b3ae1",
+                "5c2733ab01a494aaad6c89ac7de9535fe14293c5afc4dccee2ddcbbc45da9610",
+                "f8266325f3044f19525c08a5990e9a66163af0fad64faa89429a38bbdbda8ca5",
+                "787a9c05741fc9ae52c3984eeaa3cdf7cc8ea70a2841c0bab88b63f23d1021c0",
+                "0a989e888b79a9f3cdca3dc269beb5024b85217b161511334092b1ab9c7f9c70",
+                "14facaafa0d9ed6ec36c562d72e4d3413a3a22b2a0c408d2e5114af0f05ba24c",
+                "eaa15599490d0745bd8b37741b6b4506d1c3283ad7d1814584c570dfb670797d",
+                "afcd24e7388cfa6ba89b5a99753347740fe60e1a03c01f608f4107b3f5b912fc",
+                "556b8677cd6eca9d6c391d1077760af827dbad5067d3bbbf788f496463b997a2",
+                "62b3631289f56ed533cdea2d4c95d3fafe1c868e2e2b15f66c80b0ea16a29622",
             ),
             english + chinese,
         )
@@ -484,11 +639,11 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "dark-uiux-pr03-equipment-slots" to "8b5de22035be2042b4a95f92062e7a07f85fcc01fdec43a54b7b82f21675ec7b",
-                "dark-uiux-pr03-inventory-empty" to "8595d2fa14c996388f19381d5f36c02b63059f22191112c583a63f7815c7b6f0",
-                "dark-uiux-pr03-inventory-stacked" to "452de482ad35234d81e093082ebeb59ea3f344c36716b686c9ab11fa8bfd4d62",
-                "dark-uiux-pr03-inscription-shop" to "99dc4e1ebb8b79991946af6ff2daa0f9298dd9524a5e575f3b2343c55a54a0da",
-                "dark-uiux-pr03-shop-full-slot-replace" to "f4ab6e4aa0584babeb8898c0c629a46ab4f668447690e11396d14980cdc47ae8",
+                "dark-uiux-pr03-equipment-slots" to "c711c2cb5d09d3a2a9fe92833d4d22dcc5f4e7e59d8414d642d80a020081d841",
+                "dark-uiux-pr03-inventory-empty" to "70c1875a7ef793e8c28e13f7c0f7e976b2fabb56efc4156475c2e3c32fc74a7a",
+                "dark-uiux-pr03-inventory-stacked" to "38ccc5400a2042428d5b405525a1d1719f9f5dc7381f94a38eaecb06344b96f1",
+                "dark-uiux-pr03-inscription-shop" to "de3c64b9bee81544d4a8bf3e2f77f4efb2d97d7d99e0e8e8e42a38d873354b81",
+                "dark-uiux-pr03-shop-full-slot-replace" to "c30bcda437f1e786d367e9250adda74044fb0f23e0c403253f22d3b25bcc8b7e",
             ),
             hashes,
         )
@@ -531,6 +686,85 @@ class GoldenScreenshotHarnessTest {
     }
 
     @Test
+    fun `dark uiux pr08 director runtime evidence writes canonical artifacts`() {
+        val hashes = captureDarkUiuxPr08DirectorEvidence()
+
+        assertEquals(darkUiuxPr08DirectorEvidenceLabels, hashes.keys.toList())
+        assertEquals(
+            mapOf(
+                "dark-uiux-pr08-director-parity-1672x941" to "e7f65d0f2f205e238909ec1cd9f54387a9eaf365912e1da5710c9df9e72ed936",
+                "dark-uiux-pr08-director-map-stage-crop" to "84d2844867a2c287cb1fa217fbb04fc9acc8b1c5418f475163a754c380302676",
+                "dark-uiux-pr08-director-right-panel-crop" to "201645bf13f9824fd95289063b92ea8adc722f9d0f344aca75902a2e99c26c47",
+                "dark-uiux-pr08-director-bottom-deck-crop" to "a416b96d21059212a6a7682f8163f0f065dcac3b545bad28b064814f8120cdfd",
+                "dark-uiux-pr08-director-forest-map-stage-crop" to "b5d85c0849478f5b0f355a07aa7a5853824a9da048c48539edb7a7c61e358368",
+                "dark-uiux-pr08-director-mine-map-stage-crop" to "7233f0dc91505c77e7cfe4b1cbb8d02ed6d92c71d11b9e1911e33b1ecffbb3b4",
+                "dark-uiux-pr08-director-shadow-depths-map-stage-crop" to "674afbdba5bb9e4f8618c01fd7ea75590439bd5c400fb2aa000542fd02886eb5",
+                "dark-uiux-pr08-director-telegraph-combat-crop" to "2e13535fea38cef3e7a624d3659685e756588d7df3ae4907e2dd7ab03ac51b57",
+            ),
+            hashes,
+        )
+        assertTrue(hashes.values.all { hash -> hash.matches(Regex("[a-f0-9]{64}")) })
+        assertTrue(
+            hashes["dark-uiux-pr08-director-map-stage-crop"] != hashes["dark-uiux-pr08-director-right-panel-crop"],
+            "PR08 director map-stage evidence must not duplicate the right-panel crop.",
+        )
+        assertTrue(
+            hashes["dark-uiux-pr08-director-map-stage-crop"] != hashes["dark-uiux-pr08-director-bottom-deck-crop"],
+            "PR08 director map-stage evidence must not duplicate the bottom-deck crop.",
+        )
+        assertTrue(
+            listOf(
+                hashes["dark-uiux-pr08-director-map-stage-crop"],
+                hashes["dark-uiux-pr08-director-forest-map-stage-crop"],
+                hashes["dark-uiux-pr08-director-mine-map-stage-crop"],
+                hashes["dark-uiux-pr08-director-shadow-depths-map-stage-crop"],
+            ).filterNotNull().toSet().size == 4,
+            "PR08 director family evidence must capture independent map-stage crops per accepted room-art family.",
+        )
+    }
+
+    @Test
+    fun `dark uiux pr08 random seed generalization probe writes board artifacts`() {
+        val evidence = captureDarkUiuxPr08GeneralizationProbe()
+        val hashes = evidence.associate { entry -> entry.probe.label to entry.hash }
+
+        assertEquals(darkUiuxPr08GeneralizationEvidenceLabels, hashes.keys.toList())
+        assertTrue(hashes.values.all { hash -> hash.matches(Regex("[a-f0-9]{64}")) })
+        assertTrue(
+            evidence.all { entry -> entry.topology.tilesetKey == DarkUiMapVisualKeys.RUINS_TILESET },
+            "PR08 D8 probe must stay on the tileset.ruins family.",
+        )
+        assertTrue(
+            evidence.all { entry -> entry.topology.visibleMaterialCells > 0 },
+            "PR08 D8 probe must capture visible room material for every seed.",
+        )
+        assertTrue(
+            evidence.map { entry -> entry.topology.signature }.toSet().size >= 4,
+            "PR08 D8 probe must include varied visible topology signatures, not eight copies of the fixed proof crop.",
+        )
+        assertTrue(
+            Files.isRegularFile(darkUiuxPr08GeneralizationGoldenDir().resolve("dark-uiux-pr08-generalization-board.png")),
+            "PR08 D8 probe must write a board artifact for director review.",
+        )
+    }
+
+    @Test
+    fun `dark uiux pr08 topology source mask diagnostic writes owner artifacts`() {
+        val hashes = captureDarkUiuxPr08TopologySourceMaskDiagnostic()
+
+        assertEquals(darkUiuxPr08TopologyMaskEvidenceLabels, hashes.keys.toList())
+        assertTrue(hashes.values.all { hash -> hash.matches(Regex("[a-f0-9]{64}")) })
+        assertTrue(
+            Files.isRegularFile(darkUiuxPr08TopologyMaskGoldenDir().resolve("dark-uiux-pr08-topology-source-mask-board.png")),
+            "PR08 topology source mask diagnostic must write a repeatable owner board artifact.",
+        )
+        assertTrue(
+            Files.isRegularFile(darkUiuxPr08TopologyMaskGoldenDir().resolve("evidence-index.tsv")),
+            "PR08 topology source mask diagnostic must write an evidence index.",
+        )
+    }
+
+    @Test
     fun `phase4 uiux pr05 telegraph and combat decision hashes remain stable`() {
         val labels =
             listOf(
@@ -547,12 +781,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "phase4-uiux-pr05-telegraph-triple-surface" to "fa1b440201e1b416606819562dcfdc00fbbadf0dc6568565efb1fd75e1b784f5",
-                "phase4-uiux-pr05-combat-action" to "218cad9865955a2f55b582080c5e0b54c7628eb48d861969f2387cf9c517c0ca",
-                "phase4-uiux-pr05-combat-method" to "351a4b9deabd9753f719d2fc1a0c9b509cd3a5d10f37c4d55905ac99573a6d79",
-                "phase4-uiux-pr05-combat-target" to "0e5fcaa4586563049b0dac29b2893fbf2dfe93b853c752fd305c232f10fbe83e",
-                "phase4-uiux-pr05-combat-disabled-resource" to "218cad9865955a2f55b582080c5e0b54c7628eb48d861969f2387cf9c517c0ca",
-                "phase4-uiux-pr05-combat-illegal-target" to "c6f6fa4ef149d1dbcd88e47a05635d616365b3e7c02cec7ef003a5ad63cf7a96",
+                "phase4-uiux-pr05-telegraph-triple-surface" to "f02c27ffcd9259f08b03ac26ad082ce9adf760da79353417d7442ad241bdecb6",
+                "phase4-uiux-pr05-combat-action" to "cec3fd50461f55e1748258ed8b0bc09b2589895e101e89a91e4cf6a9c71d565a",
+                "phase4-uiux-pr05-combat-method" to "bfe2e831f7e98a935f0f90a23d06bda6382ae8f18225a21c966d2d3a5d801e2a",
+                "phase4-uiux-pr05-combat-target" to "e8227182d9f951a919ab1c3c3c186ed91b24fddd5d81c9805364aa3dfcd0ec29",
+                "phase4-uiux-pr05-combat-disabled-resource" to "cec3fd50461f55e1748258ed8b0bc09b2589895e101e89a91e4cf6a9c71d565a",
+                "phase4-uiux-pr05-combat-illegal-target" to "3807fa67a1475652dc2c37178bcd50fe243b696c4f48f232d6dc63a67e958951",
             ),
             hashes,
         )
@@ -569,9 +803,9 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "phase4-v4-pr05-molten-glass-phase-override-warning" to "2cd8bf6fe75535d6c009c2622a1ed2ab1a4eb0103b37c6e0e72cbfd2fe81c95f",
-                "phase4-v4-pr05-grey-crown-phase-override-warning" to "2cd8bf6fe75535d6c009c2622a1ed2ab1a4eb0103b37c6e0e72cbfd2fe81c95f",
-                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "2cd8bf6fe75535d6c009c2622a1ed2ab1a4eb0103b37c6e0e72cbfd2fe81c95f",
+                "phase4-v4-pr05-molten-glass-phase-override-warning" to "32d68de0d46bd37f40d961565f784b10629d214c05c53c51d058c7301ed667bd",
+                "phase4-v4-pr05-grey-crown-phase-override-warning" to "32d68de0d46bd37f40d961565f784b10629d214c05c53c51d058c7301ed667bd",
+                "phase4-v4-pr05-abyssal-eclipse-phase-override-warning" to "32d68de0d46bd37f40d961565f784b10629d214c05c53c51d058c7301ed667bd",
             ),
             hashes,
         )
@@ -790,6 +1024,454 @@ class GoldenScreenshotHarnessTest {
                 app.dispose()
             }
         }
+
+    private fun captureDarkUiuxPr08DirectorEvidence(): Map<String, String> {
+        val hashes = linkedMapOf<String, String>()
+        hashes +=
+            captureDarkUiuxPr08DirectorEvidenceWindow(width = 1672, height = 941) { app, overlaySource ->
+                overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                linkedMapOf(
+                    "dark-uiux-pr08-director-parity-1672x941" to
+                        captureGoldenArtifact(
+                            label = "dark-uiux-pr08-director-parity-1672x941",
+                            evidenceDir = darkUiuxPr08DirectorGoldenDir(),
+                            flipY = true,
+                        ) {
+                            repeat(2) { app.render() }
+                        },
+                )
+            }
+        hashes +=
+            captureDarkUiuxPr08DirectorEvidenceWindow(width = 1280, height = 800) { app, overlaySource ->
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for PR-08 director evidence." }
+                val layout = currentTileLayout(session)
+                val mapStageCrop = goldenCrop(layout.demoShell.mapStage, layout)
+                val rightPanelCrop = goldenCrop(layout.demoShell.rightPanel, layout)
+                val bottomDeckCrop = goldenCrop(layout.demoShell.bottomDeck.bounds, layout)
+                val windowHashes = linkedMapOf<String, String>()
+                overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                windowHashes["dark-uiux-pr08-director-map-stage-crop"] =
+                    captureGoldenArtifact(
+                        label = "dark-uiux-pr08-director-map-stage-crop",
+                        evidenceDir = darkUiuxPr08DirectorGoldenDir(),
+                        crop = mapStageCrop,
+                        flipY = true,
+                    ) {
+                        repeat(2) { app.render() }
+                    }
+                windowHashes["dark-uiux-pr08-director-right-panel-crop"] =
+                    captureGoldenArtifact(
+                        label = "dark-uiux-pr08-director-right-panel-crop",
+                        evidenceDir = darkUiuxPr08DirectorGoldenDir(),
+                        crop = rightPanelCrop,
+                        flipY = true,
+                    ) {
+                        repeat(2) { app.render() }
+                    }
+                windowHashes["dark-uiux-pr08-director-bottom-deck-crop"] =
+                    captureGoldenArtifact(
+                        label = "dark-uiux-pr08-director-bottom-deck-crop",
+                        evidenceDir = darkUiuxPr08DirectorGoldenDir(),
+                        crop = bottomDeckCrop,
+                        flipY = true,
+                    ) {
+                        repeat(2) { app.render() }
+                    }
+                windowHashes
+            }
+        hashes += captureDarkUiuxPr08DirectorFamilyMapStageCrops()
+        hashes += captureDarkUiuxPr08DirectorTelegraphCombatCrop()
+        writeDarkUiuxPr08DirectorEvidenceIndex(hashes)
+        return hashes
+    }
+
+    private fun captureDarkUiuxPr08DirectorEvidenceWindow(
+        width: Int,
+        height: Int,
+        capture: (GameApp, MutableOverlayCommandSource) -> Map<String, String>,
+    ): Map<String, String> =
+        withLwjgl3Context(width = width, height = height) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr08-director-evidence-$width-$height")),
+                    validationSaveManager = SaveManager(tempDir.resolve("dark-uiux-pr08-director-validation-$width-$height")),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr02-1-demo-shell-foundation"))
+                app.startValidationSession(scenario.toSessionOptions(ContentPackSelection.EMPTY))
+                requireNotNull(app.activeSessionOrNull()) { "Expected active validation session for PR-08 director evidence." }
+                capture(app, overlaySource)
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureDarkUiuxPr08DirectorFamilyMapStageCrops(): Map<String, String> =
+        listOf(
+            DarkUiuxPr08DirectorFamilyEvidence(
+                scenarioId = ValidationScenarioId("dark-uiux-pr08-director-forest-map-stage"),
+            ),
+            DarkUiuxPr08DirectorFamilyEvidence(
+                scenarioId = ValidationScenarioId("dark-uiux-pr08-director-mine-map-stage"),
+            ),
+            DarkUiuxPr08DirectorFamilyEvidence(
+                scenarioId = ValidationScenarioId("dark-uiux-pr08-director-shadow-depths-map-stage"),
+            ),
+        ).fold(linkedMapOf<String, String>()) { hashes, family ->
+            hashes += captureDarkUiuxPr08DirectorFamilyMapStageCrop(family)
+            hashes
+        }
+
+    private fun captureDarkUiuxPr08DirectorFamilyMapStageCrop(family: DarkUiuxPr08DirectorFamilyEvidence): Map<String, String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("${family.label}-save")),
+                    defaultConfig = family.scenario.toSessionOptions(ContentPackSelection.EMPTY).foundationConfig,
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for ${family.label}." }
+                val layout = currentTileLayout(session)
+                val mapStageCrop = goldenCrop(layout.demoShell.mapStage, layout)
+                overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                linkedMapOf(
+                    family.label to
+                        captureGoldenArtifact(
+                            label = family.label,
+                            evidenceDir = darkUiuxPr08DirectorGoldenDir(),
+                            crop = mapStageCrop,
+                            flipY = true,
+                        ) {
+                            repeat(2) { app.render() }
+                        },
+                )
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private data class DarkUiuxPr08DirectorFamilyEvidence(
+        val scenarioId: ValidationScenarioId,
+    ) {
+        val scenario = ValidationScenarioRegistry.require(scenarioId)
+        val label =
+            scenario.evidence.requiredEvidenceFiles
+                .single { evidenceFile -> evidenceFile.endsWith("-map-stage-crop.png") }
+                .removePrefix("evidence/")
+                .removeSuffix(".png")
+    }
+
+    private fun captureDarkUiuxPr08GeneralizationProbe(): List<Pr08GeneralizationProbeEvidence> {
+        val evidence =
+            darkUiuxPr08GeneralizationProbes.map { probe ->
+                captureDarkUiuxPr08GeneralizationProbeCrop(probe)
+            }
+        writeDarkUiuxPr08GeneralizationEvidenceIndex(evidence)
+        writeDarkUiuxPr08GeneralizationBoard(evidence)
+        return evidence
+    }
+
+    private fun captureDarkUiuxPr08GeneralizationProbeCrop(
+        probe: Pr08GeneralizationProbe,
+    ): Pr08GeneralizationProbeEvidence =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("${probe.label}-save")),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = probe.seed,
+                            zoneId = probe.zoneId,
+                            floor = probe.floor,
+                            maxFloor = maxOf(2, probe.floor),
+                            playerProfessionId = probe.professionId,
+                            zoneRoute = listOf(probe.zoneId),
+                            routeIndex = 0,
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for ${probe.label}." }
+                val layout = currentTileLayout(session)
+                val mapStageCrop = goldenCrop(layout.demoShell.mapStage, layout)
+                val topology = pr08RuinsVisibleTopology(session)
+                overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                val hash =
+                    captureGoldenArtifact(
+                        label = probe.label,
+                        evidenceDir = darkUiuxPr08GeneralizationGoldenDir(),
+                        crop = mapStageCrop,
+                        flipY = true,
+                    ) {
+                        repeat(2) { app.render() }
+                    }
+                Pr08GeneralizationProbeEvidence(
+                    probe = probe,
+                    hash = hash,
+                    topology = topology,
+                )
+            } finally {
+                app.dispose()
+        }
+    }
+
+    private fun captureDarkUiuxPr08TopologySourceMaskDiagnostic(): Map<String, String> {
+        val evidenceDir = darkUiuxPr08TopologyMaskGoldenDir()
+        Files.createDirectories(evidenceDir)
+        val sourcePath =
+            repoRootPath().resolve(
+                "client/src/main/resources/dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png",
+            )
+        require(Files.isRegularFile(sourcePath)) {
+            "PR08 topology source diagnostic expected the promoted runtime source PNG."
+        }
+        val source = ImageIO.read(sourcePath.toFile())
+        val board = renderPr08TopologySourceMaskBoard(source)
+        val boardPath = evidenceDir.resolve("dark-uiux-pr08-topology-source-mask-board.png")
+        ImageIO.write(board, "png", boardPath.toFile())
+        val hashes =
+            linkedMapOf(
+                "dark-uiux-pr08-topology-source-mask-board" to fileHash(boardPath),
+            )
+        writeDarkUiuxPr08TopologySourceMaskEvidenceIndex(
+            hashes = hashes,
+            sourceHash = fileHash(sourcePath),
+        )
+        return hashes
+    }
+
+    private fun renderPr08TopologySourceMaskBoard(
+        source: java.awt.image.BufferedImage,
+    ): java.awt.image.BufferedImage {
+        val probes = pr08TopologyMaskProbes()
+        val panelWidth = 900
+        val panelHeight = 360
+        val margin = 24
+        val board =
+            java.awt.image.BufferedImage(
+                panelWidth,
+                margin + probes.size * panelHeight + (probes.size - 1) * margin,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB,
+            )
+        val graphics = board.createGraphics()
+        try {
+            graphics.color = java.awt.Color(3, 10, 10)
+            graphics.fillRect(0, 0, board.width, board.height)
+            probes.forEachIndexed { index, probe ->
+                val panelY = margin + index * (panelHeight + margin)
+                drawPr08TopologyMaskProbePanel(
+                    graphics = graphics,
+                    source = source,
+                    probe = probe,
+                    x = margin,
+                    y = panelY,
+                    width = panelWidth - margin * 2,
+                    height = panelHeight,
+                )
+            }
+        } finally {
+            graphics.dispose()
+        }
+        return board
+    }
+
+    private fun drawPr08TopologyMaskProbePanel(
+        graphics: java.awt.Graphics2D,
+        source: java.awt.image.BufferedImage,
+        probe: Pr08TopologyMaskProbe,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+    ) {
+        graphics.color = java.awt.Color(2, 8, 8)
+        graphics.fillRect(x, y, width, height)
+        graphics.color = java.awt.Color(120, 73, 17)
+        graphics.drawRect(x, y, width - 1, height - 1)
+        graphics.font = java.awt.Font("SansSerif", java.awt.Font.PLAIN, 16)
+        graphics.color = java.awt.Color(223, 215, 196)
+        graphics.drawString(probe.label, x + 16, y + 28)
+
+        val cellSize = minOf(46, (width - 120) / probe.columns, (height - 92) / probe.rows)
+        val gridWidth = cellSize * probe.columns
+        val gridHeight = cellSize * probe.rows
+        val gridX = x + (width - gridWidth) / 2
+        val gridY = y + 58
+
+        graphics.color = java.awt.Color(1, 6, 6)
+        graphics.fillRect(gridX - 10, gridY - 10, gridWidth + 20, gridHeight + 20)
+        for (row in 0 until probe.rows) {
+            for (column in 0 until probe.columns) {
+                val cellX = gridX + column * cellSize
+                val cellY = gridY + row * cellSize
+                if ((column to row) in probe.visibleCells) {
+                    graphics.drawImage(
+                        source,
+                        cellX,
+                        cellY,
+                        cellX + cellSize,
+                        cellY + cellSize,
+                        column * source.width / probe.columns,
+                        row * source.height / probe.rows,
+                        (column + 1) * source.width / probe.columns,
+                        (row + 1) * source.height / probe.rows,
+                        null,
+                    )
+                    graphics.color = java.awt.Color(0, 245, 120)
+                } else {
+                    graphics.color = java.awt.Color(3, 8, 8)
+                    graphics.fillRect(cellX, cellY, cellSize, cellSize)
+                    graphics.color = java.awt.Color(255, 34, 34)
+                }
+                graphics.drawRect(cellX, cellY, cellSize - 1, cellSize - 1)
+            }
+        }
+        graphics.color = java.awt.Color(0, 220, 210)
+        probe.cropBands.forEach { band ->
+            graphics.drawRect(
+                gridX + band.x * cellSize,
+                gridY + band.y * cellSize,
+                band.width * cellSize - 1,
+                band.height * cellSize - 1,
+            )
+        }
+        graphics.font = java.awt.Font("SansSerif", java.awt.Font.PLAIN, 12)
+        graphics.color = java.awt.Color(187, 178, 158)
+        graphics.drawString("cyan=crop band, green=visible cells, red=hidden bbox cells", x + 16, y + height - 18)
+    }
+
+    private fun pr08TopologyMaskProbes(): List<Pr08TopologyMaskProbe> =
+        listOf(
+            Pr08TopologyMaskProbe(
+                label = "L-like visible topology - current dedicated topology source",
+                columns = 8,
+                rows = 7,
+                visibleCells =
+                    buildSet {
+                        for (row in 0..3) {
+                            for (column in 0..2) {
+                                add(column to row)
+                            }
+                        }
+                        for (row in 4..6) {
+                            for (column in 0..7) {
+                                add(column to row)
+                            }
+                        }
+                    },
+                cropBands =
+                    listOf(
+                        Pr08TopologyMaskBand(x = 0, y = 0, width = 3, height = 4),
+                        Pr08TopologyMaskBand(x = 0, y = 4, width = 8, height = 3),
+                    ),
+            ),
+            Pr08TopologyMaskProbe(
+                label = "corridor-heavy offset topology - current dedicated topology source",
+                columns = 13,
+                rows = 7,
+                visibleCells =
+                    buildSet {
+                        for (row in 0..2) {
+                            for (column in 8..12) {
+                                add(column to row)
+                            }
+                        }
+                        for (row in 3..4) {
+                            for (column in 0..12) {
+                                add(column to row)
+                            }
+                        }
+                        for (row in 5..6) {
+                            for (column in 0..3) {
+                                add(column to row)
+                            }
+                        }
+                    },
+                cropBands =
+                    listOf(
+                        Pr08TopologyMaskBand(x = 8, y = 0, width = 5, height = 3),
+                        Pr08TopologyMaskBand(x = 0, y = 3, width = 13, height = 2),
+                        Pr08TopologyMaskBand(x = 0, y = 5, width = 4, height = 2),
+                    ),
+            ),
+            Pr08TopologyMaskProbe(
+                label = "tall cross topology - current dedicated topology source",
+                columns = 8,
+                rows = 10,
+                visibleCells =
+                    buildSet {
+                        for (row in 0..9) {
+                            for (column in 3..4) {
+                                add(column to row)
+                            }
+                        }
+                        for (row in 4..6) {
+                            for (column in 0..7) {
+                                add(column to row)
+                            }
+                        }
+                    },
+                cropBands =
+                    listOf(
+                        Pr08TopologyMaskBand(x = 3, y = 0, width = 2, height = 10),
+                        Pr08TopologyMaskBand(x = 0, y = 4, width = 8, height = 3),
+                    ),
+            ),
+        )
+
+    private fun pr08RuinsVisibleTopology(session: FoundationGameSession): Pr08VisibleTopology {
+        val snapshot = session.renderSnapshot()
+        val visibleMaterialCells =
+            snapshot.mapCells.filter { cell ->
+                cell.visibility == CellVisibilitySnapshot.VISIBLE &&
+                    (cell.terrainVisualKey == DarkUiMapVisualKeys.RUINS_GROUND ||
+                        cell.terrainVisualKey == DarkUiMapVisualKeys.RUINS_WALL)
+            }
+        require(visibleMaterialCells.isNotEmpty()) {
+            "PR08 generalization probe expected visible ruins floor or wall material."
+        }
+        val minX = visibleMaterialCells.minOf { cell -> cell.x }
+        val maxX = visibleMaterialCells.maxOf { cell -> cell.x }
+        val minY = visibleMaterialCells.minOf { cell -> cell.y }
+        val maxY = visibleMaterialCells.maxOf { cell -> cell.y }
+        val boundsWidth = maxX - minX + 1
+        val boundsHeight = maxY - minY + 1
+        val fillRatioPermille = (visibleMaterialCells.size * 1000) / (boundsWidth * boundsHeight).coerceAtLeast(1)
+        return Pr08VisibleTopology(
+            tilesetKey = snapshot.metadata.tilesetKey,
+            visibleMaterialCells = visibleMaterialCells.size,
+            boundsWidth = boundsWidth,
+            boundsHeight = boundsHeight,
+            fillRatioPermille = fillRatioPermille,
+            playerOffsetX = snapshot.metadata.playerX - minX,
+            playerOffsetY = snapshot.metadata.playerY - minY,
+        )
+    }
 
     private fun captureDarkUiuxPr03GoldenEvidence(): Map<String, String> =
         withLwjgl3Context(width = 1280, height = 800) {
@@ -1275,6 +1957,64 @@ class GoldenScreenshotHarnessTest {
                         captureGoldenArtifact(
                             label = "dark-uiux-pr05-actor-boss-telegraph",
                             evidenceDir = darkUiuxPr05GoldenDir(),
+                            crop = mapStageCrop,
+                            flipY = true,
+                        ) {
+                            overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                            repeat(2) { app.render() }
+                        },
+                )
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureDarkUiuxPr08DirectorTelegraphCombatCrop(): Map<String, String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr08-director-telegraph-combat")),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260412L,
+                            zoneId = "grey_gate_depths",
+                            playerProfessionId = "templar",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for PR-08 director telegraph evidence." }
+                val stairsDown = requireNotNull(automationStairPoint(session, StairDirection.DOWN)) {
+                    "Expected downstairs entry for PR-08 director telegraph evidence."
+                }
+                automationMovePlayerTo(session, stairsDown)
+                app.render()
+                check(session.perform(PlayerCommand.Descend)) { "Failed to descend into the boss floor for PR-08 director telegraph evidence." }
+                app.render()
+
+                val bossId = requireNotNull(automationBossEntity(session)) { "Expected a live boss entity for PR-08 director telegraph evidence." }
+                val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)) {
+                    "Expected boss position for PR-08 director telegraph evidence."
+                }.toPoint()
+                automationMovePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+                prepareBossTelegraphFixture(session, bossId)
+                val snapshot = waitForBossTelegraph(session, app)
+                assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") })
+                val layout = currentTileLayout(session)
+                val mapStageCrop = goldenCrop(layout.demoShell.mapStage, layout)
+                linkedMapOf(
+                    "dark-uiux-pr08-director-telegraph-combat-crop" to
+                        captureGoldenArtifact(
+                            label = "dark-uiux-pr08-director-telegraph-combat-crop",
+                            evidenceDir = darkUiuxPr08DirectorGoldenDir(),
                             crop = mapStageCrop,
                             flipY = true,
                         ) {
@@ -2240,6 +2980,124 @@ class GoldenScreenshotHarnessTest {
         Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
     }
 
+    private fun writeDarkUiuxPr08DirectorEvidenceIndex(hashes: Map<String, String>) {
+        val evidenceDir = darkUiuxPr08DirectorGoldenDir()
+        Files.createDirectories(evidenceDir)
+        val rows =
+            buildString {
+                appendLine("label\thash\tartifact")
+                hashes.forEach { (label, hash) ->
+                    appendLine("$label\t$hash\tclient/build/reports/golden/dark-uiux-pr08-director/$label.png")
+                }
+            }
+        Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
+    }
+
+    private fun writeDarkUiuxPr08GeneralizationEvidenceIndex(evidence: List<Pr08GeneralizationProbeEvidence>) {
+        val evidenceDir = darkUiuxPr08GeneralizationGoldenDir()
+        Files.createDirectories(evidenceDir)
+        val rows =
+            buildString {
+                appendLine(
+                    "label\thash\tartifact\tseed\tzone\tfloor\tprofession\tviewport\tprobeIntent\ttileset\t" +
+                        "visibleMaterialCells\tboundsWidth\tboundsHeight\tfillRatioPermille\tplayerOffset\ttopologySignature",
+                )
+                evidence.forEach { entry ->
+                    appendLine(
+                        listOf(
+                            entry.probe.label,
+                            entry.hash,
+                            "client/build/reports/golden/dark-uiux-pr08-generalization/${entry.probe.label}.png",
+                            entry.probe.seed.toString(),
+                            entry.probe.zoneId,
+                            entry.probe.floor.toString(),
+                            entry.probe.professionId,
+                            "1280x800",
+                            entry.probe.probeIntent,
+                            entry.topology.tilesetKey,
+                            entry.topology.visibleMaterialCells.toString(),
+                            entry.topology.boundsWidth.toString(),
+                            entry.topology.boundsHeight.toString(),
+                            entry.topology.fillRatioPermille.toString(),
+                            "${entry.topology.playerOffsetX}_${entry.topology.playerOffsetY}",
+                            entry.topology.signature,
+                        ).joinToString(separator = "\t"),
+                    )
+                }
+                appendLine(
+                    "dark-uiux-pr08-generalization-board\tN/A\t" +
+                        "client/build/reports/golden/dark-uiux-pr08-generalization/dark-uiux-pr08-generalization-board.png" +
+                        "\tN/A\tN/A\tN/A\tN/A\t1280x800\t4x2 D8 crop board\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A",
+                )
+            }
+        Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
+    }
+
+    private fun writeDarkUiuxPr08TopologySourceMaskEvidenceIndex(
+        hashes: Map<String, String>,
+        sourceHash: String,
+    ) {
+        val evidenceDir = darkUiuxPr08TopologyMaskGoldenDir()
+        Files.createDirectories(evidenceDir)
+        val rows =
+            buildString {
+                appendLine("label\thash\tartifact\tsourceArtifact\tsourceHash\tmaskCount\tcontract")
+                hashes.forEach { (label, hash) ->
+                    appendLine(
+                        listOf(
+                            label,
+                            hash,
+                            "client/build/reports/golden/dark-uiux-pr08-topology-source-mask/$label.png",
+                            "client/src/main/resources/dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png",
+                            sourceHash,
+                            pr08TopologyMaskProbes().size.toString(),
+                            "review-only mask diagnostic promoted to repeatable golden owner evidence",
+                        ).joinToString(separator = "\t"),
+                    )
+                }
+            }
+        Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
+    }
+
+    private fun writeDarkUiuxPr08GeneralizationBoard(evidence: List<Pr08GeneralizationProbeEvidence>) {
+        val evidenceDir = darkUiuxPr08GeneralizationGoldenDir()
+        Files.createDirectories(evidenceDir)
+        val images =
+            evidence.map { entry ->
+                ImageIO.read(evidenceDir.resolve("${entry.probe.label}.png").toFile())
+            }
+        val columns = 4
+        val rows = (images.size + columns - 1) / columns
+        val cellWidth = images.maxOf { image -> image.width }
+        val cellHeight = images.maxOf { image -> image.height }
+        val board =
+            java.awt.image.BufferedImage(
+                cellWidth * columns,
+                cellHeight * rows,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB,
+            )
+        val graphics = board.createGraphics()
+        try {
+            graphics.color = java.awt.Color.BLACK
+            graphics.fillRect(0, 0, board.width, board.height)
+            images.forEachIndexed { index, image ->
+                val column = index % columns
+                val row = index / columns
+                graphics.drawImage(
+                    image,
+                    column * cellWidth,
+                    row * cellHeight,
+                    cellWidth,
+                    cellHeight,
+                    null,
+                )
+            }
+            ImageIO.write(board, "png", evidenceDir.resolve("dark-uiux-pr08-generalization-board.png").toFile())
+        } finally {
+            graphics.dispose()
+        }
+    }
+
     private fun writePhase4UiuxPr05EvidenceIndex(hashes: Map<String, String>) {
         val evidenceDir = phase4UiuxPr05GoldenDir()
         Files.createDirectories(evidenceDir)
@@ -2308,6 +3166,15 @@ class GoldenScreenshotHarnessTest {
     private fun darkUiuxPr05_1GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr05-1")
 
+    private fun darkUiuxPr08DirectorGoldenDir(): Path =
+        repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr08-director")
+
+    private fun darkUiuxPr08GeneralizationGoldenDir(): Path =
+        repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr08-generalization")
+
+    private fun darkUiuxPr08TopologyMaskGoldenDir(): Path =
+        repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr08-topology-source-mask")
+
     private fun phase4UiuxPr05GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/phase4-uiux-pr05")
 
@@ -2316,7 +3183,7 @@ class GoldenScreenshotHarnessTest {
 
     private fun currentTileLayout(session: FoundationGameSession): TileLayoutMetrics {
         val snapshot = session.renderSnapshot()
-        return TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, cellWidth = 32f, cellHeight = 32f)
+        return TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, cellWidth = 42f, cellHeight = 42f)
     }
 
     private fun goldenCrop(
@@ -2363,7 +3230,7 @@ class GoldenScreenshotHarnessTest {
         render: () -> Unit,
     ): String {
         val snapshot = snapshotSource.renderSnapshot()
-        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, cellWidth = 32f, cellHeight = 32f)
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, cellWidth = 42f, cellHeight = 42f)
         return captureHash(
             x = layout.logX.toInt(),
             y = layout.cardY.toInt(),
@@ -2402,6 +3269,11 @@ class GoldenScreenshotHarnessTest {
             .digest(bytes)
             .joinToString(separator = "") { byte -> "%02x".format(byte) }
     }
+
+    private fun fileHash(path: Path): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(Files.readAllBytes(path))
+            .joinToString(separator = "") { byte -> "%02x".format(byte) }
 
     private fun triggerTemplarHealFeedback(session: FoundationGameSession) {
         val world = automationWorld(session)

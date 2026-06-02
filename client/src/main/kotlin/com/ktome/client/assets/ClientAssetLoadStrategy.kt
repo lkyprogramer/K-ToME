@@ -117,12 +117,27 @@ class ClientAssetLoadStrategy(
         audioKeys += interactionAudioKeys
 
         snapshot.mapCells.forEach { cell ->
-            visualKeys += cell.terrainVisualKey
-            terrainVisualKeys += cell.terrainVisualKey
+            val terrainFamilyKeys = linkedSetOf<String>()
+            terrainFamilyKeys += assets.visualResolver.terrainVariantKeys(cell.terrainVisualKey)
+            terrainFamilyKeys += assets.visualResolver.terrainWallFamilyKeys(cell.terrainVisualKey)
+            visualKeys += terrainFamilyKeys
+            terrainVisualKeys += terrainFamilyKeys
             cell.terrainAudioProfile?.let(audioKeys::add)
             cell.items.forEach { item ->
                 collectItem(item, visualKeys, audioKeys)
                 item.iconKey?.let(iconVisualKeys::add)
+            }
+        }
+        DarkUiMapVisualKeys.roomArtPlateFamilyFor(snapshot.metadata.tilesetKey, snapshot.mapCells)?.let { family ->
+            if (family.tilesetKey == DarkUiMapVisualKeys.RUINS_TILESET) {
+                visualKeys += DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP
+                terrainVisualKeys += DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP
+            }
+            visualKeys += family.roomArtPlateKey
+            terrainVisualKeys += family.roomArtPlateKey
+            DarkUiMapVisualKeys.roomTopologySourceKeyFor(family)?.let { topologySourceKey ->
+                visualKeys += topologySourceKey
+                terrainVisualKeys += topologySourceKey
             }
         }
         snapshot.props.forEach { prop ->

@@ -1,0 +1,22 @@
+{
+  "comparison": "v45 bottom action reserve hierarchy vs v44 bottom deck crop",
+  "inputs": {
+    "before": "UI/review/dark-uiux-pr08-exploration/bottom-action-reserve-hierarchy-v45/pr08-bottom-action-reserve-hierarchy-v45-v44-bottom-deck.png",
+    "after": "UI/review/dark-uiux-pr08-exploration/bottom-action-reserve-hierarchy-v45/pr08-bottom-action-reserve-hierarchy-v45-v45-bottom-deck.png"
+  },
+  "outputs": {
+    "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/bottom-action-reserve-hierarchy-v45/pr08-bottom-action-reserve-hierarchy-v45-comparison-board.png"
+  },
+  "imageSize": {
+    "width": 1843,
+    "height": 360
+  },
+  "changedPixelRatio": 0.042176101766443604,
+  "meanAbsDiff": 0.17322602037740398,
+  "maxAbsDiff": 79,
+  "acceptance": [
+    "empty action reserve socket renders below equipped action hierarchy",
+    "empty action reserve socket no longer draws the central command connector",
+    "right panel, nav rail, map-stage, and inventory crops remain unchanged by the V45 golden gate"
+  ]
+}

@@ -13,12 +13,20 @@ private const val windowHeight = 800
 private const val windowX = 80
 private const val windowY = 60
 private const val contentPackRootsProperty: String = "ktome.contentPackRoots"
+private const val windowWidthProperty: String = "ktome.window.width"
+private const val windowHeightProperty: String = "ktome.window.height"
+
+internal data class DesktopLauncherWindowSpec(
+    val width: Int,
+    val height: Int,
+)
 
 fun main() {
     BuildInfo.initialize()
+    val windowSpec = desktopLauncherWindowSpec()
     val configuration = Lwjgl3ApplicationConfiguration().apply {
         setTitle(DesktopLauncherTitleFormatter.format())
-        setWindowedMode(windowWidth, windowHeight)
+        setWindowedMode(windowSpec.width, windowSpec.height)
         setWindowPosition(windowX, windowY)
         useVsync(true)
         setForegroundFPS(60)
@@ -30,6 +38,15 @@ fun main() {
         configuration,
     )
 }
+
+internal fun desktopLauncherWindowSpec(propertyProvider: (String) -> String? = System::getProperty): DesktopLauncherWindowSpec =
+    DesktopLauncherWindowSpec(
+        width = propertyProvider(windowWidthProperty).positiveIntOrNull() ?: windowWidth,
+        height = propertyProvider(windowHeightProperty).positiveIntOrNull() ?: windowHeight,
+    )
+
+private fun String?.positiveIntOrNull(): Int? =
+    this?.toIntOrNull()?.takeIf { value -> value > 0 }
 
 private fun contentPackSelectionFromSystemProperty(): ContentPackSelection {
     val roots =

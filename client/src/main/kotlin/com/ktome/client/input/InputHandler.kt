@@ -128,7 +128,17 @@ class InputHandler(
     private val validationPreset: ValidationPreset = ValidationPreset.CUSTOM,
     private val validationRestartNextSeedEnabled: Boolean = false,
     private val validationScenarioId: ValidationScenarioId? = null,
+    initialMode: UiMode = UiMode.MAP,
 ) {
+    init {
+        require(initialMode == UiMode.MAP || initialMode == UiMode.VALIDATION) {
+            "Input handler initial mode must be MAP or VALIDATION."
+        }
+        require(initialMode != UiMode.VALIDATION || validationOverlayAvailability == ValidationOverlayAvailability.ENABLED) {
+            "Validation initial mode requires validation overlay availability."
+        }
+    }
+
     private val uiMessageDisplayFrames = 90
     private val rightPanelBackpackPageSize = EQUIPMENT_INVENTORY_COMPANION_PAGE_SIZE
     private val talentTreePageStep = 6
@@ -170,7 +180,7 @@ class InputHandler(
         )
 
     private val waitBindings = listOf(Keys.PERIOD, Keys.SPACE, Keys.NUMPAD_5)
-    private var mode: UiMode = UiMode.MAP
+    private var mode: UiMode = initialMode
     private var inventorySelection: Int = 0
     private var inventoryPageIndex: Int = 0
     private var inventoryFocusedCell: InventoryWorkbenchCellCoordinate = InventoryWorkbenchCellCoordinate.ORIGIN

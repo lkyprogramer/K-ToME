@@ -1,0 +1,20 @@
+{
+  "cut": "v18-map-stage-masonry-texture",
+  "verdict": "rejected",
+  "source": {
+    "v17Parity1672x941": "UI/review/dark-uiux-pr08-exploration/ground-no-bleed-room-material-v17/runtime-v17-ground-bleed-0px-room-alpha-078/ui-demo-new-parity-1672x941.png",
+    "v18Parity1672x941": "UI/review/dark-uiux-pr08-exploration/map-stage-masonry-v18/runtime-v18-stage-masonry-texture/ui-demo-new-parity-1672x941.png"
+  },
+  "hashes": {
+    "v17Parity1672x941": "9f4cf0a55665c31dfc466757341ea1629cad9d2e760efdc4cf828b3df0a71715",
+    "v18Parity1672x941": "17eb09ca46c521828275b53ae56aafcf1747557e8518ddeecb2346002220d789",
+    "v18MapCrop": "7d9b7532a5829ab3cd15a2632e02d4e0944655bd50305c0997716d95f1d37c80"
+  },
+  "pixelDiff": {
+    "meanAbsRgbAll": 0.01954902653697329,
+    "maxAbsRgb": 4,
+    "changedPixels": 301096,
+    "darkStageMaskPixels": 673827,
+    "darkStageMeanLumaDelta": 0.00482802381026584
+  }
+}

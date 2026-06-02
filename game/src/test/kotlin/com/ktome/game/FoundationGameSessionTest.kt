@@ -547,6 +547,41 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `dark uiux pr08 map telegraph action materializes packaged evidence surface`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr08-director-grade"))
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("dark-uiux-pr08-map-telegraph")),
+                    options = scenario.toSessionOptions(),
+                ),
+            )
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenario.id,
+                        actionId = ValidationScenarioActionId.PREPARE_MAP_TELEGRAPH,
+                    ),
+                ),
+            ),
+        )
+
+        val snapshot = session.renderSnapshot()
+        assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") })
+        assertTrue(snapshot.uiState.recentRewards.isEmpty())
+        assertTrue(
+            snapshot.logEvents.any { event ->
+                event.message.key == "log.validation.phase4_v4.action" &&
+                    event.message.arguments.any { argument ->
+                        argument.name == "result" && argument.value == "dark_uiux_pr08_map_telegraph_ready"
+                    }
+            },
+        )
+    }
+
+    @Test
     fun `validation action failures surface explicit feedback`() {
         val session = newValidationSessionForTest(tempDir.resolve("validation-runtime-failure"))
         clearMonsters(session)

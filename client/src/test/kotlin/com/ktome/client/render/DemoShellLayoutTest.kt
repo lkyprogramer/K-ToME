@@ -70,6 +70,41 @@ class DemoShellLayoutTest {
     }
 
     @Test
+    fun `demo aspect equipment sockets occupy a director grade paper doll width`() {
+        val layout = resolve(1672, 941)
+        val right = layout.rightPanelLayout
+        val left = right.equipmentSlots.slotBounds.minOf { slot -> slot.x }
+        val rightEdge = right.equipmentSlots.slotBounds.maxOf { slot -> slot.right }
+        val stanceRatio = (rightEdge - left) / right.equipment.width
+
+        assertTrue(
+            stanceRatio >= 0.55f,
+            "equipment sockets should occupy enough of the right panel width to read as a paper-doll loadout, not a narrow centered stack; stanceRatio=$stanceRatio",
+        )
+    }
+
+    @Test
+    fun `demo aspect right panel keeps equipment rack compact enough for utility density`() {
+        val layout = resolve(1672, 941)
+        val right = layout.rightPanelLayout
+        val equipmentRatio = right.equipment.height / layout.rightPanel.height
+        val utilityHeight = right.inscriptions.height + right.backpack.height + right.operationHints.height
+
+        assertTrue(
+            equipmentRatio <= 0.39f,
+            "equipment rack should stay compact enough for inscriptions backpack and commands to read as dense utility UI; equipmentRatio=$equipmentRatio",
+        )
+        assertTrue(
+            right.equipmentSlots.slotSide <= 60f,
+            "demo-aspect equipment sockets should not inflate into showcase tiles; slotSide=${right.equipmentSlots.slotSide}",
+        )
+        assertTrue(
+            utilityHeight >= right.equipment.height * 1.32f,
+            "right panel should give utility sections more total vertical density than the equipment rack; utilityHeight=$utilityHeight equipmentHeight=${right.equipment.height}",
+        )
+    }
+
+    @Test
     fun `large tall viewport keeps standard density instead of inflating demo aspect chrome`() {
         val layout = resolve(1980, 1280)
 
@@ -161,6 +196,11 @@ class DemoShellLayoutTest {
         assertEquals(2, right.equipmentSlots.columns)
         assertEquals(5, right.equipmentSlots.rows)
         assertEquals(9, right.equipmentSlots.slotBounds.size)
+        val equipmentColumnCenters = right.equipmentSlots.slotBounds.take(2).map { slot -> slot.x + slot.width / 2f }
+        assertTrue(
+            equipmentColumnCenters[1] - equipmentColumnCenters[0] >= right.equipmentSlots.slotSide * 1.62f,
+            "equipment sockets should use a wide paper-doll stance instead of a compact two-column stack",
+        )
         assertEquals(2, right.inscriptionSlots.columns)
         assertEquals(4, right.inscriptionSlots.rows)
         assertEquals(8, right.inscriptionSlots.slotBounds.size)

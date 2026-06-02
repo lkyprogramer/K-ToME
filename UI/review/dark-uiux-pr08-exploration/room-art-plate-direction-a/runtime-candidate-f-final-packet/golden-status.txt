@@ -1,0 +1,31 @@
+Command:
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts" --rerun-tasks --no-configuration-cache
+
+Result:
+EXPECTED FAIL. The PR-08 Candidate F room art plate changes the dark UI/UX PR-02-1 golden hashes, and this packet does not rebaseline golden artifacts.
+
+Environment:
+Java 21.0.10-tem and Kotlin 2.2.21 were active through SDKMAN.
+
+Actual hashes reported by the golden harness after the bounded composition pass:
+ui-demo-new-parity-1672x941=a948abb581328b8f176d352961a96d167b8623e3d666509be04bb20553a9d43b
+ui-demo-new-parity-1280x800=6abb44b14429099ceec2d6ac9baa91870b785590bc1087878eeae96769f9d5a2
+ui-demo-new-right-panel-grid=36e9b06dc1aba326458cd9c907e02062130d7fb5321007f13483fd18e96ccfcc
+ui-demo-new-bottom-deck-no-command-hints=6bf2380371c23586c38737409e70fb487c903b82b89ed989fc80c0f8e837a142
+ui-demo-new-nav-rail-crop=c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6
+ui-demo-new-map-stage-crop=1ffb0314bcf9c9907daab737a35ae0813295aed0aad3c2cc78491dd6c63cc749
+ui-demo-new-inventory-page-1=021a21d9494e20ad4374d4209e2e66d38b7e0280d55f1845ca01b33377c039cf
+ui-demo-new-inventory-page-2=3f93fa09695715e8ab612fbd28d62675e82f1a8a6b8dc0e1ba8430ce8a3a7a8f
+
+Archived files:
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/evidence-index.tsv
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/ui-demo-new-parity-1672x941.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/ui-demo-new-parity-1280x800.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/ui-demo-new-map-stage-crop.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/ui-demo-new-right-panel-grid.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/ui-demo-new-bottom-deck-no-command-hints.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/ui-demo-new-nav-rail-crop.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/ui-demo-new-inventory-page-1.png
+UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/runtime-candidate-f-final-packet/ui-demo-new-inventory-page-2.png

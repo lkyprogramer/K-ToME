@@ -1438,6 +1438,116 @@ object ValidationScenarioRegistry {
                     ),
             ),
             ValidationScenarioDef(
+                id = ValidationScenarioId("dark-uiux-pr08-director-grade"),
+                prId = "PR-08",
+                runtime =
+                    ValidationScenarioRuntimeSpec(
+                        preset = ValidationPreset.LOOT_LAB,
+                        seed = 2026051102L,
+                        locale = GameLocale.ZH_CN,
+                        professionId = "vanguard",
+                        raceId = "human",
+                        zoneId = "shattered_outpost",
+                        floor = 1,
+                        routeIndex = -1,
+                        contentPackMode = ValidationScenarioContentPackMode.NONE,
+                    ),
+                evidence =
+                    ValidationScenarioEvidenceSpec(
+                        requiredEvidenceFiles =
+                            listOf(
+                                "evidence/dark-uiux-pr08-director-parity-1672x941.png",
+                                "evidence/dark-uiux-pr08-director-map-stage-crop.png",
+                                "evidence/dark-uiux-pr08-director-right-panel-crop.png",
+                                "evidence/dark-uiux-pr08-director-bottom-deck-crop.png",
+                                "evidence/dark-uiux-pr08-director-telegraph-combat-crop.png",
+                                "evidence/dark-uiux-pr08-director-grade-app.log",
+                            ),
+                        cuaSteps =
+                            listOf(
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Packaged app validation session",
+                                    input = "Launch with the PR08 director-grade runbook and capture the 1672x941 validation window.",
+                                    expectedVisibleResult = "PR08 accepted ruins room art plate proof slice renders as an authored stone room first, with shell, right panel, and bottom deck still readable.",
+                                    evidenceFile = "evidence/dark-uiux-pr08-director-parity-1672x941.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Packaged app crop",
+                                    input = "Capture the map-stage crop from the same PR08 director validation window.",
+                                    expectedVisibleResult = "The map-stage crop reads as the accepted tileset.ruins room art plate proof slice rather than a flat tactical grid; player, stairs, loot, fog, and room boundaries remain legible.",
+                                    evidenceFile = "evidence/dark-uiux-pr08-director-map-stage-crop.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Packaged app crop",
+                                    input = "Capture the right companion panel crop from the same PR08 director validation window.",
+                                    expectedVisibleResult = "Right panel evidence proves PR08 map-stage changes did not regress equipment, inscriptions, backpack, or operation hint hierarchy.",
+                                    evidenceFile = "evidence/dark-uiux-pr08-director-right-panel-crop.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Packaged app crop",
+                                    input = "Capture the bottom deck crop from the same PR08 director validation window.",
+                                    expectedVisibleResult = "Bottom deck evidence proves hero card, action deck, and log deck keep the PR02-1 shell hierarchy without duplicate command hints or overlap.",
+                                    evidenceFile = "evidence/dark-uiux-pr08-director-bottom-deck-crop.png",
+                                ),
+                                ValidationScenarioEvidenceStep(
+                                    mode = "Keyboard (initial UI mode: MAP)",
+                                    input = "V, move to Prepare map telegraph, Enter, Esc; capture the telegraph/combat map crop.",
+                                    expectedVisibleResult = "Telegraph/combat crop proves PR08 art plate overlay grammar preserves targeting, actors, loot markers, and warning readability above the room-scale plate.",
+                                    evidenceFile = "evidence/dark-uiux-pr08-director-telegraph-combat-crop.png",
+                                ),
+                            ),
+                        manualRecordPath = "UI/manual-records/dark-uiux-director-grade-runtime-parity.md",
+                        requiredLogEventKeys =
+                            listOf(
+                                "log.validation.phase4_v4.action",
+                            ),
+                        scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr08-director-grade.evidence.summary_note",
+                    ),
+                actionIds =
+                    listOf(
+                        ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                        ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY,
+                        ValidationScenarioActionId.PREPARE_MAP_TELEGRAPH,
+                        ValidationScenarioActionId.RESET_SCENARIO,
+                    ),
+            ),
+            pr08DirectorFamilyMapStageScenario(
+                Pr08DirectorFamilyScenarioSpec(
+                    scenarioId = "dark-uiux-pr08-director-forest-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-forest",
+                    seed = 20260602L,
+                    zoneId = "greenwood_fringe",
+                    professionId = "rogue",
+                    familyName = "tileset.forest_edge",
+                    scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr08-director-forest-map-stage.evidence.summary_note",
+                    expectedMapStageResult = "Forest-edge packaged map-stage crop keeps the accepted mossy room-art plate as the first read while player, stairs, loot, fog, and room boundaries remain legible.",
+                ),
+            ),
+            pr08DirectorFamilyMapStageScenario(
+                Pr08DirectorFamilyScenarioSpec(
+                    scenarioId = "dark-uiux-pr08-director-mine-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-mine",
+                    seed = 20260603L,
+                    zoneId = "deep_iron_pit",
+                    professionId = "vanguard",
+                    familyName = "tileset.mine",
+                    scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr08-director-mine-map-stage.evidence.summary_note",
+                    expectedMapStageResult = "Mine packaged map-stage crop keeps the accepted dark industrial room-art plate as the first read while player, stairs, loot, fog, and room boundaries remain legible.",
+                ),
+            ),
+            pr08DirectorFamilyMapStageScenario(
+                Pr08DirectorFamilyScenarioSpec(
+                    scenarioId = "dark-uiux-pr08-director-shadow-depths-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-shadow-depths",
+                    seed = 20260604L,
+                    zoneId = "grey_gate_depths",
+                    professionId = "templar",
+                    familyName = "tileset.shadow_depths",
+                    scenarioNoteLabelKey = "validation.phase4.v4.dark-uiux-pr08-director-shadow-depths-map-stage.evidence.summary_note",
+                    expectedMapStageResult = "Shadow-depths packaged map-stage crop uses the V4 right-mass room-art plate with a secondary wall return, broken slab lane and restrained violet seams while player, stairs, loot, fog, and room boundaries remain legible.",
+                ),
+            ),
+            ValidationScenarioDef(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 prId = "PR-06",
                 runtime =
@@ -1565,6 +1675,98 @@ object ValidationScenarioRegistry {
                     ),
             ),
         )
+
+    private data class Pr08DirectorFamilyScenarioSpec(
+        val scenarioId: String,
+        val evidencePrefix: String,
+        val seed: Long,
+        val zoneId: String,
+        val professionId: String,
+        val familyName: String,
+        val scenarioNoteLabelKey: String,
+        val expectedMapStageResult: String,
+    )
+
+    private fun pr08DirectorFamilyMapStageScenario(spec: Pr08DirectorFamilyScenarioSpec): ValidationScenarioDef {
+        val fullWindowEvidence = "evidence/${spec.evidencePrefix}-parity-1280x800.png"
+        val mapStageEvidence = "evidence/${spec.evidencePrefix}-map-stage-crop.png"
+        val rightPanelEvidence = "evidence/${spec.evidencePrefix}-right-panel-crop.png"
+        val bottomDeckEvidence = "evidence/${spec.evidencePrefix}-bottom-deck-crop.png"
+        val summaryEvidence = "evidence/${spec.evidencePrefix}-evidence-summary.png"
+        return ValidationScenarioDef(
+            id = ValidationScenarioId(spec.scenarioId),
+            prId = "PR-08",
+            runtime =
+                ValidationScenarioRuntimeSpec(
+                    preset = ValidationPreset.LOOT_LAB,
+                    seed = spec.seed,
+                    locale = GameLocale.ZH_CN,
+                    professionId = spec.professionId,
+                    raceId = "human",
+                    zoneId = spec.zoneId,
+                    floor = 1,
+                    routeIndex = -1,
+                    contentPackMode = ValidationScenarioContentPackMode.NONE,
+                ),
+            evidence =
+                ValidationScenarioEvidenceSpec(
+                    requiredEvidenceFiles =
+                        listOf(
+                            fullWindowEvidence,
+                            mapStageEvidence,
+                            rightPanelEvidence,
+                            bottomDeckEvidence,
+                            summaryEvidence,
+                            "evidence/${spec.scenarioId}-app.log",
+                        ),
+                    cuaSteps =
+                        listOf(
+                            ValidationScenarioEvidenceStep(
+                                mode = "Packaged app validation session",
+                                input = "Launch with the PR08 ${spec.familyName} family runbook, close validation overlay with F9 if needed, and capture the 1280x800 validation window.",
+                                expectedVisibleResult = "PR08 ${spec.familyName} room-art family renders in the packaged app without reusing the ruins proof slice.",
+                                evidenceFile = fullWindowEvidence,
+                            ),
+                            ValidationScenarioEvidenceStep(
+                                mode = "Packaged app crop",
+                                input = "Capture the map-stage crop from the same PR08 ${spec.familyName} validation window.",
+                                expectedVisibleResult = spec.expectedMapStageResult,
+                                evidenceFile = mapStageEvidence,
+                            ),
+                            ValidationScenarioEvidenceStep(
+                                mode = "Packaged app crop",
+                                input = "Capture the right companion panel crop from the same PR08 ${spec.familyName} validation window.",
+                                expectedVisibleResult = "Right panel evidence proves the ${spec.familyName} family scenario does not regress equipment, inscriptions, backpack, or operation hint hierarchy.",
+                                evidenceFile = rightPanelEvidence,
+                            ),
+                            ValidationScenarioEvidenceStep(
+                                mode = "Packaged app crop",
+                                input = "Capture the bottom deck crop from the same PR08 ${spec.familyName} validation window.",
+                                expectedVisibleResult = "Bottom deck evidence proves hero card, action deck, and log deck remain readable while this scenario validates the ${spec.familyName} map-stage family.",
+                                evidenceFile = bottomDeckEvidence,
+                            ),
+                            ValidationScenarioEvidenceStep(
+                                mode = "Keyboard (initial UI mode: MAP)",
+                                input = "F9, Right, Enter",
+                                expectedVisibleResult = "Evidence summary lists the ${spec.familyName} family evidence paths, app hash, and manual record path without claiming all-map closure.",
+                                evidenceFile = summaryEvidence,
+                            ),
+                        ),
+                    manualRecordPath = "UI/manual-records/dark-uiux-pr08-non-ruins-packaged-parity.md",
+                    requiredLogEventKeys =
+                        listOf(
+                            "log.validation.phase4_v4.action",
+                        ),
+                    scenarioNoteLabelKey = spec.scenarioNoteLabelKey,
+                ),
+            actionIds =
+                listOf(
+                    ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY,
+                    ValidationScenarioActionId.RESET_SCENARIO,
+                ),
+        )
+    }
 
     private fun pr0401PassiveScenario(
         id: String,

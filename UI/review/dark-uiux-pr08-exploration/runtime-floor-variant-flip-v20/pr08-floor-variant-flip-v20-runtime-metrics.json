@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "dark-uiux-pr08-runtime-metrics-v1",
+  "candidate": "runtime-floor-variant-flip-v20",
+  "baseline": "runtime-right-equipment-workbench-v19",
+  "meanAbsRgbDiffVsV19": 0.2950285588331129,
+  "maxRgbDiffVsV19": 47,
+  "changedPixelsVsV19": 241670,
+  "totalPixels": 2086920,
+  "changedRatioVsV19": 0.11580223487244361,
+  "visualVerdict": "accepted-forward-only",
+  "notes": [
+    "deterministic floor variant flips reduce repeated motif orientation",
+    "not director-grade closure; map grid remains first-read blocker"
+  ]
+}

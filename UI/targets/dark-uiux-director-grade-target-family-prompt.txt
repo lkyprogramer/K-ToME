@@ -1,0 +1,52 @@
+# Dark UI/UX PR-08 Target Family Prompt Set
+
+These prompts are design-evidence prompts for `UI/targets/dark-uiux-director-grade-target-family-pack.md`.
+They are not manifest, sheet-plan, key-registry, runtime or golden authority.
+
+## floor-32px
+
+Canvas: 256x128
+Use case: game-asset-target
+Asset type: K-ToME PR-08 ruins floor 32px tile-family target, design evidence only
+Primary request: Create an 8 column by 4 row contact sheet of clean repeatable dark fantasy ruined-stone floor tile variants.
+Cell contract: every cell must represent one standalone 32px by 32px top-down floor tile. The output canvas is exactly 256x128, with no gutters, no labels, no borders, no coordinate marks and no text.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Material: worn charcoal stone slabs, chipped edges, subtle moss, dust, hairline cracks, muted ember warmth, restrained cyan-cold edge hints only where natural.
+Repeatability: each tile must survive 8x4 repetition without obvious checkerboard seams. Variation should be subtle and cell-local.
+Avoid: actors, props, walls, torches, fog, poison, selection rings, telegraph marks, arrows, letters, digits, runes, UI labels, log text, watermarks, signatures, full-scene illustration, perspective, isometric view, heavy baked lighting, black void.
+
+## wall-32px
+
+Canvas: 256x128
+Use case: game-asset-target
+Asset type: K-ToME PR-08 ruins wall 32px tile-family target, design evidence only
+Primary request: Create an 8 column by 4 row contact sheet of clean repeatable top-down ruined-stone wall tile variants.
+Cell contract: every cell must represent one standalone 32px by 32px top-down blocking wall tile. The output canvas is exactly 256x128, with no gutters, no labels, no borders, no coordinate marks and no text.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Material: thick chipped dungeon wall mass, raised stone lip, darker side faces, small broken corners, compact rubble detail contained inside the cell, charcoal stone with restrained warm wear.
+Readability: wall cells must read heavier and more blocking than floor cells, but must not become a full room border or scene fragment.
+Repeatability: wall tiles must survive 8x4 repetition without obvious checkerboard seams or directional discontinuity.
+Avoid: floor-only slabs, room silhouettes, torches, props, actors, fog, poison, selection rings, telegraph marks, arrows, letters, digits, runes, UI labels, log text, watermarks, signatures, full-scene illustration, perspective, isometric view, black void.
+
+## map-compositor
+
+Canvas: 512x320
+Use case: ui-compositor-target
+Asset type: K-ToME PR-08 map compositor reference, design evidence only
+Primary request: Create a clean layer-order reference showing how deterministic darkness, warm light pools, selection rings and telegraph overlays should sit over top-down 32px dungeon floor/wall resources.
+Layout: orthographic top-down dungeon sample with clean grid-like 32px floor/wall resources underneath, then separated overlay examples: non-rectangular black field at map edges, warm torch pool, cyan player selection ring, red hostile ring, green hazard/poison telegraph, red attack telegraph.
+Important: the overlay must not hide actor, loot, telegraph, or selection readability. Treat this as compositor behavior reference, not full-screen map art.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Avoid: any text, numbers, labels, UI words, manifest keys, watermarks, full-scene paintover, baked actor detail as the main subject, isometric view, perspective room, glossy sci-fi HUD, neon cyberpunk.
+
+## ui-chrome
+
+Canvas: 512x320
+Use case: ui-asset-target
+Asset type: K-ToME PR-08 UI chrome family target, design evidence only
+Primary request: Create a dark fantasy UI chrome contact sheet for panel body, divider strip, empty slot frame, selected slot frame, bottom deck frame and blank log surface.
+Layout: multiple separated UI chrome samples on one canvas: large panel body fill, narrow divider strip, square empty slot frame, square selected slot frame, wide bottom deck frame, blank parchment/stone log surface. No text anywhere.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Material: forged iron, worn stone, old leather, weathered brass, charcoal black panels, restrained ember accents, restrained cyan edge highlights.
+Sliceability: every element must look reusable by stretch or tiling as existing `ui_frame` style resources. Icons and item art must not be baked into slot chrome.
+Avoid: labels, words, digits, hotkeys, runes, fake UI text, manifest keys, watermarks, item icons inside slots, character portraits, full-screen mockup, glossy plastic, bright glassmorphism, high-saturation purple theme.

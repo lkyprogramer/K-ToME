@@ -26,8 +26,8 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameSession
 
-private const val cellWidth = 32f
-private const val cellHeight = 32f
+private const val cellWidth = 42f
+private const val cellHeight = 42f
 private const val runtimeErrorMessageMaxChars = 200
 
 class FoundationGameScreen(

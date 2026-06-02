@@ -1,0 +1,12 @@
+Canvas: 1672x941
+Use case: ui-mockup
+Asset type: K-ToME PR-08 first-screen target comp, design evidence only
+Primary request: Create a director-grade dark fantasy roguelike first-screen UI target comp for K-ToME.
+Layout: narrow left navigation rail, dominant center dungeon map stage, right equipment/inscription/backpack panel, and bottom hero/action/log HUD. Preserve this game-shell structure.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Visual direction: charcoal black, forged iron, worn stone, old leather, weathered brass, restrained ember light, restrained cyan edge glow, dungeon grit, readable silhouettes.
+Center map: hand-authored ruined dungeon room with worn stone floor slabs, thick chipped walls, non-rectangular surrounding darkness, subtle torch pools, and clear actor/loot/telegraph/selection marker placeholders.
+UI chrome: right panel and bottom HUD should share one forged iron and worn stone material language; panels should feel like a cohesive character console rather than floating cards.
+Text policy: no baked Chinese text, English text, numbers, hotkeys, labels, watermarks, logos, row/column marks, or manifest keys anywhere in the image.
+Sliceability policy: do not create a full-screen paintover that only works as one bitmap. The comp must look decomposable into tile floor, tile wall, map-stage backdrop, panel chrome, slot chrome, bottom deck chrome, actor, prop, and deterministic light/dark compositor families.
+Avoid: sci-fi HUD, neon cyberpunk, anime, chibi, glossy plastic, bright glassmorphism, modern flat icons, high-saturation purple theme, pure black empty map, repeated obvious checkerboard floor.

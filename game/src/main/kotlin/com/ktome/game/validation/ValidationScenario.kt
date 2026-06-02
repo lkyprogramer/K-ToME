@@ -177,7 +177,11 @@ data class ValidationScenarioDef(
     fun toSessionOptions(
         samplePackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
         evidenceSummary: ValidationScenarioEvidenceSummary? = null,
+        startupSurface: ValidationScenarioStartupSurface? = null,
     ): ValidationSessionOptions {
+        require(startupSurface == null || ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY in actionIds) {
+            "Validation scenario ${id.value} does not expose an evidence summary action."
+        }
         val contentSelection =
             when (runtime.contentPackMode) {
                 ValidationScenarioContentPackMode.NONE -> ContentPackSelection.EMPTY
@@ -203,6 +207,7 @@ data class ValidationScenarioDef(
             scenarioId = id,
             scenarioRouteIndex = runtime.routeIndex,
             scenarioEvidenceSummary = evidenceSummary,
+            scenarioStartupSurface = startupSurface,
             scenarioTalentSetup = talentSetup,
         )
     }

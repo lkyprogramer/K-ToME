@@ -1,0 +1,76 @@
+{
+  "source": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/pr08-floor-wall-variant-structure-source-ag-ah-ai.png",
+  "source_size": [
+    1024,
+    1536
+  ],
+  "candidates": [
+    {
+      "id": "AG",
+      "description": "conservative-material",
+      "floorTile": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ag/pr08-ag-floor-tile.png",
+      "wallTile": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ag/pr08-ag-wall-tile.png",
+      "candidateSheet": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ag/pr08-ag-r02-ui-demo-ruins-tiles.png",
+      "tilingBoard": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ag/pr08-ag-tiling-board.png",
+      "floorCrop": [
+        10,
+        10,
+        502,
+        502
+      ],
+      "wallCrop": [
+        554,
+        8,
+        982,
+        504
+      ],
+      "floorSha256": "fb72860bf52adf4014d25781339c80a2f5a7efae85b10297cc3f7bd335a30417",
+      "wallSha256": "535afcd73226eed6830ae86ae7ecec11be2865e7f116756864c8db13cb402231"
+    },
+    {
+      "id": "AH",
+      "description": "material-depth",
+      "floorTile": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ah/pr08-ah-floor-tile.png",
+      "wallTile": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ah/pr08-ah-wall-tile.png",
+      "candidateSheet": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ah/pr08-ah-r02-ui-demo-ruins-tiles.png",
+      "tilingBoard": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ah/pr08-ah-tiling-board.png",
+      "floorCrop": [
+        10,
+        522,
+        502,
+        1014
+      ],
+      "wallCrop": [
+        554,
+        520,
+        982,
+        1016
+      ],
+      "floorSha256": "15c62af163d04272af64463aa4b182c1a7a0daff92aff0c36721c3f8312597a7",
+      "wallSha256": "cbd0d5b71adc794dfc76913808b4a8b068b1b0363aee98ab2f7ba8dd09e4d795"
+    },
+    {
+      "id": "AI",
+      "description": "room-space-strong-style",
+      "floorTile": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ai/pr08-ai-floor-tile.png",
+      "wallTile": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ai/pr08-ai-wall-tile.png",
+      "candidateSheet": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ai/pr08-ai-r02-ui-demo-ruins-tiles.png",
+      "tilingBoard": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/ai/pr08-ai-tiling-board.png",
+      "floorCrop": [
+        10,
+        1034,
+        502,
+        1526
+      ],
+      "wallCrop": [
+        554,
+        1032,
+        982,
+        1528
+      ],
+      "floorSha256": "f06c674110c049b75e2164afbced69b8c0cf865139cb3fbc4ee7211834c206a9",
+      "wallSha256": "f1401ff141a2eeca50d3a954d133bd69e7b98284124ffdeb2b363b131ad07374"
+    }
+  ],
+  "combinedBoard": "UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/floor-wall-variant-structure-sprint/pr08-floor-wall-variant-structure-ag-ah-ai-contact-tiling-board.png"
+}

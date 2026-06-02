@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>K-ToME · In-Run Shell Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  body { background: #1c1f24; }
+  /* Design canvas tweaks */
+  .design-canvas-bg { background: #14171c !important; }
+  .design-doc-header {
+    max-width: 1200px;
+    margin: 24px auto 8px;
+    padding: 16px 20px;
+    background: #10151D;
+    border: 1px solid #2B3542;
+    border-radius: 3px;
+    font-family: "Noto Sans SC", sans-serif;
+    color: #E7E1D3;
+  }
+  .design-doc-header h1 {
+    margin: 0 0 4px 0;
+    font-family: "Cinzel", serif;
+    color: #D99A2B;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+  }
+  .design-doc-header .sub {
+    color: #AEB5BF;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .design-doc-header .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: #1CB7C8;
+  }
+  .design-doc-header .meta span {
+    background: rgba(28,183,200,0.06);
+    border: 1px solid #155B66;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel" src="components/icon-token.jsx"></script>
+<script type="text/babel" src="components/primitives.jsx"></script>
+<script type="text/babel" src="components/slot.jsx"></script>
+<script type="text/babel" src="components/shell.jsx"></script>
+<script type="text/babel" src="components/state-lab.jsx"></script>
+<script type="text/babel" src="components/token-board.jsx"></script>
+<script type="text/babel" src="components/talent-assign.jsx"></script>
+<script type="text/babel" src="components/inventory-modal.jsx"></script>
+<script type="text/babel" src="components/state-matrix.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "showOverlay": false,
+  "variantFilter": "all",       // all | A | B | C
+  "section": "all",             // all | shell | talent | inventory | matrix | ninepatch | states | tokens
+  "slotDemo": "mix",            // mix | all-equipped | all-empty | one-selected
+  "talentCat": "combat",        // combat | defense | command
+  "invFilter": "all",           // all | weapon | armor | consumable | material | key
+  "showTooltip": true
+}/*EDITMODE-END*/;
+
+// ====== Demo state catalogs ======
+const SLOT_DEMOS = {
+  "mix": {
+    equipment: { weapon: "equipped", shield: "equipped", helmet: "equipped", armor: "equipped",
+                 cloak: "equipped", gloves: "equipped", amulet: "empty", ring: "selected" },
+    inscription: { slot1: "equipped", slot2: "equipped", slot3: "equipped", slot4: "equipped",
+                   slot5: "selected", slot6: "equipped", slot7: "equipped", slot8: "equipped",
+                   slot9: "equipped", slot10: "equipped", slot11: "equipped", slot12: "equipped" },
+    inventory: {},
+    actions: ["equipped", "selected", "equipped"]
+  },
+  "all-equipped": {
+    equipment: Object.fromEntries(["weapon","shield","helmet","armor","cloak","gloves","amulet","ring"].map(k => [k, "equipped"])),
+    inscription: {}, inventory: {}, actions: ["equipped","equipped","equipped"]
+  },
+  "all-empty": {
+    equipment: Object.fromEntries(["weapon","shield","helmet","armor","cloak","gloves","amulet","ring"].map(k => [k, "empty"])),
+    inscription: Object.fromEntries(Array.from({length:12}, (_,i) => [`slot${i+1}`, "empty"])),
+    inventory: Object.fromEntries(["potion_hp","scroll","key","gold","ruby","herb","potion_mp","crystal"].map(k => [k, "empty"])),
+    actions: ["empty","empty","empty"]
+  },
+  "one-selected": {
+    equipment: { weapon: "selected" }, inscription: { slot1: "selected" }, inventory: { potion_hp: "selected" },
+    actions: ["equipped","selected","equipped"]
+  },
+};
+
+function ContextDoc() {
+  return (
+    <div className="design-doc-header">
+      <h1>K-ToME · In-Run Shell · Quantified Design Spec</h1>
+      <div className="sub">
+        style: <span style={{color:"#1CB7C8"}}>ktome-dark-fantasy-sprite-ui-v1</span> ·
+        scope: in-run shell only (PR04/05 surface · §2.1.4 #6) ·
+        canvas: 1280×800 ·
+        rendered against UI/ART_STYLE_BIBLE.md color/state contracts
+      </div>
+      <div style={{fontSize: 13, lineHeight: 1.55, marginTop: 8}}>
+        <strong style={{color:"#D99A2B"}}>设计契约 / Design Pact.</strong>
+        本文件不是营销稿,而是 <em>renderer 落地清单</em>:每个面板的 token、像素、九宫格友好性、状态枚举、对 Kotlin/libGDX 的实现暗示都已显式标注。
+        颜色仅作 role language,所有状态都有 tone + sigil/marker 双通道。三个变体共享同一 grid skeleton,仅在 nav/right/hud 权重上分歧。
+        Icon 全部用 <code style={{color:"#1CB7C8", fontFamily:"JetBrains Mono"}}>[icon: targetKey]</code> 占位框 — manifest key 由 sheet-plan.yaml 落地,不在此处发明。
+      </div>
+      <div className="meta">
+        <span>nav-rail · 56/56/48px</span>
+        <span>right-col · 320/360/280px</span>
+        <span>hud · 200/180/160px</span>
+        <span>slot · 64 / 48 / 32px canon</span>
+        <span>4px subgrid · 8px module</span>
+        <span>ninepatch corners · 3px</span>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const variants = ["A", "B", "C"].filter(v => t.variantFilter === "all" || t.variantFilter === v);
+  const demoStates = SLOT_DEMOS[t.slotDemo] || SLOT_DEMOS.mix;
+
+  const showShells    = t.section === "all" || t.section === "shell";
+  const showTalent    = t.section === "all" || t.section === "talent";
+  const showInventory = t.section === "all" || t.section === "inventory";
+  const showMatrix    = t.section === "all" || t.section === "matrix";
+  const showNinepatch = t.section === "all" || t.section === "ninepatch";
+  const showStates    = t.section === "all" || t.section === "states";
+  const showTokens    = t.section === "all" || t.section === "tokens";
+
+  return (
+    <>
+      <ContextDoc />
+      <DesignCanvas>
+        {showShells && (
+          <DCSection id="shells" title="In-Run Shell · Layout Variants"
+                     subtitle="三种 1280×800 全屏内界面变体。所有变体共享同一 grid skeleton,仅在 nav / right / hud 维度上分歧。">
+            {variants.map(v => (
+              <DCArtboard key={v} id={`shell-${v}`} label={`Variant ${v} · ${VARIANT_SPEC[v].name}`}
+                          width={1280} height={800}>
+                <InRunShell variant={v} showOverlay={t.showOverlay} demoStates={demoStates} />
+              </DCArtboard>
+            ))}
+          </DCSection>
+        )}
+
+        {showShells && (
+          <DCSection id="shell-spec" title="Variant Spec Sheet"
+                     subtitle="并列 spec 表 — 给 renderer 工程师直接照抄。">
+            {variants.map(v => (
+              <DCArtboard key={`spec-${v}`} id={`spec-${v}`} label={`Spec ${v}`} width={420} height={560}>
+                <VariantSpecCard variant={v} />
+              </DCArtboard>
+            ))}
+          </DCSection>
+        )}
+
+        {showTalent && (
+          <DCSection id="talent" title="Talent Assign · Surface"
+                     subtitle="职业树分配全屏界面 (1280×800)。四态语法:indent + connector + marker + icon + name + rank。左类目 / 中树 / 右详情。">
+            <DCArtboard id="talent-assign" label="Talent Assign" width={1280} height={800}>
+              <TalentAssign focusedCat={t.talentCat} focusedTalent={t.talentCat === "combat" ? "onslaught" : t.talentCat === "defense" ? "riposte" : "inspire"} showOverlay={t.showOverlay} />
+            </DCArtboard>
+          </DCSection>
+        )}
+
+        {showInventory && (
+          <DCSection id="inventory" title="Inventory Modal + Item Tooltip"
+                     subtitle="背包 modal (scrim + 1120×700 frame)、物品详情面板、悬浮 tooltip,以及 5 个稀有度的 tooltip 卡。">
+            <DCArtboard id="inv-modal" label="Inventory Modal" width={1280} height={800}>
+              <InventoryModal activeFilter={t.invFilter} showOverlay={t.showOverlay} showTooltip={t.showTooltip} />
+            </DCArtboard>
+            <DCArtboard id="tooltip-showcase" label="Item Tooltip · 5 rarities" width={1240} height={520}>
+              <TooltipShowcase />
+            </DCArtboard>
+          </DCSection>
+        )}
+
+        {showMatrix && (
+          <DCSection id="matrix" title="Slot State Matrix"
+                     subtitle="8 slot kinds × 6 states = 48 cells。renderer golden screenshot 验收网格 — PR 落地前必须达到此图。">
+            <DCArtboard id="slot-matrix" label="Slot Matrix · 8×6" width={1040} height={680}>
+              <SlotStateMatrix />
+            </DCArtboard>
+          </DCSection>
+        )}
+
+        {showNinepatch && (
+          <DCSection id="ninepatch" title="Nine-Patch Slice Spec"
+                     subtitle="6 面板种类的 atlas 切片规范:source-rect + split markers + content padding + stretch 证明。可直接嗂 libGDX NinePatchDrawable。">
+            <DCArtboard id="ninepatch-spec" label="Nine-Patch Spec" width={1080} height={1180}>
+              <NinePatchSpec />
+            </DCArtboard>
+          </DCSection>
+        )}
+
+        {showStates && (
+          <DCSection id="states" title="Component State Lab"
+                     subtitle="状态合同全量:slot 6 态 + panel 6 态 + talent 4 态 + bar + keycap。renderer 必须实现这些 state 的 dual-channel 表达(tone + sigil)。">
+            <DCArtboard id="state-slot"   label="Slot 状态"   width={760} height={170}><div style={{padding: 16}}><SlotStateLab/></div></DCArtboard>
+            <DCArtboard id="state-panel"  label="Panel 状态"  width={950} height={200}><div style={{padding: 16}}><PanelStateLab/></div></DCArtboard>
+            <DCArtboard id="state-talent" label="Talent 四态" width={950} height={200}><div style={{padding: 16}}><TalentStateLab/></div></DCArtboard>
+            <DCArtboard id="state-bar"    label="Bar"          width={840} height={170}><div style={{padding: 16}}><BarStateLab/></div></DCArtboard>
+            <DCArtboard id="state-keycap" label="KeyCap"       width={500} height={170}><div style={{padding: 16}}><KeyCapLab/></div></DCArtboard>
+          </DCSection>
+        )}
+
+        {showTokens && (
+          <DCSection id="tokens" title="Token Reference Board"
+                     subtitle="颜色 / 间距 / 字阶 / 槽位尺寸 — 与 ART_STYLE_BIBLE §3 一致。renderer 端的 token 名是源头真相,本表只是 mirror。">
+            <DCArtboard id="tokens" label="Tokens" width={1200} height={1020}>
+              <div style={{padding: 24}}><TokenBoard/></div>
+            </DCArtboard>
+          </DCSection>
+        )}
+      </DesignCanvas>
+
+      <TweaksPanel>
+        <TweakSection label="View" />
+        <TweakSelect label="Section" value={t.section}
+                    options={["all", "shell", "talent", "inventory", "matrix", "ninepatch", "states", "tokens"]}
+                    onChange={v => setTweak("section", v)} />
+        <TweakSelect label="Variant" value={t.variantFilter}
+                     options={["all", "A", "B", "C"]}
+                     onChange={v => setTweak("variantFilter", v)} />
+        <TweakToggle label="Spec overlay" value={t.showOverlay}
+                     onChange={v => setTweak("showOverlay", v)} />
+
+        <TweakSection label="Demo State" />
+        <TweakSelect label="Slot demo" value={t.slotDemo}
+                     options={["mix", "all-equipped", "all-empty", "one-selected"]}
+                     onChange={v => setTweak("slotDemo", v)} />
+        <TweakRadio label="Talent cat" value={t.talentCat}
+                    options={["combat", "defense", "command"]}
+                    onChange={v => setTweak("talentCat", v)} />
+        <TweakSelect label="Inv filter" value={t.invFilter}
+                     options={["all", "weapon", "armor", "consumable", "material", "key"]}
+                     onChange={v => setTweak("invFilter", v)} />
+        <TweakToggle label="Inv tooltip" value={t.showTooltip}
+                     onChange={v => setTweak("showTooltip", v)} />
+      </TweaksPanel>
+    </>
+  );
+}
+
+function VariantSpecCard({ variant }) {
+  const s = VARIANT_SPEC[variant];
+  const W = 1280, H = 800, gap = 6;
+  const mapW = W - s.navW - s.rightW - gap*4;
+  const mapH = H - s.hudH - gap*3;
+  const rows = [
+    ["canvas",       `${W} × ${H}`,                  "整屏画布 · 16:10"],
+    ["nav-rail.w",   `${s.navW}px`,                  "左侧导航栏 · 含 5 项"],
+    ["right-col.w",  `${s.rightW}px`,                "右侧装备/铭刻/背包栈"],
+    ["hud.h",        `${s.hudH}px`,                  "底部 HUD · 4 列 grid"],
+    ["map.w × h",    `${mapW} × ${mapH}`,            "tile-map render target"],
+    ["right.stack",  s.rightStack.join(" → "),       "从上至下 flex 权重 1.5/1.6/0.9"],
+    ["panel.surface", s.surface,                     s.surface === "stone" ? "石板纹 · 9p stretch 可" : "炭黑 · radial vignette"],
+    ["panel.edge",   s.panelEdge,                    "1px iron · 3px corner radius"],
+    ["slot.equip",   variant === "C" ? "56px" : "60px", "装备槽 · 渲染时回归 64px canon"],
+    ["slot.inv",     variant === "C" ? "44px" : "48px", "背包槽 · 渲染时 48px canon"],
+  ];
+  return (
+    <div style={{
+      width: "100%", height: "100%",
+      background: "var(--charcoal-panel)",
+      border: "1px solid var(--iron-edge)",
+      padding: 20,
+      fontFamily: "var(--f-body)",
+      color: "var(--primary-text)",
+      display: "flex", flexDirection: "column", gap: 12,
+      boxSizing: "border-box",
+    }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+        <div style={{ fontFamily: "var(--f-title)", color: "var(--ember-gold)", fontSize: 20, letterSpacing: "0.08em" }}>Variant {variant}</div>
+        <div style={{ fontFamily: "var(--f-mono)", color: "var(--cold-cyan)", fontSize: 11 }}>1280×800</div>
+      </div>
+      <div style={{ fontFamily: "var(--f-title)", color: "var(--primary-text)", fontSize: 14, letterSpacing: "0.06em" }}>{s.name}</div>
+      <div style={{ color: "var(--muted-text)", fontSize: 12, lineHeight: 1.55 }}>{s.desc}</div>
+
+      <div className="section-title" style={{ marginTop: 8 }}>SPEC · 尺寸 / token</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {rows.map(([k, v, hint]) => (
+          <div key={k} style={{ display: "grid", gridTemplateColumns: "115px 1fr", gap: 8, padding: "4px 8px", background: "rgba(5,7,10,0.5)", border: "1px solid var(--iron-edge-dim)", borderRadius: 2 }}>
+            <span style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--cold-cyan)" }}>{k}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <span style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--primary-text)" }}>{v}</span>
+              <span style={{ fontFamily: "var(--f-body)", fontSize: 10, color: "var(--muted-text)" }}>{hint}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="section-title" style={{ marginTop: 8 }}>LIBGDX · 实现暗示</div>
+      <div style={{
+        fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.6,
+        color: "var(--muted-text)",
+        padding: "8px 10px",
+        background: "rgba(5,7,10,0.6)",
+        border: "1px solid var(--iron-edge-dim)",
+        borderRadius: 2,
+      }}>{s.libgdx}</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+</body>
+</html>

@@ -1,13 +1,9 @@
 schemaVersion: dark-owner-contract-v1
 ownerPr: PR-02-2
 requiredSheetIds:
-  - r02-ui-demo-ruins-tiles
   - r03-ui-demo-actor-props
 requiredCellCountsBySheet:
-  r02-ui-demo-ruins-tiles: { direct: 2, alias: 0, reserved: 0, total: 2 }
   r03-ui-demo-actor-props: { direct: 2, alias: 0, reserved: 0, total: 2 }
 requiredCells:
-  - { targetKey: tileset.ruins.ground_01, sheetId: r02-ui-demo-ruins-tiles, category: tile_ground }
-  - { targetKey: tileset.ruins.wall_01, sheetId: r02-ui-demo-ruins-tiles, category: tile_wall }
   - { targetKey: actor.vanguard, sheetId: r03-ui-demo-actor-props, category: actor_sprite }
   - { targetKey: prop.stairs.down, sheetId: r03-ui-demo-actor-props, category: prop_interactable }

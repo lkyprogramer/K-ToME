@@ -1,0 +1,31 @@
+schemaVersion: dark-owner-contract-v1
+ownerPr: PR-08
+requiredSheetIds:
+  - r01-ui-chrome
+  - r01b-ui-shell-chrome
+  - r02-ui-demo-ruins-tiles
+requiredCellCountsBySheet:
+  r01-ui-chrome: { direct: 5, alias: 0, reserved: 0, total: 5 }
+  r01b-ui-shell-chrome: { direct: 5, alias: 0, reserved: 0, total: 5 }
+  r02-ui-demo-ruins-tiles: { direct: 10, alias: 0, reserved: 0, total: 10 }
+requiredCells:
+  - { targetKey: ui.frame.panel.body, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.panel.focus, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.slot.empty, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.slot.equipped, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.frame.slot.selected, sheetId: r01-ui-chrome, category: ui_frame }
+  - { targetKey: ui.shell.hero_card.frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
+  - { targetKey: ui.shell.action_deck.frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
+  - { targetKey: ui.shell.log_deck.frame, sheetId: r01b-ui-shell-chrome, category: ui_frame }
+  - { targetKey: ui.shell.right_section.divider, sheetId: r01b-ui-shell-chrome, category: ui_frame }
+  - { targetKey: ui.shell.command_hint.plate, sheetId: r01b-ui-shell-chrome, category: ui_frame }
+  - { targetKey: tileset.ruins.ground_01, sheetId: r02-ui-demo-ruins-tiles, category: tile_ground }
+  - { targetKey: tileset.ruins.ground_01.variant_1, sheetId: r02-ui-demo-ruins-tiles, category: tile_ground }
+  - { targetKey: tileset.ruins.ground_01.variant_2, sheetId: r02-ui-demo-ruins-tiles, category: tile_ground }
+  - { targetKey: tileset.ruins.ground_01.variant_3, sheetId: r02-ui-demo-ruins-tiles, category: tile_ground }
+  - { targetKey: tileset.ruins.wall_01, sheetId: r02-ui-demo-ruins-tiles, category: tile_wall }
+  - { targetKey: tileset.ruins.wall_01.crown, sheetId: r02-ui-demo-ruins-tiles, category: tile_wall }
+  - { targetKey: tileset.ruins.wall_01.side, sheetId: r02-ui-demo-ruins-tiles, category: tile_wall }
+  - { targetKey: tileset.ruins.wall_01.corner, sheetId: r02-ui-demo-ruins-tiles, category: tile_wall }
+  - { targetKey: tileset.ruins.wall_01.door_contact, sheetId: r02-ui-demo-ruins-tiles, category: tile_wall }
+  - { targetKey: tileset.ruins.room_breakup_01, sheetId: r02-ui-demo-ruins-tiles, category: tile_decal }

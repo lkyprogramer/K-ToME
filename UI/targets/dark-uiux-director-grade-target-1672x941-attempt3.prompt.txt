@@ -1,0 +1,13 @@
+Canvas: 1672x941
+Use case: ui-mockup
+Asset type: K-ToME PR-08 first-screen target comp candidate, design evidence only
+Primary request: Create a sliceable director-grade dark fantasy roguelike first-screen UI target comp for K-ToME.
+Layout: narrow left navigation rail, dominant center orthographic top-down tile-map stage, right equipment/inscription/backpack panel, and bottom hero/action/log HUD.
+Style tag: ktome-dark-fantasy-sprite-ui-v1.
+Critical text ban: no letters, no words, no sentences, no Chinese, no English, no digits, no hotkeys, no UI labels, no title text, no menu text, no readable marks anywhere. The log panel must be an empty dark parchment/stone surface with no glyphs. Use icon silhouettes and blank slots only.
+Critical map constraint: the center map must be orthographic top-down, not isometric, not perspective, not a single painted ruin scene. It must visibly be decomposable into repeatable 32px floor tiles, repeatable 32px wall tiles, separate actor sprites, separate prop sprites, separate telegraph markers, and deterministic light/dark overlays.
+Tile truth: floor and wall material should look hand-authored and dark fantasy but remain repeatable at 32px without obvious checkerboard seams. Use small conceptual variants, but do not depend on a full-screen paintover.
+Map composition: rectangular dungeon rooms and corridors are allowed, but break the silhouette with non-rectangular darkness, chipped wall edges, small props, torch pools, and subtle fog that do not hide actors, loot, telegraphs, or selection.
+UI chrome: forged iron, worn stone, old leather, weathered brass, charcoal black panels, restrained ember accents, restrained cyan edge highlights. Right panel and bottom HUD should feel like one cohesive character console.
+Sliceability policy: the comp must look decomposable into tile floor, tile wall, map-stage backdrop, panel chrome, slot chrome, bottom deck chrome, actor, prop, and light/dark compositor families. Avoid any visual element that requires atlas/region schema, a new manifest schema, or full-screen map art.
+Avoid: any text-like strokes, rune text, log sentences, numbers, isometric board, 3D perspective room, full-scene illustration, sci-fi HUD, neon cyberpunk, anime, glossy plastic, bright glassmorphism, modern flat icons, high-saturation purple theme, pure black empty map, repeated obvious checkerboard floor.

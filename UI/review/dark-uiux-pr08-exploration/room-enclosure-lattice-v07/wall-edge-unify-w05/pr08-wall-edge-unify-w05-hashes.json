@@ -1,0 +1,98 @@
+[
+  {
+    "candidate": "w05a_soft_edges",
+    "role": "base",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05a_soft_edges/tileset_ruins_wall_01_base_w05a_soft_edges.png",
+    "sha256": "f19793a68f52ec3b554f3c8f66b31b24f5830cc155b1d53efbca703df8c97e8b"
+  },
+  {
+    "candidate": "w05a_soft_edges",
+    "role": "crown",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05a_soft_edges/tileset_ruins_wall_01_crown_w05a_soft_edges.png",
+    "sha256": "a624c4ffbecbdeda357ceefdf40ec977fb4114c38558a2e7ad771f012205e964"
+  },
+  {
+    "candidate": "w05a_soft_edges",
+    "role": "side",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05a_soft_edges/tileset_ruins_wall_01_side_w05a_soft_edges.png",
+    "sha256": "e42895dae5acca75bfd1e0266a5b64e382eff093b3c061a1677e920bb5345a69"
+  },
+  {
+    "candidate": "w05a_soft_edges",
+    "role": "corner",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05a_soft_edges/tileset_ruins_wall_01_corner_w05a_soft_edges.png",
+    "sha256": "35e521b2a796e720e5fccd01a9de9e9d47d988e950061a5150632d2d2a4a0522"
+  },
+  {
+    "candidate": "w05a_soft_edges",
+    "role": "door_contact",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05a_soft_edges/tileset_ruins_wall_01_door_contact_w05a_soft_edges.png",
+    "sha256": "8879b339f06416f11be00e1a7d3e43dfafcf60437cbeb19228ef9496cc77be24"
+  },
+  {
+    "candidate": "w05b_strong_vertical_unify",
+    "role": "base",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05b_strong_vertical_unify/tileset_ruins_wall_01_base_w05b_strong_vertical_unify.png",
+    "sha256": "7f3cc751c5228573d3ba696f78aa3cffb79f4c5e0b349a7fc3aa8eac04371dfd"
+  },
+  {
+    "candidate": "w05b_strong_vertical_unify",
+    "role": "crown",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05b_strong_vertical_unify/tileset_ruins_wall_01_crown_w05b_strong_vertical_unify.png",
+    "sha256": "a452e9878ee7ce2fd75bc80fa257219312f15fb39421c2343a847b042b12486a"
+  },
+  {
+    "candidate": "w05b_strong_vertical_unify",
+    "role": "side",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05b_strong_vertical_unify/tileset_ruins_wall_01_side_w05b_strong_vertical_unify.png",
+    "sha256": "e7bb89df9eff705a8e389547b322e198196b90275d81c71c16c61f85b0dc44c4"
+  },
+  {
+    "candidate": "w05b_strong_vertical_unify",
+    "role": "corner",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05b_strong_vertical_unify/tileset_ruins_wall_01_corner_w05b_strong_vertical_unify.png",
+    "sha256": "56ace6f65f47253c5d588e42313b3526611a0a20514c5702a7119b1c6da63412"
+  },
+  {
+    "candidate": "w05b_strong_vertical_unify",
+    "role": "door_contact",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05b_strong_vertical_unify/tileset_ruins_wall_01_door_contact_w05b_strong_vertical_unify.png",
+    "sha256": "1f829e847ffe9a9d8a0bf53cbb515b602da43161fe378d41faee0c8ea1b5afcd"
+  },
+  {
+    "candidate": "w05c_balanced_masonry",
+    "role": "base",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05c_balanced_masonry/tileset_ruins_wall_01_base_w05c_balanced_masonry.png",
+    "sha256": "aebfe71fca599e7f03a453a4b3881f7f4dd63e341752faed958ee9cf80373d59"
+  },
+  {
+    "candidate": "w05c_balanced_masonry",
+    "role": "crown",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05c_balanced_masonry/tileset_ruins_wall_01_crown_w05c_balanced_masonry.png",
+    "sha256": "b4a3ce00ddb3f7404ce0218bb71a60609fb00682677ac5beb025649861b2f8a6"
+  },
+  {
+    "candidate": "w05c_balanced_masonry",
+    "role": "side",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05c_balanced_masonry/tileset_ruins_wall_01_side_w05c_balanced_masonry.png",
+    "sha256": "fec66fe70a94ea70e1cc1a22b2d3b711e4cbd3111be4679b84db15223e85df39"
+  },
+  {
+    "candidate": "w05c_balanced_masonry",
+    "role": "corner",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05c_balanced_masonry/tileset_ruins_wall_01_corner_w05c_balanced_masonry.png",
+    "sha256": "7194fc2ecc063ecd83200b24e6057814538cf90146027354f1a3420fbcb5d083"
+  },
+  {
+    "candidate": "w05c_balanced_masonry",
+    "role": "door_contact",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/w05c_balanced_masonry/tileset_ruins_wall_01_door_contact_w05c_balanced_masonry.png",
+    "sha256": "5584ec3403a0c5395057bb09d0329bf86aada823c20fa3121c187868415880fc"
+  },
+  {
+    "candidate": "board",
+    "role": "tiling",
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/wall-edge-unify-w05/pr08-wall-edge-unify-w05-tiling-board.png",
+    "sha256": "555cdf018b0697156ca98c01e81b566fe4d6e53f925eba12745c7e92b18ee6ee"
+  }
+]

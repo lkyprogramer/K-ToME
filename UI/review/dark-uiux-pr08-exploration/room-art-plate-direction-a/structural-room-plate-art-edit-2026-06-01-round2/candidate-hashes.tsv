@@ -1,0 +1,12 @@
+candidate	sha256	note
+imagegen-source	c13ed6643e19c78aa7a9cb95ad5e7a14cc34e602ff2d7939b368d0c83f6dfdab	workspace copy of built-in imagegen source used as material/reference, not direct runtime candidate
+pr08-room-art-plate-structural-edit-l_imagegen-floor-transplant.png	1dcd17dbdc1c9a35825702716b15bdb5fff5a7cd3002562a8da9d973dd42082b	AI material source transplanted softly into center-right floor; preserves current K geometry most safely.
+pr08-room-art-plate-structural-edit-m_diagonal-shadow-break.png	06450873c38b1a179030505b395fddae172dd50a2e812487fc088ab3f5b2386c	Stronger diagonal shadow/fracture field; highest grid suppression, medium darkness risk.
+pr08-room-art-plate-structural-edit-n_right-room-authored-field.png	fa8ccfba209775c7c7a67079621f1ce5bdcc4a47cf6465aeeb1671e644cd6db2	Most aggressive authored right-field rewrite using AI crack/rubble language; best chance to break square-board read.
+pr08-room-art-plate-structural-edit-o_geometry-safe-degrid-glaze.png	4941423d961f19711097bb8ea6d4b5b31791e6aa9852b8556976647c3f38b00e	geometry-safe AI highpass material glaze; no copied generated room structures
+pr08-room-art-plate-structural-edit-p_diagonal-field-safe.png	7ed13cb3e01c2676411c4ae8092fe483ec03fa0c4c921deec6512ef15d8bdd0b	stronger geometry-safe diagonal dark field; higher suppression with readability risk
+pr08-room-art-plate-structural-edit-q_warm-readable-degrid.png	e450669ec054d302fb62ac857dc5f3d7200ac8d297ac15b00b7f992de666f78e	warmer readable degrid pass; keeps actors/loot stage brighter than P
+runtime-s-stronger-surface-cohesion/ui_map_stage_ruins_room_plate_pr08_demo.png	d0c3c2ea28c9493be4ab0d0acb441c92a5ce1564a8e081153ecf21697dca148f	accepted-forward source cohesion baseline before T/U/V comparison
+runtime-t-tactical-lattice-demotion/ui_map_stage_ruins_room_plate_pr08_demo.png	5d230020698602b6268599ed11ebf3f784a9d813805eeb69dddc29fa3156419a	broader tactical lattice demotion; improves line source but not broad combat field enough versus S
+runtime-u-combat-field-surface-integration/ui_map_stage_ruins_room_plate_pr08_demo.png	2d1f7e38054df9a899cbf1ec414f79e3fd39a0bcae1f0e462811790b1e302f01	selected-forward combat field surface integration; best balance of grid demotion and authored stone readability
+runtime-v-continuous-combat-plane/ui_map_stage_ruins_room_plate_pr08_demo.png	b1451f71a9b35746c2880a6cd56354744808db561b59bedd107d7788147f105d	strongest continuous combat plane but rejected because it over-washes stone detail into fog

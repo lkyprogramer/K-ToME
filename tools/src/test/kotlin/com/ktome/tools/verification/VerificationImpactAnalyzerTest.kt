@@ -305,7 +305,7 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
-    fun `dark ui sprite sheet and manifest changes route to pr02 owner scope dark gates`() {
+    fun `dark ui sprite sheet and manifest changes route to owner scope dark gates`() {
         val changedFiles =
             listOf(
                 "UI/sprite-sheets/sheet-plan.yaml",
@@ -336,6 +336,7 @@ class VerificationImpactAnalyzerTest {
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02OwnerScope"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02_1OwnerScope"), "changedFile=$changedFile plan=$plan")
             assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr02_2OwnerScope"), "changedFile=$changedFile plan=$plan")
+            assertTrue(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr08OwnerScope"), "changedFile=$changedFile plan=$plan")
             assertFalse(plan.requestedTaskPaths.contains(":tools:darkManifestCoveragePr00DryRun"), "changedFile=$changedFile plan=$plan")
             assertFalse(plan.requestedTaskPaths.contains(":tools:darkManifestCoverageLint"), "changedFile=$changedFile plan=$plan")
             assertEquals(

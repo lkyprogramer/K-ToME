@@ -18,6 +18,7 @@ import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import java.awt.image.BufferedImage
 import java.lang.reflect.Proxy
 import java.nio.file.Files
 import java.nio.file.Path
@@ -121,12 +122,10 @@ class ManifestResolveTest {
     }
 
     @Test
-    fun `dark uiux pr02 2 ui demo new owner keys resolve through exact entries`() {
+    fun `dark uiux pr02 2 actor and prop owner keys resolve through exact entries`() {
         val resolver = ClientAssetBundleLoader.load().visualResolver
 
         mapOf(
-            "tileset.ruins.ground_01" to "dark-v1/tiles/tileset_ruins_ground_01.png",
-            "tileset.ruins.wall_01" to "dark-v1/tiles/tileset_ruins_wall_01.png",
             "actor.vanguard" to "dark-v1/actors/actor_vanguard.png",
             "prop.stairs.down" to "dark-v1/props/prop_stairs_down.png",
         ).forEach { (key, expectedPath) ->
@@ -140,6 +139,98 @@ class ManifestResolveTest {
             assertFalse(resolved.fallbackUsed, key)
             assertFalse(resolved.matchedByPrefix, key)
         }
+    }
+
+    @Test
+    fun darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        mapOf(
+            "tileset.ruins.ground_01" to "dark-v1/tiles/tileset_ruins_ground_01.png",
+            "tileset.ruins.ground_01.variant_1" to "dark-v1/tiles/tileset_ruins_ground_01_variant_1.png",
+            "tileset.ruins.ground_01.variant_2" to "dark-v1/tiles/tileset_ruins_ground_01_variant_2.png",
+            "tileset.ruins.ground_01.variant_3" to "dark-v1/tiles/tileset_ruins_ground_01_variant_3.png",
+            "tileset.ruins.wall_01" to "dark-v1/tiles/tileset_ruins_wall_01.png",
+            "tileset.ruins.wall_01.crown" to "dark-v1/tiles/tileset_ruins_wall_01_crown.png",
+            "tileset.ruins.wall_01.side" to "dark-v1/tiles/tileset_ruins_wall_01_side.png",
+            "tileset.ruins.wall_01.corner" to "dark-v1/tiles/tileset_ruins_wall_01_corner.png",
+            "tileset.ruins.wall_01.door_contact" to "dark-v1/tiles/tileset_ruins_wall_01_door_contact.png",
+            DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP to "dark-v1/tiles/tileset_ruins_room_breakup_01.png",
+            DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE to "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+            DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE to "dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png",
+            DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE to "dark-v1/ui/ui_map_stage_forest_edge_room_plate_pr08_demo.png",
+            DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE to "dark-v1/ui/ui_map_stage_mine_room_plate_pr08_demo.png",
+            DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE to "dark-v1/ui/ui_map_stage_shadow_depths_room_plate_pr08_demo.png",
+        ).forEach { (key, expectedPath) ->
+            val resolved = resolver.resolve(key)
+
+            assertEquals(key, resolved.resolvedKey)
+            assertEquals(key, resolved.requestedKey)
+            assertEquals(expectedPath, resolved.entry.rawOutputPath)
+            assertTrue(resolved.entry.tags.contains("dark-v1"), key)
+            assertTrue(resolved.entry.tags.contains("ui-demo-new"), key)
+            if (key == DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP) {
+                assertEquals("tile_decal", resolved.entry.category)
+                assertTrue(resolved.entry.tags.contains("room_material_breakup"), key)
+            }
+            if (key.endsWith(".room_plate.pr08_demo")) {
+                assertEquals("ui_frame", resolved.entry.category)
+                assertTrue(resolved.entry.tags.contains("room_art_plate"), key)
+            }
+            if (key.endsWith(".room_topology_source.pr08_demo")) {
+                assertEquals("ui_frame", resolved.entry.category)
+                assertTrue(resolved.entry.tags.contains("room_topology_source"), key)
+                assertTrue(resolved.entry.tags.contains("topology_fragment_source"), key)
+            }
+            assertFalse(resolved.fallbackUsed, key)
+            assertFalse(resolved.matchedByPrefix, key)
+        }
+    }
+
+    @Test
+    fun darkUiuxPr08DirectorFloorVariantFamilyResolvesFromManifestTags() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        val familyKeys = resolver.terrainVariantKeys("tileset.ruins.ground_01")
+
+        assertEquals(
+            listOf(
+                "tileset.ruins.ground_01",
+                "tileset.ruins.ground_01.variant_1",
+                "tileset.ruins.ground_01.variant_2",
+                "tileset.ruins.ground_01.variant_3",
+            ),
+            familyKeys,
+        )
+        assertEquals("tileset.ruins.ground_01", resolver.resolveTerrainVariant("tileset.ruins.ground_01", 0).resolvedKey)
+        assertEquals("tileset.ruins.ground_01.variant_1", resolver.resolveTerrainVariant("tileset.ruins.ground_01", 1).resolvedKey)
+        assertEquals("tileset.ruins.ground_01.variant_1", resolver.resolveTerrainVariant("tileset.ruins.ground_01", 5).resolvedKey)
+        assertEquals("tileset.ruins.wall_01", resolver.resolveTerrainVariant("tileset.ruins.wall_01", 3).resolvedKey)
+    }
+
+    @Test
+    fun darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        assertEquals(
+            listOf(
+                "tileset.ruins.wall_01",
+                "tileset.ruins.wall_01.crown",
+                "tileset.ruins.wall_01.side",
+                "tileset.ruins.wall_01.corner",
+                "tileset.ruins.wall_01.door_contact",
+            ),
+            resolver.terrainWallFamilyKeys("tileset.ruins.wall_01"),
+        )
+        assertEquals("tileset.ruins.wall_01", resolver.resolveTerrainWallPiece("tileset.ruins.wall_01", TerrainWallPieceRole.BASE).resolvedKey)
+        assertEquals("tileset.ruins.wall_01.crown", resolver.resolveTerrainWallPiece("tileset.ruins.wall_01", TerrainWallPieceRole.CROWN).resolvedKey)
+        assertEquals("tileset.ruins.wall_01.side", resolver.resolveTerrainWallPiece("tileset.ruins.wall_01", TerrainWallPieceRole.SIDE).resolvedKey)
+        assertEquals("tileset.ruins.wall_01.corner", resolver.resolveTerrainWallPiece("tileset.ruins.wall_01", TerrainWallPieceRole.CORNER).resolvedKey)
+        assertEquals(
+            "tileset.ruins.wall_01.door_contact",
+            resolver.resolveTerrainWallPiece("tileset.ruins.wall_01", TerrainWallPieceRole.DOOR_CONTACT).resolvedKey,
+        )
+        assertEquals(listOf("tileset.ruins.ground_01"), resolver.terrainWallFamilyKeys("tileset.ruins.ground_01"))
     }
 
     @Test
@@ -277,6 +368,53 @@ class ManifestResolveTest {
 
             assertTrue(cornerAlpha.all { alpha -> alpha <= 8 }, "$key corners must stay transparent: $cornerAlpha")
         }
+    }
+
+    @Test
+    fun `vanguard starter hotbar icons are subject first without circular medallion fill`() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        listOf(
+            "talent.vanguard.power_strike.icon",
+            "talent.vanguard.shield_bash.icon",
+            "talent.vanguard.guard_stance.icon",
+            "talent.vanguard.charge.icon",
+        ).forEach { key ->
+            val resolved = resolver.resolve(key)
+            val resourceUrl = requireNotNull(javaClass.classLoader.getResource(resolved.entry.rawOutputPath)) { resolved.entry.rawOutputPath }
+            val image = ImageIO.read(resourceUrl)
+            val alphaCoverage = alphaCoverage(image)
+
+            assertTrue(
+                alphaCoverage in 0.18..0.40,
+                "$key should be a transparent, subject-first action icon rather than a baked circular medallion fill; alphaCoverage=$alphaCoverage",
+            )
+        }
+    }
+
+    @Test
+    fun `dark uiux hero crest keeps authored red enamel and gold heraldry`() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+        val resolved = resolver.resolve(DarkUiChromeVisualKeys.SHELL_HERO_CREST_PLACEHOLDER)
+        val resourceUrl = requireNotNull(javaClass.classLoader.getResource(resolved.entry.rawOutputPath)) { resolved.entry.rawOutputPath }
+        val image = ImageIO.read(resourceUrl)
+
+        assertTrue(
+            alphaCoverage(image) in 0.35..0.58,
+            "Hero crest should stay as a transparent subject-first sprite, not a baked opaque card.",
+        )
+        assertTrue(
+            pixelShare(image) { red, green, blue ->
+                red > 95 && red > green * 1.35 && red > blue * 1.65
+            } >= 0.08,
+            "Hero crest should carry enough red enamel to read as authored heraldry rather than a grey placeholder shield.",
+        )
+        assertTrue(
+            pixelShare(image) { red, green, blue ->
+                red > 130 && green > 92 && blue < 90 && red >= green * 1.05
+            } >= 0.04,
+            "Hero crest should carry enough gold heraldic metal to read at bottom-HUD scale.",
+        )
     }
 
     @Test
@@ -422,10 +560,82 @@ class ManifestResolveTest {
                 val loadedPaths = assets.textureRepository.loadedPaths()
                 assertTrue(loadedPaths.contains(assets.visualResolver.resolve(snapshot.metadata.zoneVisualKey).entry.rawOutputPath))
                 assertTrue(loadedPaths.contains(assets.visualResolver.resolve(snapshot.mapCells.first().terrainVisualKey).entry.rawOutputPath))
+                assets.visualResolver
+                    .terrainVariantKeys(snapshot.mapCells.first().terrainVisualKey)
+                    .forEach { key ->
+                        assertTrue(loadedPaths.contains(assets.visualResolver.resolve(key).entry.rawOutputPath), key)
+                    }
+                assertTrue(
+                    loadedPaths.contains(assets.visualResolver.resolve(DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP).entry.rawOutputPath),
+                    DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP,
+                )
+                assertTrue(
+                    loadedPaths.contains(assets.visualResolver.resolve(DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE).entry.rawOutputPath),
+                    DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE,
+                )
+                assertTrue(
+                    loadedPaths.contains(assets.visualResolver.resolve(DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE).entry.rawOutputPath),
+                    DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
+                )
                 assertTrue(loadedPaths.contains(assets.visualResolver.resolve(snapshot.actors.first().visualKey).entry.rawOutputPath))
                 assertTrue(loadedPaths.contains(assets.visualResolver.resolve(snapshot.overlays.first().visualKey).entry.rawOutputPath))
             } finally {
                 assets.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `non ruins accepted room art families preload only their own room plate textures`() {
+        withHeadlessGdx {
+            val base = sampleRenderSnapshot()
+            val families =
+                listOf(
+                    RoomArtPlateFamilyVisualKeys(
+                        tilesetKey = DarkUiMapVisualKeys.FOREST_EDGE_TILESET,
+                        groundKey = DarkUiMapVisualKeys.FOREST_EDGE_GROUND,
+                        wallKey = DarkUiMapVisualKeys.FOREST_EDGE_WALL,
+                        roomArtPlateKey = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE,
+                    ),
+                    RoomArtPlateFamilyVisualKeys(
+                        tilesetKey = DarkUiMapVisualKeys.MINE_TILESET,
+                        groundKey = DarkUiMapVisualKeys.MINE_GROUND,
+                        wallKey = DarkUiMapVisualKeys.MINE_WALL,
+                        roomArtPlateKey = DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE,
+                    ),
+                    RoomArtPlateFamilyVisualKeys(
+                        tilesetKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_TILESET,
+                        groundKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_GROUND,
+                        wallKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_WALL,
+                        roomArtPlateKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE,
+                    ),
+                )
+
+            families.forEach { family ->
+                val assets = ClientAssetBundleLoader.load()
+                val strategy = ClientAssetLoadStrategy(assets)
+                val snapshot = base.withRoomArtPlateFamily(family)
+
+                try {
+                    strategy.sessionLoad(snapshot)
+                    strategy.warmCache(snapshot)
+
+                    val loadedPaths = assets.textureRepository.loadedPaths()
+                    assertTrue(
+                        loadedPaths.contains(assets.visualResolver.resolve(family.roomArtPlateKey).entry.rawOutputPath),
+                        family.roomArtPlateKey,
+                    )
+                    assertFalse(
+                        loadedPaths.contains(assets.visualResolver.resolve(DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE).entry.rawOutputPath),
+                        family.tilesetKey,
+                    )
+                    assertFalse(
+                        loadedPaths.contains(assets.visualResolver.resolve(DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP).entry.rawOutputPath),
+                        family.tilesetKey,
+                    )
+                } finally {
+                    assets.dispose()
+                }
             }
         }
     }
@@ -589,6 +799,22 @@ class ManifestResolveTest {
                 ),
         )
 
+    private fun RenderSnapshot.withRoomArtPlateFamily(family: RoomArtPlateFamilyVisualKeys): RenderSnapshot =
+        copy(
+            metadata = metadata.copy(tilesetKey = family.tilesetKey),
+            mapCells =
+                mapCells.map { cell ->
+                    cell.copy(
+                        terrainVisualKey =
+                            if (cell.terrainTypeId == "wall") {
+                                family.wallKey
+                            } else {
+                                family.groundKey
+                            },
+                    )
+                },
+        )
+
     private fun visualManifestWithEntryFields(
         manifestVersion: Int,
         extraEntryFields: String,
@@ -658,6 +884,47 @@ class ManifestResolveTest {
         key: String,
     ): List<String> =
         (payload[key] as JsonArray).map { item -> item.jsonPrimitive.content }
+
+    private fun alphaCoverage(image: BufferedImage): Double {
+        var covered = 0
+        val total = image.width * image.height
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+                val alpha = image.getRGB(x, y).ushr(24) and 0xFF
+                if (alpha > 24) {
+                    covered += 1
+                }
+            }
+        }
+        return covered.toDouble() / total.toDouble()
+    }
+
+    private fun pixelShare(
+        image: BufferedImage,
+        matches: (red: Int, green: Int, blue: Int) -> Boolean,
+    ): Double {
+        var matched = 0
+        var covered = 0
+
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+                val argb = image.getRGB(x, y)
+                val alpha = argb.ushr(24) and 0xFF
+                if (alpha <= 24) {
+                    continue
+                }
+                covered += 1
+                val red = argb.ushr(16) and 0xFF
+                val green = argb.ushr(8) and 0xFF
+                val blue = argb and 0xFF
+                if (matches(red, green, blue)) {
+                    matched += 1
+                }
+            }
+        }
+
+        return matched.toDouble() / covered.toDouble()
+    }
 
     private fun JsonObject.string(key: String): String =
         requireNotNull(this[key]) { "Missing '$key' in PR-05 owner inventory entry." }.jsonPrimitive.content

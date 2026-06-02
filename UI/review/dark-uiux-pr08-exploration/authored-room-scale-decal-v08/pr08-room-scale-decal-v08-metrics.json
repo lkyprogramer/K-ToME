@@ -1,0 +1,49 @@
+{
+  "source": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-map-stage-crop.png",
+  "detectedRoomBounds": {
+    "x": 344,
+    "y": 157,
+    "right": 1467,
+    "bottom": 885
+  },
+  "candidates": {
+    "a_ao_collar": {
+      "overlay": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-a_ao_collar-overlay.png",
+      "crop": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-a_ao_collar-map-stage-crop.png",
+      "overlaySha256": "ddc0e1608854633c8495f5455b9b7f117da90c977bc4b401ee8377a0533af1e9",
+      "cropSha256": "ff7a8acdc12a734e7c696c346d246308b91f36e1954b14ee8f9e2b4981d9a4f8",
+      "edgeScore": {
+        "meanEdge": 5.274,
+        "p90Edge": 16
+      }
+    },
+    "b_broken_slab": {
+      "overlay": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-b_broken_slab-overlay.png",
+      "crop": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-b_broken_slab-map-stage-crop.png",
+      "overlaySha256": "f4c15ce40a6d1e2d9c96e3f81cc8a318848dd728cf88478ba32a721e3bc5bf05",
+      "cropSha256": "ff22c06032deeb85095d4b83f6c617b99656162030eb2a50ca8333a0e0a58bea",
+      "edgeScore": {
+        "meanEdge": 5.615,
+        "p90Edge": 17
+      }
+    },
+    "c_enclosure_light": {
+      "overlay": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-c_enclosure_light-overlay.png",
+      "crop": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-c_enclosure_light-map-stage-crop.png",
+      "overlaySha256": "6f026f9f77b03e7ab22b728008f2ded3804c59715bca1694503040d10c1b11b9",
+      "cropSha256": "d9095ab0674c45942143f4b77c4c1d242745e6338ff85762f224202c26d732eb",
+      "edgeScore": {
+        "meanEdge": 4.741,
+        "p90Edge": 14
+      }
+    }
+  },
+  "baselineEdgeScore": {
+    "meanEdge": 6.992,
+    "p90Edge": 23
+  },
+  "referenceCrop": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-reference-map-crop-from-ui-demo-new.png",
+  "referenceCropSha256": "9b221fcf78d1bb6392a38a705fabde2e82c9f75e070d32f1a1cce05d43b7f6fa",
+  "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-comparison-board.png",
+  "comparisonBoardSha256": "2d87e91d76a40a3990335fd8e2bb2377bc4a92130c4807c00bfb295270182437"
+}

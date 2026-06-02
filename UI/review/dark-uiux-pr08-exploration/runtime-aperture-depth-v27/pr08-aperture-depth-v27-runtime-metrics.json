@@ -1,0 +1,172 @@
+{
+  "copied_artifacts": [
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-dark-uiux-pr02-1-demo-main-menu.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-dark-uiux-pr02-1-demo-shell-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-dark-uiux-pr02-1-demo-shell-inventory-open.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-dark-uiux-pr02-1-demo-shell-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-dark-uiux-pr02-1-demo-validation-setup.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-evidence-index.tsv",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-ui-demo-new-bottom-deck-no-command-hints.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-ui-demo-new-inventory-page-1.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-ui-demo-new-inventory-page-2.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-ui-demo-new-map-stage-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-ui-demo-new-nav-rail-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-ui-demo-new-parity-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-ui-demo-new-parity-1672x941.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-aperture-depth-v27/pr08-aperture-depth-v27-ui-demo-new-right-panel-grid.png"
+  ],
+  "v26_vs_reference_map_resized": {
+    "changed_ratio": 0.99993339466774,
+    "channel_extrema": [
+      [
+        0,
+        248
+      ],
+      [
+        0,
+        244
+      ],
+      [
+        0,
+        212
+      ]
+    ],
+    "mean_abs_diff": 17.133900516870156,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v27_vs_reference_map_resized": {
+    "changed_ratio": 0.9999362697180534,
+    "channel_extrema": [
+      [
+        0,
+        248
+      ],
+      [
+        0,
+        244
+      ],
+      [
+        0,
+        212
+      ]
+    ],
+    "mean_abs_diff": 17.150591621464486,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v27_vs_v26_bottom_deck": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      1843,
+      360
+    ]
+  },
+  "v27_vs_v26_full_1280x800": {
+    "changed_ratio": 0.021775146484375,
+    "channel_extrema": [
+      [
+        0,
+        27
+      ],
+      [
+        0,
+        23
+      ],
+      [
+        0,
+        14
+      ]
+    ],
+    "mean_abs_diff": 0.056704833984375,
+    "size": [
+      2560,
+      1600
+    ]
+  },
+  "v27_vs_v26_full_1672x941": {
+    "changed_ratio": 0.019462904677402134,
+    "channel_extrema": [
+      [
+        0,
+        27
+      ],
+      [
+        0,
+        23
+      ],
+      [
+        0,
+        14
+      ]
+    ],
+    "mean_abs_diff": 0.050649240178506354,
+    "size": [
+      3344,
+      1882
+    ]
+  },
+  "v27_vs_v26_map_stage": {
+    "changed_ratio": 0.042738102083453126,
+    "channel_extrema": [
+      [
+        0,
+        27
+      ],
+      [
+        0,
+        23
+      ],
+      [
+        0,
+        14
+      ]
+    ],
+    "mean_abs_diff": 0.11129463515611522,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v27_vs_v26_right_panel": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  }
+}

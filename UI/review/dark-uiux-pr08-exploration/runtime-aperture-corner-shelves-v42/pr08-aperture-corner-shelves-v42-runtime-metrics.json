@@ -1,0 +1,90 @@
+{
+  "goldenActualHashes": {
+    "ui-demo-new-parity-1672x941": "f4f5f29fdb78f6c65208b58c60a26654b419d8316f72f287a9dbd46bc46f725f",
+    "ui-demo-new-parity-1280x800": "d6e4f64eef1075f7cf1ce8b78a2955608a7a8921c94f8530250e51427ecd064f",
+    "ui-demo-new-right-panel-grid": "4fc73bb307d123267bef293e925fd0f1449b4dd3437b92ffc315d3f9ada6c5f8",
+    "ui-demo-new-bottom-deck-no-command-hints": "9a64b9de43f0d8526d48e2bd5e9705c266599d3002c9b924305f7c2bf5aacdcd",
+    "ui-demo-new-nav-rail-crop": "c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6",
+    "ui-demo-new-map-stage-crop": "03d2f81a14c71c628f6c0b64e163674dd65fe4766b098af2366f4560746eed84",
+    "ui-demo-new-inventory-page-1": "23905f61e56675bd4736eb0a9f47a200012d9899584e1be5c1b613c84952b8bd",
+    "ui-demo-new-inventory-page-2": "63bbaecf273cd14cbdea001954c8d4a50691e29207140bf3067332e18d9cc94a"
+  },
+  "v42VsV41FullScreen": {
+    "changedRatio": 0.008391478829912187,
+    "maxAbsRgbDiff": [
+      21,
+      17,
+      15
+    ],
+    "meanAbsRgbDiff": 0.030365370665093993
+  },
+  "v42VsV41MapStage": {
+    "changedRatio": 0.01817463055603473,
+    "maxAbsRgbDiff": [
+      23,
+      19,
+      16
+    ],
+    "meanAbsRgbDiff": 0.06548853493825006
+  },
+  "v42VsV41RoomCloseup": {
+    "changedRatio": 0.015016171261358386,
+    "maxAbsRgbDiff": [
+      21,
+      16,
+      15
+    ],
+    "meanAbsRgbDiff": 0.06750808563067798
+  },
+  "v41VsReferenceMapResized": {
+    "changedRatio": 0.9999118317903897,
+    "maxAbsRgbDiff": [
+      250,
+      249,
+      226
+    ],
+    "meanAbsRgbDiff": 14.975958190369429
+  },
+  "v42VsReferenceMapResized": {
+    "changedRatio": 0.9999123109654419,
+    "maxAbsRgbDiff": [
+      250,
+      249,
+      226
+    ],
+    "meanAbsRgbDiff": 14.942269628597481
+  },
+  "roomCloseupCrop": {
+    "x": 600,
+    "y": 140,
+    "width": 755,
+    "height": 860
+  },
+  "artifactHashes": {
+    "pr08-aperture-corner-shelves-v42-comparison-board.png": "59b1726dbc93bd5616c18e199306e67c09ca6357d25626956e20dfa8206f41f7",
+    "pr08-aperture-corner-shelves-v42-evidence-index.tsv": "0ed35255c0f0962fec63c2bf0d24bddf6ad90ddbedb91b31332eb57d162406a4",
+    "pr08-aperture-corner-shelves-v42-reference-map-crop.png": "b8860c59c4482b1ddf3e726e0d7ece6a75637bcef5d4203fd2fd4733ad2eea2f",
+    "pr08-aperture-corner-shelves-v42-runtime-metrics.json": "4e556e2a2bcb24f1258dcc0e8ca7edaa927579c586355485a69e4c14871f2501",
+    "pr08-aperture-corner-shelves-v42-ui-demo-new-bottom-deck-no-command-hints.png": "f9b22db39ff64fb45768d66feccf6d6bf69ae0a69cdc77ec2432f092be429907",
+    "pr08-aperture-corner-shelves-v42-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "pr08-aperture-corner-shelves-v42-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "pr08-aperture-corner-shelves-v42-ui-demo-new-map-stage-crop.png": "b42ae80e4d7e077bcf3a308a7eaa9cc869b13d20989e57bc968f53ce1f21dd44",
+    "pr08-aperture-corner-shelves-v42-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "pr08-aperture-corner-shelves-v42-ui-demo-new-parity-1280x800.png": "671667f52e7c3747601ead5fcaa7c6aa0ee14153979ae1d9a52d9870be4f629b",
+    "pr08-aperture-corner-shelves-v42-ui-demo-new-parity-1672x941.png": "11b5d250d5a867301e655899e3c763f163e302f867591f8c27ee57bf92e30e91",
+    "pr08-aperture-corner-shelves-v42-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "pr08-aperture-corner-shelves-v42-v41-room-closeup.png": "bd6b611b4db640dd503171aadd2ed8e03098931fb0fece2712c28640cbde2730",
+    "pr08-aperture-corner-shelves-v42-v41-ui-demo-new-bottom-deck-no-command-hints.png": "f9b22db39ff64fb45768d66feccf6d6bf69ae0a69cdc77ec2432f092be429907",
+    "pr08-aperture-corner-shelves-v42-v41-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "pr08-aperture-corner-shelves-v42-v41-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "pr08-aperture-corner-shelves-v42-v41-ui-demo-new-map-stage-crop.png": "0ec0a8befb6787031cc4d0920c9b0e8a575e725f8fe98335db91d674716dd927",
+    "pr08-aperture-corner-shelves-v42-v41-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "pr08-aperture-corner-shelves-v42-v41-ui-demo-new-parity-1280x800.png": "6fb91fbf9bfa62f82228499a055f699549b57a8f3fed79fc063f04b176ea5afd",
+    "pr08-aperture-corner-shelves-v42-v41-ui-demo-new-parity-1672x941.png": "195f1881322fdacf0ce5bbe0dec7b19db193c10e68cd8fd06727afe392a3cac4",
+    "pr08-aperture-corner-shelves-v42-v41-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "pr08-aperture-corner-shelves-v42-v42-room-closeup.png": "ca0f196344e1219fc9cc0f7916a642fe853c65c15972bc52082ab9ee0f32552f",
+    "pr08-aperture-corner-shelves-v42-v42-v41-full-diff.png": "e45f85faf5e8aeadfef250c0792f45f2b8512783f44279a7b607e27f77ff002c",
+    "pr08-aperture-corner-shelves-v42-v42-v41-map-stage-diff.png": "133c2dcaf15cb14eb2fd8f59b36cce3ebf98d6475355f015880105464778abaf",
+    "pr08-aperture-corner-shelves-v42-v42-v41-room-closeup-diff.png": "d06803e3d26d6117ff49e22d0424b259eaf7a31f5bd0ea20e24c8954ad7b7142"
+  }
+}

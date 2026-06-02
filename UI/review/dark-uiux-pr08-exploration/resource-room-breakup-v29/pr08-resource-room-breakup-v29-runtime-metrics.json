@@ -1,0 +1,210 @@
+{
+  "copied_artifacts": [
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-main-menu.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-shell-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-shell-inventory-open.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-shell-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-validation-setup.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-evidence-index.tsv",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-bottom-deck-no-command-hints.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-inventory-page-1.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-inventory-page-2.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-map-stage-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-nav-rail-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-parity-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-parity-1672x941.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-tileset_ruins_room_breakup_01.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-r02-ui-demo-ruins-tiles-contact.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-v1-pr08-sprite-map-report.jsonl",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-reference-map-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-v29-v28-map-stage-diff.png",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-comparison-board.png"
+  ],
+  "hashes": {
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-comparison-board.png": "26eea9264ed3569258b3e1ed18ca3156bb242308632116e27c9d6129383c37c9",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-main-menu.png": "7134d961071c37d18b5ee504331fa1c70db1773f6e5f40b65a68a90ae6a626cf",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-shell-1280x800.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-shell-inventory-open.png": "5f380674c11becc39068da388f81235435fab68257f9f961bd7e1f6f0727fd84",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-shell-right-panel-grid.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-uiux-pr02-1-demo-validation-setup.png": "fe1270a0e2acbac3fced17fd13c3ef75f0914bc6ea753d6cad3c93c07b0b5a09",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-dark-v1-pr08-sprite-map-report.jsonl": "37185334c8c98e83af674fdf92b2ed5222b4cc8e9ff370326c5cc7100732566a",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-evidence-index.tsv": "e8c32138648bbfa18ad1dc1cef7bb63212883d36e1474996a91e4117d38e28af",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-r02-ui-demo-ruins-tiles-contact.png": "7c22c4f90920bfd49954b57f87f136d99eff49a4f97dbe39e55ab1cfd5578442",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-reference-map-crop.png": "b8860c59c4482b1ddf3e726e0d7ece6a75637bcef5d4203fd2fd4733ad2eea2f",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-tileset_ruins_room_breakup_01.png": "16fc7cf156f238f6fa9f73f07d5a3ea2e562df97d79444edf936dc6a6398f729",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-bottom-deck-no-command-hints.png": "1d3ac3e0b3b67dea66a077aa2afa30f9b47b5bb4318e812f2894ea2534f9d02e",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-inventory-page-1.png": "2dc2ac8cf03dba3693f5d5d6e12a68225a0debeac6e9cc6321f823b1417ddd63",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-inventory-page-2.png": "230165e27de1426439671000c82b215cdf15ded3c30d6bd9db1ee32ae77a5b23",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-map-stage-crop.png": "d176d825f0c4d75c43a45e9b7c598e2fb082d550f6e1d6d17822ad1d8720c292",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-parity-1280x800.png": "172042dd1cf6982d3ead188d0b78171e0af1d14c1d2394cb4d9e2c4123e7293e",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-parity-1672x941.png": "76fb525781ca8a6b6fbbc207c91eb323e54261169f44fd5ece2090b628455c55",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-ui-demo-new-right-panel-grid.png": "8de82d8abf81c34906ba60e5a8dd7545aa2e883b0c6574e100accd720df4c277",
+    "UI/review/dark-uiux-pr08-exploration/resource-room-breakup-v29/pr08-resource-room-breakup-v29-v29-v28-map-stage-diff.png": "14bda968c061c4dde8f03c2e6d07f56f47727ab3628b28447694c28e785effbd"
+  },
+  "resource_metrics": {
+    "alpha_coverage": 0.604248046875,
+    "max_alpha": 162,
+    "mean_weighted_edge": 1.884943452794504,
+    "size": [
+      128,
+      128
+    ],
+    "unique_color_count": 5646
+  },
+  "v28_vs_reference_map_resized": {
+    "changed_ratio": 0.9999118317903897,
+    "channel_extrema": [
+      [
+        0,
+        250
+      ],
+      [
+        0,
+        249
+      ],
+      [
+        0,
+        232
+      ]
+    ],
+    "mean_abs_diff": 17.126598208524204,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v29_vs_reference_map_resized": {
+    "changed_ratio": 0.9999089567400763,
+    "channel_extrema": [
+      [
+        0,
+        250
+      ],
+      [
+        0,
+        249
+      ],
+      [
+        0,
+        232
+      ]
+    ],
+    "mean_abs_diff": 15.950576128137797,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v29_vs_v28_bottom_deck": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      1843,
+      360
+    ]
+  },
+  "v29_vs_v28_full_1280x800": {
+    "changed_ratio": 0.15274609375,
+    "channel_extrema": [
+      [
+        0,
+        37
+      ],
+      [
+        0,
+        30
+      ],
+      [
+        0,
+        24
+      ]
+    ],
+    "mean_abs_diff": 1.0622376302083334,
+    "size": [
+      2560,
+      1600
+    ]
+  },
+  "v29_vs_v28_full_1672x941": {
+    "changed_ratio": 0.13745700262878238,
+    "channel_extrema": [
+      [
+        0,
+        37
+      ],
+      [
+        0,
+        30
+      ],
+      [
+        0,
+        24
+      ]
+    ],
+    "mean_abs_diff": 0.9569317080136338,
+    "size": [
+      3344,
+      1882
+    ]
+  },
+  "v29_vs_v28_map_stage": {
+    "changed_ratio": 0.29979491307764555,
+    "channel_extrema": [
+      [
+        0,
+        37
+      ],
+      [
+        0,
+        30
+      ],
+      [
+        0,
+        24
+      ]
+    ],
+    "mean_abs_diff": 2.0848548738491814,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v29_vs_v28_right_panel": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  }
+}

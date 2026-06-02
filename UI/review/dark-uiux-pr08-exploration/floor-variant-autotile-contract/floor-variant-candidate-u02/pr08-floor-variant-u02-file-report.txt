@@ -1,0 +1,9 @@
+pr08-floor-variant-u02-contact-tiling-board.png 1096x430 sha256=c2730d1386ed57ba62c5918742f8fdbde0ac407396f9c13399aa0267d7e1683f
+pr08-floor-variant-u02-current-vs-mixed-8x-board.png 1048x546 sha256=cdc91a1de84f277cb38ad3b0c08777b81654af5daf416be59683b8bec15ee39c
+pr08-floor-variant-u02-four-tile-row.png 512x128 sha256=1a2b230a672a020b774adb8f8f85a3706ea9ba717ecc878dae771d1c06a80d25
+pr08-floor-variant-u02-imagegen-source.png 1254x1254 sha256=7a125aa9d0b8181fe225d3add4c429abed466a80723de299f4b74019b9d75fce
+pr08-floor-variant-u02-synthetic-room-preview.png 896x640 sha256=bc712b88fd0a86d409ee8c5710c7c028fb27d1123da90398b165bd261061747c
+pr08-floor-variant-u02-tile-0.png 128x128 sha256=baf28af388ca2077daf4768c91f9b93cc6235c610d4d99ab2d63c0bb705f3690
+pr08-floor-variant-u02-tile-1.png 128x128 sha256=fa72fa5228486834109423139c628bfe640d83613621e8b786ea7e174ea4d1d7
+pr08-floor-variant-u02-tile-2.png 128x128 sha256=e46d1065292e07b68e52228dc9d196fa4e52109ed955cffeb7c36d49aa5015c8
+pr08-floor-variant-u02-tile-3.png 128x128 sha256=cc8e74cfb841d1db9fdbf05155f13e585edfdc1ce0e5d0f77fe0a051116b5c0b

@@ -1,0 +1,46 @@
+{
+  "verdict": "accepted-forward candidate",
+  "intent": "V49 adds macro structural plates around the visible map room so the room reads as carved architecture rather than grid texture.",
+  "paths": {
+    "before_map": "UI/review/dark-uiux-pr08-exploration/map-macro-structure-v49/pr08-map-macro-structure-v49-before-map-stage-crop.png",
+    "after_map": "UI/review/dark-uiux-pr08-exploration/map-macro-structure-v49/pr08-map-macro-structure-v49-after-map-stage-crop.png",
+    "before_full": "UI/review/dark-uiux-pr08-exploration/map-macro-structure-v49/pr08-map-macro-structure-v49-before-full.png",
+    "after_full": "UI/review/dark-uiux-pr08-exploration/map-macro-structure-v49/pr08-map-macro-structure-v49-after-full.png"
+  },
+  "outputs": {
+    "comparison_board": "UI/review/dark-uiux-pr08-exploration/map-macro-structure-v49/pr08-map-macro-structure-v49-comparison-board.png",
+    "runtime_metrics": "UI/review/dark-uiux-pr08-exploration/map-macro-structure-v49/pr08-map-macro-structure-v49-runtime-metrics.json"
+  },
+  "map_crop_delta": {
+    "size": [
+      1683,
+      1240
+    ],
+    "changed_pixel_ratio": 0.028889463898951567,
+    "mean_abs_rgb_diff": 0.06707620161130597,
+    "max_abs_channel_diff": 29
+  },
+  "full_delta": {
+    "size": [
+      3344,
+      1882
+    ],
+    "changed_pixel_ratio": 0.013280880565823796,
+    "mean_abs_rgb_diff": 0.03076923239893764,
+    "max_abs_channel_diff": 28
+  },
+  "before_map_luma": {
+    "mean_luma": 21.783245644298777,
+    "stddev_luma": 22.437400425897312,
+    "dark_luma_lt_32_ratio": 0.717440055200966,
+    "low_mid_luma_32_71_ratio": 0.25807074540471125,
+    "bright_luma_gte_128_ratio": 0.0016253617771644338
+  },
+  "after_map_luma": {
+    "mean_luma": 21.71988001456692,
+    "stddev_luma": 22.38685791373808,
+    "dark_luma_lt_32_ratio": 0.7189868322695647,
+    "low_mid_luma_32_71_ratio": 0.2565646982155521,
+    "bright_luma_gte_128_ratio": 0.0016253617771644338
+  }
+}

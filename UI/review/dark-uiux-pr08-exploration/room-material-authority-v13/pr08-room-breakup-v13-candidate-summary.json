@@ -1,0 +1,28 @@
+{
+  "status": "candidate-generation-only",
+  "candidates": [
+    {
+      "name": "m01-woven-slab",
+      "cell": "UI/review/dark-uiux-pr08-exploration/room-material-authority-v13/pr08-room-breakup-v13-m01-woven-slab.png",
+      "probe": "UI/review/dark-uiux-pr08-exploration/room-material-authority-v13/pr08-room-breakup-v13-m01-woven-slab-floor-probe.png",
+      "cellSha256": "0b6385966667a2a804b263991f0b1cf93e94f46ce432d7c3d055c534cfd9d4e1",
+      "probeSha256": "6a6323a19bfb8a359fa0a1e20c34dc2cd2bc66bc424bb6e34fbc629fbf8bc1b5"
+    },
+    {
+      "name": "m02-ash-masonry",
+      "cell": "UI/review/dark-uiux-pr08-exploration/room-material-authority-v13/pr08-room-breakup-v13-m02-ash-masonry.png",
+      "probe": "UI/review/dark-uiux-pr08-exploration/room-material-authority-v13/pr08-room-breakup-v13-m02-ash-masonry-floor-probe.png",
+      "cellSha256": "2b110834a73725f3f9811a4283543d1bc60d57daf2f1968f8ab5d74c2f7a8141",
+      "probeSha256": "9ce860bb19a2b3a8f2f2585702529884e29f72f48d51739550107622fa2a31a0"
+    },
+    {
+      "name": "m03-fractured-rake",
+      "cell": "UI/review/dark-uiux-pr08-exploration/room-material-authority-v13/pr08-room-breakup-v13-m03-fractured-rake.png",
+      "probe": "UI/review/dark-uiux-pr08-exploration/room-material-authority-v13/pr08-room-breakup-v13-m03-fractured-rake-floor-probe.png",
+      "cellSha256": "d5c7be4c353d644cef3c56262a2d5978ae695d9af75ec3313cf3801f15317bc5",
+      "probeSha256": "0b12519c632383adb91d7b99c7a2cd57cce4db841dd8a1e181fdc911de108b34"
+    }
+  ],
+  "board": "UI/review/dark-uiux-pr08-exploration/room-material-authority-v13/pr08-room-breakup-v13-candidate-board.png",
+  "boardSha256": "ee77a639c11d45cf553d0a990969b48ce6e5398e4d041ac7f3c944b2bd1671f1"
+}

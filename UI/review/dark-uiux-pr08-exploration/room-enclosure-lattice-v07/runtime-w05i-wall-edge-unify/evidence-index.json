@@ -1,0 +1,66 @@
+[
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-parity-1672x941.png",
+    "sha256": "ad22913bd4ccb399c899ce5084f1c2dd898faed8b77251c5f3272562ffa1d22d"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-parity-1280x800.png",
+    "sha256": "92c7c63615f396924337d4c073ab87c55bc16ec77641991c975a3b4e313d3d92"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-map-stage-crop.png",
+    "sha256": "c89d6142f7796fc1a9fab4d655e5868a08af18433a27525417cc6b8b9179b4ab"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-right-panel-grid.png",
+    "sha256": "417dc27fb77b5f7dd633cab0ca3e377dc82894c17bee9b4bc6676d841a6ff79f"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-bottom-deck-no-command-hints.png",
+    "sha256": "b5bf7bd1840e2f34bc2f0e7ebbb1e4c39cd92f1bbd170e157b5eb297a093f4cf"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-nav-rail-crop.png",
+    "sha256": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-inventory-page-1.png",
+    "sha256": "3190f7f5e44d5c6db5655a447f82a5acb5ac34161c2c1190b00abe06a2d24e69"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-inventory-page-2.png",
+    "sha256": "6488ea8fb52cde04983692768f75e7eb4578712f3d4f85812b7c3014aacceee7"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/pr08-room-enclosure-lattice-w05i-runtime-comparison-board.png",
+    "sha256": "ca9c2d6552af923a09526c0d6013ac0233a633cbb7b70b9ffd69afa04685482a"
+  },
+  {
+    "path": "client/src/main/resources/dark-v1/tiles/tileset_ruins_wall_01.png",
+    "sha256": "52081fed3a1478343e1f1e5a42e0c8cb113caa28e350c6a27d9afe8735f76212"
+  },
+  {
+    "path": "client/src/main/resources/dark-v1/tiles/tileset_ruins_wall_01_crown.png",
+    "sha256": "d4edb9a81c8c3917ed7a2ca99d07646e375a1572c0ff7990378f7584a60496d7"
+  },
+  {
+    "path": "client/src/main/resources/dark-v1/tiles/tileset_ruins_wall_01_side.png",
+    "sha256": "6893df8dc013e92e834a4161959223576e9ae92dd9db0fc231252959a2d4a83a"
+  },
+  {
+    "path": "client/src/main/resources/dark-v1/tiles/tileset_ruins_wall_01_corner.png",
+    "sha256": "3cc0e3f3c1e0da7dc5d28f58d8138fe2f5a5863bdc0873c2870fcbe0318cd365"
+  },
+  {
+    "path": "client/src/main/resources/dark-v1/tiles/tileset_ruins_wall_01_door_contact.png",
+    "sha256": "abc31dca258d47a9932941e5a41346949a4be92c00b6425d949a78b00aa7f430"
+  },
+  {
+    "path": "assets-src/image/contact-sheets/dark-v1/r02-ui-demo-ruins-tiles-contact.png",
+    "sha256": "7efc3559199accd8c22669baaf39b8a8dce1c6ece0b11dcaaa8441285e5434d1"
+  },
+  {
+    "path": "assets-src/image/manifests/dark-v1-pr08-sprite-map-report.jsonl",
+    "sha256": "f0e2d7835b15ff2d15f36d9fc4d002db382b3bcbb6f47547cab810eadb54bb83"
+  }
+]

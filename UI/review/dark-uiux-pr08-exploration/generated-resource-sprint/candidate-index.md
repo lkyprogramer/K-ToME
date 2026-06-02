@@ -1,0 +1,18 @@
+# PR-08 Generated Floor/Wall Candidate Batch
+
+| Candidate | Type | Floor | Wall | Contact |
+| --- | --- | --- | --- | --- |
+| X | conservative | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-candidate-x-conservative.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-wall-candidate-x-conservative.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-wall-candidate-x-contact.png` |
+| Y | material-depth | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-candidate-y-material-depth.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-wall-candidate-y-material-depth.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-wall-candidate-y-contact.png` |
+| Z | strong-style | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-candidate-z-strong-style.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-wall-candidate-z-strong-style.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-wall-candidate-z-contact.png` |
+| AA | conservative regenerated | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-candidate-aa-conservative.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-wall-candidate-aa-conservative.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-wall-candidate-aa-contact.png` |
+| AB | material-depth regenerated | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-candidate-ab-material-depth.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-wall-candidate-ab-material-depth.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-wall-candidate-ab-contact.png` |
+| AC | strong-style regenerated | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-candidate-ac-strong-style.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-wall-candidate-ac-strong-style.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/pr08-floor-wall-candidate-ac-contact.png` |
+
+## Chrome Resource Sprint
+
+| Candidate | Type | Source | Contact | Runtime verdict |
+| --- | --- | --- | --- | --- |
+| AD | conservative chrome family | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/chrome-resource-sprint/ad-conservative/pr08-generated-chrome-source-ad-conservative.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/chrome-resource-sprint/ad-conservative/pr08-chrome-candidate-ad-conservative-contact.png` | integrated as current forward right-panel / bottom-deck chrome candidate |
+| AE | material-depth chrome family | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/chrome-resource-sprint/ae-material-depth/pr08-generated-chrome-source-ae-material-depth.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/chrome-resource-sprint/ae-material-depth/pr08-chrome-candidate-ae-material-depth-contact.png` | rejected for final integration; stronger material but too heavy behind hero/action text |
+| AF | strong-style chrome family | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/chrome-resource-sprint/af-strong-style/pr08-generated-chrome-source-af-strong-style.png` | `UI/review/dark-uiux-pr08-exploration/generated-resource-sprint/chrome-resource-sprint/af-strong-style/pr08-chrome-candidate-af-strong-style-contact.png` | rejected for final integration; richer silhouette but over-ornate versus runtime readability |

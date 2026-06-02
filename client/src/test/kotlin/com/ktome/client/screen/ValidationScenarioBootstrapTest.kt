@@ -8,6 +8,7 @@ import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.validation.ValidationOverlaySection
 import com.ktome.game.validation.ValidationPreset
 import com.ktome.game.validation.ValidationScenarioId
+import com.ktome.game.validation.ValidationScenarioStartupSurface
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -43,6 +44,48 @@ class ValidationScenarioBootstrapTest {
             result.options.scenarioEvidenceSummary?.runbookPath,
         )
         assertEquals("abc123", result.options.scenarioEvidenceSummary?.appExecutableSha256)
+    }
+
+    @Test
+    fun `valid startup surface system property maps to typed scenario startup surface`() {
+        val result =
+            ValidationScenarioBootstrap.resolve(
+                propertyProvider =
+                    mapOf(
+                        ValidationScenarioBootstrap.SCENARIO_PROPERTY to "dark-uiux-pr08-director-mine-map-stage",
+                        ValidationScenarioBootstrap.WHITEBOX_ROOT_PROPERTY to "build/whitebox/dark-uiux-pr08-director-mine-map-stage",
+                        ValidationScenarioBootstrap.STARTUP_SURFACE_PROPERTY to "evidence-summary",
+                    )::get,
+                samplePackSelection = ContentPackSelection.EMPTY,
+            ) as ValidationScenarioBootstrapResult.Start
+
+        assertEquals(
+            ValidationScenarioStartupSurface.EVIDENCE_SUMMARY,
+            result.options.scenarioStartupSurface,
+        )
+    }
+
+    @Test
+    fun `invalid startup surface system property fails fast`() {
+        val result =
+            ValidationScenarioBootstrap.resolve(
+                propertyProvider =
+                    mapOf(
+                        ValidationScenarioBootstrap.SCENARIO_PROPERTY to "dark-uiux-pr08-director-mine-map-stage",
+                        ValidationScenarioBootstrap.WHITEBOX_ROOT_PROPERTY to "build/whitebox/dark-uiux-pr08-director-mine-map-stage",
+                        ValidationScenarioBootstrap.STARTUP_SURFACE_PROPERTY to "prepare-shop-surface",
+                    )::get,
+                samplePackSelection = ContentPackSelection.EMPTY,
+            ) as ValidationScenarioBootstrapResult.Error
+        val payload =
+            validationScenarioErrorState(
+                result,
+                LocalizationBundle.load().translator(GameLocale.EN_US),
+            ).payload.renderPlainText()
+
+        assertEquals(ValidationScenarioBootstrapErrorCode.INVALID_PHASE4_V4_STARTUP_SURFACE, result.errorCode)
+        assertTrue(payload.contains("validationErrorCode: INVALID_PHASE4_V4_STARTUP_SURFACE"))
+        assertTrue(payload.contains("ktome.validation.startupSurface=prepare-shop-surface"))
     }
 
     @Test

@@ -4061,7 +4061,7 @@
       "nearCapacityWarn": true
     },
     {
-      "expectedCount": 8,
+      "expectedCount": 16,
       "family": "tileset visual",
       "historicalSheetIds": [
         "r02-tiles-ground",
@@ -4114,25 +4114,113 @@
           "sheetId": "r02-tiles-wall"
         },
         {
-          "consumer": "UI-demo-new shattered outpost terrain floor",
-          "consumerTest": "ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold",
+          "consumer": "PR-08 director shattered outpost terrain floor",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold",
           "coverageExclusion": null,
           "historicalSheetIds": [
             "r02-ui-demo-ruins-tiles"
           ],
           "key": "tileset.ruins.ground_01",
-          "ownerPr": "PR-02-2",
+          "ownerPr": "PR-08",
           "sheetId": "r02-ui-demo-ruins-tiles"
         },
         {
-          "consumer": "UI-demo-new shattered outpost terrain wall",
-          "consumerTest": "ManifestResolveTest.darkUiuxPr02_2OwnerKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold",
+          "consumer": "PR-08 director shattered outpost terrain floor variant family",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold",
+          "coverageExclusion": null,
+          "historicalSheetIds": [
+            "r02-ui-demo-ruins-tiles"
+          ],
+          "key": "tileset.ruins.ground_01.variant_1",
+          "ownerPr": "PR-08",
+          "sheetId": "r02-ui-demo-ruins-tiles"
+        },
+        {
+          "consumer": "PR-08 director shattered outpost terrain floor variant family",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold",
+          "coverageExclusion": null,
+          "historicalSheetIds": [
+            "r02-ui-demo-ruins-tiles"
+          ],
+          "key": "tileset.ruins.ground_01.variant_2",
+          "ownerPr": "PR-08",
+          "sheetId": "r02-ui-demo-ruins-tiles"
+        },
+        {
+          "consumer": "PR-08 director shattered outpost terrain floor variant family",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold",
+          "coverageExclusion": null,
+          "historicalSheetIds": [
+            "r02-ui-demo-ruins-tiles"
+          ],
+          "key": "tileset.ruins.ground_01.variant_3",
+          "ownerPr": "PR-08",
+          "sheetId": "r02-ui-demo-ruins-tiles"
+        },
+        {
+          "consumer": "PR-08 director shattered outpost room-scale material breakup compositor",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, TileRendererCanvasTest.renderCanvasDrawsPr08RoomMaterialBreakupAsSingleRoomScaleAsset",
+          "coverageExclusion": null,
+          "historicalSheetIds": [
+            "r02-ui-demo-ruins-tiles"
+          ],
+          "key": "tileset.ruins.room_breakup_01",
+          "ownerPr": "PR-08",
+          "sheetId": "r02-ui-demo-ruins-tiles"
+        },
+        {
+          "consumer": "PR-08 director shattered outpost terrain wall family base",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.darkUiuxPr021DrawsRightPanelSlotsAndHeroCrestScaffold",
           "coverageExclusion": null,
           "historicalSheetIds": [
             "r02-ui-demo-ruins-tiles"
           ],
           "key": "tileset.ruins.wall_01",
-          "ownerPr": "PR-02-2",
+          "ownerPr": "PR-08",
+          "sheetId": "r02-ui-demo-ruins-tiles"
+        },
+        {
+          "consumer": "PR-08 director shattered outpost terrain wall family corner",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.renderCanvasUsesPr08WallFamilyPiecesForRoomEnclosure",
+          "coverageExclusion": null,
+          "historicalSheetIds": [
+            "r02-ui-demo-ruins-tiles"
+          ],
+          "key": "tileset.ruins.wall_01.corner",
+          "ownerPr": "PR-08",
+          "sheetId": "r02-ui-demo-ruins-tiles"
+        },
+        {
+          "consumer": "PR-08 director shattered outpost terrain wall family crown",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.renderCanvasUsesPr08WallFamilyPiecesForRoomEnclosure",
+          "coverageExclusion": null,
+          "historicalSheetIds": [
+            "r02-ui-demo-ruins-tiles"
+          ],
+          "key": "tileset.ruins.wall_01.crown",
+          "ownerPr": "PR-08",
+          "sheetId": "r02-ui-demo-ruins-tiles"
+        },
+        {
+          "consumer": "PR-08 director shattered outpost terrain wall family door contact",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.renderCanvasUsesPr08WallFamilyPiecesForRoomEnclosure",
+          "coverageExclusion": null,
+          "historicalSheetIds": [
+            "r02-ui-demo-ruins-tiles"
+          ],
+          "key": "tileset.ruins.wall_01.door_contact",
+          "ownerPr": "PR-08",
+          "sheetId": "r02-ui-demo-ruins-tiles"
+        },
+        {
+          "consumer": "PR-08 director shattered outpost terrain wall family side",
+          "consumerTest": "ManifestResolveTest.darkUiuxPr08DirectorFloorWallKeysResolveThroughExactEntries, ManifestResolveTest.darkUiuxPr08DirectorWallFamilyResolvesFromManifestTags, TileRendererCanvasTest.renderCanvasUsesPr08WallFamilyPiecesForRoomEnclosure",
+          "coverageExclusion": null,
+          "historicalSheetIds": [
+            "r02-ui-demo-ruins-tiles"
+          ],
+          "key": "tileset.ruins.wall_01.side",
+          "ownerPr": "PR-08",
           "sheetId": "r02-ui-demo-ruins-tiles"
         },
         {
@@ -4581,7 +4669,7 @@
             "r01-ui-chrome"
           ],
           "key": "ui.frame.panel.body",
-          "ownerPr": "PR-02",
+          "ownerPr": "PR-08",
           "sheetId": "r01-ui-chrome"
         },
         {
@@ -4680,7 +4768,7 @@
             "r01-ui-chrome"
           ],
           "key": "ui.frame.panel.focus",
-          "ownerPr": "PR-02",
+          "ownerPr": "PR-08",
           "sheetId": "r01-ui-chrome"
         },
         {
@@ -4691,7 +4779,7 @@
             "r01-ui-chrome"
           ],
           "key": "ui.frame.slot.empty",
-          "ownerPr": "PR-02",
+          "ownerPr": "PR-08",
           "sheetId": "r01-ui-chrome"
         },
         {
@@ -4702,7 +4790,7 @@
             "r01-ui-chrome"
           ],
           "key": "ui.frame.slot.equipped",
-          "ownerPr": "PR-02",
+          "ownerPr": "PR-08",
           "sheetId": "r01-ui-chrome"
         },
         {
@@ -4713,7 +4801,7 @@
             "r01-ui-chrome"
           ],
           "key": "ui.frame.slot.selected",
-          "ownerPr": "PR-02",
+          "ownerPr": "PR-08",
           "sheetId": "r01-ui-chrome"
         },
         {
@@ -4878,7 +4966,7 @@
             "r01b-ui-shell-chrome"
           ],
           "key": "ui.shell.action_deck.frame",
-          "ownerPr": "PR-02-1",
+          "ownerPr": "PR-08",
           "sheetId": "r01b-ui-shell-chrome"
         },
         {
@@ -4889,7 +4977,7 @@
             "r01b-ui-shell-chrome"
           ],
           "key": "ui.shell.command_hint.plate",
-          "ownerPr": "PR-02-1",
+          "ownerPr": "PR-08",
           "sheetId": "r01b-ui-shell-chrome"
         },
         {
@@ -4900,7 +4988,7 @@
             "r01b-ui-shell-chrome"
           ],
           "key": "ui.shell.hero_card.frame",
-          "ownerPr": "PR-02-1",
+          "ownerPr": "PR-08",
           "sheetId": "r01b-ui-shell-chrome"
         },
         {
@@ -4922,7 +5010,7 @@
             "r01b-ui-shell-chrome"
           ],
           "key": "ui.shell.log_deck.frame",
-          "ownerPr": "PR-02-1",
+          "ownerPr": "PR-08",
           "sheetId": "r01b-ui-shell-chrome"
         },
         {
@@ -5043,7 +5131,7 @@
             "r01b-ui-shell-chrome"
           ],
           "key": "ui.shell.right_section.divider",
-          "ownerPr": "PR-02-1",
+          "ownerPr": "PR-08",
           "sheetId": "r01b-ui-shell-chrome"
         },
         {
@@ -5641,12 +5729,12 @@
   "schemaOwner": "PR-06",
   "schemaVersion": "dark-v1-final-full-inventory-v1",
   "sourceDigests": {
-    "UI/pr/screen-coverage-matrix.md": "a33c0b06a50aa18ffb8e2077097534d5d86d0dc8fd05d6f0aad9382e00effbcd",
+    "UI/pr/screen-coverage-matrix.md": "d1e7e4e1739ae1cbac0075ca33309f268d8699c53842ca367c32dbc15d9be5b8",
     "UI/sprite-sheets/dark-v1-pr06-handoff-inventory.json": "1adff4f2b1bd9dfdf4d1de316bf0639f767d29b4bd01f06d83ee0c7ee83a06e0",
-    "UI/sprite-sheets/key-registry.yaml": "9459fee273251332d98cb31be631de4e2bf21cdedb7570862b3de1b1bcaf2f06",
-    "UI/sprite-sheets/sheet-plan.yaml": "962532a0dd36adc50bb2d8d37e3283d92910864d9a549fce8c647d83d6813d7e",
-    "assets-src/image/manifests/phase2-visual-manifest.json": "702c43f1a35fa2e66c3d0c2df8a45d1b0319a15e4a41e3e12fb2286473f7620c",
-    "client/src/main/resources/manifests/visual-manifest.json": "702c43f1a35fa2e66c3d0c2df8a45d1b0319a15e4a41e3e12fb2286473f7620c",
+    "UI/sprite-sheets/key-registry.yaml": "bd376b28383fc39b471e68244e387debb282568a09ffa5dd14179fd9893d20c8",
+    "UI/sprite-sheets/sheet-plan.yaml": "a7c9de5ecc26198154735561747bf4f1059e80db92907dbeff8ee5c27b62ffad",
+    "assets-src/image/manifests/phase2-visual-manifest.json": "bb0446064b29af5b0cad3aaa16263733d99cb9d0f3ae76028e5ecdfe5a7698f7",
+    "client/src/main/resources/manifests/visual-manifest.json": "bb0446064b29af5b0cad3aaa16263733d99cb9d0f3ae76028e5ecdfe5a7698f7",
     "game/src/main/resources/data/professions/index.yaml": "c394bbfc96e600aed0b5ac13fa30c4e46bc570ce3a95a32092b7dc57c61e1a2c",
     "game/src/main/resources/data/races/index.yaml": "a314bd9b3b7a4cec1478739ebe6334c782fcd0cf86d955ced604d5fd775b8cc2",
     "game/src/main/resources/data/talents/index.yaml": "630365db586c0bc5ade2da0b40d8fe3ed6f9d8282b497b477820c998071a0560",

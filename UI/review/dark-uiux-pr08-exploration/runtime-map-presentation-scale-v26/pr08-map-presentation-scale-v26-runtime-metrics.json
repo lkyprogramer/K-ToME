@@ -1,0 +1,54 @@
+{
+  "comparisonBase": "V25 runtime-ground-family-relief-repaint",
+  "artifacts": {
+    "ui-demo-new-parity-1672x941": "UI/review/dark-uiux-pr08-exploration/runtime-map-presentation-scale-v26/pr08-map-presentation-scale-v26-ui-demo-new-parity-1672x941.png",
+    "ui-demo-new-parity-1280x800": "UI/review/dark-uiux-pr08-exploration/runtime-map-presentation-scale-v26/pr08-map-presentation-scale-v26-ui-demo-new-parity-1280x800.png",
+    "ui-demo-new-right-panel-grid": "UI/review/dark-uiux-pr08-exploration/runtime-map-presentation-scale-v26/pr08-map-presentation-scale-v26-ui-demo-new-right-panel-grid.png",
+    "ui-demo-new-bottom-deck-no-command-hints": "UI/review/dark-uiux-pr08-exploration/runtime-map-presentation-scale-v26/pr08-map-presentation-scale-v26-ui-demo-new-bottom-deck-no-command-hints.png",
+    "ui-demo-new-inventory-page-1": "UI/review/dark-uiux-pr08-exploration/runtime-map-presentation-scale-v26/pr08-map-presentation-scale-v26-ui-demo-new-inventory-page-1.png",
+    "ui-demo-new-inventory-page-2": "UI/review/dark-uiux-pr08-exploration/runtime-map-presentation-scale-v26/pr08-map-presentation-scale-v26-ui-demo-new-inventory-page-2.png",
+    "ui-demo-new-nav-rail-crop": "UI/review/dark-uiux-pr08-exploration/runtime-map-presentation-scale-v26/pr08-map-presentation-scale-v26-ui-demo-new-nav-rail-crop.png",
+    "ui-demo-new-map-stage-crop": "UI/review/dark-uiux-pr08-exploration/runtime-map-presentation-scale-v26/pr08-map-presentation-scale-v26-ui-demo-new-map-stage-crop.png"
+  },
+  "hashes": {
+    "ui-demo-new-parity-1672x941": "6779e2cf6ab483533f77b0e79e96e937d18160472241fd704c211f57ca079f99",
+    "ui-demo-new-parity-1280x800": "c6a2e27bfe478aa49cbe990981ca5bd2428d74f47c166d84d98f99df5dd3ede9",
+    "ui-demo-new-right-panel-grid": "8de82d8abf81c34906ba60e5a8dd7545aa2e883b0c6574e100accd720df4c277",
+    "ui-demo-new-bottom-deck-no-command-hints": "1d3ac3e0b3b67dea66a077aa2afa30f9b47b5bb4318e812f2894ea2534f9d02e",
+    "ui-demo-new-inventory-page-1": "2dc2ac8cf03dba3693f5d5d6e12a68225a0debeac6e9cc6321f823b1417ddd63",
+    "ui-demo-new-inventory-page-2": "230165e27de1426439671000c82b215cdf15ded3c30d6bd9db1ee32ae77a5b23",
+    "ui-demo-new-nav-rail-crop": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "ui-demo-new-map-stage-crop": "322b36600d01b41d0fce5349edbf919503233991a086880e315f044a25285ed1"
+  },
+  "runtimePresentationCellSize": 40,
+  "diffAgainstV25": {
+    "ui-demo-new-parity-1672x941": {
+      "meanAbsRgbDiff": 4.687473146505042,
+      "maxRgbDiff": 226,
+      "changedPixels": 1688699,
+      "totalPixels": 6293408,
+      "changedRatio": 0.26832822534308914
+    },
+    "ui-demo-new-map-stage-crop": {
+      "meanAbsRgbDiff": 10.215827311700178,
+      "maxRgbDiff": 226,
+      "changedPixels": 1219395,
+      "totalPixels": 2086920,
+      "changedRatio": 0.5843036628140993
+    },
+    "ui-demo-new-right-panel-grid": {
+      "meanAbsRgbDiff": 0.0,
+      "maxRgbDiff": 0,
+      "changedPixels": 0,
+      "totalPixels": 1147200,
+      "changedRatio": 0.0
+    },
+    "ui-demo-new-bottom-deck-no-command-hints": {
+      "meanAbsRgbDiff": 0.0,
+      "maxRgbDiff": 0,
+      "changedPixels": 0,
+      "totalPixels": 663480,
+      "changedRatio": 0.0
+    }
+  }
+}

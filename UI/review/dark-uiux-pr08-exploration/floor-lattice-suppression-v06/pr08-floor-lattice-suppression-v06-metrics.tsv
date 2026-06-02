@@ -1,0 +1,13 @@
+candidate	tile	max_row_boost	max_col_boost	rows_touched	cols_touched
+v06a_moderate	tileset_ruins_ground_01	4.981	5.495	8	14
+v06a_moderate	tileset_ruins_ground_01_variant_1	10.000	9.394	11	11
+v06a_moderate	tileset_ruins_ground_01_variant_2	7.822	7.427	6	10
+v06a_moderate	tileset_ruins_ground_01_variant_3	7.446	6.803	12	17
+v06b_strong	tileset_ruins_ground_01	6.588	7.268	14	25
+v06b_strong	tileset_ruins_ground_01_variant_1	13.817	12.425	19	18
+v06b_strong	tileset_ruins_ground_01_variant_2	10.345	9.823	13	16
+v06b_strong	tileset_ruins_ground_01_variant_3	9.848	8.998	20	22
+v06c_material	tileset_ruins_ground_01	7.391	8.154	22	30
+v06c_material	tileset_ruins_ground_01_variant_1	15.502	13.940	28	28
+v06c_material	tileset_ruins_ground_01_variant_2	11.607	11.021	15	21
+v06c_material	tileset_ruins_ground_01_variant_3	11.049	10.095	25	29

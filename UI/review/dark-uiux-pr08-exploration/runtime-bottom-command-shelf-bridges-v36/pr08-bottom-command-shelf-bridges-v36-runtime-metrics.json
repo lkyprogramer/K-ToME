@@ -1,0 +1,163 @@
+{
+  "artifactHashes": {
+    "bottomDeckCrop": "f9b22db39ff64fb45768d66feccf6d6bf69ae0a69cdc77ec2432f092be429907",
+    "bridgeCloseup": "af1dfc46af2777b2880aa2e9ce8fc22fd7163b6d1a0ca989328769705c0ecdfd",
+    "comparisonBoard": "45904dd14a17ee128b6fca5a63db9848d6dc59de421e290cde1d065ce101498d",
+    "fullScreen1672x941": "3d5bb0c4c7e904c166e30afadc821d13c9f1ee184cfa2a5c8ec26829494b08ba",
+    "v36ActionDeckCrop": "3a3cc4488a4fdc605bf366171a996eb9468efc7ae390970087cb0c1d11326f14",
+    "v36VsV35ActionDeckDiff": "8637fb573b888a7812c1f4a6d26fd9a7b2bf2d53fcd463a348f427dc71867636"
+  },
+  "diffVsV35": {
+    "actionDeckCrop": {
+      "changedRatio": 0.04869958847736625,
+      "maxRgbDiff": [
+        [
+          0,
+          46
+        ],
+        [
+          0,
+          32
+        ],
+        [
+          0,
+          23
+        ]
+      ],
+      "meanAbsRgbDiff": 0.15433196159122084
+    },
+    "bottomDeckCrop": {
+      "changedRatio": 0.0350244167118828,
+      "maxRgbDiff": [
+        [
+          0,
+          46
+        ],
+        [
+          0,
+          33
+        ],
+        [
+          0,
+          30
+        ]
+      ],
+      "meanAbsRgbDiff": 0.1108337854946645
+    },
+    "fullScreen1672x941": {
+      "changedRatio": 0.005114875755711373,
+      "maxRgbDiff": [
+        [
+          0,
+          45
+        ],
+        [
+          0,
+          30
+        ],
+        [
+          0,
+          31
+        ]
+      ],
+      "meanAbsRgbDiff": 0.016572843627279
+    },
+    "mapStageCrop": {
+      "changedRatio": 0.0,
+      "maxRgbDiff": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "meanAbsRgbDiff": 0.0
+    },
+    "navRailCrop": {
+      "changedRatio": 0.0,
+      "maxRgbDiff": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "meanAbsRgbDiff": 0.0
+    },
+    "rightPanelCrop": {
+      "changedRatio": 0.0,
+      "maxRgbDiff": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "meanAbsRgbDiff": 0.0
+    }
+  },
+  "goldenHashes": {
+    "ui-demo-new-bottom-deck-no-command-hints": {
+      "artifact": "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-bottom-deck-no-command-hints.png",
+      "sha256": "9a64b9de43f0d8526d48e2bd5e9705c266599d3002c9b924305f7c2bf5aacdcd"
+    },
+    "ui-demo-new-inventory-page-1": {
+      "artifact": "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-inventory-page-1.png",
+      "sha256": "23905f61e56675bd4736eb0a9f47a200012d9899584e1be5c1b613c84952b8bd"
+    },
+    "ui-demo-new-inventory-page-2": {
+      "artifact": "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-inventory-page-2.png",
+      "sha256": "63bbaecf273cd14cbdea001954c8d4a50691e29207140bf3067332e18d9cc94a"
+    },
+    "ui-demo-new-map-stage-crop": {
+      "artifact": "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-map-stage-crop.png",
+      "sha256": "8a21f9a42b0045398a44324580798afed351e22e6d1484f3187055c6874a79d7"
+    },
+    "ui-demo-new-nav-rail-crop": {
+      "artifact": "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-nav-rail-crop.png",
+      "sha256": "c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6"
+    },
+    "ui-demo-new-parity-1280x800": {
+      "artifact": "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1280x800.png",
+      "sha256": "aa0c249be84b5e2d81b634a8591cf67c32c49019870929c134ef9dc37236db6c"
+    },
+    "ui-demo-new-parity-1672x941": {
+      "artifact": "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1672x941.png",
+      "sha256": "586c7fdd8cf3a57557edfff4905ba3c5dfaca9979e1b0d9d28d72df080c31ba9"
+    },
+    "ui-demo-new-right-panel-grid": {
+      "artifact": "client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-right-panel-grid.png",
+      "sha256": "4fc73bb307d123267bef293e925fd0f1449b4dd3437b92ffc315d3f9ada6c5f8"
+    }
+  },
+  "iteration": "V36-bottom-command-shelf-bridges",
+  "referenceDistance": {
+    "note": "Crop shapes and scene content differ; this is a directional check, not a director-grade score.",
+    "v35ActionResizedToReferenceMeanAbsDiff": 17.466652352835926,
+    "v36ActionResizedToReferenceMeanAbsDiff": 17.41089282519234
+  },
+  "schemaVersion": "dark-uiux-pr08-runtime-evidence-v1",
+  "scope": "client renderer presentation only; no gameplay, schema, manifest key, save, replay, resource file, or golden expected-hash change",
+  "verdict": "accepted-forward-only"
+}

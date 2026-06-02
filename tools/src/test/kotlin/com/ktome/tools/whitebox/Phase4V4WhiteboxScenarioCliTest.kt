@@ -28,6 +28,10 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(exception.message?.contains("dark-uiux-pr02-ui-chrome-sprite-pilot") == true)
         assertTrue(exception.message?.contains("dark-uiux-pr03-equipment-inventory-items") == true)
         assertTrue(exception.message?.contains("dark-uiux-pr07-final-ui") == true)
+        assertTrue(exception.message?.contains("dark-uiux-pr08-director-grade") == true)
+        assertTrue(exception.message?.contains("dark-uiux-pr08-director-forest-map-stage") == true)
+        assertTrue(exception.message?.contains("dark-uiux-pr08-director-mine-map-stage") == true)
+        assertTrue(exception.message?.contains("dark-uiux-pr08-director-shadow-depths-map-stage") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr03") == true)
         assertTrue(exception.message?.contains("phase4-v4-pr04") == true)
     }
@@ -60,6 +64,8 @@ class Phase4V4WhiteboxScenarioCliTest {
         assertTrue(launchScript.contains("APP_EXECUTABLE_SHA256=\"${'$'}REPO_ROOT/build/whitebox/phase4-v4-pr00-selftest/app-executable.sha256\""))
         assertTrue(launchScript.contains("EXPECTED_HASH=\"$(awk '{print ${'$'}1}' \"${'$'}APP_EXECUTABLE_SHA256\")\""))
         assertTrue(launchScript.contains("-Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"))
+        assertTrue(launchScript.contains("-Dktome.window.width=1280"))
+        assertTrue(launchScript.contains("-Dktome.window.height=800"))
         assertTrue(launchScript.contains("\"${'$'}SCENARIO_APP_EXECUTABLE\" >> \"${'$'}SCENARIO_APP_LOG\" 2>&1 &"))
         assertTrue(launchScript.contains("APP_PID=\"${'$'}!\""))
         assertTrue(launchScript.contains("kill -0 \"${'$'}APP_PID\""))
@@ -437,6 +443,106 @@ class Phase4V4WhiteboxScenarioCliTest {
     }
 
     @Test
+    fun `dark uiux pr08 director grade scenario generates room plate evidence names from the typed registry`() {
+        val result =
+            Phase4V4WhiteboxScenarioCli.run(
+                baseConfig(scenarioId = "dark-uiux-pr08-director-grade"),
+            )
+        val paths = result.paths
+
+        val launchScript = paths.launchScript.readText()
+        assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/dark-uiux-pr08-director-grade/evidence/dark-uiux-pr08-director-grade-app.log\""))
+        assertTrue(launchScript.contains("-Dktome.validation.scenario=dark-uiux-pr08-director-grade"))
+        assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/dark-uiux-director-grade-runtime-parity.md"))
+        assertTrue(launchScript.contains("-Dktome.window.width=1672"))
+        assertTrue(launchScript.contains("-Dktome.window.height=941"))
+
+        val runbook = paths.runbook.readText()
+        assertTrue(runbook.contains("- window: `1672x941`"))
+        assertTrue(runbook.contains("dark-uiux-pr08-director-parity-1672x941.png"))
+        assertTrue(runbook.contains("dark-uiux-pr08-director-map-stage-crop.png"))
+        assertTrue(runbook.contains("dark-uiux-pr08-director-right-panel-crop.png"))
+        assertTrue(runbook.contains("dark-uiux-pr08-director-bottom-deck-crop.png"))
+        assertTrue(runbook.contains("dark-uiux-pr08-director-telegraph-combat-crop.png"))
+        assertTrue(runbook.contains("UI/manual-records/dark-uiux-director-grade-runtime-parity.md"))
+        assertTrue(runbook.contains("tileset.ruins room art plate proof slice"))
+        assertFalseMachinePath(runbook)
+
+        val expectedEvidence = paths.expectedEvidence.readText()
+        assertTrue(expectedEvidence.contains("\"scenarioId\": \"dark-uiux-pr08-director-grade\""))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr08-director-grade-app.log"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr08-director-map-stage-crop.png.sha256"))
+        assertTrue(expectedEvidence.contains("dark-uiux-pr08-director-telegraph-combat-crop.png.sha256"))
+        assertFalseMachinePath(expectedEvidence)
+    }
+
+    @Test
+    fun `dark uiux pr08 director family scenarios generate packaged crop evidence names from the typed registry`() {
+        data class ExpectedFamilyScenario(
+            val id: String,
+            val evidencePrefix: String,
+            val familyName: String,
+        )
+        val expectedScenarios =
+            listOf(
+                ExpectedFamilyScenario(
+                    id = "dark-uiux-pr08-director-forest-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-forest",
+                    familyName = "tileset.forest_edge",
+                ),
+                ExpectedFamilyScenario(
+                    id = "dark-uiux-pr08-director-mine-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-mine",
+                    familyName = "tileset.mine",
+                ),
+                ExpectedFamilyScenario(
+                    id = "dark-uiux-pr08-director-shadow-depths-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-shadow-depths",
+                    familyName = "tileset.shadow_depths",
+                ),
+            )
+
+        expectedScenarios.forEach { expected ->
+            val result =
+                Phase4V4WhiteboxScenarioCli.run(
+                    baseConfig(scenarioId = expected.id),
+                )
+            val paths = result.paths
+
+            val launchScript = paths.launchScript.readText()
+            assertTrue(launchScript.contains("SCENARIO_APP_LOG=\"build/whitebox/${expected.id}/evidence/${expected.id}-app.log\""))
+            assertTrue(launchScript.contains("-Dktome.validation.scenario=${expected.id}"))
+            assertTrue(launchScript.contains("-Dktome.whitebox.manualRecord=UI/manual-records/dark-uiux-pr08-non-ruins-packaged-parity.md"))
+            assertTrue(launchScript.contains("-Dktome.window.width=1280"))
+            assertTrue(launchScript.contains("-Dktome.window.height=800"))
+            assertTrue(launchScript.contains("KTOME_VALIDATION_STARTUP_SURFACE"))
+            assertTrue(launchScript.contains("-Dktome.validation.startupSurface=${'$'}KTOME_VALIDATION_STARTUP_SURFACE"))
+            assertFalseMachinePath(launchScript)
+
+            val runbook = paths.runbook.readText()
+            assertTrue(runbook.contains("- window: `1280x800`"))
+            assertTrue(runbook.contains("${expected.evidencePrefix}-parity-1280x800.png"))
+            assertTrue(runbook.contains("${expected.evidencePrefix}-map-stage-crop.png"))
+            assertTrue(runbook.contains("${expected.evidencePrefix}-right-panel-crop.png"))
+            assertTrue(runbook.contains("${expected.evidencePrefix}-bottom-deck-crop.png"))
+            assertTrue(runbook.contains("${expected.evidencePrefix}-evidence-summary.png"))
+            assertTrue(runbook.contains("UI/manual-records/dark-uiux-pr08-non-ruins-packaged-parity.md"))
+            assertTrue(runbook.contains("KTOME_VALIDATION_STARTUP_SURFACE=evidence-summary"))
+            assertTrue(runbook.contains(expected.familyName))
+            assertTrue(runbook.contains("without claiming all-map closure"))
+            assertFalseMachinePath(runbook)
+
+            val expectedEvidence = paths.expectedEvidence.readText()
+            assertTrue(expectedEvidence.contains("\"scenarioId\": \"${expected.id}\""))
+            assertTrue(expectedEvidence.contains("${expected.id}-app.log"))
+            assertTrue(expectedEvidence.contains("${expected.evidencePrefix}-map-stage-crop.png.sha256"))
+            assertTrue(expectedEvidence.contains("${expected.evidencePrefix}-evidence-summary.png.sha256"))
+            assertTrue(expectedEvidence.contains("log.validation.phase4_v4.action"))
+            assertFalseMachinePath(expectedEvidence)
+        }
+    }
+
+    @Test
     fun `pr04 scenario generates hidden search hook evidence names from the typed registry`() {
         val result =
             Phase4V4WhiteboxScenarioCli.run(
@@ -573,6 +679,10 @@ class Phase4V4WhiteboxScenarioCliTest {
             |  - id: dark-uiux-pr05-1-inventory-page-workbench
             |  - id: dark-uiux-pr06-status-quest-skill-overview
             |  - id: dark-uiux-pr07-final-ui
+            |  - id: dark-uiux-pr08-director-grade
+            |  - id: dark-uiux-pr08-director-forest-map-stage
+            |  - id: dark-uiux-pr08-director-mine-map-stage
+            |  - id: dark-uiux-pr08-director-shadow-depths-map-stage
             |  - id: phase4-v4-pr06
             |  - id: phase4-v4-pr07
             |

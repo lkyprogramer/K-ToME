@@ -1,0 +1,22 @@
+{
+  "comparison": "v46 bottom shared command spine vs v45 bottom deck crop",
+  "inputs": {
+    "before": "UI/review/dark-uiux-pr08-exploration/bottom-command-console-spine-v46/pr08-bottom-command-console-spine-v46-v45-bottom-deck.png",
+    "after": "UI/review/dark-uiux-pr08-exploration/bottom-command-console-spine-v46/pr08-bottom-command-console-spine-v46-v46-bottom-deck.png"
+  },
+  "outputs": {
+    "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/bottom-command-console-spine-v46/pr08-bottom-command-console-spine-v46-comparison-board.png"
+  },
+  "imageSize": {
+    "width": 1843,
+    "height": 360
+  },
+  "changedPixelRatio": 0.06664255139567131,
+  "meanAbsDiff": 0.24963927573802777,
+  "maxAbsDiff": 57,
+  "acceptance": [
+    "bottom HUD renders one shared command spine across hero, action deck, and log",
+    "shared command spine stays in the lower safe band and does not obscure primary action, hero, or log text",
+    "right panel, nav rail, map-stage, and inventory crops remain unchanged by the V46 golden gate"
+  ]
+}

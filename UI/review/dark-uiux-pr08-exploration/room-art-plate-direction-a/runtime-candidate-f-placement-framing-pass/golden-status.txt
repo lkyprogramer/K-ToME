@@ -1,0 +1,20 @@
+Command:
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts" --rerun-tasks --no-configuration-cache
+
+Result:
+EXPECTED FAIL - PR-08 evidence was regenerated without rebaselining the PR-02-1 golden hashes.
+
+Actual hashes reported by the golden harness:
+ui-demo-new-parity-1672x941=cb1a627f7144e58843543f20c7d3b67f8e872fde647615b90ad7dfcb2147a113
+ui-demo-new-parity-1280x800=84a94aff469104a3f8413b8168780714e0c1ce5e20a7b908622b17fa7d1bfc48
+ui-demo-new-right-panel-grid=36e9b06dc1aba326458cd9c907e02062130d7fb5321007f13483fd18e96ccfcc
+ui-demo-new-bottom-deck-no-command-hints=6bf2380371c23586c38737409e70fb487c903b82b89ed989fc80c0f8e837a142
+ui-demo-new-nav-rail-crop=c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6
+ui-demo-new-map-stage-crop=a83d37d11137a52e6ec6bfe2ad124cea9a9234611635f702ff66032551a5770c
+ui-demo-new-inventory-page-1=021a21d9494e20ad4374d4209e2e66d38b7e0280d55f1845ca01b33377c039cf
+ui-demo-new-inventory-page-2=3f93fa09695715e8ab612fbd28d62675e82f1a8a6b8dc0e1ba8430ce8a3a7a8f
+
+Director result:
+The bounded placement/framing pass improves the flat black-field hard cut and lowers idle grid hints, but D3 map-stage closure remains rejected. The map still reads too much as a tactical board in the right combat field.

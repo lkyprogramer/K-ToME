@@ -1,0 +1,5 @@
+EXPECTED_FAIL status=1 because PR-08 runtime evidence changes map-stage hashes without golden rebaseline
+observed ui-demo-new-map-stage-crop=5b79f4c0e271d7a93c4dd6b3b2cfc343537b52a394dee59c44abbc4b7e784810
+4918c6e5c9eb92a587ca0fbf4122ee80ba667324eb0eaa1f89b6caa132a28c98  UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/room-art-plate-v2-generated/runtime-e/ui-demo-new-map-stage-crop.png
+b7100e8f3099c899cefee806fe1146cd463bd3e70f90fd6ed0a19e81c0681567  UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/room-art-plate-v2-generated/runtime-e/ui-demo-new-parity-1280x800.png
+df92318a468bb19be7b86f10da562c0f962b86f7f4fcf5c5006ce1ed848f14db  UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/room-art-plate-v2-generated/runtime-e/ui-demo-new-parity-1672x941.png

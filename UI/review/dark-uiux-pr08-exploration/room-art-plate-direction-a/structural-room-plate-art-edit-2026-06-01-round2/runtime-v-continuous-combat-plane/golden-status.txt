@@ -1,0 +1,10 @@
+Command:
+source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts" --rerun-tasks --no-configuration-cache
+
+Result:
+EXPECTED FAIL. PR-08 exploration generated runtime evidence without rebaselining PR-02-1 golden hashes.
+
+Actual hashes:
+ui-demo-new-parity-1672x941=41191a6810939641544397e49794722f18a3f89984e802b875124a2c9014e632
+ui-demo-new-parity-1280x800=6f5d568fabefbac96b9434068bbbc9e64ad7048a051bfafe8898b8fd2aeb68b9
+ui-demo-new-map-stage-crop=532fd64777593941bf4b532c05f02937a4abca4a128d540e814c56e8c717ecd9

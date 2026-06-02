@@ -1,0 +1,27 @@
+{
+  "artifacts": {
+    "ui-demo-new-map-stage-crop": {
+      "path": "UI/review/dark-uiux-pr08-exploration/runtime-room-scale-material-fields/pr08-room-scale-material-fields-ui-demo-new-map-stage-crop.png",
+      "sha256": "7076f3879314516a6b1464172f36010bbac22e599595650be3567478f2bdf881"
+    },
+    "ui-demo-new-parity-1672x941": {
+      "path": "UI/review/dark-uiux-pr08-exploration/runtime-room-scale-material-fields/pr08-room-scale-material-fields-ui-demo-new-parity-1672x941.png",
+      "sha256": "8a26ccb42e839ad6e726f384e441b3540b82a02749c50128a62b7a615fe67e52"
+    },
+    "ui-demo-new-parity-1280x800": {
+      "path": "UI/review/dark-uiux-pr08-exploration/runtime-room-scale-material-fields/pr08-room-scale-material-fields-ui-demo-new-parity-1280x800.png",
+      "sha256": "69d5f6d1830513eadd57ec637495aa4b47386aed0d451ae63a17a9dbf92acc73"
+    },
+    "ui-demo-new-bottom-deck-no-command-hints": {
+      "path": "UI/review/dark-uiux-pr08-exploration/runtime-room-scale-material-fields/pr08-room-scale-material-fields-ui-demo-new-bottom-deck-no-command-hints.png",
+      "sha256": "b5bf7bd1840e2f34bc2f0e7ebbb1e4c39cd92f1bbd170e157b5eb297a093f4cf"
+    },
+    "ui-demo-new-right-panel-grid": {
+      "path": "UI/review/dark-uiux-pr08-exploration/runtime-room-scale-material-fields/pr08-room-scale-material-fields-ui-demo-new-right-panel-grid.png",
+      "sha256": "417dc27fb77b5f7dd633cab0ca3e377dc82894c17bee9b4bc6676d841a6ff79f"
+    }
+  },
+  "evidenceIndex": "UI/review/dark-uiux-pr08-exploration/runtime-room-scale-material-fields/pr08-room-scale-material-fields-evidence-index.tsv",
+  "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/runtime-room-scale-material-fields/pr08-room-scale-material-fields-comparison-board.png",
+  "roomDetailZoom": "UI/review/dark-uiux-pr08-exploration/runtime-room-scale-material-fields/pr08-room-scale-material-fields-room-detail-zoom.png"
+}

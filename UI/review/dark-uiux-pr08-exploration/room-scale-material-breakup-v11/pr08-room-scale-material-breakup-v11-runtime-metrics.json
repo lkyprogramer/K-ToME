@@ -1,0 +1,53 @@
+{
+  "source": "UI/review/dark-uiux-pr08-exploration/source-resource-de-line-v10/runtime-v10b-edge-lift/ui-demo-new-map-stage-crop.png",
+  "runtime": "UI/review/dark-uiux-pr08-exploration/room-scale-material-breakup-v11/runtime-v11-room-breakup/ui-demo-new-map-stage-crop.png",
+  "status": "accept-forward-infrastructure-partial-visual-improvement",
+  "artifactSha256ByLabel": {
+    "ui-demo-new-bottom-deck-no-command-hints": "b5bf7bd1840e2f34bc2f0e7ebbb1e4c39cd92f1bbd170e157b5eb297a093f4cf",
+    "ui-demo-new-inventory-page-1": "3190f7f5e44d5c6db5655a447f82a5acb5ac34161c2c1190b00abe06a2d24e69",
+    "ui-demo-new-inventory-page-2": "6488ea8fb52cde04983692768f75e7eb4578712f3d4f85812b7c3014aacceee7",
+    "ui-demo-new-map-stage-crop": "0785053b1b98fe8f7e13e4405e0a85fbc01942b6e4ed03f8bcdd90bd90040bd0",
+    "ui-demo-new-nav-rail-crop": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "ui-demo-new-parity-1280x800": "2b4d050785f114ccec7ac1ac79396f7cffefcedaa5e790c1f38be9108b8fa127",
+    "ui-demo-new-parity-1672x941": "a90abd4d2100c6562411d0de8f8bbc9f6f0cefc372ac9eda6879898884c23400",
+    "ui-demo-new-right-panel-grid": "417dc27fb77b5f7dd633cab0ca3e377dc82894c17bee9b4bc6676d841a6ff79f"
+  },
+  "reportedGoldenContentHashes": {
+    "ui-demo-new-parity-1672x941": "9d6ac09c71d93d108924fcb94366dc8aea8c4b5a54ba9db401fd21f6d93b947e",
+    "ui-demo-new-parity-1280x800": "9f9d4c9689e901c9012668b0e812ecea8140738280364e7f5d51fcd53b5edd12",
+    "ui-demo-new-right-panel-grid": "b96f246cdb9ffb8a2af026d856f8efaaf5911a46ff0bde56d8693ab2451f0ae8",
+    "ui-demo-new-bottom-deck-no-command-hints": "bd25097dd6ae08004c28d3964c09bba46f64ca8fc002630d548fdbc39a8e9453",
+    "ui-demo-new-nav-rail-crop": "c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6",
+    "ui-demo-new-map-stage-crop": "8d5acb1f488dc2e89f880fc3614b903190c228f7cf46de725b05820a0f718601",
+    "ui-demo-new-inventory-page-1": "2be674b1b1cee578f3e38baaeb57b5d8affed53074e51ef233039c8b419172b8",
+    "ui-demo-new-inventory-page-2": "b859958fb6082bb610ae43cb4103e47fe63de43b45f612e294c4d275f15f53e7"
+  },
+  "candidates": {
+    "V10b runtime": {
+      "path": "UI/review/dark-uiux-pr08-exploration/source-resource-de-line-v10/runtime-v10b-edge-lift/ui-demo-new-map-stage-crop.png",
+      "sha256": "995128e604a2c6433087c34dd61da4435cf94279a29bf4c7b78b169df49f96c2",
+      "edgeScore": {
+        "meanEdge": 1.132,
+        "p90Edge": 3
+      }
+    },
+    "V11 room breakup": {
+      "path": "UI/review/dark-uiux-pr08-exploration/room-scale-material-breakup-v11/runtime-v11-room-breakup/ui-demo-new-map-stage-crop.png",
+      "sha256": "0785053b1b98fe8f7e13e4405e0a85fbc01942b6e4ed03f8bcdd90bd90040bd0",
+      "edgeScore": {
+        "meanEdge": 1.089,
+        "p90Edge": 2
+      }
+    },
+    "Reference crop": {
+      "path": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-reference-map-crop-from-ui-demo-new.png",
+      "sha256": "9b221fcf78d1bb6392a38a705fabde2e82c9f75e070d32f1a1cce05d43b7f6fa",
+      "edgeScore": {
+        "meanEdge": 6.082,
+        "p90Edge": 15
+      }
+    }
+  },
+  "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/room-scale-material-breakup-v11/pr08-room-scale-material-breakup-v11-runtime-comparison-board.png",
+  "comparisonBoardSha256": "417adf2d9d598089331947e0b9c6df21989a0beb81528bc4d4e79b2bfe67fede"
+}

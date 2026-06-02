@@ -1,7 +1,9 @@
 package com.ktome.client.render
 
 import com.ktome.client.assets.DarkUiChromeVisualKeys
+import com.ktome.client.assets.DarkUiMapVisualKeys
 import com.ktome.client.assets.ResolvedVisualAsset
+import com.ktome.client.assets.TerrainWallPieceRole
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.ShopFocus
@@ -105,6 +107,8 @@ internal data class TileVisualPlacement(
     val alpha: Float = 1f,
     val tintColorHex: String? = null,
     val drawPriority: Int = 0,
+    val flipX: Boolean = false,
+    val flipY: Boolean = false,
 )
 
 internal data class TileGroundLootMarkerModel(
@@ -589,6 +593,8 @@ internal data class TileRenderModel(
     val playerTile: com.ktome.core.map.Point,
     val mapDimensions: TileMapDimensions,
     val chromeAssets: TileChromeAssets? = null,
+    val roomPresentationPlan: RoomPresentationPlan = RoomPresentationPlan(),
+    val roomMaterialBreakup: ResolvedVisualAsset? = null,
 )
 
 internal object TileRenderModelBuilder {
@@ -616,11 +622,15 @@ internal object TileRenderModelBuilder {
             snapshot.mapCells
                 .filter { cell -> cell.visibility != CellVisibilitySnapshot.HIDDEN }
                 .map { cell ->
+                    val materialVariant = materialVariant(cell.x, cell.y, cell.terrainVisualKey)
+                    val terrainPlacement = resolveTerrainPlacement(visualResolver, cell, cellByPoint, materialVariant)
                     TileVisualPlacement(
                         x = cell.x,
                         y = cell.y,
-                        asset = resolveVisual(visualResolver, cell.terrainVisualKey),
+                        asset = terrainPlacement.asset,
                         alpha = if (cell.visibility == CellVisibilitySnapshot.EXPLORED) 0.72f else 1f,
+                        flipX = terrainPlacement.flipX,
+                        flipY = terrainPlacement.flipY,
                     )
                 }
         val mapCellMaterials = buildMapCellMaterials(snapshot.mapCells)
@@ -821,6 +831,16 @@ internal object TileRenderModelBuilder {
             playerTile = point(player.x, player.y),
             mapDimensions = TileMapDimensions(snapshot.metadata.width, snapshot.metadata.height),
             chromeAssets = chromeAssets,
+            roomPresentationPlan =
+                RoomPresentationPlan(
+                    artPlate =
+                        RoomArtPlateCatalog.resolve(
+                            visualResolver = visualResolver,
+                            tilesetKey = snapshot.metadata.tilesetKey,
+                            cells = snapshot.mapCells,
+                        ),
+                ),
+            roomMaterialBreakup = resolveRuinsRoomMaterialBreakup(visualResolver, snapshot),
         )
     }
 
@@ -1157,6 +1177,87 @@ internal object TileRenderModelBuilder {
         this == null ||
             visibility == CellVisibilitySnapshot.HIDDEN ||
             materialKind() == TileMapCellMaterialKind.WALL
+
+    private fun MapCellSnapshot?.isVisibleFloorMaterial(): Boolean =
+        this != null &&
+            visibility != CellVisibilitySnapshot.HIDDEN &&
+            materialKind() == TileMapCellMaterialKind.FLOOR
+
+    private fun resolveRuinsRoomMaterialBreakup(
+        visualResolver: VisualManifestResolver,
+        snapshot: RenderSnapshot,
+    ): ResolvedVisualAsset? =
+        if (DarkUiMapVisualKeys.supportsRuinsRoomPresentation(snapshot.metadata.tilesetKey, snapshot.mapCells)) {
+            resolveVisual(visualResolver, DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP)
+        } else {
+            null
+        }
+
+    private data class TerrainPlacement(
+        val asset: ResolvedVisualAsset,
+        val flipX: Boolean = false,
+        val flipY: Boolean = false,
+    )
+
+    private data class TerrainWallPieceSelection(
+        val role: TerrainWallPieceRole,
+        val flipX: Boolean = false,
+        val flipY: Boolean = false,
+    )
+
+    private fun resolveTerrainPlacement(
+        visualResolver: VisualManifestResolver,
+        cell: MapCellSnapshot,
+        cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
+        materialVariant: Int,
+    ): TerrainPlacement =
+        if (cell.materialKind() == TileMapCellMaterialKind.WALL) {
+            val selection = wallPieceSelection(cell, cellByPoint)
+            TerrainPlacement(
+                asset = visualResolver.resolveTerrainWallPiece(cell.terrainVisualKey, selection.role),
+                flipX = selection.flipX,
+                flipY = selection.flipY,
+            )
+        } else {
+            val asset = visualResolver.resolveTerrainVariant(cell.terrainVisualKey, materialVariant)
+            val hasVariantFamily = visualResolver.terrainVariantKeys(cell.terrainVisualKey).size > 1
+            val canFlip = hasVariantFamily && asset.entry.category == "tile_ground"
+            TerrainPlacement(
+                asset = asset,
+                flipX = canFlip && materialVariant % 2 == 0,
+                flipY = canFlip && (materialVariant / 2) % 2 == 0,
+            )
+        }
+
+    private fun wallPieceSelection(
+        cell: MapCellSnapshot,
+        cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
+    ): TerrainWallPieceSelection {
+        val northFloor = cellByPoint[point(cell.x, cell.y + 1)].isVisibleFloorMaterial()
+        val southFloor = cellByPoint[point(cell.x, cell.y - 1)].isVisibleFloorMaterial()
+        val westFloor = cellByPoint[point(cell.x - 1, cell.y)].isVisibleFloorMaterial()
+        val eastFloor = cellByPoint[point(cell.x + 1, cell.y)].isVisibleFloorMaterial()
+        val hasVerticalContact = northFloor || southFloor
+        val hasHorizontalContact = westFloor || eastFloor
+        return when {
+            (northFloor && southFloor) || (westFloor && eastFloor) ->
+                TerrainWallPieceSelection(TerrainWallPieceRole.DOOR_CONTACT)
+            hasVerticalContact && hasHorizontalContact ->
+                TerrainWallPieceSelection(
+                    role = TerrainWallPieceRole.CORNER,
+                    flipX = westFloor,
+                    flipY = northFloor,
+                )
+            hasHorizontalContact ->
+                TerrainWallPieceSelection(
+                    role = TerrainWallPieceRole.SIDE,
+                    flipX = westFloor,
+                )
+            southFloor -> TerrainWallPieceSelection(TerrainWallPieceRole.CROWN)
+            northFloor -> TerrainWallPieceSelection(TerrainWallPieceRole.BASE)
+            else -> TerrainWallPieceSelection(TerrainWallPieceRole.BASE)
+        }
+    }
 
     private fun MapCellSnapshot.materialKind(): TileMapCellMaterialKind =
         when {

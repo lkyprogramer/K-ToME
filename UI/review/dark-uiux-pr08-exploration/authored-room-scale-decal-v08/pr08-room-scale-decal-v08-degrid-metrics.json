@@ -1,0 +1,43 @@
+{
+  "source": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/runtime-w05i-wall-edge-unify/ui-demo-new-map-stage-crop.png",
+  "roomBounds": {
+    "x": 344,
+    "y": 157,
+    "right": 1467,
+    "bottom": 885
+  },
+  "baselineEdgeScore": {
+    "meanEdge": 6.992,
+    "p90Edge": 23
+  },
+  "candidates": {
+    "d_degrid_only": {
+      "crop": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-d_degrid_only-map-stage-crop.png",
+      "cropSha256": "2aeedc7f96b8613d847e3d40817c82ed7084e3463bf7714b3cf64527244f1b8d",
+      "edgeScore": {
+        "meanEdge": 6.238,
+        "p90Edge": 20
+      }
+    },
+    "e_degrid_room_ao": {
+      "crop": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-e_degrid_room_ao-map-stage-crop.png",
+      "cropSha256": "6b1765e810c464cc9ddd1fdb4b2088aea055f42e2358f75ca039f70367e9c9ad",
+      "edgeScore": {
+        "meanEdge": 5.456,
+        "p90Edge": 17
+      }
+    },
+    "f_contact_enclosure": {
+      "crop": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-f_contact_enclosure-map-stage-crop.png",
+      "cropSha256": "123be44e6c9c4d66f40ecaa15121233688ee7448e023b1e4e9dc68578ce7ecd5",
+      "edgeScore": {
+        "meanEdge": 5.588,
+        "p90Edge": 17
+      }
+    }
+  },
+  "latticeMask": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-dark-lattice-mask.png",
+  "latticeMaskSha256": "818651ead580f8d520b92bb706587fafecfeb2657a9fc6939743d51c62266013",
+  "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/authored-room-scale-decal-v08/pr08-room-scale-decal-v08-degrid-comparison-board.png",
+  "comparisonBoardSha256": "11ac11f8f98e4096897bc733596438324660633941641cb36781458b54f50a15"
+}

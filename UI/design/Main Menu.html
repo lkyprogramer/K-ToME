@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>K-ToME · Main Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  html, body { margin: 0; height: 100%; background: #05070A; overflow: hidden; }
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(80% 60% at 50% 30%, #0b0f15 0%, #05070A 70%);
+  }
+  #canvas {
+    width: 1280px; height: 800px;
+    transform-origin: center center;
+    flex: 0 0 auto;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="canvas"><div id="root"></div></div>
+</div>
+
+<script type="text/babel" src="components/icon-token.jsx"></script>
+<script type="text/babel" src="components/primitives.jsx"></script>
+<script type="text/babel" src="components/shell.jsx"></script>
+<script type="text/babel" src="components/main-menu.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<script type="text/babel">
+const MM_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "selectedMenu": "quickstart",
+  "classIndex": 0,
+  "raceIndex": 0,
+  "showError": true,
+  "showOverlay": false,
+  "lang": "简体中文"
+}/*EDITMODE-END*/;
+
+function scaleCanvas() {
+  const pad = 24;
+  const s = Math.min((window.innerWidth - pad) / 1280, (window.innerHeight - pad) / 800);
+  document.getElementById("canvas").style.transform = `scale(${s})`;
+}
+window.addEventListener("resize", scaleCanvas);
+
+const MENU_ORDER = (window.MM_MENU || []).map(m => m.key);
+
+function App() {
+  const [t, setTweak] = useTweaks(MM_TWEAK_DEFAULTS);
+  React.useEffect(scaleCanvas, []);
+
+  // keyboard navigation, synced to tweak state
+  React.useEffect(() => {
+    const onKey = (e) => {
+      const order = MENU_ORDER.length ? MENU_ORDER : ["quickstart","continue","validation","settings","quit"];
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const i = order.indexOf(t.selectedMenu);
+        setTweak("selectedMenu", order[(i + 1) % order.length]);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const i = order.indexOf(t.selectedMenu);
+        setTweak("selectedMenu", order[(i - 1 + order.length) % order.length]);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setTweak("classIndex", (t.classIndex + MM_CLASSES.length - 1) % MM_CLASSES.length);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setTweak("classIndex", (t.classIndex + 1) % MM_CLASSES.length);
+      } else if (e.key === "q" || e.key === "Q") {
+        setTweak("raceIndex", (t.raceIndex + MM_RACES.length - 1) % MM_RACES.length);
+      } else if (e.key === "e" || e.key === "E") {
+        setTweak("raceIndex", (t.raceIndex + 1) % MM_RACES.length);
+      } else if (e.key === "l" || e.key === "L") {
+        setTweak("lang", t.lang === "简体中文" ? "English" : "简体中文");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [t.selectedMenu, t.classIndex, t.raceIndex, t.lang]);
+
+  return (
+    <>
+      <MainMenu
+        selectedMenu={t.selectedMenu}
+        classIndex={t.classIndex}
+        raceIndex={t.raceIndex}
+        showError={t.showError}
+        showOverlay={t.showOverlay}
+        lang={t.lang}
+        onSelectMenu={k => setTweak("selectedMenu", k)}
+        onSelectClass={i => setTweak("classIndex", i)}
+        onSelectRace={i => setTweak("raceIndex", i)}
+      />
+      <TweaksPanel>
+        <TweakSection label="Selection" />
+        <TweakSelect label="Menu item" value={t.selectedMenu}
+                     options={["quickstart", "continue", "validation", "settings", "quit"]}
+                     onChange={v => setTweak("selectedMenu", v)} />
+        <TweakSelect label="Class" value={String(t.classIndex)}
+                     options={["0", "1", "2", "3"]}
+                     onChange={v => setTweak("classIndex", parseInt(v))} />
+        <TweakSelect label="Race" value={String(t.raceIndex)}
+                     options={["0", "1", "2", "3"]}
+                     onChange={v => setTweak("raceIndex", parseInt(v))} />
+        <TweakSection label="Display" />
+        <TweakToggle label="Save error banner" value={t.showError}
+                     onChange={v => setTweak("showError", v)} />
+        <TweakToggle label="Spec overlay" value={t.showOverlay}
+                     onChange={v => setTweak("showOverlay", v)} />
+        <TweakRadio label="Language" value={t.lang}
+                    options={["简体中文", "English"]}
+                    onChange={v => setTweak("lang", v)} />
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+</body>
+</html>

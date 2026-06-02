@@ -842,6 +842,14 @@ registerDarkManifestCoverageTask(
     reportFileName = "dark-v1-manifest-coverage-pr02-2-owner-scope.json",
 )
 
+registerDarkManifestCoverageTask(
+    name = "darkManifestCoveragePr08OwnerScope",
+    mode = "owner-scope",
+    ownerPr = "PR-08",
+    ownerContract = "UI/sprite-sheets/owner-contracts/pr08-owner-keys.yaml",
+    reportFileName = "dark-v1-manifest-coverage-pr08-owner-scope.json",
+)
+
 tasks.register<VerificationTask>("verifyContractLintPreflight") {
     description = "Runs the contractLint STATIC_GRAPH demo through the unified verification task foundation."
     domainId.set("contractLint")
@@ -1349,6 +1357,7 @@ listOf(
     tasks.named("darkManifestCoveragePr02OwnerScope"),
     tasks.named("darkManifestCoveragePr02_1OwnerScope"),
     tasks.named("darkManifestCoveragePr02_2OwnerScope"),
+    tasks.named("darkManifestCoveragePr08OwnerScope"),
     tasks.named("verifyContractLintPreflight"),
     tasks.named("verifyLootPreflight"),
     tasks.named("verifyHiddenPreflight"),

@@ -1,0 +1,9 @@
+label	hash	artifact
+ui-demo-new-parity-1672x941	bc5e73e6ca4dd4e6cf46528f52a4c40b051f4b4b42a8fdd77edafb73dcfb32cb	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1672x941.png
+ui-demo-new-parity-1280x800	76b41326b4c16819c239ee3ab74535ff95c8196609461b7e4918f2e346f9320f	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-parity-1280x800.png
+ui-demo-new-right-panel-grid	4fc73bb307d123267bef293e925fd0f1449b4dd3437b92ffc315d3f9ada6c5f8	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-right-panel-grid.png
+ui-demo-new-bottom-deck-no-command-hints	9a64b9de43f0d8526d48e2bd5e9705c266599d3002c9b924305f7c2bf5aacdcd	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-bottom-deck-no-command-hints.png
+ui-demo-new-nav-rail-crop	c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-nav-rail-crop.png
+ui-demo-new-map-stage-crop	841f3083a7c37860c4468f0fd49705266842519c90532784a08bed5fe8d21e6f	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-map-stage-crop.png
+ui-demo-new-inventory-page-1	23905f61e56675bd4736eb0a9f47a200012d9899584e1be5c1b613c84952b8bd	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-inventory-page-1.png
+ui-demo-new-inventory-page-2	63bbaecf273cd14cbdea001954c8d4a50691e29207140bf3067332e18d9cc94a	client/build/reports/golden/dark-uiux-pr02-1/ui-demo-new-inventory-page-2.png

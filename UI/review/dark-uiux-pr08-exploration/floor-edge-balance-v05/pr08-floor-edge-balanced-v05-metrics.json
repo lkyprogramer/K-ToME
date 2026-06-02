@@ -1,0 +1,49 @@
+{
+  "slice": "floor-edge-balance-v05",
+  "metrics": [
+    {
+      "key": "tileset.ruins.ground_01",
+      "before_edge_luma": 33.83,
+      "before_center_luma": 43.995,
+      "before_edge_center_delta": -10.165,
+      "after_edge_luma": 41.583,
+      "after_center_luma": 43.995,
+      "after_edge_center_delta": -2.413,
+      "runtime_output": "client/src/main/resources/dark-v1/tiles/tileset_ruins_ground_01.png",
+      "evidence_output": "UI/review/dark-uiux-pr08-exploration/floor-edge-balance-v05/tileset_ruins_ground_01_edge_balanced_v05.png"
+    },
+    {
+      "key": "tileset.ruins.ground_01.variant_1",
+      "before_edge_luma": 35.681,
+      "before_center_luma": 41.839,
+      "before_edge_center_delta": -6.157,
+      "after_edge_luma": 39.85,
+      "after_center_luma": 41.839,
+      "after_edge_center_delta": -1.989,
+      "runtime_output": "client/src/main/resources/dark-v1/tiles/tileset_ruins_ground_01_variant_1.png",
+      "evidence_output": "UI/review/dark-uiux-pr08-exploration/floor-edge-balance-v05/tileset_ruins_ground_01_variant_1_edge_balanced_v05.png"
+    },
+    {
+      "key": "tileset.ruins.ground_01.variant_2",
+      "before_edge_luma": 32.926,
+      "before_center_luma": 40.562,
+      "before_edge_center_delta": -7.636,
+      "after_edge_luma": 38.965,
+      "after_center_luma": 40.562,
+      "after_edge_center_delta": -1.596,
+      "runtime_output": "client/src/main/resources/dark-v1/tiles/tileset_ruins_ground_01_variant_2.png",
+      "evidence_output": "UI/review/dark-uiux-pr08-exploration/floor-edge-balance-v05/tileset_ruins_ground_01_variant_2_edge_balanced_v05.png"
+    },
+    {
+      "key": "tileset.ruins.ground_01.variant_3",
+      "before_edge_luma": 36.74,
+      "before_center_luma": 43.776,
+      "before_edge_center_delta": -7.035,
+      "after_edge_luma": 42.153,
+      "after_center_luma": 43.776,
+      "after_edge_center_delta": -1.623,
+      "runtime_output": "client/src/main/resources/dark-v1/tiles/tileset_ruins_ground_01_variant_3.png",
+      "evidence_output": "UI/review/dark-uiux-pr08-exploration/floor-edge-balance-v05/tileset_ruins_ground_01_variant_3_edge_balanced_v05.png"
+    }
+  ]
+}

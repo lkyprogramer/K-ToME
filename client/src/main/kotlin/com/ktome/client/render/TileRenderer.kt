@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.Texture.TextureFilter
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.Disposable
 import com.ktome.client.assets.ClientTextureRepository
+import com.ktome.client.assets.DarkUiMapVisualKeys
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
@@ -46,6 +47,7 @@ import com.ktome.client.ui.talent.TalentTreeNodeToneToken
 import com.ktome.client.ui.talent.toTalentTreeSelectionIdentity
 import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.map.Point
+import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.i18n.Localizer
 import kotlin.math.abs
@@ -73,7 +75,7 @@ internal enum class TileLayerFlushReason {
     MAP_TARGETING_HIGHLIGHTS,
     MAP_ACTIVE_CURSOR,
     MAP_COMBAT_FEEDBACK,
-    MAP_WARM_OVERLAY,
+    MAP_ROOM_COMPOSITOR,
     MAP_FRONTSTAGE_SURFACE,
     SHELL_OUTER_FRAME,
     MAP_STAGE_FRAME,
@@ -116,11 +118,21 @@ internal data class TileRectDraw(
     val color: Color,
 )
 
+internal data class TileAssetSourceRegion(
+    val leftRatio: Float,
+    val bottomRatio: Float,
+    val widthRatio: Float,
+    val heightRatio: Float,
+)
+
 internal data class TileAssetDraw(
     val asset: ResolvedVisualAsset,
     val bounds: TileFloatBounds,
     val alpha: Float = 1f,
     val tintColorHex: String? = null,
+    val flipX: Boolean = false,
+    val flipY: Boolean = false,
+    val sourceRegion: TileAssetSourceRegion? = null,
 )
 
 internal data class TileTextDraw(
@@ -179,6 +191,8 @@ internal fun TileCanvas.drawAsset(
     bounds: TileFloatBounds,
     alpha: Float = 1f,
     tintColorHex: String? = null,
+    flipX: Boolean = false,
+    flipY: Boolean = false,
 ) {
     drawAsset(
         TileAssetDraw(
@@ -186,6 +200,8 @@ internal fun TileCanvas.drawAsset(
             bounds = bounds,
             alpha = alpha,
             tintColorHex = tintColorHex,
+            flipX = flipX,
+            flipY = flipY,
         ),
     )
 }
@@ -366,9 +382,58 @@ class TileRenderer(
                 draw.tintColorHex
                     ?.let { tint -> Color.valueOf(tint.removePrefix("#")).also { color -> color.a = draw.alpha } }
                     ?: Color(1f, 1f, 1f, draw.alpha)
-            batch.draw(texture, draw.bounds.x, draw.bounds.y, draw.bounds.width, draw.bounds.height)
+            val source = draw.sourceRegion?.toTextureSource(texture)
+            if (source != null || draw.flipX || draw.flipY) {
+                val sourceRect =
+                    source ?: TextureSourceRect(
+                        x = 0,
+                        y = 0,
+                        width = texture.width,
+                        height = texture.height,
+                    )
+                batch.draw(
+                    texture,
+                    draw.bounds.x,
+                    draw.bounds.y,
+                    draw.bounds.width,
+                    draw.bounds.height,
+                    sourceRect.x,
+                    sourceRect.y,
+                    sourceRect.width,
+                    sourceRect.height,
+                    draw.flipX,
+                    draw.flipY,
+                )
+            } else {
+                batch.draw(texture, draw.bounds.x, draw.bounds.y, draw.bounds.width, draw.bounds.height)
+            }
             batch.color = previous
             hasPendingDraw = true
+        }
+
+        private fun TileAssetSourceRegion.toTextureSource(texture: Texture): TextureSourceRect {
+            val sourceX = (leftRatio.coerceIn(0f, 1f) * texture.width).roundToInt().coerceAtMost(texture.width - 1)
+            val sourceY =
+                ((1f - bottomRatio.coerceIn(0f, 1f) - heightRatio.coerceIn(0.01f, 1f)) * texture.height)
+                    .roundToInt()
+                    .coerceAtLeast(0)
+                    .coerceAtMost(texture.height - 1)
+            val sourceWidth =
+                (widthRatio.coerceIn(0.01f, 1f) * texture.width)
+                    .roundToInt()
+                    .coerceAtLeast(1)
+                    .coerceAtMost(texture.width - sourceX)
+            val sourceHeight =
+                (heightRatio.coerceIn(0.01f, 1f) * texture.height)
+                    .roundToInt()
+                    .coerceAtLeast(1)
+                    .coerceAtMost(texture.height - sourceY)
+            return TextureSourceRect(
+                x = sourceX,
+                y = sourceY,
+                width = sourceWidth,
+                height = sourceHeight,
+            )
         }
 
         override fun drawText(draw: TileTextDraw) {
@@ -392,6 +457,13 @@ class TileRenderer(
             hasPendingDraw = false
         }
     }
+
+    private data class TextureSourceRect(
+        val x: Int,
+        val y: Int,
+        val width: Int,
+        val height: Int,
+    )
 
     private fun solidTexture(): Texture =
         Pixmap(1, 1, Pixmap.Format.RGBA8888).let { pixmap ->
@@ -515,8 +587,6 @@ class TileRenderer(
             canvas.flushLayer(TileLayerFlushReason.MAP_STAGE_FRAME)
             val mapFrame = MapRenderFrame(model, layerPlan, layout, viewport)
             TileMapRenderer.render(canvas, mapFrame)
-            renderWarmMapOverlay(canvas, mapFrame)
-            canvas.flushLayer(TileLayerFlushReason.MAP_WARM_OVERLAY)
             DemoShellRenderer.renderFrontstageSurface(canvas, shellFrame)
             canvas.flushLayer(TileLayerFlushReason.MAP_FRONTSTAGE_SURFACE)
             DemoShellRenderer.renderShell(canvas, shellFrame)
@@ -769,73 +839,117 @@ class TileRenderer(
                 frame: MapRenderFrame,
             ) {
                 val viewport = frame.viewport
-                frame.layerPlan.terrainBase.forEach { placement -> drawPlacement(canvas, placement, viewport) }
+                val isRoomArtPlateActive = frame.model.roomPresentationPlan.compositorStrategy == RoomCompositorStrategy.ART_PLATE_PRESENTATION
+                val (groundTerrain, upperTerrain) =
+                    frame.layerPlan.terrainBase.partition { placement -> placement.asset.entry.category == "tile_ground" }
+                if (!isRoomArtPlateActive) {
+                    groundTerrain.forEach { placement -> drawPlacement(canvas, placement, viewport) }
+                }
+                upperTerrain.forEach { placement -> drawPlacement(canvas, placement, viewport) }
                 canvas.flushLayer(TileLayerFlushReason.MAP_TERRAIN_BASE)
                 drawVisibleRoomFoundationGlaze(canvas, frame)
-                frame.layerPlan.cellMaterials.forEach { material -> drawCellMaterial(canvas, material, viewport) }
+                frame.layerPlan.cellMaterials
+                    .filterNot { material -> isRoomArtPlateActive && material.kind == TileMapCellMaterialKind.FLOOR }
+                    .forEach { material -> drawCellMaterial(canvas, material, viewport) }
                 canvas.flushLayer(TileLayerFlushReason.MAP_CELL_MATERIAL)
+                renderRoomCompositor(canvas, frame)
+                canvas.flushLayer(TileLayerFlushReason.MAP_ROOM_COMPOSITOR)
                 drawPropAtmosphere(canvas, frame.layerPlan.propsAndDecals, viewport)
                 canvas.flushLayer(TileLayerFlushReason.MAP_PROP_ATMOSPHERE)
                 frame.layerPlan.propsAndDecals.forEach { placement -> drawPlacement(canvas, placement, viewport) }
                 canvas.flushLayer(TileLayerFlushReason.MAP_PROPS_AND_DECALS)
-                frame.layerPlan.spriteOverlaysAndTelegraphs.forEach { placement -> drawPlacement(canvas, placement, viewport) }
+                if (isRoomArtPlateActive) {
+                    frame.layerPlan.spriteOverlaysAndTelegraphs.forEach { placement ->
+                        drawRoomArtPlateSpriteOverlay(canvas, placement, viewport)
+                    }
+                } else {
+                    frame.layerPlan.spriteOverlaysAndTelegraphs.forEach { placement -> drawPlacement(canvas, placement, viewport) }
+                }
                 canvas.flushLayer(TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS)
                 frame.layerPlan.actors.forEach { placement -> drawActorGroundingShadow(canvas, placement, viewport) }
                 frame.layerPlan.actors.forEach { placement -> drawPlacement(canvas, placement, viewport) }
                 canvas.flushLayer(TileLayerFlushReason.MAP_ACTORS)
-                frame.layerPlan.playerIndicators.forEach { indicator ->
-                    if (viewport.containsTile(indicator.tile)) {
-                        val rect = viewport.tileRect(indicator.tile)
-                        val x = rect.x.toFloat()
-                        val y = rect.y.toFloat()
-                        val width = rect.width.toFloat()
-                        val height = rect.height.toFloat()
-                        canvas.drawRect(tileBounds(x + 8f, y + 6f, 17f, 3f), color("050604", 0.315f))
-                        drawRectOutline(
-                            canvas = canvas,
-                            x = x + 3f,
-                            y = y + 3f,
-                            width = rect.width - 6f,
-                            height = rect.height - 6f,
-                            stroke = 2f,
-                            color = color("D99A2B", 0.94f),
-                        )
-                        val bracket = color("FFE18A", 0.615f)
-                        canvas.drawRect(tileBounds(x + 4f, y + 4f, 8f, 2f), bracket)
-                        canvas.drawRect(tileBounds(x + 4f, y + 4f, 2f, 8f), bracket)
-                        canvas.drawRect(tileBounds(x + width - 12f, y + 4f, 8f, 2f), bracket)
-                        canvas.drawRect(tileBounds(x + width - 6f, y + 4f, 2f, 8f), bracket)
-                        canvas.drawRect(tileBounds(x + 4f, y + height - 6f, 8f, 2f), bracket)
-                        canvas.drawRect(tileBounds(x + 4f, y + height - 12f, 2f, 8f), bracket)
-                        canvas.drawRect(tileBounds(x + width - 12f, y + height - 6f, 8f, 2f), bracket)
-                        canvas.drawRect(tileBounds(x + width - 6f, y + height - 12f, 2f, 8f), bracket)
-                    }
+                if (isRoomArtPlateActive) {
+                    drawRoomArtPlatePlayerIndicators(canvas, frame.layerPlan.playerIndicators, viewport)
+                } else {
+                    drawPlayerIndicators(canvas, frame.layerPlan.playerIndicators, viewport)
                 }
                 canvas.flushLayer(TileLayerFlushReason.MAP_PLAYER_INDICATOR)
-                drawGroundLootAtmosphere(canvas, frame.layerPlan.groundLootMarkers, viewport)
+                if (isRoomArtPlateActive) {
+                    drawRoomArtPlateGroundLootAtmosphere(canvas, frame.layerPlan.groundLootMarkers, viewport)
+                } else {
+                    drawGroundLootAtmosphere(canvas, frame.layerPlan.groundLootMarkers, viewport)
+                }
                 canvas.flushLayer(TileLayerFlushReason.MAP_GROUND_LOOT_ATMOSPHERE)
-                drawGroundLootMarkers(canvas, frame.layerPlan.groundLootMarkers, viewport)
+                if (isRoomArtPlateActive) {
+                    drawRoomArtPlateGroundLootMarkers(canvas, frame.layerPlan.groundLootMarkers, viewport)
+                } else {
+                    drawGroundLootMarkers(canvas, frame.layerPlan.groundLootMarkers, viewport)
+                }
                 canvas.flushLayer(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS)
-                drawFogOverlays(canvas, frame.layerPlan.fogVeils, viewport)
+                if (isRoomArtPlateActive) {
+                    drawRoomArtPlateFogOverlays(canvas, frame)
+                } else {
+                    drawFogOverlays(canvas, frame.layerPlan.fogVeils, viewport)
+                }
+                if (isRoomArtPlateActive) {
+                    drawRoomArtPlateApertureShoulders(canvas, frame)
+                }
+                drawHiddenStageApertureMasonry(canvas, frame, visibleRoomClip(frame) ?: viewport.mapBounds)
                 canvas.flushLayer(TileLayerFlushReason.MAP_FOG_VEILS)
-                drawTargetHighlights(canvas, frame.layerPlan.targetHighlights, viewport)
+                drawTargetHighlights(canvas, frame)
                 canvas.flushLayer(TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS)
                 frame.layerPlan.activeCursor?.let { cursor ->
-                    drawCursor(
-                        canvas = canvas,
-                        tile = cursor.tile,
-                        viewport = viewport,
-                        color =
-                            if (cursor.mode == TileViewportFocusMode.TARGETING) {
-                                targetCursorColor(cursor.state)
-                            } else {
-                                UiDesignTokens.color.focus.ring.color()
-                            },
-                    )
+                    val cursorColor =
+                        if (cursor.mode == TileViewportFocusMode.TARGETING) {
+                            targetCursorColor(cursor.state)
+                        } else {
+                            UiDesignTokens.color.focus.ring.color()
+                        }
+                    if (isRoomArtPlateActive) {
+                        drawRoomArtPlateCursor(canvas, cursor.tile, viewport, cursorColor)
+                    } else {
+                        drawCursor(canvas, cursor.tile, viewport, cursorColor)
+                    }
                 }
                 canvas.flushLayer(TileLayerFlushReason.MAP_ACTIVE_CURSOR)
                 drawCombatFeedback(canvas, frame.layerPlan.combatFeedback, viewport)
                 canvas.flushLayer(TileLayerFlushReason.MAP_COMBAT_FEEDBACK)
+            }
+
+            private fun renderRoomCompositor(
+                canvas: TileCanvas,
+                frame: MapRenderFrame,
+            ) {
+                when (frame.model.roomPresentationPlan.compositorStrategy) {
+                    RoomCompositorStrategy.LEGACY_TILE_DECORATION -> renderLegacyRoomDecoration(canvas, frame)
+                    RoomCompositorStrategy.ART_PLATE_PRESENTATION -> {
+                        RoomArtPlateRenderer.render(canvas, frame)
+                        renderRoomArtPlateReadability(canvas, frame)
+                    }
+                    RoomCompositorStrategy.TOPOLOGY_RISK_HYBRID_PRESENTATION -> {
+                        renderLegacyRoomDecoration(canvas, frame)
+                        RoomArtPlateRenderer.render(canvas, frame)
+                    }
+                }
+            }
+
+            private fun renderLegacyRoomDecoration(
+                canvas: TileCanvas,
+                frame: MapRenderFrame,
+            ) {
+                drawVisibleRoomFloorUnifier(canvas, frame)
+                drawVisibleRoomAtmosphere(canvas, frame)
+                drawVisibleRoomApertureHierarchy(canvas, frame)
+                renderWarmMapOverlay(canvas, frame)
+            }
+
+            private fun renderRoomArtPlateReadability(
+                canvas: TileCanvas,
+                frame: MapRenderFrame,
+            ) {
+                drawRoomArtPlateTargetTopologyHints(canvas, frame)
+                visibleRoomClip(frame)?.let { roomClip -> drawRoomArtPlateEdgeFeather(canvas, frame, roomClip) }
             }
         }
 
@@ -1901,6 +2015,71 @@ class TileRenderer(
             canvas.drawRect(tileBounds(x + width - stroke, y, stroke, height), color)
         }
 
+        private fun drawPlayerIndicators(
+            canvas: TileCanvas,
+            indicators: List<TilePlayerIndicatorModel>,
+            viewport: TileMapViewport,
+        ) {
+            indicators.forEach { indicator ->
+                if (viewport.containsTile(indicator.tile)) {
+                    val rect = viewport.tileRect(indicator.tile)
+                    val x = rect.x.toFloat()
+                    val y = rect.y.toFloat()
+                    val width = rect.width.toFloat()
+                    val height = rect.height.toFloat()
+                    canvas.drawRect(tileBounds(x + 8f, y + 6f, 17f, 3f), color("050604", 0.315f))
+                    drawRectOutline(
+                        canvas = canvas,
+                        x = x + 3f,
+                        y = y + 3f,
+                        width = rect.width - 6f,
+                        height = rect.height - 6f,
+                        stroke = 2f,
+                        color = color("D99A2B", 0.94f),
+                    )
+                    val bracket = color("FFE18A", 0.615f)
+                    canvas.drawRect(tileBounds(x + 4f, y + 4f, 8f, 2f), bracket)
+                    canvas.drawRect(tileBounds(x + 4f, y + 4f, 2f, 8f), bracket)
+                    canvas.drawRect(tileBounds(x + width - 12f, y + 4f, 8f, 2f), bracket)
+                    canvas.drawRect(tileBounds(x + width - 6f, y + 4f, 2f, 8f), bracket)
+                    canvas.drawRect(tileBounds(x + 4f, y + height - 6f, 8f, 2f), bracket)
+                    canvas.drawRect(tileBounds(x + 4f, y + height - 12f, 2f, 8f), bracket)
+                    canvas.drawRect(tileBounds(x + width - 12f, y + height - 6f, 8f, 2f), bracket)
+                    canvas.drawRect(tileBounds(x + width - 6f, y + height - 12f, 2f, 8f), bracket)
+                }
+            }
+        }
+
+        private fun drawRoomArtPlatePlayerIndicators(
+            canvas: TileCanvas,
+            indicators: List<TilePlayerIndicatorModel>,
+            viewport: TileMapViewport,
+        ) {
+            indicators.forEach { indicator ->
+                if (!viewport.containsTile(indicator.tile)) {
+                    return@forEach
+                }
+                val rect = viewport.tileRect(indicator.tile)
+                val x = rect.x.toFloat()
+                val y = rect.y.toFloat()
+                val width = rect.width.toFloat()
+                val height = rect.height.toFloat()
+                canvas.drawRect(tileBounds(x + 8f, y + 5f, width - 16f, 3f), color("050604", 0.22f))
+                canvas.drawRect(tileBounds(x + 11f, y + 8f, width - 22f, 2f), color("D99A2B", 0.25f))
+                drawArtPlateCornerMarks(
+                    canvas = canvas,
+                    x = x,
+                    y = y,
+                    width = width,
+                    height = height,
+                    mark = color("FFE18A", 0.58f),
+                    inset = 5f,
+                    length = 8f,
+                    stroke = 1.5f,
+                )
+            }
+        }
+
         private fun drawGroundLootMarkers(
             canvas: TileCanvas,
             markers: List<TileGroundLootMarkerModel>,
@@ -1945,36 +2124,199 @@ class TileRenderer(
             }
         }
 
-        private fun drawTargetHighlights(
+        private fun drawRoomArtPlateGroundLootMarkers(
             canvas: TileCanvas,
-            highlights: List<TileTargetHighlightModel>,
+            markers: List<TileGroundLootMarkerModel>,
             viewport: TileMapViewport,
         ) {
-            highlights.forEach { highlight ->
+            markers.forEach { marker ->
+                val tile = Point(marker.x, marker.y)
+                if (!viewport.containsTile(tile)) {
+                    return@forEach
+                }
+                val rect = viewport.tileRect(tile)
+                val cellLeft = rect.x.toFloat()
+                val cellBottom = rect.y.toFloat()
+                val actorCorner = marker.placement == com.ktome.client.ui.item.GroundLootMarkerPlacement.ACTOR_CORNER
+                val iconSize = if (actorCorner) viewport.cellSize * 0.46f else viewport.cellSize * 0.62f
+                val iconX =
+                    if (actorCorner) {
+                        cellLeft + viewport.cellSize - iconSize - 3f
+                    } else {
+                        cellLeft + (viewport.cellSize - iconSize) / 2f
+                    }
+                val iconY =
+                    if (actorCorner) {
+                        cellBottom + viewport.cellSize - iconSize - 3f
+                    } else {
+                        cellBottom + (viewport.cellSize - iconSize) / 2f
+                    }
+                val railColor = withAlpha(tone(marker.rarityTone), 0.58f)
+                val shelfAlpha = if (actorCorner) 0.18f else 0.24f
+                canvas.drawRect(tileBounds(iconX + 2f, iconY - 3f, iconSize - 4f, 3f), color("050604", shelfAlpha))
+                canvas.drawRect(tileBounds(iconX + 1f, iconY + iconSize + 1f, iconSize - 2f, 2f), railColor)
+                marker.specialAccentTokenId?.let { accent ->
+                    canvas.drawRect(tileBounds(iconX + iconSize - 6f, iconY + 2f, 2f, iconSize - 4f), withAlpha(specialAccentColor(accent), 0.52f))
+                }
+                canvas.drawAsset(marker.icon, tileBounds(iconX, iconY, iconSize, iconSize))
+                marker.cornerGlyph?.let { glyph ->
+                    canvas.drawText(TileTextStyle.SMALL, glyph, tilePosition(iconX - 1f, iconY + iconSize + 13f), railColor)
+                }
+                marker.countBadge?.let { badge ->
+                    val badgeWidth = if (badge == "9+") 27f else 20f
+                    canvas.drawRect(tileBounds(iconX + iconSize - badgeWidth + 4f, iconY - 4f, badgeWidth, 16f), color("050604", 0.64f))
+                    canvas.drawText(TileTextStyle.SMALL, badge, tilePosition(iconX + iconSize - badgeWidth + 7f, iconY + 10f), tone(TileTextTone.WHITE))
+                }
+            }
+        }
+
+        private fun drawTargetHighlights(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val viewport = frame.viewport
+            val useArtPlateGrammar =
+                frame.model.roomPresentationPlan.compositorStrategy == RoomCompositorStrategy.ART_PLATE_PRESENTATION
+            if (useArtPlateGrammar) {
+                drawArtPlateTargetHighlights(canvas, frame.layerPlan.targetHighlights, viewport)
+                return
+            }
+            frame.layerPlan.targetHighlights.forEach { highlight ->
                 if (!viewport.containsTile(highlight.tile)) {
                     return@forEach
                 }
                 val rect = viewport.tileRect(highlight.tile)
-                val inset = 4f
-                val bounds =
-                    tileBounds(
-                        x = rect.x.toFloat() + inset,
-                        y = rect.y.toFloat() + inset,
-                        width = (rect.width - inset * 2f).coerceAtLeast(1f),
-                        height = (rect.height - inset * 2f).coerceAtLeast(1f),
-                    )
-                canvas.drawRect(bounds, targetHighlightFill(highlight.state))
-                drawRectOutline(
-                    canvas = canvas,
-                    x = bounds.x,
-                    y = bounds.y,
-                    width = bounds.width,
-                    height = bounds.height,
-                    stroke = 1f,
-                    color = targetHighlightBorder(highlight.state),
-                )
+                drawLegacyTargetHighlight(canvas, rect, highlight.state)
             }
         }
+
+        private fun drawLegacyTargetHighlight(
+            canvas: TileCanvas,
+            rect: RectInt,
+            state: TileTargetCursorState,
+        ) {
+            val inset = 4f
+            val bounds =
+                tileBounds(
+                    x = rect.x.toFloat() + inset,
+                    y = rect.y.toFloat() + inset,
+                    width = (rect.width - inset * 2f).coerceAtLeast(1f),
+                    height = (rect.height - inset * 2f).coerceAtLeast(1f),
+                )
+            canvas.drawRect(bounds, targetHighlightFill(state))
+            drawRectOutline(
+                canvas = canvas,
+                x = bounds.x,
+                y = bounds.y,
+                width = bounds.width,
+                height = bounds.height,
+                stroke = 1f,
+                color = targetHighlightBorder(state),
+            )
+        }
+
+        private fun drawArtPlateTargetHighlight(
+            canvas: TileCanvas,
+            rect: RectInt,
+            state: TileTargetCursorState,
+        ) {
+            val x = rect.x.toFloat()
+            val y = rect.y.toFloat()
+            val width = rect.width.toFloat()
+            val height = rect.height.toFloat()
+            val veilInset = 7f
+            canvas.drawRect(
+                tileBounds(
+                    x = x + veilInset,
+                    y = y + veilInset,
+                    width = (width - veilInset * 2f).coerceAtLeast(1f),
+                    height = (height - veilInset * 2f).coerceAtLeast(1f),
+                ),
+                targetHighlightArtPlateVeil(state),
+            )
+            val mark = targetHighlightArtPlateMark(state)
+            val length = (minOf(width, height) * 0.28f).coerceIn(7f, 10f)
+            val stroke = 1.5f
+            val inset = 4f
+            val left = x + inset
+            val right = x + width - inset
+            val bottom = y + inset
+            val top = y + height - inset
+            canvas.drawRect(tileBounds(left, bottom, length, stroke), mark)
+            canvas.drawRect(tileBounds(left, bottom, stroke, length), mark)
+            canvas.drawRect(tileBounds(right - length, bottom, length, stroke), mark)
+            canvas.drawRect(tileBounds(right - stroke, bottom, stroke, length), mark)
+            canvas.drawRect(tileBounds(left, top - stroke, length, stroke), mark)
+            canvas.drawRect(tileBounds(left, top - length, stroke, length), mark)
+            canvas.drawRect(tileBounds(right - length, top - stroke, length, stroke), mark)
+            canvas.drawRect(tileBounds(right - stroke, top - length, stroke, length), mark)
+        }
+
+        private fun drawArtPlateTargetHighlights(
+            canvas: TileCanvas,
+            highlights: List<TileTargetHighlightModel>,
+            viewport: TileMapViewport,
+        ) {
+            val visibleHighlights = highlights.filter { highlight -> viewport.containsTile(highlight.tile) }
+            val legalTiles =
+                visibleHighlights
+                    .asSequence()
+                    .filter { highlight -> highlight.state == TileTargetCursorState.LEGAL }
+                    .map { highlight -> highlight.tile }
+                    .toSet()
+            if (legalTiles.isNotEmpty()) {
+                drawArtPlateLegalTargetBoundaryMarks(canvas, legalTiles, viewport)
+            }
+            visibleHighlights
+                .filterNot { highlight -> highlight.state == TileTargetCursorState.LEGAL }
+                .forEach { highlight ->
+                    drawArtPlateTargetHighlight(canvas, viewport.tileRect(highlight.tile), highlight.state)
+                }
+        }
+
+        private fun drawArtPlateLegalTargetBoundaryMarks(
+            canvas: TileCanvas,
+            legalTiles: Set<Point>,
+            viewport: TileMapViewport,
+        ) {
+            val mark = withAlpha(targetHighlightArtPlateMark(TileTargetCursorState.LEGAL), 0.31f)
+            legalTiles.forEach { tile ->
+                val rect = viewport.tileRect(tile)
+                val x = rect.x.toFloat()
+                val y = rect.y.toFloat()
+                val width = rect.width.toFloat()
+                val height = rect.height.toFloat()
+                val centerX = x + width / 2f
+                val centerY = y + height / 2f
+                val edgeLength = (minOf(width, height) * 0.30f).coerceIn(8f, 11f)
+                val stroke = 1.5f
+                val inset = 4f
+                if (Point(tile.x, tile.y - 1) !in legalTiles) {
+                    canvas.drawRect(tileBounds(centerX - edgeLength / 2f, y + inset, edgeLength, stroke), mark)
+                }
+                if (Point(tile.x, tile.y + 1) !in legalTiles) {
+                    canvas.drawRect(tileBounds(centerX - edgeLength / 2f, y + height - inset - stroke, edgeLength, stroke), mark)
+                }
+                if (Point(tile.x - 1, tile.y) !in legalTiles) {
+                    canvas.drawRect(tileBounds(x + inset, centerY - edgeLength / 2f, stroke, edgeLength), mark)
+                }
+                if (Point(tile.x + 1, tile.y) !in legalTiles) {
+                    canvas.drawRect(tileBounds(x + width - inset - stroke, centerY - edgeLength / 2f, stroke, edgeLength), mark)
+                }
+            }
+        }
+
+        private fun targetHighlightArtPlateVeil(state: TileTargetCursorState): Color =
+            when (state) {
+                TileTargetCursorState.ILLEGAL -> color("5F1616", 0.10f)
+                TileTargetCursorState.LEGAL -> color("0C515A", 0.060f)
+            }
+
+        private fun targetHighlightArtPlateMark(state: TileTargetCursorState): Color =
+            when (state) {
+                TileTargetCursorState.ILLEGAL -> color("D4524D", 0.46f)
+                TileTargetCursorState.LEGAL -> color("1CB7C8", 0.34f)
+            }
 
         private fun drawCombatFeedback(
             canvas: TileCanvas,
@@ -2013,10 +2355,65 @@ class TileRenderer(
             drawRectOutline(canvas, rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat(), 2f, color)
         }
 
+        private fun drawRoomArtPlateCursor(
+            canvas: TileCanvas,
+            tile: Point,
+            viewport: TileMapViewport,
+            color: Color,
+        ) {
+            if (!viewport.containsTile(tile)) {
+                return
+            }
+            val rect = viewport.tileRect(tile)
+            val x = rect.x.toFloat()
+            val y = rect.y.toFloat()
+            val width = rect.width.toFloat()
+            val height = rect.height.toFloat()
+            val mark = withAlpha(color, 0.62f)
+            drawArtPlateCornerMarks(
+                canvas = canvas,
+                x = x,
+                y = y,
+                width = width,
+                height = height,
+                mark = mark,
+                inset = 4f,
+                length = 9f,
+                stroke = 1.5f,
+            )
+            canvas.drawRect(tileBounds(x + width * 0.34f, y + 4f, width * 0.32f, 2f), withAlpha(color, 0.35f))
+        }
+
+        private fun drawArtPlateCornerMarks(
+            canvas: TileCanvas,
+            x: Float,
+            y: Float,
+            width: Float,
+            height: Float,
+            mark: Color,
+            inset: Float,
+            length: Float,
+            stroke: Float,
+        ) {
+            val left = x + inset
+            val right = x + width - inset
+            val bottom = y + inset
+            val top = y + height - inset
+            canvas.drawRect(tileBounds(left, bottom, length, stroke), mark)
+            canvas.drawRect(tileBounds(left, bottom, stroke, length), mark)
+            canvas.drawRect(tileBounds(right - length, bottom, length, stroke), mark)
+            canvas.drawRect(tileBounds(right - stroke, bottom, stroke, length), mark)
+            canvas.drawRect(tileBounds(left, top - stroke, length, stroke), mark)
+            canvas.drawRect(tileBounds(left, top - length, stroke, length), mark)
+            canvas.drawRect(tileBounds(right - length, top - stroke, length, stroke), mark)
+            canvas.drawRect(tileBounds(right - stroke, top - length, stroke, length), mark)
+        }
+
         private fun drawPlacement(
             canvas: TileCanvas,
             placement: TileVisualPlacement,
             viewport: TileMapViewport,
+            alphaScale: Float = 1f,
         ) {
             val tile = Point(placement.x, placement.y)
             if (!viewport.containsTile(tile)) {
@@ -2034,23 +2431,93 @@ class TileRenderer(
             val isTerrain = terrainCategory.startsWith("tile_")
             val terrainBleed =
                 when {
-                    terrainCategory == "tile_ground" -> 2.8f
+                    terrainCategory == "tile_ground" -> 0f
                     isTerrain -> 1.2f
                     else -> 0f
                 }
             val alpha =
                 when {
-                    terrainCategory == "tile_ground" -> placement.alpha * 0.98f
+                    terrainCategory == "tile_ground" -> placement.alpha
                     isTerrain -> placement.alpha * 0.96f
                     else -> placement.alpha
                 }
             canvas.drawAsset(
                 placement.asset,
                 tileBounds(drawX - terrainBleed, drawY - terrainBleed, width + terrainBleed * 2f, height + terrainBleed * 2f),
-                alpha,
+                alpha * alphaScale,
                 placement.tintColorHex,
+                placement.flipX,
+                placement.flipY,
             )
         }
+
+        private fun drawRoomArtPlateSpriteOverlay(
+            canvas: TileCanvas,
+            placement: TileVisualPlacement,
+            viewport: TileMapViewport,
+        ) {
+            val tile = Point(placement.x, placement.y)
+            if (!viewport.containsTile(tile)) {
+                return
+            }
+            val rect = viewport.tileRect(tile)
+            val alphaScale =
+                when {
+                    placement.drawPriority >= 3 -> 0.52f
+                    placement.drawPriority == 2 -> 0.44f
+                    else -> 0.34f
+                }
+            drawPlacement(canvas, placement, viewport, alphaScale = alphaScale)
+            drawRoomArtPlateOverlayMarkers(canvas, rect, placement.drawPriority)
+        }
+
+        private fun drawRoomArtPlateOverlayMarkers(
+            canvas: TileCanvas,
+            rect: RectInt,
+            dangerLevel: Int,
+        ) {
+            val x = rect.x.toFloat()
+            val y = rect.y.toFloat()
+            val size = minOf(rect.width, rect.height).toFloat()
+            val inset = 5f
+            val stroke = if (dangerLevel >= 3) 2f else 1.5f
+            val longMark = (size * 0.36f).coerceIn(9f, 13f)
+            val shortMark = (size * 0.22f).coerceIn(6f, 9f)
+            val mark = roomArtPlateOverlayMarkColor(dangerLevel)
+            val veil = roomArtPlateOverlayVeilColor(dangerLevel)
+
+            canvas.drawRect(
+                tileBounds(x + inset + 3f, y + inset + 3f, size - inset * 2f - 6f, size - inset * 2f - 6f),
+                veil,
+            )
+            canvas.drawRect(tileBounds(x + inset, y + inset, longMark, stroke), mark)
+            canvas.drawRect(tileBounds(x + inset, y + inset, stroke, shortMark), mark)
+            canvas.drawRect(tileBounds(x + size - inset - longMark, y + inset, longMark, stroke), mark)
+            canvas.drawRect(tileBounds(x + size - inset - stroke, y + inset, stroke, shortMark), mark)
+            canvas.drawRect(tileBounds(x + inset, y + size - inset - stroke, longMark, stroke), mark)
+            canvas.drawRect(tileBounds(x + inset, y + size - inset - shortMark, stroke, shortMark), mark)
+            canvas.drawRect(tileBounds(x + size - inset - longMark, y + size - inset - stroke, longMark, stroke), mark)
+            canvas.drawRect(tileBounds(x + size - inset - stroke, y + size - inset - shortMark, stroke, shortMark), mark)
+
+            if (dangerLevel >= 3) {
+                canvas.drawRect(tileBounds(x + size * 0.28f, y + size * 0.50f, size * 0.44f, 1.5f), mark)
+                canvas.drawRect(tileBounds(x + size * 0.50f, y + size * 0.28f, 1.5f, size * 0.44f), mark)
+            }
+        }
+
+        private fun roomArtPlateOverlayMarkColor(dangerLevel: Int): Color =
+            when {
+                dangerLevel >= 3 -> color("D66A4D", 0.58f)
+                dangerLevel == 2 -> color("D9A24F", 0.46f)
+                else -> color("50B2A8", 0.34f)
+            }
+
+        private fun roomArtPlateOverlayVeilColor(dangerLevel: Int): Color =
+            when {
+                dangerLevel >= 3 -> color("7A1D15", 0.072f)
+                dangerLevel == 2 -> color("6A4514", 0.055f)
+                else -> color("0E3B39", 0.040f)
+            }
 
         private fun drawActorGroundingShadow(
             canvas: TileCanvas,
@@ -2136,6 +2603,79 @@ class TileRenderer(
             }
         }
 
+        private fun drawRoomArtPlateGroundLootAtmosphere(
+            canvas: TileCanvas,
+            markers: List<TileGroundLootMarkerModel>,
+            viewport: TileMapViewport,
+        ) {
+            markers.forEach { marker ->
+                val tile = Point(marker.x, marker.y)
+                if (!viewport.containsTile(tile)) {
+                    return@forEach
+                }
+                val rect = viewport.tileRect(tile)
+                val x = rect.x.toFloat()
+                val y = rect.y.toFloat()
+                val size = rect.width.toFloat()
+                val actorCorner = marker.placement == com.ktome.client.ui.item.GroundLootMarkerPlacement.ACTOR_CORNER
+                if (actorCorner) {
+                    canvas.drawRect(tileBounds(x + size - 17f, y + size - 9f, 10f, 2f), color("050604", 0.16f))
+                } else {
+                    canvas.drawRect(tileBounds(x + 10f, y + 8f, size - 20f, 3f), color("050604", 0.18f))
+                    canvas.drawRect(tileBounds(x + 13f, y + 12f, size - 26f, 5f), color("D99A2B", 0.045f))
+                }
+            }
+        }
+
+        private fun drawRoomArtPlateTargetTopologyHints(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val targetPoints =
+                frame.layerPlan.targetHighlights
+                    .asSequence()
+                    .filter { highlight ->
+                        highlight.state == TileTargetCursorState.LEGAL &&
+                            frame.viewport.containsTile(highlight.tile)
+                    }.map { highlight -> highlight.tile }
+                    .toSet()
+            if (targetPoints.isEmpty()) {
+                return
+            }
+            val cellSize = frame.viewport.cellSize.toFloat()
+            val connectorColor = color("A89460", 0.074f)
+            targetPoints.forEach { tile ->
+                val rect = frame.viewport.tileRect(tile)
+                val x = rect.x.toFloat()
+                val y = rect.y.toFloat()
+                if (Point(tile.x + 1, tile.y) in targetPoints) {
+                    canvas.drawRect(tileBounds(x + cellSize - 2f, y + cellSize / 2f - 1f, 4f, 2f), connectorColor)
+                }
+                if (Point(tile.x, tile.y + 1) in targetPoints) {
+                    canvas.drawRect(tileBounds(x + cellSize / 2f - 1f, y + cellSize - 2f, 2f, 4f), connectorColor)
+                }
+            }
+        }
+
+        private fun drawRoomArtPlateEdgeFeather(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            roomClip: RectInt,
+        ) {
+            val depth = (frame.viewport.cellSize.toFloat() * 0.16f).coerceIn(5f, 14f)
+            val left = roomClip.x.toFloat()
+            val right = roomClip.right.toFloat()
+            val bottom = roomClip.y.toFloat()
+            val top = roomClip.top.toFloat()
+            val width = roomClip.width.toFloat()
+            val height = roomClip.height.toFloat()
+            val edge = color("050604", 0.082f)
+            canvas.drawRect(tileBounds(left, bottom, width, depth), edge)
+            canvas.drawRect(tileBounds(left, top - depth, width, depth), edge)
+            canvas.drawRect(tileBounds(left, bottom, depth, height), edge)
+            canvas.drawRect(tileBounds(right - depth, bottom, depth, height), edge)
+        }
+
         private fun drawCellMaterial(
             canvas: TileCanvas,
             material: TileMapCellMaterialModel,
@@ -2165,69 +2705,8 @@ class TileRenderer(
             size: Float,
             alphaScale: Float,
         ) {
-            val variant = material.variant
-            canvas.drawRect(tileBounds(x - 1.5f, y - 1.5f, size + 3f, size + 3f), color("2C3A33", 0.095f * alphaScale))
-            canvas.drawRect(tileBounds(x - 0.5f, y - 0.5f, size + 1f, size + 1f), color("3D493F", 0.038f * alphaScale))
-            canvas.drawRect(tileBounds(x + 4f, y + 4f, size - 8f, size - 8f), color("7B856A", 0.010f * alphaScale))
-            when (variant % 5) {
-                0 -> canvas.drawRect(tileBounds(x + 1f, y + 1f, size - 2f, size - 2f), color("050604", 0.006f * alphaScale))
-                1 -> canvas.drawRect(tileBounds(x + 1f, y + 1f, size - 2f, size - 2f), color("B8873E", 0.006f * alphaScale))
-                2 -> canvas.drawRect(tileBounds(x + 1f, y + 1f, size - 2f, size - 2f), color("263D32", 0.006f * alphaScale))
-                3 -> canvas.drawRect(tileBounds(x + 2f, y + 2f, size - 4f, size - 4f), color("17231E", 0.005f * alphaScale))
-            }
-            val etchX = x + 7f + (variant % 5).toFloat()
-            val etchY = y + 10f + (variant % 7).toFloat()
-            canvas.drawRect(tileBounds(etchX, etchY, 12f, 1f), color("050604", 0.041f * alphaScale))
-            canvas.drawRect(tileBounds(etchX + 3f, etchY + 4f, 9f, 1f), color("A8905E", 0.022f * alphaScale))
-            val aggregateX = x + 9f + (variant % 8).toFloat()
-            val aggregateY = y + 6f + ((variant / 5) % 10).toFloat()
-            canvas.drawRect(tileBounds(aggregateX, aggregateY, 2f, 2f), color("050604", 0.036f * alphaScale))
-            canvas.drawRect(
-                tileBounds(
-                    (aggregateX + 11f).coerceAtMost(x + size - 5f),
-                    (aggregateY + 7f).coerceAtMost(y + size - 5f),
-                    2f,
-                    2f,
-                ),
-                color("2B241A", 0.030f * alphaScale),
-            )
-            canvas.drawRect(
-                tileBounds(
-                    (aggregateX + 5f).coerceAtMost(x + size - 9f),
-                    (aggregateY + 12f).coerceAtMost(y + size - 3f),
-                    6f,
-                    1f,
-                ),
-                color("B69B6B", 0.026f * alphaScale),
-            )
-            val fractureX = x + 8f + ((variant / 3) % 8).toFloat()
-            val fractureY = y + 11f + ((variant / 7) % 7).toFloat()
-            canvas.drawRect(tileBounds(fractureX, fractureY, 10f, 1.5f), color("050604", 0.054f * alphaScale))
-            canvas.drawRect(tileBounds(fractureX + 7f, fractureY - 4f, 1.5f, 8f), color("050604", 0.050f * alphaScale))
-            canvas.drawRect(tileBounds(fractureX + 2f, fractureY + 3.5f, 5f, 1.5f), color("B69B6B", 0.032f * alphaScale))
-            val chippedX = x + 6f + ((variant / 2) % 9).toFloat()
-            val chippedY = y + 6f + ((variant / 11) % 9).toFloat()
-            canvas.drawRect(tileBounds(chippedX, chippedY, 4f, 3f), color("050604", 0.089f * alphaScale))
-            canvas.drawRect(
-                tileBounds(
-                    (chippedX + 5f).coerceAtMost(x + size - 5f),
-                    (chippedY + 2f).coerceAtMost(y + size - 5f),
-                    3f,
-                    3f,
-                ),
-                color("263D32", 0.059f * alphaScale),
-            )
-            canvas.drawRect(
-                tileBounds(
-                    (chippedX - 1f).coerceAtLeast(x + 4f),
-                    (chippedY + 6f).coerceAtMost(y + size - 3f),
-                    8f,
-                    1.5f,
-                ),
-                color("B69B6B", 0.047f * alphaScale),
-            )
-            canvas.drawRect(tileBounds(x + 5f, y + size - 3f, size - 10f, 1f), color("D4A45A", 0.002f * alphaScale))
-            canvas.drawRect(tileBounds(x + 5f, y + 1f, size - 10f, 1f), color("050604", 0.002f * alphaScale))
+            canvas.drawRect(tileBounds(x - 1.5f, y - 1.5f, size + 3f, size + 3f), color("2C3A33", 0.012f * alphaScale))
+            canvas.drawRect(tileBounds(x + 3f, y + 3f, size - 6f, size - 6f), color("3D493F", 0.006f * alphaScale))
             if (material.northOcclusion) {
                 canvas.drawRect(tileBounds(x, y + size - 7f, size, 7f), color("050604", 0.080f * alphaScale))
             }
@@ -2240,52 +2719,6 @@ class TileRenderer(
             if (material.eastOcclusion) {
                 canvas.drawRect(tileBounds(x + size - 6f, y, 6f, size), color("050604", 0.052f * alphaScale))
             }
-            val seamY = y + 8f + (variant % 3) * 5f
-            canvas.drawRect(tileBounds(x + 6f, seamY, size - 12f, 1f), color("2A1A0D", 0.010f * alphaScale))
-            val nickX = x + 6f + (variant % 17).toFloat()
-            val nickY = y + 7f + ((variant / 17) % 15).toFloat()
-            canvas.drawRect(tileBounds(nickX, nickY, 7f, 1f), color("C49B61", 0.020f * alphaScale))
-            canvas.drawRect(tileBounds(nickX + 2f, nickY - 3f, 1f, 6f), color("050604", 0.024f * alphaScale))
-            if (variant % 7 == 0) {
-                val crackX = x + 7f + ((variant / 7) % 10).toFloat()
-                val crackY = y + 8f + ((variant / 31) % 8).toFloat()
-                canvas.drawRect(tileBounds(crackX, crackY, 9f, 1f), color("050604", 0.030f * alphaScale))
-                canvas.drawRect(tileBounds(crackX + 8f, crackY - 3f, 1f, 4f), color("050604", 0.024f * alphaScale))
-                canvas.drawRect(tileBounds(crackX + 2f, crackY + 3f, 7f, 1f), color("C49B61", 0.014f * alphaScale))
-            }
-            if (variant % 13 == 0) {
-                val chipX = x + 8f + ((variant / 13) % 13).toFloat()
-                val chipY = y + 6f + ((variant / 19) % 14).toFloat()
-                canvas.drawRect(tileBounds(chipX, chipY, 5f, 2f), color("8A7654", 0.044f * alphaScale))
-                canvas.drawRect(tileBounds(chipX + 7f, chipY + 4f, 3f, 2f), color("5B4930", 0.036f * alphaScale))
-                canvas.drawRect(tileBounds(chipX - 3f, chipY + 7f, 2f, 2f), color("C49B61", 0.022f * alphaScale))
-            }
-            if (variant % 19 == 0) {
-                val stainX = x + 9f + ((variant / 19) % 9).toFloat()
-                val stainY = y + 8f + ((variant / 23) % 10).toFloat()
-                canvas.drawRect(tileBounds(stainX, stainY, 12f, 5f), color("40110D", 0.052f * alphaScale))
-                canvas.drawRect(tileBounds(stainX + 3f, stainY - 3f, 7f, 3f), color("250807", 0.044f * alphaScale))
-                canvas.drawRect(tileBounds(stainX + 10f, stainY + 5f, 4f, 2f), color("5C1A10", 0.030f * alphaScale))
-            }
-            if (variant % 29 == 0) {
-                val dustX = x + 5f + ((variant / 29) % 12).toFloat()
-                val dustY = y + 5f + ((variant / 31) % 14).toFloat()
-                canvas.drawRect(tileBounds(dustX, dustY, 14f, 2f), color("B69B6B", 0.030f * alphaScale))
-                canvas.drawRect(tileBounds(dustX + 4f, dustY + 4f, 9f, 2f), color("050604", 0.030f * alphaScale))
-            }
-            if (variant % 11 == 0) {
-                val scarX = x + 6f + ((variant / 11) % 7).toFloat()
-                val scarY = y + 9f + ((variant / 17) % 8).toFloat()
-                canvas.drawRect(tileBounds(scarX, scarY, 18f, 3f), color("050604", 0.065f * alphaScale))
-                canvas.drawRect(tileBounds(scarX + 3f, scarY + 4f, 13f, 1f), color("D4A45A", 0.034f * alphaScale))
-                canvas.drawRect(tileBounds(scarX + 13f, scarY - 5f, 2f, 9f), color("050604", 0.050f * alphaScale))
-            }
-            if (variant % 23 == 0) {
-                val coldX = x + 4f + ((variant / 23) % 10).toFloat()
-                val coldY = y + 6f + ((variant / 29) % 9).toFloat()
-                canvas.drawRect(tileBounds(coldX, coldY, 20f, 10f), color("183529", 0.042f * alphaScale))
-                canvas.drawRect(tileBounds(coldX + 4f, coldY + 3f, 12f, 3f), color("75A37A", 0.018f * alphaScale))
-            }
         }
 
         private fun drawWallMaterial(
@@ -2297,19 +2730,19 @@ class TileRenderer(
             alphaScale: Float,
         ) {
             val variant = material.variant
-            canvas.drawRect(tileBounds(x + 1f, y + 1f, size - 2f, size - 2f), color("050604", 0.035f * alphaScale))
+            canvas.drawRect(tileBounds(x + 1f, y + 1f, size - 2f, size - 2f), color("050604", 0.010f * alphaScale))
             when (variant % 4) {
-                0 -> canvas.drawRect(tileBounds(x + 2f, y + 2f, size - 4f, size - 4f), color("050604", 0.024f * alphaScale))
-                1 -> canvas.drawRect(tileBounds(x + 2f, y + 2f, size - 4f, size - 4f), color("8A6A35", 0.018f * alphaScale))
-                2 -> canvas.drawRect(tileBounds(x + 3f, y + 3f, size - 6f, size - 6f), color("1C2B24", 0.018f * alphaScale))
+                0 -> canvas.drawRect(tileBounds(x + 2f, y + 2f, size - 4f, size - 4f), color("050604", 0.006f * alphaScale))
+                1 -> canvas.drawRect(tileBounds(x + 2f, y + 2f, size - 4f, size - 4f), color("8A6A35", 0.006f * alphaScale))
+                2 -> canvas.drawRect(tileBounds(x + 3f, y + 3f, size - 6f, size - 6f), color("1C2B24", 0.006f * alphaScale))
             }
-            canvas.drawRect(tileBounds(x + 2f, y + size - 6f, size - 4f, 4f), color("C49B61", 0.060f * alphaScale))
-            canvas.drawRect(tileBounds(x + 2f, y + 2f, size - 4f, 5f), color("050604", 0.13f * alphaScale))
+            canvas.drawRect(tileBounds(x + 2f, y + size - 6f, size - 4f, 4f), color("C49B61", 0.035f * alphaScale))
+            canvas.drawRect(tileBounds(x + 2f, y + 2f, size - 4f, 5f), color("050604", 0.055f * alphaScale))
             canvas.drawRect(tileBounds(x + 3f, y + size - 10f, size - 6f, 2f), color("FFE18A", 0.014f * alphaScale))
-            canvas.drawRect(tileBounds(x + 2f, y + size * 0.48f, size - 4f, 1f), color("6D4520", 0.055f * alphaScale))
+            canvas.drawRect(tileBounds(x + 2f, y + size * 0.48f, size - 4f, 1f), color("6D4520", 0.025f * alphaScale))
             if (variant % 2 == 0) {
                 val seamX = x + 8f + (variant % 11).toFloat()
-                canvas.drawRect(tileBounds(seamX, y + 5f, 1f, size - 10f), color("050604", 0.11f * alphaScale))
+                canvas.drawRect(tileBounds(seamX, y + 5f, 1f, size - 10f), color("050604", 0.030f * alphaScale))
             } else {
                 val chipX = x + 5f + (variant % 13).toFloat()
                 val chipY = y + 8f + ((variant / 13) % 11).toFloat()
@@ -2348,13 +2781,286 @@ class TileRenderer(
                     return@forEach
                 }
                 val rect = viewport.tileRect(tile)
-                val fogColor =
-                    when (fog.visibility) {
-                        com.ktome.core.snapshot.CellVisibilitySnapshot.HIDDEN -> color("050604", (fog.alpha + 0.64f).coerceAtMost(0.99f))
-                        com.ktome.core.snapshot.CellVisibilitySnapshot.EXPLORED -> color("090706", (fog.alpha + 0.28f).coerceAtMost(0.82f))
-                        com.ktome.core.snapshot.CellVisibilitySnapshot.VISIBLE -> color("1A0E04", fog.alpha * 0.30f)
+                canvas.drawRect(tileBounds(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat()), fogOverlayColor(fog))
+            }
+        }
+
+        private fun drawRoomArtPlateFogOverlays(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val visibleFog =
+                frame.layerPlan.fogVeils.filter { fog ->
+                    frame.viewport.containsTile(Point(fog.x, fog.y))
+                }
+            val (exploredFog, hardOcclusionFog) =
+                visibleFog.partition { fog -> fog.visibility == CellVisibilitySnapshot.EXPLORED }
+            exploredFog.toRoomArtPlateFogComponents().forEach { component ->
+                drawRoomArtPlateExploredFogComponent(canvas, frame, component)
+            }
+            val fogRuns =
+                hardOcclusionFog.toRoomArtPlateFogRuns()
+                    .mergeVerticalRoomArtPlateFogRuns()
+            if (fogRuns.isEmpty()) {
+                return
+            }
+            fogRuns.forEach { run ->
+                drawRoomArtPlateFogRun(canvas, frame, run)
+            }
+        }
+
+        private fun drawRoomArtPlateExploredFogComponent(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            component: List<TileFogPlacement>,
+        ) {
+            if (component.isEmpty()) {
+                return
+            }
+            val rects = component.map { fog -> frame.viewport.tileRect(Point(fog.x, fog.y)) }
+            val left = rects.minOf { rect -> rect.x }.toFloat()
+            val right = rects.maxOf { rect -> rect.x + rect.width }.toFloat()
+            val bottom = rects.minOf { rect -> rect.y }.toFloat()
+            val top = rects.maxOf { rect -> rect.y + rect.height }.toFloat()
+            val cellSize = frame.viewport.cellSize.toFloat()
+            val horizontalBleed = cellSize * 0.24f
+            val verticalBleed = cellSize * 0.22f
+            drawClippedRect(
+                canvas = canvas,
+                x = left - horizontalBleed,
+                y = bottom - verticalBleed,
+                width = right - left + horizontalBleed * 2f,
+                height = top - bottom + verticalBleed * 2f,
+                clip = frame.viewport.mapBounds,
+                color = roomArtPlateExploredFogOverlayColor(component.first().alpha),
+            )
+            drawClippedRect(
+                canvas,
+                left - horizontalBleed * 0.24f,
+                top - cellSize * 0.14f,
+                right - left + horizontalBleed * 0.48f,
+                cellSize * 0.09f,
+                frame.viewport.mapBounds,
+                color("6F5A39", 0.026f),
+            )
+            drawClippedRect(
+                canvas,
+                left + cellSize * 0.18f,
+                bottom - verticalBleed * 0.30f,
+                (right - left - cellSize * 0.36f).coerceAtLeast(cellSize * 0.50f),
+                cellSize * 0.07f,
+                frame.viewport.mapBounds,
+                color("020303", 0.044f),
+            )
+        }
+
+        private fun drawRoomArtPlateFogRun(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            run: RoomArtPlateFogRun,
+        ) {
+            val first = frame.viewport.tileRect(Point(run.startX, run.startY))
+            val last = frame.viewport.tileRect(Point(run.endX, run.endY))
+            val left = minOf(first.x, last.x).toFloat()
+            val right = maxOf(first.x + first.width, last.x + last.width).toFloat()
+            val bottom = minOf(first.y, last.y).toFloat()
+            val top = maxOf(first.y + first.height, last.y + last.height).toFloat()
+            val cellSize = frame.viewport.cellSize.toFloat()
+            val horizontalBleed =
+                when (run.visibility) {
+                    CellVisibilitySnapshot.HIDDEN -> cellSize * 0.10f
+                    CellVisibilitySnapshot.EXPLORED -> cellSize * 0.20f
+                    CellVisibilitySnapshot.VISIBLE -> cellSize * 0.14f
+                }
+            val verticalBleed =
+                when (run.visibility) {
+                    CellVisibilitySnapshot.HIDDEN -> cellSize * 0.08f
+                    CellVisibilitySnapshot.EXPLORED -> cellSize * 0.18f
+                    CellVisibilitySnapshot.VISIBLE -> cellSize * 0.12f
+                }
+            drawClippedRect(
+                canvas = canvas,
+                x = left - horizontalBleed,
+                y = bottom - verticalBleed,
+                width = right - left + horizontalBleed * 2f,
+                height = top - bottom + verticalBleed * 2f,
+                clip = frame.viewport.mapBounds,
+                color = roomArtPlateFogOverlayColor(run),
+            )
+            if (run.visibility == CellVisibilitySnapshot.EXPLORED) {
+                drawClippedRect(
+                    canvas,
+                    left - horizontalBleed * 0.38f,
+                    top - cellSize * 0.13f,
+                    right - left + horizontalBleed * 0.76f,
+                    cellSize * 0.10f,
+                    frame.viewport.mapBounds,
+                    color("6F5A39", 0.030f),
+                )
+                drawClippedRect(
+                    canvas,
+                    left + cellSize * 0.18f,
+                    bottom - verticalBleed * 0.36f,
+                    (right - left - cellSize * 0.36f).coerceAtLeast(cellSize * 0.50f),
+                    cellSize * 0.08f,
+                    frame.viewport.mapBounds,
+                    color("020303", 0.052f),
+                )
+            }
+        }
+
+        private data class RoomArtPlateFogRun(
+            val visibility: CellVisibilitySnapshot,
+            val alpha: Float,
+            val startX: Int,
+            val endX: Int,
+            val startY: Int,
+            val endY: Int,
+        )
+
+        private fun List<TileFogPlacement>.toRoomArtPlateFogComponents(): List<List<TileFogPlacement>> {
+            val fogByPoint = associateBy { fog -> Point(fog.x, fog.y) }
+            val visited = mutableSetOf<Point>()
+            val components = mutableListOf<List<TileFogPlacement>>()
+            sortedWith(compareBy<TileFogPlacement> { fog -> fog.y }.thenBy { fog -> fog.x }).forEach { fog ->
+                val start = Point(fog.x, fog.y)
+                if (!visited.add(start)) {
+                    return@forEach
+                }
+                val queue = ArrayDeque<Point>()
+                val component = mutableListOf<TileFogPlacement>()
+                queue.add(start)
+                while (queue.isNotEmpty()) {
+                    val point = queue.removeFirst()
+                    val current = fogByPoint[point] ?: continue
+                    component += current
+                    listOf(
+                        Point(point.x - 1, point.y),
+                        Point(point.x + 1, point.y),
+                        Point(point.x, point.y - 1),
+                        Point(point.x, point.y + 1),
+                    ).forEach { neighbor ->
+                        if (neighbor in fogByPoint && visited.add(neighbor)) {
+                            queue.add(neighbor)
+                        }
                     }
-                canvas.drawRect(tileBounds(rect.x.toFloat(), rect.y.toFloat(), rect.width.toFloat(), rect.height.toFloat()), fogColor)
+                }
+                components += component
+            }
+            return components
+        }
+
+        private fun List<TileFogPlacement>.toRoomArtPlateFogRuns(): List<RoomArtPlateFogRun> =
+            groupBy { fog -> Triple(fog.visibility, fog.alpha, fog.y) }
+                .flatMap { (key, rowFogTiles) ->
+                    rowFogTiles
+                        .sortedBy(TileFogPlacement::x)
+                        .fold(mutableListOf<RoomArtPlateFogRun>()) { runs, fog ->
+                            val current = runs.lastOrNull()
+                            if (current != null && current.endX + 1 == fog.x) {
+                                runs[runs.lastIndex] = current.copy(endX = fog.x)
+                            } else {
+                                runs +=
+                                    RoomArtPlateFogRun(
+                                        visibility = key.first,
+                                        alpha = key.second,
+                                        startX = fog.x,
+                                        endX = fog.x,
+                                        startY = key.third,
+                                        endY = key.third,
+                                    )
+                            }
+                            runs
+                        }
+                }
+
+        private fun List<RoomArtPlateFogRun>.mergeVerticalRoomArtPlateFogRuns(): List<RoomArtPlateFogRun> =
+            sortedWith(
+                compareBy<RoomArtPlateFogRun> { run -> run.visibility.name }
+                    .thenBy { run -> run.alpha }
+                    .thenBy { run -> run.startX }
+                    .thenBy { run -> run.endX }
+                    .thenBy { run -> run.startY },
+            ).fold(mutableListOf<RoomArtPlateFogRun>()) { merged, run ->
+                val current = merged.lastOrNull()
+                if (
+                    current != null &&
+                    current.visibility == run.visibility &&
+                    current.alpha == run.alpha &&
+                    current.startX == run.startX &&
+                    current.endX == run.endX &&
+                    current.endY + 1 == run.startY
+                ) {
+                    merged[merged.lastIndex] = current.copy(endY = run.endY)
+                } else {
+                    merged += run
+                }
+                merged
+            }
+
+        private fun roomArtPlateFogOverlayColor(run: RoomArtPlateFogRun): Color =
+            when (run.visibility) {
+                CellVisibilitySnapshot.HIDDEN -> color("050604", (run.alpha + 0.54f).coerceAtMost(0.92f))
+                CellVisibilitySnapshot.EXPLORED -> roomArtPlateExploredFogOverlayColor(run.alpha)
+                CellVisibilitySnapshot.VISIBLE -> color("1A0E04", run.alpha * 0.22f)
+            }
+
+        private fun roomArtPlateExploredFogOverlayColor(alpha: Float): Color =
+            color("090706", (alpha * 0.78f).coerceIn(0.24f, 0.38f))
+
+        private fun fogOverlayColor(fog: TileFogPlacement): Color =
+            when (fog.visibility) {
+                com.ktome.core.snapshot.CellVisibilitySnapshot.HIDDEN -> color("050604", (fog.alpha + 0.64f).coerceAtMost(0.99f))
+                com.ktome.core.snapshot.CellVisibilitySnapshot.EXPLORED -> color("090706", (fog.alpha + 0.28f).coerceAtMost(0.82f))
+                com.ktome.core.snapshot.CellVisibilitySnapshot.VISIBLE -> color("1A0E04", fog.alpha * 0.30f)
+            }
+
+        private fun drawRoomArtPlateApertureShoulders(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val visiblePoints = visibleMaterialPoints(frame)
+            if (visiblePoints.isEmpty()) {
+                return
+            }
+            val viewport = frame.viewport
+            val cellSize = viewport.cellSize.toFloat()
+            val shoulderDepth = (cellSize * 0.40f).coerceIn(8f, 14f)
+            val lipDepth = 2f
+            val spanInset = (cellSize * 0.20f).coerceIn(5f, 8f)
+            frame.layerPlan.fogVeils.forEach { fog ->
+                val tile = Point(fog.x, fog.y)
+                if (!viewport.containsTile(tile)) {
+                    return@forEach
+                }
+                val alpha =
+                    when (fog.visibility) {
+                        CellVisibilitySnapshot.HIDDEN -> 0.074f
+                        CellVisibilitySnapshot.EXPLORED -> 0.052f
+                        CellVisibilitySnapshot.VISIBLE -> return@forEach
+                    }
+                val rect = viewport.tileRect(tile)
+                val x = rect.x.toFloat()
+                val y = rect.y.toFloat()
+                val size = rect.width.toFloat()
+                val shoulder = color("111711", alpha)
+                val lip = color("6F5A39", alpha * 0.18f)
+                if (Point(tile.x - 1, tile.y) in visiblePoints) {
+                    canvas.drawRect(tileBounds(x, y + spanInset, shoulderDepth, size - spanInset * 2f), shoulder)
+                    canvas.drawRect(tileBounds(x + shoulderDepth - lipDepth, y + spanInset + 3f, lipDepth, size - spanInset * 2f - 6f), lip)
+                }
+                if (Point(tile.x + 1, tile.y) in visiblePoints) {
+                    canvas.drawRect(tileBounds(x + size - shoulderDepth, y + spanInset, shoulderDepth, size - spanInset * 2f), shoulder)
+                    canvas.drawRect(tileBounds(x + size - shoulderDepth, y + spanInset + 3f, lipDepth, size - spanInset * 2f - 6f), lip)
+                }
+                if (Point(tile.x, tile.y - 1) in visiblePoints) {
+                    canvas.drawRect(tileBounds(x + spanInset, y, size - spanInset * 2f, shoulderDepth), shoulder)
+                    canvas.drawRect(tileBounds(x + spanInset + 3f, y + shoulderDepth - lipDepth, size - spanInset * 2f - 6f, lipDepth), lip)
+                }
+                if (Point(tile.x, tile.y + 1) in visiblePoints) {
+                    canvas.drawRect(tileBounds(x + spanInset, y + size - shoulderDepth, size - spanInset * 2f, shoulderDepth), shoulder)
+                    canvas.drawRect(tileBounds(x + spanInset + 3f, y + size - shoulderDepth, size - spanInset * 2f - 6f, lipDepth), lip)
+                }
             }
         }
 
@@ -2382,10 +3088,10 @@ class TileRenderer(
             if (width < cellSize * 4f || height < cellSize * 4f) {
                 return
             }
-            canvas.drawRect(tileBounds(left, bottom, width, height), color("26362F", 0.082f))
+            canvas.drawRect(tileBounds(left, bottom, width, height), color("26362F", 0.040f))
             canvas.drawRect(
                 tileBounds(left + cellSize * 1.15f, bottom + cellSize * 1.05f, width - cellSize * 2.30f, height - cellSize * 2.10f),
-                color("8A7654", 0.018f),
+                color("8A7654", 0.007f),
             )
             val rows = (height / cellSize).toInt()
             val columns = (width / cellSize).toInt()
@@ -2399,7 +3105,7 @@ class TileRenderer(
                         (cellSize * (1.25f + ((column + segment) % 3) * 0.34f))
                             .coerceAtMost(top - seamY - cellSize * 0.35f)
                     if (seamHeight > cellSize * 0.35f) {
-                        val alpha = if ((column + segment) % 2 == 0) 0.018f else 0.012f
+                        val alpha = if ((column + segment) % 2 == 0) 0.007f else 0.005f
                         canvas.drawRect(
                             tileBounds(left + column * cellSize - 0.5f, seamY, 1f, seamHeight),
                             color("7B7457", alpha),
@@ -2417,11 +3123,151 @@ class TileRenderer(
                         (cellSize * (1.35f + ((row + segment) % 4) * 0.30f))
                             .coerceAtMost(right - seamX - cellSize * 0.35f)
                     if (seamWidth > cellSize * 0.35f) {
-                        val alpha = if ((row + segment) % 2 == 0) 0.017f else 0.011f
+                        val alpha = if ((row + segment) % 2 == 0) 0.006f else 0.004f
                         canvas.drawRect(
                             tileBounds(seamX, bottom + row * cellSize - 0.5f, seamWidth, 1f),
                             color("7B7457", alpha),
                         )
+                    }
+                }
+            }
+        }
+
+        private fun drawVisibleRoomFloorUnifier(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val floorMaterials =
+                frame.model.mapCellMaterials
+                    .filter { material ->
+                        material.kind == TileMapCellMaterialKind.FLOOR &&
+                            material.visibility == com.ktome.core.snapshot.CellVisibilitySnapshot.VISIBLE &&
+                            frame.viewport.containsTile(Point(material.x, material.y))
+                    }
+            if (floorMaterials.isEmpty()) {
+                return
+            }
+            val rects = floorMaterials.map { material -> frame.viewport.tileRect(Point(material.x, material.y)) }
+            val left = rects.minOf { rect -> rect.x }.toFloat()
+            val right = rects.maxOf { rect -> rect.x + rect.width }.toFloat()
+            val bottom = rects.minOf { rect -> rect.y }.toFloat()
+            val top = rects.maxOf { rect -> rect.y + rect.height }.toFloat()
+            val width = right - left
+            val height = top - bottom
+            val cellSize = frame.viewport.cellSize.toFloat()
+            if (width < cellSize * 7f || height < cellSize * 5f) {
+                return
+            }
+            canvas.drawRect(
+                tileBounds(left + cellSize * 1.10f, bottom + cellSize * 0.82f, width - cellSize * 2.20f, height - cellSize * 1.64f),
+                color("2C3A33", 0.158f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 2.35f, bottom + cellSize * 1.72f, width - cellSize * 4.70f, height - cellSize * 3.15f),
+                color("6F674C", 0.060f),
+            )
+            canvas.drawRect(
+                tileBounds(left + width * 0.35f, bottom + height * 0.40f, width * 0.34f, 3f),
+                color("B69B6B", 0.040f),
+            )
+            drawVisibleRoomBrokenMortarCaps(canvas, frame)
+        }
+
+        private fun drawVisibleRoomApertureHierarchy(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val floorMaterials =
+                frame.model.mapCellMaterials
+                    .filter { material ->
+                        material.kind == TileMapCellMaterialKind.FLOOR &&
+                            material.visibility == com.ktome.core.snapshot.CellVisibilitySnapshot.VISIBLE &&
+                            frame.viewport.containsTile(Point(material.x, material.y))
+                    }
+            if (floorMaterials.isEmpty()) {
+                return
+            }
+            val rects = floorMaterials.map { material -> frame.viewport.tileRect(Point(material.x, material.y)) }
+            val left = rects.minOf { rect -> rect.x }.toFloat()
+            val right = rects.maxOf { rect -> rect.x + rect.width }.toFloat()
+            val bottom = rects.minOf { rect -> rect.y }.toFloat()
+            val top = rects.maxOf { rect -> rect.y + rect.height }.toFloat()
+            val width = right - left
+            val height = top - bottom
+            val cellSize = frame.viewport.cellSize.toFloat()
+            if (width < cellSize * 7f || height < cellSize * 5f) {
+                return
+            }
+
+            val crownShadowHeight = (cellSize * 1.24f).coerceAtMost(height * 0.24f)
+            canvas.drawRect(
+                tileBounds(left + cellSize * 0.20f, top - crownShadowHeight - cellSize * 0.15f, width - cellSize * 0.40f, crownShadowHeight),
+                color("050604", 0.148f),
+            )
+            canvas.drawRect(
+                tileBounds(left + width * 0.58f, bottom + height * 0.22f, width * 0.34f, height * 0.56f),
+                color("07100D", 0.109f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 0.42f, bottom + cellSize * 0.42f, width * 0.38f, height * 0.20f),
+                color("050604", 0.116f),
+            )
+            canvas.drawRect(
+                tileBounds(left + width * 0.24f, bottom + height * 0.24f, width * 0.48f, height * 0.48f),
+                color("334036", 0.086f),
+            )
+            canvas.drawRect(
+                tileBounds(left + width * 0.30f, bottom + height * 0.44f, width * 0.34f, 4f),
+                color("A8905E", 0.052f),
+            )
+        }
+
+        private fun drawVisibleRoomFloorSeamUnderpaint(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            floorMaterials: List<TileMapCellMaterialModel>,
+        ) {
+            val viewport = frame.viewport
+            val floorPoints = floorMaterials.map { material -> Point(material.x, material.y) }.toSet()
+            if (floorPoints.isEmpty()) {
+                return
+            }
+            val minFloorX = floorPoints.minOf { point -> point.x }
+            val maxFloorX = floorPoints.maxOf { point -> point.x }
+            val minFloorY = floorPoints.minOf { point -> point.y }
+            val maxFloorY = floorPoints.maxOf { point -> point.y }
+            val floorColumns = maxFloorX - minFloorX + 1
+            val floorRows = maxFloorY - minFloorY + 1
+
+            floorMaterials.forEach { material ->
+                val point = Point(material.x, material.y)
+                val rect = viewport.tileRect(point)
+                val x = rect.x.toFloat()
+                val y = rect.y.toFloat()
+                val size = rect.width.toFloat()
+                val localX = point.x - minFloorX
+                val localY = point.y - minFloorY
+                val interiorSeam =
+                    localX in 1 until (floorColumns - 1).coerceAtLeast(1) &&
+                        localY in 1 until (floorRows - 1).coerceAtLeast(1)
+                if (!interiorSeam) {
+                    return@forEach
+                }
+                val seamPattern = localX * 13 + localY * 17 + material.variant
+                if (Point(point.x + 1, point.y) in floorPoints && seamPattern % 5 != 1 && seamPattern % 5 != 4) {
+                    val seamHeight = size * (0.62f + (seamPattern % 4) * 0.060f)
+                    val seamY = y + (size - seamHeight) * 0.50f + (seamPattern % 3 - 1) * 1.1f
+                    canvas.drawRect(tileBounds(x + size - 4f, seamY, 8f, seamHeight), color("545E4C", 0.026f))
+                    if (seamPattern % 4 == 0) {
+                        canvas.drawRect(tileBounds(x + size - 1f, seamY + seamHeight * 0.34f, 2f, seamHeight * 0.24f), color("050604", 0.014f))
+                    }
+                }
+                if (Point(point.x, point.y - 1) in floorPoints && seamPattern % 6 != 0 && seamPattern % 6 != 3) {
+                    val seamWidth = size * (0.70f + (seamPattern % 3) * 0.060f)
+                    val seamX = x + (size - seamWidth) * 0.46f + (seamPattern % 4 - 1) * 0.8f
+                    canvas.drawRect(tileBounds(seamX, y + size - 4f, seamWidth, 8f), color("56604C", 0.024f))
+                    if (seamPattern % 5 == 2) {
+                        canvas.drawRect(tileBounds(seamX + seamWidth * 0.44f, y + size - 1f, seamWidth * 0.24f, 2f), color("A8905E", 0.014f))
                     }
                 }
             }
@@ -2436,19 +3282,27 @@ class TileRenderer(
             drawMapStageStoneTexture(canvas, frame.layout.demoShell.mapStage)
             drawMapStageShadowVeil(canvas, frame.layout.demoShell.mapStage)
             drawHiddenStageGridSuppression(canvas, frame, visibleClip)
-            drawVisibleRoomAtmosphere(canvas, frame)
             drawVisibleWallRelief(canvas, frame)
             drawVisibleWallMassBands(canvas, frame)
             drawVisibleWallRaisedFaces(canvas, frame)
             drawVisibleWallCrownBlocks(canvas, frame)
             drawVisibleWallMasonryCourses(canvas, frame)
             drawVisibleWallFootRubble(canvas, frame)
+            drawPr08WallFamilyReliefRepaint(canvas, frame)
             drawVisiblePassageThresholds(canvas, frame)
             drawVisibleRoomCornerBreakup(canvas, frame)
+            drawVisibleRoomSilhouettePressure(canvas, frame, visibleClip)
+            drawVisibleRoomBoundaryCompression(canvas, frame)
+            drawVisibleRoomAsymmetricEdgeMass(canvas, frame)
+            drawVisibleRoomMacroStructuralPlates(canvas, frame)
+            drawVisibleRoomRuntimeCornerApertureShelves(canvas, frame)
             drawVisibleRoomOuterShadows(canvas, frame, visibleMaterialPoints)
             drawMapStageEdgeVignette(canvas, frame.layout.demoShell.mapStage)
             drawVisibleRoomContactShadows(canvas, frame)
             drawVisibleRoomStoryDecals(canvas, frame)
+            if (frame.model.roomPresentationPlan.compositorStrategy != RoomCompositorStrategy.TOPOLOGY_RISK_HYBRID_PRESENTATION) {
+                drawVisibleRoomMaterialBreakupAsset(canvas, frame)
+            }
             drawTorchLightBlooms(canvas, frame, visibleMaterialPoints, visibleClip)
             drawTorchFixtures(canvas, frame)
             drawPlayerWarmLight(canvas, frame.model.playerTile, frame.viewport, visibleMaterialPoints, visibleClip)
@@ -2605,6 +3459,285 @@ class TileRenderer(
             }
         }
 
+        private fun drawHiddenStageApertureMasonry(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            visibleClip: RectInt,
+        ) {
+            val mapBounds = frame.viewport.mapBounds
+            val cellSize = frame.viewport.cellSize.toFloat()
+            if (visibleClip.width < cellSize * 2.5f || visibleClip.height < cellSize * 2.5f) {
+                return
+            }
+            val leftGap = visibleClip.x - mapBounds.x
+            val rightGap = mapBounds.right - visibleClip.right
+            val bottomGap = visibleClip.y - mapBounds.y
+            val topGap = mapBounds.top - visibleClip.top
+            if (leftGap > cellSize * 1.5f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 2.22f,
+                    visibleClip.y + visibleClip.height * 0.08f,
+                    cellSize * 1.62f,
+                    visibleClip.height * 0.88f,
+                    mapBounds,
+                    color("15201C", 0.132f),
+                )
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 0.78f,
+                    visibleClip.y + visibleClip.height * 0.25f,
+                    3f,
+                    visibleClip.height * 0.46f,
+                    mapBounds,
+                    color("85704A", 0.096f),
+                )
+            }
+            if (topGap > cellSize * 1.5f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 0.42f,
+                    visibleClip.top + cellSize * 0.24f,
+                    visibleClip.width + cellSize * 1.62f,
+                    cellSize * 0.84f,
+                    mapBounds,
+                    color("1B1710", 0.158f),
+                )
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x + visibleClip.width * 0.18f,
+                    visibleClip.top + cellSize * 0.34f,
+                    visibleClip.width * 0.64f,
+                    3f,
+                    mapBounds,
+                    color("8A7654", 0.088f),
+                )
+            }
+            if (rightGap > cellSize * 1.5f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.right + cellSize * 0.46f,
+                    visibleClip.y + visibleClip.height * 0.18f,
+                    cellSize * 1.34f,
+                    visibleClip.height * 0.70f,
+                    mapBounds,
+                    color("111B18", 0.112f),
+                )
+            }
+            if (bottomGap > cellSize * 1.5f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x + visibleClip.width * 0.05f,
+                    visibleClip.y - cellSize * 1.04f,
+                    visibleClip.width * 0.76f,
+                    cellSize * 0.52f,
+                    mapBounds,
+                    color("101713", 0.118f),
+                )
+            }
+            drawDirectorScaleApertureDepth(
+                canvas,
+                frame,
+                visibleClip,
+                leftGap.toFloat(),
+                rightGap.toFloat(),
+                bottomGap.toFloat(),
+                topGap.toFloat(),
+            )
+        }
+
+        private fun drawDirectorScaleApertureDepth(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            visibleClip: RectInt,
+            leftGap: Float,
+            rightGap: Float,
+            bottomGap: Float,
+            topGap: Float,
+        ) {
+            val mapBounds = frame.viewport.mapBounds
+            val cellSize = frame.viewport.cellSize.toFloat()
+            val roomWidth = visibleClip.width.toFloat()
+            val roomHeight = visibleClip.height.toFloat()
+            if (roomWidth < cellSize * 2.5f || roomHeight < cellSize * 2.5f) {
+                return
+            }
+            val playerCenterX =
+                if (frame.viewport.containsTile(frame.model.playerTile)) {
+                    val playerRect = frame.viewport.tileRect(frame.model.playerTile)
+                    playerRect.x + playerRect.width / 2f
+                } else {
+                    visibleClip.x + roomWidth * 0.50f
+                }
+            val topLipWidth = (roomWidth * 0.50f).coerceAtMost(cellSize * 7.2f).coerceAtLeast(cellSize * 1.55f)
+            val topLipMinX = visibleClip.x + cellSize * 0.50f
+            val topLipMaxX = visibleClip.right - topLipWidth - cellSize * 0.40f
+            val topLipX =
+                if (topLipMaxX > topLipMinX) {
+                    (playerCenterX - topLipWidth * 0.46f).coerceIn(topLipMinX, topLipMaxX)
+                } else {
+                    visibleClip.x + roomWidth * 0.18f
+                }
+            val bottomLipWidth = (roomWidth * 0.40f).coerceAtMost(cellSize * 5.8f).coerceAtLeast(cellSize * 1.20f)
+            val bottomLipMinX = visibleClip.x + cellSize * 0.44f
+            val bottomLipMaxX = visibleClip.right - bottomLipWidth - cellSize * 0.48f
+            val bottomLipX =
+                if (bottomLipMaxX > bottomLipMinX) {
+                    (playerCenterX - bottomLipWidth * 0.48f).coerceIn(bottomLipMinX, bottomLipMaxX)
+                } else {
+                    visibleClip.x + roomWidth * 0.26f
+                }
+
+            if (topGap > cellSize * 1.35f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 1.05f,
+                    visibleClip.top + cellSize * 0.12f,
+                    roomWidth + cellSize * 2.18f,
+                    cellSize * 0.72f,
+                    mapBounds,
+                    color("050604", 0.472f),
+                )
+                drawClippedRect(
+                    canvas,
+                    topLipX,
+                    visibleClip.top + cellSize * 0.76f,
+                    topLipWidth,
+                    3f,
+                    mapBounds,
+                    color("A8905E", 0.178f),
+                )
+            }
+            if (bottomGap > cellSize * 1.35f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 0.94f,
+                    visibleClip.y - cellSize * 0.90f,
+                    roomWidth + cellSize * 2.02f,
+                    cellSize * 0.62f,
+                    mapBounds,
+                    color("050604", 0.438f),
+                )
+                drawClippedRect(
+                    canvas,
+                    bottomLipX,
+                    visibleClip.y - cellSize * 0.33f,
+                    bottomLipWidth,
+                    3f,
+                    mapBounds,
+                    color("A8905E", 0.146f),
+                )
+            }
+            if (leftGap > cellSize * 1.65f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 0.96f,
+                    visibleClip.y + roomHeight * 0.15f,
+                    cellSize * 0.78f,
+                    roomHeight * 0.64f,
+                    mapBounds,
+                    color("050604", 0.416f),
+                )
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 0.24f,
+                    visibleClip.y + roomHeight * 0.30f,
+                    3f,
+                    roomHeight * 0.40f,
+                    mapBounds,
+                    color("A8905E", 0.154f),
+                )
+            }
+            if (rightGap > cellSize * 1.65f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.right + cellSize * 0.18f,
+                    visibleClip.y + roomHeight * 0.19f,
+                    cellSize * 0.70f,
+                    roomHeight * 0.55f,
+                    mapBounds,
+                    color("050604", 0.392f),
+                )
+                drawClippedRect(
+                    canvas,
+                    visibleClip.right + cellSize * 0.16f,
+                    visibleClip.y + roomHeight * 0.44f,
+                    3f,
+                    roomHeight * 0.22f,
+                    mapBounds,
+                    color("7D6A49", 0.078f),
+                )
+            }
+            drawDirectorScaleApertureCornerShelves(canvas, frame, visibleClip, leftGap, rightGap, bottomGap, topGap)
+        }
+
+        private fun drawDirectorScaleApertureCornerShelves(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            visibleClip: RectInt,
+            leftGap: Float,
+            rightGap: Float,
+            bottomGap: Float,
+            topGap: Float,
+        ) {
+            val mapBounds = frame.viewport.mapBounds
+            val cellSize = frame.viewport.cellSize.toFloat()
+            val roomWidth = visibleClip.width.toFloat()
+            val roomHeight = visibleClip.height.toFloat()
+            if (roomWidth < cellSize * 4.8f || roomHeight < cellSize * 4f) {
+                return
+            }
+            if (leftGap > cellSize * 1.65f && topGap > cellSize * 1.05f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 1.18f,
+                    visibleClip.top + cellSize * 0.10f,
+                    roomWidth * 0.54f,
+                    cellSize * 0.58f,
+                    mapBounds,
+                    color("050604", 0.344f),
+                )
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 0.88f,
+                    visibleClip.top + cellSize * 0.48f,
+                    roomWidth * 0.32f,
+                    3f,
+                    mapBounds,
+                    color("8A7654", 0.118f),
+                )
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x - cellSize * 0.70f,
+                    visibleClip.y + roomHeight * 0.23f,
+                    cellSize * 0.52f,
+                    roomHeight * 0.60f,
+                    mapBounds,
+                    color("050604", 0.286f),
+                )
+            }
+            if (rightGap > cellSize * 1.20f && bottomGap > cellSize * 1.05f) {
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x + roomWidth * 0.42f,
+                    visibleClip.y - cellSize * 0.54f,
+                    roomWidth * 0.52f,
+                    cellSize * 0.48f,
+                    mapBounds,
+                    color("050604", 0.318f),
+                )
+                drawClippedRect(
+                    canvas,
+                    visibleClip.x + roomWidth * 0.58f,
+                    visibleClip.y - cellSize * 0.18f,
+                    roomWidth * 0.24f,
+                    3f,
+                    mapBounds,
+                    color("7D6A49", 0.094f),
+                )
+            }
+        }
+
         private fun drawVisibleRoomAtmosphere(
             canvas: TileCanvas,
             frame: MapRenderFrame,
@@ -2628,7 +3761,7 @@ class TileRenderer(
             val cellSize = frame.viewport.cellSize.toFloat()
             repeat(6) { index ->
                 val inset = index * 10f
-                val alpha = 0.010f * (1f - index / 6f)
+                val alpha = 0.006f * (1f - index / 6f)
                 canvas.drawRect(
                     tileBounds(
                         left - inset,
@@ -2641,18 +3774,17 @@ class TileRenderer(
             }
             canvas.drawRect(
                 tileBounds(left + cellSize * 0.42f, bottom + cellSize * 0.36f, width - cellSize * 0.84f, height - cellSize * 0.72f),
-                color("2F3B32", 0.034f),
+                color("2F3B32", 0.022f),
             )
             canvas.drawRect(
                 tileBounds(left + cellSize * 1.25f, bottom + cellSize * 1.05f, width - cellSize * 2.50f, height - cellSize * 2.10f),
-                color("B8873E", 0.008f),
+                color("B8873E", 0.004f),
             )
             drawVisibleRoomSlabVariation(canvas, left, bottom, width, height, cellSize)
-            drawVisibleRoomSeamSoftener(canvas, left, bottom, width, height, cellSize)
             drawVisibleRoomGridDissolve(canvas, left, bottom, width, height, cellSize)
-            drawVisibleRoomBrokenMortarCaps(canvas, frame)
             drawVisibleRoomStaggeredStoneRhythm(canvas, left, bottom, width, height, cellSize)
             drawVisibleRoomCrossCellSlabFields(canvas, left, bottom, width, height, cellSize)
+            drawVisibleRoomScaleMaterialFields(canvas, frame, left, bottom, width, height, cellSize)
             drawVisibleRoomLocalizedStoneDamage(canvas, left, bottom, width, height, cellSize)
             drawVisibleRoomSilhouetteBreakup(canvas, left, bottom, width, height, cellSize)
             drawVisibleRoomPainterlyBreakup(canvas, left, bottom, width, height, cellSize)
@@ -2675,46 +3807,56 @@ class TileRenderer(
                     color("6F5A39", 0.050f),
                 )
             }
-            val floorMaterials = visibleMaterials.filter { material -> material.kind == TileMapCellMaterialKind.FLOOR }
-            floorMaterials.forEach { material ->
-                val rect = frame.viewport.tileRect(Point(material.x, material.y))
-                val variantGlow = if (material.variant % 4 == 0) 0.010f else 0.006f
-                canvas.drawRect(
-                    tileBounds(rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 4f),
-                    color("C49B61", variantGlow),
-                )
-                if (material.variant % 19 == 0) {
-                    canvas.drawRect(
-                        tileBounds(
-                            rect.x + 5f,
-                            rect.y + 8f,
-                            rect.width * 1.62f,
-                            rect.height * 0.44f,
-                        ),
-                        color("050604", 0.12f),
-                    )
-                    canvas.drawRect(
-                        tileBounds(
-                            rect.x + 10f,
-                            rect.y + 12f,
-                            rect.width * 1.18f,
-                            rect.height * 0.16f,
-                        ),
-                        color("8A7654", 0.11f),
-                    )
-                }
-                if (material.variant % 11 == 0) {
-                    canvas.drawRect(
-                        tileBounds(
-                            rect.x + 3f,
-                            rect.y + 4f,
-                            rect.width * 0.76f,
-                            rect.height * 0.34f,
-                        ),
-                        color("112923", 0.13f),
-                )
-            }
         }
+
+        private fun drawVisibleRoomMaterialBreakupAsset(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val asset = frame.model.roomMaterialBreakup ?: return
+            val viewport = frame.viewport
+            val floorRects =
+                visibleFloorPoints(frame)
+                    .asSequence()
+                    .filter(viewport::containsTile)
+                    .map(viewport::tileRect)
+                    .toList()
+            if (floorRects.isEmpty()) {
+                return
+            }
+            val left = floorRects.minOf { rect -> rect.x }.toFloat()
+            val right = floorRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+            val bottom = floorRects.minOf { rect -> rect.y }.toFloat()
+            val top = floorRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+            val width = right - left
+            val height = top - bottom
+            val cellSize = viewport.cellSize.toFloat()
+            if (width < cellSize * 6f || height < cellSize * 4f) {
+                return
+            }
+
+            val driftSeed =
+                abs(
+                    left.roundToInt() * 23 +
+                        bottom.roundToInt() * 29 +
+                        width.roundToInt() * 31 +
+                        height.roundToInt() * 37 +
+                        floorRects.size * 41,
+                )
+            val driftX = ((driftSeed % 5) - 2) * cellSize * 0.045f
+            val driftY = (((driftSeed / 5) % 5) - 2) * cellSize * 0.035f
+            val insetX = (cellSize * 0.62f).coerceAtMost(width * 0.11f)
+            val insetY = (cellSize * 0.52f).coerceAtMost(height * 0.13f)
+            canvas.drawAsset(
+                asset,
+                tileBounds(
+                    left + insetX + driftX,
+                    bottom + insetY + driftY,
+                    width - insetX * 2f,
+                    height - insetY * 2f,
+                ),
+                alpha = 0.78f,
+            )
         }
 
         private fun drawVisibleRoomSlabVariation(
@@ -2791,20 +3933,6 @@ class TileRenderer(
             }
             val columns = (width / cellSize).toInt()
             val rows = (height / cellSize).toInt()
-            (1 until columns).forEach { column ->
-                val alpha = if (column % 2 == 0) 0.039f else 0.031f
-                canvas.drawRect(
-                    tileBounds(left + column * cellSize - 4.5f, bottom + cellSize * 0.68f, 9f, height - cellSize * 1.36f),
-                    color("5A6048", alpha),
-                )
-            }
-            (1 until rows).forEach { row ->
-                val alpha = if (row % 2 == 0) 0.037f else 0.030f
-                canvas.drawRect(
-                    tileBounds(left + cellSize * 0.68f, bottom + row * cellSize - 4.5f, width - cellSize * 1.36f, 9f),
-                    color("565D47", alpha),
-                )
-            }
             val jointPlugAnchors =
                 listOf(
                     Pair(2, 2),
@@ -2893,6 +4021,12 @@ class TileRenderer(
                 return
             }
             val floorPoints = floorMaterials.map { material -> Point(material.x, material.y) }.toSet()
+            val minFloorX = floorPoints.minOf { point -> point.x }
+            val maxFloorX = floorPoints.maxOf { point -> point.x }
+            val minFloorY = floorPoints.minOf { point -> point.y }
+            val maxFloorY = floorPoints.maxOf { point -> point.y }
+            val floorColumns = maxFloorX - minFloorX + 1
+            val floorRows = maxFloorY - minFloorY + 1
 
             floorMaterials.forEach { material ->
                 val point = Point(material.x, material.y)
@@ -2900,13 +4034,40 @@ class TileRenderer(
                 val x = rect.x.toFloat()
                 val y = rect.y.toFloat()
                 val size = rect.width.toFloat()
+                val localX = point.x - minFloorX
+                val localY = point.y - minFloorY
+                val seamPattern = localX * 7 + localY * 11
+                val seamVariant = material.variant + seamPattern
+                val interiorSeam =
+                    localX in 1 until (floorColumns - 1).coerceAtLeast(1) &&
+                        localY in 1 until (floorRows - 1).coerceAtLeast(1)
                 if (Point(point.x + 1, point.y) in floorPoints && (point.x + point.y) % 7 == 0) {
-                    canvas.drawRect(tileBounds(x + size - 5f, y + size * 0.18f, 10f, size * 0.66f), color("626A50", 0.112f))
-                    canvas.drawRect(tileBounds(x + size - 2f, y + size * 0.50f, 4f, 9f), color("050604", 0.140f))
+                    canvas.drawRect(tileBounds(x + size - 5f, y + size * 0.18f, 10f, size * 0.66f), color("626A50", 0.046f))
+                    canvas.drawRect(tileBounds(x + size - 2f, y + size * 0.50f, 4f, 9f), color("050604", 0.040f))
+                }
+                val verticalWeave = seamPattern % 5
+                if (Point(point.x + 1, point.y) in floorPoints && interiorSeam && (verticalWeave == 0 || verticalWeave == 2)) {
+                    val capWidth = if (seamVariant % 3 == 0) 21f else 19f
+                    val capHeight = size * (0.86f + (seamVariant % 2) * 0.10f)
+                    val capX = x + size - capWidth * 0.50f + (seamVariant % 3 - 1) * 0.8f
+                    val capY = y + size * 0.02f + (seamVariant % 3) * 1.2f
+                    canvas.drawRect(tileBounds(capX, capY, capWidth, capHeight), color("65705B", 0.052f))
+                    canvas.drawRect(tileBounds(capX + capWidth * 0.58f, capY + capHeight * 0.36f, 4f, 12f), color("050604", 0.036f))
+                    canvas.drawRect(tileBounds(capX + 3f, capY + capHeight * 0.70f, capWidth - 6f, 2f), color("A8905E", 0.024f))
                 }
                 if (Point(point.x, point.y - 1) in floorPoints && (point.x * 3 + point.y) % 8 == 0) {
-                    canvas.drawRect(tileBounds(x + size * 0.16f, y + size - 5f, size * 0.72f, 10f), color("5A6048", 0.098f))
-                    canvas.drawRect(tileBounds(x + size * 0.48f, y + size - 2f, 9f, 4f), color("B69B6B", 0.070f))
+                    canvas.drawRect(tileBounds(x + size * 0.16f, y + size - 5f, size * 0.72f, 10f), color("5A6048", 0.040f))
+                    canvas.drawRect(tileBounds(x + size * 0.48f, y + size - 2f, 9f, 4f), color("B69B6B", 0.026f))
+                }
+                val horizontalWeave = (localX * 5 + localY * 7) % 6
+                if (Point(point.x, point.y - 1) in floorPoints && interiorSeam && (horizontalWeave == 1 || horizontalWeave == 4)) {
+                    val capWidth = size * (1.08f + (seamVariant % 2) * 0.18f)
+                    val capHeight = if (seamVariant % 3 == 1) 18f else 16f
+                    val capX = x + size * 0.08f + (seamVariant % 4 - 1) * 1.2f
+                    val capY = y + size - capHeight * 0.50f + (seamVariant % 3 - 1) * 0.9f
+                    canvas.drawRect(tileBounds(capX, capY, capWidth, capHeight), color("626A50", 0.048f))
+                    canvas.drawRect(tileBounds(capX + capWidth * 0.42f, capY + capHeight * 0.58f, 12f, 4f), color("050604", 0.034f))
+                    canvas.drawRect(tileBounds(capX + capWidth * 0.18f, capY + 3f, capWidth * 0.58f, 2f), color("B69B6B", 0.022f))
                 }
             }
         }
@@ -2999,10 +4160,7 @@ class TileRenderer(
             val debrisAnchors =
                 listOf(
                     Pair(1.58f, 1.92f),
-                    Pair(3.28f, 2.76f),
                     Pair(5.72f, 1.54f),
-                    Pair(6.36f, 4.28f),
-                    Pair(8.74f, 3.32f),
                     Pair(9.42f, 5.02f),
                 )
             debrisAnchors.forEachIndexed { index, anchor ->
@@ -3010,45 +4168,33 @@ class TileRenderer(
                 val chipY = bottom + cellSize * anchor.second
                 val chipWidth = if (index % 2 == 0) 5f else 4f
                 val chipHeight = if (index % 3 == 0) 3f else 4f
-                canvas.drawRect(tileBounds(chipX, chipY, chipWidth, chipHeight), color("050604", 0.072f))
-                canvas.drawRect(tileBounds(chipX + 1.5f, chipY + chipHeight + 1f, chipWidth - 1f, 1.5f), color("A8905E", 0.058f))
+                canvas.drawRect(tileBounds(chipX, chipY, chipWidth, chipHeight), color("050604", 0.060f))
+                canvas.drawRect(tileBounds(chipX + 1.5f, chipY + chipHeight + 1f, chipWidth - 1f, 1.5f), color("A8905E", 0.046f))
             }
             val pittedStoneAnchors =
                 listOf(
                     Pair(1.95f, 2.26f),
-                    Pair(2.42f, 4.48f),
                     Pair(3.16f, 1.68f),
-                    Pair(3.76f, 3.64f),
                     Pair(4.48f, 5.08f),
-                    Pair(5.12f, 2.24f),
-                    Pair(5.86f, 4.72f),
-                    Pair(6.58f, 1.88f),
-                    Pair(7.34f, 3.38f),
-                    Pair(8.02f, 5.18f),
                     Pair(8.68f, 2.18f),
-                    Pair(9.28f, 4.44f),
                 )
             pittedStoneAnchors.forEachIndexed { index, anchor ->
                 val pitX = left + cellSize * anchor.first
                 val pitY = bottom + cellSize * anchor.second
                 val pitSize = if (index % 3 == 0) 3f else 2f
-                canvas.drawRect(tileBounds(pitX, pitY, pitSize, pitSize), color("050604", 0.046f))
+                canvas.drawRect(tileBounds(pitX, pitY, pitSize, pitSize), color("050604", 0.038f))
             }
             val shortCutAnchors =
                 listOf(
                     Pair(2.18f, 3.12f),
-                    Pair(3.58f, 5.36f),
                     Pair(4.86f, 1.96f),
-                    Pair(5.52f, 3.80f),
-                    Pair(6.94f, 5.42f),
                     Pair(8.38f, 2.92f),
-                    Pair(9.04f, 4.02f),
                 )
             shortCutAnchors.forEachIndexed { index, anchor ->
                 val cutX = left + cellSize * anchor.first
                 val cutY = bottom + cellSize * anchor.second
                 val cutWidth = if (index % 2 == 0) 9f else 7f
-                canvas.drawRect(tileBounds(cutX, cutY, cutWidth, 1.5f), color("B69B6B", 0.052f))
+                canvas.drawRect(tileBounds(cutX, cutY, cutWidth, 1.5f), color("B69B6B", 0.040f))
             }
         }
 
@@ -3065,19 +4211,19 @@ class TileRenderer(
             }
             canvas.drawRect(
                 tileBounds(left + cellSize * 2.05f, bottom + cellSize * 1.58f, cellSize * 5.68f, cellSize * 2.62f),
-                color("344137", 0.072f),
+                color("344137", 0.118f),
             )
             canvas.drawRect(
                 tileBounds(left + cellSize * 2.42f, bottom + cellSize * 2.18f, cellSize * 4.72f, 8f),
-                color("B69B6B", 0.052f),
+                color("B69B6B", 0.068f),
             )
             canvas.drawRect(
                 tileBounds(left + width - cellSize * 7.10f, bottom + height - cellSize * 3.48f, cellSize * 5.86f, cellSize * 2.30f),
-                color("242D27", 0.068f),
+                color("242D27", 0.104f),
             )
             canvas.drawRect(
                 tileBounds(left + width - cellSize * 6.72f, bottom + height - cellSize * 2.42f, cellSize * 5.10f, 9f),
-                color("7F6F50", 0.050f),
+                color("7F6F50", 0.062f),
             )
             canvas.drawRect(
                 tileBounds(left + width * 0.29f, bottom + height * 0.48f, cellSize * 6.10f, 10f),
@@ -3086,6 +4232,59 @@ class TileRenderer(
             canvas.drawRect(
                 tileBounds(left + width * 0.33f, bottom + height * 0.48f + 6f, cellSize * 4.24f, 2f),
                 color("A8905E", 0.050f),
+            )
+        }
+
+        private fun drawVisibleRoomScaleMaterialFields(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            left: Float,
+            bottom: Float,
+            width: Float,
+            height: Float,
+            cellSize: Float,
+        ) {
+            if (width < cellSize * 8f || height < cellSize * 6f) {
+                return
+            }
+            val floorPoints = visibleFloorPoints(frame)
+            if (floorPoints.isEmpty()) {
+                return
+            }
+            val minFloorX = floorPoints.minOf { point -> point.x }
+            val maxFloorX = floorPoints.maxOf { point -> point.x }
+            val minFloorY = floorPoints.minOf { point -> point.y }
+            val maxFloorY = floorPoints.maxOf { point -> point.y }
+            val phase =
+                abs(
+                    minFloorX * 31 +
+                        minFloorY * 37 +
+                        maxFloorX * 41 +
+                        maxFloorY * 43 +
+                        frame.model.playerTile.x * 7 +
+                        frame.model.playerTile.y * 11,
+                ) % 5
+            val drift = (phase - 2) * cellSize * 0.07f
+
+            canvas.drawRect(
+                tileBounds(left + width * 0.06f + drift, bottom + height * 0.12f, width * 0.62f, height * 0.38f),
+                color("2F473A", 0.128f),
+            )
+            canvas.drawRect(
+                tileBounds(left + width * 0.15f + drift * 0.35f, bottom + height * 0.19f, width * 0.40f, 5f),
+                color("8A8468", 0.074f),
+            )
+            canvas.drawRect(
+                tileBounds(left + width * 0.48f - drift, bottom + height * 0.50f, width * 0.42f, height * 0.32f),
+                color("111D19", 0.116f),
+            )
+            canvas.drawRect(
+                tileBounds(left + width * 0.57f - drift * 0.40f, bottom + height * 0.61f, width * 0.24f, 4f),
+                color("5F6C57", 0.080f),
+            )
+            canvas.drawRect(
+                tileBounds(left + width * 0.35f + drift * 0.50f, bottom + height * 0.34f, width * 0.30f, height * 0.26f),
+                color("050604", 0.110f),
             )
         }
 
@@ -3100,19 +4299,19 @@ class TileRenderer(
             if (width < cellSize * 8f || height < cellSize * 6f) {
                 return
             }
-            val dark = color("050604", 0.46f)
-            val softDark = color("050604", 0.32f)
-            val stone = color("2B2F27", 0.16f)
+            val dark = color("050604", 0.24f)
+            val softDark = color("050604", 0.17f)
+            val stone = color("2B2F27", 0.10f)
             canvas.drawRect(tileBounds(left, bottom + height - cellSize * 4.12f, cellSize * 4.82f, cellSize * 3.82f), dark)
             canvas.drawRect(tileBounds(left + cellSize * 0.72f, bottom + height - cellSize * 4.26f, cellSize * 2.70f, cellSize * 0.96f), stone)
             canvas.drawRect(tileBounds(left + width - cellSize * 5.04f, bottom + height - cellSize * 4.06f, cellSize * 4.70f, cellSize * 3.76f), dark)
             canvas.drawRect(tileBounds(left + width - cellSize * 3.88f, bottom + height - cellSize * 4.46f, cellSize * 2.14f, cellSize * 0.96f), stone)
             canvas.drawRect(tileBounds(left, bottom + cellSize * 0.08f, cellSize * 3.65f, cellSize * 3.22f), softDark)
             canvas.drawRect(tileBounds(left + width - cellSize * 3.70f, bottom + cellSize * 0.02f, cellSize * 3.42f, cellSize * 3.36f), softDark)
-            canvas.drawRect(tileBounds(left, bottom + height * 0.36f, cellSize * 3.15f, cellSize * 2.60f), color("050604", 0.34f))
-            canvas.drawRect(tileBounds(left + width - cellSize * 3.08f, bottom + height * 0.46f, cellSize * 2.78f, cellSize * 2.82f), color("050604", 0.34f))
-            canvas.drawRect(tileBounds(left + width * 0.37f, bottom, cellSize * 3.92f, cellSize * 1.35f), color("050604", 0.25f))
-            canvas.drawRect(tileBounds(left + width * 0.42f, bottom + height - cellSize * 1.36f, cellSize * 3.16f, cellSize * 1.02f), color("050604", 0.24f))
+            canvas.drawRect(tileBounds(left, bottom + height * 0.36f, cellSize * 3.15f, cellSize * 2.60f), color("050604", 0.18f))
+            canvas.drawRect(tileBounds(left + width - cellSize * 3.08f, bottom + height * 0.46f, cellSize * 2.78f, cellSize * 2.82f), color("050604", 0.18f))
+            canvas.drawRect(tileBounds(left + width * 0.37f, bottom, cellSize * 3.92f, cellSize * 1.35f), color("050604", 0.12f))
+            canvas.drawRect(tileBounds(left + width * 0.42f, bottom + height - cellSize * 1.36f, cellSize * 3.16f, cellSize * 1.02f), color("050604", 0.12f))
         }
 
         private fun drawVisibleRoomPainterlyBreakup(
@@ -3217,117 +4416,28 @@ class TileRenderer(
             }
             canvas.drawRect(
                 tileBounds(left + width * 0.34f, bottom + height * 0.425f, cellSize * 4.90f, cellSize * 1.16f),
-                color("07100D", 0.153f),
+                color("07100D", 0.085f),
             )
             canvas.drawRect(
                 tileBounds(left + width * 0.38f, bottom + height * 0.485f, cellSize * 3.80f, 4f),
-                color("050604", 0.161f),
+                color("050604", 0.095f),
             )
             canvas.drawRect(
                 tileBounds(left + width * 0.43f, bottom + height * 0.525f, cellSize * 2.55f, 2f),
-                color("A8905E", 0.061f),
+                color("A8905E", 0.045f),
             )
             canvas.drawRect(
                 tileBounds(left + width * 0.45f, bottom + height * 0.51f, cellSize * 2.75f, 3f),
-                color("050604", 0.137f),
+                color("050604", 0.086f),
             )
             canvas.drawRect(
                 tileBounds(left + width * 0.585f, bottom + height * 0.465f, 3f, cellSize * 1.06f),
-                color("050604", 0.128f),
+                color("050604", 0.080f),
             )
             canvas.drawRect(
                 tileBounds(left + width * 0.50f, bottom + height * 0.57f, cellSize * 1.95f, 2f),
-                color("8EA38E", 0.076f),
+                color("8EA38E", 0.054f),
             )
-        }
-
-        private fun drawVisibleRoomSeamSoftener(
-            canvas: TileCanvas,
-            left: Float,
-            bottom: Float,
-            width: Float,
-            height: Float,
-            cellSize: Float,
-        ) {
-            if (width < cellSize * 4f || height < cellSize * 4f) {
-                return
-            }
-            canvas.drawRect(
-                tileBounds(left + cellSize * 0.72f, bottom + cellSize * 0.64f, width - cellSize * 1.44f, height - cellSize * 1.28f),
-                color("15221E", 0.040f),
-            )
-            val columns = (width / cellSize).toInt()
-            val rows = (height / cellSize).toInt()
-            (1 until columns).forEach { column ->
-                canvas.drawRect(
-                    tileBounds(left + column * cellSize - 2.5f, bottom + cellSize * 0.56f, 5f, height - cellSize * 1.12f),
-                    color("4E5A45", 0.034f),
-                )
-                canvas.drawRect(
-                    tileBounds(left + column * cellSize - 0.5f, bottom + cellSize * 0.48f, 1f, height - cellSize * 0.96f),
-                    color("B69B6B", 0.012f),
-                )
-            }
-            (1 until rows).forEach { row ->
-                canvas.drawRect(
-                    tileBounds(left + cellSize * 0.56f, bottom + row * cellSize - 2.5f, width - cellSize * 1.12f, 5f),
-                    color("4A543F", 0.030f),
-                )
-                canvas.drawRect(
-                    tileBounds(left + cellSize * 0.48f, bottom + row * cellSize - 0.5f, width - cellSize * 0.96f, 1f),
-                    color("B69B6B", 0.011f),
-                )
-            }
-            val availableRows = (rows - 2).coerceAtLeast(1)
-            (1 until columns).forEach { column ->
-                if (column % 3 == 0) {
-                    return@forEach
-                }
-                val segmentCount = if (column % 5 == 0) 2 else 1
-                repeat(segmentCount) { segment ->
-                    val startRow = 1 + (column * 3 + segment * 4) % availableRows
-                    val seamY = bottom + startRow * cellSize + cellSize * 0.18f
-                    val seamHeight =
-                        (cellSize * (1.15f + ((column + segment) % 4) * 0.36f))
-                            .coerceAtMost(bottom + height - seamY - cellSize * 0.35f)
-                    if (seamHeight > cellSize * 0.35f) {
-                        val alpha = if ((column + segment) % 2 == 0) 0.015f else 0.011f
-                        canvas.drawRect(
-                            tileBounds(left + column * cellSize - 0.5f, seamY, 1f, seamHeight),
-                            color("8A8468", alpha),
-                        )
-                        canvas.drawRect(
-                            tileBounds(left + column * cellSize - cellSize * 0.16f, seamY + seamHeight * 0.45f, cellSize * 0.32f, 1f),
-                            color("050604", alpha * 0.45f),
-                        )
-                    }
-                }
-            }
-            val availableColumns = (columns - 2).coerceAtLeast(1)
-            (1 until rows).forEach { row ->
-                if (row % 3 == 2) {
-                    return@forEach
-                }
-                val segmentCount = if (row % 5 == 1) 2 else 1
-                repeat(segmentCount) { segment ->
-                    val startColumn = 1 + (row * 5 + segment * 3) % availableColumns
-                    val seamX = left + startColumn * cellSize + cellSize * 0.18f
-                    val seamWidth =
-                        (cellSize * (1.20f + ((row + segment) % 4) * 0.32f))
-                            .coerceAtMost(left + width - seamX - cellSize * 0.35f)
-                    if (seamWidth > cellSize * 0.35f) {
-                        val alpha = if ((row + segment) % 2 == 0) 0.014f else 0.010f
-                        canvas.drawRect(
-                            tileBounds(seamX, bottom + row * cellSize - 0.5f, seamWidth, 1f),
-                            color("8A8468", alpha),
-                        )
-                        canvas.drawRect(
-                            tileBounds(seamX + seamWidth * 0.46f, bottom + row * cellSize - cellSize * 0.14f, 1f, cellSize * 0.28f),
-                            color("050604", alpha * 0.42f),
-                        )
-                    }
-                }
-            }
         }
 
         private fun drawVisibleWallRelief(
@@ -4037,6 +5147,24 @@ class TileRenderer(
             walls.forEach(::drawWallChip)
         }
 
+        private fun drawPr08WallFamilyReliefRepaint(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            frame.layerPlan.terrainBase
+                .asSequence()
+                .filter { placement ->
+                    placement.alpha >= 0.99f &&
+                        placement.asset.entry.category == "tile_wall" &&
+                        placement.asset.resolvedKey.isPr08RuinsWallFamily()
+                }.forEach { placement ->
+                    drawPlacement(canvas, placement, frame.viewport, alphaScale = 0.46f)
+                }
+        }
+
+        private fun String.isPr08RuinsWallFamily(): Boolean =
+            this == DarkUiMapVisualKeys.RUINS_WALL || startsWith("${DarkUiMapVisualKeys.RUINS_WALL}.")
+
         private fun drawVisiblePassageThresholds(
             canvas: TileCanvas,
             frame: MapRenderFrame,
@@ -4104,6 +5232,10 @@ class TileRenderer(
                                 drawClippedRect(canvas, x + size - 9f, y + size - 15f, 5f, 11f, viewport.mapBounds, color("050604", 0.241f))
                                 drawClippedRect(canvas, x + size * 0.34f, y + size - 4f, 8f, 2f, viewport.mapBounds, color("B69B6B", 0.149f))
                                 drawClippedRect(canvas, x + size * 0.58f, y + size - 7f, 7f, 2f, viewport.mapBounds, color("8A7654", 0.149f))
+                                drawClippedRect(canvas, x - size * 0.81f, y + size + 2f, size * 2.62f, 18f, viewport.mapBounds, color("050604", 0.232f))
+                                drawClippedRect(canvas, x - size * 0.48f, y + size + 9f, size * 1.64f, 4f, viewport.mapBounds, color("8A7654", 0.148f))
+                                drawClippedRect(canvas, x - size * 0.58f, y + size + 7f, 11f, 26f, viewport.mapBounds, color("050604", 0.168f))
+                                drawClippedRect(canvas, x + size * 1.24f, y + size + 10f, 11f, 24f, viewport.mapBounds, color("050604", 0.168f))
                             }
                         }
                         if (southFloor) {
@@ -4120,6 +5252,10 @@ class TileRenderer(
                                 drawClippedRect(canvas, x + size - 9f, y + 2f, 5f, 14f, viewport.mapBounds, color("050604", 0.263f))
                                 drawClippedRect(canvas, x + size * 0.30f, y + 5f, 8f, 2f, viewport.mapBounds, color("B69B6B", 0.149f))
                                 drawClippedRect(canvas, x + size * 0.57f, y + 8f, 7f, 2f, viewport.mapBounds, color("8A7654", 0.149f))
+                                drawClippedRect(canvas, x - size * 0.76f, y - 20f, size * 2.56f, 18f, viewport.mapBounds, color("050604", 0.232f))
+                                drawClippedRect(canvas, x - size * 0.36f, y - 13f, size * 1.58f, 4f, viewport.mapBounds, color("8A7654", 0.148f))
+                                drawClippedRect(canvas, x - size * 0.54f, y - 35f, 11f, 24f, viewport.mapBounds, color("050604", 0.168f))
+                                drawClippedRect(canvas, x + size * 1.20f, y - 34f, 11f, 26f, viewport.mapBounds, color("050604", 0.168f))
                             }
                         }
                     }
@@ -4145,6 +5281,10 @@ class TileRenderer(
                                 drawClippedRect(canvas, x + size - 15f, y + size - 9f, 11f, 5f, viewport.mapBounds, color("050604", 0.241f))
                                 drawClippedRect(canvas, x + size - 4f, y + size * 0.34f, 2f, 8f, viewport.mapBounds, color("B69B6B", 0.149f))
                                 drawClippedRect(canvas, x + size - 7f, y + size * 0.58f, 2f, 7f, viewport.mapBounds, color("8A7654", 0.149f))
+                                drawClippedRect(canvas, x + size + 2f, y - size * 0.81f, 18f, size * 2.62f, viewport.mapBounds, color("050604", 0.232f))
+                                drawClippedRect(canvas, x + size + 9f, y - size * 0.48f, 4f, size * 1.64f, viewport.mapBounds, color("8A7654", 0.148f))
+                                drawClippedRect(canvas, x + size + 7f, y - size * 0.58f, 26f, 11f, viewport.mapBounds, color("050604", 0.168f))
+                                drawClippedRect(canvas, x + size + 10f, y + size * 1.24f, 24f, 11f, viewport.mapBounds, color("050604", 0.168f))
                             }
                         }
                         if (westFloor) {
@@ -4161,6 +5301,10 @@ class TileRenderer(
                                 drawClippedRect(canvas, x + 2f, y + size - 9f, 14f, 5f, viewport.mapBounds, color("050604", 0.263f))
                                 drawClippedRect(canvas, x + 5f, y + size * 0.30f, 2f, 8f, viewport.mapBounds, color("B69B6B", 0.149f))
                                 drawClippedRect(canvas, x + 8f, y + size * 0.57f, 2f, 7f, viewport.mapBounds, color("8A7654", 0.149f))
+                                drawClippedRect(canvas, x - 20f, y - size * 0.76f, 18f, size * 2.56f, viewport.mapBounds, color("050604", 0.232f))
+                                drawClippedRect(canvas, x - 13f, y - size * 0.36f, 4f, size * 1.58f, viewport.mapBounds, color("8A7654", 0.148f))
+                                drawClippedRect(canvas, x - 35f, y - size * 0.54f, 24f, 11f, viewport.mapBounds, color("050604", 0.168f))
+                                drawClippedRect(canvas, x - 34f, y + size * 1.20f, 26f, 11f, viewport.mapBounds, color("050604", 0.168f))
                             }
                         }
                     }
@@ -4212,6 +5356,368 @@ class TileRenderer(
             drawClippedRect(canvas, right - cellSize * 1.44f, bottom + height * 0.62f, cellSize * 0.74f, cellSize * 0.16f, frame.viewport.mapBounds, color("6F5A39", 0.102f))
             drawClippedRect(canvas, left + width * 0.39f, top - cellSize * 0.82f, cellSize * 2.45f, cellSize * 0.82f, frame.viewport.mapBounds, color("050604", 0.305f))
             drawClippedRect(canvas, left + width * 0.44f, top - cellSize * 0.18f, cellSize * 1.34f, cellSize * 0.14f, frame.viewport.mapBounds, color("8A7654", 0.092f))
+        }
+
+        private fun drawVisibleRoomSilhouettePressure(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+            clip: RectInt,
+        ) {
+            val cellSize = frame.viewport.cellSize.toFloat()
+            val width = clip.width.toFloat()
+            val height = clip.height.toFloat()
+            if (width < cellSize * 5.5f || height < cellSize * 4.2f) {
+                return
+            }
+
+            val left = clip.x.toFloat()
+            val right = clip.right.toFloat()
+            val bottom = clip.y.toFloat()
+            val top = clip.top.toFloat()
+            val playerCenterX =
+                if (frame.viewport.containsTile(frame.model.playerTile)) {
+                    val playerRect = frame.viewport.tileRect(frame.model.playerTile)
+                    playerRect.x + playerRect.width / 2f
+                } else {
+                    left + width * 0.52f
+                }
+            val topBiteWidth = (width * 0.34f).coerceAtMost(cellSize * 5.4f).coerceAtLeast(cellSize * 2.4f)
+            val topBiteMinX = left + cellSize * 0.86f
+            val topBiteMaxX = right - topBiteWidth - cellSize * 0.62f
+            val topBiteX =
+                if (topBiteMaxX > topBiteMinX) {
+                    (playerCenterX - topBiteWidth * 0.34f).coerceIn(topBiteMinX, topBiteMaxX)
+                } else {
+                    left + width * 0.24f
+                }
+            drawClippedRect(
+                canvas,
+                topBiteX,
+                top - cellSize * 1.38f,
+                topBiteWidth,
+                cellSize * 1.02f,
+                frame.viewport.mapBounds,
+                color("050604", 0.480f),
+            )
+            drawClippedRect(
+                canvas,
+                topBiteX + topBiteWidth * 0.14f,
+                top - cellSize * 0.32f,
+                topBiteWidth * 0.52f,
+                3f,
+                frame.viewport.mapBounds,
+                color("A8905E", 0.126f),
+            )
+
+            val lowerBiteWidth = (width * 0.28f).coerceAtMost(cellSize * 5.2f).coerceAtLeast(cellSize * 2.0f)
+            val lowerBiteMinX = left + width * 0.38f
+            val lowerBiteMaxX = right - lowerBiteWidth - cellSize * 0.56f
+            val lowerBiteX =
+                if (lowerBiteMaxX > lowerBiteMinX) {
+                    (playerCenterX + lowerBiteWidth * 0.42f).coerceIn(lowerBiteMinX, lowerBiteMaxX)
+                } else {
+                    left + width * 0.48f
+                }
+            drawClippedRect(
+                canvas,
+                lowerBiteX,
+                bottom + cellSize * 0.08f,
+                lowerBiteWidth,
+                cellSize * 0.82f,
+                frame.viewport.mapBounds,
+                color("050604", 0.400f),
+            )
+            drawClippedRect(
+                canvas,
+                lowerBiteX + lowerBiteWidth * 0.38f,
+                bottom + cellSize * 0.44f,
+                lowerBiteWidth * 0.34f,
+                3f,
+                frame.viewport.mapBounds,
+                color("8A7654", 0.086f),
+            )
+
+            drawClippedRect(
+                canvas,
+                right - cellSize * 1.02f,
+                bottom + height * 0.30f,
+                cellSize * 1.02f,
+                height * 0.43f,
+                frame.viewport.mapBounds,
+                color("050604", 0.360f),
+            )
+            drawClippedRect(
+                canvas,
+                right - cellSize * 1.10f,
+                bottom + height * 0.49f,
+                cellSize * 0.58f,
+                3f,
+                frame.viewport.mapBounds,
+                color("A8905E", 0.092f),
+            )
+        }
+
+        private fun drawVisibleRoomBoundaryCompression(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val floorRects =
+                visibleFloorPoints(frame)
+                    .asSequence()
+                    .filter(frame.viewport::containsTile)
+                    .map(frame.viewport::tileRect)
+                    .toList()
+            if (floorRects.isEmpty()) {
+                return
+            }
+            val left = floorRects.minOf { rect -> rect.x }.toFloat()
+            val right = floorRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+            val bottom = floorRects.minOf { rect -> rect.y }.toFloat()
+            val top = floorRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+            val width = right - left
+            val height = top - bottom
+            val cellSize = frame.viewport.cellSize.toFloat()
+            if (width < cellSize * 7f || height < cellSize * 5f) {
+                return
+            }
+
+            canvas.drawRect(
+                tileBounds(left + cellSize * 0.62f, top - cellSize * 0.46f, width - cellSize * 1.24f, cellSize * 0.44f),
+                color("050604", 0.180f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 1.18f, bottom + cellSize * 0.10f, width - cellSize * 2.36f, cellSize * 0.32f),
+                color("1D1710", 0.140f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 0.12f, bottom + cellSize * 0.92f, cellSize * 0.40f, height - cellSize * 1.84f),
+                color("050604", 0.150f),
+            )
+            canvas.drawRect(
+                tileBounds(right - cellSize * 0.52f, bottom + cellSize * 0.96f, cellSize * 0.40f, height - cellSize * 1.92f),
+                color("050604", 0.142f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 0.34f, top - cellSize * 0.96f, cellSize * 1.12f, cellSize * 0.84f),
+                color("050604", 0.210f),
+            )
+            canvas.drawRect(
+                tileBounds(right - cellSize * 1.46f, top - cellSize * 0.90f, cellSize * 1.08f, cellSize * 0.78f),
+                color("050604", 0.210f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 0.62f, top - cellSize * 0.32f, width * 0.30f, 2.5f),
+                color("8A7654", 0.090f),
+            )
+            canvas.drawRect(
+                tileBounds(right - width * 0.34f, top - cellSize * 0.36f, width * 0.26f, 2f),
+                color("6F5A39", 0.080f),
+            )
+        }
+
+        private fun drawVisibleRoomAsymmetricEdgeMass(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val floorRects =
+                visibleFloorPoints(frame)
+                    .asSequence()
+                    .filter(frame.viewport::containsTile)
+                    .map(frame.viewport::tileRect)
+                    .toList()
+            if (floorRects.isEmpty()) {
+                return
+            }
+            val left = floorRects.minOf { rect -> rect.x }.toFloat()
+            val right = floorRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+            val bottom = floorRects.minOf { rect -> rect.y }.toFloat()
+            val top = floorRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+            val width = right - left
+            val height = top - bottom
+            val cellSize = frame.viewport.cellSize.toFloat()
+            if (width < cellSize * 7f || height < cellSize * 5f) {
+                return
+            }
+
+            canvas.drawRect(
+                tileBounds(left + cellSize * 0.72f, top - cellSize * 1.34f, cellSize * 3.20f, cellSize * 1.00f),
+                color("050604", 0.320f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 1.02f, top - cellSize * 0.72f, cellSize * 1.98f, 3f),
+                color("8A7654", 0.138f),
+            )
+            canvas.drawRect(
+                tileBounds(right - cellSize * 4.36f, bottom + cellSize * 0.48f, cellSize * 3.10f, cellSize * 0.85f),
+                color("1A120C", 0.300f),
+            )
+            canvas.drawRect(
+                tileBounds(right - cellSize * 3.68f, bottom + cellSize * 1.16f, cellSize * 1.64f, 2.5f),
+                color("A8905E", 0.116f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 0.44f, bottom + height * 0.32f, cellSize * 1.30f, cellSize * 2.50f),
+                color("050604", 0.300f),
+            )
+            canvas.drawRect(
+                tileBounds(left + cellSize * 1.42f, bottom + height * 0.49f, 3f, cellSize * 1.32f),
+                color("6F5A39", 0.104f),
+            )
+            canvas.drawRect(
+                tileBounds(right - cellSize * 1.36f, bottom + height * 0.40f, cellSize * 1.08f, cellSize * 2.35f),
+                color("050604", 0.270f),
+            )
+            canvas.drawRect(
+                tileBounds(right - cellSize * 1.50f, bottom + height * 0.60f, 3f, cellSize * 1.04f),
+                color("7D6A49", 0.092f),
+            )
+        }
+
+        private fun drawVisibleRoomMacroStructuralPlates(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val floorRects =
+                visibleFloorPoints(frame)
+                    .asSequence()
+                    .filter(frame.viewport::containsTile)
+                    .map(frame.viewport::tileRect)
+                    .toList()
+            if (floorRects.isEmpty()) {
+                return
+            }
+            val left = floorRects.minOf { rect -> rect.x }.toFloat()
+            val right = floorRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+            val bottom = floorRects.minOf { rect -> rect.y }.toFloat()
+            val top = floorRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+            val width = right - left
+            val height = top - bottom
+            val cellSize = frame.viewport.cellSize.toFloat()
+            if (width < cellSize * 6f || height < cellSize * 5f) {
+                return
+            }
+
+            drawClippedRect(
+                canvas,
+                left + cellSize * 0.62f,
+                top - cellSize * 1.08f,
+                width * 0.54f,
+                cellSize * 0.90f,
+                frame.viewport.mapBounds,
+                color("050604", 0.365f),
+            )
+            drawClippedRect(
+                canvas,
+                left + cellSize * 1.08f,
+                top - cellSize * 0.55f,
+                width * 0.30f,
+                3f,
+                frame.viewport.mapBounds,
+                color("8A7654", 0.142f),
+            )
+            drawClippedRect(
+                canvas,
+                left + width * 0.52f,
+                bottom + cellSize * 0.08f,
+                width * 0.40f,
+                cellSize * 0.72f,
+                frame.viewport.mapBounds,
+                color("1A120C", 0.305f),
+            )
+            drawClippedRect(
+                canvas,
+                left + cellSize * 0.24f,
+                bottom + height * 0.28f,
+                cellSize * 0.74f,
+                height * 0.46f,
+                frame.viewport.mapBounds,
+                color("050604", 0.285f),
+            )
+            drawClippedRect(
+                canvas,
+                right - cellSize * 0.92f,
+                bottom + height * 0.44f,
+                cellSize * 0.70f,
+                height * 0.34f,
+                frame.viewport.mapBounds,
+                color("050604", 0.258f),
+            )
+        }
+
+        private fun drawVisibleRoomRuntimeCornerApertureShelves(
+            canvas: TileCanvas,
+            frame: MapRenderFrame,
+        ) {
+            val cellSize = frame.viewport.cellSize.toFloat()
+            if (cellSize < 40f) {
+                return
+            }
+            val materialRects =
+                frame.model.mapCellMaterials
+                    .asSequence()
+                    .filter { material ->
+                        material.visibility == com.ktome.core.snapshot.CellVisibilitySnapshot.VISIBLE &&
+                            frame.viewport.containsTile(Point(material.x, material.y))
+                    }.map { material -> frame.viewport.tileRect(Point(material.x, material.y)) }
+                    .toList()
+            if (materialRects.isEmpty()) {
+                return
+            }
+            val left = materialRects.minOf { rect -> rect.x }.toFloat()
+            val right = materialRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+            val bottom = materialRects.minOf { rect -> rect.y }.toFloat()
+            val top = materialRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+            val width = right - left
+            val height = top - bottom
+            if (width < cellSize * 5f || height < cellSize * 4f) {
+                return
+            }
+
+            drawClippedRect(
+                canvas,
+                left + cellSize * 0.04f,
+                top - cellSize * 0.58f,
+                width * 0.52f,
+                cellSize * 0.54f,
+                frame.viewport.mapBounds,
+                color("050604", 0.332f),
+            )
+            drawClippedRect(
+                canvas,
+                left + cellSize * 0.48f,
+                top - cellSize * 0.21f,
+                width * 0.24f,
+                3f,
+                frame.viewport.mapBounds,
+                color("8A7654", 0.126f),
+            )
+            drawClippedRect(
+                canvas,
+                left + cellSize * 0.08f,
+                bottom + height * 0.28f,
+                cellSize * 0.42f,
+                height * 0.44f,
+                frame.viewport.mapBounds,
+                color("050604", 0.248f),
+            )
+            drawClippedRect(
+                canvas,
+                left + width * 0.42f,
+                bottom + cellSize * 0.10f,
+                width * 0.50f,
+                cellSize * 0.50f,
+                frame.viewport.mapBounds,
+                color("050604", 0.296f),
+            )
+            drawClippedRect(
+                canvas,
+                left + width * 0.56f,
+                bottom + cellSize * 0.42f,
+                width * 0.26f,
+                3f,
+                frame.viewport.mapBounds,
+                color("7D6A49", 0.102f),
+            )
         }
 
         private fun drawVisibleRoomOuterShadows(
@@ -4482,10 +5988,10 @@ class TileRenderer(
             val centerY = rect.y + rect.height / 2f
             val cellSize = viewport.cellSize.toFloat()
             drawFocalWarmStoneDropout(canvas, centerX, centerY, cellSize, clip, alphaScale = 1f)
-            drawClippedCenteredRect(canvas, centerX, centerY, cellSize * 6.20f, cellSize * 4.60f, clip, color("D99A2B", 0.018f))
-            drawClippedCenteredRect(canvas, centerX, centerY, cellSize * 4.85f, cellSize * 3.45f, clip, color("E28A2B", 0.034f))
-            drawClippedCenteredRect(canvas, centerX, centerY, cellSize * 3.70f, cellSize * 2.625f, clip, color("D99A2B", 0.080f))
-            drawVisibleTileGlow(canvas, playerTile, viewport, visibleMaterialPoints, radius = 3, maxAlpha = 0.18f)
+            drawClippedCenteredRect(canvas, centerX, centerY, cellSize * 6.20f, cellSize * 4.60f, clip, color("D99A2B", 0.012f))
+            drawClippedCenteredRect(canvas, centerX, centerY, cellSize * 4.85f, cellSize * 3.45f, clip, color("E28A2B", 0.024f))
+            drawClippedCenteredRect(canvas, centerX, centerY, cellSize * 3.70f, cellSize * 2.625f, clip, color("D99A2B", 0.058f))
+            drawVisibleTileGlow(canvas, playerTile, viewport, visibleMaterialPoints, radius = 3, maxAlpha = 0.13f)
         }
 
         private fun drawTorchLightBlooms(
@@ -4496,9 +6002,9 @@ class TileRenderer(
         ) {
             visibleTorchWallTiles(frame)
                 .forEachIndexed { index, tile ->
-                    val maxAlpha = if (index < 4) 0.11f else 0.065f
+                    val maxAlpha = if (index < 4) 0.080f else 0.052f
                     drawVisibleTileGlow(canvas, tile, frame.viewport, visibleMaterialPoints, radius = 3, maxAlpha = maxAlpha)
-                    drawTorchWarmPool(canvas, tile, frame.viewport, clip, maxAlpha = if (index < 4) 0.066f else 0.046f)
+                    drawTorchWarmPool(canvas, tile, frame.viewport, clip, maxAlpha = if (index < 4) 0.046f else 0.032f)
                 }
         }
 
@@ -4928,6 +6434,11 @@ class TileRenderer(
                 com.ktome.client.ui.item.SpecialAccentTokenId.UNIQUE -> UiDesignTokens.color.accent.unique.color()
                 com.ktome.client.ui.item.SpecialAccentTokenId.ARTIFACT -> UiDesignTokens.color.accent.artifact.color()
             }
+
+        private fun withAlpha(
+            source: Color,
+            alpha: Float,
+        ): Color = Color(source).also { color -> color.a = alpha }
 
         internal fun color(
             hex: String,

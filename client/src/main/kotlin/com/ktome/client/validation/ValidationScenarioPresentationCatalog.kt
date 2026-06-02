@@ -138,6 +138,30 @@ internal object ValidationScenarioPresentationCatalog {
                 initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
             ),
             ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr08-director-grade"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr08-director-grade.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr08-director-forest-map-stage"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr08-director-forest-map-stage.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr08-director-mine-map-stage"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr08-director-mine-map-stage.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
+                id = ValidationScenarioId("dark-uiux-pr08-director-shadow-depths-map-stage"),
+                titleKey = "validation.phase4.v4.dark-uiux-pr08-director-shadow-depths-map-stage.title",
+                startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,
+                initialOverlaySection = ValidationOverlaySection.PHASE4_V4_FAST,
+            ),
+            ValidationScenarioPresentationSpec(
                 id = ValidationScenarioId("phase4-v4-pr06"),
                 titleKey = "validation.phase4.v4.phase4-v4-pr06.title",
                 startupMode = ValidationScenarioStartupMode.DIRECT_VALIDATION_SESSION,

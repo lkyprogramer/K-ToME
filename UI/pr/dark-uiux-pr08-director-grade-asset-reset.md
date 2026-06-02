@@ -47,6 +47,7 @@ PR-08 触发资源、runtime compositor、golden、packaged app 和 governance �
 | PR plan source | `UI/pr/dark-uiux-asset-first-director-grade-redesign-plan.md` |
 | PR execution contract | `UI/pr/dark-uiux-pr08-director-grade-asset-reset.md` |
 | Gap audit | `UI/review/dark-uiux-director-grade-gap-audit.md` |
+| Evidence and direction brief | `UI/review/dark-uiux-pr08-evidence-and-direction.md` |
 | Target comp record | `UI/manual-records/dark-uiux-director-grade-target-comp.md` |
 | Runtime parity record | `UI/manual-records/dark-uiux-director-grade-runtime-parity.md` |
 | Readiness report | `build/reports/verification/dark-uiux/director-grade-asset-readiness.json` |
@@ -99,6 +100,16 @@ PR-08 第一项 runtime 探索不是生成新资源，而是临时关掉主要 d
 
 探索截图不得更新 golden baseline。
 
+### 3.1 Exploration Result
+
+2026-05-26 已完成 subtractive spike 和 gap audit，结论记录在 `UI/review/dark-uiux-director-grade-gap-audit.md`。
+
+root-cause verdict: `resource-gap`。禁用 foundation glaze、cell material 和 warm overlay 后，地图清晰度提升，但仍暴露出单一 floor/wall tile 重复、硬格线、非矩形暗场不足和 UI chrome 割裂问题；因此 PR-08 后续方向不是纯 overlay cleanup，也不是继续堆 renderer micro-rectangles，而是 asset/compositor reset。
+
+探索截图保留在 `UI/review/dark-uiux-pr08-exploration/`，只作为 PR-08 方向证据，不更新 `client/build/reports/golden/**` baseline。
+
+完整证据链、否决路线、接受路线和下一步实现顺序已收敛到 `UI/review/dark-uiux-pr08-evidence-and-direction.md`。
+
 ## 4. Target Comp And Sliceability
 
 target comp 必须附带 32px tile-truth inset，并为每个资源族记录：
@@ -106,6 +117,23 @@ target comp 必须附带 32px tile-truth inset，并为每个资源族记录：
 `ownerPr`, `sheetId`, `targetKey`, `category`, `displaySize`, `tiling/stretch strategy`, `consumer`, `consumerTest`, `fallbackKey`, `requiresNewSchema=no`, `packagedRisk`.
 
 任何需要 baked UI text、atlas/region schema、full-screen paintover 或新 manifest schema 才能成立的方案，必须 rejected 或拆到独立 manifest epoch PR。
+
+2026-05-26 已建立 target comp 目录合同与人工记录：
+
+1. `UI/targets/README.md`
+2. `UI/manual-records/dark-uiux-director-grade-target-comp.md`
+
+当前状态为 `family-pack-accepted`。attempt 1 质感较好但失败于 map sliceability；attempt 2 更接近 orthographic tile-map，但包含 baked English log text；attempt 3 已经成为当前最佳 mood/layout reference，且无明显 baked text，但从整屏 comp 抽样的 32px tile-truth 仍混入光照、毒池、道具、墙边黑场等 compositor/scene 内容，不能证明 floor/wall resource 可切片。
+
+2026-05-27 已产出并接受 resource-family target pack 作为方向证据：
+
+1. `UI/targets/dark-uiux-director-grade-target-family-floor-32px.png`
+2. `UI/targets/dark-uiux-director-grade-target-family-wall-32px.png`
+3. `UI/targets/dark-uiux-director-grade-target-family-floor-wall-repeat.png`
+4. `UI/targets/dark-uiux-director-grade-target-family-map-compositor.png`
+5. `UI/targets/dark-uiux-director-grade-target-family-ui-chrome.png`
+
+结论：PR-08 后续大改造方向确定为 resource-family-first reset。floor/wall 可以走 `PR-08` formal supersession；光照、黑场、selection、hazard、telegraph 留在 deterministic compositor；right panel、slot、bottom deck 走 reusable `ui_frame` chrome；actor/prop 暂缓，除非新 floor/wall/compositor 后 marker readability 失败。正式 runtime integration、resource migration、manifest sync 或 golden baseline update 仍必须等 owner coverage、resource readiness、focused renderer tests 和 PR-08 golden labels 接好后再做。
 
 ## 5. Resource And Owner Contract
 
@@ -117,6 +145,12 @@ PR-08 固定使用 `ownerPr=PR-08`。如果 `UI-demo-new` 首屏 ruins keys 被 
 4. `prop.stairs.down`
 
 PR-02-2、PR-05、PR-06 只作为上游合同和 migration 约束来源，不是 PR-08 的替代路线。
+
+### 5.1 Owner Coverage Implementation
+
+2026-05-27 首轮 owner wiring 已把 `tileset.ruins.ground_01` 与 `tileset.ruins.wall_01` 接入 `ownerPr=PR-08`，并新增 `darkManifestCoveragePr08OwnerScope` 与 `UI/sprite-sheets/owner-contracts/pr08-owner-keys.yaml`。`actor.vanguard` 与 `prop.stairs.down` 仍归 `PR-02-2`，除非新 floor/wall/compositor 后 marker readability 失败。
+
+Rollback rule: 若 PR-08 floor/wall runtime candidates 未通过 director review，只回退 PR-08 owner migration、floor/wall generated resources 和 `dark-uiux-pr08-director-*` evidence；不得回退 PR-07 close evidence，也不得把 actor/prop 从 PR-02-2 静默迁出。
 
 ## 6. Runtime Layer Contract
 

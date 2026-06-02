@@ -1,0 +1,21 @@
+{
+  "comparison": "v44 right empty slot quieting vs v43i right panel crop",
+  "inputs": {
+    "before": "UI/review/dark-uiux-pr08-exploration/runtime-right-empty-slot-quieting-v44/pr08-right-empty-slot-quieting-v44-v43i-right-panel-grid.png",
+    "after": "UI/review/dark-uiux-pr08-exploration/runtime-right-empty-slot-quieting-v44/pr08-right-empty-slot-quieting-v44-v44-right-panel-grid.png"
+  },
+  "outputs": {
+    "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/runtime-right-empty-slot-quieting-v44/pr08-right-empty-slot-quieting-v44-comparison-board.png"
+  },
+  "imageSize": {
+    "width": 717,
+    "height": 1600
+  },
+  "changedPixelRatio": 0.032239365411436544,
+  "meanAbsDiff": 0.3675447466294747,
+  "maxAbsDiff": 149,
+  "acceptance": [
+    "visual-only empty equipment sockets no longer draw high-alpha central pseudo-glyph strokes",
+    "filled equipment, inscriptions, backpack icons, operation hints, nav, bottom deck, and map-stage contracts remain visually unchanged except propagated right-panel crops"
+  ]
+}

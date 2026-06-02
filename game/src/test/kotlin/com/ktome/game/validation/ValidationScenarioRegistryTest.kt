@@ -456,6 +456,147 @@ class ValidationScenarioRegistryTest {
     }
 
     @Test
+    fun `dark uiux pr08 director grade scenario maps dedicated room plate evidence contract`() {
+        val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("dark-uiux-pr08-director-grade"))
+
+        assertEquals("PR-08", scenario.prId)
+        assertEquals(ValidationPreset.LOOT_LAB, scenario.runtime.preset)
+        assertEquals(2026051102L, scenario.runtime.seed)
+        assertEquals(GameLocale.ZH_CN, scenario.runtime.locale)
+        assertEquals("vanguard", scenario.runtime.professionId)
+        assertEquals("human", scenario.runtime.raceId)
+        assertEquals("shattered_outpost", scenario.runtime.zoneId)
+        assertEquals(1, scenario.runtime.floor)
+        assertEquals(-1, scenario.runtime.routeIndex)
+        assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+        assertEquals(
+            listOf(
+                ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY,
+                ValidationScenarioActionId.PREPARE_MAP_TELEGRAPH,
+                ValidationScenarioActionId.RESET_SCENARIO,
+            ),
+            scenario.actionIds,
+        )
+        assertEquals("UI/manual-records/dark-uiux-director-grade-runtime-parity.md", scenario.evidence.manualRecordPath)
+        assertEquals(listOf("log.validation.phase4_v4.action"), scenario.evidence.requiredLogEventKeys)
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr08-director-grade.evidence.summary_note",
+            scenario.evidence.scenarioNoteLabelKey,
+        )
+        assertEquals(
+            listOf(
+                "evidence/dark-uiux-pr08-director-parity-1672x941.png",
+                "evidence/dark-uiux-pr08-director-map-stage-crop.png",
+                "evidence/dark-uiux-pr08-director-right-panel-crop.png",
+                "evidence/dark-uiux-pr08-director-bottom-deck-crop.png",
+                "evidence/dark-uiux-pr08-director-telegraph-combat-crop.png",
+                "evidence/dark-uiux-pr08-director-grade-app.log",
+            ),
+            scenario.evidence.requiredEvidenceFiles,
+        )
+        assertEquals(
+            scenario.evidence.requiredEvidenceFiles.filter { file -> file.endsWith(".png") },
+            scenario.evidence.cuaSteps.map { step -> step.evidenceFile },
+        )
+        val runbookText = scenario.evidence.cuaSteps.joinToString("\n") { step -> step.expectedVisibleResult }
+        assertTrue(runbookText.contains("ruins room art plate proof slice"))
+        assertTrue(runbookText.contains("tileset.ruins"))
+        assertTrue(runbookText.contains("Telegraph/combat"))
+    }
+
+    @Test
+    fun `dark uiux pr08 director family scenarios map packaged crop evidence contracts`() {
+        data class ExpectedFamilyScenario(
+            val id: String,
+            val evidencePrefix: String,
+            val seed: Long,
+            val zoneId: String,
+            val professionId: String,
+            val familyName: String,
+        )
+        val expectedScenarios =
+            listOf(
+                ExpectedFamilyScenario(
+                    id = "dark-uiux-pr08-director-forest-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-forest",
+                    seed = 20260602L,
+                    zoneId = "greenwood_fringe",
+                    professionId = "rogue",
+                    familyName = "tileset.forest_edge",
+                ),
+                ExpectedFamilyScenario(
+                    id = "dark-uiux-pr08-director-mine-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-mine",
+                    seed = 20260603L,
+                    zoneId = "deep_iron_pit",
+                    professionId = "vanguard",
+                    familyName = "tileset.mine",
+                ),
+                ExpectedFamilyScenario(
+                    id = "dark-uiux-pr08-director-shadow-depths-map-stage",
+                    evidencePrefix = "dark-uiux-pr08-director-shadow-depths",
+                    seed = 20260604L,
+                    zoneId = "grey_gate_depths",
+                    professionId = "templar",
+                    familyName = "tileset.shadow_depths",
+                ),
+            )
+
+        expectedScenarios.forEach { expected ->
+            val scenario = ValidationScenarioRegistry.require(ValidationScenarioId(expected.id))
+
+            assertEquals("PR-08", scenario.prId)
+            assertEquals(ValidationPreset.LOOT_LAB, scenario.runtime.preset)
+            assertEquals(expected.seed, scenario.runtime.seed)
+            assertEquals(GameLocale.ZH_CN, scenario.runtime.locale)
+            assertEquals(expected.professionId, scenario.runtime.professionId)
+            assertEquals("human", scenario.runtime.raceId)
+            assertEquals(expected.zoneId, scenario.runtime.zoneId)
+            assertEquals(1, scenario.runtime.floor)
+            assertEquals(-1, scenario.runtime.routeIndex)
+            assertEquals(ValidationScenarioContentPackMode.NONE, scenario.runtime.contentPackMode)
+            assertEquals(
+                listOf(
+                    ValidationScenarioActionId.PREPARE_PRIMARY_SCENE,
+                    ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY,
+                    ValidationScenarioActionId.RESET_SCENARIO,
+                ),
+                scenario.actionIds,
+            )
+            assertEquals(
+                "UI/manual-records/dark-uiux-pr08-non-ruins-packaged-parity.md",
+                scenario.evidence.manualRecordPath,
+            )
+            assertEquals(listOf("log.validation.phase4_v4.action"), scenario.evidence.requiredLogEventKeys)
+            assertEquals(
+                "validation.phase4.v4.${expected.id}.evidence.summary_note",
+                scenario.evidence.scenarioNoteLabelKey,
+            )
+            assertEquals(
+                listOf(
+                    "evidence/${expected.evidencePrefix}-parity-1280x800.png",
+                    "evidence/${expected.evidencePrefix}-map-stage-crop.png",
+                    "evidence/${expected.evidencePrefix}-right-panel-crop.png",
+                    "evidence/${expected.evidencePrefix}-bottom-deck-crop.png",
+                    "evidence/${expected.evidencePrefix}-evidence-summary.png",
+                    "evidence/${expected.id}-app.log",
+                ),
+                scenario.evidence.requiredEvidenceFiles,
+            )
+            assertEquals(
+                scenario.evidence.requiredEvidenceFiles.filter { file -> file.endsWith(".png") },
+                scenario.evidence.cuaSteps.map { step -> step.evidenceFile },
+            )
+            val runbookText = scenario.evidence.cuaSteps.joinToString("\n") { step ->
+                "${step.input} ${step.expectedVisibleResult}"
+            }
+            assertTrue(runbookText.contains(expected.familyName))
+            assertTrue(runbookText.contains("without claiming all-map closure"))
+        }
+    }
+
+    @Test
     fun `pr07 sample pack visibility scenario matches fixed phase4 v4 contract`() {
         val scenario = ValidationScenarioRegistry.require(ValidationScenarioId("phase4-v4-pr07"))
 

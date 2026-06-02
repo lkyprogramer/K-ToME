@@ -125,6 +125,36 @@ class ValidationCommandSourceTest {
     }
 
     @Test
+    fun `dark uiux pr08 director grade scenario exposes presentation title key`() {
+        val scenarioId = ValidationScenarioId("dark-uiux-pr08-director-grade")
+
+        assertEquals(
+            "validation.phase4.v4.dark-uiux-pr08-director-grade.title",
+            ValidationScenarioPresentationCatalog.require(scenarioId).titleKey,
+        )
+    }
+
+    @Test
+    fun `dark uiux pr08 director family scenarios expose presentation title keys`() {
+        val expectedTitleKeys =
+            mapOf(
+                "dark-uiux-pr08-director-forest-map-stage" to
+                    "validation.phase4.v4.dark-uiux-pr08-director-forest-map-stage.title",
+                "dark-uiux-pr08-director-mine-map-stage" to
+                    "validation.phase4.v4.dark-uiux-pr08-director-mine-map-stage.title",
+                "dark-uiux-pr08-director-shadow-depths-map-stage" to
+                    "validation.phase4.v4.dark-uiux-pr08-director-shadow-depths-map-stage.title",
+            )
+
+        expectedTitleKeys.forEach { (scenarioId, titleKey) ->
+            assertEquals(
+                titleKey,
+                ValidationScenarioPresentationCatalog.require(ValidationScenarioId(scenarioId)).titleKey,
+            )
+        }
+    }
+
+    @Test
     fun `phase4 v4 fast section emits typed scenario actions`() {
         val scenarioId = ValidationScenarioId("phase4-v4-pr00-selftest")
         val action =
@@ -167,6 +197,30 @@ class ValidationCommandSourceTest {
             ValidationAction.Phase4V4ScenarioAction(
                 scenarioId = scenarioId,
                 actionId = ValidationScenarioActionId.PREPARE_SHOP_REPLACEMENT,
+            ),
+            action,
+        )
+    }
+
+    @Test
+    fun `pr08 director grade fast section exposes map telegraph evidence action`() {
+        val scenarioId = ValidationScenarioId("dark-uiux-pr08-director-grade")
+        val action =
+            validationOverlayAction(
+                ValidationOverlaySelection(
+                    preset = com.ktome.game.validation.ValidationPreset.MAPGEN_DIFF,
+                    restartNextSeedEnabled = false,
+                    scenarioId = scenarioId,
+                    section = ValidationOverlaySection.PHASE4_V4_FAST,
+                    index = 2,
+                    inspectCursor = Point.ZERO,
+                ),
+            )
+
+        assertEquals(
+            ValidationAction.Phase4V4ScenarioAction(
+                scenarioId = scenarioId,
+                actionId = ValidationScenarioActionId.PREPARE_MAP_TELEGRAPH,
             ),
             action,
         )

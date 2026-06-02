@@ -1,0 +1,96 @@
+{
+  "artifactHashes": {
+    "pr08-room-breakup-resource-v38-comparison-board.png": "9573445c0fa3f72e21072c63907fa4b87177e95e17d8ce1401fa104acb60a90b",
+    "pr08-room-breakup-resource-v38-dark-uiux-pr02-1-demo-main-menu.png": "7134d961071c37d18b5ee504331fa1c70db1773f6e5f40b65a68a90ae6a626cf",
+    "pr08-room-breakup-resource-v38-dark-uiux-pr02-1-demo-shell-1280x800.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "pr08-room-breakup-resource-v38-dark-uiux-pr02-1-demo-shell-inventory-open.png": "5f380674c11becc39068da388f81235435fab68257f9f961bd7e1f6f0727fd84",
+    "pr08-room-breakup-resource-v38-dark-uiux-pr02-1-demo-shell-right-panel-grid.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "pr08-room-breakup-resource-v38-dark-uiux-pr02-1-demo-validation-setup.png": "fe1270a0e2acbac3fced17fd13c3ef75f0914bc6ea753d6cad3c93c07b0b5a09",
+    "pr08-room-breakup-resource-v38-evidence-index.tsv": "7d5153426e0fb065fd13169cd519b5682364ac423c00e55c511548614c7e947d",
+    "pr08-room-breakup-resource-v38-reference-map-crop.png": "b8860c59c4482b1ddf3e726e0d7ece6a75637bcef5d4203fd2fd4733ad2eea2f",
+    "pr08-room-breakup-resource-v38-room-breakup-contact-cell.png": "55f351f7c9a3a60a74a98f8ad0d8b69b952d0dc5920606e2bdc9447c2a54eda0",
+    "pr08-room-breakup-resource-v38-tileset-ruins-room-breakup-01.png": "4f81f2ec8f7d09311d36135f6ec50a07518b9b1abc0abedd468966f6e290971f",
+    "pr08-room-breakup-resource-v38-ui-demo-new-bottom-deck-no-command-hints.png": "f9b22db39ff64fb45768d66feccf6d6bf69ae0a69cdc77ec2432f092be429907",
+    "pr08-room-breakup-resource-v38-ui-demo-new-inventory-page-1.png": "2a6931d95e18fc7449950ada456cdea9cc7ead9e64f9f0ba5ea822a9ac1bf92f",
+    "pr08-room-breakup-resource-v38-ui-demo-new-inventory-page-2.png": "bbc3d85cc709d691f665b86b056a985055e8a944c04bc788529c582ae937359c",
+    "pr08-room-breakup-resource-v38-ui-demo-new-map-stage-crop.png": "a1953d0d0903883113ad923acc504f461a6b3e9890987872bb3bb39e449db0d9",
+    "pr08-room-breakup-resource-v38-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "pr08-room-breakup-resource-v38-ui-demo-new-parity-1280x800.png": "2e56d13bc4b722996487d306744907be2ad8eb2064ab21d3ed4fd4ad05c60194",
+    "pr08-room-breakup-resource-v38-ui-demo-new-parity-1672x941.png": "f6ecef33ff41c6863d2a5255d3568822e3924c7015ca898cd4181bee312db611",
+    "pr08-room-breakup-resource-v38-ui-demo-new-right-panel-grid.png": "f1fd786aeac2e56a2b963f8d693679cf51680f5715716d5cfa4f6d460c720686",
+    "pr08-room-breakup-resource-v38-v37-room-closeup.png": "75a9b9f8e896e70dfe06bdf02bc3d37ff24d0c3755528811ebebc9e2b3002164",
+    "pr08-room-breakup-resource-v38-v38-room-closeup.png": "9976edd3d0c51ff31b99b03bec4342dc2ef835de01663e061cbaabd5436098a0",
+    "pr08-room-breakup-resource-v38-v38-v37-full-diff.png": "888be5ec538cf2a06db26913cf8bcee00f1c7686d08c9a7925d4280eb029cc4b",
+    "pr08-room-breakup-resource-v38-v38-v37-map-stage-diff.png": "b02373e52069dd246ea6b766126902e14f40bd26067fe2af4ac95955a7f9118f"
+  },
+  "goldenActualHashes": {
+    "ui-demo-new-bottom-deck-no-command-hints": "9a64b9de43f0d8526d48e2bd5e9705c266599d3002c9b924305f7c2bf5aacdcd",
+    "ui-demo-new-inventory-page-1": "23905f61e56675bd4736eb0a9f47a200012d9899584e1be5c1b613c84952b8bd",
+    "ui-demo-new-inventory-page-2": "63bbaecf273cd14cbdea001954c8d4a50691e29207140bf3067332e18d9cc94a",
+    "ui-demo-new-map-stage-crop": "841f3083a7c37860c4468f0fd49705266842519c90532784a08bed5fe8d21e6f",
+    "ui-demo-new-nav-rail-crop": "c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6",
+    "ui-demo-new-parity-1280x800": "76b41326b4c16819c239ee3ab74535ff95c8196609461b7e4918f2e346f9320f",
+    "ui-demo-new-parity-1672x941": "bc5e73e6ca4dd4e6cf46528f52a4c40b051f4b4b42a8fdd77edafb73dcfb32cb",
+    "ui-demo-new-right-panel-grid": "4fc73bb307d123267bef293e925fd0f1449b4dd3437b92ffc315d3f9ada6c5f8"
+  },
+  "v37RoomSeamProbe": {
+    "maxLocalContrast": 219.0,
+    "meanLocalContrast": 109.45833333333333,
+    "samples": 32
+  },
+  "v37VsReferenceMapResized": {
+    "changedRatio": 0.9999118317903897,
+    "maxAbsRgbDiff": [
+      250,
+      249,
+      232
+    ],
+    "meanAbsRgbDiff": 15.49837559657294
+  },
+  "v38RoomMaterialResource": {
+    "alphaCoverage": 0.4998779296875,
+    "height": 128,
+    "largestMaterialIsland": {
+      "area": 3753,
+      "axisDistance": 14.510029721154714,
+      "longSpan": 128,
+      "shortSpan": 78
+    },
+    "maxAlpha": 114,
+    "meanWeightedEdge": 2.321037265637058,
+    "uniqueColorCount": 5371,
+    "width": 128
+  },
+  "v38RoomSeamProbe": {
+    "maxLocalContrast": 219.0,
+    "meanLocalContrast": 110.92708333333333,
+    "samples": 32
+  },
+  "v38VsReferenceMapResized": {
+    "changedRatio": 0.9999070400398674,
+    "maxAbsRgbDiff": [
+      250,
+      249,
+      232
+    ],
+    "meanAbsRgbDiff": 15.575196621496431
+  },
+  "v38VsV37FullScreen": {
+    "changedRatio": 0.11324500175421648,
+    "maxAbsRgbDiff": [
+      31,
+      23,
+      14
+    ],
+    "meanAbsRgbDiff": 0.3213815683542738
+  },
+  "v38VsV37MapStage": {
+    "changedRatio": 0.24689494566154907,
+    "maxAbsRgbDiff": [
+      30,
+      24,
+      14
+    ],
+    "meanAbsRgbDiff": 0.7000175697519151
+  }
+}

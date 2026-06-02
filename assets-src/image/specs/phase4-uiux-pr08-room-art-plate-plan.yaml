@@ -1,0 +1,87 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly room art plate for K-ToME Phase 4
+  UI/UX PR-08. This is a pre-rendered map-stage room surface, not a 128px tile,
+  icon, prop, actor, or UI chrome frame. Preserve warm torch lighting, thick
+  ruin walls, soft dark corners, irregular broken slab rhythm, and demoted
+  tactical lattice. Never anime and never sci-fi.
+defaults:
+  imageAspectRatio: "4:3"
+  imageSize: "1448x1086"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-UIUX-PR08:
+    description: PR-08 Direction A authored room source plate for client-only map-stage presentation evidence.
+    assets:
+      - id: phase4_uiux_pr08_ruins_room_art_plate_demo
+        category: ui_frame
+        visualKey: ui.map_stage.ruins.room_plate.pr08_demo
+        outputName: dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/structural-room-plate-art-edit-2026-06-01-round3/runtime-w-authored-room-source/ui_map_stage_ruins_room_plate_pr08_demo.png
+        subject: pre-rendered ruins room floor and wall art plate with thick worn masonry, rough broken stone slabs, warm torch pools, dark room mass, corridor mouths, authored material hierarchy and demoted tactical lattice for the D3 ruins proof slice
+        constraints:
+          - client-only presentation resource
+          - no baked gameplay markers
+          - no readable text
+          - no modern grid
+        materialTags: [phase4, uiux, pr08, ruins, room_art_plate, room_art_plate_v2, authored_room_source, structural_art_edit, imagegen_material_paintover, source_cohesion_paintover, combat_surface_integration, d3_ruins_map_stage_closed, geometry_safe_degrid, dark-v1, client-only-prototype]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr08_ruins_room_topology_source_demo
+        category: ui_frame
+        visualKey: ui.map_stage.ruins.room_topology_source.pr08_demo
+        outputName: dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/topology-source-asset-2026-06-02-round4/ui_map_stage_ruins_topology_source_pr08_candidate_d.png
+        subject: topology-aware ruins room source atlas with crop-safe wall ribbons, distributed wall mass, broken masonry shoulders, corridor mouths, brighter readable mid-band stone fields, warm torch pools, dense center cross material and dark edge pressure for topology-risk source-region bands
+        constraints:
+          - client-only presentation resource
+          - no baked gameplay markers
+          - no readable text
+          - no modern grid
+          - not a complete fixed room perimeter
+        materialTags: [phase4, uiux, pr08, ruins, room_art_plate, room_topology_source, topology_fragment_source, source_region_crop, topology_source_d, mask_diagnostic_accepted_forward, dark-v1, client-only-prototype]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr08_forest_edge_room_art_plate_demo
+        category: ui_frame
+        visualKey: ui.map_stage.forest_edge.room_plate.pr08_demo
+        outputName: dark-v1/ui/ui_map_stage_forest_edge_room_plate_pr08_demo.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-room-art-family-2026-06-02/ui_map_stage_forest_edge_room_plate_pr08_demo.png
+        subject: pre-rendered forest-edge room art plate with mossy ruin walls, root-wrapped masonry, damp irregular stone, leaf litter, warm lantern pools, dark forest edge mass and demoted tactical lattice for the non-ruins family rollout
+        constraints:
+          - client-only presentation resource
+          - no baked gameplay markers
+          - no readable text
+          - no modern grid
+        materialTags: [phase4, uiux, pr08, forest-edge, room_art_plate, non_ruins_family, geometry_safe_degrid, dark-v1, client-only-prototype]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr08_mine_room_art_plate_demo
+        category: ui_frame
+        visualKey: ui.map_stage.mine.room_plate.pr08_demo
+        outputName: dark-v1/ui/ui_map_stage_mine_room_plate_pr08_demo.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-room-art-family-2026-06-02/ui_map_stage_mine_room_plate_pr08_demo.png
+        subject: pre-rendered mine room art plate with rough hewn stone, timber supports, dark ore seams, cracked slate floor, rubble, warm lantern pools, deep mine voids and demoted tactical lattice for the non-ruins family rollout
+        constraints:
+          - client-only presentation resource
+          - no baked gameplay markers
+          - no readable text
+          - no modern grid
+        materialTags: [phase4, uiux, pr08, mine, room_art_plate, non_ruins_family, geometry_safe_degrid, dark-v1, client-only-prototype]
+        geminiKeyRequired: true
+      - id: phase4_uiux_pr08_shadow_depths_room_art_plate_demo
+        category: ui_frame
+        visualKey: ui.map_stage.shadow_depths.room_plate.pr08_demo
+        outputName: dark-v1/ui/ui_map_stage_shadow_depths_room_plate_pr08_demo.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-room-art-family-2026-06-02/ui_map_stage_shadow_depths_room_plate_pr08_demo_v4-imagegen.png
+        subject: pre-rendered shadow-depths room art plate with black basalt and obsidian wall mass, right-side collapsed parapet and buttress mass, broad quiet lower-right broken slab lane, restrained violet shadow seams, cold misty corners, top/left enclosure and demoted tactical lattice for the fixed PR08 shadow-depths runtime crop
+        constraints:
+          - client-only presentation resource
+          - no baked gameplay markers
+          - no readable text
+          - no modern grid
+        materialTags: [phase4, uiux, pr08, shadow-depths, room_art_plate, non_ruins_family, shadow_depths_v4_right_mass, geometry_safe_degrid, dark-v1, client-only-prototype]
+        geminiKeyRequired: true

@@ -14,6 +14,12 @@ enum class ProfileRunPersistenceMode {
     NO_OP,
 }
 
+enum class ValidationScenarioStartupSurface(
+    val propertyValue: String,
+) {
+    EVIDENCE_SUMMARY("evidence-summary"),
+}
+
 enum class ValidationPreset(
     val titleKey: String,
     val summaryKey: String,
@@ -62,10 +68,17 @@ data class ValidationSessionOptions(
     val scenarioId: ValidationScenarioId? = null,
     val scenarioRouteIndex: Int? = null,
     val scenarioEvidenceSummary: ValidationScenarioEvidenceSummary? = null,
+    val scenarioStartupSurface: ValidationScenarioStartupSurface? = null,
     val scenarioTalentSetup: ValidationScenarioTalentSetupSpec? = null,
 ) {
     init {
         validatePresetStartZone(preset = preset, zoneId = foundationConfig.zoneId)
+        require(scenarioStartupSurface == null || scenarioId != null) {
+            "Validation scenario startup surface requires a scenario id."
+        }
+        require(scenarioStartupSurface == null || scenarioEvidenceSummary != null) {
+            "Validation scenario startup surface requires evidence summary metadata."
+        }
     }
 }
 

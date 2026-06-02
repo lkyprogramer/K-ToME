@@ -1,0 +1,172 @@
+{
+  "copied_artifacts": [
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-main-menu.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-shell-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-shell-inventory-open.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-shell-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-validation-setup.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-evidence-index.tsv",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-bottom-deck-no-command-hints.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-inventory-page-1.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-inventory-page-2.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-map-stage-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-nav-rail-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-parity-1280x800.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-parity-1672x941.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-right-panel-grid.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-reference-map-crop.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-v30-v29-map-stage-diff.png",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-comparison-board.png"
+  ],
+  "hashes": {
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-comparison-board.png": "2d3bda6427d64c4ff8c74a7640d5a139bcccda18f36916c369ad87fd816c76ac",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-main-menu.png": "7134d961071c37d18b5ee504331fa1c70db1773f6e5f40b65a68a90ae6a626cf",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-shell-1280x800.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-shell-inventory-open.png": "5f380674c11becc39068da388f81235435fab68257f9f961bd7e1f6f0727fd84",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-shell-right-panel-grid.png": "a6c33f4e4a3f93c742b5d316bd7912e455256b3edce82b1390736826f9433a64",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-dark-uiux-pr02-1-demo-validation-setup.png": "fe1270a0e2acbac3fced17fd13c3ef75f0914bc6ea753d6cad3c93c07b0b5a09",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-evidence-index.tsv": "707826bed851729062957134ccf62c7893f3e0e1cd3ef009e0cc33d7ffb61735",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-reference-map-crop.png": "b8860c59c4482b1ddf3e726e0d7ece6a75637bcef5d4203fd2fd4733ad2eea2f",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-bottom-deck-no-command-hints.png": "1d3ac3e0b3b67dea66a077aa2afa30f9b47b5bb4318e812f2894ea2534f9d02e",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-inventory-page-1.png": "2dc2ac8cf03dba3693f5d5d6e12a68225a0debeac6e9cc6321f823b1417ddd63",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-inventory-page-2.png": "230165e27de1426439671000c82b215cdf15ded3c30d6bd9db1ee32ae77a5b23",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-map-stage-crop.png": "b07adf8da68253006bdce2af1a2657f870fe6f31d65d35aa355485102895b6a8",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-nav-rail-crop.png": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-parity-1280x800.png": "8cb077d181749699f9520a97b51fcc5eb8e0adc5b6b3f1fe73ab351c886c5325",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-parity-1672x941.png": "0a10d5f9400bff39013961491810e645a66e007f443787144e542867b5db0052",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-ui-demo-new-right-panel-grid.png": "8de82d8abf81c34906ba60e5a8dd7545aa2e883b0c6574e100accd720df4c277",
+    "UI/review/dark-uiux-pr08-exploration/runtime-corridor-mouth-apron-v30/pr08-corridor-mouth-apron-v30-v30-v29-map-stage-diff.png": "d12c1879ab9572e29dfdc909997bbb1a932559afb002558a801f2f199191849b"
+  },
+  "v29_vs_reference_map_resized": {
+    "changed_ratio": 0.9999257278669044,
+    "channel_extrema": [
+      [
+        0,
+        250
+      ],
+      [
+        0,
+        249
+      ],
+      [
+        0,
+        226
+      ]
+    ],
+    "mean_abs_diff": 15.843126713050811,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v30_vs_reference_map_resized": {
+    "changed_ratio": 0.9999257278669044,
+    "channel_extrema": [
+      [
+        0,
+        250
+      ],
+      [
+        0,
+        249
+      ],
+      [
+        0,
+        226
+      ]
+    ],
+    "mean_abs_diff": 15.802840070534568,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v30_vs_v29_bottom_deck": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      1843,
+      360
+    ]
+  },
+  "v30_vs_v29_full_1672x941": {
+    "changed_ratio": 0.007348006040606298,
+    "channel_extrema": [
+      [
+        0,
+        21
+      ],
+      [
+        0,
+        20
+      ],
+      [
+        0,
+        16
+      ]
+    ],
+    "mean_abs_diff": 0.028491505185531698,
+    "size": [
+      3344,
+      1882
+    ]
+  },
+  "v30_vs_v29_map_stage": {
+    "changed_ratio": 0.016053322599812164,
+    "channel_extrema": [
+      [
+        0,
+        22
+      ],
+      [
+        0,
+        19
+      ],
+      [
+        0,
+        16
+      ]
+    ],
+    "mean_abs_diff": 0.062326778218618824,
+    "size": [
+      1683,
+      1240
+    ]
+  },
+  "v30_vs_v29_right_panel": {
+    "changed_ratio": 0.0,
+    "channel_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "mean_abs_diff": 0.0,
+    "size": [
+      717,
+      1600
+    ]
+  }
+}

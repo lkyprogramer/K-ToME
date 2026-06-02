@@ -1,0 +1,20 @@
+Command:
+
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.dark uiux pr02 1 golden evidence hashes remain stable and writes canonical artifacts" --rerun-tasks --no-configuration-cache
+
+Result:
+
+Expected failure. This PR-08 evidence packet does not update the old PR-02-1 golden baseline.
+
+Actual hashes:
+
+ui-demo-new-parity-1672x941=4a55f315c4d239bc14787070a0a846ffac2cefe568854d4c9a16853492a0fc85
+ui-demo-new-parity-1280x800=69d8dd728ffdf8e1d85ac02983c8b9679a787e010a324540d1b76101677d5d81
+ui-demo-new-right-panel-grid=36e9b06dc1aba326458cd9c907e02062130d7fb5321007f13483fd18e96ccfcc
+ui-demo-new-bottom-deck-no-command-hints=6bf2380371c23586c38737409e70fb487c903b82b89ed989fc80c0f8e837a142
+ui-demo-new-nav-rail-crop=c253dc7d8e1aca962a973415973c6a1d9cc739afd704d943a0c28e678f3419d6
+ui-demo-new-map-stage-crop=d48c1f6b0f7dbc767218e081555ecb02c1d9b325a1cf92ff11b306c051ff867d
+ui-demo-new-inventory-page-1=021a21d9494e20ad4374d4209e2e66d38b7e0280d55f1845ca01b33377c039cf
+ui-demo-new-inventory-page-2=3f93fa09695715e8ab612fbd28d62675e82f1a8a6b8dc0e1ba8430ce8a3a7a8f

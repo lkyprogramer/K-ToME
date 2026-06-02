@@ -1,0 +1,29 @@
+{
+  "candidate": "runtime-hidden-aperture-masonry-v21",
+  "baseline": "runtime-floor-variant-flip-v20",
+  "artifactPaths": {
+    "ui-demo-new-parity-1672x941": "UI/review/dark-uiux-pr08-exploration/runtime-hidden-aperture-masonry-v21/pr08-hidden-aperture-masonry-v21-ui-demo-new-parity-1672x941.png",
+    "ui-demo-new-map-stage-crop": "UI/review/dark-uiux-pr08-exploration/runtime-hidden-aperture-masonry-v21/pr08-hidden-aperture-masonry-v21-ui-demo-new-map-stage-crop.png",
+    "ui-demo-new-right-panel-grid": "UI/review/dark-uiux-pr08-exploration/runtime-hidden-aperture-masonry-v21/pr08-hidden-aperture-masonry-v21-ui-demo-new-right-panel-grid.png",
+    "ui-demo-new-bottom-deck-no-command-hints": "UI/review/dark-uiux-pr08-exploration/runtime-hidden-aperture-masonry-v21/pr08-hidden-aperture-masonry-v21-ui-demo-new-bottom-deck-no-command-hints.png"
+  },
+  "artifactSha256": {
+    "ui-demo-new-parity-1672x941": "16798e19101b3b7c850dcec5f84ac970c31076d3dd0c531c033e8d6aa277b007",
+    "ui-demo-new-map-stage-crop": "0cfaf9942278db1fe921e2fce933dd3e7a5a476845d2bb687c907d7b2cf2f433",
+    "ui-demo-new-right-panel-grid": "0147692daa8cda571cee24c4e4c168d6d53e82cd9a073cad4eb67ec4a60cdb01",
+    "ui-demo-new-bottom-deck-no-command-hints": "b5bf7bd1840e2f34bc2f0e7ebbb1e4c39cd92f1bbd170e157b5eb297a093f4cf"
+  },
+  "goldenEvidenceIndexHashes": {
+    "ui-demo-new-parity-1672x941": "c8d29456c5db97976bf73e034daa0928ea926c977ec4538b1a9fc92439606108",
+    "ui-demo-new-map-stage-crop": "67daccb1e4b2122ed36d047c3b7d258d3fe869b62c377296439cf26ae7dac7b3",
+    "ui-demo-new-right-panel-grid": "9d29e9f6aa2cb7d293df853397177e9d2d2a9a2a8613b2a615ad9de7c2c6ff23",
+    "ui-demo-new-bottom-deck-no-command-hints": "bd25097dd6ae08004c28d3964c09bba46f64ca8fc002630d548fdbc39a8e9453"
+  },
+  "comparisonBoard": "UI/review/dark-uiux-pr08-exploration/runtime-hidden-aperture-masonry-v21/pr08-hidden-aperture-masonry-v21-comparison-board.png",
+  "comparisonBoardSha256": "151f83c60d110d221c8a0a991dbc910706a23c91323582b5807a0cd842760811",
+  "meanAbsoluteRgbDiffVsV20MapCrop": 0.24766130629508237,
+  "maxRgbDiffVsV20MapCrop": 14,
+  "changedPixelsVsV20MapCrop": 199364,
+  "totalPixels": 2086920,
+  "changedRatioVsV20MapCrop": 0.09553025511279781
+}

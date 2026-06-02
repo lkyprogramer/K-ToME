@@ -1,0 +1,18 @@
+[
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/v07a_center_floor_plane.png",
+    "sha256": "c166e635feb983b4c2404e7bf559abd1395d211ea872f3c212b7d4b7de5a7fce"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/v07b_deep_room_collar.png",
+    "sha256": "08f6ac4cdb11ec5f9729aed7a072212d9d0d944e1ef9d87365da1028c0d3f60f"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/v07c_lattice_weave_reset.png",
+    "sha256": "caebeb88f74957ecb1b671d98a7362ea0973fd4228cbace37c316d50c692b1dd"
+  },
+  {
+    "path": "UI/review/dark-uiux-pr08-exploration/room-enclosure-lattice-v07/pr08-room-enclosure-lattice-v07-prototype-board.png",
+    "sha256": "34bab26dbacef7783d40ebc0bc53d6d9031dc97e7c51a827d913241dbaaec9fb"
+  }
+]

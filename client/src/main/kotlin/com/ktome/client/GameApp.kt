@@ -58,6 +58,7 @@ import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
+import com.ktome.game.PlayerCommand
 import com.ktome.game.PlayerCreationSelection
 import com.ktome.game.PlayerCreationState
 import com.ktome.game.contentpack.ContentPackLoadException
@@ -67,8 +68,11 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.validation.ProfileRunPersistenceMode
+import com.ktome.game.validation.ValidationAction
 import com.ktome.game.validation.ValidationPreset
 import com.ktome.game.validation.ValidationPaths
+import com.ktome.game.validation.ValidationScenarioActionId
+import com.ktome.game.validation.ValidationScenarioStartupSurface
 import com.ktome.game.validation.ValidationSessionRequest
 import com.ktome.game.validation.ValidationSessionOptions
 import com.ktome.game.validation.loadPersistedValidationSessionOptions
@@ -290,6 +294,9 @@ class GameApp(
                 showValidationSetupFailure(options, exception)
                 return
             }
+        if (!applyValidationStartupSurface(session, options)) {
+            return
+        }
         activeSessionPath = SessionPath.VALIDATION
         activeSession = session
         try {
@@ -302,6 +309,35 @@ class GameApp(
             return
         }
         replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), session, gameCommandSourceFactory()), renderEnabled))
+    }
+
+    private fun applyValidationStartupSurface(
+        session: FoundationGameSession,
+        options: ValidationSessionOptions,
+    ): Boolean {
+        val startupSurface = options.scenarioStartupSurface ?: return true
+        val scenarioId = options.scenarioId ?: return true
+        val actionId =
+            when (startupSurface) {
+                ValidationScenarioStartupSurface.EVIDENCE_SUMMARY -> ValidationScenarioActionId.SHOW_EVIDENCE_SUMMARY
+            }
+        val accepted =
+            session.perform(
+                PlayerCommand.Validation(
+                    ValidationAction.Phase4V4ScenarioAction(
+                        scenarioId = scenarioId,
+                        actionId = actionId,
+                    ),
+                ),
+            )
+        if (!accepted) {
+            showValidationSetupFailure(
+                options,
+                IllegalArgumentException("Validation startup action ${actionId.value} was rejected for scenario ${scenarioId.value}."),
+            )
+            return false
+        }
+        return true
     }
 
     internal fun continueValidationSession() {

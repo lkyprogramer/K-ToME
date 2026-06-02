@@ -819,6 +819,124 @@ class DarkSpriteSheetPipelineScriptTest {
     }
 
     @Test
+    fun `pr08 room material breakup resource keeps painterly negative space and micro texture`() {
+        val resource =
+            repoRoot()
+                .resolve("client/src/main/resources/dark-v1/tiles/tileset_ruins_room_breakup_01.png")
+        assertTrue(Files.isRegularFile(resource), "PR08 room breakup resource is missing: $resource")
+
+        val metrics = imageTextureMetrics(resource)
+
+        assertEquals(128, metrics.width)
+        assertEquals(128, metrics.height)
+        assertTrue(
+            metrics.alphaCoverage in 0.40..0.72,
+            "room-scale breakup should leave transparent negative space instead of becoming a flat opaque sheet: $metrics",
+        )
+        assertTrue(
+            metrics.maxAlpha <= 218,
+            "room-scale breakup should stay translucent so actor, loot and telegraph readability remain owned by runtime layers: $metrics",
+        )
+        assertTrue(
+            metrics.uniqueColorCount >= 4_800,
+            "room-scale breakup needs painterly color complexity rather than flat vector islands: $metrics",
+        )
+        assertTrue(
+            metrics.meanWeightedEdge >= 1.80,
+            "room-scale breakup needs enough chipped stone edge density to read above the visible floor grid: $metrics",
+        )
+        assertTrue(
+            metrics.largestMaterialIslandLongSpan >= 104,
+            "room-scale breakup needs a large authored material plate instead of many small tile-sized flecks: $metrics",
+        )
+        assertTrue(
+            metrics.largestMaterialIslandShortSpan >= 44,
+            "room-scale breakup needs enough cross-axis mass to read as room material rather than a thin grid-aligned scratch: $metrics",
+        )
+        assertTrue(
+            metrics.largestMaterialIslandAxisDistance >= 12.0,
+            "room-scale breakup should be visibly off-grid so it does not reinforce the square lattice: $metrics",
+        )
+    }
+
+    @Test
+    fun `pr08 ruins floor family keeps material detail without bright tile-edge seams`() {
+        val resourceRoot = repoRoot().resolve("client/src/main/resources/dark-v1/tiles")
+        val resources =
+            listOf(
+                "tileset_ruins_ground_01.png",
+                "tileset_ruins_ground_01_variant_1.png",
+                "tileset_ruins_ground_01_variant_2.png",
+                "tileset_ruins_ground_01_variant_3.png",
+            )
+
+        resources.forEach { resourceName ->
+            val resource = resourceRoot.resolve(resourceName)
+            assertTrue(Files.isRegularFile(resource), "PR08 ruins floor resource is missing: $resource")
+
+            val metrics = imageTextureMetrics(resource)
+
+            assertEquals(128, metrics.width, resourceName)
+            assertEquals(128, metrics.height, resourceName)
+            assertEquals(1.0, metrics.alphaCoverage, 0.0, resourceName)
+            assertEquals(255, metrics.maxAlpha, resourceName)
+            assertTrue(
+                metrics.uniqueColorCount >= 5_800,
+                "floor resource needs enough painterly color complexity to read as authored stone: $resourceName $metrics",
+            )
+            assertTrue(
+                metrics.meanWeightedEdge >= 7.50,
+                "floor resource needs chipped stone micro-contrast above a flat fill: $resourceName $metrics",
+            )
+            assertTrue(
+                kotlin.math.abs(metrics.borderMinusCoreLuminance) <= 2.25,
+                "floor resource must not brighten or darken its outer 8px edge enough to create a repeated tile lattice: $resourceName $metrics",
+            )
+            assertTrue(
+                metrics.borderToCoreLuminanceStdRatio >= 0.35,
+                "floor resource edge must keep enough stone microtexture so the outer ring does not tile as a low-detail frame: $resourceName $metrics",
+            )
+            assertTrue(
+                metrics.outerEdgeToCoreLuminanceStdRatio >= 0.40,
+                "floor resource outer 2px must not flatten into a visible runtime frame when tiles repeat: $resourceName $metrics",
+            )
+        }
+    }
+
+    @Test
+    fun `pr08 ruins wall family keeps dense masonry material in every authored piece`() {
+        val resourceRoot = repoRoot().resolve("client/src/main/resources/dark-v1/tiles")
+        val resources =
+            listOf(
+                "tileset_ruins_wall_01.png",
+                "tileset_ruins_wall_01_crown.png",
+                "tileset_ruins_wall_01_side.png",
+                "tileset_ruins_wall_01_corner.png",
+                "tileset_ruins_wall_01_door_contact.png",
+            )
+
+        resources.forEach { resourceName ->
+            val resource = resourceRoot.resolve(resourceName)
+            assertTrue(Files.isRegularFile(resource), "PR08 ruins wall resource is missing: $resource")
+
+            val metrics = imageTextureMetrics(resource)
+
+            assertEquals(128, metrics.width, resourceName)
+            assertEquals(128, metrics.height, resourceName)
+            assertEquals(1.0, metrics.alphaCoverage, 0.0, resourceName)
+            assertEquals(255, metrics.maxAlpha, resourceName)
+            assertTrue(
+                metrics.uniqueColorCount >= 4_200,
+                "wall resource piece needs enough painterly color complexity to avoid flat wall panels: $resourceName $metrics",
+            )
+            assertTrue(
+                metrics.meanWeightedEdge >= 6.40,
+                "wall resource piece needs chipped masonry edge density to read at runtime scale: $resourceName $metrics",
+            )
+        }
+    }
+
+    @Test
     fun `slice script skips pending non dark outputs without overwriting fallback resources`() {
         val plan = tempDir.resolve("sheet-plan.yaml")
         val runtimeRoot = tempDir.resolve("runtime")
@@ -2600,6 +2718,7 @@ class DarkSpriteSheetPipelineScriptTest {
         }
 
         assertEquals(0, runFor("PR-02-1").exitCode)
+        assertEquals(0, runFor("PR-08").exitCode)
 
         val extraSegment = runFor("PR-02-1-1")
         assertEquals(1, extraSegment.exitCode, extraSegment.output)
@@ -3161,6 +3280,189 @@ class DarkSpriteSheetPipelineScriptTest {
             }
         }
         ImageIO.write(image, "png", path.toFile())
+    }
+
+    private data class ImageTextureMetrics(
+        val width: Int,
+        val height: Int,
+        val alphaCoverage: Double,
+        val maxAlpha: Int,
+        val uniqueColorCount: Int,
+        val meanWeightedEdge: Double,
+        val borderMinusCoreLuminance: Double,
+        val borderToCoreLuminanceStdRatio: Double,
+        val outerEdgeToCoreLuminanceStdRatio: Double,
+        val largestMaterialIslandLongSpan: Int,
+        val largestMaterialIslandShortSpan: Int,
+        val largestMaterialIslandAxisDistance: Double,
+    )
+
+    private fun imageTextureMetrics(path: Path): ImageTextureMetrics {
+        val image = ImageIO.read(path.toFile())
+        val uniqueColors = mutableSetOf<Int>()
+        val weightedLuminance = DoubleArray(image.width * image.height)
+        var covered = 0
+        var maxAlpha = 0
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+                val argb = image.getRGB(x, y)
+                uniqueColors += argb
+                val alpha = argb.ushr(24) and 0xFF
+                if (alpha > 12) {
+                    covered += 1
+                }
+                maxAlpha = maxOf(maxAlpha, alpha)
+                val red = argb.ushr(16) and 0xFF
+                val green = argb.ushr(8) and 0xFF
+                val blue = argb and 0xFF
+                val luminance = red * 0.299 + green * 0.587 + blue * 0.114
+                weightedLuminance[y * image.width + x] = luminance * alpha / 255.0
+            }
+        }
+        var edgeSum = 0.0
+        var edgeCount = 0
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width - 1) {
+                edgeSum += kotlin.math.abs(weightedLuminance[y * image.width + x + 1] - weightedLuminance[y * image.width + x])
+                edgeCount += 1
+            }
+        }
+        for (y in 0 until image.height - 1) {
+            for (x in 0 until image.width) {
+                edgeSum += kotlin.math.abs(weightedLuminance[(y + 1) * image.width + x] - weightedLuminance[y * image.width + x])
+                edgeCount += 1
+            }
+        }
+        var borderLuminanceSum = 0.0
+        var borderLuminanceSquareSum = 0.0
+        var borderLuminanceCount = 0
+        var outerEdgeLuminanceSum = 0.0
+        var outerEdgeLuminanceSquareSum = 0.0
+        var outerEdgeLuminanceCount = 0
+        var coreLuminanceSum = 0.0
+        var coreLuminanceSquareSum = 0.0
+        var coreLuminanceCount = 0
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+                val luminance = weightedLuminance[y * image.width + x]
+                if (x < 8 || y < 8 || x >= image.width - 8 || y >= image.height - 8) {
+                    borderLuminanceSum += luminance
+                    borderLuminanceSquareSum += luminance * luminance
+                    borderLuminanceCount += 1
+                }
+                if (x < 2 || y < 2 || x >= image.width - 2 || y >= image.height - 2) {
+                    outerEdgeLuminanceSum += luminance
+                    outerEdgeLuminanceSquareSum += luminance * luminance
+                    outerEdgeLuminanceCount += 1
+                }
+                if (x in 32 until 96 && y in 32 until 96) {
+                    coreLuminanceSum += luminance
+                    coreLuminanceSquareSum += luminance * luminance
+                    coreLuminanceCount += 1
+                }
+            }
+        }
+        val borderMean = borderLuminanceSum / borderLuminanceCount.toDouble()
+        val outerEdgeMean = outerEdgeLuminanceSum / outerEdgeLuminanceCount.toDouble()
+        val coreMean = coreLuminanceSum / coreLuminanceCount.toDouble()
+        val borderStd = kotlin.math.sqrt(borderLuminanceSquareSum / borderLuminanceCount.toDouble() - borderMean * borderMean)
+        val outerEdgeStd = kotlin.math.sqrt(outerEdgeLuminanceSquareSum / outerEdgeLuminanceCount.toDouble() - outerEdgeMean * outerEdgeMean)
+        val coreStd = kotlin.math.sqrt(coreLuminanceSquareSum / coreLuminanceCount.toDouble() - coreMean * coreMean)
+        val visited = BooleanArray(image.width * image.height)
+        var largestIslandArea = 0
+        var largestIslandLongSpan = 0
+        var largestIslandShortSpan = 0
+        var largestIslandAxisDistance = 0.0
+        for (startY in 0 until image.height) {
+            for (startX in 0 until image.width) {
+                val startIndex = startY * image.width + startX
+                if (visited[startIndex] || image.getRGB(startX, startY).ushr(24) and 0xFF < 72) {
+                    continue
+                }
+                val stack = mutableListOf(startIndex)
+                visited[startIndex] = true
+                var area = 0
+                var minX = startX
+                var maxX = startX
+                var minY = startY
+                var maxY = startY
+                var sumX = 0.0
+                var sumY = 0.0
+                var sumXX = 0.0
+                var sumYY = 0.0
+                var sumXY = 0.0
+                while (stack.isNotEmpty()) {
+                    val index = stack.removeAt(stack.lastIndex)
+                    val x = index % image.width
+                    val y = index / image.width
+                    area += 1
+                    minX = minOf(minX, x)
+                    maxX = maxOf(maxX, x)
+                    minY = minOf(minY, y)
+                    maxY = maxOf(maxY, y)
+                    val dx = x.toDouble()
+                    val dy = y.toDouble()
+                    sumX += dx
+                    sumY += dy
+                    sumXX += dx * dx
+                    sumYY += dy * dy
+                    sumXY += dx * dy
+                    val neighbors =
+                        intArrayOf(
+                            x - 1,
+                            y,
+                            x + 1,
+                            y,
+                            x,
+                            y - 1,
+                            x,
+                            y + 1,
+                        )
+                    for (neighbor in neighbors.indices step 2) {
+                        val nextX = neighbors[neighbor]
+                        val nextY = neighbors[neighbor + 1]
+                        if (nextX !in 0 until image.width || nextY !in 0 until image.height) {
+                            continue
+                        }
+                        val nextIndex = nextY * image.width + nextX
+                        if (visited[nextIndex] || image.getRGB(nextX, nextY).ushr(24) and 0xFF < 72) {
+                            continue
+                        }
+                        visited[nextIndex] = true
+                        stack += nextIndex
+                    }
+                }
+                if (area > largestIslandArea) {
+                    val spanX = maxX - minX + 1
+                    val spanY = maxY - minY + 1
+                    val meanX = sumX / area.toDouble()
+                    val meanY = sumY / area.toDouble()
+                    val varianceX = sumXX / area.toDouble() - meanX * meanX
+                    val varianceY = sumYY / area.toDouble() - meanY * meanY
+                    val covariance = sumXY / area.toDouble() - meanX * meanY
+                    val axisAngle =
+                        0.5 * Math.toDegrees(kotlin.math.atan2(2.0 * covariance, varianceX - varianceY))
+                    largestIslandArea = area
+                    largestIslandLongSpan = maxOf(spanX, spanY)
+                    largestIslandShortSpan = minOf(spanX, spanY)
+                    largestIslandAxisDistance = minOf(kotlin.math.abs(axisAngle), kotlin.math.abs(kotlin.math.abs(axisAngle) - 90.0))
+                }
+            }
+        }
+        return ImageTextureMetrics(
+            width = image.width,
+            height = image.height,
+            alphaCoverage = covered.toDouble() / (image.width * image.height).toDouble(),
+            maxAlpha = maxAlpha,
+            uniqueColorCount = uniqueColors.size,
+            meanWeightedEdge = edgeSum / edgeCount.toDouble(),
+            borderMinusCoreLuminance = borderMean - coreMean,
+            borderToCoreLuminanceStdRatio = borderStd / coreStd.coerceAtLeast(0.0001),
+            outerEdgeToCoreLuminanceStdRatio = outerEdgeStd / coreStd.coerceAtLeast(0.0001),
+            largestMaterialIslandLongSpan = largestIslandLongSpan,
+            largestMaterialIslandShortSpan = largestIslandShortSpan,
+            largestMaterialIslandAxisDistance = largestIslandAxisDistance,
+        )
     }
 
     private fun writeWideImage(path: Path) {

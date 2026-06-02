@@ -1,0 +1,2 @@
+label	hash	artifact	sourceArtifact	sourceHash	maskCount	contract
+dark-uiux-pr08-topology-source-mask-board	8c0fb5155efc49ede5e95d5f9643227ee7525db053c6b97d775ce32a9f6cac96	client/build/reports/golden/dark-uiux-pr08-topology-source-mask/dark-uiux-pr08-topology-source-mask-board.png	client/src/main/resources/dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png	da6b3b9150e93f78a28d08fb92668a96f228333020326ff4b46a082c4a6c92a2	3	review-only mask diagnostic promoted to repeatable golden owner evidence

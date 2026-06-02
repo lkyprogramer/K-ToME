@@ -4,9 +4,11 @@ import com.badlogic.gdx.graphics.Color
 import com.ktome.client.assets.ClientAssetBundleLoader
 import com.ktome.client.assets.DarkUiChromeTestKeys
 import com.ktome.client.assets.DarkUiChromeVisualKeys
+import com.ktome.client.assets.DarkUiMapVisualKeys
 import com.ktome.client.assets.ManifestLogSink
 import com.ktome.client.assets.ManifestPrefixRule
 import com.ktome.client.assets.ResolvedVisualAsset
+import com.ktome.client.assets.RoomArtPlateFamilyVisualKeys
 import com.ktome.client.assets.ShopOfferTagTokens
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestEntry
@@ -298,6 +300,44 @@ class TileRendererCanvasTest {
                     draw.contains(selectedBounds.x + selectedBounds.width / 2f, selectedBounds.y + selectedBounds.height / 2f)
             },
             "selected nav item should gain a restrained cyan halo that anchors the active pane without adding text labels",
+        )
+
+        assertTrue(
+            navIcons.all { draw -> draw.width >= 40f && draw.height >= 40f },
+            "left nav icon subjects should fill their sockets enough to read as permanent navigation controls at director evidence size",
+        )
+
+        val selectedBeacon =
+            canvas.rectDraws.any { draw ->
+                draw.width in 3f..6f &&
+                    draw.height >= selectedBounds.height * 0.68f &&
+                    draw.color.a.isNear(0.255f) &&
+                    draw.x >= selectedBounds.x - 8f &&
+                    draw.x <= selectedBounds.x + 3f &&
+                    draw.y >= selectedBounds.y + 4f &&
+                    draw.y + draw.height <= selectedBounds.top - 4f
+            }
+        assertTrue(
+            selectedBeacon,
+            "selected nav item should use a warm vertical beacon so active rail state is visible through material grammar, not only a faint cyan wash",
+        )
+
+        val materialSockets =
+            buttonBounds.count { button ->
+                canvas.rectDraws.any { draw ->
+                    draw.width >= button.width * 0.70f &&
+                        draw.height >= button.height * 0.70f &&
+                        draw.color.a.isNear(0.244f) &&
+                        draw.x >= button.x + 4f &&
+                        draw.x + draw.width <= button.right - 4f &&
+                        draw.y >= button.y + 4f &&
+                        draw.y + draw.height <= button.top - 4f
+                }
+            }
+        assertEquals(
+            buttonBounds.size,
+            materialSockets,
+            "each nav icon should sit inside a dark material socket so the rail reads as a forged control spine rather than icons pasted onto a strip",
         )
     }
 
@@ -1261,22 +1301,28 @@ class TileRendererCanvasTest {
             }
         assertTrue(rightPanelSlotDraws.isNotEmpty())
         assertTrue(rightPanelSlotDraws.all { draw -> draw.alpha >= 0.94f }, "right panel slots must keep readable material frames")
-        val visualSocketGlyphs =
-            canvas.rectDraws.count { draw ->
-                draw.color.a.isNear(0.72f) &&
-                    draw.x >= right.equipment.x &&
-                    draw.x + draw.width <= right.equipment.right &&
-                    draw.y >= right.equipment.y &&
-                    draw.y + draw.height <= right.equipment.top
+        val visualSocketPlates =
+            right.equipmentSlots.slotBounds.drop(4).count { slotBounds ->
+                canvas.rectDraws.any { draw ->
+                    draw.color.a.isNear(0.56f) &&
+                        draw.width >= slotBounds.width * 0.80f &&
+                        draw.width <= slotBounds.width * 0.94f &&
+                        draw.height >= slotBounds.height * 0.80f &&
+                        draw.height <= slotBounds.height * 0.94f &&
+                        draw.x >= slotBounds.x + 2f &&
+                        draw.x + draw.width <= slotBounds.right - 2f &&
+                        draw.y >= slotBounds.y + 2f &&
+                        draw.y + draw.height <= slotBounds.top - 2f
+                }
             }
-        assertTrue(visualSocketGlyphs >= 5, "visual-only equipment sockets should read as forged placeholders instead of blank holes")
+        assertTrue(visualSocketPlates >= 5, "visual-only equipment sockets should read as authored empty plates instead of blank holes")
         assertTrue(
             canvas.rectDraws.any { draw ->
-                draw.color.a.isNear(0.34f) &&
+                draw.color.a.isNear(0.40f) &&
                     draw.width > right.equipment.width * 0.48f &&
                     draw.height > right.equipment.height * 0.54f &&
-                    draw.x >= right.equipment.x + 24f &&
-                    draw.x + draw.width <= right.equipment.right - 24f &&
+                    draw.x >= right.equipment.x + 16f &&
+                    draw.x + draw.width <= right.equipment.right - 16f &&
                     draw.y >= right.equipment.y &&
                     draw.y + draw.height <= right.equipment.top
             },
@@ -1437,7 +1483,7 @@ class TileRendererCanvasTest {
             canvas.rectDraws.filter { draw ->
                 draw.width in 2f..4f &&
                     draw.height > equipment.height * 0.52f &&
-                    draw.color.a.isNear(0.118f) &&
+                    draw.color.a.isNear(0.144f) &&
                     draw.x >= equipment.x &&
                     draw.x + draw.width <= equipment.right &&
                     draw.y >= equipment.y &&
@@ -1497,8 +1543,8 @@ class TileRendererCanvasTest {
 
         val torsoShadow =
             canvas.rectDraws.filter { draw ->
-                draw.color.a.isNear(0.168f) &&
-                    draw.width in 38f..54f &&
+                draw.color.a.isNear(0.236f) &&
+                    draw.width in 44f..62f &&
                     draw.height > equipment.height * 0.20f &&
                     draw.x >= equipment.x + equipment.width * 0.38f &&
                     draw.x + draw.width <= equipment.right - equipment.width * 0.38f &&
@@ -1512,7 +1558,7 @@ class TileRendererCanvasTest {
 
         val shoulderMantles =
             canvas.rectDraws.filter { draw ->
-                draw.color.a.isNear(0.154f) &&
+                draw.color.a.isNear(0.218f) &&
                     draw.width > equipment.width * 0.36f &&
                     draw.height in 18f..26f &&
                     draw.x >= equipment.x + equipment.width * 0.18f &&
@@ -1527,8 +1573,8 @@ class TileRendererCanvasTest {
 
         val sideArmorPlates =
             canvas.rectDraws.filter { draw ->
-                draw.color.a.isNear(0.142f) &&
-                    draw.width in 14f..22f &&
+                draw.color.a.isNear(0.204f) &&
+                    draw.width in 18f..28f &&
                     draw.height > equipment.height * 0.24f &&
                     draw.x >= equipment.x + 10f &&
                     draw.x + draw.width <= equipment.right - 10f &&
@@ -1538,6 +1584,82 @@ class TileRendererCanvasTest {
         assertTrue(
             sideArmorPlates.size >= 2,
             "equipment rig should add paired side armor plates so the large equipment section has authored side mass instead of empty black gutters",
+        )
+    }
+
+    @Test
+    fun `right panel equipment rack groups socket pairs into compact armory bays`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val right = TileRenderer.layoutMetrics(mapWidth = 1, mapHeight = 1, cellWidth = 32f, cellHeight = 32f).demoShell.rightPanelLayout
+        val pairBayCount =
+            right.equipmentSlots.slotBounds.take(8).chunked(2).count { rowSlots ->
+                val left = rowSlots.minOf { slot -> slot.x }
+                val rightEdge = rowSlots.maxOf { slot -> slot.right }
+                val bottom = rowSlots.minOf { slot -> slot.y }
+                val top = rowSlots.maxOf { slot -> slot.top }
+                canvas.rectDraws.any { draw ->
+                    draw.color.a.isNear(0.168f) &&
+                        draw.width >= rightEdge - left + 12f &&
+                        draw.height >= right.equipmentSlots.slotSide * 0.92f &&
+                        draw.height <= right.equipmentSlots.slotSide * 1.22f &&
+                        draw.x <= left - 4f &&
+                        draw.x + draw.width >= rightEdge + 4f &&
+                        draw.y <= bottom + 4f &&
+                        draw.y + draw.height >= top - 4f &&
+                        draw.x >= right.equipment.x &&
+                        draw.x + draw.width <= right.equipment.right
+                }
+            }
+        assertTrue(
+            pairBayCount >= 4,
+            "equipment socket pairs should sit inside compact armory bay plates so the rack reads as dense crafted UI instead of separate floating sockets",
+        )
+    }
+
+    @Test
+    fun `visual only equipment sockets render as full authored slot plates`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val right = TileRenderer.layoutMetrics(mapWidth = 1, mapHeight = 1, cellWidth = 32f, cellHeight = 32f).demoShell.rightPanelLayout
+        val authoredEmptyPlates =
+            right.equipmentSlots.slotBounds.count { slotBounds ->
+                canvas.rectDraws.any { draw ->
+                    draw.color.a.isNear(0.56f) &&
+                        draw.width >= slotBounds.width * 0.80f &&
+                        draw.width <= slotBounds.width * 0.94f &&
+                        draw.height >= slotBounds.height * 0.80f &&
+                        draw.height <= slotBounds.height * 0.94f &&
+                        draw.x >= slotBounds.x + 2f &&
+                        draw.x + draw.width <= slotBounds.right - 2f &&
+                        draw.y >= slotBounds.y + 2f &&
+                        draw.y + draw.height <= slotBounds.top - 2f
+                }
+            }
+
+        assertTrue(
+            authoredEmptyPlates >= 5,
+            "visual-only equipment sockets should read as full authored slot plates, not tiny placeholder glyphs floating inside otherwise empty squares",
         )
     }
 
@@ -1724,6 +1846,121 @@ class TileRendererCanvasTest {
         assertTrue(
             backpackStraps.size >= 2,
             "backpack utility slots should be tied together by subtle leather/iron straps so the section reads as one pack tray",
+        )
+    }
+
+    @Test
+    fun `right panel utility sections sit on one forged chassis`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val right = TileRenderer.layoutMetrics(mapWidth = 1, mapHeight = 1, cellWidth = 32f, cellHeight = 32f).demoShell.rightPanelLayout
+        val utilityTop = right.inscriptions.top
+        val utilityBottom = right.operationHints.y
+        val utilityHeight = utilityTop - utilityBottom
+
+        val chassisBackplate =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.124f) &&
+                    draw.width > right.inscriptions.width * 0.82f &&
+                    draw.height > utilityHeight * 0.88f &&
+                    draw.x >= right.inscriptions.x + 8f &&
+                    draw.x + draw.width <= right.inscriptions.right - 8f &&
+                    draw.y >= utilityBottom &&
+                    draw.y + draw.height <= utilityTop
+            }
+        assertTrue(
+            chassisBackplate.isNotEmpty(),
+            "inscription, backpack and operation hint sections should sit over one dark forged chassis so the right panel reads as a unified utility column",
+        )
+
+        val chassisSideRails =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.166f) &&
+                    draw.width in 2f..4f &&
+                    draw.height > utilityHeight * 0.78f &&
+                    draw.x >= right.inscriptions.x + 16f &&
+                    draw.x + draw.width <= right.inscriptions.right - 16f &&
+                    draw.y >= utilityBottom &&
+                    draw.y + draw.height <= utilityTop
+            }
+        assertTrue(
+            chassisSideRails.size >= 2,
+            "right-panel utility chassis should use paired long side rails so section groups stop reading as separate cards",
+        )
+
+        val sectionTieBars =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.104f) &&
+                    draw.width > right.inscriptions.width * 0.78f &&
+                    draw.height in 2f..4f &&
+                    draw.x >= right.inscriptions.x + 10f &&
+                    draw.x + draw.width <= right.inscriptions.right - 10f &&
+                    draw.y >= utilityBottom &&
+                    draw.y + draw.height <= utilityTop
+            }
+        assertTrue(
+            sectionTieBars.size >= 3,
+            "right-panel utility chassis should include horizontal tie bars at section transitions so inscriptions, backpack and hints feel physically connected",
+        )
+    }
+
+    @Test
+    fun `right panel backpack pager and operation hints share a utility bridge`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val right = TileRenderer.layoutMetrics(mapWidth = 1, mapHeight = 1, cellWidth = 32f, cellHeight = 32f).demoShell.rightPanelLayout
+        val bridgeBottom = right.operationHints.top - 2f
+        val bridgeTop = right.backpackPager.top + 2f
+        val bridgeHeight = bridgeTop - bridgeBottom
+
+        val utilityBridgePosts =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.142f) &&
+                    draw.width in 3f..5f &&
+                    draw.height > bridgeHeight * 0.70f &&
+                    draw.x >= right.backpack.x + 18f &&
+                    draw.x + draw.width <= right.backpack.right - 18f &&
+                    draw.y >= bridgeBottom - 1f &&
+                    draw.y + draw.height <= bridgeTop + 1f
+            }
+        assertTrue(
+            utilityBridgePosts.size >= 2,
+            "backpack pager and operation hints should be linked by paired vertical utility bridge posts instead of reading as separate lower-right cards",
+        )
+
+        val pagerCradle =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.205f) &&
+                    draw.width > right.backpackPager.width * 0.92f &&
+                    draw.height > right.backpackPager.height * 1.12f &&
+                    draw.x <= right.backpackPager.x &&
+                    draw.x + draw.width >= right.backpackPager.right &&
+                    draw.y >= right.backpackPager.y - 6f &&
+                    draw.y + draw.height <= right.backpackPager.top + 6f
+            }
+        assertTrue(
+            pagerCradle.isNotEmpty(),
+            "backpack page readout should sit in a forged cradle that visually belongs to the same utility bridge as the operation dock",
         )
     }
 
@@ -2556,6 +2793,150 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `render canvas anchors corridor mouths with room side stone aprons`() {
+        val canvas = RecordingTileCanvas()
+        val cells =
+            (0 until 7).flatMap { x ->
+                (0 until 7).map { y ->
+                    val floor = (x in 2..4 && y in 3..5) || (x == 3 && y in 1..2)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (floor) "floor" else "wall",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 7, height = 7, cells = cells, playerX = 3, playerY = 4),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val throat = summary.viewport.tileRect(com.ktome.core.map.Point(3, 2))
+        val throatCenterX = throat.x + throat.width / 2f
+        val player = summary.viewport.tileRect(com.ktome.core.map.Point(3, 4))
+        val playerCenterX = player.x + player.width / 2f
+        val playerCenterY = player.y + player.height / 2f
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 83f..85f &&
+                    draw.height in 17f..19f &&
+                    draw.color.a.isNear(0.232f) &&
+                    draw.contains(throatCenterX, throat.y + throat.height + 10f)
+            },
+            "corridor mouths need a room-side stone apron so the opening integrates with the floor mass instead of stopping at a one-tile throat cap",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 51f..54f &&
+                    draw.height in 3f..5f &&
+                    draw.color.a.isNear(0.148f) &&
+                    draw.contains(throatCenterX, throat.y + throat.height + 12f)
+            },
+            "room-side aprons should carry a restrained worn-stone sill so the doorway reads as material architecture, not another dark overlay",
+        )
+        val roomSideAbutments =
+            canvas.rectDraws.filter { draw ->
+                draw.width in 10f..12f &&
+                    draw.height in 24f..27f &&
+                    draw.color.a.isNear(0.168f) &&
+                    draw.y > throat.y + throat.height
+            }
+        assertTrue(
+            roomSideAbutments.size >= 2,
+            "corridor mouth aprons should include asymmetric side abutments that tie the threshold into the room wall/floor junction",
+        )
+        assertFalse(
+            canvas.rectDraws.any { draw ->
+                draw.color.a.isNear(0.232f) &&
+                    draw.contains(playerCenterX, playerCenterY)
+            },
+            "room-side corridor aprons must stay near the doorway and not mask the playable focal center",
+        )
+    }
+
+    @Test
+    fun `render canvas anchors horizontal corridor mouths with room side stone aprons`() {
+        val canvas = RecordingTileCanvas()
+        val cells =
+            (0 until 7).flatMap { x ->
+                (0 until 7).map { y ->
+                    val floor = (x in 3..5 && y in 2..4) || (x in 1..2 && y == 3)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (floor) "floor" else "wall",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 7, height = 7, cells = cells, playerX = 4, playerY = 3),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val throat = summary.viewport.tileRect(com.ktome.core.map.Point(2, 3))
+        val throatCenterY = throat.y + throat.height / 2f
+        val player = summary.viewport.tileRect(com.ktome.core.map.Point(4, 3))
+        val playerCenterX = player.x + player.width / 2f
+        val playerCenterY = player.y + player.height / 2f
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 17f..19f &&
+                    draw.height in 83f..85f &&
+                    draw.color.a.isNear(0.232f) &&
+                    draw.contains(throat.x + throat.width + 10f, throatCenterY)
+            },
+            "horizontal corridor mouths need a room-side stone apron so side openings integrate with the room mass instead of reading as flat slots",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 3f..5f &&
+                    draw.height in 51f..54f &&
+                    draw.color.a.isNear(0.148f) &&
+                    draw.contains(throat.x + throat.width + 12f, throatCenterY)
+            },
+            "horizontal room-side aprons should carry a restrained worn-stone sill to keep the doorway material",
+        )
+        val roomSideAbutments =
+            canvas.rectDraws.filter { draw ->
+                draw.width in 24f..27f &&
+                    draw.height in 10f..12f &&
+                    draw.color.a.isNear(0.168f) &&
+                    draw.x > throat.x + throat.width
+            }
+        assertTrue(
+            roomSideAbutments.size >= 2,
+            "horizontal corridor mouth aprons should include asymmetric lintel/floor abutments that tie the threshold into the side room",
+        )
+        assertFalse(
+            canvas.rectDraws.any { draw ->
+                draw.color.a.isNear(0.232f) &&
+                    draw.contains(playerCenterX, playerCenterY)
+            },
+            "horizontal corridor aprons must stay near the doorway and not mask the playable focal center",
+        )
+    }
+
+    @Test
     fun `render canvas chips corridor mouth edges with rubble teeth`() {
         val canvas = RecordingTileCanvas()
         val cells =
@@ -2770,13 +3151,60 @@ class TileRendererCanvasTest {
             terrainDraw.alpha >= 0.98f,
             "authored ground tile art should remain the dominant read; atmosphere tuning must not lower terrain asset opacity",
         )
+        val terrainTints =
+            canvas.assetDraws
+                .filter { draw -> draw.asset.entry.category == "tile_ground" }
+                .map { draw -> draw.tintColorHex }
+                .toSet()
+        assertEquals(
+            setOf<String?>(null),
+            terrainTints,
+            "PR-08 generated floor resources should not be split back into visible per-cell renderer tint variants; tints=$terrainTints",
+        )
+        val dominantCellWashes =
+            canvas.rectDraws.filter { draw ->
+                draw.afterFlush in
+                    setOf(
+                        TileLayerFlushReason.MAP_TERRAIN_BASE,
+                        TileLayerFlushReason.MAP_CELL_MATERIAL,
+                        TileLayerFlushReason.MAP_ROOM_COMPOSITOR,
+                    ) &&
+                    draw.width in 34f..36f &&
+                    draw.height in 34f..36f &&
+                    draw.color.a > 0.030f
+            }
+        assertTrue(
+            dominantCellWashes.size <= 8,
+            "PR-08 floor resources should not be covered by repeated high-alpha full-cell washes; count=${dominantCellWashes.size}",
+        )
+        val perCellAmberGlows =
+            canvas.rectDraws.filter { draw ->
+                draw.width in 27f..29f &&
+                    draw.height in 27f..29f &&
+                    (draw.color.a.isNear(0.010f) || draw.color.a.isNear(0.006f)) &&
+                    draw.color.r > 0.70f &&
+                    draw.color.g > 0.45f &&
+                    draw.color.b < 0.45f
+            }
+        assertTrue(
+            perCellAmberGlows.isEmpty(),
+            "PR-08 compositor should not restore tile-by-tile amber glow as a floor authority; use room-scale hierarchy or authored resources instead",
+        )
         assertTrue(
             canvas.rectDraws.any { draw ->
                 draw.width > 360f &&
                     draw.height > 230f &&
-                    draw.color.a.isNear(0.082f)
+                    draw.color.a.isNear(0.040f)
             },
-            "large visible rooms should use a lighter foundation glaze so the generated stone tile texture remains visible at runtime size",
+            "large visible rooms should use a subdued foundation glaze so the generated stone tile texture remains visible at runtime size",
+        )
+        assertTrue(
+                canvas.rectDraws.any { draw ->
+                    draw.width > 290f &&
+                        draw.height > 170f &&
+                        draw.color.a.isNear(0.158f)
+                },
+                "PR-08 floor composition should add a room-scale pre-actor unifier so tile sampling seams soften without turning grid lines into the primary material read",
         )
         assertTrue(
             canvas.rectDraws.any { draw ->
@@ -2786,13 +3214,61 @@ class TileRendererCanvasTest {
             },
             "large visible rooms should keep painterly atmosphere below the authored floor detail instead of burying cracks and stone grain",
         )
-        assertTrue(
+        assertFalse(
             canvas.rectDraws.any { draw ->
                 draw.width in 8f..10f &&
                     draw.height > 190f &&
-                    draw.color.a.isNear(0.039f)
+                    draw.color.a >= 0.003f
             },
-            "internal grid dissolve should be restrained enough that players read hand-painted stone first and tile structure second",
+            "PR-08 should not reintroduce continuous full-height grid dissolve bands over authored ground resources",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width > 340f &&
+                    draw.height in 36f..42f &&
+                    draw.color.a.isNear(0.148f)
+            },
+            "visible rooms should get one room-scale crown shadow from the floor mass instead of many single-cell darkness patches",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width > 120f &&
+                    draw.height > 130f &&
+                    draw.color.a.isNear(0.109f)
+            },
+            "visible rooms should carry asymmetric side pressure at room scale so the first read is an authored space, not a regular grid",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width > 170f &&
+                    draw.height > 110f &&
+                    draw.color.a.isNear(0.086f)
+            },
+            "visible rooms should include a broad walkable-stone light plane under actors and loot so the room hierarchy leads over cell rhythm",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width > 210f &&
+                    draw.height > 80f &&
+                    draw.color.a.isNear(0.128f)
+            },
+            "visible rooms should add deterministic room-scale material fields so large floor tone changes come from room structure, not repeated single-cell patches",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width > 140f &&
+                    draw.height in 4f..6f &&
+                    draw.color.a.isNear(0.074f)
+            },
+            "room-scale material fields should carry a long worn-stone lip that breaks grid rhythm without becoming another per-cell seam",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width > 140f &&
+                    draw.height > 70f &&
+                    draw.color.a.isNear(0.116f)
+            },
+            "visible rooms should include a second large AO field keyed by room/world coordinates so the room reads as authored space before tile repetition",
         )
     }
 
@@ -2835,7 +3311,7 @@ class TileRendererCanvasTest {
             "visible room floors should include strong story stains, not only neutral stone tiling",
         )
         assertTrue(
-            canvas.rectDraws.any { draw -> draw.width > 150f && draw.height > 120f && draw.color.a.isNear(0.46f) },
+            canvas.rectDraws.any { draw -> draw.width > 150f && draw.height > 120f && draw.color.a.isNear(0.24f) },
             "large visible rooms should receive collapsed dark corners so the map does not read as a perfect rectangle",
         )
         assertTrue(
@@ -2843,7 +3319,7 @@ class TileRendererCanvasTest {
             "large visible rooms should receive a restrained painterly wash without burying the authored tile art",
         )
         assertTrue(
-            canvas.rectDraws.any { draw -> draw.width > 360f && draw.height > 230f && draw.color.a.isNear(0.082f) },
+            canvas.rectDraws.any { draw -> draw.width > 360f && draw.height > 230f && draw.color.a.isNear(0.040f) },
             "large visible rooms should glaze the base layer lightly so the authored tile art remains the primary read",
         )
         assertTrue(
@@ -2854,17 +3330,13 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw -> draw.width > 96f && draw.height > 54f && draw.color.a.isNear(0.066f) },
             "large visible rooms should include broad uneven slab plates so the floor reads as stonework, not a flat wash",
         )
-        assertTrue(
-            canvas.rectDraws.any { draw -> draw.width == 5f && draw.height > 190f && draw.color.a.isNear(0.034f) },
-            "large visible rooms should cover black cell joints with broader stone mortar bands instead of debug-like grid cuts",
-        )
-        assertTrue(
+        assertFalse(
             canvas.rectDraws.any { draw ->
                 draw.width in 8f..10f &&
                     draw.height > 190f &&
-                    draw.color.a.isNear(0.039f)
+                    draw.color.a >= 0.003f
             },
-            "large visible rooms should dissolve internal black grid joints with wider low-alpha stone grout before adding authored slab accents",
+            "large visible rooms should use off-grid stone plates instead of continuous full-height joint bands",
         )
         val jointPlugs =
             canvas.rectDraws.filter { draw ->
@@ -2890,7 +3362,7 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width > 170f &&
                     draw.height > 78f &&
-                    draw.color.a.isNear(0.072f)
+                    draw.color.a.isNear(0.118f)
             },
             "large visible rooms should place director-scale stone slab fields across multiple cells so the interior stops reading as individual square tiles",
         )
@@ -3104,14 +3576,14 @@ class TileRendererCanvasTest {
         val centerFloor = summary.viewport.tileRect(playerTile)
         val tacticalClarityCandidates =
             canvas.rectDraws
-                .filter { draw -> draw.color.a.isNear(0.153f) || draw.color.a.isNear(0.161f) || draw.color.a.isNear(0.061f) }
+                .filter { draw -> draw.color.a.isNear(0.085f) || draw.color.a.isNear(0.095f) || draw.color.a.isNear(0.045f) }
                 .joinToString { draw -> "${draw.width}x${draw.height}@${draw.x},${draw.y}/a=${draw.color.a}" }
 
         assertTrue(
             canvas.rectDraws.any { draw ->
                 draw.width in 150f..162f &&
                     draw.height in 35f..39f &&
-                    draw.color.a.isNear(0.153f) &&
+                    draw.color.a.isNear(0.085f) &&
                     draw.contains(centerFloor.x + centerFloor.width * 0.28f, centerFloor.y + centerFloor.height * 0.46f)
             },
             "visible room focus should cut the warm map haze with a cool tactical clarity plane so the center reads as stone, not amber fog; center=$centerFloor; candidates=$tacticalClarityCandidates",
@@ -3120,7 +3592,7 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width in 119f..123f &&
                     draw.height in 3f..5f &&
-                    draw.color.a.isNear(0.161f) &&
+                    draw.color.a.isNear(0.095f) &&
                     draw.contains(centerFloor.x + centerFloor.width * 0.62f, centerFloor.y + centerFloor.height * 0.90f)
             },
             "tactical clarity should add a compact dark undercut that sharpens the focal lane without restoring a full grid line",
@@ -3129,7 +3601,7 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width in 78f..84f &&
                     draw.height in 1f..3f &&
-                    draw.color.a.isNear(0.061f) &&
+                    draw.color.a.isNear(0.045f) &&
                     draw.contains(centerFloor.x + centerFloor.width * 0.54f, centerFloor.y + centerFloor.height * 1.22f)
             },
             "tactical clarity should keep a restrained worn lip so the sharper center remains dungeon material instead of a UI overlay",
@@ -3168,14 +3640,14 @@ class TileRendererCanvasTest {
         val centerFloor = summary.viewport.tileRect(playerTile)
         val focalCutlineCandidates =
             canvas.rectDraws
-                .filter { draw -> draw.color.a.isNear(0.137f) || draw.color.a.isNear(0.128f) || draw.color.a.isNear(0.076f) }
+                .filter { draw -> draw.color.a.isNear(0.086f) || draw.color.a.isNear(0.080f) || draw.color.a.isNear(0.054f) }
                 .joinToString { draw -> "${draw.width}x${draw.height}@${draw.x},${draw.y}/a=${draw.color.a}" }
 
         assertTrue(
             canvas.rectDraws.any { draw ->
                 draw.width in 87f..90f &&
                     draw.height in 2f..4f &&
-                    draw.color.a.isNear(0.137f) &&
+                    draw.color.a.isNear(0.086f) &&
                     draw.contains(centerFloor.x + centerFloor.width * 0.72f, centerFloor.y + centerFloor.height * 1.08f)
             },
             "visible room center should receive a short dark focal cutline so the stone floor reads sharper than a soft fog plane; center=$centerFloor candidates=$focalCutlineCandidates",
@@ -3184,7 +3656,7 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width in 2f..4f &&
                     draw.height in 32f..36f &&
-                    draw.color.a.isNear(0.128f) &&
+                    draw.color.a.isNear(0.080f) &&
                     draw.contains(centerFloor.x + centerFloor.width * 2.02f, centerFloor.y + centerFloor.height * 0.86f)
             },
             "focal stone cutlines should include a compact vertical bite that breaks the remaining square-grid read near the player lane",
@@ -3193,7 +3665,7 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width in 60f..64f &&
                     draw.height in 1f..3f &&
-                    draw.color.a.isNear(0.076f) &&
+                    draw.color.a.isNear(0.054f) &&
                     draw.contains(centerFloor.x + centerFloor.width * 1.40f, centerFloor.y + centerFloor.height * 1.58f)
             },
             "focal stone cutlines should keep a cool worn lip so the sharpened center remains material, not UI chrome",
@@ -3201,7 +3673,7 @@ class TileRendererCanvasTest {
     }
 
     @Test
-    fun `render canvas adds fine aggregate stone grain to visible floor cells`() {
+    fun `render canvas keeps generated floor resources free of per cell aggregate grain overlays`() {
         val canvas = RecordingTileCanvas()
         val playerTile = com.ktome.core.map.Point(5, 4)
         val cells =
@@ -3243,29 +3715,33 @@ class TileRendererCanvasTest {
             canvas.rectDraws.filter { draw ->
                 draw.width == 2f &&
                     draw.height == 2f &&
-                    (draw.color.a.isNear(0.036f) || draw.color.a.isNear(0.030f)) &&
+                    (draw.color.a.isNear(0.02088f) || draw.color.a.isNear(0.01740f)) &&
                     isInsideCenterFloor(draw.x + 1f, draw.y + 1f)
             }
         val warmAggregateFlecks =
             canvas.rectDraws.filter { draw ->
                 draw.width in 5f..7f &&
                     draw.height == 1f &&
-                    draw.color.a.isNear(0.026f) &&
+                    draw.color.a.isNear(0.01508f) &&
                     isInsideCenterFloor(draw.x + draw.width / 2f, draw.y)
             }
 
         assertTrue(
-            fineDarkPits.size >= 2,
-            "visible floor cells should carry multiple tiny dark aggregate pits so hand-painted stone density is visible at runtime size",
+            fineDarkPits.isEmpty(),
+            "PR-08 runtime compositor reset should not reintroduce per-cell dark aggregate pits; floor grain must come from generated tile resources",
         )
         assertTrue(
-            warmAggregateFlecks.isNotEmpty(),
-            "visible floor cells should include restrained warm aggregate flecks so stone grain reads as authored material, not only flat haze",
+            warmAggregateFlecks.isEmpty(),
+            "PR-08 runtime compositor reset should not paint per-cell warm aggregate flecks over generated floor resources",
+        )
+        assertTrue(
+            canvas.assetDraws.count { draw -> draw.asset.entry.category == "tile_ground" } >= 30,
+            "generated floor resources should remain the repeated terrain authority after removing renderer-owned per-cell grain",
         )
     }
 
     @Test
-    fun `render canvas sharpens visible floor cells with fracture kernels`() {
+    fun `render canvas keeps floor fracture detail out of per cell overlays`() {
         val canvas = RecordingTileCanvas()
         val playerTile = com.ktome.core.map.Point(5, 4)
         val cells =
@@ -3303,37 +3779,37 @@ class TileRendererCanvasTest {
                 y >= centerFloor.y &&
                 y <= centerFloor.y + centerFloor.height
 
-        assertTrue(
+        assertFalse(
             canvas.rectDraws.any { draw ->
                 draw.width in 9f..12f &&
                     draw.height in 1f..2f &&
-                    draw.color.a.isNear(0.054f) &&
+                    draw.color.a.isNear(0.03132f) &&
                     isInsideCenterFloor(draw.x + draw.width / 2f, draw.y)
             },
-            "visible floor cells should carry compact dark fracture kernels so the tile body reads as sharpened stone rather than fog-softened texture",
+            "PR-08 should not paint compact per-cell fracture kernels over generated floor resources",
         )
-        assertTrue(
+        assertFalse(
             canvas.rectDraws.any { draw ->
                 draw.width in 1f..2f &&
                     draw.height in 6f..9f &&
-                    draw.color.a.isNear(0.050f) &&
+                    draw.color.a.isNear(0.02900f) &&
                     isInsideCenterFloor(draw.x, draw.y + draw.height / 2f)
             },
-            "visible floor fracture kernels should include a short vertical cut to break repeated same-direction cracks",
+            "PR-08 should not paint per-cell vertical fracture bites over generated floor resources",
         )
-        assertTrue(
+        assertFalse(
             canvas.rectDraws.any { draw ->
                 draw.width in 4f..6f &&
                     draw.height in 1f..2f &&
-                    draw.color.a.isNear(0.032f) &&
+                    draw.color.a.isNear(0.01856f) &&
                     isInsideCenterFloor(draw.x + draw.width / 2f, draw.y)
             },
-            "visible floor fracture kernels should keep a restrained worn edge so the sharper cracks remain material, not UI noise",
+            "PR-08 should not use worn per-cell fracture lips as a substitute for authored tile detail",
         )
     }
 
     @Test
-    fun `render canvas adds resource-scale chipped stone clusters to visible floor cells`() {
+    fun `render canvas keeps chipped stone clusters out of per cell floor overlays`() {
         val canvas = RecordingTileCanvas()
         val playerTile = com.ktome.core.map.Point(5, 4)
         val cells =
@@ -3371,32 +3847,32 @@ class TileRendererCanvasTest {
                 y >= centerFloor.y &&
                 y <= centerFloor.y + centerFloor.height
 
-        assertTrue(
+        assertFalse(
             canvas.rectDraws.any { draw ->
                 draw.width in 3f..5f &&
                     draw.height in 2f..4f &&
-                    draw.color.a.isNear(0.089f) &&
+                    draw.color.a.isNear(0.05162f) &&
                     isInsideCenterFloor(draw.x + draw.width / 2f, draw.y + draw.height / 2f)
             },
-            "visible floor cells should include compact dark chipped-stone sockets that read at 32px runtime size",
+            "PR-08 should not paint compact chipped-stone sockets per floor cell after resource migration",
         )
-        assertTrue(
+        assertFalse(
             canvas.rectDraws.any { draw ->
                 draw.width in 2f..4f &&
                     draw.height in 2f..4f &&
-                    draw.color.a.isNear(0.059f) &&
+                    draw.color.a.isNear(0.03422f) &&
                     isInsideCenterFloor(draw.x + draw.width / 2f, draw.y + draw.height / 2f)
             },
-            "visible floor chipped clusters should include cold stone flecks so material density is authored instead of monochrome dirt",
+            "PR-08 should not paint cold chipped-stone flecks as a per-cell floor authority",
         )
-        assertTrue(
+        assertFalse(
             canvas.rectDraws.any { draw ->
                 draw.width in 6f..9f &&
                     draw.height in 1f..2f &&
-                    draw.color.a.isNear(0.047f) &&
+                    draw.color.a.isNear(0.02726f) &&
                     isInsideCenterFloor(draw.x + draw.width / 2f, draw.y)
             },
-            "visible floor chipped clusters should keep a restrained worn lip so added detail reads as stone edge wear, not random noise",
+            "PR-08 should not keep per-cell worn chip lips over generated floor assets",
         )
     }
 
@@ -3577,7 +4053,7 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width in 116f..120f &&
                     draw.height in 82f..86f &&
-                    draw.color.a.isNear(0.080f) &&
+                    draw.color.a.isNear(0.058f) &&
                     draw.contains(playerCenterX, playerCenterY)
             },
             "player focus should use a compact warm lantern pool instead of only a map-wide square wash",
@@ -3586,7 +4062,7 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width in 80f..84f &&
                     draw.height in 52f..54f &&
-                    draw.color.a.isNear(0.066f) &&
+                    draw.color.a.isNear(0.046f) &&
                     draw.contains(torchCenterX, torchCenterY)
             },
             "torch fixtures should cast a tight local warm pool so firelight reads as authored focal light rather than a broad amber rectangle",
@@ -3595,10 +4071,10 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width == 30f &&
                     draw.height == 30f &&
-                    draw.color.a.isNear(0.18f) &&
+                    draw.color.a.isNear(0.13f) &&
                     draw.contains(playerCenterX, playerCenterY)
             },
-            "player tile should retain a brighter local core so the hero remains the map focal point",
+            "player tile should retain a readable local core so the hero remains the map focal point",
         )
         assertTrue(
             canvas.rectDraws.any { draw ->
@@ -4117,6 +4593,521 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `render canvas frames hidden stage with carved masonry aperture shelves`() {
+        val canvas = RecordingTileCanvas()
+        val playerTile = com.ktome.core.map.Point(5, 4)
+        val cells =
+            (0 until 11).flatMap { x ->
+                (0 until 9).map { y ->
+                    val visibleRoom = x in 4..6 && y in 3..5
+                    val wall = visibleRoom && (x == 4 || x == 6 || y == 3 || y == 5)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (visibleRoom) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (wall) "wall" else "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 11, height = 9, cells = cells, playerX = playerTile.x, playerY = playerTile.y),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val roomCenter = summary.viewport.tileRect(playerTile)
+        val roomCenterX = roomCenter.x + roomCenter.width / 2f
+        val roomCenterY = roomCenter.y + roomCenter.height / 2f
+        val firstHiddenFogIndex =
+            canvas.rectDraws.indexOfFirst { draw ->
+                draw.color.r.isNear(5f / 255f) &&
+                    draw.color.g.isNear(6f / 255f) &&
+                    draw.color.b.isNear(4f / 255f) &&
+                    draw.color.a > 0.80f &&
+                    draw.x + draw.width < roomCenterX - 34f
+            }
+        val firstApertureShoulderIndex =
+            canvas.rectDraws.indexOfFirst { draw ->
+                draw.color.r.isNear(21f / 255f) &&
+                    draw.color.g.isNear(32f / 255f) &&
+                    draw.color.b.isNear(28f / 255f) &&
+                    draw.color.a.isNear(0.132f) &&
+                    draw.width > 46f &&
+                    draw.height > 80f &&
+                    draw.x + draw.width < roomCenterX - 34f
+            }
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.color.r.isNear(21f / 255f) &&
+                    draw.color.g.isNear(32f / 255f) &&
+                    draw.color.b.isNear(28f / 255f) &&
+                    draw.color.a.isNear(0.132f) &&
+                    draw.width > 46f &&
+                    draw.height > 80f &&
+                    draw.x + draw.width < roomCenterX - 34f &&
+                    draw.y < roomCenterY &&
+                    draw.y + draw.height > roomCenterY
+            },
+            "hidden stage should keep a broad carved masonry shoulder beside the room so the first read is an authored aperture, not flat black outside the room",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.color.r.isNear(27f / 255f) &&
+                    draw.color.g.isNear(23f / 255f) &&
+                    draw.color.b.isNear(16f / 255f) &&
+                    draw.color.a.isNear(0.158f) &&
+                    draw.width > 130f &&
+                    draw.height in 24f..30f &&
+                    draw.x < roomCenterX &&
+                    draw.x + draw.width > roomCenterX &&
+                    draw.y > roomCenterY + 36f
+            },
+            "upper hidden stage should carry a broad broken lintel shelf so the room silhouette reads carved from masonry instead of floating in a rectangular void",
+        )
+        assertTrue(
+            firstHiddenFogIndex >= 0,
+            "hidden stage fog must exist in the test scene so aperture masonry visibility is tested against the real fog veil",
+        )
+        assertTrue(
+            firstApertureShoulderIndex > firstHiddenFogIndex,
+            "aperture masonry must draw after hidden fog; otherwise the production fog veil can fully cover the authored aperture shape",
+        )
+        assertFalse(
+            canvas.rectDraws.any { draw ->
+                (draw.color.a.isNear(0.132f) || draw.color.a.isNear(0.158f)) &&
+                    draw.contains(roomCenterX, roomCenterY)
+            },
+            "aperture masonry shelves must stay outside the playable focal center",
+        )
+    }
+
+    @Test
+    fun `render canvas frames enlarged room with stage scale aperture depth`() {
+        val canvas = RecordingTileCanvas()
+        val playerTile = com.ktome.core.map.Point(5, 4)
+        val visibleRoomTiles = (4..6).flatMap { x -> (3..5).map { y -> com.ktome.core.map.Point(x, y) } }.toSet()
+        val cells =
+            (0 until 11).flatMap { x ->
+                (0 until 9).map { y ->
+                    val visibleRoom = com.ktome.core.map.Point(x, y) in visibleRoomTiles
+                    val wall = visibleRoom && (x == 4 || x == 6 || y == 3 || y == 5)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (visibleRoom) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (wall) "wall" else "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 11, height = 9, cells = cells, playerX = playerTile.x, playerY = playerTile.y),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val roomRects = visibleRoomTiles.map { point -> summary.viewport.tileRect(point) }
+        val roomLeft = roomRects.minOf { rect -> rect.x }.toFloat()
+        val roomRight = roomRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+        val roomBottom = roomRects.minOf { rect -> rect.y }.toFloat()
+        val roomTop = roomRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+        val roomWidth = roomRight - roomLeft
+        val roomHeight = roomTop - roomBottom
+        val playerRect = summary.viewport.tileRect(playerTile)
+        val playerCenterX = playerRect.x + playerRect.width / 2f
+        val playerCenterY = playerRect.y + playerRect.height / 2f
+
+        fun RecordingTileCanvas.RectDraw.isDirectorAperture(alpha: Float): Boolean =
+            color.r.isNear(5f / 255f) &&
+                color.g.isNear(6f / 255f) &&
+                color.b.isNear(4f / 255f) &&
+                color.a.isNear(alpha)
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isDirectorAperture(0.472f) &&
+                    draw.width > roomWidth + 52f &&
+                    draw.height > 20f &&
+                    draw.x < roomLeft &&
+                    draw.x + draw.width > roomRight &&
+                    draw.y >= roomTop + 2f
+            },
+            "enlarged map stage should add a heavy upper aperture lintel outside the visible room so the room reads carved from dark masonry rather than floating in a flat black field",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isDirectorAperture(0.438f) &&
+                    draw.width > roomWidth + 48f &&
+                    draw.height > 18f &&
+                    draw.x < roomLeft &&
+                    draw.x + draw.width > roomRight - 12f &&
+                    draw.y + draw.height <= roomBottom - 2f
+            },
+            "enlarged map stage should add a lower aperture plinth that compresses the empty bottom field without covering playable tiles",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isDirectorAperture(0.416f) &&
+                    draw.width > 20f &&
+                    draw.height > roomHeight * 0.54f &&
+                    draw.x + draw.width <= roomLeft - 2f &&
+                    draw.y < playerCenterY &&
+                    draw.y + draw.height > playerCenterY
+            },
+            "left side of the enlarged map should carry a vertical aperture pylon so the stage has depth instead of a single rectangular veil",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isDirectorAperture(0.392f) &&
+                    draw.width > 18f &&
+                    draw.height > roomHeight * 0.48f &&
+                    draw.x >= roomRight + 2f &&
+                    draw.y < playerCenterY &&
+                    draw.y + draw.height > playerCenterY
+            },
+            "right side of the enlarged map should carry a staggered aperture pylon to keep the room framing asymmetric and authored",
+        )
+        assertFalse(
+            canvas.rectDraws.any { draw ->
+                (draw.isDirectorAperture(0.472f) ||
+                    draw.isDirectorAperture(0.438f) ||
+                    draw.isDirectorAperture(0.416f) ||
+                    draw.isDirectorAperture(0.392f)) &&
+                    draw.contains(playerCenterX, playerCenterY)
+            },
+            "director-scale aperture depth must frame the room from outside and never mask the playable focal center",
+        )
+    }
+
+    @Test
+    fun `render canvas gives director scaled runtime room diagonal aperture corner shelves`() {
+        val canvas = RecordingTileCanvas()
+        val playerTile = com.ktome.core.map.Point(6, 5)
+        val visibleRoomTiles = (4..9).flatMap { x -> (3..7).map { y -> com.ktome.core.map.Point(x, y) } }.toSet()
+        val cells =
+            (0 until 14).flatMap { x ->
+                (0 until 11).map { y ->
+                    val visibleRoom = com.ktome.core.map.Point(x, y) in visibleRoomTiles
+                    val wall = visibleRoom && (x == 4 || x == 9 || y == 3 || y == 7)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (visibleRoom) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (wall) "wall" else "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 14, height = 11, cells = cells, playerX = playerTile.x, playerY = playerTile.y),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 42f,
+                cellHeight = 42f,
+            )
+
+        val roomRects = visibleRoomTiles.map { point -> summary.viewport.tileRect(point) }
+        val roomLeft = roomRects.minOf { rect -> rect.x }.toFloat()
+        val roomRight = roomRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+        val roomBottom = roomRects.minOf { rect -> rect.y }.toFloat()
+        val roomTop = roomRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+        val roomWidth = roomRight - roomLeft
+        val roomHeight = roomTop - roomBottom
+        val playerRect = summary.viewport.tileRect(playerTile)
+        val playerCenterX = playerRect.x + playerRect.width / 2f
+        val playerCenterY = playerRect.y + playerRect.height / 2f
+
+        fun RecordingTileCanvas.RectDraw.isRuntimeCornerAperture(alpha: Float): Boolean =
+            color.r.isNear(5f / 255f) &&
+                color.g.isNear(6f / 255f) &&
+                color.b.isNear(4f / 255f) &&
+                color.a.isNear(alpha)
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isRuntimeCornerAperture(0.344f) &&
+                    draw.width > roomWidth * 0.42f &&
+                    draw.height in 22f..28f &&
+                    draw.x < roomLeft &&
+                    draw.x + draw.width > roomLeft + roomWidth * 0.20f &&
+                    draw.y >= roomTop
+            },
+            "director-scaled map needs a broad upper-left diagonal aperture shelf so the enlarged room does not sit inside a clean rectangular stage",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isRuntimeCornerAperture(0.286f) &&
+                    draw.width in 20f..24f &&
+                    draw.height > roomHeight * 0.40f &&
+                    draw.x + draw.width <= roomLeft &&
+                    draw.y < playerCenterY &&
+                    draw.y + draw.height > playerCenterY
+            },
+            "director-scaled map should connect the upper shelf to a left pylon so the aperture reads as broken masonry depth, not a flat strip",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isRuntimeCornerAperture(0.318f) &&
+                    draw.width > roomWidth * 0.42f &&
+                    draw.height in 18f..22f &&
+                    draw.x > roomLeft + roomWidth * 0.34f &&
+                    draw.y + draw.height <= roomBottom
+            },
+            "director-scaled map should add a lower-right offset shelf so the stage pressure stays asymmetric after the runtime scale increase",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.color.r.isNear(138f / 255f) &&
+                    draw.color.g.isNear(118f / 255f) &&
+                    draw.color.b.isNear(84f / 255f) &&
+                    draw.color.a.isNear(0.118f) &&
+                    draw.width > roomWidth * 0.24f &&
+                    draw.height in 2f..4f &&
+                    draw.y >= roomTop
+            },
+            "runtime aperture shelves need a restrained worn-stone lip so the new pressure reads as material, not a black mask",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isRuntimeCornerAperture(0.332f) &&
+                    draw.width > roomWidth * 0.45f &&
+                    draw.height in 21f..25f &&
+                    draw.x >= roomLeft &&
+                    draw.x < roomLeft + 18f &&
+                    draw.y + draw.height <= roomTop &&
+                    draw.y > roomTop - 48f
+            },
+            "director-scaled visible room needs an interior upper-left shelf so the runtime first read changes even when the visible room reaches the map-stage aperture",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isRuntimeCornerAperture(0.296f) &&
+                    draw.width > roomWidth * 0.44f &&
+                    draw.height in 20f..23f &&
+                    draw.x > roomLeft + roomWidth * 0.28f &&
+                    draw.y >= roomBottom &&
+                    draw.y < roomBottom + 28f
+            },
+            "director-scaled visible room needs an offset lower shelf so the enlarged runtime silhouette changes in canonical screenshots, not only synthetic hidden-stage fixtures",
+        )
+        assertFalse(
+            canvas.rectDraws.any { draw ->
+                (draw.isRuntimeCornerAperture(0.344f) ||
+                    draw.isRuntimeCornerAperture(0.286f) ||
+                    draw.isRuntimeCornerAperture(0.332f) ||
+                    draw.isRuntimeCornerAperture(0.296f) ||
+                    draw.isRuntimeCornerAperture(0.318f)) &&
+                    draw.contains(playerCenterX, playerCenterY)
+            },
+            "runtime aperture corner shelves must frame the enlarged room without masking the playable focal center",
+        )
+    }
+
+    @Test
+    fun `render canvas outlines enlarged room aperture with worn masonry lips`() {
+        val canvas = RecordingTileCanvas()
+        val playerTile = com.ktome.core.map.Point(5, 4)
+        val visibleRoomTiles = (4..6).flatMap { x -> (3..5).map { y -> com.ktome.core.map.Point(x, y) } }.toSet()
+        val cells =
+            (0 until 11).flatMap { x ->
+                (0 until 9).map { y ->
+                    val visibleRoom = com.ktome.core.map.Point(x, y) in visibleRoomTiles
+                    val wall = visibleRoom && (x == 4 || x == 6 || y == 3 || y == 5)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (visibleRoom) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (wall) "wall" else "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 11, height = 9, cells = cells, playerX = playerTile.x, playerY = playerTile.y),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val roomRects = visibleRoomTiles.map { point -> summary.viewport.tileRect(point) }
+        val roomLeft = roomRects.minOf { rect -> rect.x }.toFloat()
+        val roomRight = roomRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+        val roomBottom = roomRects.minOf { rect -> rect.y }.toFloat()
+        val roomTop = roomRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+        val roomWidth = roomRight - roomLeft
+        val roomHeight = roomTop - roomBottom
+        val playerRect = summary.viewport.tileRect(playerTile)
+        val playerCenterX = playerRect.x + playerRect.width / 2f
+        val playerCenterY = playerRect.y + playerRect.height / 2f
+
+        fun RecordingTileCanvas.RectDraw.isWornLip(alpha: Float): Boolean =
+            color.r.isNear(168f / 255f) &&
+                color.g.isNear(144f / 255f) &&
+                color.b.isNear(94f / 255f) &&
+                color.a.isNear(alpha)
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isWornLip(0.178f) &&
+                    draw.width > roomWidth * 0.46f &&
+                    draw.height in 3f..6f &&
+                    draw.x > roomLeft &&
+                    draw.x + draw.width < roomRight + 20f &&
+                    draw.y >= roomTop + 12f
+            },
+            "upper aperture needs a readable worn-stone catchlight so the enlarged room edge reads as authored masonry, not just a darker mask",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isWornLip(0.146f) &&
+                    draw.width > roomWidth * 0.34f &&
+                    draw.height in 3f..6f &&
+                    draw.x > roomLeft &&
+                    draw.x + draw.width < roomRight &&
+                    draw.y + draw.height <= roomBottom - 6f
+            },
+            "lower aperture should keep a smaller broken stone lip so bottom darkness has material identity without becoming a UI frame",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isWornLip(0.154f) &&
+                    draw.width in 3f..6f &&
+                    draw.height > roomHeight * 0.34f &&
+                    draw.x + draw.width <= roomLeft - 4f &&
+                    draw.y < playerCenterY &&
+                    draw.y + draw.height > playerCenterY
+            },
+            "left aperture pylon should carry a vertical worn-stone lip to connect the black stage to dungeon masonry",
+        )
+        assertFalse(
+            canvas.rectDraws.any { draw ->
+                (draw.isWornLip(0.178f) ||
+                    draw.isWornLip(0.146f) ||
+                    draw.isWornLip(0.154f)) &&
+                    draw.contains(playerCenterX, playerCenterY)
+            },
+            "worn masonry aperture lips must stay outside the playable focal center",
+        )
+    }
+
+    @Test
+    fun `render canvas breaks enlarged room grid edges with room scale silhouette pressure`() {
+        val canvas = RecordingTileCanvas()
+        val playerTile = com.ktome.core.map.Point(6, 4)
+        val visibleRoomTiles = (3..9).flatMap { x -> (2..6).map { y -> com.ktome.core.map.Point(x, y) } }.toSet()
+        val cells =
+            (0 until 13).flatMap { x ->
+                (0 until 10).map { y ->
+                    val visibleRoom = com.ktome.core.map.Point(x, y) in visibleRoomTiles
+                    val wall = visibleRoom && (x == 3 || x == 9 || y == 2 || y == 6)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (visibleRoom) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (wall) "wall" else "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 13, height = 10, cells = cells, playerX = playerTile.x, playerY = playerTile.y),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val roomRects = visibleRoomTiles.map { point -> summary.viewport.tileRect(point) }
+        val roomLeft = roomRects.minOf { rect -> rect.x }.toFloat()
+        val roomRight = roomRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+        val roomBottom = roomRects.minOf { rect -> rect.y }.toFloat()
+        val roomTop = roomRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+        val roomWidth = roomRight - roomLeft
+        val roomHeight = roomTop - roomBottom
+        val playerRect = summary.viewport.tileRect(playerTile)
+        val playerCenterX = playerRect.x + playerRect.width / 2f
+        val playerCenterY = playerRect.y + playerRect.height / 2f
+
+        fun RecordingTileCanvas.RectDraw.isRoomSilhouettePressure(alpha: Float): Boolean =
+            color.r.isNear(5f / 255f) &&
+                color.g.isNear(6f / 255f) &&
+                color.b.isNear(4f / 255f) &&
+                color.a.isNear(alpha)
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isRoomSilhouettePressure(0.480f) &&
+                    draw.width > roomWidth * 0.30f &&
+                    draw.height > 30f &&
+                    draw.x > roomLeft + 24f &&
+                    draw.x + draw.width < roomRight - 16f &&
+                    draw.y + draw.height <= roomTop &&
+                    draw.y > roomTop - 58f
+            },
+            "the enlarged room needs a broad broken upper silhouette bite inside the visible edge so the first read is a carved room outline rather than a straight grid rectangle",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isRoomSilhouettePressure(0.400f) &&
+                    draw.width > roomWidth * 0.24f &&
+                    draw.height > 25f &&
+                    draw.x > roomLeft + roomWidth * 0.36f &&
+                    draw.y >= roomBottom &&
+                    draw.y < roomBottom + 34f
+            },
+            "the lower room edge should receive an offset room-scale bite so silhouette breakup is not limited to four corners",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isRoomSilhouettePressure(0.360f) &&
+                    draw.width > 26f &&
+                    draw.height > roomHeight * 0.34f &&
+                    draw.x + draw.width <= roomRight &&
+                    draw.x > roomRight - 48f &&
+                    draw.y < playerCenterY &&
+                    draw.y + draw.height > playerCenterY
+            },
+            "the right room edge should carry a vertical silhouette pressure block to break the continuous straight wall strip",
+        )
+        assertFalse(
+            canvas.rectDraws.any { draw ->
+                (draw.isRoomSilhouettePressure(0.480f) ||
+                    draw.isRoomSilhouettePressure(0.400f) ||
+                    draw.isRoomSilhouettePressure(0.360f)) &&
+                    draw.contains(playerCenterX, playerCenterY)
+            },
+            "room-scale silhouette pressure must break perimeter geometry without masking the playable focal center",
+        )
+    }
+
+    @Test
     fun `render canvas collars visible room with asymmetric void pressure`() {
         val canvas = RecordingTileCanvas()
         val playerTile = com.ktome.core.map.Point(5, 4)
@@ -4523,19 +5514,59 @@ class TileRendererCanvasTest {
             canvas.rectDraws.any { draw ->
                 draw.width in 9f..11f &&
                     draw.height in 20f..23f &&
-                    draw.color.a.isNear(0.112f) &&
+                    draw.color.a.isNear(0.046f) &&
                     draw.contains(verticalJointFloor.x + verticalJointFloor.width - 1f, verticalJointFloor.y + verticalJointFloor.height * 0.30f)
             },
-            "visible room floor should bridge selected internal vertical seams with stone-colored caps so grid lines stop reading as perfectly regular",
+            "visible room floor should keep selected internal vertical seam breaks as low-authority stone texture, not a readable grid overlay",
         )
         assertTrue(
             canvas.rectDraws.any { draw ->
                 draw.width in 22f..24f &&
                     draw.height in 9f..11f &&
-                    draw.color.a.isNear(0.098f) &&
+                    draw.color.a.isNear(0.040f) &&
                     draw.contains(horizontalJointFloor.x + horizontalJointFloor.width * 0.52f, horizontalJointFloor.y + horizontalJointFloor.height - 2f)
             },
-            "visible room floor should include chipped horizontal mortar caps that interrupt long row seams without hiding floor tile readability",
+            "visible room floor should keep chipped horizontal seam breaks subtle enough that room-scale stone fields remain the first read",
+        )
+        val preActorVerticalSeamBridges =
+            canvas.rectDraws.filter { draw ->
+                draw.width in 18f..22f &&
+                    draw.height in 27f..32f &&
+                    draw.color.a.isNear(0.052f)
+            }
+        assertTrue(
+            preActorVerticalSeamBridges.size >= 8,
+            "visible room floor should retain sparse pre-actor vertical seam bridges as material variation without restoring a dark lattice; count=${preActorVerticalSeamBridges.size}",
+        )
+        val preActorHorizontalSeamBridges =
+            canvas.rectDraws.filter { draw ->
+                draw.width in 34f..41f &&
+                    draw.height in 15f..19f &&
+                    draw.color.a.isNear(0.048f)
+            }
+        assertTrue(
+            preActorHorizontalSeamBridges.size >= 6,
+            "visible room floor should retain sparse pre-actor horizontal seam bridges as broken stone variation below actors and telegraphs; count=${preActorHorizontalSeamBridges.size}",
+        )
+        val verticalSeamUnderpaint =
+            canvas.rectDraws.filter { draw ->
+                draw.width in 7f..9f &&
+                    draw.height in 19f..27f &&
+                    draw.color.a.isNear(0.026f)
+            }
+        assertTrue(
+            verticalSeamUnderpaint.isEmpty(),
+            "PR-08 room reset should not underpaint vertical internal seams as wider grid-aligned strips; count=${verticalSeamUnderpaint.size}",
+        )
+        val horizontalSeamUnderpaint =
+            canvas.rectDraws.filter { draw ->
+                draw.width in 22f..27f &&
+                    draw.height in 7f..9f &&
+                    draw.color.a.isNear(0.024f)
+            }
+        assertTrue(
+            horizontalSeamUnderpaint.isEmpty(),
+            "PR-08 room reset should not underpaint horizontal internal seams as wider grid-aligned strips; count=${horizontalSeamUnderpaint.size}",
         )
     }
 
@@ -4593,51 +5624,51 @@ class TileRendererCanvasTest {
             canvas.rectDraws.filter { draw ->
                 draw.width in 3f..6f &&
                     draw.height in 2f..5f &&
-                    draw.color.a.isNear(0.072f)
+                    draw.color.a.isNear(0.060f)
             }
         assertTrue(
-            microDebrisDraws.size >= 5,
-            "visible room floor should scatter multiple small chipped-stone debris marks so the ground gains hand-authored detail density instead of only broad stains",
+            microDebrisDraws.size in 1..4,
+            "visible room floor should keep sparse chipped-stone debris as accent only; room-scale fields, not dense micro marks, must carry material depth. count=${microDebrisDraws.size}",
         )
         val wornChipHighlights =
             canvas.rectDraws.filter { draw ->
                 draw.width in 2f..5f &&
                     draw.height in 1f..3f &&
-                    draw.color.a.isNear(0.058f)
+                    draw.color.a.isNear(0.046f)
             }
         assertTrue(
-            wornChipHighlights.size >= 4,
-            "micro debris should include short warm worn edges so chips read as stone fragments rather than random dark pixels",
+            wornChipHighlights.size in 1..4,
+            "micro debris should keep only a few warm worn edges so chips remain secondary to the room-scale material field. count=${wornChipHighlights.size}",
         )
         val hairlineEtches =
             canvas.rectDraws.filter { draw ->
                 draw.width in 9f..15f &&
                     draw.height == 1f &&
-                    draw.color.a.isNear(0.041f)
+                    draw.color.a.isNear(0.02378f)
             }
         assertTrue(
-            hairlineEtches.size >= 24,
-            "visible room floor should carry fine low-alpha hairline etches so individual cells gain hand-cut stone grain at runtime size",
+            hairlineEtches.isEmpty(),
+            "visible room floor should not carry renderer-owned per-cell hairline etches after generated floor resources become the material authority",
         )
         val pittedStoneSpecks =
             canvas.rectDraws.filter { draw ->
                 draw.width in 2f..3f &&
                     draw.height in 2f..3f &&
-                    draw.color.a.isNear(0.046f)
+                    draw.color.a.isNear(0.038f)
             }
         assertTrue(
-            pittedStoneSpecks.size >= 10,
-            "visible room floor should include a field of tiny pitted stone specks so the surface gains dense hand-worked grain at runtime size",
+            pittedStoneSpecks.size in 2..5,
+            "visible room floor should keep pitted stone specks sparse so the runtime compositor does not turn into a dense micro-noise authority. count=${pittedStoneSpecks.size}",
         )
         val shortCutMarks =
             canvas.rectDraws.filter { draw ->
                 draw.width in 6f..10f &&
                     draw.height in 1f..2f &&
-                    draw.color.a.isNear(0.052f)
+                    draw.color.a.isNear(0.040f)
             }
         assertTrue(
-            shortCutMarks.size >= 6,
-            "visible room floor should add short off-grid cut marks so fine detail breaks the remaining regular lattice without hiding actors or loot",
+            shortCutMarks.size in 1..4,
+            "visible room floor should keep short off-grid cut marks as sparse accents instead of using many tiny cuts to hide the remaining lattice. count=${shortCutMarks.size}",
         )
     }
 
@@ -5216,7 +6247,334 @@ class TileRendererCanvasTest {
     }
 
     @Test
-    fun `render canvas bleeds terrain tiles to suppress hard checkerboard seams`() {
+    fun `render canvas compresses visible room boundary with thick interior stone shoulders`() {
+        val canvas = RecordingTileCanvas()
+        val playerTile = com.ktome.core.map.Point(5, 4)
+        val cells =
+            (0 until 12).flatMap { x ->
+                (0 until 8).map { y ->
+                    val wall = x == 0 || x == 11 || y == 0 || y == 7
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (wall) "wall" else "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 12, height = 8, cells = cells, playerX = playerTile.x, playerY = playerTile.y),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val screenTopInteriorFloor = summary.viewport.tileRect(com.ktome.core.map.Point(5, 1))
+        val screenBottomInteriorFloor = summary.viewport.tileRect(com.ktome.core.map.Point(5, 6))
+        val leftInteriorFloor = summary.viewport.tileRect(com.ktome.core.map.Point(1, 4))
+        val rightInteriorFloor = summary.viewport.tileRect(com.ktome.core.map.Point(10, 4))
+        val playerRect = summary.viewport.tileRect(playerTile)
+        val playerCenterX = playerRect.x + playerRect.width / 2f
+        val playerCenterY = playerRect.y + playerRect.height / 2f
+        val boundaryCompressionCandidates =
+            canvas.rectDraws
+                .filter { draw ->
+                    draw.color.a.isNear(0.180f) ||
+                        draw.color.a.isNear(0.140f) ||
+                        draw.color.a.isNear(0.150f) ||
+                        draw.color.a.isNear(0.142f) ||
+                        draw.color.a.isNear(0.210f)
+                }.joinToString { draw -> "${draw.width}x${draw.height}@${draw.x},${draw.y}/a=${draw.color.a}" }
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 276f..286f &&
+                    draw.height in 13f..16f &&
+                    draw.color.a.isNear(0.180f) &&
+                    draw.contains(
+                        screenTopInteriorFloor.x + screenTopInteriorFloor.width / 2f,
+                        screenTopInteriorFloor.y + screenTopInteriorFloor.height - 7f,
+                    )
+            },
+            "visible room top edge should gain a continuous interior stone shoulder so the room reads as thick masonry rather than a flat rectangular floor crop; candidates=$boundaryCompressionCandidates",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 238f..248f &&
+                    draw.height in 9f..12f &&
+                    draw.color.a.isNear(0.140f) &&
+                    draw.contains(screenBottomInteriorFloor.x + screenBottomInteriorFloor.width / 2f, screenBottomInteriorFloor.y + 6f)
+            },
+            "visible room bottom edge should use a lower warm shelf that supports boundary thickness without masking the playable center",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 11f..15f &&
+                    draw.height in 126f..134f &&
+                    draw.color.a.isNear(0.150f) &&
+                    draw.contains(leftInteriorFloor.x + 7f, leftInteriorFloor.y + leftInteriorFloor.height / 2f)
+            },
+            "visible room side boundary should press a vertical interior shoulder into the floor so the side wall stops reading as a single grid line",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 11f..15f &&
+                    draw.height in 126f..134f &&
+                    draw.color.a.isNear(0.142f) &&
+                    draw.contains(rightInteriorFloor.x + rightInteriorFloor.width - 7f, rightInteriorFloor.y + rightInteriorFloor.height / 2f)
+            },
+            "opposite visible room side should keep the same architectural compression while staying asymmetric in tone",
+        )
+        val cornerShoulders =
+            canvas.rectDraws.filter { draw ->
+                draw.width in 33f..39f &&
+                    draw.height in 24f..31f &&
+                    draw.color.a.isNear(0.210f)
+            }
+        val boundaryCompressionDraws =
+            canvas.rectDraws.filter { draw ->
+                (draw.width in 276f..286f && draw.height in 13f..16f && draw.color.a.isNear(0.180f)) ||
+                    (draw.width in 238f..248f && draw.height in 9f..12f && draw.color.a.isNear(0.140f)) ||
+                    (draw.width in 11f..15f && draw.height in 126f..134f && draw.color.a.isNear(0.150f)) ||
+                    (draw.width in 11f..15f && draw.height in 126f..134f && draw.color.a.isNear(0.142f)) ||
+                    (draw.width in 33f..39f && draw.height in 24f..31f && draw.color.a.isNear(0.210f))
+            }
+        assertTrue(
+            cornerShoulders.size >= 2,
+            "visible room corners should gain compact dark stone shoulders so the room silhouette has mass instead of four thin 90-degree tile intersections",
+        )
+        assertFalse(
+            boundaryCompressionDraws.any { draw ->
+                draw.contains(playerCenterX, playerCenterY)
+            },
+            "room-boundary compression must not cover the player focal center",
+        )
+    }
+
+    @Test
+    fun `render canvas offsets visible room edges with asymmetric masonry mass`() {
+        val canvas = RecordingTileCanvas()
+        val playerTile = com.ktome.core.map.Point(5, 4)
+        val cells =
+            (0 until 12).flatMap { x ->
+                (0 until 8).map { y ->
+                    val wall = x == 0 || x == 11 || y == 0 || y == 7
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (wall) "wall" else "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 12, height = 8, cells = cells, playerX = playerTile.x, playerY = playerTile.y),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val screenTopLeftFloor = summary.viewport.tileRect(com.ktome.core.map.Point(2, 1))
+        val screenBottomRightFloor = summary.viewport.tileRect(com.ktome.core.map.Point(8, 6))
+        val leftInteriorFloor = summary.viewport.tileRect(com.ktome.core.map.Point(1, 4))
+        val rightInteriorFloor = summary.viewport.tileRect(com.ktome.core.map.Point(10, 4))
+        val playerRect = summary.viewport.tileRect(playerTile)
+        val playerCenterX = playerRect.x + playerRect.width / 2f
+        val playerCenterY = playerRect.y + playerRect.height / 2f
+        val edgeMassCandidates =
+            canvas.rectDraws
+                .filter { draw ->
+                    draw.color.a.isNear(0.320f) ||
+                        draw.color.a.isNear(0.300f) ||
+                        draw.color.a.isNear(0.270f)
+                }.joinToString { draw -> "${draw.width}x${draw.height}@${draw.x},${draw.y}/a=${draw.color.a}" }
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 100f..105f &&
+                    draw.height in 30f..34f &&
+                    draw.color.a.isNear(0.320f) &&
+                    draw.contains(screenTopLeftFloor.x + screenTopLeftFloor.width / 2f, screenTopLeftFloor.y + 10f)
+            },
+            "upper-left room edge should receive a broad offset masonry mass so the room outline no longer reads as a single straight top wall strip",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 98f..101f &&
+                    draw.height in 26f..29f &&
+                    draw.color.a.isNear(0.300f) &&
+                    draw.contains(screenBottomRightFloor.x + screenBottomRightFloor.width / 2f, screenBottomRightFloor.y + 21f)
+            },
+            "lower-right room edge should gain an offset plinth that changes the first-read silhouette without touching the player center",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 40f..43f &&
+                    draw.height in 79f..82f &&
+                    draw.color.a.isNear(0.300f) &&
+                    draw.contains(leftInteriorFloor.x + 19f, leftInteriorFloor.y + leftInteriorFloor.height / 2f)
+            },
+            "left room edge should carry a vertical masonry buttress so side walls read as thick stone mass rather than a grid line",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.width in 33f..36f &&
+                    draw.height in 74f..77f &&
+                    draw.color.a.isNear(0.270f) &&
+                    draw.x >= rightInteriorFloor.x - 14f &&
+                    draw.x + draw.width <= rightInteriorFloor.x + rightInteriorFloor.width + 10f &&
+                    draw.y > screenBottomRightFloor.y + screenBottomRightFloor.height &&
+                    draw.y + draw.height < screenTopLeftFloor.y + screenTopLeftFloor.height
+            },
+            "right room edge should get a different offset buttress so silhouette pressure stays asymmetric and authored; candidates=$edgeMassCandidates",
+        )
+
+        val edgeMassDraws =
+            canvas.rectDraws.filter { draw ->
+                (draw.width in 100f..105f && draw.height in 30f..34f && draw.color.a.isNear(0.320f)) ||
+                    (draw.width in 98f..101f && draw.height in 26f..29f && draw.color.a.isNear(0.300f)) ||
+                    (draw.width in 40f..43f && draw.height in 79f..82f && draw.color.a.isNear(0.300f)) ||
+                    (draw.width in 33f..36f && draw.height in 74f..77f && draw.color.a.isNear(0.270f))
+            }
+        assertFalse(
+            edgeMassDraws.any { draw -> draw.contains(playerCenterX, playerCenterY) },
+            "asymmetric edge masses must change the room silhouette from the perimeter and never cover the player focal center",
+        )
+    }
+
+    @Test
+    fun `render canvas carves visible room with macro structural plates`() {
+        val canvas = RecordingTileCanvas()
+        val playerTile = Point(6, 5)
+        val visibleRoomTiles = (3..10).flatMap { x -> (2..8).map { y -> Point(x, y) } }.toSet()
+        val cells =
+            (0 until 14).flatMap { x ->
+                (0 until 11).map { y ->
+                    val point = Point(x, y)
+                    val visibleRoom = point in visibleRoomTiles
+                    val wall = visibleRoom && (x == 3 || x == 10 || y == 2 || y == 8)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (visibleRoom) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (wall) "wall" else "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(width = 14, height = 11, cells = cells, playerX = playerTile.x, playerY = playerTile.y),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 42f,
+                cellHeight = 42f,
+            )
+
+        val floorTiles = (4..9).flatMap { x -> (3..7).map { y -> Point(x, y) } }
+        val floorRects = floorTiles.map(summary.viewport::tileRect)
+        val floorLeft = floorRects.minOf { rect -> rect.x }.toFloat()
+        val floorRight = floorRects.maxOf { rect -> rect.x + rect.width }.toFloat()
+        val floorBottom = floorRects.minOf { rect -> rect.y }.toFloat()
+        val floorTop = floorRects.maxOf { rect -> rect.y + rect.height }.toFloat()
+        val floorWidth = floorRight - floorLeft
+        val floorHeight = floorTop - floorBottom
+        val playerRect = summary.viewport.tileRect(playerTile)
+        val playerCenterX = playerRect.x + playerRect.width / 2f
+        val playerCenterY = playerRect.y + playerRect.height / 2f
+
+        fun RecordingTileCanvas.RectDraw.isMacroPlate(alpha: Float): Boolean =
+            color.r.isNear(5f / 255f) &&
+                color.g.isNear(6f / 255f) &&
+                color.b.isNear(4f / 255f) &&
+                color.a.isNear(alpha)
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isMacroPlate(0.365f) &&
+                    draw.width > floorWidth * 0.48f &&
+                    draw.height in 35f..40f &&
+                    draw.x > floorLeft &&
+                    draw.x + draw.width < floorRight &&
+                    draw.y + draw.height <= floorTop &&
+                    draw.y > floorTop - 60f
+            },
+            "visible map stage needs a large upper structural plate inside the room silhouette so the first read becomes carved architecture rather than tile-grid texture",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.color.r.isNear(138f / 255f) &&
+                    draw.color.g.isNear(118f / 255f) &&
+                    draw.color.b.isNear(84f / 255f) &&
+                    draw.color.a.isNear(0.142f) &&
+                    draw.width > floorWidth * 0.24f &&
+                    draw.height in 2f..4f &&
+                    draw.x > floorLeft &&
+                    draw.x + draw.width < floorRight &&
+                    draw.y > floorTop - 28f &&
+                    draw.y < floorTop
+            },
+            "macro structural plate needs a restrained worn-stone lip so the dark mass reads as material, not a flat mask",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.color.r.isNear(26f / 255f) &&
+                    draw.color.g.isNear(18f / 255f) &&
+                    draw.color.b.isNear(12f / 255f) &&
+                    draw.color.a.isNear(0.305f) &&
+                    draw.width > floorWidth * 0.38f &&
+                    draw.height in 28f..32f &&
+                    draw.x > floorLeft + floorWidth * 0.42f &&
+                    draw.y >= floorBottom &&
+                    draw.y < floorBottom + 38f
+            },
+            "lower-right visible floor should gain a broad offset plinth so the room composition has weight below the player instead of a clean rectangular crop",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isMacroPlate(0.285f) &&
+                    draw.width in 29f..33f &&
+                    draw.height > floorHeight * 0.42f &&
+                    draw.x < floorLeft + 44f &&
+                    draw.y < playerCenterY &&
+                    draw.y + draw.height > playerCenterY
+            },
+            "left visible floor edge needs a macro vertical pier so side structure reads at room scale rather than only per-tile relief",
+        )
+        val macroDraws =
+            canvas.rectDraws.filter { draw ->
+                draw.isMacroPlate(0.365f) ||
+                    draw.isMacroPlate(0.285f) ||
+                    (
+                        draw.color.r.isNear(26f / 255f) &&
+                            draw.color.g.isNear(18f / 255f) &&
+                            draw.color.b.isNear(12f / 255f) &&
+                            draw.color.a.isNear(0.305f)
+                    )
+            }
+        assertFalse(
+            macroDraws.any { draw -> draw.contains(playerCenterX, playerCenterY) },
+            "macro structural plates must strengthen the room read from the perimeter and never mask the playable focal center",
+        )
+    }
+
+    @Test
+    fun `render canvas uses restrained ground bleed so repeated tile art does not become room lattice authority`() {
         val canvas = RecordingTileCanvas()
 
         TileRenderer.renderToCanvas(
@@ -5230,9 +6588,9 @@ class TileRendererCanvasTest {
         )
 
         val terrainDraw = canvas.assetDraws.first { draw -> draw.asset.entry.category == "tile_ground" }
-        assertTrue(terrainDraw.width >= 35f)
-        assertTrue(terrainDraw.height >= 35f)
-        assertTrue(terrainDraw.alpha >= 0.96f)
+        assertEquals(32f, terrainDraw.width)
+        assertEquals(32f, terrainDraw.height)
+        assertEquals(1f, terrainDraw.alpha)
     }
 
     @Test
@@ -5485,7 +6843,7 @@ class TileRendererCanvasTest {
             },
             "action deck should use one continuous dark tray so the hotbar reads as a deliberate control surface",
         )
-        val actionSocketWells =
+        val heavyIndependentSlotWells =
             layout.demoShell.bottomDeck.actionSlotBounds.count { slotBounds ->
                 canvas.rectDraws.any { draw ->
                     draw.color.a.isNear(0.52f) &&
@@ -5497,9 +6855,20 @@ class TileRendererCanvasTest {
                         draw.y + draw.height <= slotBounds.top - 2f
                 }
             }
+        assertEquals(
+            0,
+            heavyIndependentSlotWells,
+            "runtime action slots should not add full-height per-slot wells over the generated AD chrome; the shared command plinth owns the label layer",
+        )
+        val recessedIconPads =
+            canvas.rectDraws.count { draw ->
+                draw.color.a.isNear(0.30f) &&
+                    draw.width in 70f..100f &&
+                    draw.height in 70f..100f
+            }
         assertTrue(
-            actionSocketWells >= 3,
-            "filled action slots should sit in forged socket wells instead of floating as separate icon and label plates",
+            recessedIconPads >= 3,
+            "filled action icons should keep a restrained recessed pad while labels stay on the shared command plinth",
         )
     }
 
@@ -5627,6 +6996,316 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `bottom action slots render large readable icon subjects with material accents`() {
+        val canvas = RecordingTileCanvas()
+        val actionIconKeys =
+            listOf(
+                CombatAffordanceResourceKeys.ACTION_ICON,
+                CombatAffordanceResourceKeys.METHOD_ICON,
+                CombatAffordanceResourceKeys.TARGET_ICON,
+                CombatAffordanceResourceKeys.LOCK_ICON,
+            )
+        val snapshot =
+            sampleSnapshot(
+                width = 18,
+                height = 17,
+                talents =
+                    actionIconKeys.mapIndexed { index, iconKey ->
+                        TalentSlotSnapshot(
+                            slot = index + 1,
+                            talentId = "director_action_${index + 1}",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            iconKey = iconKey,
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 8,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 1,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = false,
+                        )
+                    },
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
+        val actionDeck = layout.demoShell.bottomDeck.actionDeck
+        val filledSlots = layout.demoShell.bottomDeck.actionSlotBounds.take(actionIconKeys.size)
+        val actionIconDraws =
+            canvas.assetDraws
+                .filter { draw ->
+                    draw.asset.resolvedKey in actionIconKeys &&
+                        draw.x >= actionDeck.x &&
+                        draw.x + draw.width <= actionDeck.right &&
+                        draw.y >= actionDeck.y &&
+                        draw.y + draw.height <= actionDeck.top
+                }
+                .sortedBy { draw -> draw.x }
+
+        assertEquals(actionIconKeys.size, actionIconDraws.size)
+        actionIconDraws.zip(filledSlots).forEach { (draw, slot) ->
+            assertTrue(
+                draw.width >= slot.width * 0.70f && draw.height >= slot.width * 0.70f,
+                "bottom action icon subjects should fill enough of the socket to read as authored icons at first glance; draw=$draw slot=$slot",
+            )
+        }
+
+        val iconSubjectUnderlines =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.286f) &&
+                    draw.width in 42f..76f &&
+                    draw.height in 2f..4f &&
+                    filledSlots.any { slot ->
+                        draw.x >= slot.x + 10f &&
+                            draw.x + draw.width <= slot.right - 10f &&
+                            draw.y >= slot.y + slot.height * 0.40f &&
+                            draw.y <= slot.top - 12f
+                    }
+            }
+        assertTrue(
+            iconSubjectUnderlines.size >= filledSlots.size,
+            "each filled bottom action slot should add a warm material underline behind the icon subject so the slot reads as a crafted command, not a generic button",
+        )
+
+        val iconSubjectSideGlints =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.193f) &&
+                    draw.width in 1f..3f &&
+                    draw.height in 34f..58f &&
+                    filledSlots.any { slot ->
+                        draw.x >= slot.x + 10f &&
+                            draw.x + draw.width <= slot.right - 10f &&
+                            draw.y >= slot.y + slot.height * 0.30f &&
+                            draw.y + draw.height <= slot.top - 10f
+                    }
+            }
+        assertTrue(
+            iconSubjectSideGlints.size >= filledSlots.size,
+            "each filled bottom action slot should include restrained vertical material glints that frame the readable icon subject",
+        )
+    }
+
+    @Test
+    fun `bottom action subjects sit on large material pedestals`() {
+        val canvas = RecordingTileCanvas()
+        val actionIconKeys =
+            listOf(
+                CombatAffordanceResourceKeys.ACTION_ICON,
+                CombatAffordanceResourceKeys.METHOD_ICON,
+                CombatAffordanceResourceKeys.TARGET_ICON,
+                CombatAffordanceResourceKeys.LOCK_ICON,
+            )
+        val snapshot =
+            sampleSnapshot(
+                width = 18,
+                height = 17,
+                talents =
+                    actionIconKeys.mapIndexed { index, iconKey ->
+                        TalentSlotSnapshot(
+                            slot = index + 1,
+                            talentId = "director_action_pedestal_${index + 1}",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            iconKey = iconKey,
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 8,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 1,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = false,
+                        )
+                    },
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
+        val actionDeck = layout.demoShell.bottomDeck.actionDeck
+        val filledSlots = layout.demoShell.bottomDeck.actionSlotBounds.take(actionIconKeys.size)
+        val actionIconDraws =
+            canvas.assetDraws
+                .filter { draw ->
+                    draw.asset.resolvedKey in actionIconKeys &&
+                        draw.x >= actionDeck.x &&
+                        draw.x + draw.width <= actionDeck.right &&
+                        draw.y >= actionDeck.y &&
+                        draw.y + draw.height <= actionDeck.top
+                }
+                .sortedBy { draw -> draw.x }
+
+        assertEquals(actionIconKeys.size, actionIconDraws.size)
+        actionIconDraws.zip(filledSlots).forEach { (draw, slot) ->
+            assertTrue(
+                draw.width >= slot.width * 0.82f && draw.height >= slot.width * 0.82f,
+                "bottom action icon subjects should be large enough to read as equipment-quality subjects; draw=$draw slot=$slot",
+            )
+        }
+
+        val materialPedestals =
+            filledSlots.count { slot ->
+                canvas.rectDraws.any { draw ->
+                    draw.color.a.isNear(0.278f) &&
+                        draw.width >= slot.width * 0.68f &&
+                        draw.height >= slot.height * 0.35f &&
+                        draw.x >= slot.x + 4f &&
+                        draw.x + draw.width <= slot.right - 4f &&
+                        draw.y >= slot.y + slot.height * 0.30f &&
+                        draw.y + draw.height <= slot.top - 4f
+                }
+            }
+        assertEquals(
+            filledSlots.size,
+            materialPedestals,
+            "each filled action should sit on a large dark material pedestal so the icon subject reads as authored equipment, not a small button glyph",
+        )
+
+        val pedestalCrowns =
+            filledSlots.count { slot ->
+                canvas.rectDraws.any { draw ->
+                    draw.color.a.isNear(0.232f) &&
+                        draw.width >= slot.width * 0.54f &&
+                        draw.height in 3f..6f &&
+                        draw.x >= slot.x + 12f &&
+                        draw.x + draw.width <= slot.right - 12f &&
+                        draw.y >= slot.y + slot.height * 0.66f &&
+                        draw.y <= slot.top - 8f
+                }
+            }
+        assertEquals(
+            filledSlots.size,
+            pedestalCrowns,
+            "each filled action pedestal should include a warm crown lip to match the forged command-socket material language",
+        )
+    }
+
+    @Test
+    fun `bottom action slots use rectangular hollow command sockets`() {
+        val canvas = RecordingTileCanvas()
+        val actionIconKeys =
+            listOf(
+                CombatAffordanceResourceKeys.ACTION_ICON,
+                CombatAffordanceResourceKeys.METHOD_ICON,
+                CombatAffordanceResourceKeys.TARGET_ICON,
+                CombatAffordanceResourceKeys.LOCK_ICON,
+            )
+        val snapshot =
+            sampleSnapshot(
+                width = 18,
+                height = 17,
+                talents =
+                    actionIconKeys.mapIndexed { index, iconKey ->
+                        TalentSlotSnapshot(
+                            slot = index + 1,
+                            talentId = "director_action_socket_${index + 1}",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            iconKey = iconKey,
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 8,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 1,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = false,
+                        )
+                    },
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
+        val filledSlots = layout.demoShell.bottomDeck.actionSlotBounds.take(actionIconKeys.size)
+
+        val socketBackings =
+            filledSlots.count { slot ->
+                canvas.rectDraws.any { draw ->
+                    draw.color.a.isNear(0.236f) &&
+                        draw.width >= slot.width * 0.82f &&
+                        draw.width <= slot.width - 10f &&
+                        draw.height >= slot.height * 0.44f &&
+                        draw.height <= slot.height * 0.66f &&
+                        draw.x >= slot.x + 6f &&
+                        draw.x + draw.width <= slot.right - 6f &&
+                        draw.y >= slot.y + slot.height * 0.28f &&
+                        draw.y + draw.height <= slot.top - 6f
+                }
+            }
+        assertEquals(
+            filledSlots.size,
+            socketBackings,
+            "filled action slots should use wide rectangular hollow sockets behind the icon subjects, not only small square pads",
+        )
+
+        val socketCaps =
+            filledSlots.count { slot ->
+                canvas.rectDraws.count { draw ->
+                    draw.color.a.isNear(0.174f) &&
+                        draw.width >= slot.width * 0.68f &&
+                        draw.width <= slot.width - 18f &&
+                        draw.height in 2f..4f &&
+                        draw.x >= slot.x + 8f &&
+                        draw.x + draw.width <= slot.right - 8f &&
+                        draw.y >= slot.y + slot.height * 0.32f &&
+                        draw.y <= slot.top - 8f
+                } >= 2
+            }
+        assertEquals(
+            filledSlots.size,
+            socketCaps,
+            "each filled action socket should have restrained top and bottom metal lips so the slot reads as a crafted command recess",
+        )
+
+        val socketJambs =
+            filledSlots.count { slot ->
+                canvas.rectDraws.count { draw ->
+                    draw.color.a.isNear(0.151f) &&
+                        draw.width in 2f..4f &&
+                        draw.height >= slot.height * 0.32f &&
+                        draw.height <= slot.height * 0.52f &&
+                        draw.x >= slot.x + 8f &&
+                        draw.x + draw.width <= slot.right - 8f &&
+                        draw.y >= slot.y + slot.height * 0.34f &&
+                        draw.y + draw.height <= slot.top - 8f
+                } >= 2
+            }
+        assertEquals(
+            filledSlots.size,
+            socketJambs,
+            "each filled action socket should include paired side jambs that make the icon area read as a rectangular command bay",
+        )
+    }
+
+    @Test
     fun `bottom hud panels sit on one forged foundation rail`() {
         val canvas = RecordingTileCanvas()
         val snapshot = sampleSnapshot(width = 18, height = 17)
@@ -5679,6 +7358,120 @@ class TileRendererCanvasTest {
         assertTrue(
             connectorPosts.size >= 2,
             "gaps between hero/action/log panels should have restrained vertical connector posts so the bottom HUD reads as one forged assembly",
+        )
+    }
+
+    @Test
+    fun `bottom hud renders continuous console cap rails over all panels`() {
+        val canvas = RecordingTileCanvas()
+        val snapshot = sampleSnapshot(width = 18, height = 17)
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val bottom = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f).demoShell.bottomDeck
+        val hudSpan = bottom.logDeck.right - bottom.heroCard.x
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.color.a.isNear(0.182f) &&
+                    draw.width > hudSpan * 0.96f &&
+                    draw.height in 4f..7f &&
+                    draw.x <= bottom.heroCard.x + 2f &&
+                    draw.x + draw.width >= bottom.logDeck.right - 2f &&
+                    draw.y >= bottom.heroCard.top - 12f &&
+                    draw.y <= bottom.heroCard.top - 2f
+            },
+            "bottom HUD needs a visible overlaid top cap rail spanning hero, action, and log panels so the console reads as one assembly",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.color.a.isNear(0.158f) &&
+                    draw.width > hudSpan * 0.96f &&
+                    draw.height in 3f..6f &&
+                    draw.x <= bottom.heroCard.x + 2f &&
+                    draw.x + draw.width >= bottom.logDeck.right - 2f &&
+                    draw.y >= bottom.heroCard.y + 3f &&
+                    draw.y <= bottom.heroCard.y + 11f
+            },
+            "bottom HUD needs a continuous lower cap rail so the three bottom surfaces stop reading as separate card bottoms",
+        )
+        val seamClamps =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.146f) &&
+                    draw.width in 12f..20f &&
+                    draw.height in 6f..10f &&
+                    draw.y >= bottom.heroCard.top - 13f &&
+                    draw.y <= bottom.heroCard.top - 1f
+            }
+        assertTrue(
+            seamClamps.size >= 2,
+            "bottom HUD panel seams should have small forged clamp plates on the shared top rail instead of only empty gaps",
+        )
+    }
+
+    @Test
+    fun `bottom hud uses inter panel bridge plates for one command shelf`() {
+        val canvas = RecordingTileCanvas()
+        val snapshot = sampleSnapshot(width = 18, height = 17)
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val bottom = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f).demoShell.bottomDeck
+        val bridgeCenters =
+            listOf(
+                (bottom.heroCard.right + bottom.actionDeck.x) / 2f,
+                (bottom.actionDeck.right + bottom.logDeck.x) / 2f,
+            )
+
+        val bridgePlates =
+            bridgeCenters.count { centerX ->
+                canvas.rectDraws.any { draw ->
+                    draw.color.a.isNear(0.171f) &&
+                        draw.width in 22f..44f &&
+                        draw.height > bottom.heroCard.height * 0.54f &&
+                        draw.x <= centerX - 10f &&
+                        draw.x + draw.width >= centerX + 10f &&
+                        draw.y >= bottom.heroCard.y + 12f &&
+                        draw.y + draw.height <= bottom.heroCard.top - 10f
+                }
+            }
+        assertEquals(
+            bridgeCenters.size,
+            bridgePlates,
+            "hero/action/log gutters need wide forged bridge plates so the bottom HUD reads as one command shelf, not three adjacent cards",
+        )
+
+        val bridgeRungs =
+            bridgeCenters.sumOf { centerX ->
+                canvas.rectDraws.count { draw ->
+                    draw.color.a.isNear(0.109f) &&
+                        draw.width in 24f..48f &&
+                        draw.height in 2f..4f &&
+                        draw.x <= centerX - 11f &&
+                        draw.x + draw.width >= centerX + 11f &&
+                        draw.y >= bottom.heroCard.y + 24f &&
+                        draw.y <= bottom.heroCard.top - 24f
+                }
+            }
+        assertTrue(
+            bridgeRungs >= bridgeCenters.size * 2,
+            "each inter-panel bridge should include small horizontal rungs that visually tie the three bottom surfaces together",
         )
     }
 
@@ -5738,6 +7531,34 @@ class TileRendererCanvasTest {
                 val bounds = TileRenderer.textApproximationBounds(draw.style, draw.text, draw.x, draw.y)
                 draw.x + bounds[2] <= layout.logX + layout.logWidth + 0.5f
             },
+        )
+        val routeHintScanWells =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.205f) &&
+                    draw.width >= layout.logWidth * 0.58f &&
+                    draw.height in 9f..14f &&
+                    draw.x >= layout.logX + 28f &&
+                    draw.x + draw.width <= layout.logX + layout.logWidth - 10f &&
+                    draw.y >= layout.cardY + 8f &&
+                    draw.y <= layout.cardY + layout.cardHeight - 12f
+            }
+        assertTrue(
+            routeHintScanWells.size >= minOf(2, routeHintDraws.size),
+            "long route hints should sit on readable note wells so Chinese guidance scans as operational log entries instead of a flat text block",
+        )
+        val routeHintRightBraces =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.142f) &&
+                    draw.width in 1f..3f &&
+                    draw.height in 9f..15f &&
+                    draw.x >= layout.logX + layout.logWidth - 52f &&
+                    draw.x <= layout.logX + layout.logWidth - 12f &&
+                    draw.y >= layout.cardY + 8f &&
+                    draw.y <= layout.cardY + layout.cardHeight - 12f
+            }
+        assertTrue(
+            routeHintRightBraces.size >= minOf(2, routeHintDraws.size),
+            "long route hints need a second-channel right brace in addition to text color so route guidance remains scannable at bottom-deck scale",
         )
     }
 
@@ -5820,6 +7641,82 @@ class TileRendererCanvasTest {
                     draw.y <= logContent.y + 22f
             },
             "bottom log should show a restrained lower thumb marker so recent entries feel anchored to a scrollable ledger",
+        )
+    }
+
+    @Test
+    fun `bottom log renders event row plates and tone accents for dense ledger read`() {
+        val canvas = RecordingTileCanvas()
+        val snapshot =
+            sampleSnapshot(
+                width = 18,
+                height = 17,
+                logEvents =
+                    listOf(
+                        logEvent("log.zone.enter", "zone" to "破碎前哨", "desc" to "泥泞里还有未灭的哨火。"),
+                        logEvent("log.objective.activate", "objective" to "稳住前哨交互点"),
+                        logEvent("log.reward.route.claimed", "zone" to "渡口", "item" to "铁壁之印"),
+                        logEvent("log.passive.hp_regen", "item" to "治愈之印", "amount" to "2"),
+                        logEvent("log.boss.enrage", "source" to "哨兵队长"),
+                        logEvent("log.zone.mechanic_hint", "hint" to "如果在 Boss 线外拖得太久，这层会持续有巡逻增援补进来"),
+                    ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
+        val log = layout.demoShell.bottomDeck.logDeck
+        val logContent =
+            ChromeFramePainter.contentBounds(
+                ChromeFrameBounds(log.x, log.y, log.width, log.height),
+                ChromeSurfaceKind.Panel,
+            )
+        val logTextDraws =
+            canvas.textDraws.filter { draw ->
+                draw.x >= log.x &&
+                    draw.x < log.right &&
+                    draw.y >= log.y &&
+                    draw.y < log.top
+            }
+        val visibleRowCount = minOf(4, logTextDraws.size)
+        assertTrue(visibleRowCount >= 4, "test fixture should render enough event rows to verify dense ledger treatment")
+
+        val eventRowPlates =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.327f) &&
+                    draw.width >= logContent.width * 0.72f &&
+                    draw.height in 14f..18f &&
+                    draw.x >= logContent.x + 18f &&
+                    draw.x <= logContent.x + 28f &&
+                    draw.y >= logContent.y + 12f &&
+                    draw.y <= logContent.top - 18f
+            }
+        assertTrue(
+            eventRowPlates.size >= visibleRowCount,
+            "bottom log should place each visible event on a subdued row plate so the deck reads as a dense event ledger, not a flat paragraph block",
+        )
+
+        val toneAccentStrips =
+            canvas.rectDraws.filter { draw ->
+                draw.color.a.isNear(0.252f) &&
+                    draw.width in 2f..4f &&
+                    draw.height in 10f..15f &&
+                    draw.x >= logContent.x + 18f &&
+                    draw.x <= logContent.x + 28f &&
+                    draw.y >= logContent.y + 12f &&
+                    draw.y <= logContent.top - 18f
+            }
+        assertTrue(
+            toneAccentStrips.size >= visibleRowCount,
+            "bottom log should add tone-aware accent strips beside event rows so rewards, danger and route hints remain scannable at a glance",
         )
     }
 
@@ -6298,6 +8195,7 @@ class TileRendererCanvasTest {
                 TileLayerFlushReason.MAP_STAGE_FRAME,
                 TileLayerFlushReason.MAP_TERRAIN_BASE,
                 TileLayerFlushReason.MAP_CELL_MATERIAL,
+                TileLayerFlushReason.MAP_ROOM_COMPOSITOR,
                 TileLayerFlushReason.MAP_PROP_ATMOSPHERE,
                 TileLayerFlushReason.MAP_PROPS_AND_DECALS,
                 TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS,
@@ -6309,7 +8207,6 @@ class TileRendererCanvasTest {
                 TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS,
                 TileLayerFlushReason.MAP_ACTIVE_CURSOR,
                 TileLayerFlushReason.MAP_COMBAT_FEEDBACK,
-                TileLayerFlushReason.MAP_WARM_OVERLAY,
                 TileLayerFlushReason.MAP_FRONTSTAGE_SURFACE,
                 TileLayerFlushReason.SHELL_NAV_RAIL,
                 TileLayerFlushReason.SHELL_RIGHT_PANEL,
@@ -6325,6 +8222,1689 @@ class TileRendererCanvasTest {
             ),
             canvas.flushes,
         )
+    }
+
+    @Test
+    fun `room compositor stays below actors loot and tactical affordances`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val roomLayer = canvas.flushes.indexOf(TileLayerFlushReason.MAP_ROOM_COMPOSITOR)
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_PROPS_AND_DECALS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTIVE_CURSOR))
+    }
+
+    @Test
+    fun renderCanvasDrawsPr08RoomArtPlateBelowActorsAndMarkersForRuinsPrototype() {
+        val canvas = RecordingTileCanvas()
+        val width = 12
+        val height = 8
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val rareItem =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                qualityTierId = "RARE",
+            )
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                        actorEntityId = if (x == 6 && y == 4) 2 else null,
+                        items = if (x == 6 && y == 4) listOf(rareItem) else emptyList(),
+                    )
+                }
+            }
+        val base =
+            sampleSnapshot(
+                width = width,
+                height = height,
+                cells = cells,
+                playerX = 5,
+                playerY = 4,
+                overlays =
+                    listOf(
+                        OverlayRenderSnapshot(
+                            id = "telegraph:pr08-room-plate-readability",
+                            visualKey = "missing_visual",
+                            previewTurns = 1,
+                            dangerLevel = 2,
+                            shape = OverlayShapeSnapshot.SINGLE_TILE,
+                            sourceAbilityId = "telegraph.pr08.room_plate_readability",
+                            cells = listOf(GridPointSnapshot(7, 4)),
+                        ),
+                    ),
+                targetablePositions = listOf(GridPointSnapshot(7, 4)),
+            )
+        val snapshot =
+            base.copy(
+                metadata = base.metadata.copy(tilesetKey = "tileset.ruins"),
+                actors =
+                    base.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 6,
+                            y = 4,
+                            visualKey = "actor.arcanist",
+                            nameKey = "profession.arcanist.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.GENERIC,
+                        ),
+            )
+
+        val summary =
+            TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val roomArtPlateIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == roomArtPlateKey }
+        val actorIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "actor.arcanist" }
+        val lootMarkerIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "item.short_sword.icon" }
+
+        assertTrue(roomArtPlateIndex >= 0, canvas.assetDraws.map { draw -> draw.asset.resolvedKey }.toString())
+        assertTrue(roomArtPlateIndex < actorIndex)
+        assertTrue(roomArtPlateIndex < lootMarkerIndex)
+
+        val roomArtPlate = canvas.assetDraws[roomArtPlateIndex]
+        assertTrue(roomArtPlate.width > 32f * 9f, roomArtPlate.toString())
+        assertTrue(roomArtPlate.height > 32f * 6f, roomArtPlate.toString())
+        assertEquals(1f, roomArtPlate.alpha)
+
+        val roomLayer = canvas.flushes.indexOf(TileLayerFlushReason.MAP_ROOM_COMPOSITOR)
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS))
+    }
+
+    @Test
+    fun renderCanvasFallsBackFromPr08FullRoomPlateWhenVisibleTopologyIsLShaped() {
+        val canvas = RecordingTileCanvas()
+        val width = 8
+        val height = 7
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val topologySourceKey = DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE
+        val visibleRegion =
+            (0 until width).flatMap { x ->
+                (0 until height).mapNotNull { y ->
+                    if (y <= 2 || x <= 2) {
+                        x to y
+                    } else {
+                        null
+                    }
+                }
+            }.toSet()
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if ((x to y) in visibleRegion) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val snapshot =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 2, playerY = 2)
+                .withRuinsTileset()
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver =
+                    sampleResolver(
+                        extraEntries =
+                            listOf(
+                                VisualManifestEntry(
+                                    key = roomArtPlateKey,
+                                    category = "ui_frame",
+                                    rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                    footprint = "ui",
+                                    tags = listOf("pr08", "client-only-prototype"),
+                                ),
+                                VisualManifestEntry(
+                                    key = topologySourceKey,
+                                    category = "ui_frame",
+                                    rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png",
+                                    footprint = "ui",
+                                    tags = listOf("pr08", "client-only-prototype", "room_topology_source"),
+                                ),
+                            ),
+                    ),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+        val innerHorizontalNotchEdge = summary.viewport.tileRect(Point(3, 2))
+        val innerVerticalNotchEdge = summary.viewport.tileRect(Point(2, 3))
+        val hiddenNotch = summary.viewport.tileRect(Point(3, 3))
+        val horizontalSourceRepresentative = summary.viewport.tileRect(Point(4, 0))
+        val verticalSourceRepresentative = summary.viewport.tileRect(Point(1, 3))
+        val localLightAnchor = summary.viewport.tileRect(Point(4, 2))
+
+        assertTrue(
+            canvas.assetDraws.none { draw -> draw.isPr08FullRoomPlateStretch(roomArtPlateKey) },
+            "PR-08 full-room plate must not stretch as one unsafe bbox over topology-risky L-shaped visible bounds: ${canvas.assetDraws}",
+        )
+        val topologySourceBands = canvas.assetDraws.filter { draw -> draw.isPr08TopologyRiskSourceCroppedBand(topologySourceKey) }
+        assertEquals(
+            2,
+            topologySourceBands.size,
+            "Topology-risk hybrid should replace bridge fragments with two dedicated-source visible-topology bands: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            canvas.assetDraws.none { draw ->
+                draw.asset.resolvedKey == roomArtPlateKey && draw.sourceRegion != null
+            },
+            "Topology-risk hybrid must stop sampling the full-room plate after dedicated topology source is available: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            topologySourceBands.any { draw ->
+                val sourceRegion = draw.sourceRegion
+                draw.width >= 240f &&
+                    draw.height in 80f..90f &&
+                    sourceRegion != null &&
+                    sourceRegion.leftRatio == 0f &&
+                    sourceRegion.bottomRatio == 0f &&
+                    sourceRegion.widthRatio == 1f &&
+                    sourceRegion.heightRatio in 0.42f..0.44f
+            },
+            "Topology-risk hybrid should crop the dedicated topology source onto the main visible band: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            topologySourceBands.any { draw ->
+                val sourceRegion = draw.sourceRegion
+                draw.width in 80f..90f &&
+                    draw.height >= 110f &&
+                    sourceRegion != null &&
+                    sourceRegion.leftRatio == 0f &&
+                    sourceRegion.bottomRatio in 0.42f..0.44f &&
+                    sourceRegion.widthRatio in 0.37f..0.38f &&
+                    sourceRegion.heightRatio in 0.56f..0.58f
+            },
+            "Topology-risk hybrid should crop the dedicated topology source onto the visible vertical arm instead of repeating the full plate: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            topologySourceBands.none { draw ->
+                draw.contains(hiddenNotch.x + hiddenNotch.width * 0.5f, hiddenNotch.y + hiddenNotch.height * 0.5f)
+            },
+            "Topology-risk source-cropped bands must not cover the hidden L-shaped notch outside visible topology: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            canvas.assetDraws.none { draw ->
+                draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP
+            },
+            "Topology-risk hybrid must stop using the old room-breakup decal as its authored source after dedicated topology source bands are available: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            topologySourceBands.any { draw ->
+                draw.contains(
+                    horizontalSourceRepresentative.x + horizontalSourceRepresentative.width * 0.5f,
+                    horizontalSourceRepresentative.y + horizontalSourceRepresentative.height * 0.5f,
+                )
+            },
+            "Topology-risk dedicated source bands should cover a representative visible cell on the horizontal arm: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            topologySourceBands.any { draw ->
+                draw.contains(
+                    verticalSourceRepresentative.x + verticalSourceRepresentative.width * 0.5f,
+                    verticalSourceRepresentative.y + verticalSourceRepresentative.height * 0.5f,
+                )
+            },
+            "Topology-risk dedicated source bands should cover a representative visible cell on the vertical arm: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.asset.entry.category == "tile_ground" &&
+                    draw.asset.requestedKey == DarkUiMapVisualKeys.RUINS_GROUND
+            },
+            "Topology-risk fallback should keep runtime tile material visible instead of leaving the map compositor empty: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw -> draw.isPr08TopologyRiskHybridRunField() },
+            "Topology-risk hybrid should add a room-scale material field over legacy tiles instead of plain fallback: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isPr08TopologyRiskInteriorSeamDissolve() &&
+                    draw.contains(
+                        horizontalSourceRepresentative.x + horizontalSourceRepresentative.width * 0.5f,
+                        horizontalSourceRepresentative.y + horizontalSourceRepresentative.height - 2f,
+                    )
+            },
+            "Topology-risk hybrid should dissolve internal horizontal seams with a multi-cell field instead of exposing tile-grid rhythm: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isPr08TopologyRiskInteriorSeamDissolve() &&
+                    draw.contains(
+                        verticalSourceRepresentative.x + verticalSourceRepresentative.width - 2f,
+                        verticalSourceRepresentative.y + verticalSourceRepresentative.height * 0.5f,
+                    )
+            },
+            "Topology-risk hybrid should dissolve internal vertical seams with a multi-cell field instead of exposing tile-grid rhythm: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.none { draw ->
+                draw.isPr08TopologyRiskInteriorSeamDissolve() &&
+                    draw.contains(
+                        hiddenNotch.x + hiddenNotch.width * 0.5f,
+                        hiddenNotch.y + hiddenNotch.height * 0.5f,
+                    )
+            },
+            "Topology-risk seam dissolve fields must not cover hidden topology notches: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isPr08TopologyRiskHybridDarkEdge() &&
+                    draw.contains(
+                        innerHorizontalNotchEdge.x + innerHorizontalNotchEdge.width * 0.5f,
+                        innerHorizontalNotchEdge.y + innerHorizontalNotchEdge.height - 4f,
+                    )
+            },
+            "Topology-risk hybrid should mark the horizontal inner notch edge on real visible topology: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isPr08TopologyRiskHybridDarkEdge() &&
+                    draw.contains(
+                        innerVerticalNotchEdge.x + innerVerticalNotchEdge.width - 4f,
+                        innerVerticalNotchEdge.y + innerVerticalNotchEdge.height * 0.5f,
+                    )
+            },
+            "Topology-risk hybrid should mark the vertical inner notch edge on real visible topology: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isPr08TopologyRiskAmbientDepthField() &&
+                    draw.contains(
+                        innerHorizontalNotchEdge.x + innerHorizontalNotchEdge.width * 0.5f,
+                        innerHorizontalNotchEdge.y + innerHorizontalNotchEdge.height - 10f,
+                    )
+            },
+            "Topology-risk hybrid should add room-scale AO along the horizontal inner notch instead of only thin edge marks: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isPr08TopologyRiskSidePressure() &&
+                    draw.contains(
+                        innerVerticalNotchEdge.x + innerVerticalNotchEdge.width - 8f,
+                        innerVerticalNotchEdge.y + innerVerticalNotchEdge.height * 0.5f,
+                    )
+            },
+            "Topology-risk hybrid should add side pressure around vertical risky boundaries so the L-shaped room reads carved, not just outlined: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.isPr08TopologyRiskLocalLightPool() &&
+                    draw.contains(
+                        localLightAnchor.x + localLightAnchor.width * 0.5f,
+                        localLightAnchor.y + localLightAnchor.height * 0.5f,
+                    )
+            },
+            "Topology-risk hybrid should place a deterministic local-light pool on the strongest visible run so risky rooms regain authored-room warmth: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.isPr08TopologyRiskWallComponent("tileset.ruins.wall_01.door_contact") &&
+                    draw.contains(
+                        innerHorizontalNotchEdge.x + innerHorizontalNotchEdge.width * 0.5f,
+                        innerHorizontalNotchEdge.y + innerHorizontalNotchEdge.height - 4f,
+                    )
+            },
+            "Topology-risk hybrid should decompose the horizontal inner notch into a wall-family component: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.isPr08TopologyRiskWallComponent("tileset.ruins.wall_01.door_contact") &&
+                    draw.contains(
+                        innerVerticalNotchEdge.x + innerVerticalNotchEdge.width - 4f,
+                        innerVerticalNotchEdge.y + innerVerticalNotchEdge.height * 0.5f,
+                    )
+            },
+            "Topology-risk hybrid should decompose the vertical inner notch into a wall-family component: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            canvas.assetDraws.any { draw -> draw.isPr08TopologyRiskWallComponent("tileset.ruins.wall_01.crown") },
+            "Topology-risk hybrid should draw crown components on outer horizontal boundaries: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            canvas.assetDraws.any { draw -> draw.isPr08TopologyRiskWallComponent("tileset.ruins.wall_01.side") },
+            "Topology-risk hybrid should draw side components on outer vertical boundaries: ${canvas.assetDraws}",
+        )
+    }
+
+    @Test
+    fun renderCanvasSuppressesPr08LegacyRoomDecorativePassesWhenRoomArtPlateIsActive() {
+        val canvas = RecordingTileCanvas()
+        val width = 12
+        val height = 8
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val rareItem =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                qualityTierId = "RARE",
+            )
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                        actorEntityId = if (x == 6 && y == 4) 2 else null,
+                        items = if (x == 6 && y == 4) listOf(rareItem) else emptyList(),
+                    )
+                }
+            }
+        val base =
+            sampleSnapshot(
+                width = width,
+                height = height,
+                cells = cells,
+                playerX = 5,
+                playerY = 4,
+                overlays =
+                    listOf(
+                        OverlayRenderSnapshot(
+                            id = "telegraph:pr08-room-plate-d4-readability",
+                            visualKey = "missing_visual",
+                            previewTurns = 1,
+                            dangerLevel = 2,
+                            shape = OverlayShapeSnapshot.SINGLE_TILE,
+                            sourceAbilityId = "telegraph.pr08.room_plate_d4_readability",
+                            cells = listOf(GridPointSnapshot(7, 4)),
+                        ),
+                    ),
+                targetablePositions = listOf(GridPointSnapshot(7, 4)),
+            )
+        val snapshot =
+            base.copy(
+                metadata = base.metadata.copy(tilesetKey = "tileset.ruins"),
+                actors =
+                    base.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 6,
+                            y = 4,
+                            visualKey = "actor.arcanist",
+                            nameKey = "profession.arcanist.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.GENERIC,
+                        ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.TARGETING, targetingCursor = com.ktome.core.map.Point(7, 4)),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == roomArtPlateKey })
+        assertTrue(
+            canvas.assetDraws.none { draw -> draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP },
+            canvas.assetDraws.map { draw -> draw.asset.resolvedKey }.toString(),
+        )
+        assertTrue(
+            canvas.rectDraws.none { draw ->
+                draw.afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+                    draw.width > 32f * 6f &&
+                    draw.height > 32f * 3f &&
+                    draw.color.a.isNear(0.158f)
+            },
+            canvas.rectDraws.filter { draw -> draw.afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL }.toString(),
+        )
+        assertTrue(
+            canvas.rectDraws.none { draw -> draw.isRoomArtPlateGridSoftener() },
+            canvas.rectDraws.filter { draw -> draw.afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL }.toString(),
+        )
+        assertTrue(
+            canvas.rectDraws.count { draw -> draw.isRoomArtPlateEdgeFeather() } >= 4,
+            canvas.rectDraws.filter { draw -> draw.afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL }.toString(),
+        )
+
+        val roomLayer = canvas.flushes.indexOf(TileLayerFlushReason.MAP_ROOM_COMPOSITOR)
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS))
+        assertTrue(canvas.rectDraws.count { draw -> draw.isRestrainedArtPlateCursorMark() } >= 4, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadArtPlateCursorOutline() }, canvas.rectDraws.toString())
+    }
+
+    @Test
+    fun renderCanvasAddsPr08ApertureShoulderForHiddenVoidsInsideRoomPlate() {
+        val canvas = RecordingTileCanvas()
+        val width = 8
+        val height = 6
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val hiddenVoid = setOf(2 to 3, 3 to 3, 2 to 4, 3 to 4)
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    val isHiddenVoid = (x to y) in hiddenVoid
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (isHiddenVoid) CellVisibilitySnapshot.HIDDEN else CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val snapshot =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 4, playerY = 2)
+                .withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val roomArtPlate = canvas.assetDraws.single { draw -> draw.asset.resolvedKey == roomArtPlateKey }
+        val apertureShoulders = canvas.rectDraws.filter { draw -> draw.isRoomArtPlateApertureShoulder() }
+
+        assertTrue(apertureShoulders.isNotEmpty(), canvas.rectDraws.toString())
+        assertTrue(
+            apertureShoulders.none { draw ->
+                draw.contains(roomArtPlate.x + 4.5f * 32f, roomArtPlate.y + 2.5f * 32f)
+            },
+            apertureShoulders.toString(),
+        )
+    }
+
+    @Test
+    fun renderCanvasKeepsPr08IdleGridHintsBelowInteractionWeight() {
+        val canvas = RecordingTileCanvas()
+        val width = 10
+        val height = 7
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val snapshot =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 4, playerY = 3)
+                .withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val idleGridHints = canvas.rectDraws.filter { draw -> draw.isRoomArtPlateGridHint() }
+
+        assertTrue(idleGridHints.isEmpty(), idleGridHints.toString())
+    }
+
+    @Test
+    fun renderCanvasMergesPr08FogVeilsIntoRoomScaleBandsOverRoomArtPlate() {
+        val canvas = RecordingTileCanvas()
+        val width = 8
+        val height = 6
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val exploredBand = setOf(4 to 2, 5 to 2, 6 to 2, 4 to 3, 5 to 3, 6 to 3)
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if ((x to y) in exploredBand) CellVisibilitySnapshot.EXPLORED else CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val snapshot =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 3, playerY = 3)
+                .withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val artPlateFog = canvas.rectDraws.filter { draw -> draw.isPr08RoomArtPlateFogVeil() }
+
+        assertTrue(
+            artPlateFog.any { draw -> draw.width > 32f * 3f && draw.height > 32f * 2f },
+            "PR-08 art-plate fog should bleed past exact tactical tile-run bounds so explored regions read as a soft room-scale surface: $artPlateFog",
+        )
+        assertTrue(
+            artPlateFog.none { draw -> draw.width.isNear(32f) && draw.height.isNear(32f) },
+            "PR-08 art-plate fog should group visibility veil regions instead of painting one tactical square per explored tile: $artPlateFog",
+        )
+        assertTrue(
+            artPlateFog.none { draw -> draw.width.isNear(32f * 3f) && draw.height.isNear(32f * 2f) && draw.color.a >= 0.50f },
+            "PR-08 art-plate fog should not leave a hard 3x2 tactical rectangle over the art plate: $artPlateFog",
+        )
+    }
+
+    @Test
+    fun renderCanvasDrawsPr08ExploredFogAsConnectedBlanketOverRoomArtPlate() {
+        val canvas = RecordingTileCanvas()
+        val width = 8
+        val height = 7
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val exploredPocket = setOf(4 to 2, 5 to 2, 6 to 2, 6 to 3, 6 to 4)
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if ((x to y) in exploredPocket) CellVisibilitySnapshot.EXPLORED else CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val snapshot =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 3, playerY = 3)
+                .withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val artPlateFog = canvas.rectDraws.filter { draw -> draw.isPr08RoomArtPlateFogVeil() }
+
+        assertEquals(1, artPlateFog.size, artPlateFog.toString())
+        assertTrue(
+            artPlateFog.single().width > 32f * 3f && artPlateFog.single().height > 32f * 3f,
+            "PR-08 irregular explored fog should read as one connected material blanket instead of stacked tactical runs: $artPlateFog",
+        )
+    }
+
+    @Test
+    fun renderCanvasDoesNotPaintPr08VisibleFogRunsOverRoomArtPlate() {
+        val canvas = RecordingTileCanvas()
+        val width = 9
+        val height = 7
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val snapshot =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 4, playerY = 3)
+                .withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val visibleFogRuns = canvas.rectDraws.filter { draw -> draw.isPr08RoomArtPlateVisibleFogRun() }
+
+        assertTrue(
+            visibleFogRuns.isEmpty(),
+            "PR-08 visible cells should let the room art plate own the readable floor plane instead of painting cell-aligned fog runs: $visibleFogRuns",
+        )
+    }
+
+    @Test
+    fun renderCanvasLetsPr08RoomArtPlateOwnGroundMaterialInsteadOfBaseTileSquares() {
+        val canvas = RecordingTileCanvas()
+        val width = 8
+        val height = 6
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (x >= 5 && y <= 3) CellVisibilitySnapshot.EXPLORED else CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val snapshot =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 3, playerY = 3)
+                .withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == roomArtPlateKey })
+        assertTrue(
+            canvas.assetDraws.none { draw ->
+                draw.asset.entry.category == "tile_ground" &&
+                    draw.asset.resolvedKey.startsWith(DarkUiMapVisualKeys.RUINS_GROUND)
+            },
+            canvas.assetDraws.filter { draw -> draw.asset.entry.category == "tile_ground" }.toString(),
+        )
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.asset.entry.category == "tile_wall" &&
+                    draw.asset.resolvedKey.startsWith(DarkUiMapVisualKeys.RUINS_WALL)
+            },
+            canvas.assetDraws.map { draw -> draw.asset.resolvedKey }.toString(),
+        )
+    }
+
+    @Test
+    fun renderCanvasUsesRestrainedPr08SpriteOverlayGrammarOverRoomArtPlate() {
+        val canvas = RecordingTileCanvas()
+        val width = 8
+        val height = 6
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val overlays =
+            listOf(
+                OverlayRenderSnapshot(
+                    id = "boss:warning",
+                    visualKey = "vfx.boss.warning.sigil_01",
+                    previewTurns = 1,
+                    dangerLevel = 3,
+                    shape = OverlayShapeSnapshot.SINGLE_TILE,
+                    sourceAbilityId = "boss_warning",
+                    cells = listOf(GridPointSnapshot(5, 3)),
+                ),
+                OverlayRenderSnapshot(
+                    id = "ordinary:vfx",
+                    visualKey = "vfx.zone.effect.void_pressure_01",
+                    previewTurns = 1,
+                    dangerLevel = 1,
+                    shape = OverlayShapeSnapshot.SINGLE_TILE,
+                    sourceAbilityId = "zone_pressure",
+                    cells = listOf(GridPointSnapshot(4, 2)),
+                ),
+            )
+        val snapshot =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 3, playerY = 3, overlays = overlays)
+                .withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val overlayAssets =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.resolvedKey == "vfx.boss.warning.sigil_01" ||
+                    draw.asset.resolvedKey == "vfx.zone.effect.void_pressure_01"
+            }
+        val overlayMarks = canvas.rectDraws.filter { draw -> draw.isRestrainedArtPlateSpriteOverlayMark() }
+
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == roomArtPlateKey })
+        assertEquals(2, overlayAssets.size)
+        assertTrue(overlayAssets.all { draw -> draw.alpha < 0.44f }, overlayAssets.toString())
+        assertTrue(overlayMarks.size >= overlays.size * 4, overlayMarks.toString())
+        assertTrue(
+            canvas.flushes.indexOf(TileLayerFlushReason.MAP_ROOM_COMPOSITOR) <
+                canvas.flushes.indexOf(TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS),
+        )
+    }
+
+    @Test
+    fun renderCanvasUsesRestrainedPr08TargetingGrammarOverRoomArtPlate() {
+        val canvas = RecordingTileCanvas()
+        val width = 10
+        val height = 7
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val legalTargets =
+            listOf(
+                GridPointSnapshot(6, 3),
+                GridPointSnapshot(7, 3),
+                GridPointSnapshot(7, 2),
+            )
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+        val targetState =
+            CombatDecisionFrameState(
+                phase = CombatDecisionPhase.TARGET,
+                selectedActionId = "talent:1",
+                selectedMethodId = "default",
+                skippedMethod = true,
+            )
+        val overlayState =
+            OverlayState(
+                mode = UiMode.TARGETING,
+                targetingCursor = com.ktome.core.map.Point(7, 3),
+                modalFrames =
+                    listOf(
+                        ModalFrame(
+                            kind = ModalFrameKind.COMBAT_DECISION,
+                            localState =
+                                ModalFrameLocalState(
+                                    targetingCursor = com.ktome.core.map.Point(7, 3),
+                                    combatDecisionState = targetState,
+                                ),
+                        ),
+                    ),
+            )
+        val snapshot =
+            sampleSnapshot(
+                width = width,
+                height = height,
+                cells = cells,
+                playerX = 4,
+                playerY = 3,
+                talents =
+                    listOf(
+                        TalentSlotSnapshot(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 3,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 5,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = true,
+                        ),
+                    ),
+                targetablePositions = legalTargets,
+            ).withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = overlayState,
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == roomArtPlateKey })
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadTargetingTileFill() }, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isRoomArtPlateGridHint() }, canvas.rectDraws.toString())
+        assertTrue(
+            canvas.rectDraws.none { draw -> draw.isPr08ArtPlateTargetRangeBand() },
+            "PR-08 art-plate targeting should avoid row range bands because they become a grid-first surface over the authored room: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.count { draw -> draw.isPr08ArtPlateTargetTopologyConnector() } <= legalTargets.size,
+            canvas.rectDraws.toString(),
+        )
+        assertTrue(
+            canvas.rectDraws.count { draw -> draw.isRestrainedArtPlateTargetMark() } >= legalTargets.size * 2,
+            canvas.rectDraws.toString(),
+        )
+        assertTrue(canvas.rectDraws.count { draw -> draw.isRestrainedArtPlateCursorMark() } >= 4, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadArtPlateCursorOutline() }, canvas.rectDraws.toString())
+    }
+
+    @Test
+    fun renderCanvasUsesRestrainedPr08MarkerSurfaceGrammarOverRoomArtPlate() {
+        val canvas = RecordingTileCanvas()
+        val width = 10
+        val height = 7
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val rareItem =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                qualityTierId = "RARE",
+            )
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                        actorEntityId = if (x == 6 && y == 3) 2 else null,
+                        items = if (x == 7 && y == 3) List(10) { rareItem } else emptyList(),
+                    )
+                }
+            }
+        val targetState =
+            CombatDecisionFrameState(
+                phase = CombatDecisionPhase.TARGET,
+                selectedActionId = "talent:1",
+                selectedMethodId = "default",
+                skippedMethod = true,
+            )
+        val overlayState =
+            OverlayState(
+                mode = UiMode.TARGETING,
+                targetingCursor = com.ktome.core.map.Point(7, 3),
+                modalFrames =
+                    listOf(
+                        ModalFrame(
+                            kind = ModalFrameKind.COMBAT_DECISION,
+                            localState =
+                                ModalFrameLocalState(
+                                    targetingCursor = com.ktome.core.map.Point(7, 3),
+                                    combatDecisionState = targetState,
+                                ),
+                        ),
+                    ),
+            )
+        val base =
+            sampleSnapshot(
+                width = width,
+                height = height,
+                cells = cells,
+                playerX = 4,
+                playerY = 3,
+                targetablePositions = listOf(GridPointSnapshot(7, 3)),
+            )
+        val snapshot =
+            base.copy(
+                actors =
+                    base.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 6,
+                            y = 3,
+                            visualKey = "actor.arcanist",
+                            nameKey = "profession.arcanist.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.GENERIC,
+                        ),
+            ).withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = overlayState,
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == roomArtPlateKey })
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == "actor.arcanist" })
+        assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == "item.short_sword.icon" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "9+" })
+        assertTrue(canvas.textDraws.any { draw -> draw.text == "\u25C6\u25C6" })
+        assertTrue(canvas.rectDraws.count { draw -> draw.isRestrainedArtPlatePlayerIndicatorMark() } >= 4, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.count { draw -> draw.isRestrainedArtPlateCursorMark() } >= 4, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.any { draw -> draw.isRestrainedArtPlateLootRail() }, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadArtPlatePlayerIndicatorFrame() }, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadArtPlateLootBackingCard() }, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadArtPlateCursorOutline() }, canvas.rectDraws.toString())
+    }
+
+    @Test
+    fun renderCanvasDrawsAcceptedNonRuinsRoomArtPlateFamiliesWithoutRuinsPlateReuse() {
+        val families =
+            listOf(
+                RoomArtPlateFamilyVisualKeys(
+                    tilesetKey = DarkUiMapVisualKeys.FOREST_EDGE_TILESET,
+                    groundKey = DarkUiMapVisualKeys.FOREST_EDGE_GROUND,
+                    wallKey = DarkUiMapVisualKeys.FOREST_EDGE_WALL,
+                    roomArtPlateKey = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE,
+                ),
+                RoomArtPlateFamilyVisualKeys(
+                    tilesetKey = DarkUiMapVisualKeys.MINE_TILESET,
+                    groundKey = DarkUiMapVisualKeys.MINE_GROUND,
+                    wallKey = DarkUiMapVisualKeys.MINE_WALL,
+                    roomArtPlateKey = DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE,
+                ),
+                RoomArtPlateFamilyVisualKeys(
+                    tilesetKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_TILESET,
+                    groundKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_GROUND,
+                    wallKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_WALL,
+                    roomArtPlateKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE,
+                ),
+            )
+
+        families.forEach { family ->
+            val canvas = RecordingTileCanvas()
+            val width = 5
+            val height = 5
+            val cells =
+                (0 until width).flatMap { x ->
+                    (0 until height).map { y ->
+                        val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                        MapCellSnapshot(
+                            x = x,
+                            y = y,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = if (isWall) "wall" else "floor",
+                            terrainVisualKey = if (isWall) family.wallKey else family.groundKey,
+                        )
+                    }
+                }
+            val base = sampleSnapshot(width = width, height = height, cells = cells, playerX = 2, playerY = 2)
+            val snapshot = base.copy(metadata = base.metadata.copy(tilesetKey = family.tilesetKey))
+
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+            assertTrue(canvas.assetDraws.any { draw -> draw.asset.resolvedKey == family.roomArtPlateKey }, family.toString())
+            assertTrue(canvas.assetDraws.none { draw -> draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE }, family.toString())
+            assertTrue(canvas.assetDraws.none { draw -> draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP }, family.toString())
+            assertTrue(canvas.flushes.indexOf(TileLayerFlushReason.MAP_ROOM_COMPOSITOR) < canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS))
+        }
+    }
+
+    @Test
+    fun renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies() {
+        data class NonRuinsTopologySourceCase(
+            val family: RoomArtPlateFamilyVisualKeys,
+            val topologySourceKey: String,
+            val topologySourcePath: String,
+        )
+
+        val families =
+            listOf(
+                NonRuinsTopologySourceCase(
+                    family =
+                        RoomArtPlateFamilyVisualKeys(
+                            tilesetKey = DarkUiMapVisualKeys.FOREST_EDGE_TILESET,
+                            groundKey = DarkUiMapVisualKeys.FOREST_EDGE_GROUND,
+                            wallKey = DarkUiMapVisualKeys.FOREST_EDGE_WALL,
+                            roomArtPlateKey = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE,
+                        ),
+                    topologySourceKey = "ui.map_stage.forest_edge.room_topology_source.pr08_demo",
+                    topologySourcePath = "dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png",
+                ),
+                NonRuinsTopologySourceCase(
+                    family =
+                        RoomArtPlateFamilyVisualKeys(
+                            tilesetKey = DarkUiMapVisualKeys.MINE_TILESET,
+                            groundKey = DarkUiMapVisualKeys.MINE_GROUND,
+                            wallKey = DarkUiMapVisualKeys.MINE_WALL,
+                            roomArtPlateKey = DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE,
+                        ),
+                    topologySourceKey = "ui.map_stage.mine.room_topology_source.pr08_demo",
+                    topologySourcePath = "dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png",
+                ),
+                NonRuinsTopologySourceCase(
+                    family =
+                        RoomArtPlateFamilyVisualKeys(
+                            tilesetKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_TILESET,
+                            groundKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_GROUND,
+                            wallKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_WALL,
+                            roomArtPlateKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE,
+                        ),
+                    topologySourceKey = "ui.map_stage.shadow_depths.room_topology_source.pr08_demo",
+                    topologySourcePath = "dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png",
+                ),
+            )
+
+        families.forEach { case ->
+            val family = case.family
+            val canvas = RecordingTileCanvas()
+            val width = 8
+            val height = 7
+            val visibleRegion =
+                (0 until width).flatMap { x ->
+                    (0 until height).mapNotNull { y ->
+                        if (y <= 2 || x <= 2) {
+                            x to y
+                        } else {
+                            null
+                        }
+                    }
+                }.toSet()
+            val cells =
+                (0 until width).flatMap { x ->
+                    (0 until height).map { y ->
+                        val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                        MapCellSnapshot(
+                            x = x,
+                            y = y,
+                            visibility = if ((x to y) in visibleRegion) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                            terrainTypeId = if (isWall) "wall" else "floor",
+                            terrainVisualKey = if (isWall) family.wallKey else family.groundKey,
+                        )
+                    }
+                }
+            val base = sampleSnapshot(width = width, height = height, cells = cells, playerX = 2, playerY = 2)
+            val snapshot = base.copy(metadata = base.metadata.copy(tilesetKey = family.tilesetKey))
+
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver =
+                    sampleResolver(
+                        extraEntries =
+                            listOf(
+                                VisualManifestEntry(
+                                    key = case.topologySourceKey,
+                                    category = "ui_frame",
+                                    rawOutputPath = case.topologySourcePath,
+                                    footprint = "ui",
+                                    tags = listOf("pr08", "room_art_plate", "room_topology_source", "topology_fragment_source"),
+                                ),
+                            ),
+                    ),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+            val topologySourceBands =
+                canvas.assetDraws.filter { draw ->
+                    draw.isPr08TopologyRiskSourceCroppedBand(case.topologySourceKey)
+                }
+
+            assertEquals(
+                2,
+                topologySourceBands.size,
+                "Non-ruins topology-risk rooms should crop their dedicated topology source instead of fallback full-room plates: $case ${canvas.assetDraws}",
+            )
+            assertTrue(
+                canvas.assetDraws.none { draw ->
+                    draw.asset.resolvedKey == family.roomArtPlateKey && draw.sourceRegion != null
+                },
+                "Non-ruins topology-risk rooms must stop sampling the accepted full-room plate once a dedicated topology source exists: $case ${canvas.assetDraws}",
+            )
+            assertTrue(
+                canvas.assetDraws.none { draw -> draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE },
+                "Non-ruins topology-risk fallback must not reuse the ruins dedicated topology source: $family ${canvas.assetDraws}",
+            )
+        }
+    }
+
+    @Test
+    fun renderCanvasDoesNotDrawPr08RoomArtPlateForUnsupportedTilesets() {
+        val canvas = RecordingTileCanvas()
+        val knownRoomArtPlateKeys =
+            setOf(
+                DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE,
+                DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE,
+                DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE,
+                DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE,
+            )
+        val cells =
+            (0 until 5).flatMap { x ->
+                (0 until 5).map { y ->
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = "floor",
+                        terrainVisualKey = "tileset.test.ground_01",
+                    )
+                }
+            }
+        val base = sampleSnapshot(width = 5, height = 5, cells = cells, playerX = 2, playerY = 2)
+        val snapshot = base.copy(metadata = base.metadata.copy(tilesetKey = "tileset.test"))
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.assetDraws.none { draw -> draw.asset.resolvedKey in knownRoomArtPlateKeys })
+        assertTrue(canvas.assetDraws.none { draw -> draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP })
+    }
+
+    @Test
+    fun renderCanvasDrawsPr08RoomMaterialBreakupAsSingleRoomScaleAsset() {
+        val canvas = RecordingTileCanvas()
+        val width = 12
+        val height = 8
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot =
+                sampleSnapshot(width = width, height = height, cells = cells, playerX = 6, playerY = 4)
+                    .withRuinsTileset(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val roomBreakupDraws =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP
+            }
+        assertEquals(1, roomBreakupDraws.size)
+
+        val roomBreakup = roomBreakupDraws.single()
+        val floorDraws = canvas.assetDraws.filter { draw -> draw.asset.requestedKey == DarkUiMapVisualKeys.RUINS_GROUND }
+        val floorLeft = floorDraws.minOf { draw -> draw.x }
+        val floorRight = floorDraws.maxOf { draw -> draw.x + draw.width }
+        val floorBottom = floorDraws.minOf { draw -> draw.y }
+        val floorTop = floorDraws.maxOf { draw -> draw.y + draw.height }
+
+        assertTrue(roomBreakup.width > 32f * 7f, roomBreakup.toString())
+        assertTrue(roomBreakup.height > 32f * 4f, roomBreakup.toString())
+        assertTrue(roomBreakup.x > floorLeft, roomBreakup.toString())
+        assertTrue(roomBreakup.y > floorBottom, roomBreakup.toString())
+        assertTrue(roomBreakup.x + roomBreakup.width < floorRight, roomBreakup.toString())
+        assertTrue(roomBreakup.y + roomBreakup.height < floorTop, roomBreakup.toString())
+        assertEquals(0.78f, roomBreakup.alpha)
+
+        val roomLayer = canvas.flushes.indexOf(TileLayerFlushReason.MAP_ROOM_COMPOSITOR)
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS))
+        assertTrue(roomLayer < canvas.flushes.indexOf(TileLayerFlushReason.MAP_SPRITE_OVERLAYS_AND_TELEGRAPHS))
+    }
+
+    @Test
+    fun renderCanvasKeepsPr08RoomMaterialBreakupStableWhenPlayerMovesInsideSameRoom() {
+        val width = 12
+        val height = 8
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+
+        fun roomBreakupDrawFor(
+            playerX: Int,
+            playerY: Int,
+        ): RecordingTileCanvas.AssetDraw {
+            val canvas = RecordingTileCanvas()
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(width = width, height = height, cells = cells, playerX = playerX, playerY = playerY)
+                        .withRuinsTileset(),
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+            return canvas.assetDraws.single { draw -> draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP }
+        }
+
+        val first = roomBreakupDrawFor(playerX = 5, playerY = 4)
+        val second = roomBreakupDrawFor(playerX = 6, playerY = 4)
+
+        assertEquals(first.x, second.x)
+        assertEquals(first.y, second.y)
+        assertEquals(first.width, second.width)
+        assertEquals(first.height, second.height)
+    }
+
+    @Test
+    fun renderCanvasKeepsFloorMaterialForNonArtPlateFallback() {
+        val canvas = RecordingTileCanvas()
+        val cells =
+            (0 until 6).flatMap { x ->
+                (0 until 6).map { y ->
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = "floor",
+                        terrainVisualKey = "tileset.forest_edge.ground_01",
+                    )
+                }
+            }
+
+        val snapshot = sampleSnapshot(width = 6, height = 6, cells = cells, playerX = 3, playerY = 3)
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot.copy(metadata = snapshot.metadata.copy(tilesetKey = "tileset.forest_edge")),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(
+            canvas.rectDraws.any { draw ->
+                draw.afterFlush == TileLayerFlushReason.MAP_TERRAIN_BASE &&
+                    draw.color.a in 0.010f..0.030f
+            },
+            canvas.rectDraws.filter { draw -> draw.afterFlush == TileLayerFlushReason.MAP_TERRAIN_BASE }.toString(),
+        )
+    }
+
+    @Test
+    fun renderCanvasRepaintsPr08WallFamilyAsRoomReliefAfterAtmosphere() {
+        val canvas = RecordingTileCanvas()
+        val width = 12
+        val height = 8
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                    )
+                }
+            }
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot =
+                sampleSnapshot(width = width, height = height, cells = cells, playerX = 6, playerY = 4)
+                    .withRuinsTileset(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val terrainWallDraws =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.entry.category == "tile_wall" &&
+                    draw.asset.resolvedKey.startsWith(DarkUiMapVisualKeys.RUINS_WALL) &&
+                    draw.alpha > 0.90f
+            }
+        val reliefDraws =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.entry.category == "tile_wall" &&
+                    draw.asset.resolvedKey.startsWith(DarkUiMapVisualKeys.RUINS_WALL) &&
+                    draw.alpha in 0.40f..0.46f
+            }
+
+        assertTrue(terrainWallDraws.size >= 20, terrainWallDraws.toString())
+        assertTrue(
+            reliefDraws.size >= terrainWallDraws.size,
+            "PR08 wall-family resources should be repainted as a compositor relief pass so the authored masonry reads above atmosphere; relief=${reliefDraws.size}, base=${terrainWallDraws.size}",
+        )
+        assertTrue(
+            setOf(
+                DarkUiMapVisualKeys.RUINS_WALL,
+                "tileset.ruins.wall_01.crown",
+                "tileset.ruins.wall_01.side",
+            ).all { key -> reliefDraws.any { draw -> draw.asset.resolvedKey == key } },
+            reliefDraws.map { draw -> draw.asset.resolvedKey }.toString(),
+        )
+        assertTrue(
+            reliefDraws.all { relief ->
+                terrainWallDraws.any { base ->
+                    base.asset.resolvedKey == relief.asset.resolvedKey &&
+                        base.x == relief.x &&
+                        base.y == relief.y &&
+                        base.width == relief.width &&
+                        base.height == relief.height &&
+                        base.flipX == relief.flipX &&
+                        base.flipY == relief.flipY
+                }
+            },
+            "wall relief must reuse the exact terrain placement and not create a second wall authority",
+        )
+    }
+
+    @Test
+    fun renderCanvasKeepsPr08GroundFamilyOutOfRoomReliefRestamps() {
+        val canvas = RecordingTileCanvas()
+        val width = 12
+        val height = 8
+        val rareItem =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                qualityTierId = "RARE",
+            )
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                        actorEntityId = if (x == 6 && y == 4) 2 else null,
+                        items = if (x == 6 && y == 4) listOf(rareItem) else emptyList(),
+                    )
+                }
+            }
+        val base =
+            sampleSnapshot(width = width, height = height, cells = cells, playerX = 5, playerY = 4)
+                .withRuinsTileset()
+        val snapshot =
+            base.copy(
+                actors =
+                    base.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 6,
+                            y = 4,
+                            visualKey = "actor.arcanist",
+                            nameKey = "profession.arcanist.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.GENERIC,
+                        ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val terrainGroundDraws =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.entry.category == "tile_ground" &&
+                    draw.asset.resolvedKey.startsWith(DarkUiMapVisualKeys.RUINS_GROUND) &&
+                    draw.alpha > 0.90f
+            }
+        val repeatedReliefRestamps =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.entry.category == "tile_ground" &&
+                    draw.asset.resolvedKey.startsWith(DarkUiMapVisualKeys.RUINS_GROUND) &&
+                    draw.alpha in 0.31f..0.36f
+            }
+
+        assertTrue(terrainGroundDraws.size >= 50, terrainGroundDraws.toString())
+        assertTrue(
+            repeatedReliefRestamps.isEmpty(),
+            "PR08 room compositor should not repaint every ground-family tile as a second floor authority; repeatedRestamps=${repeatedReliefRestamps.size}, base=${terrainGroundDraws.size}",
+        )
+
+        val actorIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "actor.arcanist" }
+        val lootMarkerIndex = canvas.assetDraws.indexOfFirst { draw -> draw.asset.resolvedKey == "item.short_sword.icon" }
+        assertTrue(actorIndex in 0 until lootMarkerIndex)
+        assertTrue(canvas.flushes.indexOf(TileLayerFlushReason.MAP_ROOM_COMPOSITOR) < canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS))
+        assertTrue(canvas.flushes.indexOf(TileLayerFlushReason.MAP_ACTORS) < canvas.flushes.indexOf(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS))
     }
 
     @Test
@@ -7533,7 +11113,10 @@ class TileRendererCanvasTest {
             else -> error("Unexpected shell key $key")
         }
 
-    private fun sampleResolver(logSink: ManifestLogSink = ManifestLogSink { error("Unexpected manifest fallback: $it") }): VisualManifestResolver =
+    private fun sampleResolver(
+        logSink: ManifestLogSink = ManifestLogSink { error("Unexpected manifest fallback: $it") },
+        extraEntries: List<VisualManifestEntry> = emptyList(),
+    ): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
                 VisualManifest(
@@ -7555,10 +11138,130 @@ class TileRendererCanvasTest {
                                 footprint = "1x1",
                             ),
                             VisualManifestEntry(
-                                key = "tileset.forest_edge.ground_01",
+                                key = DarkUiMapVisualKeys.FOREST_EDGE_GROUND,
                                 category = "tile_ground",
                                 rawOutputPath = "dark-v1/tiles/tileset_forest_edge_ground_01.png",
                                 footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.FOREST_EDGE_WALL,
+                                category = "tile_wall",
+                                rawOutputPath = "dark-v1/tiles/tileset_forest_edge_wall_01.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.MINE_GROUND,
+                                category = "tile_ground",
+                                rawOutputPath = "dark-v1/tiles/tileset_mine_ground_01.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.MINE_WALL,
+                                category = "tile_wall",
+                                rawOutputPath = "dark-v1/tiles/tileset_mine_wall_01.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.SHADOW_DEPTHS_GROUND,
+                                category = "tile_ground",
+                                rawOutputPath = "dark-v1/tiles/tileset_shadow_depths_ground_01.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.SHADOW_DEPTHS_WALL,
+                                category = "tile_wall",
+                                rawOutputPath = "dark-v1/tiles/tileset_shadow_depths_wall_01.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.RUINS_GROUND,
+                                category = "tile_ground",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_ground_01.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_variant_family:${DarkUiMapVisualKeys.RUINS_GROUND}", "terrain_variant_index:0"),
+                            ),
+                            VisualManifestEntry(
+                                key = "tileset.ruins.ground_01.variant_1",
+                                category = "tile_ground",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_ground_01_variant_1.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_variant_family:${DarkUiMapVisualKeys.RUINS_GROUND}", "terrain_variant_index:1"),
+                            ),
+                            VisualManifestEntry(
+                                key = "tileset.ruins.ground_01.variant_2",
+                                category = "tile_ground",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_ground_01_variant_2.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_variant_family:${DarkUiMapVisualKeys.RUINS_GROUND}", "terrain_variant_index:2"),
+                            ),
+                            VisualManifestEntry(
+                                key = "tileset.ruins.ground_01.variant_3",
+                                category = "tile_ground",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_ground_01_variant_3.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_variant_family:${DarkUiMapVisualKeys.RUINS_GROUND}", "terrain_variant_index:3"),
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.RUINS_WALL,
+                                category = "tile_wall",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_wall_01.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_wall_family:${DarkUiMapVisualKeys.RUINS_WALL}", "terrain_wall_piece:base"),
+                            ),
+                            VisualManifestEntry(
+                                key = "tileset.ruins.wall_01.crown",
+                                category = "tile_wall",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_wall_01_crown.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_wall_family:${DarkUiMapVisualKeys.RUINS_WALL}", "terrain_wall_piece:crown"),
+                            ),
+                            VisualManifestEntry(
+                                key = "tileset.ruins.wall_01.side",
+                                category = "tile_wall",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_wall_01_side.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_wall_family:${DarkUiMapVisualKeys.RUINS_WALL}", "terrain_wall_piece:side"),
+                            ),
+                            VisualManifestEntry(
+                                key = "tileset.ruins.wall_01.corner",
+                                category = "tile_wall",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_wall_01_corner.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_wall_family:${DarkUiMapVisualKeys.RUINS_WALL}", "terrain_wall_piece:corner"),
+                            ),
+                            VisualManifestEntry(
+                                key = "tileset.ruins.wall_01.door_contact",
+                                category = "tile_wall",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_wall_01_door_contact.png",
+                                footprint = "1x1",
+                                tags = listOf("terrain_wall_family:${DarkUiMapVisualKeys.RUINS_WALL}", "terrain_wall_piece:door_contact"),
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP,
+                                category = "tile_decal",
+                                rawOutputPath = "dark-v1/tiles/tileset_ruins_room_breakup_01.png",
+                                footprint = "1x1",
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_forest_edge_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "room_art_plate", "client-only-prototype"),
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_mine_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "room_art_plate", "client-only-prototype"),
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_shadow_depths_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "room_art_plate", "client-only-prototype"),
                             ),
                             VisualManifestEntry(
                                 key = "actor.vanguard",
@@ -7747,8 +11450,8 @@ class TileRendererCanvasTest {
                                             CombatAffordanceResourceKeys.TARGET_ICON,
                                             CombatAffordanceResourceKeys.LOCK_ICON,
                                             CombatAffordanceResourceKeys.INVALID_ICON,
-                                        )
-                                }.map(::darkUiManifestEntry),
+                                    )
+                                }.map(::darkUiManifestEntry) + extraEntries,
                     prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),
                 ),
             logSink = logSink,
@@ -7931,6 +11634,9 @@ class TileRendererCanvasTest {
                 ),
         )
 
+    private fun RenderSnapshot.withRuinsTileset(): RenderSnapshot =
+        copy(metadata = metadata.copy(tilesetKey = DarkUiMapVisualKeys.RUINS_TILESET))
+
     private fun sampleSnapshot(
         width: Int = 1,
         height: Int = 1,
@@ -8109,6 +11815,190 @@ private fun RecordingTileCanvas.RectDraw.contains(
     y: Float,
 ): Boolean = x >= this.x && x <= this.x + width && y >= this.y && y <= this.y + height
 
+private fun RecordingTileCanvas.AssetDraw.contains(
+    x: Float,
+    y: Float,
+): Boolean = x >= this.x && x <= this.x + width && y >= this.y && y <= this.y + height
+
+private fun RecordingTileCanvas.RectDraw.isRoomArtPlateGridSoftener(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.38f..0.65f &&
+        color.g in 0.30f..0.56f &&
+        color.b in 0.18f..0.46f &&
+        color.a in 0.045f..0.075f &&
+        ((width <= 3f && height > 20f) || (height <= 3f && width > 20f))
+
+private fun RecordingTileCanvas.RectDraw.isRoomArtPlateGridHint(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.38f..0.65f &&
+        color.g in 0.30f..0.56f &&
+        color.b in 0.18f..0.46f &&
+        color.a in 0.010f..0.080f &&
+        ((width <= 3f && height > 20f) || (height <= 3f && width > 20f))
+
+private fun RecordingTileCanvas.RectDraw.isRoomArtPlateEdgeFeather(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r < 0.08f &&
+        color.g < 0.08f &&
+        color.b < 0.08f &&
+        color.a in 0.055f..0.120f &&
+        ((width > 32f * 5f && height <= 16f) || (height > 32f * 4f && width <= 16f))
+
+private fun RecordingTileCanvas.RectDraw.isRoomArtPlateApertureShoulder(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS &&
+        color.r in 0.055f..0.085f &&
+        color.g in 0.075f..0.105f &&
+        color.b in 0.055f..0.085f &&
+        color.a in 0.060f..0.085f
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskHybridRunField(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.085f..0.105f &&
+        color.g in 0.135f..0.155f &&
+        color.b in 0.110f..0.130f &&
+        color.a in 0.085f..0.100f &&
+        width >= 80f &&
+        height >= 20f
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskInteriorSeamDissolve(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.060f..0.085f &&
+        color.g in 0.075f..0.100f &&
+        color.b in 0.055f..0.080f &&
+        color.a in 0.095f..0.125f &&
+        ((width >= 90f && height in 7f..16f) || (height >= 90f && width in 7f..16f))
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskHybridDarkEdge(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r < 0.030f &&
+        color.g < 0.030f &&
+        color.b < 0.030f &&
+        color.a in 0.245f..0.265f &&
+        ((width <= 10f && height >= 20f) || (height <= 10f && width >= 20f))
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskAmbientDepthField(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r < 0.030f &&
+        color.g < 0.030f &&
+        color.b < 0.030f &&
+        color.a in 0.110f..0.125f &&
+        width >= 80f &&
+        height in 10f..18f
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskSidePressure(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r < 0.030f &&
+        color.g < 0.040f &&
+        color.b < 0.030f &&
+        color.a in 0.095f..0.112f &&
+        ((width in 12f..16f && height >= 20f) || (height in 8f..12f && width >= 70f))
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskLocalLightPool(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.50f..0.58f &&
+        color.g in 0.32f..0.38f &&
+        color.b in 0.15f..0.21f &&
+        color.a in 0.055f..0.068f &&
+        width >= 110f &&
+        height >= 55f
+
+private fun RecordingTileCanvas.AssetDraw.isPr08FullRoomPlateStretch(resolvedKey: String): Boolean =
+    asset.resolvedKey == resolvedKey &&
+        alpha >= 0.95f &&
+        width >= 160f &&
+        height >= 120f
+
+private fun RecordingTileCanvas.AssetDraw.isPr08TopologyRiskSourceCroppedBand(resolvedKey: String): Boolean =
+    asset.resolvedKey == resolvedKey &&
+        alpha in 0.41f..0.43f &&
+        sourceRegion != null &&
+        width >= 80f &&
+        height >= 80f
+
+private fun RecordingTileCanvas.AssetDraw.isPr08TopologyRiskWallComponent(resolvedKey: String): Boolean =
+    asset.resolvedKey == resolvedKey &&
+        asset.entry.category == "tile_wall" &&
+        alpha in 0.30f..0.50f
+
+private fun RecordingTileCanvas.RectDraw.isPr08RoomArtPlateFogVeil(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS &&
+        color.r.isNear(9f / 255f) &&
+        color.g.isNear(7f / 255f) &&
+        color.b.isNear(6f / 255f) &&
+        color.a in 0.22f..0.58f
+
+private fun RecordingTileCanvas.RectDraw.isPr08RoomArtPlateVisibleFogRun(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS &&
+        color.r.isNear(26f / 255f) &&
+        color.g.isNear(14f / 255f) &&
+        color.b.isNear(4f / 255f) &&
+        color.a > 0f
+
+private fun RecordingTileCanvas.RectDraw.isBroadTargetingTileFill(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_FOG_VEILS &&
+        width >= 20f &&
+        height >= 20f &&
+        color.a >= 0.12f
+
+private fun RecordingTileCanvas.RectDraw.isRestrainedArtPlateTargetMark(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_FOG_VEILS &&
+        color.a in 0.20f..0.50f &&
+        ((width in 5f..14f && height <= 2f) || (height in 5f..14f && width <= 2f))
+
+private fun RecordingTileCanvas.RectDraw.isPr08ArtPlateTargetRangeBand(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_FOG_VEILS &&
+        color.r in 0.035f..0.060f &&
+        color.g in 0.28f..0.36f &&
+        color.b in 0.32f..0.39f &&
+        color.a in 0.025f..0.050f &&
+        width >= 12f &&
+        height in 10f..14f
+
+private fun RecordingTileCanvas.RectDraw.isPr08ArtPlateTargetTopologyConnector(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.60f..0.72f &&
+        color.g in 0.50f..0.64f &&
+        color.b in 0.30f..0.45f &&
+        color.a in 0.060f..0.085f &&
+        ((width <= 4.5f && height <= 2.5f) || (height <= 4.5f && width <= 2.5f))
+
+private fun RecordingTileCanvas.RectDraw.isRestrainedArtPlateSpriteOverlayMark(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_PROPS_AND_DECALS &&
+        color.a in 0.30f..0.62f &&
+        ((width in 8f..16f && height <= 2.5f) || (height in 6f..16f && width <= 2.5f))
+
+private fun RecordingTileCanvas.RectDraw.isRestrainedArtPlatePlayerIndicatorMark(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_ACTORS &&
+        color.a in 0.50f..0.65f &&
+        ((width in 7f..10f && height <= 2f) || (height in 7f..10f && width <= 2f))
+
+private fun RecordingTileCanvas.RectDraw.isBroadArtPlatePlayerIndicatorFrame(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_ACTORS &&
+        color.a >= 0.80f &&
+        ((width >= 24f && height <= 2.5f) || (height >= 24f && width <= 2.5f))
+
+private fun RecordingTileCanvas.RectDraw.isRestrainedArtPlateCursorMark(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS &&
+        color.a in 0.30f..0.68f &&
+        ((width in 7f..11f && height <= 2.5f) || (height in 7f..11f && width <= 2.5f))
+
+private fun RecordingTileCanvas.RectDraw.isBroadArtPlateCursorOutline(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_TARGETING_HIGHLIGHTS &&
+        color.a >= 0.80f &&
+        ((width >= 30f && height <= 2.5f) || (height >= 30f && width <= 2.5f))
+
+private fun RecordingTileCanvas.RectDraw.isRestrainedArtPlateLootRail(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_GROUND_LOOT_ATMOSPHERE &&
+        color.a in 0.50f..0.64f &&
+        width in 12f..24f &&
+        height <= 2.5f
+
+private fun RecordingTileCanvas.RectDraw.isBroadArtPlateLootBackingCard(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_GROUND_LOOT_ATMOSPHERE &&
+        color.a >= 0.60f &&
+        width >= 22f &&
+        height >= 22f
+
 private class RecordingTileCanvas : TileCanvas {
     data class AssetDraw(
         val asset: ResolvedVisualAsset,
@@ -8118,6 +12008,9 @@ private class RecordingTileCanvas : TileCanvas {
         val height: Float,
         val alpha: Float,
         val tintColorHex: String?,
+        val flipX: Boolean,
+        val flipY: Boolean,
+        val sourceRegion: TileAssetSourceRegion?,
     )
 
     data class RectDraw(
@@ -8126,6 +12019,7 @@ private class RecordingTileCanvas : TileCanvas {
         val width: Float,
         val height: Float,
         val color: Color,
+        val afterFlush: TileLayerFlushReason?,
     )
 
     data class TextDraw(
@@ -8149,6 +12043,7 @@ private class RecordingTileCanvas : TileCanvas {
                 draw.bounds.width,
                 draw.bounds.height,
                 Color(draw.color),
+                flushes.lastOrNull(),
             )
     }
 
@@ -8162,6 +12057,9 @@ private class RecordingTileCanvas : TileCanvas {
                 draw.bounds.height,
                 draw.alpha,
                 draw.tintColorHex,
+                draw.flipX,
+                draw.flipY,
+                draw.sourceRegion,
             )
     }
 

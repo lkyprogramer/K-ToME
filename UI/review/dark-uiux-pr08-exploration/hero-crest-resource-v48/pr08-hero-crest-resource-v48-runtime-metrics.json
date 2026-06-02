@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "dark-uiux-pr08-runtime-diff-v1",
+  "iteration": "V48 hero crest resource replacement",
+  "sourceMode": "built-in image_gen plus local chroma-key alpha extraction",
+  "paths": {
+    "beforeBottom": "UI/review/dark-uiux-pr08-exploration/hero-card-material-hierarchy-v47/pr08-hero-card-material-hierarchy-v47-v47-bottom-deck.png",
+    "afterBottom": "UI/review/dark-uiux-pr08-exploration/hero-crest-resource-v48/pr08-hero-crest-resource-v48-v48-bottom-deck.png",
+    "afterFull": "UI/review/dark-uiux-pr08-exploration/hero-crest-resource-v48/pr08-hero-crest-resource-v48-v48-full.png",
+    "runtimeHeroCrest": "UI/review/dark-uiux-pr08-exploration/hero-crest-resource-v48/pr08-hero-crest-resource-v48-runtime-hero-crest.png"
+  },
+  "bottomDeckSize": {
+    "width": 1843,
+    "height": 360
+  },
+  "changedPixelRatio": 0.03628896123470188,
+  "meanAbsoluteRgbDiff": 1.106585478587649,
+  "maxAbsoluteChannelDiff": 233,
+  "expectedChangedRegion": "bottom hero card crest only; right panel, nav rail, map stage, and inventory crops remain hash-stable"
+}

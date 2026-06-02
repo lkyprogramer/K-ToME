@@ -838,6 +838,30 @@ sheets:
       softened cracks with two readable directions at 32px, subtle moss and soot, warm amber grime in
       seams, 4x tiling must not show checkerboard seams, no grass, no modern grid, no letters
   - row: 0
+    col: 2
+    targetKey: tileset.ruins.ground_01.variant_1
+    category: tile_ground
+    outputName: dark-v1/tiles/tileset_ruins_ground_01_variant_1.png
+    subject: PR-08 sibling variant for tileset ruins ground 01, same palette and slab scale as the base
+      floor tile, different softened crack path and grime clusters, no light pool, no selection frame,
+      no decorative border, no transparent edge, no modern grid, no letters
+  - row: 0
+    col: 3
+    targetKey: tileset.ruins.ground_01.variant_2
+    category: tile_ground
+    outputName: dark-v1/tiles/tileset_ruins_ground_01_variant_2.png
+    subject: PR-08 sibling variant for tileset ruins ground 01, same dark blue gray worn stone material
+      as the base floor tile, different chipped slab islands and soot speckles, no light pool, no
+      selection frame, no decorative border, no transparent edge, no modern grid, no letters
+  - row: 0
+    col: 4
+    targetKey: tileset.ruins.ground_01.variant_3
+    category: tile_ground
+    outputName: dark-v1/tiles/tileset_ruins_ground_01_variant_3.png
+    subject: PR-08 sibling variant for tileset ruins ground 01, same low-frequency value and warm grime
+      language as the base floor tile, different fine fracture rhythm, no light pool, no selection frame,
+      no decorative border, no transparent edge, no modern grid, no letters
+  - row: 0
     col: 1
     targetKey: tileset.ruins.wall_01
     category: tile_wall
@@ -846,6 +870,46 @@ sheets:
       top-down blocking stone mass, thick chipped cap and side shadow, no transparent border, no black
       rectangular frame, warm torch highlights on upper edge, matches floor material, readable at 32px,
       no periodic horizontal brick stripe, no modern grid, no letters
+  - row: 1
+    col: 0
+    targetKey: tileset.ruins.wall_01.crown
+    category: tile_wall
+    outputName: dark-v1/tiles/tileset_ruins_wall_01_crown.png
+    subject: PR-08 wall-family crown piece for ruins wall 01, isolated thick chipped top cap stones
+      with under-shadow, dark green-gray worn stone, no floor, no props, no text, no transparent
+      border, readable at 32px
+  - row: 1
+    col: 1
+    targetKey: tileset.ruins.wall_01.side
+    category: tile_wall
+    outputName: dark-v1/tiles/tileset_ruins_wall_01_side.png
+    subject: PR-08 wall-family side shadow piece for ruins wall 01, vertical wall side with strong
+      ambient occlusion and worn block edges, no full room scene, no text, no transparent border,
+      readable at 32px
+  - row: 1
+    col: 2
+    targetKey: tileset.ruins.wall_01.corner
+    category: tile_wall
+    outputName: dark-v1/tiles/tileset_ruins_wall_01_corner.png
+    subject: PR-08 wall-family corner piece for ruins wall 01, L-shaped thick corner mass with chipped
+      crown blocks and contact shadow, no props, no text, no transparent border, readable at 32px
+  - row: 1
+    col: 3
+    targetKey: tileset.ruins.wall_01.door_contact
+    category: tile_wall
+    outputName: dark-v1/tiles/tileset_ruins_wall_01_door_contact.png
+    subject: PR-08 wall-family doorway contact piece for ruins wall 01, low broken stone threshold
+      and side contact shadows, no actual door, no symbols, no text, no transparent border, readable at
+      32px
+  - row: 1
+    col: 4
+    targetKey: tileset.ruins.room_breakup_01
+    category: tile_decal
+    outputName: dark-v1/tiles/tileset_ruins_room_breakup_01.png
+    subject: PR-08 room-scale non-grid-aligned worn stone material breakup overlay for ruins floors,
+      transparent background, broad diagonal slab islands, soot scars, moss-dark pits and warm amber
+      fracture glints, no single tile border, no repeated grid, no symbols, no text, readable when scaled
+      across the visible room floor
 - sheetId: r03-ui-demo-actor-props
   round: 3
   type: large-sheet

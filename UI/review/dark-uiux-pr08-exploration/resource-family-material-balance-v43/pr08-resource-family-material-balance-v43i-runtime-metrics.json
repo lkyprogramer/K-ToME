@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "ktome-pr08-v43-resource-metrics-v1",
+  "artifacts": {
+    "v42Map": "UI/review/dark-uiux-pr08-exploration/runtime-aperture-corner-shelves-v42/pr08-aperture-corner-shelves-v42-ui-demo-new-map-stage-crop.png",
+    "v43Map": "UI/review/dark-uiux-pr08-exploration/resource-family-material-balance-v43/pr08-resource-family-material-balance-v43i-ui-demo-new-map-stage-crop.png",
+    "reference": "UI/UI-demo-new.png"
+  },
+  "v43VsV42Map": {
+    "changed_ratio": 0.13658118183734883,
+    "mean_abs_rgb_diff": 0.14303039886532556
+  },
+  "v42MapVsReferenceResized": {
+    "changed_ratio": 0.9998964981887183,
+    "mean_abs_rgb_diff": 23.694325609028123
+  },
+  "v43MapVsReferenceResized": {
+    "changed_ratio": 0.9998988940639795,
+    "mean_abs_rgb_diff": 23.661567126032903
+  }
+}

@@ -74,7 +74,7 @@ object Phase4V4WhiteboxScenarioCli {
             )
 
         paths.appExecutableSha256.writeText("$appHash  ${repoRelative(config.repoRoot, config.appExecutable)}\n")
-        paths.launchScript.writeText(renderLaunchScript(config.repoRoot, scenario, paths, appHash))
+        paths.launchScript.writeText(renderLaunchScript(config.repoRoot, scenario, materialization, paths, appHash))
         paths.launchScript.toFile().setExecutable(true)
         paths.runbook.writeText(renderRunbook(config.repoRoot, scenario, materialization, paths))
         paths.manualRecordTemplate.writeText(renderManualRecordTemplate(config.repoRoot, scenario, paths, appHash))
@@ -101,6 +101,7 @@ object Phase4V4WhiteboxScenarioCli {
     private fun renderLaunchScript(
         repoRoot: Path,
         scenario: ValidationScenarioDef,
+        materialization: Phase4V4WhiteboxScenarioMaterializationSpec,
         paths: Phase4V4WhiteboxScenarioPaths,
         appHash: String,
     ): String {
@@ -120,7 +121,7 @@ object Phase4V4WhiteboxScenarioCli {
         val scenarioAppExecutable = "$scenarioAppBundle/Contents/MacOS/$appExecutableName"
         val scenarioAppConfig = "$scenarioAppBundle/Contents/app/$appExecutableName.cfg"
         val extraLaunchSetup = renderExtraLaunchSetup(repoRoot, scenario)
-        val extraJavaOptionLines = renderExtraJavaOptionLines(scenario)
+        val extraJavaOptionLines = renderExtraJavaOptionLines(scenario, materialization)
         val scenarioAppLogName = scenarioAppLogName(scenario)
         return """
             |#!/usr/bin/env bash
@@ -166,6 +167,9 @@ object Phase4V4WhiteboxScenarioCli {
             |  echo "java-options=-Dktome.whitebox.evidenceDir=${'$'}REPO_ROOT/$evidenceDir"
             |  echo "java-options=-Dktome.whitebox.manualRecord=$manualRecord"
             |  echo "java-options=-Dktome.whitebox.appHash=${'$'}EXPECTED_HASH"
+            |  if [ -n "${'$'}{KTOME_VALIDATION_STARTUP_SURFACE:-}" ]; then
+            |    echo "java-options=-Dktome.validation.startupSurface=${'$'}KTOME_VALIDATION_STARTUP_SURFACE"
+            |  fi
             |$extraJavaOptionLines
             |} >> "${'$'}SCENARIO_APP_CFG"
             |"${'$'}SCENARIO_APP_EXECUTABLE" >> "${'$'}SCENARIO_APP_LOG" 2>&1 &
@@ -211,15 +215,24 @@ object Phase4V4WhiteboxScenarioCli {
             ":"
         }
 
-    private fun renderExtraJavaOptionLines(scenario: ValidationScenarioDef): String =
-        if (scenario.id.value == "phase4-v4-pr06") {
+    private fun renderExtraJavaOptionLines(
+        scenario: ValidationScenarioDef,
+        materialization: Phase4V4WhiteboxScenarioMaterializationSpec,
+    ): String {
+        val windowOptionLines =
             """
-                |  echo "java-options=-D${Phase4V4Pr06WhiteboxProperties.PRIMARY_RESULT}=${'$'}PR06_PRIMARY_RESULT"
-                |  echo "java-options=-D${Phase4V4Pr06WhiteboxProperties.EVIDENCE_RESULT}=${'$'}PR06_EVIDENCE_RESULT"
+                |  echo "java-options=-Dktome.window.width=${materialization.windowWidth}"
+                |  echo "java-options=-Dktome.window.height=${materialization.windowHeight}"
             """.trimMargin()
-        } else {
-            ""
+        if (scenario.id.value != "phase4-v4-pr06") {
+            return windowOptionLines
         }
+        return """
+            |$windowOptionLines
+            |  echo "java-options=-D${Phase4V4Pr06WhiteboxProperties.PRIMARY_RESULT}=${'$'}PR06_PRIMARY_RESULT"
+            |  echo "java-options=-D${Phase4V4Pr06WhiteboxProperties.EVIDENCE_RESULT}=${'$'}PR06_EVIDENCE_RESULT"
+        """.trimMargin()
+    }
 
     private fun renderRunbook(
         repoRoot: Path,
@@ -292,6 +305,7 @@ object Phase4V4WhiteboxScenarioCli {
             appendLine()
             appendLine("- The session is validation-only and does not expose the standard player entry.")
             appendLine("- F9 or V opens `PHASE4_V4_FAST` with `${scenario.id.value}`, `${runtime.preset}`, and `${runtime.seed}` visible.")
+            appendLine("- For evidence-summary-only capture, set `KTOME_VALIDATION_STARTUP_SURFACE=evidence-summary` before the launch script when local keyboard routing is unreliable.")
             appendLine()
             appendLine("## 5. Input sequence")
             appendLine()

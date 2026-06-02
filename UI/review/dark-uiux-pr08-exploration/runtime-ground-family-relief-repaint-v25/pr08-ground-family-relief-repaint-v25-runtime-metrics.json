@@ -1,0 +1,39 @@
+{
+  "comparisonBase": "V24 runtime-wall-family-relief-repaint",
+  "artifacts": {
+    "ui-demo-new-parity-1672x941": "UI/review/dark-uiux-pr08-exploration/runtime-ground-family-relief-repaint-v25/pr08-ground-family-relief-repaint-v25-ui-demo-new-parity-1672x941.png",
+    "ui-demo-new-parity-1280x800": "UI/review/dark-uiux-pr08-exploration/runtime-ground-family-relief-repaint-v25/pr08-ground-family-relief-repaint-v25-ui-demo-new-parity-1280x800.png",
+    "ui-demo-new-right-panel-grid": "UI/review/dark-uiux-pr08-exploration/runtime-ground-family-relief-repaint-v25/pr08-ground-family-relief-repaint-v25-ui-demo-new-right-panel-grid.png",
+    "ui-demo-new-bottom-deck-no-command-hints": "UI/review/dark-uiux-pr08-exploration/runtime-ground-family-relief-repaint-v25/pr08-ground-family-relief-repaint-v25-ui-demo-new-bottom-deck-no-command-hints.png",
+    "ui-demo-new-inventory-page-1": "UI/review/dark-uiux-pr08-exploration/runtime-ground-family-relief-repaint-v25/pr08-ground-family-relief-repaint-v25-ui-demo-new-inventory-page-1.png",
+    "ui-demo-new-inventory-page-2": "UI/review/dark-uiux-pr08-exploration/runtime-ground-family-relief-repaint-v25/pr08-ground-family-relief-repaint-v25-ui-demo-new-inventory-page-2.png",
+    "ui-demo-new-nav-rail-crop": "UI/review/dark-uiux-pr08-exploration/runtime-ground-family-relief-repaint-v25/pr08-ground-family-relief-repaint-v25-ui-demo-new-nav-rail-crop.png",
+    "ui-demo-new-map-stage-crop": "UI/review/dark-uiux-pr08-exploration/runtime-ground-family-relief-repaint-v25/pr08-ground-family-relief-repaint-v25-ui-demo-new-map-stage-crop.png"
+  },
+  "hashes": {
+    "ui-demo-new-parity-1672x941": "251ef0f6005ede9e4fceeafe37bce9425bf996577e6b6579650c1dfd782f6dac",
+    "ui-demo-new-parity-1280x800": "0fec76652e2ed7eecb2442ea9dd52b0cda606915dfe0a926e05b881303dff49c",
+    "ui-demo-new-right-panel-grid": "8de82d8abf81c34906ba60e5a8dd7545aa2e883b0c6574e100accd720df4c277",
+    "ui-demo-new-bottom-deck-no-command-hints": "1d3ac3e0b3b67dea66a077aa2afa30f9b47b5bb4318e812f2894ea2534f9d02e",
+    "ui-demo-new-inventory-page-1": "2dc2ac8cf03dba3693f5d5d6e12a68225a0debeac6e9cc6321f823b1417ddd63",
+    "ui-demo-new-inventory-page-2": "230165e27de1426439671000c82b215cdf15ded3c30d6bd9db1ee32ae77a5b23",
+    "ui-demo-new-nav-rail-crop": "7e85df5eaeb4dbb71f06f848c3666256fe947291889dd2082eafa7469e11fd8b",
+    "ui-demo-new-map-stage-crop": "c552622c4aa2a121608ec44699a47ba47d21d3a645434f662dc971f15b6e9378"
+  },
+  "diffAgainstV24": {
+    "ui-demo-new-parity-1672x941": {
+      "meanAbsRgbDiff": 0.14275995878015008,
+      "maxRgbDiff": 24,
+      "changedPixels": 438030,
+      "totalPixels": 6293408,
+      "changedRatio": 0.06960139879696342
+    },
+    "ui-demo-new-map-stage-crop": {
+      "meanAbsRgbDiff": 0.3052632587736952,
+      "maxRgbDiff": 21,
+      "changedPixels": 317529,
+      "totalPixels": 2086920,
+      "changedRatio": 0.1521519751595653
+    }
+  }
+}
