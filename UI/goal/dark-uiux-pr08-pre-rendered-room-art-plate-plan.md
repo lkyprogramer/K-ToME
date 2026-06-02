@@ -57,6 +57,7 @@
 **Updated**: 2026-06-02 after PR08 topology-risk source alpha scope V1 packet
 **Updated**: 2026-06-02 after PR08 topology-risk interior seam dissolve V1 packet
 **Updated**: 2026-06-02 after PR08 review feedback convergence governance
+**Updated**: 2026-06-02 after PR08 second feedback execution lock
 **Estimated Complexity**: High
 **Status**: Candidate W authored room source remains accepted as the current
 same-key prototype resource and D3 map-stage closure for the `tileset.ruins`
@@ -216,6 +217,9 @@ only after a D9 real-procgen ROI checkpoint measures the `FULL_PLATE_SAFE` hit
 rate and topology-risk distribution under playable generation parameters. Until
 that distribution is known, do not return to small alpha, fog, line-weight,
 single-cell rectangle or same-key topology-source tuning.
+Do not add another governance-only revision before D9. The source A/B/C/D,
+source-alpha and interior-seam sequence is already same-family escalation input,
+not evidence that more same-family accepted-forward polish should continue.
 
 ## 0. Precheck Summary
 
@@ -645,13 +649,16 @@ Execution order after this protocol:
 
 1. Materialize or design D9 real-procgen distribution evidence before broad
    Direction A rollout or further ruins topology-risk polish.
-2. Use the D9 packet to decide full rollout, hybrid-first convergence or stop.
-3. If D9 supports freezing the accepted ruins proof slice, stop same-family
+2. Do not count another goal/plan governance-only edit as PR-08 progress; the
+   next progress packet must be D9 evidence or the D9-backed ROI/freeze
+   decision.
+3. Use the D9 packet to decide full rollout, hybrid-first convergence or stop.
+4. If D9 supports freezing the accepted ruins proof slice, stop same-family
    ruins alpha/seam/fog/source tweaks and move to non-ruins topology coverage or
    another higher-return surface.
-4. Do not run golden rebaseline until the final runtime packet is accepted by
+5. Do not run golden rebaseline until the final runtime packet is accepted by
    evidence review and the ROI/freeze checkpoint is resolved.
-5. Do not apply the ruins room plate or D4 compositor strategy to other tileset
+6. Do not apply the ruins room plate or D4 compositor strategy to other tileset
    families without their own evidence.
 
 ### 2026-05-31 Implementation Checkpoint

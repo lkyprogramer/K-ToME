@@ -36,7 +36,7 @@ Required fields:
 | Direction checkpoint | Direction A is selected for the map: pre-rendered room art plate via client-only presentation layer; stop default alpha/seam/rail/rectangle tuning |
 | Multi-map rollout boundary | First runtime proof is `tileset.ruins`; non-ruins family proof now has packaged core crop and evidence-summary capture for forest-edge, mine and shadow-depths V4, but it is not broader-topology or all-map closure |
 | Agent-owned D3 decision gate | Candidate W closes D3 for the `tileset.ruins` fixed proof slice only; the final ruins runtime packet, current packaged telegraph evidence, explicit golden rebaseline and owner gate ladder are now reproducible; non-ruins family route is accepted-forward, with shadow-depths V4 improved and packaged core plus summary evidence captured, but still not procedural-generalization or all-map closure |
-| Next slice | Resolve the D9 real-procgen ROI/freeze checkpoint before broad Direction A rollout or further same-family topology-risk polish; do not claim procedural/all-map closure, update director hashes, or return to small alpha/fog/line-weight/single-cell rectangle tuning from interior seam dissolve V1 alone |
+| Next slice | Resolve the D9 real-procgen ROI/freeze checkpoint before broad Direction A rollout or further same-family topology-risk polish; do not claim procedural/all-map closure, update director hashes, add another governance-only accepted-forward update, or return to small alpha/fog/line-weight/single-cell rectangle tuning from interior seam dissolve V1 alone |
 
 ## Entry Template
 
@@ -53,6 +53,51 @@ Required fields:
 - Remaining risk:
 - Next action:
 ```
+
+## 2026-06-02 - PR08 Second Feedback Execution Lock
+
+- Loop type: documentation-only review feedback assessment
+- Target area: PR-08 D9/freeze execution lock and historical micro-tuning
+  failure-counter accounting
+- Changed files:
+  - `UI/goal/dark-uiux-pr08-director-grade-iteration-goal.md`
+  - `UI/goal/dark-uiux-pr08-pre-rendered-room-art-plate-plan.md`
+  - `UI/goal/dark-uiux-pr08-director-grade-iteration-log.md`
+- Visual evidence:
+  - N/A; this entry records feedback interpretation only and does not generate
+    new D9/procgen or runtime visual evidence.
+- Commands run:
+  - read the latest pasted review feedback from the Codex attachment
+  - `ps -axo pid,ppid,stat,etime,command | rg 'git (push|remote-https)|git-remote-https|git-remote-http'`
+  - `git status --short --branch`
+  - `git ls-remote origin refs/heads/main`
+  - `git log -1 --oneline --decorate`
+  - targeted `rg` and `sed` reads of the PR-08 goal, room-art plan and log
+- Result:
+  - UPDATED: the goal and plan now state that another governance-only edit is
+    not PR-08 progress; the next valid progress packet is D9 evidence or the
+    D9-backed ROI/freeze decision.
+  - UPDATED: the source A/B/C/D, source-alpha and interior-seam sequence is now
+    treated as historical same-family failure-counter input, so its
+    `accepted-forward` status cannot justify additional ruins same-family
+    polish before D9/freeze.
+  - CONFIRMED: before this entry's new edits, the previously interrupted
+    `git push` was no longer running, and `origin/main` matched local `HEAD` at
+    `e0bb21a6`.
+  - NOT RUN: Gradle, golden screenshot, packaged whitebox or resource gates.
+    This entry is documentation-only and makes no Kotlin/resource/runtime
+    changes.
+- Director verdict:
+  - Feedback is accepted only as a small execution lock, not as a reason to add
+    a third governance framework. The existing D9/freeze rules are sufficient;
+    the next closure-oriented action must execute them.
+- Remaining risk:
+  - D9 statistics are still not materialized.
+  - The ruins freeze decision is still pending D9-backed evidence or an explicit
+    checkpoint decision.
+- Next action:
+  - Run or implement the D9 real-procgen distribution probe, then record the
+    Direction A ROI and ruins freeze decision.
 
 ## 2026-06-02 - PR08 Review Feedback Convergence Governance
 

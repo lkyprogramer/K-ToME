@@ -60,6 +60,7 @@
 > Updated: 2026-06-02 after PR08 topology-risk source alpha scope V1 packet
 > Updated: 2026-06-02 after PR08 topology-risk interior seam dissolve V1 packet
 > Updated: 2026-06-02 after PR08 review feedback convergence governance
+> Updated: 2026-06-02 after PR08 second feedback execution lock
 > Status: `pr08-topology-risk-interior-seam-dissolve-v1-accepted-forward`
 > Scope: PR-08 post-exploration implementation loop
 
@@ -111,6 +112,15 @@ blocking regression. Further ruins topology-risk alpha, seam, fog, line-weight,
 single-cell rectangle or same-key source polish is blocked by default until the
 D9 distribution and ROI decision decide whether Direction A should continue,
 converge to hybrid-first composition, or stop.
+
+2026-06-02 second feedback clarification: the governance update above is not
+progress toward PR-08 closure by itself. The next accepted progress packet must
+materialize D9 real-procgen evidence or record the ROI/freeze decision that D9
+enables. Treat the 2026-06-02 same-key topology source A/B/C/D sequence, source
+alpha `0.36` / `0.42` sequence and interior seam dissolve packet as historical
+same-family failure-counter input; their `accepted-forward` status cannot
+justify another governance-only update or another ruins alpha/seam/fog/source
+polish pass before D9/freeze is resolved.
 
 ## 1. Authority Chain
 
