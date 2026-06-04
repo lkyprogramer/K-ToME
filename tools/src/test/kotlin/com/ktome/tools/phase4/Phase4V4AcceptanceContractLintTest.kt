@@ -251,8 +251,10 @@ class Phase4V4AcceptanceContractLintTest {
     private fun assertUiD10RetainedUiContract(root: Path) {
         val docPath = "UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md"
         val manualPath = "UI/manual-records/dark-uiux-pr08-d10-retained-ui.md"
+        val openDesignHelperPath = "UI/review/open-design/dark-uiux-pr08-d10-retained-ui-skin-design.md"
         val markdown = read(root, docPath)
         val manualRecord = read(root, manualPath)
+        val openDesignHelper = read(root, openDesignHelperPath)
         val owner = "UI08-D10 retained UI contract"
 
         (0..8).forEach { phase ->
@@ -275,6 +277,36 @@ class Phase4V4AcceptanceContractLintTest {
             "d10InventoryEquipment",
             "d10TalentTree",
             "d10FrontstageOverlay",
+            "Each D10-P2 through D10-P7 focused evidence tag must have a matching client `Test` task and a root wrapper",
+            "Root task to add/run",
+            ":client:d10RetainedShell",
+            "./gradlew d10RetainedShell --no-configuration-cache",
+            "client/build.gradle.kts",
+            "tools/src/main/kotlin/com/ktome/tools/verification/VerificationTaskRegistry.kt",
+            "D10-KTX-COMPAT",
+            "ktx-scene2d 1.13.1-rc1 declares runtime gdx 1.13.1 and kotlin-stdlib 2.1.10",
+            "resolved `com.badlogicgames.gdx:gdx == 1.14.0`",
+            "KtomeUiStage does not dispose shared Skin",
+            "D10-P4-T0",
+            "MapStageRenderFrame",
+            "MapStageRenderFrame.fromActor(this)",
+            "MapStageActorTest.convertsNestedTableActorBoundsToStageSpace",
+            "SpriteBatch-preserving",
+            "FoundationViewportSupport.worldWidth/worldHeight/syncViewport",
+            "Current executable packaged scenarios after runtime migration",
+            "Future dedicated retained-ui scenarios, only after registration",
+            "runtimeRoute: \"retained-ui-stage\"",
+            "expected-evidence.json",
+            "route=retained-ui-stage",
+            ".metadata.txt",
+            "Phase4V4WhiteboxScenarioCliTest",
+            "../review/open-design/dark-uiux-pr08-d10-retained-ui-skin-design.md",
+            "../review/open-design/ktome-dark-ui-design.md",
+            "MapStageActor.draw() must not call batch.begin",
+            "Touchable.disabled",
+            "ValidationScenarioRegistry",
+            "Phase4V4WhiteboxScenarioMaterializationCatalog",
+            "rollback-only quarantined route",
         ).forEach { token ->
             assertContains(markdown, token, owner)
         }
@@ -284,9 +316,28 @@ class Phase4V4AcceptanceContractLintTest {
             "$docPath must not use numeric D10-S execution labels; use D10-P* phase ids.",
         )
         assertBashBlocksHaveNoAnglePlaceholders(markdown, docPath)
+        assertOpenDesignHelperContract(openDesignHelper, openDesignHelperPath)
 
         assertContains(manualRecord, "runtime migration has not started", manualPath)
         assertContains(manualRecord, "Validation Results", manualPath)
+    }
+
+    private fun assertOpenDesignHelperContract(markdown: String, owner: String) {
+        listOf(
+            "auxiliary Open Design helper",
+            "not an implementation contract and not a resource contract",
+            "UI/review/open-design/ktome-dark-ui-design.md",
+            "test-only in-memory/generated fixture drawables",
+            "no committed/generated repo assets in P1",
+        ).forEach { token ->
+            assertContains(markdown, token, owner)
+        }
+        markdown.lineSequence().forEach { line ->
+            assertNoMachinePath(line, owner)
+            assertFalse(line.contains("TODO"), "$owner must not contain TODO markers: $line")
+            assertFalse(line.contains("TBD"), "$owner must not contain TBD markers: $line")
+            assertFalse(line.contains("FIXME"), "$owner must not contain FIXME markers: $line")
+        }
     }
 
     private fun assertBashBlocksHaveNoAnglePlaceholders(markdown: String, owner: String) {

@@ -7,6 +7,15 @@
 **输入来源**: PR-08 current evidence chain、D9 / D10 map-stage evidence、当前 client UI 代码、libGDX Scene2D retained UI 体系、KTX Scene2D DSL、Skin Composer / TexturePacker、gdx-skins、VisUI、Unciv / Mindustry / Shattered Pixel Dungeon reference audit。
 **文档权威**: 本文件是 `UI/pr` 下的 PR-08 D10 retained UI / map-stage authority 执行合同。它不替代 `UI/pr/dark-uiux-pr08-director-grade-asset-reset.md` 的 PR-08 总目标，而是将 PR-08 的 UI/UX 修复路线从 renderer micro-polish 提升到 retained UI / theme authority。
 
+## Open Design 辅助参考
+
+D10 implementation and review should read this PR contract together with:
+
+1. [D10 retained UI Skin design helper](../review/open-design/dark-uiux-pr08-d10-retained-ui-skin-design.md)
+2. [K-ToME dark UI design reference](../review/open-design/ktome-dark-ui-design.md)
+
+These Open Design documents are auxiliary only. They help decide when retained UI can reuse existing dark-v1 assets, when new or re-sliced Skin resources are justified, and how to critique screenshots against `UI/UI-demo-new.png`. They do not override this PR document, phase gates, manifests, schemas, resource pipeline, golden/manual evidence, whitebox scenarios, implementation contracts or dependency decisions.
+
 ## 0. 开发治理与验收矩阵
 
 本 D10 包继承 `UI/pr/development-governance.md` 的 Acceptance Matrix、Gate Ladder、Visual Convergence Gate、canonical artifact 和失败规则，并受 `docs/verification/README.md` 与 `docs/rule/ai-change-governance.md` 的 verification / anti-bloat 纪律约束。它不修改 PR-08 根目标：map-stage、shell chrome、right panel、bottom HUD 达到 director-grade first-read quality，同时保持 gameplay、save、replay、profile、manifest schema 不变。
@@ -73,11 +82,11 @@ MapStageActor 把 TileRenderer 嵌入 Stage / Table 布局，不把地图 tile �
 | `UI08-D10-R02` | §3 | `client` | `KtomeUiStage` builds Stage root without rendering map | focused Scene2D host test | `client/src/main/kotlin/com/ktome/client/ui/scene2d/` | `N/A` |
 | `UI08-D10-R03` | §3.2 / §5 | `client` / `assets` | `KtomeSceneSkin` consumes resolver-backed drawables | focused Skin bridge test + resource lint when assets change | `client/src/main/kotlin/com/ktome/client/ui/scene2d/KtomeSceneSkin.kt` | `N/A` |
 | `UI08-D10-R04` | §3.3 / §5 | `client` | `MapStageActor` keeps stable bounds and delegates to `TileRenderer` | focused map actor test + existing map renderer tests | `client/src/main/kotlin/com/ktome/client/ui/scene2d/MapStageActor.kt` | `required` |
-| `UI08-D10-R05` | §4.1 | `client` | main menu / validation / outcome screens have actor-tree tests | `:client:test` focused screen suite | `client/src/test/kotlin/com/ktome/client/ui/scene2d/` | `required` |
-| `UI08-D10-R06` | §4.2 | `client` | in-game shell has one root Table and no overlapping major surfaces | `:client:test` layout suite + golden screenshot | `client/build/reports/golden/dark-uiux-pr08-d10-retained-shell/` | `required` |
+| `UI08-D10-R05` | §4.3 / D10-P2 | `client` | main menu / validation / outcome screens have actor-tree tests | `:client:test` focused screen suite | `client/src/test/kotlin/com/ktome/client/ui/scene2d/` | `required` |
+| `UI08-D10-R06` | §4.5 / D10-P4 | `client` | in-game shell has one root Table and no overlapping major surfaces | `:client:test` layout suite + golden screenshot | `client/build/reports/golden/dark-uiux-pr08-d10-retained-shell/` | `required` |
 | `UI08-D10-R07` | §3.4 / §5.5 | `client` | keyboard traversal covers primary flows | focused focus graph test + smoke | `client/src/test/kotlin/com/ktome/client/ui/scene2d/KtomeUiFocusGraphTest.kt` | `required` |
 | `UI08-D10-R08` | §6 | `client` / `tools` | old immediate route removed or explicitly retired per screen | maintainability lint + code scan | `UI/manual-records/dark-uiux-pr08-d10-retained-ui.md` | `N/A` |
-| `UI08-D10-R09` | §7 | `client` / `tools` | packaged forest / mine / shadow crops refreshed after runtime UI migration | packaged whitebox | `build/whitebox/dark-uiux-pr08-director-*-retained-ui/` | `required` |
+| `UI08-D10-R09` | §6.3 / §7 | `client` / `tools` | packaged forest / mine / shadow crops refreshed after runtime UI migration with registered scenario ids | packaged whitebox | `build/whitebox/dark-uiux-pr08-director-*-retained-ui/` after registry/materialization registration, or registered `*-map-stage` reuse with `runtimeRoute: "retained-ui-stage"` / `route=retained-ui-stage` metadata | `required` |
 | `UI08-D10-R10` | §1.3 | `docs` / `client` / `assets` | `UI/UI-demo-new.png` parity decomposition exists | retained shell golden + resource gate when assets change | `UI/manual-records/dark-uiux-pr08-d10-retained-ui.md` | `required` |
 | `UI08-D10-R11` | §2.5 / §5.5 | `client` / `tools` | framework adoption matrix is closed | dependency hygiene scan + bootstrap if dependency changes | `UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md` | `N/A` |
 | `UI08-D10-R12` | §8 | `client` / `docs` | main menu, talent tree and inventory workbench adaptation plans exist | focused screen suites when implemented | `UI/pr/screen-coverage-matrix.md` | `required` |
@@ -124,14 +133,16 @@ sdk env
 
 The full `:client:goldenScreenshot` task is a broad regression gate only. It does not prove that a D10 phase-specific evidence label exists. Before any runtime D10 phase closes, that implementation PR must add and run the matching focused tag or test listed below, and the manual record must name the generated artifact labels.
 
-| Phase | Required focused evidence tag before closure | Labels it must prove |
-| --- | --- | --- |
-| `D10-P2` | `d10StandaloneScreens` | `dark-uiux-pr08-d10-main-menu-retained`, `dark-uiux-pr08-d10-validation-retained`, `dark-uiux-pr08-d10-outcome-retained` |
-| `D10-P3` | `d10FocusModalTooltip` | focus traversal, modal blocking and tooltip hover evidence for migrated surfaces |
-| `D10-P4` | `d10RetainedShell` | `dark-uiux-pr08-d10-retained-shell`, map actor bounds, right panel host and bottom deck host |
-| `D10-P5` | `d10InventoryEquipment` | `dark-uiux-pr08-d10-right-panel-inventory-retained`, `dark-uiux-pr08-d10-inventory-workbench-retained`, `dark-uiux-pr08-d10-shop-retained` |
-| `D10-P6` | `d10TalentTree` | `dark-uiux-pr08-d10-talent-tree-retained`, `dark-uiux-pr08-d10-active-slot-modal-retained` |
-| `D10-P7` | `d10FrontstageOverlay` | `dark-uiux-pr08-d10-combat-decision-retained`, `dark-uiux-pr08-d10-frontstage-retained`, `dark-uiux-pr08-d10-bottom-deck-retained`, `dark-uiux-pr08-d10-nav-rail-retained` |
+Each D10-P2 through D10-P7 focused evidence tag must have a matching client `Test` task and a root wrapper. A tag name alone is not closure evidence. The phase implementation must add a client-side task, for example `:client:d10RetainedShell` with `useJUnitPlatform { includeTags("d10RetainedShell") }`, and a root `d10RetainedShell` wrapper that depends on it. Owner files are `client/build.gradle.kts` for the client task and root `build.gradle.kts` for the wrapper. If the task enters shared verification or CI, update the root verification task list in `tools/src/main/kotlin/com/ktome/tools/verification/VerificationTaskRegistry.kt` in the same PR. A client-only hidden task is not valid phase closure evidence.
+
+| Phase | Required focused evidence tag before closure | Client task to add/run | Root task to add/run | Labels it must prove |
+| --- | --- | --- | --- | --- |
+| `D10-P2` | `d10StandaloneScreens` | `:client:d10StandaloneScreens` | `d10StandaloneScreens` | `dark-uiux-pr08-d10-main-menu-retained`, `dark-uiux-pr08-d10-validation-retained`, `dark-uiux-pr08-d10-outcome-retained` |
+| `D10-P3` | `d10FocusModalTooltip` | `:client:d10FocusModalTooltip` | `d10FocusModalTooltip` | focus traversal, modal blocking and tooltip hover evidence for migrated surfaces |
+| `D10-P4` | `d10RetainedShell` | `:client:d10RetainedShell` | `d10RetainedShell` | `dark-uiux-pr08-d10-retained-shell`, map actor bounds, right panel host and bottom deck host |
+| `D10-P5` | `d10InventoryEquipment` | `:client:d10InventoryEquipment` | `d10InventoryEquipment` | `dark-uiux-pr08-d10-right-panel-inventory-retained`, `dark-uiux-pr08-d10-inventory-workbench-retained`, `dark-uiux-pr08-d10-shop-retained` |
+| `D10-P6` | `d10TalentTree` | `:client:d10TalentTree` | `d10TalentTree` | `dark-uiux-pr08-d10-talent-tree-retained`, `dark-uiux-pr08-d10-active-slot-modal-retained` |
+| `D10-P7` | `d10FrontstageOverlay` | `:client:d10FrontstageOverlay` | `d10FrontstageOverlay` | `dark-uiux-pr08-d10-combat-decision-retained`, `dark-uiux-pr08-d10-frontstage-retained`, `dark-uiux-pr08-d10-bottom-deck-retained`, `dark-uiux-pr08-d10-nav-rail-retained` |
 
 Resource / Skin asset implementation:
 
@@ -148,25 +159,39 @@ Dependency change implementation, only if KTX is accepted:
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./scripts/verify-bootstrap.sh
+./gradlew :client:dependencyInsight --configuration runtimeClasspath --dependency io.github.libktx:ktx-scene2d --no-configuration-cache
+./gradlew :client:dependencyInsight --configuration runtimeClasspath --dependency com.badlogicgames.gdx:gdx --no-configuration-cache
+./gradlew :client:compileTestKotlin --no-configuration-cache
 ./gradlew :client:test --tests "com.ktome.client.ui.scene2d.*" --no-configuration-cache
 ```
 
-Packaged evidence:
+Packaged evidence currently executable against the registered PR-08 map-stage scenario family:
 
 ```bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
-./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-forest-retained-ui --no-configuration-cache
-./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-mine-retained-ui --no-configuration-cache
-./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-shadow-depths-retained-ui --no-configuration-cache
+./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-forest-map-stage --no-configuration-cache
+./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-mine-map-stage --no-configuration-cache
+./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-shadow-depths-map-stage --no-configuration-cache
 ./gradlew verifyChanged --no-configuration-cache
 ```
+
+Future `dark-uiux-pr08-director-*-retained-ui` packaged scenario ids may appear in executable commands only after they are registered in `ValidationScenarioRegistry`, `Phase4V4WhiteboxScenarioMaterializationCatalog`, `tools/src/main/resources/phase4/whitebox/phase4-v4-scenarios.yaml` and the relevant golden label list. If the implementation reuses the existing `*-map-stage` family instead, `route=retained-ui-stage` must be machine-recorded in generated packaged evidence, not only described in a PR body.
+
+Retained route marker owner:
+
+1. `Phase4V4WhiteboxScenarioCli` / materialization output must write top-level `runtimeRoute: "retained-ui-stage"` into the generated `build/whitebox/<scenario>/expected-evidence.json` when a registered `*-map-stage` scenario is reused for D10 retained UI evidence.
+2. Each accepted screenshot sidecar in that package must include `route=retained-ui-stage` in its `.metadata.txt` file.
+3. `UI/manual-records/dark-uiux-pr08-d10-retained-ui.md` must record a fixed `runtimeRoute = retained-ui-stage` field for the packaged run.
+4. `tools/src/test/kotlin/com/ktome/tools/whitebox/Phase4V4WhiteboxScenarioCliTest.kt` must assert the generated `expected-evidence.json` and required metadata/runbook text include the retained route marker before D10-P8 packaged closure.
+5. Do not add a `ValidationScenarioDef` field for this marker unless a separate validation scenario public-contract PR explicitly changes that schema.
 
 ### Canonical Artifacts (0.4)
 
 | Artifact family | Required repo-relative path |
 | --- | --- |
 | D10 PR-level design | `UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md` |
+| D10 Open Design helper | `UI/review/open-design/dark-uiux-pr08-d10-retained-ui-skin-design.md` |
 | Target quality bar | `UI/UI-demo-new.png` |
 | PR-08 root plan | `UI/pr/dark-uiux-pr08-director-grade-asset-reset.md` |
 | PR governance | `UI/pr/development-governance.md` |
@@ -177,7 +202,7 @@ sdk env
 | Scene2D host package | `client/src/main/kotlin/com/ktome/client/ui/scene2d/` |
 | Scene2D host tests | `client/src/test/kotlin/com/ktome/client/ui/scene2d/` |
 | Retained shell golden | `client/build/reports/golden/dark-uiux-pr08-d10-retained-shell/` |
-| Packaged whitebox | `build/whitebox/dark-uiux-pr08-director-*-retained-ui/` |
+| Packaged whitebox | registered `build/whitebox/dark-uiux-pr08-director-*-map-stage/` with `runtimeRoute: "retained-ui-stage"` in `expected-evidence.json` and `route=retained-ui-stage` in screenshot metadata, or `build/whitebox/dark-uiux-pr08-director-*-retained-ui/` after retained-ui id registration |
 
 ### Failure Rule (0.5)
 
@@ -271,8 +296,8 @@ D10 完成后，K-ToME client 至少具备：
 
 | Reference | Adopt | Boundary |
 | --- | --- | --- |
-| KTX Scene2D DSL | deferred | Kotlin DSL 能减少 boilerplate，但当前 K-ToME 已是 libGDX `1.14.0` / Kotlin `2.2.21`，而当前 KTX public docs / release examples仍以 `1.13.1-rc1` 一类版本线示例；D10-P1/P2 先不用 KTX |
-| KTX style helpers | deferred | 可辅助 Skin style 构造；必须等 no-KTX host proof 后单独做 compatibility spike，不能成为资源 key、atlas path 或 theme token 的第二 authority |
+| KTX Scene2D DSL | conditionally deferred | Kotlin DSL 能减少 Scene2D boilerplate；当前 Maven Central 最新 `ktx-scene2d` 是 `1.13.1-rc1`，POM 声明 runtime `gdx 1.13.1` / `kotlin-stdlib 2.1.10`，而 K-ToME pin 在 libGDX `1.14.0` / Kotlin `2.2.21`。这不证明不兼容，但必须先做 `D10-KTX-COMPAT` spike；D10-P1/P2 不引入 KTX |
+| KTX style helpers | conditionally deferred | 可辅助 Skin style 构造；只有 `ktx-scene2d` 兼容性 spike 通过且 `KtomeSceneSkin` boilerplate 已变成真实维护成本时才采用；不能成为资源 key、atlas path、font owner 或 theme token 的第二 authority |
 | Skin Composer | tool only | 可用于人工编辑 / 预览 Skin；输出不能直接作为 runtime truth，必须同步到 manifest-backed Skin bridge |
 | gdx-skins | prototype only | 只用于快速 spike 看 widget style，不允许提交为正式视觉来源 |
 
@@ -294,22 +319,27 @@ D10 完成后，K-ToME client 至少具备：
 
 ### 2.5 Source-Checked Adoption Matrix
 
-Source review date: `2026-06-03`.
+Source review date: `2026-06-04`.
 
 Source references:
 
 1. libGDX Scene2D UI: `https://libgdx.com/wiki/graphics/2d/scene2d/scene2d-ui`
 2. libGDX Scene2D custom Actor: `https://libgdx.com/wiki/graphics/2d/scene2d/scene2d`
 3. KTX project: `https://github.com/libktx/ktx`
-4. Skin Composer tool docs: `https://libgdx.com/wiki/tools/skin-composer`
-5. VisUI project: `https://github.com/kotcrab/vis-ui`
-6. gdx-skins project: `https://github.com/czyzby/gdx-skins`
+4. KTX Scene2D README: `https://github.com/libktx/ktx/blob/master/scene2d/README.md`
+5. KTX style README: `https://github.com/libktx/ktx/blob/master/style/README.md`
+6. Maven Central `ktx-scene2d` metadata: `https://repo1.maven.org/maven2/io/github/libktx/ktx-scene2d/maven-metadata.xml`
+7. Maven Central `ktx-scene2d` POM: `https://repo1.maven.org/maven2/io/github/libktx/ktx-scene2d/1.13.1-rc1/ktx-scene2d-1.13.1-rc1.pom`
+8. Maven Central `ktx-style` POM: `https://repo1.maven.org/maven2/io/github/libktx/ktx-style/1.13.1-rc1/ktx-style-1.13.1-rc1.pom`
+9. Skin Composer tool docs: `https://libgdx.com/wiki/tools/skin-composer`
+10. VisUI project: `https://github.com/kotcrab/vis-ui`
+11. gdx-skins project: `https://github.com/czyzby/gdx-skins`
 
 | Candidate | Source fact used | D10 decision | Development rule |
 | --- | --- | --- | --- |
 | libGDX Scene2D / Scene2D UI | official libGDX docs show `Stage`, `Skin`, root `Table`, `stage.act`, `stage.draw`, `resize` viewport update and custom `Actor.draw(Batch, parentAlpha)` as the intended retained UI path | adopt now | D10-P1/P2 must use official libGDX API first; no dependency change required |
-| KTX `ktx-scene2d` | KTX docs expose type-safe Scene2D builders and Maven Central modules under `io.github.libktx`; example version is a KTX line that must be compatibility-checked against repo libGDX/Kotlin pins | defer | D10 may not add KTX in the first host/skin PR; only a later `D10-KTX-COMPAT` spike can add `ktx-scene2d` and `ktx-style` |
-| KTX `ktx-style` | KTX docs describe Skin style builders | defer | Allowed only if `KtomeSceneSkin` boilerplate becomes large after S2 and compatibility spike passes |
+| KTX `ktx-scene2d` | KTX docs expose type-safe Scene2D builders that mirror official Scene2D widgets; Maven Central latest/release is `1.13.1-rc1`; `ktx-scene2d 1.13.1-rc1 declares runtime gdx 1.13.1 and kotlin-stdlib 2.1.10`; K-ToME uses libGDX `1.14.0` and Kotlin `2.2.21` | conditionally defer | D10 may not add KTX in the first host/skin PR. A later `D10-KTX-COMPAT` spike may adopt `ktx-scene2d` only if Gradle resolution keeps repo-pinned libGDX/Kotlin behavior and focused Scene2D tests compile/pass |
+| KTX `ktx-style` | KTX docs describe Skin style builders and direct `Skin.register` extension methods; the module has the same `1.13.1-rc1` runtime dependency line as `ktx-scene2d` | conditionally defer | Allowed only after `ktx-scene2d` compatibility passes and only for reducing verified `KtomeSceneSkin` style boilerplate; no Skin JSON/raw path/theme-token authority is delegated to KTX |
 | Skin Composer | libGDX tool documentation treats it as a Skin authoring tool; it is not a runtime framework | adopt as tool only | Use to preview nine-patch / style states; convert accepted output back into manifest-backed `KtomeSceneSkin` code |
 | TexturePacker | libGDX toolchain supports atlas production | adopt as tool only | Atlas/nine-patch output must still pass key registry, canonical manifest, runtime manifest and resolver tests |
 | gdx-skins | community sample skins are useful prototypes, not K-ToME dark-v1 resources | reject runtime | May be used locally for spike comparison; no gdx-skins file enters production resources |
@@ -317,7 +347,28 @@ Source references:
 
 ### 2.6 KTX Compatibility Spike, Only If Needed
 
-Default D10 implementation is `no-KTX`. If official Scene2D code becomes noisy enough to harm maintainability, a later compatibility spike can be proposed with this exact scope:
+Default D10 implementation is `no-KTX`. Current source-checked conclusion is:
+
+```text
+KTX is technically plausible for K-ToME, but not proven compatible in this repo yet.
+It should be treated as a conditional productivity layer over official Scene2D, not as the retained UI authority.
+```
+
+Why this is the right conclusion:
+
+1. `ktx-scene2d` and `ktx-style` are thin Kotlin helpers around official Scene2D / Skin APIs, so they are relevant to K-ToME's retained UI migration.
+2. Maven Central currently publishes `1.13.1-rc1` as latest/release for both modules.
+3. The `1.13.1-rc1` POMs declare runtime `com.badlogicgames.gdx:gdx:1.13.1` and `org.jetbrains.kotlin:kotlin-stdlib:2.1.10`.
+4. K-ToME currently pins libGDX `1.14.0` and Kotlin `2.2.21`.
+5. That version gap is not a rejection by itself. It means compatibility must be proven by Gradle dependency resolution, Kotlin compilation and focused Scene2D behavior tests.
+
+Candidate version for the first spike:
+
+```text
+ktxVersion=1.13.1-rc1
+```
+
+If official Scene2D code becomes noisy enough to harm maintainability, a later compatibility spike can be proposed with this exact scope:
 
 Allowed modules:
 
@@ -339,12 +390,32 @@ any broad KTX stack import
 
 Spike rules:
 
-1. Resolve a KTX version compatible with repo-pinned `libgdxVersion=1.14.0` and `kotlinVersion=2.2.21`.
-2. Add a `ktxVersion` property only in the spike branch.
-3. Run `./scripts/verify-bootstrap.sh`.
-4. Run focused `KtomeUiStageTest`, `KtomeSceneSkinTest` and one migrated screen test both before and after DSL conversion.
-5. Keep `KtomeRootTable` readable without DSL-specific magic; a libGDX developer must still be able to map widgets to Scene2D classes.
-6. If binary/source compatibility is unclear, reject KTX and keep official API.
+1. Add a `ktxVersion` property only in the spike branch, starting with `1.13.1-rc1`.
+2. Run `./scripts/verify-bootstrap.sh` because this is a dependency change.
+3. Run `./gradlew :client:dependencyInsight --configuration runtimeClasspath --dependency io.github.libktx:ktx-scene2d --no-configuration-cache`.
+4. Run `./gradlew :client:dependencyInsight --configuration runtimeClasspath --dependency com.badlogicgames.gdx:gdx --no-configuration-cache`.
+5. The dependency report must show that resolved `com.badlogicgames.gdx:gdx == 1.14.0`. This only confirms Gradle resolution; with default highest-version conflict resolution it should pass unless a future `force`, `strictly` or conflict rule changes dependency semantics.
+6. Binary/source compatibility is proven by compiling and running focused Scene2D behavior tests against resolved libGDX `1.14.0`, not by `dependencyInsight` alone.
+7. Run `./gradlew :client:compileTestKotlin --no-configuration-cache` and reject KTX if Kotlin metadata or source compatibility fails under Kotlin `2.2.21`.
+8. Run focused `KtomeUiStageTest`, `KtomeSceneSkinTest` and one migrated screen test both before and after DSL conversion.
+9. Keep `KtomeRootTable` readable without DSL-specific magic; a libGDX developer must still be able to map widgets to Scene2D classes.
+10. Accept only `ktx-scene2d` first. Add `ktx-style` only if Skin boilerplate remains noisy after no-KTX `KtomeSceneSkin` is already working.
+11. If binary/source compatibility is unclear, Gradle resolution is surprising, or the DSL hides layout ownership, reject KTX and keep official API.
+
+Acceptance bar for adopting KTX:
+
+1. `client/build.gradle.kts` dependency diff contains only the approved KTX modules and `ktxVersion`.
+2. `dependencyInsight` output confirms resolved `com.badlogicgames.gdx:gdx == 1.14.0`; this is a resolution sanity check, not a binary-compatibility proof.
+3. Kotlin compile has no metadata compatibility failure.
+4. Scene2D host, Skin bridge and at least one migrated screen pass with and without the DSL conversion against resolved libGDX `1.14.0`.
+5. `KtomeSceneSkin` still consumes manifest/resolver-owned drawables and client-owned fonts.
+
+Rejection bar:
+
+1. KTX requires adding `ktx-app`, async asset modules, injection, `ktx-vis` or broad stack imports.
+2. KTX encourages `Scene2DSkin.defaultSkin` global state that hides K-ToME's resolver-backed Skin owner.
+3. `ktx-style` code starts naming atlas entries or resource paths directly.
+4. A Gradle conflict, Kotlin metadata issue or libGDX binary issue requires version pinning gymnastics.
 
 ### 2.7 Skin Composer Development Guide
 
@@ -424,15 +495,15 @@ KtomeRootTable
         +-- NavRail / RightPanel / BottomDeck / ModalLayer / TooltipLayer
         +-- MapStageActor
               |
-              +-- TileRenderer.render(...)
+              +-- TileRendererDelegate.renderMapIntoStage(...)
 ```
 
 Authority split：
 
 | Layer | Owns | Must not own |
 | --- | --- | --- |
-| `KtomeUiStage` | Stage lifecycle、viewport、input routing、act/draw order | game rules、resource truth、snapshot mutation |
-| `KtomeSceneSkin` | widget styles、colors、fonts、drawable construction | raw asset paths、manifest inventory、game semantics |
+| `KtomeUiStage` | Stage lifecycle、viewport、input routing、act/draw order | game rules、resource truth、snapshot mutation、shared Skin/font disposal |
+| `KtomeSceneSkin` | widget styles、colors、drawable construction and binding to client-owned font handles | raw asset paths、manifest inventory、game semantics、font asset generation |
 | `KtomeRootTable` | retained layout、major surfaces、modal/tooltip stacking | tile rendering、visibility、combat state |
 | `KtomeScreenPresenter` | snapshot / app state -> UI view model | locale bundle truth、save/profile state |
 | `MapStageActor` | actor bounds、clip、delegation to map renderer | tile semantics、topology classifier、resource resolver policy |
@@ -458,16 +529,35 @@ Rules：
 3. Skin / Table 不保存 `rawOutputPath`、filesystem path、manifest key inventory mirror。
 4. Skin Composer 输出只能作为 authoring artifact，经 manifest / resolver / test 后才能进入 runtime。
 5. 如果使用 atlas / nine-patch，atlas entry 仍必须能从 manifest key 追溯。
+6. KtomeUiStage does not dispose shared Skin. Skin disposal belongs to `KtomeSceneSkin` or the client asset owner that created it.
+7. Font ownership stays with the existing client font asset owner. `KtomeSceneSkin` may register existing `BitmapFont` handles into `Skin`, but it must not create a second FreeType generator or independent font cache.
 
 ### 3.3 MapStageActor Boundary
 
 `MapStageActor` 是保守适配层：
 
 1. 它是 Scene2D `Actor` 或 `Widget`，拥有 bounds、clip、hit area。
-2. 它内部调用现有 `TileRenderer`，传入 `SpriteBatch`、resolver、snapshot、overlay state、cell size、map-stage bounds。
+2. 它内部调用新建的 map-only `TileRendererDelegate.renderMapIntoStage` / equivalent API，传入 P4-T0 选定的 renderer batch contract、snapshot、overlay state、cell size、map-stage bounds。
 3. 它不解析 terrain、AI、visibility、loot、telegraph、pathing。
 4. 它不维护地图视觉 key inventory。
 5. 它只向 Stage 暴露高层 input handoff：map click / hover / focus request。
+6. MapStageActor.draw() must not call batch.begin or batch.end.
+7. `MapStageActor.draw()` must not call `Gdx.gl.glClear`, `viewport.apply`, mutate the Stage camera or change the `Batch` projection matrix permanently.
+8. Stage / `KtomeUiStage` owns `Batch` lifecycle and viewport application. `MapStageActor` only renders inside the already-active Scene2D draw pass.
+9. Bounds must come from Table-derived actor geometry converted to stage-space. Raw `Actor.x` / `Actor.y` fields are actor-local or parent-space under nested Table / Group and must not be passed as stage-space. `MapStageRenderFrame.fromActor(actor)` or an equivalent API must use `localToStageCoordinates` for local `(0, 0)` and `(width, height)`, then convert the resulting stage bounds to existing `TileMapViewportState` inputs. The actor must not read final UI bounds from `DemoShellLayoutSolver`.
+10. The actor must wrap map rendering in Scene2D clipping or `ScissorStack`, flushing before clip transitions and before `clipEnd`.
+11. The map-only render API must not draw right panel, bottom deck, nav rail, standalone screens, modal, tooltip or inventory/talent chrome.
+
+Canonical frame contract:
+
+1. The new frame type name is `MapStageRenderFrame`, owned by `client/src/main/kotlin/com/ktome/client/render/MapStageRenderFrame.kt`.
+2. `MapStageRenderFrame` is a renderer-side adapter, not a Scene2D widget. `ui/scene2d/MapStageActor.kt` consumes it through `TileRendererDelegate`; it does not build renderer identities itself.
+3. D10 shell uses `FitViewport(UiDesignTokens.fixed.shellPreferredWorldWidth, UiDesignTokens.fixed.shellPreferredWorldHeight)` as the initial retained Stage viewport contract. The current design size is `1280x800`; larger packaged windows are capture sizes, not a second UI world truth.
+4. Map rendering inside Stage uses UI-space drawing. The actor's Table-derived bounds are converted into a cell-aligned map rectangle and effective cell size; `TileRenderer` must not install a separate map camera or persistent projection matrix inside `MapStageActor.draw()`.
+5. `MapStageRenderFrame` produces or carries the existing `TileMapViewportState` for deadzone and visible-range continuity. It does not replace `TileMapViewportState`; it wraps the actor-space inputs needed to create a `TileMapViewportIdentity`.
+6. `FoundationViewportSupport.worldWidth/worldHeight/syncViewport` is a legacy full-shell viewport owner. During P4 it must move behind `MapStageRenderFrame` or be retired for retained shell runtime; `FoundationGameScreen` must stop sizing the production UI viewport from snapshot map dimensions.
+7. A future independent map projection is allowed only as a separate implementation choice with save/restore, flush and packaged smoke evidence. It is not the default D10 path because it raises Batch lifecycle risk.
+8. P4-T0 must close the `Batch` versus `SpriteBatch` contract before `MapStageActor` calls the delegate. The default D10 path is SpriteBatch-preserving because the current `TileRenderer.render` contract takes `SpriteBatch`: `TileRendererDelegate.renderMapIntoStage` should take `SpriteBatch`, `KtomeUiStage` should construct Stage with that same `SpriteBatch`, and `MapStageActor` may only perform a single tested fail-fast boundary check if Scene2D supplies another `Batch` implementation. A broader `Batch` refactor is allowed only if `TileRenderer`, `GdxTileCanvas` and existing renderer tests move to libGDX `Batch` in the same P4-T0 slice. Do not leave the delegate typed as `Batch` while the renderer still requires `SpriteBatch`.
 
 Map rendering stays immediate inside the actor. UI layout becomes retained outside the actor.
 
@@ -480,6 +570,9 @@ Map rendering stays immediate inside the actor. UI layout becomes retained outsi
 3. Focus state 使用 `UiFocusGraph` 或同等薄模型，而不是从 draw order 反推。
 4. modal 打开时，map movement 必须被阻断或显式降级。
 5. map-stage focus 下，键盘移动仍走现有 gameplay input，不通过 Scene2D button 模拟。
+6. Non-interactive shell containers, background panels and decorative frame actors above the map must use `Touchable.disabled` or `Touchable.childrenOnly`.
+7. Only actionable widgets consume input. A parent Table that merely organizes layout must not steal map click / hover events.
+8. `MapStageActor` may consume map click / hover only after translating them to the existing map input contract; otherwise the event falls through to `InputHandler`.
 
 ### 3.5 Rendering Order
 
@@ -493,6 +586,8 @@ Stage background / shell chrome
 ```
 
 如果 Stage 与 `TileRenderer` 共享 `SpriteBatch`，必须保证 begin/end lifecycle 单一 owner。推荐在 `KtomeUiStage.draw()` 内部统一调度，避免 `FoundationGameScreen` 和 `TileRenderer` 各自拥有 batch lifecycle。
+
+Current renderer fact that makes this feasible: the existing `TileCanvas` draw helpers ultimately write through `SpriteBatch`, and the flush path uses `batch.flush()` rather than taking over `begin/end`. The D10 split must preserve that constraint for the new map-only render API.
 
 ### 3.6 Long-Term Refactor Findings
 
@@ -541,7 +636,7 @@ Tasks:
 | `D10-P0-T2` | `UI/pr/screen-coverage-matrix.md` | ensure all affected screens have D10 evidence labels: main menu, validation, outcome, shell, inventory, talent, active slot modal | every D10 surface has a required label |
 | `D10-P0-T3` | `UI/goal/dark-uiux-pr08-director-grade-iteration-goal.md` | record that further PR-08 UI work should not add new `TileCanvas` UI outside map rendering | future prompt contract points to D10 |
 | `D10-P0-T4` | `UI/manual-records/dark-uiux-pr08-d10-retained-ui.md` | add phase checklist and current route inventory | manual record names old routes and target retained owners |
-| `D10-P0-T5` | `tools` acceptance lint owner | register D10 and add retained-UI doc checks: phase headings, manual record, phase transition checklist, placeholder-free bash gates and no numeric `D10-S*` execution labels | `acceptanceContractLint` fails if any D10 doc check drifts |
+| `D10-P0-T5` | `tools` acceptance lint owner | register D10 and add retained-UI doc checks: phase headings, manual record, phase transition checklist, placeholder-free bash gates and no numeric `D10-S*` execution labels. `D10-S*` was an early D10 draft step shorthand and is no longer a valid execution id | `acceptanceContractLint` fails if any D10 doc check drifts |
 
 Phase gate:
 
@@ -557,6 +652,7 @@ Whitebox evidence:
 1. No runtime whitebox required for docs-only P0.
 2. Manual record must state that runtime migration has not started.
 3. Runtime renderer / resource / manifest / golden changes are not valid P0 closure evidence; split them out or reclassify the packet as a later implementation phase.
+4. Any concurrent PR-08 map-stage runtime changes belong to a separate map-stage evidence packet; they do not count as D10-P0 closure evidence.
 
 Do not enter P1 if:
 
@@ -573,9 +669,9 @@ Tasks:
 
 | Task | Location | Work | Acceptance |
 | --- | --- | --- | --- |
-| `D10-P1-T1` | `client/src/main/kotlin/com/ktome/client/ui/scene2d/KtomeUiStage.kt` | create Stage lifecycle owner: viewport, root install, act/draw, resize, dispose | viewport resize test passes |
+| `D10-P1-T1` | `client/src/main/kotlin/com/ktome/client/ui/scene2d/KtomeUiStage.kt` | create Stage lifecycle owner: viewport, root install, act/draw, resize, dispose | viewport resize test passes; stage disposal does not dispose shared Skin |
 | `D10-P1-T2` | `client/src/main/kotlin/com/ktome/client/ui/scene2d/KtomeRootTable.kt` | create root table factories for standalone and game shell routes | root table fills viewport and exposes stable bounds |
-| `D10-P1-T3` | `client/src/main/kotlin/com/ktome/client/ui/scene2d/KtomeSceneSkin.kt` | build Skin styles from resolver-backed assets, fonts and tokens | required style keys are present; no raw path |
+| `D10-P1-T3` | `client/src/main/kotlin/com/ktome/client/ui/scene2d/KtomeSceneSkin.kt` | build Skin styles from resolver-backed assets, client-owned fonts and tokens | required style keys are present; no raw path; no duplicate FreeType generator |
 | `D10-P1-T4` | `client/src/main/kotlin/com/ktome/client/ui/scene2d/KtomeInputRouter.kt` | define Stage-first input routing with fallback to map/game input | consumed UI input does not leak to movement |
 | `D10-P1-T5` | `client/src/test/kotlin/com/ktome/client/ui/scene2d/` | add kernel, skin and input-boundary tests | focused suite passes |
 | `D10-P1-T6` | `client/build.gradle.kts` | keep dependency set unchanged; no KTX in P1 | dependency diff is empty |
@@ -586,6 +682,8 @@ Implementation notes:
 2. Do not introduce KTX in P1. If boilerplate is painful, record it as a P1 finding and handle it after P8 or in a separate compatibility PR.
 3. Do not load Skin JSON as source truth. `KtomeSceneSkin` should construct styles from manifest/resolver-owned assets.
 4. `KtomeUiStage` is the draw lifecycle owner for retained UI; avoid nested `batch.begin()` / `batch.end()` ownership.
+5. `KtomeUiStage` must not own or dispose a shared `Skin`; `KtomeSceneSkin` or the client asset owner disposes the Skin according to the creation contract.
+6. Non-interactive root/background containers must use `Touchable.disabled` or `Touchable.childrenOnly`, with explicit tests for map click fallback.
 
 Phase gate:
 
@@ -638,6 +736,7 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew :client:test --tests com.ktome.client.screen.MainMenuControllerTest --tests com.ktome.client.screen.MainMenuScreenTextTest --tests com.ktome.client.screen.ValidationSetupControllerTest --tests com.ktome.client.screen.OutcomeSummaryPresenterTest --no-configuration-cache
 ./gradlew :client:test --tests "com.ktome.client.ui.scene2d.*Standalone*" --no-configuration-cache
+./gradlew d10StandaloneScreens --no-configuration-cache
 ./gradlew :client:goldenScreenshot --no-configuration-cache
 ./gradlew maintainabilityLint --no-configuration-cache
 ```
@@ -684,6 +783,7 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew :client:test --tests com.ktome.client.input.InputHandlerTest --tests com.ktome.client.ui.layout.ModalStackTest --tests com.ktome.client.ui.layout.PaneFocusControllerTest --no-configuration-cache
 ./gradlew :client:test --tests "com.ktome.client.ui.scene2d.*Focus*" --tests "com.ktome.client.ui.scene2d.*Modal*" --tests "com.ktome.client.ui.scene2d.*Tooltip*" --no-configuration-cache
+./gradlew d10FocusModalTooltip --no-configuration-cache
 ./gradlew :client:goldenScreenshot --no-configuration-cache
 ```
 
@@ -709,9 +809,10 @@ Tasks:
 
 | Task | Location | Work | Acceptance |
 | --- | --- | --- | --- |
+| `D10-P4-T0` | `client/src/main/kotlin/com/ktome/client/render/TileRendererDelegate.kt`, `MapStageRenderFrame.kt`, `TileRenderer.kt` | split a map-only render entry before `MapStageActor` uses the renderer; choose and document the `Batch` / `SpriteBatch` contract; move snapshot-sized viewport assumptions behind `MapStageRenderFrame` | `renderMapIntoStage` / equivalent draws map, actor, fog, telegraph and map-only effects, uses converted actor-to-stage bounds, rejects untested batch casts, and does not draw shell panels, modal, tooltip, inventory or talent UI |
 | `D10-P4-T1` | `GameShellTable.kt` | create retained root shell with nav rail, map stage, right panel host, bottom deck and overlay layer | major surfaces are disjoint across viewport sizes |
-| `D10-P4-T2` | `MapStageActor.kt` | delegate map rendering to `TileRenderer` inside Table-derived bounds | map actor bounds are stable and clipped |
-| `D10-P4-T3` | `FoundationGameScreen.kt` | install retained shell route in production | runtime uses Stage shell |
+| `D10-P4-T2` | `MapStageActor.kt` | delegate map rendering to the map-only renderer inside Table-derived bounds | map actor bounds are stable, clipped and do not call the old full-shell render route |
+| `D10-P4-T3` | `FoundationGameScreen.kt` | install retained shell route in production and stop sizing the production UI viewport from `FoundationViewportSupport.worldWidth/worldHeight` | runtime uses Stage shell with retained UI viewport |
 | `D10-P4-T4` | `DemoShellLayoutSolver` integration | stop using solver as final UI layout authority; keep only temporary adapter if still needed for map-only calculations | no retained surface reads final bounds from old solver |
 | `D10-P4-T5` | `DemoShellRenderer.kt` | remove outer frame, nav rail, right panel host and bottom deck host draw paths once retained equivalents exist | renderer no longer draws shell chrome for migrated shell |
 | `D10-P4-T6` | `TileRenderer.kt` | narrow non-map flush layers and route map-stage frame through retained shell where possible | map tests remain green |
@@ -728,6 +829,7 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew :client:test --tests com.ktome.client.render.TileRendererCanvasTest --tests com.ktome.client.render.GameShellLayoutTest --tests com.ktome.client.render.DemoShellLayoutTest --no-configuration-cache
 ./gradlew :client:test --tests "com.ktome.client.ui.scene2d.*GameShell*" --tests "com.ktome.client.ui.scene2d.*MapStageActor*" --no-configuration-cache
+./gradlew d10RetainedShell --no-configuration-cache
 ./gradlew :client:goldenScreenshot --no-configuration-cache
 ./gradlew maintainabilityLint --no-configuration-cache
 ```
@@ -738,15 +840,18 @@ Whitebox evidence:
 
 1. `dark-uiux-pr08-d10-retained-shell`;
 2. map-stage crop with actor bounds recorded;
-3. right panel crop host visible even before dense widgets migrate;
-4. bottom deck crop host visible;
-5. movement / targeting smoke confirms map input fallback.
+3. `MapStageActorTest.convertsNestedTableActorBoundsToStageSpace`;
+4. right panel crop host visible even before dense widgets migrate;
+5. bottom deck crop host visible;
+6. movement / targeting smoke confirms map input fallback.
 
 Do not enter P5 if:
 
 1. map crop shifts or blurs when only UI shell changes;
 2. right panel or bottom deck overlaps map actor;
 3. shell is still drawn by `DemoShellRenderer` in production.
+4. `MapStageActor` still calls the old full-shell `TileRenderer.render` path.
+5. map-only render split is incomplete or draws any non-map UI surface.
 
 ### 4.6 D10-P5: Equipment, Inventory, Shop And Detail Workbench
 
@@ -782,6 +887,7 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew :client:test --tests com.ktome.client.render.EquipmentInventoryPresenterTest --tests com.ktome.client.render.InventoryWorkbenchPresenterTest --tests com.ktome.client.input.InputHandlerTest --no-configuration-cache
 ./gradlew :client:test --tests "com.ktome.client.ui.scene2d.*Inventory*" --tests "com.ktome.client.ui.scene2d.*Equipment*" --tests "com.ktome.client.ui.scene2d.*Shop*" --no-configuration-cache
+./gradlew d10InventoryEquipment --no-configuration-cache
 ./gradlew :client:goldenScreenshot --no-configuration-cache
 ./gradlew maintainabilityLint --no-configuration-cache
 ```
@@ -837,6 +943,7 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew :client:test --tests com.ktome.client.ui.talent.TalentSidebarPresenterTest --tests com.ktome.client.input.InputHandlerTest --no-configuration-cache
 ./gradlew :client:test --tests "com.ktome.client.ui.scene2d.*Talent*" --tests "com.ktome.client.ui.scene2d.*ActiveSlot*" --no-configuration-cache
+./gradlew d10TalentTree --no-configuration-cache
 ./gradlew :client:goldenScreenshot --no-configuration-cache
 ./gradlew maintainabilityLint --no-configuration-cache
 ```
@@ -885,6 +992,7 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew :client:test --tests com.ktome.client.input.InputHandlerTest --tests com.ktome.client.ui.card.ModalCardModelTest --tests com.ktome.client.render.RoutePreviewTextTest --no-configuration-cache
 ./gradlew :client:test --tests "com.ktome.client.ui.scene2d.*Combat*" --tests "com.ktome.client.ui.scene2d.*Frontstage*" --tests "com.ktome.client.ui.scene2d.*BottomDeck*" --no-configuration-cache
+./gradlew d10FrontstageOverlay --no-configuration-cache
 ./gradlew :client:goldenScreenshot --no-configuration-cache
 ./gradlew maintainabilityLint --no-configuration-cache
 ```
@@ -937,10 +1045,12 @@ sdk env
 Packaged whitebox:
 
 ```text
-dark-uiux-pr08-director-forest-retained-ui
-dark-uiux-pr08-director-mine-retained-ui
-dark-uiux-pr08-director-shadow-depths-retained-ui
+dark-uiux-pr08-director-forest-map-stage, with runtimeRoute=retained-ui-stage in expected-evidence.json and route=retained-ui-stage in screenshot metadata
+dark-uiux-pr08-director-mine-map-stage, with runtimeRoute=retained-ui-stage in expected-evidence.json and route=retained-ui-stage in screenshot metadata
+dark-uiux-pr08-director-shadow-depths-map-stage, with runtimeRoute=retained-ui-stage in expected-evidence.json and route=retained-ui-stage in screenshot metadata
 ```
+
+If D10 chooses dedicated retained-ui ids instead, P8 must first register `dark-uiux-pr08-director-forest-retained-ui`, `dark-uiux-pr08-director-mine-retained-ui` and `dark-uiux-pr08-director-shadow-depths-retained-ui` in `ValidationScenarioRegistry`, `Phase4V4WhiteboxScenarioMaterializationCatalog`, `tools/src/main/resources/phase4/whitebox/phase4-v4-scenarios.yaml` and the golden label owner before any command uses them.
 
 Do not claim D10 complete if:
 
@@ -974,16 +1084,23 @@ Suggested files:
 | `KtomeRootTable.kt` | root Table factory for standalone screen and game shell |
 | `KtomeScreenPresenter.kt` | view model to widget binding helpers |
 | `KtomeUiFocusGraph.kt` | keyboard focus scopes and traversal |
-| `MapStageActor.kt` | TileRenderer actor adapter |
+| `MapStageActor.kt` | Scene2D actor that consumes the renderer-side map-only delegate |
 | `GameShellTable.kt` | retained in-game shell layout |
 | `StandaloneScreenTable.kt` | retained standalone screen layout |
+
+Renderer-side adapter files:
+
+| File | Responsibility |
+| --- | --- |
+| `client/src/main/kotlin/com/ktome/client/render/TileRendererDelegate.kt` | owns the map-only API consumed by `MapStageActor`; no Scene2D types should leak into this contract |
+| `client/src/main/kotlin/com/ktome/client/render/MapStageRenderFrame.kt` | converts Table-derived stage bounds into renderer inputs, effective cell size and `TileMapViewportState` continuity |
+| `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt` | implements the map-only draw path while retaining map, actor, fog, telegraph and map-stage effect authority |
 
 Minimal API sketch:
 
 ```kotlin
 internal class KtomeUiStage(
     private val viewport: Viewport,
-    private val skin: Skin,
 ) : Disposable {
     val stage: Stage = Stage(viewport)
 
@@ -1003,10 +1120,11 @@ internal class KtomeUiStage(
 
     override fun dispose() {
         stage.dispose()
-        skin.dispose()
     }
 }
 ```
+
+`KtomeUiStage` owns the `Stage` and viewport lifecycle only. It does not dispose shared Skin or font assets. The creator of `KtomeSceneSkin` / client asset owner must dispose those resources explicitly.
 
 ```kotlin
 internal class MapStageActor(
@@ -1016,17 +1134,29 @@ internal class MapStageActor(
 ) : Widget() {
     override fun draw(batch: Batch, parentAlpha: Float) {
         validate()
-        renderer.renderInto(
-            batch = batch,
-            bounds = KtomeBounds(x, y, width, height),
-            snapshot = snapshotProvider(),
-            overlay = overlayProvider(),
-        )
+        val spriteBatch =
+            batch as? SpriteBatch
+                ?: error("MapStageActor requires the Stage SpriteBatch selected by D10-P4-T0.")
+        val frame = MapStageRenderFrame.fromActor(this)
+        batch.flush()
+        if (clipBegin(0f, 0f, width, height)) {
+            try {
+                renderer.renderMapIntoStage(
+                    batch = spriteBatch,
+                    frame = frame,
+                    snapshot = snapshotProvider(),
+                    overlay = overlayProvider(),
+                )
+            } finally {
+                batch.flush()
+                clipEnd()
+            }
+        }
     }
 }
 ```
 
-The sketch defines shape only. Final implementation should align with existing `TileRenderer` batch lifecycle and libGDX `Batch` type.
+The sketch defines shape only. `MapStageRenderFrame.fromActor(this)` is responsible for local-to-stage conversion and must be covered by `MapStageActorTest.convertsNestedTableActorBoundsToStageSpace`. Final implementation must align with existing `TileRenderer` batch lifecycle and the P4-T0 `Batch` / `SpriteBatch` contract. `MapStageActor.draw()` must not call batch.begin, batch.end, `Gdx.gl.glClear`, `viewport.apply`, mutate the batch projection permanently, or call the old full-shell render entry.
 
 ### 5.2 Existing Screen Classes
 
@@ -1038,13 +1168,14 @@ The sketch defines shape only. Final implementation should align with existing `
 | `client/src/main/kotlin/com/ktome/client/screen/VictoryScreen.kt` | use retained outcome table |
 | `client/src/main/kotlin/com/ktome/client/screen/GameOverScreen.kt` | use retained outcome table |
 | `client/src/main/kotlin/com/ktome/client/screen/UiErrorScreen.kt` | first migration target |
-| `client/src/main/kotlin/com/ktome/client/screen/FoundationGameScreen.kt` | owns retained game shell and `MapStageActor` integration |
+| `client/src/main/kotlin/com/ktome/client/screen/FoundationGameScreen.kt` | owns retained game shell and `MapStageActor` integration; after P4 production UI viewport is retained UI sized, not snapshot map sized |
 
 ### 5.3 Existing Renderer Classes
 
 | File | Change |
 | --- | --- |
-| `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt` | keep map renderer; stop drawing retained UI panels after migration |
+| `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt` | keep map renderer; add map-only delegate implementation; stop drawing retained UI panels after migration |
+| `client/src/main/kotlin/com/ktome/client/render/MapStageRenderFrame.kt` | new P4 adapter from retained actor bounds to cell-aligned map viewport inputs |
 | `client/src/main/kotlin/com/ktome/client/render/DemoShellRenderer.kt` | staged retirement per panel; map-stage frame may move to Skin / shell table |
 | `client/src/main/kotlin/com/ktome/client/render/layout/DemoShellLayout.kt` | short-term adapter for bounds; final authority should move to Table layout |
 | `client/src/main/kotlin/com/ktome/client/render/TileRenderModel.kt` | preserve view model source for panel content; do not create Actor here |
@@ -1076,10 +1207,11 @@ KTX adoption options:
 
 If KTX is added:
 
-1. Add explicit version property aligned with the current libGDX and Kotlin versions after compatibility verification.
-2. Add only `ktx-scene2d` and `ktx-style`.
-3. Run `./scripts/verify-bootstrap.sh`.
+1. Add explicit `ktxVersion=1.13.1-rc1` or a later verified version after compatibility verification.
+2. Add only `ktx-scene2d` first; add `ktx-style` only after Skin boilerplate has proven costly.
+3. Run `./scripts/verify-bootstrap.sh`, `dependencyInsight` for `io.github.libktx:ktx-scene2d` and `com.badlogicgames.gdx:gdx`, and `:client:compileTestKotlin`.
 4. Keep final widget structure readable to libGDX developers who do not know KTX DSL.
+5. Do not use `Scene2DSkin.defaultSkin` as hidden global UI state unless the D10 Skin owner explicitly installs and clears it in tests.
 
 ## 6. Test And Evidence Plan
 
@@ -1094,8 +1226,9 @@ Suggested tests:
 5. `StandaloneScreenTableTest.laysOutOutcomeScreenWithinPanelBounds`
 6. `GameShellTableTest.keepsMapStageRightPanelAndBottomDeckDisjoint`
 7. `MapStageActorTest.delegatesRenderingWithinActorBounds`
-8. `KtomeUiFocusGraphTest.traversesPrimaryFlowByKeyboard`
-9. `KtomeUiFocusGraphTest.modalBlocksMapMovementAndRestoresFocus`
+8. `MapStageActorTest.convertsNestedTableActorBoundsToStageSpace`
+9. `KtomeUiFocusGraphTest.traversesPrimaryFlowByKeyboard`
+10. `KtomeUiFocusGraphTest.modalBlocksMapMovementAndRestoresFocus`
 
 ### 6.2 Existing Test Suites To Keep Green
 
@@ -1110,13 +1243,46 @@ Suggested tests:
 
 ### 6.3 Golden / Whitebox Evidence
 
-Required crops after runtime migration:
+Current registered packaged scenario family:
 
-| Scenario | Evidence |
+```text
+dark-uiux-pr08-director-forest-map-stage
+dark-uiux-pr08-director-mine-map-stage
+dark-uiux-pr08-director-shadow-depths-map-stage
+```
+
+These ids are already present in `ValidationScenarioRegistry`, `Phase4V4WhiteboxScenarioMaterializationCatalog` and `tools/src/main/resources/phase4/whitebox/phase4-v4-scenarios.yaml`. D10 may reuse them if generated packaged evidence records `runtimeRoute: "retained-ui-stage"` in `build/whitebox/<scenario>/expected-evidence.json`, each accepted screenshot `.metadata.txt` records `route=retained-ui-stage`, and the crops prove the retained route.
+
+Future retained-ui scenario ids:
+
+```text
+dark-uiux-pr08-director-forest-retained-ui
+dark-uiux-pr08-director-mine-retained-ui
+dark-uiux-pr08-director-shadow-depths-retained-ui
+```
+
+These ids are not executable until an implementation PR registers them in the scenario registry, materialization catalog, YAML inventory, presentation catalog if player-visible, and golden label owner. No D10 document or PR body may present an unregistered id as a runnable command.
+
+Current executable packaged scenarios after runtime migration:
+
+| Scenario | Required retained evidence |
 | --- | --- |
-| `dark-uiux-pr08-director-forest-retained-ui` | full window, map-stage crop, right panel crop, bottom deck crop, modal/tooltip if active |
-| `dark-uiux-pr08-director-mine-retained-ui` | same crop set; prevents forest-only validation |
-| `dark-uiux-pr08-director-shadow-depths-retained-ui` | same crop set; covers disconnected / dark topology stress |
+| `dark-uiux-pr08-director-forest-map-stage` | `route=retained-ui-stage`; full window, map-stage crop, right panel crop, bottom deck crop, modal/tooltip if active |
+| `dark-uiux-pr08-director-mine-map-stage` | `route=retained-ui-stage`; same crop set; prevents forest-only validation |
+| `dark-uiux-pr08-director-shadow-depths-map-stage` | `route=retained-ui-stage`; same crop set; covers disconnected / dark topology stress |
+
+Future dedicated retained-ui scenarios, only after registration:
+
+| Scenario | Status |
+| --- | --- |
+| `dark-uiux-pr08-director-forest-retained-ui` | may become a packaged gate only after registry, materialization, YAML, presentation and golden label registration |
+| `dark-uiux-pr08-director-mine-retained-ui` | may become a packaged gate only after registry, materialization, YAML, presentation and golden label registration |
+| `dark-uiux-pr08-director-shadow-depths-retained-ui` | may become a packaged gate only after registry, materialization, YAML, presentation and golden label registration |
+
+D10 retained golden / actor-tree labels:
+
+| Label | Evidence |
+| --- | --- |
 | `dark-uiux-pr08-d10-main-menu-retained` | standalone screen crop and actor-tree report |
 | `dark-uiux-pr08-d10-validation-retained` | validation setup crop and keyboard flow evidence |
 | `dark-uiux-pr08-d10-outcome-retained` | victory / game-over / error table evidence |
@@ -1132,12 +1298,13 @@ Required crops after runtime migration:
 
 Evidence must record:
 
-1. route: `retained-ui-stage`
-2. screen id
-3. skin style version or style key set hash
-4. map-stage actor bounds
-5. focused actor path, if modal or tooltip is open
-6. manual verdict
+1. `runtimeRoute: "retained-ui-stage"` in generated `expected-evidence.json`;
+2. `route=retained-ui-stage` in each accepted screenshot `.metadata.txt`;
+3. screen id
+4. skin style version or style key set hash
+5. map-stage actor bounds
+6. focused actor path, if modal or tooltip is open
+7. manual verdict
 
 ## 7. Migration And Rollback
 
@@ -1157,6 +1324,7 @@ Rollback must be narrow:
 2. Keep `KtomeUiStage` host if other migrated screens still use it.
 3. Do not delete manifest assets as part of UI rollback unless they were introduced only for the failed slice.
 4. Manual record must state which route is active after rollback.
+5. Rollback means phase revert or rollback-only quarantined route. It is not a long-term compatibility flag and must not remain as a normal product route after the phase is repaired.
 
 ### 7.3 Staged Retirement
 
@@ -1384,7 +1552,7 @@ Evidence:
 
 ### 8.6 Rollout Order
 
-The screen rollout must follow the phase plan in §4. Historical `D10-S*` shorthand must not be used as an execution label; implementation packets use `D10-P*` phase ids.
+The screen rollout must follow the phase plan in §4. Historical `D10-S*` shorthand was an early D10 draft step label and must not be used as an execution label; implementation packets use `D10-P*` phase ids.
 
 Recommended order:
 
@@ -1400,16 +1568,22 @@ Recommended order:
 
 Do not start talent tree or full inventory workbench before P1-P4 pass. They should consume the retained host, Skin, shell and focus contracts after the simpler standalone and shell surfaces are stable. If the team intentionally pulls inventory or talent earlier, it must create a separate PR with its own phase gate and explain why the dependency inversion is worth the risk.
 
+Cost spikes:
+
+1. `D10-P4` is the largest architecture spike because it combines `TileRenderer` map-only split, retained shell hard cut, Stage/Table coordinates, clipping and input fallback.
+2. `D10-P6` is the largest widget complexity spike because talent tree needs deep hierarchy, connector drawing, legality state display and active-slot modal focus in one family.
+3. P4 and P6 should each reserve extra whitebox/debug time; do not schedule them as simple visual-polish phases.
+
 ## 9. Risk Register
 
 | Risk | Why it matters | Mitigation |
 | --- | --- | --- |
-| Stage steals gameplay input | Movement / targeting can regress invisibly | input multiplexer tests, modal blocking tests, keyboard smoke |
+| Stage steals gameplay input | Movement / targeting can regress invisibly | `Touchable.disabled` / `Touchable.childrenOnly` policy, input multiplexer tests, modal blocking tests, keyboard smoke |
 | Skin becomes second resource authority | Breaks K-ToME manifest contract | resolver-backed drawable factory, raw path scan, resource lint |
 | Table layout fights existing input hit-test | Mouse hover/click areas drift from visual bounds | expose Table-derived bounds to input adapter and add hit-test tests |
-| KTX dependency expands scope | Dependency verification can dominate PR | start with libGDX official API, add KTX only after host proof |
+| KTX dependency expands scope | Dependency verification can dominate PR | start with libGDX official API, add KTX only after host proof and `D10-KTX-COMPAT` passes |
 | Retained UI duplicates old immediate route | Long-term maintenance gets worse | one-screen-at-a-time migration and staged retirement matrix |
-| Map rendering inside Actor breaks batch lifecycle | blank frames or nested begin/end errors | single owner draw lifecycle test and packaged smoke |
+| Map rendering inside Actor breaks batch lifecycle | blank frames or nested begin/end errors | map-only render split, single owner draw lifecycle test and packaged smoke |
 | Scene2D widgets look generic | VisUI-like default styling can miss dark UI bar | PR-08 Skin bridge consumes dark-v1 assets and golden evidence |
 | Golden passes but packaged app differs | Desktop packaging / asset loading can diverge | packaged whitebox remains required for runtime migration |
 
@@ -1437,7 +1611,7 @@ D10 retained UI PR is complete only when:
 D10 的最佳方案是改变 UI authority，而不是继续在 `TileCanvas` 里堆更多视觉构图：
 
 1. libGDX 官方 `Scene2D / Stage / Skin / Table` 是 K-ToME 应该回归的 retained UI 主线。
-2. KTX Scene2D DSL 可以借鉴或后续引入，但不能阻塞官方 Scene2D host proof。
+2. KTX Scene2D DSL 可以条件采用，但必须先通过 `D10-KTX-COMPAT` 的 Maven/Gradle/Kotlin 编译 spike；它不能阻塞官方 Scene2D host proof。
 3. Skin Composer、TexturePacker 是资源与 Skin authoring 工具，不是 runtime truth。
 4. VisUI、Unciv、Mindustry、Shattered Pixel Dungeon 只提供不同层面的参考，不应成为 K-ToME 的直接架构依赖。
 5. `TileRenderer` 保留地图渲染权威，`MapStageActor` 把它嵌入 retained shell。
