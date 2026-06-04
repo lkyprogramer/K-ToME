@@ -365,7 +365,30 @@ tasks.register<Test>("goldenScreenshot") {
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform {
         includeTags("goldenScreenshot")
+        excludeTags("pr08RuntimeTopologyProbe")
     }
+}
+
+tasks.register<Test>("pr08RuntimeTopologyProbe") {
+    group = "verification"
+    description = "Runs PR-08 runtime topology crop probes that use dedicated LWJGL single-shot capture."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("pr08RuntimeTopologyProbe")
+    }
+    mustRunAfter(tasks.named("goldenScreenshot"))
+}
+
+tasks.register<Test>("pr08RealProcgenProbe") {
+    group = "verification"
+    description = "Runs PR-08 D9 real-procgen ROI evidence probes."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("pr08RealProcgenProbe")
+    }
+    mustRunAfter(tasks.named("test"))
 }
 
 listOf(

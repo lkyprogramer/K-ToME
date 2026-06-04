@@ -418,8 +418,10 @@ UI chrome 新增明确 key，避免 renderer 使用裸路径：
 | `dark-uiux-pr05` | [Map Actor Portrait Replacement](./pr/dark-uiux-pr05-map-actor-portrait-replacement.md) | XL | Tile、prop、VFX、actor、portrait 统一替换 |
 | `dark-uiux-pr06` | [Skills Status Quest Full Manifest](./pr/dark-uiux-pr06-skills-status-quest-full-manifest.md) | XL | 技能、状态、任务、fallback、全 manifest 收口 |
 | `dark-uiux-pr07` | [Golden Whitebox Polish](./pr/dark-uiux-pr07-golden-whitebox-polish.md) | M | 全 UI 面 golden/白盒、验证模式、结算/错误页、性能与 atlas 决策 |
+| `dark-uiux-pr08` | [Director Grade Asset Reset](./pr/dark-uiux-pr08-director-grade-asset-reset.md) | XL | PR-07 后对 map-stage、shell chrome、right panel、bottom HUD 做 director-grade 质感重置 |
+| `dark-uiux-pr08-d10` | [Retained UI And Map-Stage Authority](./pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md) | XL | 将后续 UI 修复迁移到 libGDX retained UI / Skin / Table authority，并按 phase gate 大改首页、shell、背包、shop、天赋、combat/frontstage |
 
-执行顺序固定为：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07`。
+执行顺序固定为：`PR-00 -> PR-01 -> PR-01-1 -> PR-02 -> PR-02-1 -> PR-03 -> PR-04 -> PR-05 -> PR-06 -> PR-07 -> PR-08 -> PR-08 D10`。D10 是 PR-08 retained UI authority 子包，不替代 PR-08 director visual evidence；D10 内部按 `D10-P0 ~ D10-P8` 串行推进，每个 phase 完成测试、golden / 白盒和旧 route 删除或隔离后才能进入下一 phase。
 
 ## Asset Pipeline Deliverables
 必须新增或更新以下文件族：

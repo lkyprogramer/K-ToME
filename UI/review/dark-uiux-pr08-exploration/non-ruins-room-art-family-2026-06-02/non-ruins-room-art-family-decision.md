@@ -153,12 +153,13 @@ After the V4 right-mass pass, the current fixed-crop board is:
 
 `UI/review/dark-uiux-pr08-exploration/non-ruins-room-art-family-2026-06-02/packaged-non-ruins-family-map-stage-crop-board-v4-shadow.png`
 
-Forest-edge and mine remain accepted-forward as packaged core crop evidence.
-Shadow-depths V4 is also accepted-forward as packaged core crop evidence: it
-fixes the immediate right-half emptiness blocker by adding secondary room mass
-and larger slab rhythm under the runtime grid. It is still weaker than
-forest/mine as a final all-map proof because the fixed room shape remains
-narrow and grid-readable in the lower-right play lane.
+Forest-edge and mine remain historical packaged core crop references only
+after the 2026-06-03 wall-family packaged parity branch was rejected/backed
+out. Shadow-depths V4 is also historical blocker evidence: it fixed the
+immediate right-half emptiness blocker by adding secondary room mass and larger
+slab rhythm under the runtime grid. It is still weaker than forest/mine as a
+final all-map proof because the fixed room shape remains narrow and
+grid-readable in the lower-right play lane.
 
 The `show-evidence-summary` action is now captured and logged for all three
 packaged scenarios. Forest-edge used the normal packaged interaction path. Mine

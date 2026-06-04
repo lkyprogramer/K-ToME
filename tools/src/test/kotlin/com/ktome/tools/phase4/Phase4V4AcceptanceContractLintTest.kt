@@ -19,6 +19,7 @@ class Phase4V4AcceptanceContractLintTest {
         val readme = read(root, "docs/review/phase4/v4-pr/README.md")
         val uiGovernance = read(root, "UI/pr/development-governance.md")
         val uiReadme = read(root, "UI/pr/README.md")
+        val pr08IterationLog = read(root, "UI/goal/dark-uiux-pr08-director-grade-iteration-log.md")
         val verificationReadme = read(root, "docs/verification/README.md")
         val aiGovernance = read(root, "docs/rule/ai-change-governance.md")
 
@@ -44,6 +45,8 @@ class Phase4V4AcceptanceContractLintTest {
         assertContains(uiGovernance, "Dark UI/UX PR Development Governance", "UI/pr development-governance.md")
         assertContains(uiGovernance, "Acceptance Matrix", "UI/pr development-governance.md")
         assertContains(uiGovernance, "Gate Ladder", "UI/pr development-governance.md")
+        assertUiGovernanceConvergenceGate(uiGovernance)
+        assertPr08ConvergenceState(pr08IterationLog)
         assertContains(uiReadme, "development-governance.md", "UI/pr README")
         assertContains(uiReadme, "acceptanceContractLint", "UI/pr README")
         assertContains(uiReadme, "Gate ladder 固定", "UI/pr README")
@@ -54,6 +57,7 @@ class Phase4V4AcceptanceContractLintTest {
         uiPrDocs.forEach { prDoc ->
             assertPrDocContract(root, prDoc)
         }
+        assertUiD10RetainedUiContract(root)
         assertUiPr05InventoryReferenceArtifacts(root)
 
         val pr03 = read(root, prDocs.first { doc -> doc.requirementPrefix == "PR03" }.path)
@@ -90,6 +94,137 @@ class Phase4V4AcceptanceContractLintTest {
         assertTrue(markdown.contains(token), "$owner must contain '$token'.")
     }
 
+    private fun assertUiGovernanceConvergenceGate(markdown: String) {
+        val owner = "UI/pr development-governance.md Visual Convergence Gate"
+        listOf(
+            "Visual Convergence Gate",
+            "`blocker-id`",
+            "`accepted-forward`",
+            "technique family",
+            "`technique-family`",
+            "`source-art`",
+            "`alpha-tuning`",
+            "`compositor-rect`",
+            "`wall-family`",
+            "`presentation-structure`",
+            "`layout-ab`",
+            "failure-counter impact",
+            "`failure-counter-impact`",
+            "`counts-as-progress`",
+            "`counts-as-failure`",
+            "`freeze-no-more-local-polish`",
+            "`not-visual-progress`",
+            "`ab-decision-required`",
+            "governance-only",
+            "routine human wait",
+        ).forEach { token ->
+            assertContains(markdown, token, owner)
+        }
+    }
+
+    private fun assertPr08ConvergenceState(markdown: String) {
+        val owner = "PR-08 iteration log Current Convergence State"
+        val section = sectionBetween(
+            markdown = markdown,
+            startHeading = "## Current Convergence State",
+            endHeading = "## Entry Template",
+            owner = owner,
+        )
+        listOf(
+            "blocker-id",
+            "technique-family",
+            "occurrence-count",
+            "failure-counter-impact",
+            "required-action",
+            "status",
+        ).forEach { token ->
+            assertContains(section, token, owner)
+        }
+
+        val rows = section
+            .lineSequence()
+            .map(String::trim)
+            .filter { line -> line.startsWith("| `") }
+            .toList()
+        assertTrue(rows.isNotEmpty(), "$owner must declare at least one active blocker row.")
+
+        val rowsByBlocker = mutableMapOf<String, String>()
+        rows.forEach { row ->
+            val cells = tableCells(row)
+            assertTrue(
+                cells.size >= PR08_CONVERGENCE_COLUMN_COUNT,
+                "$owner row must include blocker, technique, count, impact, action and status: $row",
+            )
+            val blockerId = unquotedTableCell(cells[0])
+            val techniqueFamily = unquotedTableCell(cells[1])
+            val occurrenceCount = unquotedTableCell(cells[2])
+            val impact = unquotedTableCell(cells[3])
+            val requiredAction = unquotedTableCell(cells[4])
+            val status = unquotedTableCell(cells[5])
+
+            assertTrue(
+                pr08TechniqueFamilies.contains(techniqueFamily),
+                "$owner row uses unknown technique-family '$techniqueFamily': $row",
+            )
+            assertTrue(
+                pr08FailureCounterImpacts.contains(impact),
+                "$owner row uses unknown failure-counter-impact '$impact': $row",
+            )
+            if (requiresDirectionAction(occurrenceCount)) {
+                assertTrue(
+                    pr08RepeatBlockerActions.contains(requiredAction),
+                    "$owner repeated blocker must require direction-change/freeze/deferral/A-B action: $row",
+                )
+                assertFalse(
+                    status == "progress",
+                    "$owner repeated blocker must not remain in progress status: $row",
+                )
+            }
+            rowsByBlocker[blockerId] = row
+        }
+
+        val topologyRiskRow = rowsByBlocker["topology-risk-non-ruins-first-read"]
+        assertTrue(
+            topologyRiskRow != null,
+            "$owner must keep topology-risk non-ruins first-read blocker visible.",
+        )
+        if (topologyRiskRow != null) {
+            assertContains(topologyRiskRow, "`wall-family`", owner)
+            assertContains(topologyRiskRow, "`>=3`", owner)
+            assertContains(topologyRiskRow, "`counts-as-failure`", owner)
+            assertContains(topologyRiskRow, "`ab-decision-required`", owner)
+            assertContains(topologyRiskRow, "`direction-change-triggered`", owner)
+        }
+    }
+
+    private fun sectionBetween(
+        markdown: String,
+        startHeading: String,
+        endHeading: String,
+        owner: String,
+    ): String {
+        val startIndex = markdown.indexOf(startHeading)
+        assertTrue(startIndex >= 0, "$owner must contain '$startHeading'.")
+        val endIndex = markdown.indexOf(endHeading, startIndex + startHeading.length)
+        assertTrue(endIndex > startIndex, "$owner must contain '$endHeading' after '$startHeading'.")
+        return markdown.substring(startIndex, endIndex)
+    }
+
+    private fun tableCells(row: String): List<String> =
+        row
+            .trim()
+            .trim('|')
+            .split("|")
+            .map(String::trim)
+
+    private fun unquotedTableCell(cell: String): String =
+        cell
+            .removePrefix("`")
+            .removeSuffix("`")
+
+    private fun requiresDirectionAction(occurrenceCount: String): Boolean =
+        occurrenceCount == ">=3" || (occurrenceCount.toIntOrNull()?.let { count -> count >= 3 } ?: false)
+
     private fun assertPrDocContract(root: Path, prDoc: PrDoc) {
         val markdown = read(root, prDoc.path)
         assertContains(markdown, "## 0. 开发治理与验收矩阵", prDoc.path)
@@ -110,6 +245,65 @@ class Phase4V4AcceptanceContractLintTest {
         rows.forEach { row ->
             assertFalse(row.contains("TBD"), "${prDoc.path} acceptance row must not contain TBD: $row")
             assertNoMachinePath(row, prDoc.path)
+        }
+    }
+
+    private fun assertUiD10RetainedUiContract(root: Path) {
+        val docPath = "UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md"
+        val manualPath = "UI/manual-records/dark-uiux-pr08-d10-retained-ui.md"
+        val markdown = read(root, docPath)
+        val manualRecord = read(root, manualPath)
+        val owner = "UI08-D10 retained UI contract"
+
+        (0..8).forEach { phase ->
+            assertContains(markdown, "D10-P$phase", owner)
+        }
+        listOf(
+            "docs-only authority freeze",
+            "Runtime renderer / resource / manifest / golden changes are not valid P0 closure evidence",
+            "Phase Transition Checklist",
+            "old_route_removed",
+            "temporary_adapter",
+            "focused_tests",
+            "golden_or_actor_tree",
+            "packaged_whitebox",
+            "next_phase_allowed",
+            "Full golden passing alone is not D10-P2 closure evidence",
+            "d10StandaloneScreens",
+            "d10FocusModalTooltip",
+            "d10RetainedShell",
+            "d10InventoryEquipment",
+            "d10TalentTree",
+            "d10FrontstageOverlay",
+        ).forEach { token ->
+            assertContains(markdown, token, owner)
+        }
+
+        assertFalse(
+            Regex("\\bD10-S\\d+\\b").containsMatchIn(markdown),
+            "$docPath must not use numeric D10-S execution labels; use D10-P* phase ids.",
+        )
+        assertBashBlocksHaveNoAnglePlaceholders(markdown, docPath)
+
+        assertContains(manualRecord, "runtime migration has not started", manualPath)
+        assertContains(manualRecord, "Validation Results", manualPath)
+    }
+
+    private fun assertBashBlocksHaveNoAnglePlaceholders(markdown: String, owner: String) {
+        var inBashBlock = false
+        markdown.lineSequence().forEachIndexed { index, line ->
+            val trimmed = line.trim()
+            if (trimmed == "```bash") {
+                inBashBlock = true
+            } else if (trimmed.startsWith("```")) {
+                inBashBlock = false
+            } else if (inBashBlock) {
+                val placeholder = BASH_PLACEHOLDER_PATTERN.find(line)?.value
+                assertTrue(
+                    placeholder == null,
+                    "$owner bash command block must not contain placeholder $placeholder at line ${index + 1}: $line",
+                )
+            }
         }
     }
 
@@ -176,6 +370,40 @@ class Phase4V4AcceptanceContractLintTest {
     )
 
     private companion object {
+        private const val PR08_CONVERGENCE_COLUMN_COUNT = 6
+
+        private val BASH_PLACEHOLDER_PATTERN = Regex("<[^>]+>")
+
+        private val pr08TechniqueFamilies: Set<String> =
+            setOf(
+                "source-art",
+                "alpha-tuning",
+                "compositor-rect",
+                "wall-family",
+                "presentation-structure",
+                "layout-ab",
+                "interaction-grammar",
+                "resource-manifest-wiring",
+                "packaged-parity",
+                "governance-docs",
+            )
+
+        private val pr08FailureCounterImpacts: Set<String> =
+            setOf(
+                "counts-as-progress",
+                "counts-as-failure",
+                "freeze-no-more-local-polish",
+                "not-visual-progress",
+            )
+
+        private val pr08RepeatBlockerActions: Set<String> =
+            setOf(
+                "direction-change",
+                "freeze",
+                "explicit-deferral",
+                "ab-decision-required",
+            )
+
         private val prDocs: List<PrDoc> =
             listOf(
                 PrDoc(
@@ -260,6 +488,11 @@ class Phase4V4AcceptanceContractLintTest {
                     requirementPrefix = "UI07",
                     path = "UI/pr/dark-uiux-pr07-golden-whitebox-polish.md",
                     minimumRows = 6,
+                ),
+                PrDoc(
+                    requirementPrefix = "UI08-D10",
+                    path = "UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md",
+                    minimumRows = 14,
                 ),
             )
     }

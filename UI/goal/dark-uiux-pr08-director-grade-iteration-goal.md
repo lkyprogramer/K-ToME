@@ -61,7 +61,8 @@
 > Updated: 2026-06-02 after PR08 topology-risk interior seam dissolve V1 packet
 > Updated: 2026-06-02 after PR08 review feedback convergence governance
 > Updated: 2026-06-02 after PR08 second feedback execution lock
-> Status: `pr08-topology-risk-interior-seam-dissolve-v1-accepted-forward`
+> Updated: 2026-06-03 after PR08 D10 retained UI authority promotion
+> Status: `pr08-d10-retained-ui-authority-promoted`
 > Scope: PR-08 post-exploration implementation loop
 
 ## 0. Goal Objective
@@ -122,6 +123,18 @@ same-family failure-counter input; their `accepted-forward` status cannot
 justify another governance-only update or another ruins alpha/seam/fog/source
 polish pass before D9/freeze is resolved.
 
+2026-06-03 D10 route promotion: the next PR-08 route is no longer another
+map-stage micro-polish packet. `UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md`
+promotes retained UI / theme authority as the execution contract: official
+libGDX `Scene2D` / `Stage` / `Skin` / `Table` owns UI layout, focus, modal,
+tooltip and shell surfaces, while `TileRenderer` remains the map authority
+behind a `MapStageActor` boundary. KTX is deferred to a compatibility spike;
+Skin Composer and TexturePacker are authoring tools only; VisUI and gdx-skins
+are not runtime dependencies. The topology-risk non-ruins A/B remains a
+map-stage subproblem after the retained shell boundary exists or is explicitly
+split. D10 is now phase-gated as `D10-P0 ~ D10-P8`; migrated UI surfaces should
+not retain old immediate routes as long-term compatibility paths.
+
 ## 1. Authority Chain
 
 Know these documents and their roles. Before every resumed goal run, read the
@@ -133,9 +146,10 @@ Minimum full-read set:
 1. `docs/INDEX.md`
 2. `UI/review/dark-uiux-pr08-evidence-and-direction.md`
 3. `UI/goal/dark-uiux-pr08-director-grade-iteration-goal.md`
-4. `UI/goal/dark-uiux-pr08-pre-rendered-room-art-plate-plan.md`
-5. `UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/pr08-room-art-plate-direction-a-decision.md`
-6. `UI/goal/dark-uiux-pr08-director-grade-iteration-log.md` if it exists
+4. `UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md`
+5. `UI/goal/dark-uiux-pr08-pre-rendered-room-art-plate-plan.md`
+6. `UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/pr08-room-art-plate-direction-a-decision.md`
+7. `UI/goal/dark-uiux-pr08-director-grade-iteration-log.md` if it exists
 
 On-demand authority set:
 
@@ -1527,6 +1541,7 @@ If the latest log says V48 is accepted-forward and the map remains grid-first, c
 If the latest log says runtime composition or shell-scale hierarchy is the blocker, do not start another floor/wall candidate batch unless new evidence reclassifies the blocker as resource-owned.
 If the latest log says right panel, bottom HUD, inventory, talent, slot state, panel state or chrome is the blocker, consult the relevant UI/design file and name the design-derived acceptance surface before writing code.
 If the latest log is `accepted-forward only` for the same technique family, state whether the new packet would count as progress, a failure toward escalation, or a freeze.
+If the current route is D10, follow `D10-P0 ~ D10-P8` in `UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md`: official libGDX Scene2D/Stage/Skin/Table first, no KTX in the kernel phase, hard-cut migrated surfaces instead of keeping old immediate UI compatibility, and do not enter the next phase until focused tests plus required golden/whitebox evidence pass.
 If the next action is broad Direction A rollout, all-map closure, ruins freeze, or another same-family topology-risk polish pass, route through the D9 ROI/freeze checkpoint first.
 For resource work, state the candidate batch size and A/B evidence paths before integrating runtime resources.
 Do not touch runtime/manifest/golden unless the current loop type allows it.
@@ -2087,3 +2102,14 @@ Current accepted facts:
     `evidence_summary_opened` logs. This removes the local input-routing
     blocker from the packaged evidence packet, but does not close all-map,
     non-ruins final, broader topology or director-grade PR08 acceptance.
+49. The 2026-06-03 D10 retained UI authority packet is the current PR-08 route
+    promotion. It moves the next implementation plan from manual `TileCanvas`
+    UI composition toward retained `Scene2D` / `Stage` / `Skin` / `Table`
+    surfaces, with `TileRenderer` kept as map authority through `MapStageActor`.
+    The packet does not claim final `UI/UI-demo-new.png` quality by itself:
+    retained UI solves layout, focus, modal, tooltip, state styling and surface
+    reuse; final texture/material quality still requires dark-v1 resource
+    ownership and runtime golden/whitebox evidence. Main menu, validation and
+    outcome screens should migrate before the in-run shell; equipment,
+    inventory detail and talent tree retained surfaces follow after the host
+    and Skin bridge are proven.

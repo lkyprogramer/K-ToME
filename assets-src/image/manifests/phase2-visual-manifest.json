@@ -7572,7 +7572,77 @@
         "pr05",
         "forest",
         "tile_wall",
-        "r02-tiles-wall"
+        "r02-tiles-wall",
+        "terrain_wall_family:tileset.forest_edge.wall_01",
+        "terrain_wall_piece:base"
+      ]
+    },
+    {
+      "key": "tileset.forest_edge.wall_01.crown",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_forest_edge_wall_01_crown.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "forest",
+        "tile_wall",
+        "terrain_wall_family:tileset.forest_edge.wall_01",
+        "terrain_wall_piece:crown"
+      ]
+    },
+    {
+      "key": "tileset.forest_edge.wall_01.side",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_forest_edge_wall_01_side.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "forest",
+        "tile_wall",
+        "terrain_wall_family:tileset.forest_edge.wall_01",
+        "terrain_wall_piece:side"
+      ]
+    },
+    {
+      "key": "tileset.forest_edge.wall_01.corner",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_forest_edge_wall_01_corner.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "forest",
+        "tile_wall",
+        "terrain_wall_family:tileset.forest_edge.wall_01",
+        "terrain_wall_piece:corner"
+      ]
+    },
+    {
+      "key": "tileset.forest_edge.wall_01.door_contact",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_forest_edge_wall_01_door_contact.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "forest",
+        "tile_wall",
+        "terrain_wall_family:tileset.forest_edge.wall_01",
+        "terrain_wall_piece:door_contact"
       ]
     },
     {
@@ -7604,7 +7674,77 @@
         "pr05",
         "mine",
         "tile_wall",
-        "r02-tiles-wall"
+        "r02-tiles-wall",
+        "terrain_wall_family:tileset.mine.wall_01",
+        "terrain_wall_piece:base"
+      ]
+    },
+    {
+      "key": "tileset.mine.wall_01.crown",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_mine_wall_01_crown.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "mine",
+        "tile_wall",
+        "terrain_wall_family:tileset.mine.wall_01",
+        "terrain_wall_piece:crown"
+      ]
+    },
+    {
+      "key": "tileset.mine.wall_01.side",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_mine_wall_01_side.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "mine",
+        "tile_wall",
+        "terrain_wall_family:tileset.mine.wall_01",
+        "terrain_wall_piece:side"
+      ]
+    },
+    {
+      "key": "tileset.mine.wall_01.corner",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_mine_wall_01_corner.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "mine",
+        "tile_wall",
+        "terrain_wall_family:tileset.mine.wall_01",
+        "terrain_wall_piece:corner"
+      ]
+    },
+    {
+      "key": "tileset.mine.wall_01.door_contact",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_mine_wall_01_door_contact.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "mine",
+        "tile_wall",
+        "terrain_wall_family:tileset.mine.wall_01",
+        "terrain_wall_piece:door_contact"
       ]
     },
     {
@@ -7856,6 +7996,28 @@
       ]
     },
     {
+      "key": "ui.map_stage.forest_edge.room_topology_source.pr08_demo",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr08",
+        "forest-edge",
+        "room_art_plate",
+        "room_topology_source",
+        "topology_fragment_source",
+        "source_region_crop",
+        "non_ruins_topology_source",
+        "dark-v1",
+        "ui-demo-new",
+        "client-only-prototype"
+      ]
+    },
+    {
       "key": "ui.map_stage.mine.room_plate.pr08_demo",
       "category": "ui_frame",
       "rawOutputPath": "dark-v1/ui/ui_map_stage_mine_room_plate_pr08_demo.png",
@@ -7874,6 +8036,28 @@
       ]
     },
     {
+      "key": "ui.map_stage.mine.room_topology_source.pr08_demo",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr08",
+        "mine",
+        "room_art_plate",
+        "room_topology_source",
+        "topology_fragment_source",
+        "source_region_crop",
+        "non_ruins_topology_source",
+        "dark-v1",
+        "ui-demo-new",
+        "client-only-prototype"
+      ]
+    },
+    {
       "key": "ui.map_stage.shadow_depths.room_plate.pr08_demo",
       "category": "ui_frame",
       "rawOutputPath": "dark-v1/ui/ui_map_stage_shadow_depths_room_plate_pr08_demo.png",
@@ -7886,6 +8070,28 @@
         "pr08",
         "shadow-depths",
         "room_art_plate",
+        "dark-v1",
+        "ui-demo-new",
+        "client-only-prototype"
+      ]
+    },
+    {
+      "key": "ui.map_stage.shadow_depths.room_topology_source.pr08_demo",
+      "category": "ui_frame",
+      "rawOutputPath": "dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "uiux",
+        "pr08",
+        "shadow-depths",
+        "room_art_plate",
+        "room_topology_source",
+        "topology_fragment_source",
+        "source_region_crop",
+        "non_ruins_topology_source",
         "dark-v1",
         "ui-demo-new",
         "client-only-prototype"
@@ -7920,7 +8126,77 @@
         "pr05",
         "shadow-depths",
         "tile_wall",
-        "r02-tiles-wall"
+        "r02-tiles-wall",
+        "terrain_wall_family:tileset.shadow_depths.wall_01",
+        "terrain_wall_piece:base"
+      ]
+    },
+    {
+      "key": "tileset.shadow_depths.wall_01.crown",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_shadow_depths_wall_01_crown.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "shadow-depths",
+        "tile_wall",
+        "terrain_wall_family:tileset.shadow_depths.wall_01",
+        "terrain_wall_piece:crown"
+      ]
+    },
+    {
+      "key": "tileset.shadow_depths.wall_01.side",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_shadow_depths_wall_01_side.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "shadow-depths",
+        "tile_wall",
+        "terrain_wall_family:tileset.shadow_depths.wall_01",
+        "terrain_wall_piece:side"
+      ]
+    },
+    {
+      "key": "tileset.shadow_depths.wall_01.corner",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_shadow_depths_wall_01_corner.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "shadow-depths",
+        "tile_wall",
+        "terrain_wall_family:tileset.shadow_depths.wall_01",
+        "terrain_wall_piece:corner"
+      ]
+    },
+    {
+      "key": "tileset.shadow_depths.wall_01.door_contact",
+      "category": "tile_wall",
+      "rawOutputPath": "dark-v1/tiles/tileset_shadow_depths_wall_01_door_contact.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "dark-v1",
+        "uiux",
+        "pr08",
+        "shadow-depths",
+        "tile_wall",
+        "terrain_wall_family:tileset.shadow_depths.wall_01",
+        "terrain_wall_piece:door_contact"
       ]
     },
     {

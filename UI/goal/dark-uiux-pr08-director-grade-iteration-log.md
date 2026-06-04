@@ -1,7 +1,7 @@
 # Dark UI/UX PR-08 Director-Grade Iteration Log
 
 > Date: 2026-05-27
-> Status: `pr08-topology-risk-interior-seam-dissolve-v1-accepted-forward`
+> Status: `pr08-non-ruins-wall-family-packaged-parity-v1-rejected-backed-out`
 > Parent goal: `UI/goal/dark-uiux-pr08-director-grade-iteration-goal.md`
 
 ## Usage
@@ -32,11 +32,24 @@ Required fields:
 | Direction A execution plan | `UI/goal/dark-uiux-pr08-pre-rendered-room-art-plate-plan.md` |
 | Unified lky decision packet | `UI/review/dark-uiux-pr08-exploration/room-art-plate-direction-a/pr08-room-art-plate-direction-a-decision.md` |
 | Supplemental prototype reference | `UI/design/In-Run Shell.html` and selected `UI/design/components/*.jsx` files |
-| Current status | Candidate W authored room source is accepted over the current `ui.map_stage.ruins.room_plate.pr08_demo` resource foundation; D3 map-stage closure is accepted for the `tileset.ruins` proof slice only; PR08 director runtime evidence has its own `dark-uiux-pr08-director-*` harness and review packet; packaged recapture after the right-panel utility bridge pass exists with display-size limitation; the explicit golden rebaseline and owner gate ladder now pass for the accepted ruins proof slice; first non-ruins family proof exists for `tileset.forest_edge`, `tileset.mine` and `tileset.shadow_depths`; shadow-depths V4 supersedes V3 as current accepted-forward right-mass resource after golden and packaged recapture; sibling packaged validation scenarios now exist for the three non-ruins family crops and `preparePhase4V4Whitebox` materializes each runbook/expected-evidence packet; forest-edge, mine and shadow-depths now all have packaged evidence-summary captures and runtime `evidence_summary_opened` logs; the D8 ruins random-seed board records `accepted-with-topology-contract`, topology contract V1 keeps full-room plate drawing only for plate-safe visible regions, topology-risk hybrid V1 keeps runtime tile material visible while adding true-topology material fields plus boundary marks for risky regions, topology-risk decomposition V1 draws canonical wall-family crown, side and door-contact components over risky shapes, topology-risk AO/local-light V1 adds visible-run ambient depth plus deterministic warm pools, source-cropped room plate V1 added a true source-region crop contract, dedicated topology source A V1 routed `tileset.ruins` topology-risk rooms through `ui.map_stage.ruins.room_topology_source.pr08_demo` instead of sampling the accepted full-room plate, dedicated topology source B V1 superseded A, C superseded B, and dedicated topology source D V1 now supersedes C as the current same-key topology source; this prevents unsafe bbox stretching and removes full-room source reuse from the current ruins risky path, and the mask/crop diagnostic is now a repeatable `client` golden owner artifact; topology-risk source-alpha V1 raises dedicated source crop bands from `0.36` to `0.42`, source-alpha scope V1 now limits that stronger alpha to formal dedicated topology sources while non-ruins fallback family room-plate bands stay at `0.36`, and topology-risk interior seam dissolve V1 now adds long-run internal shared-seam fields in the hybrid path without covering hidden notches or replacing boundary wall components; the current PR08 director recapture writes impact evidence but still fails expected-hash assertions and is not rebaselined; topology-risk rows remain accepted-forward only below plate-safe authored-room quality; right-panel, bottom-deck, bottom-action, left-nav, bottom-strip final-read and right-panel utility bridge shell passes are accepted-forward only |
+| Current status | Candidate W authored room source is accepted over the current `ui.map_stage.ruins.room_plate.pr08_demo` resource foundation; D3 map-stage closure is accepted for the `tileset.ruins` proof slice only; PR08 director runtime evidence has its own `dark-uiux-pr08-director-*` harness and review packet; packaged recapture after the right-panel utility bridge pass exists with display-size limitation; the explicit golden rebaseline and owner gate ladder now pass for the accepted ruins proof slice; first non-ruins family proof exists for `tileset.forest_edge`, `tileset.mine` and `tileset.shadow_depths`; the D8 ruins random-seed board records `accepted-with-topology-contract`; topology-risk interior seam dissolve V1 adds long-run internal shared-seam fields in the hybrid path; D9 real-procgen ROI records `hybrid-first-convergence` and freezes same-family ruins local polish; non-ruins topology-source hybrid V1 now adds family-owned topology source keys/resources for `tileset.forest_edge`, `tileset.mine` and `tileset.shadow_depths`, and the focused renderer/preload evidence proves topology-risk non-ruins rooms crop dedicated source bands instead of fallback full-room plates; the D9 risky `tileset.forest_edge` low-fill runtime crop board proves the dedicated topology source route on seed `2026060908`; the D9 disconnected `tileset.shadow_depths` runtime crop board now proves the same route for seed `2026060920`; topology-risk ground ownership V1 suppresses ground-tile/floor-material passes for hybrid rooms, keeps wall/runtime layers and adds tileset-aware band mantle fields; topology-risk interaction grammar V1 extends restrained art-plate sprite/target/player/loot/fog/cursor grammar to hybrid rooms; non-ruins topology-source V2 now replaces the three non-ruins topology-source PNGs in place and exposes non-ruins dedicated bands at `0.62`, but D9 runtime whole-crop brightness remains nearly flat, so it is limited-forward only; topology-risk wall-run veil V1 removes the second wall-family relief repaint in hybrid rooms, dims runtime wall terrain, adds run-level wall veils and keeps component pieces sparse; topology-risk wall-mass slab V1 reduces runtime wall terrain to sparse deterministic anchors and adds heavier boundary wall-mass slabs before the lighter veil layer; non-ruins topology-source V3 replaces the three non-ruins topology-source PNGs in place and improves source quality but is limited-forward because runtime crop metrics remain flat; non-ruins wall-family variation V1 adds distinct `base/crown/side/corner/door_contact` resources for `forest_edge`, `mine` and `shadow_depths`, lowering D9 runtime crop edge rhythm through the existing manifest wall-family contract; non-ruins wall-family packaged parity V1 rejects topology-source-only and family-ghost packaged crops, then backs out the family-ghost runtime path |
+| Current packet | Non-ruins wall-family packaged parity V1 is rejected/backed out: topology-source-only packaged crops regressed forest/shadow, and the follow-up family-ghost variants exposed chopped room-source fragments, debug-like floors and auxiliary wall rails instead of recovering authored-room quality. The runtime now forbids non-ruins topology-risk rooms from sampling full family plates through chopped topology bands. Treat this as a direction change trigger, not accepted-forward progress |
 | Direction checkpoint | Direction A is selected for the map: pre-rendered room art plate via client-only presentation layer; stop default alpha/seam/rail/rectangle tuning |
 | Multi-map rollout boundary | First runtime proof is `tileset.ruins`; non-ruins family proof now has packaged core crop and evidence-summary capture for forest-edge, mine and shadow-depths V4, but it is not broader-topology or all-map closure |
-| Agent-owned D3 decision gate | Candidate W closes D3 for the `tileset.ruins` fixed proof slice only; the final ruins runtime packet, current packaged telegraph evidence, explicit golden rebaseline and owner gate ladder are now reproducible; non-ruins family route is accepted-forward, with shadow-depths V4 improved and packaged core plus summary evidence captured, but still not procedural-generalization or all-map closure |
-| Next slice | Resolve the D9 real-procgen ROI/freeze checkpoint before broad Direction A rollout or further same-family topology-risk polish; do not claim procedural/all-map closure, update director hashes, add another governance-only accepted-forward update, or return to small alpha/fog/line-weight/single-cell rectangle tuning from interior seam dissolve V1 alone |
+| Agent-owned D3 decision gate | Candidate W closes D3 for the `tileset.ruins` fixed proof slice only; the final ruins runtime packet, current packaged telegraph evidence, explicit golden rebaseline and owner gate ladder are now reproducible; non-ruins family route has historical packaged core plus summary evidence, but the current wall-family packaged parity branch is rejected/backed out and must not be treated as procedural-generalization, all-map closure or current packaged acceptance |
+| Next slice | Run a tactical-grid acceptance / deferral A/B decision for non-ruins topology-risk rooms before any new authored presentation implementation; do not claim procedural/all-map closure, update director hashes, add another governance-only accepted-forward update, or continue source-only brightness/texture iteration |
+| Quality-first stop rule | UI/UX first-read quality outranks technical topology safety; if a probe looks like debug floor, chopped source strips, rails or placeholder topology bands, stop that direction immediately, record rejected evidence and restore the safer runtime state |
+
+## Current Convergence State
+
+Machine-readable current state for `UI/pr/development-governance.md#31-visual-convergence-gate`.
+Update this table when the active visual blocker, technique family, counter
+impact or required action changes. Do not use docs-only packets to lower the
+counter.
+
+| blocker-id | technique-family | occurrence-count | failure-counter-impact | required-action | status |
+| --- | --- | --- | --- | --- | --- |
+| `topology-risk-non-ruins-first-read` | `wall-family` | `>=3` | `counts-as-failure` | `ab-decision-required` | `direction-change-triggered` |
 
 ## Entry Template
 
@@ -50,9 +63,824 @@ Required fields:
 - Commands run:
 - Result:
 - Director verdict:
+- Convergence:
+  - blocker-id:
+  - technique-family:
+  - failure-counter-impact:
 - Remaining risk:
 - Next action:
 ```
+
+## 2026-06-03 - PR08 Round 2 Convergence Execution Lock
+
+- Loop type: review feedback triage / visual convergence execution lock /
+  acceptance lint hardening
+- Target area: second review report feedback on PR-08 `accepted-forward`
+  inflation, technique-family ambiguity, machine enforcement and the next
+  topology-risk non-ruins decision
+- Changed files:
+  - `UI/pr/development-governance.md`
+  - `tools/src/test/kotlin/com/ktome/tools/phase4/Phase4V4AcceptanceContractLintTest.kt`
+  - `UI/goal/dark-uiux-pr08-director-grade-iteration-goal.md`
+  - `UI/goal/dark-uiux-pr08-pre-rendered-room-art-plate-plan.md`
+  - `UI/goal/dark-uiux-pr08-director-grade-iteration-log.md`
+- Visual evidence:
+  - N/A; this packet hardens docs/gate execution and does not claim visual
+    progress.
+- Commands run:
+  - read the pasted second review report from the Codex attachment
+  - targeted `sed`, `rg`, `wc` and `git diff` reads of the governance, goal,
+    plan, log and `acceptanceContractLint` test
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew acceptanceContractLint --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew maintainabilityLint --no-configuration-cache`
+  - `git diff --check`
+  - repo-relative path hygiene scan over the touched Markdown docs
+  - stale next-route scan for legacy broader-presentation wording in the PR-08
+    goal, plan and log
+- Result:
+  - CONFIRMED: the report is correct that the previous gate only protected
+    governance wording and did not parse a PR-08 execution state.
+  - CONFIRMED: `topology-risk-non-ruins-first-read` has exceeded the repeated
+    blocker threshold and must not proceed as another same-family wall/source /
+    alpha / ghost / presentation micro-pass.
+  - ABSORBED: `UI/pr/development-governance.md` now defines closed
+    `technique-family`, `failure-counter-impact` and repeated-blocker
+    `required-action` values.
+  - ABSORBED: the PR-08 log now has a machine-readable Current Convergence
+    State row that marks `topology-risk-non-ruins-first-read` as `>=3`,
+    `counts-as-failure`, `ab-decision-required` and
+    `direction-change-triggered`.
+  - ABSORBED: `acceptanceContractLint` now parses that current convergence
+    state, validates the closed technique/failure enums and fails if a repeated
+    blocker lacks a direction-change / freeze / deferral / A-B action.
+  - ABSORBED: the PR-08 goal and plate plan now make the next valid packet a
+    tactical-grid acceptance / deferral A/B decision before any new authored
+    presentation implementation.
+  - PASS: `acceptanceContractLint` passed with `BUILD SUCCESSFUL in 3s`.
+  - PASS: `maintainabilityLint` passed with `BUILD SUCCESSFUL in 4s`.
+  - PASS: `git diff --check` passed with no output.
+  - PASS: repo-relative path hygiene scan over touched Markdown docs passed
+    with no matches.
+  - PASS: stale next-route scan found no remaining legacy broader-presentation
+    next-step wording in the PR-08 goal, plan or log.
+- Director verdict:
+  - `pr08-round2-convergence-execution-lock-absorbed`: this is a governance /
+    execution-lock packet, not visual progress, packaged parity, all-map
+    quality, director golden rebaseline or final PR08 closure.
+- Convergence:
+  - blocker-id: `topology-risk-non-ruins-first-read`
+  - technique-family: `governance-docs`
+  - failure-counter-impact: `not-visual-progress`
+- Remaining risk:
+  - The lint intentionally parses the current convergence state rather than
+    backfilling all historical PR-08 packets; future visual packets must update
+    the table before claiming progress or closure.
+- Next action:
+  - Run the tactical-grid acceptance / deferral A/B decision for
+    topology-risk non-ruins rooms. Only implement another authored presentation
+    slice if that decision keeps the authored route alive with a clear rejection
+    condition and rollback invariant.
+
+## 2026-06-03 - PR08 Goal And Plate Plan Lean Regeneration
+
+- Loop type: docs compaction / current-state contract regeneration
+- Target area: oversized PR-08 goal and Direction A plan documents that slowed
+  future agent bootstrap
+- Changed files:
+  - `UI/goal/dark-uiux-pr08-director-grade-iteration-goal.md`
+  - `UI/goal/dark-uiux-pr08-pre-rendered-room-art-plate-plan.md`
+  - `UI/goal/dark-uiux-pr08-director-grade-iteration-log.md`
+- Visual evidence:
+  - N/A; docs-only routing and handoff change.
+- Commands run:
+  - `wc -l UI/goal/dark-uiux-pr08-director-grade-iteration-goal.md UI/goal/dark-uiux-pr08-pre-rendered-room-art-plate-plan.md`
+  - heading scan over the regenerated goal and plan documents
+  - `git diff --check`
+  - repo-relative path hygiene scan over the regenerated goal, plan and updated
+    log
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew acceptanceContractLint --no-configuration-cache`
+- Result:
+  - REGENERATED: the goal document is now a lean current-state contract instead
+    of a packet-history container.
+  - REGENERATED: the plate plan is now a lean Direction A execution plan instead
+    of a full historical sprint/changelog document.
+  - PRESERVED BY ROUTE: packet history remains in this iteration log,
+    `UI/review/dark-uiux-pr08-evidence-and-direction.md` and
+    `UI/review/dark-uiux-pr08-exploration/*`.
+  - OBSERVED: the two entry documents now total `583` lines after regeneration.
+  - PASS: `git diff --check` passed with no output.
+  - PASS: repo-relative path hygiene scan over the regenerated Markdown docs
+    passed with no matches.
+  - PASS: `acceptanceContractLint` passed with `BUILD SUCCESSFUL in 1s`.
+  - OBSERVED: SDKMAN printed an internet reachability warning before the Gradle
+    run, but the configured Java/Kotlin environment loaded and the verification
+    task succeeded.
+- Director verdict:
+  - `pr08-goal-plan-lean-regenerated`: docs-only handoff improvement. This is
+    not visual progress, packaged parity, all-map quality, director golden
+    rebaseline or final PR08 closure.
+- Remaining risk:
+  - Historical details are no longer duplicated in the entry docs; agents must
+    follow the documented authority chain when they need packet-level evidence.
+- Next action:
+  - Continue from the rejected/backed-out non-ruins packaged parity state:
+    tactical-grid acceptance / deferral A/B decision for topology-risk non-ruins
+    rooms, not source-only, alpha, ghost-band or governance-only iteration.
+
+## 2026-06-03 - PR08 Review Report Convergence Gate Absorption
+
+- Loop type: review feedback triage / governance contract hardening / doc-gate
+  wiring
+- Target area: `UI/goal` PR-08 review feedback about `accepted-forward`
+  inflation, D9 hybrid ROI, source-only metric drift, packaged parity backout
+  and convergence/stop-line enforcement
+- Changed files:
+  - `UI/pr/development-governance.md`
+  - `tools/src/test/kotlin/com/ktome/tools/phase4/Phase4V4AcceptanceContractLintTest.kt`
+  - `UI/goal/dark-uiux-pr08-director-grade-iteration-goal.md`
+  - `UI/goal/dark-uiux-pr08-pre-rendered-room-art-plate-plan.md`
+  - `UI/goal/dark-uiux-pr08-director-grade-iteration-log.md`
+- Visual evidence:
+  - N/A; this packet only hardens review/gate documentation and does not claim
+    visual progress.
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew acceptanceContractLint --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew maintainabilityLint --no-configuration-cache`
+  - `git diff --check`
+  - repo-relative path hygiene scan over touched docs and the updated
+    `acceptanceContractLint` test file
+- Result:
+  - CONFIRMED: the review report is correct that generic
+    `UI/pr/development-governance.md` previously lacked a visual convergence /
+    stop-line gate beyond technical gate structure.
+  - CONFIRMED: D9 `14 FULL_PLATE_SAFE / 12 TOPOLOGY_RISK_*`, source-only V3
+    flat/regressing D9 runtime metrics and packaged parity backout are already
+    present in the current PR-08 evidence chain and remain the active facts.
+  - ABSORBED: added `Visual Convergence Gate` to `UI/pr/development-governance.md`
+    so long visual loops must record active blocker, technique family and
+    failure-counter impact before final closure.
+  - ABSORBED: `acceptanceContractLint` now asserts the UI governance document
+    retains the convergence gate and its required `accepted-forward` /
+    failure-counter tokens.
+  - REJECTED: the report's recommendation to route direction/stop-line
+    decisions back through a routine lky wait. The current PR-08 protocol stays
+    agent-owned unless a repository hard red line is crossed.
+  - PASS: `acceptanceContractLint` passed with `BUILD SUCCESSFUL in 3s`.
+  - PASS: `maintainabilityLint` passed with `BUILD SUCCESSFUL in 5s`.
+  - PASS: `git diff --check` passed with no output.
+  - OBSERVED: the machine-path scan only matched the no-machine-path assertion
+    literals inside `Phase4V4AcceptanceContractLintTest.kt`; the touched
+    Markdown docs did not introduce machine-local evidence paths.
+- Director verdict:
+  - `pr08-review-report-convergence-gate-absorbed`: this is a governance
+    hardening / execution-lock packet only. It is not visual progress,
+    packaged parity, all-map quality, director golden rebaseline or final PR08
+    closure.
+- Remaining risk:
+  - The new lint protects the governance clause from disappearing, but it does
+    not parse every historical PR-08 log packet or compute consecutive
+    accepted-forward counts.
+- Next action:
+  - Continue from the rejected/backed-out non-ruins packaged parity state:
+    tactical-grid acceptance / deferral A/B decision for topology-risk non-ruins
+    rooms, not source-only, alpha, ghost-band or governance-only iteration.
+
+## 2026-06-03 - PR08 Non-Ruins Wall-Family Packaged Parity V1 Rejection / Backout
+
+- Loop type: packaged whitebox parity / fail-first renderer recovery /
+  D9 runtime-risk golden recapture
+- Target area: packaged validation of non-ruins wall-family variation beyond
+  the two D9 risky golden crops
+- Changed files:
+  - `client/src/main/kotlin/com/ktome/client/render/RoomArtPlatePresentation.kt`
+  - `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-packaged-parity-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-packaged-parity-2026-06-03/packaged-non-ruins-wall-family-topology-source-only-rejected-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-packaged-parity-2026-06-03/packaged-non-ruins-wall-family-family-ghost-v1-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-packaged-parity-2026-06-03/pr08-non-ruins-wall-family-packaged-parity-decision.md`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-packaged-parity-2026-06-03/evidence-index.tsv`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-family-ghost-material-authority-2026-06-03/alpha038/non-ruins-family-ghost-alpha038-ab-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-family-ghost-material-authority-2026-06-03/pr08-non-ruins-family-ghost-material-authority-decision.md`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-family-ghost-layer-order-2026-06-03/source-then-family-ghost/non-ruins-family-ghost-layer-order-ab-board.png`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-forest-map-stage --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-mine-map-stage --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-shadow-depths-map-stage --no-configuration-cache`
+  - `scripts/capture-macos-app-window.sh --bundle-id com.ktome.client --app-name K-ToME --pid <scenario-pid> --raw --out <scenario full-window png>`
+  - `magick` fixed crop derivation for map/right/bottom crops and `python3`
+    board composition
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.assets.ManifestResolveTest" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasSubduesTopologyRiskWallCardsIntoRunLevelVeils" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFramesNonRuinsTopologyRiskHybridWithBandScaleAperturePressure" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew resourcePipelineLint maintainabilityLint --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:packageMacApp preparePhase4V4Whitebox -Pktome.whitebox.scenario=dark-uiux-pr08-director-shadow-depths-map-stage --no-configuration-cache`
+  - `git diff --check`
+  - repo-relative path hygiene scan over the updated PR08 goal, plan, log,
+    manual record and rejected packaged parity evidence files
+- Result:
+  - REJECTED: topology-source-only packaged crops held mine but regressed
+    forest-edge and shadow-depths into a grid/source-strip first read.
+  - RED: fail-first renderer test expected two low-alpha non-ruins family ghost
+    bands and found zero; this was only a temporary probe path.
+  - PASS: focused renderer test passed after adding the clipped family ghost
+    band compositor recovery, but subsequent visual review rejected that route.
+  - REJECTED: alpha `0.38` and source-then-ghost layer-order probes made the
+    map read even more like debug floor / rails rather than authored room art.
+  - BACKED OUT: runtime family-ghost compositor code was removed; the focused
+    non-ruins topology-source test now forbids chopped full-family-plate
+    sampling again and passes with `BUILD SUCCESSFUL in 10s`.
+  - PASS: focused manifest/renderer regression after backout passed with
+    `BUILD SUCCESSFUL in 4s`.
+  - PASS: D9 forest-edge/shadow-depths golden crop owner rerun after backout
+    passed with `BUILD SUCCESSFUL in 8s`.
+  - PASS: `resourcePipelineLint maintainabilityLint` passed with
+    `BUILD SUCCESSFUL in 2s`; `resource-pipeline-authority OK` reported
+    `visualAssets=1086`, `audioAssets=330`.
+  - PASS: packaged app rebuild plus shadow-depths whitebox preparation after
+    backout passed with `BUILD SUCCESSFUL in 8s`.
+  - PASS: `git diff --check` passed with no output.
+  - PASS: repo-relative path hygiene scan over the updated PR08 records passed
+    with no matches.
+  - UPDATED: quality-first stop rule is now explicit for the PR08 loop: visual
+    quality decline stops the probe immediately; do not continue with
+    alpha/layer-order/source-only rescue variants.
+  - PASS: shadow-depths was recaptured clean after moving the mouse out of the
+    map; the previous hover-tooltip polluted capture was replaced.
+  - OBSERVED: rejected family-ghost packaged map hashes are
+    `60c95a8d5ee7e13fb8b8e95b85cbcf2ec897ed8702ed8f69b8d519972afae574`
+    for forest-edge,
+    `dcc8920a762ce554be4cd8c54afeed859ee06b8aad04a5fd7d454682aef4fef3`
+    for mine and
+    `3c5f1f494c434f7624dd00f5811ef7b76ec958e40e24aac8adc45b590ebc132c`
+    for clean shadow-depths.
+- Director verdict:
+  - `pr08-non-ruins-wall-family-packaged-parity-v1-rejected-backed-out`:
+    topology-source-only, high-opacity family ghost and layer-order family
+    ghost all fail the UI/art director bar. Do not classify this as
+    accepted-forward.
+- Remaining risk:
+  - No director golden rebaseline or all-map closure was performed.
+- Next action:
+  - Run a tactical-grid acceptance / deferral A/B decision for non-ruins
+    topology-risk rooms before any new authored presentation implementation. Do
+    not continue source-only topology PNG iteration, alpha tuning or
+    governance-only accepted-forward updates.
+
+## 2026-06-03 - PR08 Non-Ruins Wall-Family Variation V1
+
+- Loop type: resource/manifest wall-family variation / fail-first resolver test /
+  D9 runtime-risk golden recapture
+- Target area: repeated non-ruins topology-risk wall-card rhythm after
+  source-only V3 improved atlases but did not move runtime crop metrics
+- Changed files:
+  - `assets-src/image/specs/phase4-uiux-pr08-room-art-plate-plan.yaml`
+  - `assets-src/image/manifests/phase2-visual-manifest.json`
+  - `client/src/main/resources/manifests/visual-manifest.json`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png`
+  - `client/src/main/resources/dark-v1/tiles/tileset_forest_edge_wall_01_*.png`
+  - `client/src/main/resources/dark-v1/tiles/tileset_mine_wall_01_*.png`
+  - `client/src/main/resources/dark-v1/tiles/tileset_shadow_depths_wall_01_*.png`
+  - `client/src/test/kotlin/com/ktome/client/assets/ManifestResolveTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/non-ruins-topology-source-v3-source-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/wall-mass-slab-vs-topology-source-v3-runtime-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/pr08-non-ruins-topology-source-v3-decision.md`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/non-ruins-wall-family-variation-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/topology-source-v3-vs-wall-family-runtime-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/pr08-non-ruins-wall-family-variation-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.assets.ManifestResolveTest.darkUiuxPr08NonRuinsWallFamiliesResolveDistinctTopologyRiskPieces" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.assets.ManifestResolveTest" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasSubduesTopologyRiskWallCardsIntoRunLevelVeils" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew resourcePipelineLint maintainabilityLint --no-configuration-cache`
+- Result:
+  - RED: fail-first resolver test first failed because
+    `tileset.forest_edge.wall_01` returned only `[tileset.forest_edge.wall_01]`
+    instead of the five wall-family role keys.
+  - PASS: focused resolver test reported `BUILD SUCCESSFUL in 5s` after
+    adding non-ruins wall-family manifest entries and resources.
+  - PASS: D9 forest/shadow runtime-risk golden recapture reported
+    `BUILD SUCCESSFUL in 7s`.
+  - PASS: focused resolver/renderer regression command reported
+    `BUILD SUCCESSFUL in 3s`.
+  - PASS: owner gates `resourcePipelineLint maintainabilityLint` reported
+    `BUILD SUCCESSFUL`; the latest rerun after spec registration reports
+    `visualAssets=1086`.
+  - OBSERVED: source-only V3 improves source `brightOver70`, but runtime crop
+    edge metrics are flat or slightly worse against wall-mass slab
+    (`forest_edge` `1.339 -> 1.359`, `shadow_depths` `2.034 -> 2.034`).
+  - OBSERVED: wall-family variation then lowers edge rhythm from `1.359` to
+    `1.156` for `forest_edge` and from `2.034` to `1.686` for
+    `shadow_depths`.
+  - OBSERVED: final D9 runtime crop hashes are
+    `f9c13929e8429caa62d2bbd6e80557eeb51d8b8da95b304022517aeb4dc97e3b`
+    for `forest_edge` and
+    `293c813de4527cfacc1d85e11fbfa4c451d3084281a13d4f7fb72747ab8d4199`
+    for `shadow_depths`.
+- Director verdict:
+  - `pr08-non-ruins-topology-source-v3-limited-forward`: keep the V3
+    topology-source PNGs as stronger current resources, but do not treat
+    source-only iteration as the main remaining lever.
+  - `pr08-non-ruins-wall-family-variation-v1-accepted-forward`: the existing
+    manifest wall-family contract now has non-ruins role pieces, reducing
+    square wall-card rhythm in the two D9 risky crops.
+- Remaining risk:
+  - No packaged recapture, exact full-width proof, director hash rebaseline or
+    all-map closure was run for this packet.
+- Next action:
+  - Validate the wall-family variation in packaged/non-ruins scenario parity or
+    run a tactical-grid acceptance / deferral A/B decision before another
+    authored presentation pass; do not continue source-only brightness/texture
+    iteration.
+
+## 2026-06-03 - PR08 Topology-Risk Wall-Mass Slab V1
+
+- Loop type: renderer wall-mass replacement / focused contract test /
+  D9 runtime-risk golden recapture
+- Target area: remaining repeated square wall/source rhythm after wall-run veil
+  lowered edge noise but left the map-stage below director-grade
+- Changed files:
+  - `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt`
+  - `client/src/main/kotlin/com/ktome/client/render/RoomArtPlatePresentation.kt`
+  - `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-mass-slab-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-mass-slab-2026-06-03/forest-edge-wall-mass-slab-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-mass-slab-2026-06-03/forest-edge-wall-mass-slab-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-mass-slab-2026-06-03/shadow-depths-wall-mass-slab-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-mass-slab-2026-06-03/shadow-depths-wall-mass-slab-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-mass-slab-2026-06-03/pr08-topology-risk-wall-mass-slab-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasSubduesTopologyRiskWallCardsIntoRunLevelVeils" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFallsBackFromPr08FullRoomPlateWhenVisibleTopologyIsLShaped" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesPr08InteractionGrammarOverTopologyRiskHybridRoomArtPlate" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFramesNonRuinsTopologyRiskHybridWithBandScaleAperturePressure" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasSubduesTopologyRiskWallCardsIntoRunLevelVeils" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew resourcePipelineLint maintainabilityLint --no-configuration-cache`
+- Result:
+  - RED: the focused sparse-anchor test first failed because topology-risk
+    hybrid drew `20` wall cards for `20` visible wall cells.
+  - PASS: focused sparse-anchor / wall-mass slab contract reported
+    `BUILD SUCCESSFUL in 5s`.
+  - PASS: focused topology-risk renderer regression command reported
+    `BUILD SUCCESSFUL in 1s`.
+  - PASS: D9 forest/shadow runtime-risk golden recapture reported
+    `BUILD SUCCESSFUL in 7s`.
+  - PASS: owner gates `resourcePipelineLint maintainabilityLint` reported
+    `BUILD SUCCESSFUL in 6s`.
+  - OBSERVED: final D9 runtime crop hashes are
+    `5b8d8a22592fd863618f6c5cabbbd0d4946f6eb391ad6911d714531cef7cca3c`
+    for `forest_edge` and
+    `9b3e8acd80a3174246812707af0162927c641778137c6d1a8031c70582b7733d`
+    for `shadow_depths`.
+  - OBSERVED: edge mean drops from `5.831` to `5.666` for `forest_edge` and
+    from `8.234` to `8.022` for `shadow_depths` versus the wall-run veil
+    packet.
+- Director verdict:
+  - Accepted-forward as
+    `pr08-topology-risk-wall-mass-slab-v1-accepted-forward`. This reduces
+    wall-card density and edge pressure, but it does not reach director-grade
+    map-stage quality because square source/wall rhythm remains visible.
+- Remaining risk:
+  - No packaged recapture, exact full-width proof, final owner gate, director
+    hash rebaseline or all-map closure was run for this packet.
+- Next action:
+  - Move to resource-level topology-source or wall-family variation for the D9
+    non-ruins risky crops; do not continue alpha/seam/fog/micro-rectangle
+    tuning.
+
+## 2026-06-03 - PR08 Topology-Risk Wall-Run Veil V1
+
+- Loop type: renderer wall-mass visibility treatment / focused contract test /
+  D9 runtime-risk golden recapture
+- Target area: remaining repeated wall-block / tile-card first read after
+  topology-risk aperture pressure improved room framing but left wall texture
+  repetition visible
+- Changed files:
+  - `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt`
+  - `client/src/main/kotlin/com/ktome/client/render/RoomArtPlatePresentation.kt`
+  - `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-run-veil-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-run-veil-2026-06-03/forest-edge-wall-run-veil-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-run-veil-2026-06-03/forest-edge-wall-run-veil-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-run-veil-2026-06-03/shadow-depths-wall-run-veil-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-run-veil-2026-06-03/shadow-depths-wall-run-veil-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-wall-run-veil-2026-06-03/pr08-topology-risk-wall-run-veil-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasSubduesTopologyRiskWallCardsIntoRunLevelVeils" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFallsBackFromPr08FullRoomPlateWhenVisibleTopologyIsLShaped" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesPr08InteractionGrammarOverTopologyRiskHybridRoomArtPlate" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFramesNonRuinsTopologyRiskHybridWithBandScaleAperturePressure" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasSubduesTopologyRiskWallCardsIntoRunLevelVeils" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew resourcePipelineLint maintainabilityLint --no-configuration-cache`
+  - `git diff --check`
+  - repo-relative path scan over updated PR08 docs and the new evidence packet
+    for local absolute-path patterns
+- Result:
+  - RED: the focused wall-run veil test first failed before production filtering
+    because topology-risk hybrid still drew the second wall-family relief
+    repaint at alpha `0.4416`.
+  - PASS: focused wall-run veil contract reported `BUILD SUCCESSFUL in 4s`.
+  - PASS: focused topology-risk renderer regression command reported
+    `BUILD SUCCESSFUL in 1s`.
+  - PASS: D9 forest/shadow runtime-risk golden recapture reported
+    `BUILD SUCCESSFUL in 7s`.
+  - PASS: owner gates `resourcePipelineLint maintainabilityLint` reported
+    `BUILD SUCCESSFUL in 6s`.
+  - PASS: `git diff --check` returned no output.
+  - PASS: repo-relative path scan returned no matches.
+  - OBSERVED: final D9 runtime crop hashes are
+    `f42006ed133fcdaf3cf8e8604592931a1ae67c2f6cd8595d31a0237f1ecf92a8`
+    for `forest_edge` and
+    `f3068cdff05cdb24bfd9758dd5b3857043a260cb8a5ecc408b47e2d5677fd6f0`
+    for `shadow_depths`.
+  - OBSERVED: edge mean drops from `6.333` to `5.831` for `forest_edge` and
+    from `8.808` to `8.234` for `shadow_depths` versus the aperture-pressure
+    packet.
+- Director verdict:
+  - Accepted-forward as
+    `pr08-topology-risk-wall-run-veil-v1-accepted-forward`. This removes one
+    repeated wall repaint layer and lowers wall-card edge noise, but it does
+    not reach director-grade map-stage quality.
+- Remaining risk:
+  - No packaged recapture, exact full-width proof, final owner gate, director
+    hash rebaseline or all-map closure was run for this packet. Repeated 32px
+    wall texture remains visible.
+- Next action:
+  - Use the next packet for stronger wall-resource variation or run-level
+    wall-mass replacement, not another alpha/seam/fog/micro-rectangle tweak.
+
+## 2026-06-03 - PR08 Topology-Risk Aperture Pressure V1
+
+- Loop type: renderer aperture/framing pass / focused contract test /
+  D9 runtime-risk golden recapture
+- Target area: topology-risk hybrid map-stage first read after non-ruins
+  topology-source V2 showed source richness alone did not move the runtime crop
+- Changed files:
+  - `client/src/main/kotlin/com/ktome/client/render/RoomArtPlatePresentation.kt`
+  - `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-aperture-pressure-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-aperture-pressure-2026-06-03/forest-edge-aperture-pressure-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-aperture-pressure-2026-06-03/forest-edge-aperture-pressure-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-aperture-pressure-2026-06-03/shadow-depths-aperture-pressure-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-aperture-pressure-2026-06-03/shadow-depths-aperture-pressure-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-aperture-pressure-2026-06-03/pr08-topology-risk-aperture-pressure-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFramesNonRuinsTopologyRiskHybridWithBandScaleAperturePressure" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFallsBackFromPr08FullRoomPlateWhenVisibleTopologyIsLShaped" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesPr08InteractionGrammarOverTopologyRiskHybridRoomArtPlate" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFramesNonRuinsTopologyRiskHybridWithBandScaleAperturePressure" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+- Result:
+  - PASS: focused aperture-pressure contract reported
+    `BUILD SUCCESSFUL in 7s`.
+  - PASS: focused topology-risk renderer regression command reported
+    `BUILD SUCCESSFUL in 1s`.
+  - PASS: D9 forest/shadow runtime-risk golden recapture reported
+    `BUILD SUCCESSFUL in 7s`.
+  - OBSERVED: final D9 runtime crop hashes are
+    `f8b075977e4732582f646c8bc4f0a5f21e8870c2a8081dc629db93f5a0717154` for
+    `forest_edge` and
+    `de64b54c586371093833912cb1c290008cfaeb5fcfa070358ccb6530bf518636` for
+    `shadow_depths`.
+  - OBSERVED: auxiliary luma metrics are slightly positive against the V2
+    runtime crops, but the change is mainly room-scale framing, not brightness
+    recovery.
+- Director verdict:
+  - Accepted-forward as
+    `pr08-topology-risk-aperture-pressure-v1-accepted-forward`. This executes
+    the planned aperture/framing slice for D9 topology-risk crops.
+- Remaining risk:
+  - No packaged recapture, exact full-width proof, final owner gate, director
+    hash rebaseline or all-map closure was run for this packet. The visible
+    repeated wall-block / tile-card read remains below the reference quality bar.
+- Next action:
+  - Address the remaining repeated wall-block / tile-card read with a larger
+    topology-risk composition change or runtime-scale visibility treatment.
+
+## 2026-06-03 - PR08 Non-Ruins Topology Source V2 Limited
+
+- Loop type: resource richness / client presentation exposure / focused
+  contract test / D9 runtime-risk golden recapture
+- Target area: non-ruins dedicated topology sources after interaction grammar
+  showed the remaining map-stage read was still flat and dark
+- Changed files:
+  - `assets-src/image/specs/phase4-uiux-pr08-room-art-plate-plan.yaml`
+  - `client/src/main/kotlin/com/ktome/client/render/RoomArtPlatePresentation.kt`
+  - `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v2-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v2-2026-06-03/non-ruins-topology-source-v2-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v2-2026-06-03/forest-edge-topology-source-v2-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v2-2026-06-03/forest-edge-topology-source-v2-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v2-2026-06-03/shadow-depths-topology-source-v2-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v2-2026-06-03/shadow-depths-topology-source-v2-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v2-2026-06-03/pr08-non-ruins-topology-source-v2-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.assets.ManifestResolveTest" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFallsBackFromPr08FullRoomPlateWhenVisibleTopologyIsLShaped" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesPr08InteractionGrammarOverTopologyRiskHybridRoomArtPlate" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+- Result:
+  - PASS: focused resolver/renderer command reported `BUILD SUCCESSFUL in 6s`.
+  - PASS: focused ruins freeze / interaction / non-ruins exposure command
+    reported `BUILD SUCCESSFUL in 7s`.
+  - PASS: D9 forest/shadow runtime-risk golden recapture reported
+    `BUILD SUCCESSFUL in 7s`.
+  - OBSERVED: source-level `brightOver70` improves from `0.005484` to
+    `0.053702` for `forest_edge`, from `0.001727` to `0.032493` for `mine`,
+    and from `0.000077` to `0.020147` for `shadow_depths`.
+  - OBSERVED: final D9 runtime crop hashes are
+    `09c8717c650156ddce0d0b0fdfa79570080b7599ec783beb2e62f20848e1a908` for
+    `forest_edge` and
+    `c645c229ca0a79fc5ee653ccb7d2a2d81833f2f4b731d1e9d504c5e2f8d812be` for
+    `shadow_depths`.
+  - OBSERVED: whole-crop brightness remains almost flat versus the previous
+    interaction-grammar crops, so the remaining first-read blocker is not
+    source richness alone.
+- Director verdict:
+  - Limited accepted-forward as
+    `pr08-non-ruins-topology-source-v2-limited-accepted-forward`. The source
+    assets are stronger and the non-ruins exposure boundary is now explicit,
+    but this does not produce a director-grade runtime jump.
+- Remaining risk:
+  - No packaged recapture, exact full-width proof, final owner gate, director
+    hash rebaseline or all-map closure was run for this packet.
+- Next action:
+  - Move to map-stage aperture/framing or runtime scale/visibility pressure for
+    the D9 topology-risk crops. Do not keep iterating same-family topology
+    source art from this limited result.
+
+## 2026-06-03 - PR08 Topology-Risk Interaction Grammar V1
+
+- Loop type: renderer interaction grammar / focused contract test / runtime-risk
+  golden recapture
+- Target area: topology-risk hybrid interaction surfaces after ground ownership
+  moved risky rooms onto authored topology-source floor presentation
+- Changed files:
+  - `client/src/main/kotlin/com/ktome/client/render/RoomArtPlatePresentation.kt`
+  - `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt`
+  - `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-interaction-grammar-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-interaction-grammar-2026-06-03/forest-edge-interaction-grammar-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-interaction-grammar-2026-06-03/forest-edge-interaction-grammar-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-interaction-grammar-2026-06-03/shadow-depths-interaction-grammar-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-interaction-grammar-2026-06-03/shadow-depths-interaction-grammar-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-interaction-grammar-2026-06-03/pr08-topology-risk-interaction-grammar-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesPr08InteractionGrammarOverTopologyRiskHybridRoomArtPlate" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesPr08InteractionGrammarOverTopologyRiskHybridRoomArtPlate" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesRestrainedPr08SpriteOverlayGrammarOverRoomArtPlate" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesRestrainedPr08TargetingGrammarOverRoomArtPlate" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesRestrainedPr08MarkerSurfaceGrammarOverRoomArtPlate" :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+- Result:
+  - PASS: the focused topology-risk interaction grammar test reported
+    `BUILD SUCCESSFUL in 10s`.
+  - PASS: focused grammar regression plus both D9 runtime-risk golden recaptures
+    reported `BUILD SUCCESSFUL in 9s`.
+  - OBSERVED: the updated `forest_edge` crop hash is
+    `24bd8f48a2251b1c1d703f2dd5046edf2564288e465c0d5fb190051ae31cf678`; the
+    updated `shadow_depths` crop hash is
+    `1ac205dca47ea14644eb2657b9a69e87adc38816781fbe524673f4770b2ae9ab`.
+- Director verdict:
+  - Accepted-forward as
+    `pr08-topology-risk-interaction-grammar-v1-accepted-forward`. This aligns
+    hybrid rooms with restrained art-plate interaction grammar, but it is not
+    packaged parity, all-map closure, director hash rebaseline or final PR08
+    quality.
+- Remaining risk:
+  - No packaged recapture, exact full-width proof, final owner gate or
+    topology-source art regeneration was run for this packet.
+- Next action:
+  - Compare the updated interaction boards against the reference quality bar and
+    decide whether source-art richness, map-stage aperture framing or packaged
+    scenario parity is now the higher-ROI follow-up.
+
+## 2026-06-03 - PR08 Topology-Risk Ground Ownership V1
+
+- Loop type: renderer/compositor implementation / runtime-risk golden recapture /
+  focused owner evidence
+- Target area: topology-risk hybrid first-read quality after comparing the D9
+  `forest_edge` low-fill and `shadow_depths` disconnected runtime boards
+- Changed files:
+  - `client/src/main/kotlin/com/ktome/client/render/TileRenderer.kt`
+  - `client/src/main/kotlin/com/ktome/client/render/RoomArtPlatePresentation.kt`
+  - `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-ground-ownership-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-ground-ownership-2026-06-03/forest-edge-ground-ownership-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-ground-ownership-2026-06-03/forest-edge-ground-ownership-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-ground-ownership-2026-06-03/shadow-depths-ground-ownership-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-ground-ownership-2026-06-03/shadow-depths-ground-ownership-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/topology-risk-ground-ownership-2026-06-03/pr08-topology-risk-ground-ownership-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasFallsBackFromPr08FullRoomPlateWhenVisibleTopologyIsLShaped" :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasDoesNotDrawPr08RoomArtPlateForUnsupportedTilesets" --no-configuration-cache`
+- Result:
+  - PASS: renderer L-shape contract plus the two D9 runtime-risk golden captures
+    reported `BUILD SUCCESSFUL in 16s`.
+  - PASS: non-ruins topology-source and unsupported-tileset focused tests
+    reported `BUILD SUCCESSFUL in 2s`.
+  - OBSERVED: topology-risk hybrid now suppresses ground tile and floor material
+    passes, while keeping wall tiles and wall-family components visible.
+  - OBSERVED: the updated `forest_edge` crop hash is
+    `618eb919b9bb609c0872c6cc19324ceb86de1ba6c8a67252c0c8008c6ff15cdd`; the
+    updated `shadow_depths` crop hash is
+    `c27317c2a6368b4f4a35e670d83cb8915e201b6a794b90887a5ed65eb2aa15a0`.
+- Director verdict:
+  - Accepted-forward as
+    `pr08-topology-risk-ground-ownership-v1-accepted-forward`. This is a real
+    first-read compositor improvement for D9 topology-risk rows, not packaged
+    parity, all-map closure, director hash rebaseline or final PR08 quality.
+- Remaining risk:
+  - No packaged recapture, exact full-width proof, final owner gate,
+    interaction-grammar extension or source-art regeneration was run for this
+    packet.
+- Next action:
+  - Use the updated runtime boards to decide whether topology-risk interaction
+    grammar or stronger generated topology-source art is the higher-ROI follow-up.
+
+## 2026-06-03 - PR08 Shadow-Depths D9 Disconnected Runtime Crop
+
+- Loop type: runtime golden evidence / D9 disconnected topology-risk board /
+  focused owner evidence
+- Target area: D9 disconnected `tileset.shadow_depths` runtime crop after
+  dedicated topology-source routing
+- Changed files:
+  - `client/src/test/kotlin/com/ktome/client/golden/GoldenScreenshotHarnessTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/shadow-depths-d9-disconnected-runtime-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/shadow-depths-d9-disconnected-runtime-2026-06-03/dark-uiux-pr08-shadow-depths-d9-disconnected-runtime-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/shadow-depths-d9-disconnected-runtime-2026-06-03/dark-uiux-pr08-shadow-depths-d9-disconnected-runtime-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/shadow-depths-d9-disconnected-runtime-2026-06-03/evidence-index.tsv`
+  - `UI/review/dark-uiux-pr08-exploration/shadow-depths-d9-disconnected-runtime-2026-06-03/pr08-shadow-depths-d9-disconnected-runtime-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+- Result:
+  - PASS: focused golden owner command reported `BUILD SUCCESSFUL in 9s`.
+  - OBSERVED: runtime seed `2026060920`, zone `underground_river`, floor `2`,
+    profession `rogue` captured `tileset.shadow_depths` as
+    `TOPOLOGY_RISK_DISCONNECTED` with bounds `16x12`, `129` visible cells,
+    `fillPermille=671`, `aspectPermille=1333` and `connectedComponents=2`.
+  - OBSERVED: the board compares the shadow-depths full room plate, the
+    dedicated topology source and the actual disconnected runtime map-stage crop.
+- Director verdict:
+  - Accepted-forward as
+    `pr08-shadow-depths-d9-disconnected-runtime-topology-source-v1-accepted-forward`.
+    This broadens runtime-risk evidence from low-fill to disconnected topology,
+    not final map-stage closure or all-map acceptance.
+- Remaining risk:
+  - No packaged recapture, director hash rebaseline, exact full-width proof,
+    source-art replacement or final owner gate was run for this packet.
+- Next action:
+  - Compare the `forest_edge` low-fill and `shadow_depths` disconnected boards,
+    then improve the weakest recurring first-read artifact with a concrete
+    resource or compositor packet instead of adding more governance-only notes.
+
+## 2026-06-03 - PR08 Forest-Edge D9 Risky Runtime Crop
+
+- Loop type: runtime golden evidence / D9 topology-risk board / harness
+  lifecycle fix
+- Target area: D9 risky `tileset.forest_edge` runtime crop after dedicated
+  topology-source routing
+- Changed files:
+  - `client/src/test/kotlin/com/ktome/client/golden/GoldenScreenshotHarnessTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/forest-edge-d9-risky-runtime-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/forest-edge-d9-risky-runtime-2026-06-03/dark-uiux-pr08-forest-edge-d9-risky-runtime-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/forest-edge-d9-risky-runtime-2026-06-03/dark-uiux-pr08-forest-edge-d9-risky-runtime-crop.png`
+  - `UI/review/dark-uiux-pr08-exploration/forest-edge-d9-risky-runtime-2026-06-03/evidence-index.tsv`
+  - `UI/review/dark-uiux-pr08-exploration/forest-edge-d9-risky-runtime-2026-06-03/pr08-forest-edge-d9-risky-runtime-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:goldenScreenshot --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest.darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence" --no-configuration-cache`
+- Result:
+  - PASS: focused golden owner command reported `BUILD SUCCESSFUL in 10s`.
+  - OBSERVED: runtime seed `2026060908`, zone `greenwood_fringe`, floor `2`,
+    profession `rogue` captured `tileset.forest_edge` as
+    `TOPOLOGY_RISK_LOW_FILL` with bounds `14x11`, `93` visible cells,
+    `fillPermille=603`, `aspectPermille=1272` and `connectedComponents=1`.
+  - OBSERVED: the board compares the forest-edge full room plate, the dedicated
+    topology source and the actual runtime map-stage crop.
+- Director verdict:
+  - Accepted-forward as
+    `pr08-forest-edge-d9-risky-runtime-topology-source-v1-accepted-forward`.
+    This closes the specific missing D9 risky `forest_edge` runtime board, not
+    final map-stage closure or all-map acceptance.
+- Remaining risk:
+  - No packaged recapture, director hash rebaseline, exact full-width proof,
+    second risky family runtime board or final owner gate was run for this
+    packet.
+- Next action:
+  - Use this board as the first runtime D9 risky non-ruins comparison point.
+    Continue only with evidence that can improve first-read quality or broaden
+    high-value runtime-risk coverage; do not return to ruins micro-polish.
+
+## 2026-06-03 - PR08 Non-Ruins Topology Source Hybrid V1
+
+- Loop type: client presentation resource wiring / topology-risk hybrid
+  coverage / focused owner evidence
+- Target area: non-ruins room-art families after D9
+  `hybrid-first-convergence`
+- Changed files:
+  - `client/src/main/kotlin/com/ktome/client/assets/DarkUiMapVisualKeys.kt`
+  - `client/src/test/kotlin/com/ktome/client/assets/ManifestResolveTest.kt`
+  - `client/src/test/kotlin/com/ktome/client/render/TileRendererCanvasTest.kt`
+  - `assets-src/image/specs/phase4-uiux-pr08-room-art-plate-plan.yaml`
+  - `assets-src/image/manifests/phase2-visual-manifest.json`
+  - `client/src/main/resources/manifests/visual-manifest.json`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png`
+  - `client/src/main/resources/dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-2026-06-03/non-ruins-topology-source-board.png`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-2026-06-03/evidence-index.tsv`
+  - `UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-2026-06-03/pr08-non-ruins-topology-source-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew syncPhase2Manifests --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.assets.ManifestResolveTest" --tests "com.ktome.client.render.TileRendererCanvasTest.renderCanvasUsesDedicatedTopologySourceBandsForNonRuinsRoomArtFamilies" --no-configuration-cache`
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew resourcePipelineLint maintainabilityLint --no-configuration-cache`
+- Result:
+  - FAIL-FIRST: the focused renderer test failed before implementation because
+    `tileset.forest_edge` produced 0 dedicated topology-source bands and still
+    used fallback full-room plate source cropping.
+  - PASS: `syncPhase2Manifests` reported `BUILD SUCCESSFUL in 1s`.
+  - PASS: the post-change focused resolver/preload and renderer command
+    reported `BUILD SUCCESSFUL in 15s`.
+  - PASS: `resourcePipelineLint maintainabilityLint` reported
+    `BUILD SUCCESSFUL in 8s`.
+- Director verdict:
+  - Accepted-forward as
+    `pr08-non-ruins-topology-source-hybrid-v1-accepted-forward`.
+    This is real D9-backed topology-source coverage progress for non-ruins
+    families, not final map-stage closure or all-map acceptance.
+- Remaining risk:
+  - The new source board proves resource family and manifest routing, but no
+    runtime D9 risky crop board, packaged whitebox recapture, director golden
+    rebaseline or `verifyChanged` has run yet for this packet.
+- Next action:
+  - Capture a runtime/topology-risk board for a D9 risky `tileset.forest_edge`
+    seed and compare the actual map-stage crop with dedicated topology-source
+    routing before any closure or rebaseline claim.
+
+## 2026-06-03 - PR08 D9 Real-Procgen ROI / Freeze Packet
+
+- Loop type: D9 real-procgen ROI probe / focused owner evidence / freeze
+  decision
+- Target area: Direction A full-room plate ROI and topology-risk distribution
+  under playable foundation-route generation parameters
+- Changed files:
+  - `client/src/test/kotlin/com/ktome/client/golden/Pr08RoomArtPlateD9RealProcgenProbeTest.kt`
+  - `UI/review/dark-uiux-pr08-exploration/d9-real-procgen-roi-2026-06-03/`
+  - PR-08 goal / plan / log / evidence documents
+- Visual evidence:
+  - N/A; this packet is a distribution evidence packet, not a screenshot board.
+  - `UI/review/dark-uiux-pr08-exploration/d9-real-procgen-roi-2026-06-03/evidence-index.tsv`
+  - `UI/review/dark-uiux-pr08-exploration/d9-real-procgen-roi-2026-06-03/summary.md`
+  - `UI/review/dark-uiux-pr08-exploration/d9-real-procgen-roi-2026-06-03/pr08-d9-real-procgen-roi-decision.md`
+- Commands run:
+  - `source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env && ./gradlew :client:test --tests "com.ktome.client.golden.Pr08RoomArtPlateD9RealProcgenProbeTest.dark uiux pr08 d9 real procgen roi probe writes distribution artifacts" --no-configuration-cache`
+  - repeated the same command after removing unstated hit-rate thresholds from
+    the summary decision wording
+- Result:
+  - PASS: focused D9 command reported `BUILD SUCCESSFUL in 26s` on the first
+    run and `BUILD SUCCESSFUL in 8s` after the summary refinement.
+  - PASS: D9 wrote `client/build/reports/golden/dark-uiux-pr08-d9-real-procgen/evidence-index.tsv`
+    and `summary.md`.
+  - PASS: 26 real playable foundation-route samples were recorded.
+  - OBSERVED: 14 `FULL_PLATE_SAFE`, 10 `TOPOLOGY_RISK_LOW_FILL`, 2
+    `TOPOLOGY_RISK_DISCONNECTED`, 0 `TOPOLOGY_RISK_EXTREME_ASPECT`.
+  - OBSERVED: family distribution is ruins 2/4 safe, forest-edge 1/4 safe,
+    mine 2/4 safe and shadow-depths 9/14 safe.
+- Director verdict:
+  - Accepted as `pr08-d9-real-procgen-roi-hybrid-first-freeze-v1-accepted`.
+    Direction A should converge to hybrid-first: full-room plates for safe
+    rooms, topology-source / hybrid composition for risky rooms. Ruins
+    same-family local polish is frozen unless a new artifact proves a fresh
+    ruins-specific blocker.
+- Remaining risk:
+  - No new screenshot board, packaged whitebox recapture, director golden
+    rebaseline or resource generation happened in this packet.
+  - Production still lacks formal non-ruins dedicated topology-source routing;
+    D9 identifies this as the next map-stage implementation surface, especially
+    for `tileset.forest_edge`.
+- Next action:
+  - Implement non-ruins topology-source / hybrid coverage instead of returning
+    to ruins alpha, seam, fog, line-weight, source or single-cell rectangle
+    tuning.
 
 ## 2026-06-02 - PR08 Second Feedback Execution Lock
 

@@ -839,17 +839,33 @@ class TileRenderer(
                 frame: MapRenderFrame,
             ) {
                 val viewport = frame.viewport
-                val isRoomArtPlateActive = frame.model.roomPresentationPlan.compositorStrategy == RoomCompositorStrategy.ART_PLATE_PRESENTATION
+                val compositorStrategy = frame.model.roomPresentationPlan.compositorStrategy
+                val usesRoomArtPlateGroundMaterial = compositorStrategy.usesRoomArtPlateGroundMaterial
+                val usesRoomArtPlateInteractionGrammar = compositorStrategy.usesRoomArtPlateInteractionGrammar
                 val (groundTerrain, upperTerrain) =
                     frame.layerPlan.terrainBase.partition { placement -> placement.asset.entry.category == "tile_ground" }
-                if (!isRoomArtPlateActive) {
+                if (!usesRoomArtPlateGroundMaterial) {
                     groundTerrain.forEach { placement -> drawPlacement(canvas, placement, viewport) }
                 }
-                upperTerrain.forEach { placement -> drawPlacement(canvas, placement, viewport) }
+                upperTerrain.forEach { placement ->
+                    val alphaScale =
+                        if (
+                            compositorStrategy == RoomCompositorStrategy.TOPOLOGY_RISK_HYBRID_PRESENTATION &&
+                            placement.asset.entry.category == "tile_wall"
+                        ) {
+                            if (!shouldDrawTopologyRiskWallTerrainAnchor(placement, frame.model.roomPresentationPlan.artPlate)) {
+                                return@forEach
+                            }
+                            0.60f
+                        } else {
+                            1f
+                        }
+                    drawPlacement(canvas, placement, viewport, alphaScale = alphaScale)
+                }
                 canvas.flushLayer(TileLayerFlushReason.MAP_TERRAIN_BASE)
                 drawVisibleRoomFoundationGlaze(canvas, frame)
                 frame.layerPlan.cellMaterials
-                    .filterNot { material -> isRoomArtPlateActive && material.kind == TileMapCellMaterialKind.FLOOR }
+                    .filterNot { material -> usesRoomArtPlateGroundMaterial && material.kind == TileMapCellMaterialKind.FLOOR }
                     .forEach { material -> drawCellMaterial(canvas, material, viewport) }
                 canvas.flushLayer(TileLayerFlushReason.MAP_CELL_MATERIAL)
                 renderRoomCompositor(canvas, frame)
@@ -858,7 +874,7 @@ class TileRenderer(
                 canvas.flushLayer(TileLayerFlushReason.MAP_PROP_ATMOSPHERE)
                 frame.layerPlan.propsAndDecals.forEach { placement -> drawPlacement(canvas, placement, viewport) }
                 canvas.flushLayer(TileLayerFlushReason.MAP_PROPS_AND_DECALS)
-                if (isRoomArtPlateActive) {
+                if (usesRoomArtPlateInteractionGrammar) {
                     frame.layerPlan.spriteOverlaysAndTelegraphs.forEach { placement ->
                         drawRoomArtPlateSpriteOverlay(canvas, placement, viewport)
                     }
@@ -869,30 +885,30 @@ class TileRenderer(
                 frame.layerPlan.actors.forEach { placement -> drawActorGroundingShadow(canvas, placement, viewport) }
                 frame.layerPlan.actors.forEach { placement -> drawPlacement(canvas, placement, viewport) }
                 canvas.flushLayer(TileLayerFlushReason.MAP_ACTORS)
-                if (isRoomArtPlateActive) {
+                if (usesRoomArtPlateInteractionGrammar) {
                     drawRoomArtPlatePlayerIndicators(canvas, frame.layerPlan.playerIndicators, viewport)
                 } else {
                     drawPlayerIndicators(canvas, frame.layerPlan.playerIndicators, viewport)
                 }
                 canvas.flushLayer(TileLayerFlushReason.MAP_PLAYER_INDICATOR)
-                if (isRoomArtPlateActive) {
+                if (usesRoomArtPlateInteractionGrammar) {
                     drawRoomArtPlateGroundLootAtmosphere(canvas, frame.layerPlan.groundLootMarkers, viewport)
                 } else {
                     drawGroundLootAtmosphere(canvas, frame.layerPlan.groundLootMarkers, viewport)
                 }
                 canvas.flushLayer(TileLayerFlushReason.MAP_GROUND_LOOT_ATMOSPHERE)
-                if (isRoomArtPlateActive) {
+                if (usesRoomArtPlateInteractionGrammar) {
                     drawRoomArtPlateGroundLootMarkers(canvas, frame.layerPlan.groundLootMarkers, viewport)
                 } else {
                     drawGroundLootMarkers(canvas, frame.layerPlan.groundLootMarkers, viewport)
                 }
                 canvas.flushLayer(TileLayerFlushReason.MAP_GROUND_LOOT_MARKERS)
-                if (isRoomArtPlateActive) {
+                if (usesRoomArtPlateInteractionGrammar) {
                     drawRoomArtPlateFogOverlays(canvas, frame)
                 } else {
                     drawFogOverlays(canvas, frame.layerPlan.fogVeils, viewport)
                 }
-                if (isRoomArtPlateActive) {
+                if (usesRoomArtPlateInteractionGrammar) {
                     drawRoomArtPlateApertureShoulders(canvas, frame)
                 }
                 drawHiddenStageApertureMasonry(canvas, frame, visibleRoomClip(frame) ?: viewport.mapBounds)
@@ -906,7 +922,7 @@ class TileRenderer(
                         } else {
                             UiDesignTokens.color.focus.ring.color()
                         }
-                    if (isRoomArtPlateActive) {
+                    if (usesRoomArtPlateInteractionGrammar) {
                         drawRoomArtPlateCursor(canvas, cursor.tile, viewport, cursorColor)
                     } else {
                         drawCursor(canvas, cursor.tile, viewport, cursorColor)
@@ -915,6 +931,27 @@ class TileRenderer(
                 canvas.flushLayer(TileLayerFlushReason.MAP_ACTIVE_CURSOR)
                 drawCombatFeedback(canvas, frame.layerPlan.combatFeedback, viewport)
                 canvas.flushLayer(TileLayerFlushReason.MAP_COMBAT_FEEDBACK)
+            }
+
+            private fun shouldDrawTopologyRiskWallTerrainAnchor(
+                placement: TileVisualPlacement,
+                artPlate: RoomArtPlateModel?,
+            ): Boolean {
+                val visiblePoints = artPlate?.topology?.shape?.visiblePoints ?: return true
+                val point = Point(placement.x, placement.y)
+                val openNeighborCount =
+                    if (point in visiblePoints) {
+                        listOf(
+                            Point(point.x, point.y + 1),
+                            Point(point.x, point.y - 1),
+                            Point(point.x - 1, point.y),
+                            Point(point.x + 1, point.y),
+                        ).count { neighbor -> neighbor !in visiblePoints }
+                    } else {
+                        0
+                    }
+                val hash = (point.x * 31 + point.y * 17).mod(9)
+                return hash == 0 || openNeighborCount >= 2 && hash == 1
             }
 
             private fun renderRoomCompositor(
@@ -2175,9 +2212,7 @@ class TileRenderer(
             frame: MapRenderFrame,
         ) {
             val viewport = frame.viewport
-            val useArtPlateGrammar =
-                frame.model.roomPresentationPlan.compositorStrategy == RoomCompositorStrategy.ART_PLATE_PRESENTATION
-            if (useArtPlateGrammar) {
+            if (frame.model.roomPresentationPlan.compositorStrategy.usesRoomArtPlateInteractionGrammar) {
                 drawArtPlateTargetHighlights(canvas, frame.layerPlan.targetHighlights, viewport)
                 return
             }
@@ -5151,6 +5186,9 @@ class TileRenderer(
             canvas: TileCanvas,
             frame: MapRenderFrame,
         ) {
+            if (frame.model.roomPresentationPlan.compositorStrategy == RoomCompositorStrategy.TOPOLOGY_RISK_HYBRID_PRESENTATION) {
+                return
+            }
             frame.layerPlan.terrainBase
                 .asSequence()
                 .filter { placement ->

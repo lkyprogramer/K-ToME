@@ -24,16 +24,19 @@ internal object DarkUiMapVisualKeys {
     const val FOREST_EDGE_GROUND: String = "tileset.forest_edge.ground_01"
     const val FOREST_EDGE_WALL: String = "tileset.forest_edge.wall_01"
     const val FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE: String = "ui.map_stage.forest_edge.room_plate.pr08_demo"
+    const val FOREST_EDGE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE: String = "ui.map_stage.forest_edge.room_topology_source.pr08_demo"
 
     const val MINE_TILESET: String = "tileset.mine"
     const val MINE_GROUND: String = "tileset.mine.ground_01"
     const val MINE_WALL: String = "tileset.mine.wall_01"
     const val MINE_ROOM_ART_PLATE_PROTOTYPE: String = "ui.map_stage.mine.room_plate.pr08_demo"
+    const val MINE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE: String = "ui.map_stage.mine.room_topology_source.pr08_demo"
 
     const val SHADOW_DEPTHS_TILESET: String = "tileset.shadow_depths"
     const val SHADOW_DEPTHS_GROUND: String = "tileset.shadow_depths.ground_01"
     const val SHADOW_DEPTHS_WALL: String = "tileset.shadow_depths.wall_01"
     const val SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE: String = "ui.map_stage.shadow_depths.room_plate.pr08_demo"
+    const val SHADOW_DEPTHS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE: String = "ui.map_stage.shadow_depths.room_topology_source.pr08_demo"
 
     private val roomArtPlateFamilies: List<RoomArtPlateFamilyVisualKeys> =
         listOf(
@@ -74,6 +77,9 @@ internal object DarkUiMapVisualKeys {
     fun roomTopologySourceKeyFor(family: RoomArtPlateFamilyVisualKeys): String? =
         when (family.tilesetKey) {
             RUINS_TILESET -> RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE
+            FOREST_EDGE_TILESET -> FOREST_EDGE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE
+            MINE_TILESET -> MINE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE
+            SHADOW_DEPTHS_TILESET -> SHADOW_DEPTHS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE
             else -> null
         }
 

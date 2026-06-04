@@ -19,6 +19,7 @@
 | 6 | [PR-06 Skills Status Quest Full Manifest](dark-uiux-pr06-skills-status-quest-full-manifest.md) | P1 | XL | 技能、状态、任务、fallback、全 manifest 收口 | Round 8-9 + 返修 |
 | 7 | [PR-07 Golden Whitebox Polish](dark-uiux-pr07-golden-whitebox-polish.md) | P1 | M | 全 UI 面 golden/白盒、验证模式、结算/错误页、性能与 atlas 决策 | 不新增资源，允许返修 |
 | 8 | [PR-08 Director Grade Asset Reset](dark-uiux-pr08-director-grade-asset-reset.md) | P1 | XL | PR-07 完结后，对 map-stage、shell chrome、right panel、bottom HUD 做 director-grade 质感重置 | 按 subtractive spike / target comp 结论生成或迁移资源 |
+| 8.1 | [PR-08 D10 Retained UI And Map-Stage Authority](dark-uiux-pr08-d10-map-stage-authority-optimization.md) | P1 | XL | 将 PR-08 后续修复从 `TileCanvas` 手写 UI 微调提升为 Scene2D retained UI / Skin / Table authority，并按 D10-P0~P8 分 phase 大改首页、shell、背包、shop、天赋、combat/frontstage | 不直接生成正式资源；Skin 消费已有或后续 owner-routed dark-v1 资源 |
 
 ## 依赖规则
 
@@ -37,6 +38,7 @@
 13. Gate ladder 固定为 `acceptanceContractLint -> fast lane -> resource gate -> client evidence -> maintainabilityLint -> verifyChanged`；PR-07 和 PR-08 追加 packaged app 白盒。
 14. 同一重型 gate 失败超过 2 次或单轮验证超过 90 分钟时，必须先写复盘并补 focused test / resource lint，再继续重跑。
 15. 所有玩家可见或验证可见 UI 面必须映射到 [screen-coverage-matrix.md](./screen-coverage-matrix.md)。PR-07 关闭前，矩阵中 `Required` / `Conditional` 面不得存在 `missing` 或无证据的 `partial`。
+16. PR-08 D10 是 PR-08 的 retained UI authority 子 PR。它默认采用 libGDX 官方 Scene2D / Stage / Skin / Table，不在首个 host / Skin phase 引入 KTX、VisUI 或 gdx-skins 运行时依赖；首页、shell、背包详情页、shop、天赋配置、combat/frontstage 必须按 D10-P0~P8 phase gate 做硬切换计划。迁移完成的 surface 不保留旧 immediate UI 作为长期兼容路线。
 
 ## 开发治理入口
 
@@ -110,6 +112,7 @@ dark UI/UX PR 的长期治理入口固定为 [development-governance.md](./devel
 | PR-05 | tile / prop / VFX / actor / portrait | Round 2-6 全部 player-visible key |
 | PR-06 | skill / talent / status / mutation / quest / profession / tree / fallback | Round 8-9、PR-03/05 rejected cell、allowed fallback/exclusion |
 | PR-08 | director-grade map-stage / shell / panel reset | PR-07 后的 director-grade 资源迁移、runtime compositor reset、`darkManifestCoveragePr08OwnerScope` owner coverage 和 packaged whitebox |
+| PR-08 D10 | retained UI / Skin / Table authority | 默认不新增资源；若 Skin 需要新 drawable，必须走 PR-08 owner route、key registry、sheet plan、canonical/runtime manifest、resolver test 和 `resourcePipelineLint` |
 
 职业覆盖使用 `releasePlayable=[vanguard, arcanist, rogue, templar]`、`devPlayable=[berserker, spellblade]`、`excludedFrozen=[shadowblade, warden]`。PR-06 必须把 frozen 排除写入 coverage artifact，不能把它们显示成 missing。
 

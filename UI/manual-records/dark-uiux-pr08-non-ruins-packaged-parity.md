@@ -5,7 +5,7 @@
 > `dark-uiux-pr08-director-forest-map-stage`,
 > `dark-uiux-pr08-director-mine-map-stage`,
 > `dark-uiux-pr08-director-shadow-depths-map-stage`
-> Status: `PACKAGED_CROPS_AND_SUMMARY_CAPTURED_V4_SHADOW`
+> Status: `PACKAGED_WALL_FAMILY_GHOST_V1_REJECTED_BACKED_OUT`
 
 ## Summary
 
@@ -39,6 +39,12 @@ Mac keyboard/Computer Use routing did not reliably open the validation overlay
 for those transient packaged bundles. Failed input probe screenshots remain
 outside the official expected-evidence filenames to avoid false closure.
 
+2026-06-03 update: packaged parity was rerun after the non-ruins wall-family
+variation packet. The topology-source-only packaged route was rejected for
+forest-edge and shadow-depths. The family-ghost recovery was also rejected and
+backed out because it made the map read as chopped source strips, debug floor
+and auxiliary rails rather than authored-room art.
+
 ## Materialization Smoke
 
 | Scenario | Command result | Generated contract |
@@ -71,6 +77,29 @@ Packaged fixed-crop review board after the shadow-depths V4 right-mass pass:
 
 Hash: `d7676cfd8bd9d3eadaaba83fe6d21b05d99342674f327063c6690307cc47bef9`.
 
+## 2026-06-03 Wall-Family Packaged Recovery
+
+Rejected topology-source-only board:
+
+`UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-packaged-parity-2026-06-03/packaged-non-ruins-wall-family-topology-source-only-rejected-board.png`
+
+Hash: `30661acf94ffb51800c7f6319165de33a897a8c7afb83f31734db7175fc9feac`.
+
+Rejected family-ghost board:
+
+`UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-packaged-parity-2026-06-03/packaged-non-ruins-wall-family-family-ghost-v1-board.png`
+
+Hash: `19a40a9e61fa60b8c1cace69745364b3cd571541c88b793cfdf929bc9c01d0b2`.
+
+| Scenario | Full window | Map-stage crop | Right panel crop | Bottom deck crop | Note |
+| --- | --- | --- | --- | --- | --- |
+| `dark-uiux-pr08-director-forest-map-stage` | `98094de847aaa520046efa3b5a6806e68007aeeed616d18d0b60153c1d77cf27` | `60c95a8d5ee7e13fb8b8e95b85cbcf2ec897ed8702ed8f69b8d519972afae574` | `497dc5498293d8a33b1d5b2c1270d896c35b92a8a2c9c47261c36a948be13335` | `1792f55bf0f07e151e8e32840624e654a955255c4948b56edeb4f2af81df87e0` | rejected; still reads as debug floor / chopped source strips |
+| `dark-uiux-pr08-director-mine-map-stage` | `b279d5cd142ceb393ecf122563caea9fa261d0d4b9420c7b20aa93f6b2a4c31f` | `dcc8920a762ce554be4cd8c54afeed859ee06b8aad04a5fd7d454682aef4fef3` | `da2334c175c393e3bbaf4ac62c57068db8c11352c86a62ce843baa3f3e81897e` | `09643fd61cc6feebe4251e338341d5551eabf2872e7a9be972c930187e7731d1` | rejected as a branch result; mine holding is not enough to accept the route |
+| `dark-uiux-pr08-director-shadow-depths-map-stage` | `b91a353a8e60926d1e7d600f4118a1ee3312384b3ef77c16cc8d0a01dc9c1d0b` | `3c5f1f494c434f7624dd00f5811ef7b76ec958e40e24aac8adc45b590ebc132c` | `815fc8ca280661fc23d1e5ce70e5806285daf7c77821fdee699985abb526e1dd` | `261c14c775f87239b3b4c86aa4cc40f4ab1229c12e64d6fc3448cff9e51b4669` | clean recapture after moving mouse out of map; hover-tooltip polluted capture replaced |
+
+Detailed hashes and app log hashes are recorded in
+`UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-packaged-parity-2026-06-03/evidence-index.tsv`.
+
 ## Required Packaged Evidence
 
 | Scenario | Required evidence prefix |
@@ -81,24 +110,33 @@ Hash: `d7676cfd8bd9d3eadaaba83fe6d21b05d99342674f327063c6690307cc47bef9`.
 
 ## Director Verdict
 
-`ACCEPTED_FORWARD_CORE_PACKAGED_CROPS_V4_SHADOW`.
+`PRIOR_CORE_PACKAGED_CROP_REFERENCE_V4_SHADOW`; superseded for the current
+wall-family validation branch by
+`PACKAGED_WALL_FAMILY_GHOST_V1_REJECTED_BACKED_OUT`.
 
-Forest-edge and mine packaged map-stage crops prove that the family-specific
-room-art route survives packaged runtime capture and does not reuse the ruins
-proof slice. Forest-edge has the strongest first read: mossy stone, roots,
-torch pools, player, stairs and fog hierarchy all remain legible. Mine also
-holds as a distinct industrial family with readable timber, ore, lantern pools
-and tactical overlays.
+Earlier forest-edge and mine packaged map-stage crops remain reference evidence
+that the family-specific room-art route can render in packaged runtime without
+reusing the ruins proof slice. They are not current packaged acceptance proof
+after the 2026-06-03 wall-family validation branch failed. Forest-edge had the
+strongest first read in that prior baseline: mossy stone, roots, torch pools,
+player, stairs and fog hierarchy remained legible. Mine also held as a distinct
+industrial family with readable timber, ore, lantern pools and tactical
+overlays.
 
-Shadow-depths V4 is accepted-forward as the current packaged core crop. It no
-longer has the V3 blocker where the right half read as an empty tactical grid:
-the packaged fixed crop now has a secondary right-side wall return, violet
-shadow seams and a broken slab lane under the runtime grid. Treat it as a
-specific blocker resolved, not final non-ruins parity. It remains narrower and
-more grid-readable than forest-edge and mine in the lower-right play lane, so
-broader topology coverage is still required before final all-map acceptance.
+Shadow-depths V4 remains a prior reference crop that fixed the V3 blocker where
+the right half read as an empty tactical grid: the packaged fixed crop had a
+secondary right-side wall return, violet shadow seams and a broken slab lane
+under the runtime grid. Treat it as historical blocker evidence, not current
+non-ruins packaged parity. It remains narrower and more grid-readable than
+forest-edge and mine in the lower-right play lane, so broader topology coverage
+and a stronger map-stage presentation are still required before final all-map
+acceptance.
 
 Do not claim all-map closure, final non-ruins closure, or director-grade PR08
 closure from this packet. The mine/shadow summary-action capture gap is now
 closed through the constrained startup surface, but final closure still
 requires broader topology coverage and a director-grade all-map acceptance pass.
+
+The 2026-06-03 family-ghost recovery does not upgrade the non-ruins route and
+must not be treated as accepted-forward. Forest-edge and shadow-depths need a
+broader map-stage presentation change before any director-grade closure claim.

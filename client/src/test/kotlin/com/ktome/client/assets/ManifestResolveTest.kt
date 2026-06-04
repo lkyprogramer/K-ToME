@@ -159,8 +159,11 @@ class ManifestResolveTest {
             DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE to "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
             DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE to "dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png",
             DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE to "dark-v1/ui/ui_map_stage_forest_edge_room_plate_pr08_demo.png",
+            DarkUiMapVisualKeys.FOREST_EDGE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE to "dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png",
             DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE to "dark-v1/ui/ui_map_stage_mine_room_plate_pr08_demo.png",
+            DarkUiMapVisualKeys.MINE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE to "dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png",
             DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE to "dark-v1/ui/ui_map_stage_shadow_depths_room_plate_pr08_demo.png",
+            DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE to "dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png",
         ).forEach { (key, expectedPath) ->
             val resolved = resolver.resolve(key)
 
@@ -231,6 +234,43 @@ class ManifestResolveTest {
             resolver.resolveTerrainWallPiece("tileset.ruins.wall_01", TerrainWallPieceRole.DOOR_CONTACT).resolvedKey,
         )
         assertEquals(listOf("tileset.ruins.ground_01"), resolver.terrainWallFamilyKeys("tileset.ruins.ground_01"))
+    }
+
+    @Test
+    fun darkUiuxPr08NonRuinsWallFamiliesResolveDistinctTopologyRiskPieces() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        listOf(
+            DarkUiMapVisualKeys.FOREST_EDGE_WALL to "dark-v1/tiles/tileset_forest_edge_wall_01",
+            DarkUiMapVisualKeys.MINE_WALL to "dark-v1/tiles/tileset_mine_wall_01",
+            DarkUiMapVisualKeys.SHADOW_DEPTHS_WALL to "dark-v1/tiles/tileset_shadow_depths_wall_01",
+        ).forEach { (baseKey, pathPrefix) ->
+            val expectedKeys =
+                listOf(
+                    baseKey,
+                    "$baseKey.crown",
+                    "$baseKey.side",
+                    "$baseKey.corner",
+                    "$baseKey.door_contact",
+                )
+
+            assertEquals(expectedKeys, resolver.terrainWallFamilyKeys(baseKey), baseKey)
+            assertEquals(baseKey, resolver.resolveTerrainWallPiece(baseKey, TerrainWallPieceRole.BASE).resolvedKey)
+            assertEquals("$baseKey.crown", resolver.resolveTerrainWallPiece(baseKey, TerrainWallPieceRole.CROWN).resolvedKey)
+            assertEquals("$baseKey.side", resolver.resolveTerrainWallPiece(baseKey, TerrainWallPieceRole.SIDE).resolvedKey)
+            assertEquals("$baseKey.corner", resolver.resolveTerrainWallPiece(baseKey, TerrainWallPieceRole.CORNER).resolvedKey)
+            assertEquals(
+                "$baseKey.door_contact",
+                resolver.resolveTerrainWallPiece(baseKey, TerrainWallPieceRole.DOOR_CONTACT).resolvedKey,
+            )
+            TerrainWallPieceRole.entries.forEach { role ->
+                val resolved = resolver.resolveTerrainWallPiece(baseKey, role)
+                assertEquals("tile_wall", resolved.entry.category, resolved.resolvedKey)
+                assertTrue(resolved.entry.rawOutputPath.startsWith(pathPrefix), resolved.resolvedKey)
+                assertTrue(resolved.entry.tags.contains("terrain_wall_family:$baseKey"), resolved.resolvedKey)
+                assertTrue(resolved.entry.tags.contains("terrain_wall_piece:${role.tagValue}"), resolved.resolvedKey)
+            }
+        }
     }
 
     @Test
@@ -586,7 +626,7 @@ class ManifestResolveTest {
     }
 
     @Test
-    fun `non ruins accepted room art families preload only their own room plate textures`() {
+    fun `non ruins accepted room art families preload their own room plate and topology source textures`() {
         withHeadlessGdx {
             val base = sampleRenderSnapshot()
             val families =
@@ -625,8 +665,17 @@ class ManifestResolveTest {
                         loadedPaths.contains(assets.visualResolver.resolve(family.roomArtPlateKey).entry.rawOutputPath),
                         family.roomArtPlateKey,
                     )
+                    val topologySourceKey = requireNotNull(DarkUiMapVisualKeys.roomTopologySourceKeyFor(family))
+                    assertTrue(
+                        loadedPaths.contains(assets.visualResolver.resolve(topologySourceKey).entry.rawOutputPath),
+                        topologySourceKey,
+                    )
                     assertFalse(
                         loadedPaths.contains(assets.visualResolver.resolve(DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE).entry.rawOutputPath),
+                        family.tilesetKey,
+                    )
+                    assertFalse(
+                        loadedPaths.contains(assets.visualResolver.resolve(DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE).entry.rawOutputPath),
                         family.tilesetKey,
                     )
                     assertFalse(

@@ -59,6 +59,72 @@ phase2AssetGates:
           - no modern grid
         materialTags: [phase4, uiux, pr08, forest-edge, room_art_plate, non_ruins_family, geometry_safe_degrid, dark-v1, client-only-prototype]
         geminiKeyRequired: true
+      - id: phase4_uiux_pr08_forest_edge_room_topology_source_demo
+        category: ui_frame
+        visualKey: ui.map_stage.forest_edge.room_topology_source.pr08_demo
+        outputName: dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/ui_map_stage_forest_edge_room_topology_source_pr08_v3.png
+        subject: topology-aware forest-edge source atlas V3 with crop-safe mossy stone/root material flow, broad non-grid diagonal and horizontal fields, stronger readable mid-band lantern pools, dark forest edge pressure and no complete fixed room perimeter for topology-risk source-region bands
+        constraints:
+          - client-only presentation resource
+          - no baked gameplay markers
+          - no readable text
+          - no modern grid
+          - not a complete fixed room perimeter
+        materialTags: [phase4, uiux, pr08, forest-edge, room_art_plate, room_topology_source, topology_fragment_source, source_region_crop, non_ruins_topology_source, non_ruins_topology_source_v3, dark-v1, ui-demo-new, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_forest_edge_wall_01_crown
+        category: tile_wall
+        visualKey: tileset.forest_edge.wall_01.crown
+        outputName: dark-v1/tiles/tileset_forest_edge_wall_01_crown.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_forest_edge_wall_01_crown.png
+        subject: derived forest-edge wall crown piece for topology-risk component anchors, preserving mossy stone material without the full square wall card
+        constraints:
+          - derived from existing forest-edge wall material
+          - transparent outside crown mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, forest-edge, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_crown, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_forest_edge_wall_01_side
+        category: tile_wall
+        visualKey: tileset.forest_edge.wall_01.side
+        outputName: dark-v1/tiles/tileset_forest_edge_wall_01_side.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_forest_edge_wall_01_side.png
+        subject: derived forest-edge wall side piece for topology-risk component anchors, preserving mossy vertical wall material without the full square wall card
+        constraints:
+          - derived from existing forest-edge wall material
+          - transparent outside side mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, forest-edge, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_side, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_forest_edge_wall_01_corner
+        category: tile_wall
+        visualKey: tileset.forest_edge.wall_01.corner
+        outputName: dark-v1/tiles/tileset_forest_edge_wall_01_corner.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_forest_edge_wall_01_corner.png
+        subject: derived forest-edge wall corner piece for topology-risk component anchors, preserving mossy wall contact material without the full square wall card
+        constraints:
+          - derived from existing forest-edge wall material
+          - transparent outside corner mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, forest-edge, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_corner, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_forest_edge_wall_01_door_contact
+        category: tile_wall
+        visualKey: tileset.forest_edge.wall_01.door_contact
+        outputName: dark-v1/tiles/tileset_forest_edge_wall_01_door_contact.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_forest_edge_wall_01_door_contact.png
+        subject: derived forest-edge wall door-contact piece for topology-risk component anchors, preserving mossy threshold material without the full square wall card
+        constraints:
+          - derived from existing forest-edge wall material
+          - transparent outside door-contact mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, forest-edge, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_door_contact, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
       - id: phase4_uiux_pr08_mine_room_art_plate_demo
         category: ui_frame
         visualKey: ui.map_stage.mine.room_plate.pr08_demo
@@ -72,6 +138,72 @@ phase2AssetGates:
           - no modern grid
         materialTags: [phase4, uiux, pr08, mine, room_art_plate, non_ruins_family, geometry_safe_degrid, dark-v1, client-only-prototype]
         geminiKeyRequired: true
+      - id: phase4_uiux_pr08_mine_room_topology_source_demo
+        category: ui_frame
+        visualKey: ui.map_stage.mine.room_topology_source.pr08_demo
+        outputName: dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/ui_map_stage_mine_room_topology_source_pr08_v3.png
+        subject: topology-aware mine source atlas V3 with crop-safe rough slate and ore-vein material flow, broad non-grid fractured stone fields, stronger readable mid-band amber lantern pools, dark mine pressure and no complete fixed room perimeter for topology-risk source-region bands
+        constraints:
+          - client-only presentation resource
+          - no baked gameplay markers
+          - no readable text
+          - no modern grid
+          - not a complete fixed room perimeter
+        materialTags: [phase4, uiux, pr08, mine, room_art_plate, room_topology_source, topology_fragment_source, source_region_crop, non_ruins_topology_source, non_ruins_topology_source_v3, dark-v1, ui-demo-new, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_mine_wall_01_crown
+        category: tile_wall
+        visualKey: tileset.mine.wall_01.crown
+        outputName: dark-v1/tiles/tileset_mine_wall_01_crown.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_mine_wall_01_crown.png
+        subject: derived mine wall crown piece for topology-risk component anchors, preserving rough slate and timber material without the full square wall card
+        constraints:
+          - derived from existing mine wall material
+          - transparent outside crown mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, mine, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_crown, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_mine_wall_01_side
+        category: tile_wall
+        visualKey: tileset.mine.wall_01.side
+        outputName: dark-v1/tiles/tileset_mine_wall_01_side.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_mine_wall_01_side.png
+        subject: derived mine wall side piece for topology-risk component anchors, preserving rough slate vertical wall material without the full square wall card
+        constraints:
+          - derived from existing mine wall material
+          - transparent outside side mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, mine, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_side, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_mine_wall_01_corner
+        category: tile_wall
+        visualKey: tileset.mine.wall_01.corner
+        outputName: dark-v1/tiles/tileset_mine_wall_01_corner.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_mine_wall_01_corner.png
+        subject: derived mine wall corner piece for topology-risk component anchors, preserving rough slate contact material without the full square wall card
+        constraints:
+          - derived from existing mine wall material
+          - transparent outside corner mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, mine, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_corner, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_mine_wall_01_door_contact
+        category: tile_wall
+        visualKey: tileset.mine.wall_01.door_contact
+        outputName: dark-v1/tiles/tileset_mine_wall_01_door_contact.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_mine_wall_01_door_contact.png
+        subject: derived mine wall door-contact piece for topology-risk component anchors, preserving rough slate threshold material without the full square wall card
+        constraints:
+          - derived from existing mine wall material
+          - transparent outside door-contact mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, mine, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_door_contact, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
       - id: phase4_uiux_pr08_shadow_depths_room_art_plate_demo
         category: ui_frame
         visualKey: ui.map_stage.shadow_depths.room_plate.pr08_demo
@@ -85,3 +217,69 @@ phase2AssetGates:
           - no modern grid
         materialTags: [phase4, uiux, pr08, shadow-depths, room_art_plate, non_ruins_family, shadow_depths_v4_right_mass, geometry_safe_degrid, dark-v1, client-only-prototype]
         geminiKeyRequired: true
+      - id: phase4_uiux_pr08_shadow_depths_room_topology_source_demo
+        category: ui_frame
+        visualKey: ui.map_stage.shadow_depths.room_topology_source.pr08_demo
+        outputName: dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/ui_map_stage_shadow_depths_room_topology_source_pr08_v3.png
+        subject: topology-aware shadow-depths source atlas V3 with crop-safe black basalt and obsidian material flow, broad non-grid vertical/diagonal planes, stronger readable mid-band violet cold glows, dark edge pressure and no complete fixed room perimeter for topology-risk source-region bands
+        constraints:
+          - client-only presentation resource
+          - no baked gameplay markers
+          - no readable text
+          - no modern grid
+          - not a complete fixed room perimeter
+        materialTags: [phase4, uiux, pr08, shadow-depths, room_art_plate, room_topology_source, topology_fragment_source, source_region_crop, non_ruins_topology_source, non_ruins_topology_source_v3, dark-v1, ui-demo-new, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_shadow_depths_wall_01_crown
+        category: tile_wall
+        visualKey: tileset.shadow_depths.wall_01.crown
+        outputName: dark-v1/tiles/tileset_shadow_depths_wall_01_crown.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_shadow_depths_wall_01_crown.png
+        subject: derived shadow-depths wall crown piece for topology-risk component anchors, preserving basalt/obsidian material without the full square wall card
+        constraints:
+          - derived from existing shadow-depths wall material
+          - transparent outside crown mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, shadow-depths, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_crown, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_shadow_depths_wall_01_side
+        category: tile_wall
+        visualKey: tileset.shadow_depths.wall_01.side
+        outputName: dark-v1/tiles/tileset_shadow_depths_wall_01_side.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_shadow_depths_wall_01_side.png
+        subject: derived shadow-depths wall side piece for topology-risk component anchors, preserving basalt vertical wall material without the full square wall card
+        constraints:
+          - derived from existing shadow-depths wall material
+          - transparent outside side mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, shadow-depths, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_side, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_shadow_depths_wall_01_corner
+        category: tile_wall
+        visualKey: tileset.shadow_depths.wall_01.corner
+        outputName: dark-v1/tiles/tileset_shadow_depths_wall_01_corner.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_shadow_depths_wall_01_corner.png
+        subject: derived shadow-depths wall corner piece for topology-risk component anchors, preserving basalt/obsidian contact material without the full square wall card
+        constraints:
+          - derived from existing shadow-depths wall material
+          - transparent outside corner mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, shadow-depths, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_corner, dark-v1, client-only-prototype]
+        geminiKeyRequired: false
+      - id: phase4_uiux_pr08_shadow_depths_wall_01_door_contact
+        category: tile_wall
+        visualKey: tileset.shadow_depths.wall_01.door_contact
+        outputName: dark-v1/tiles/tileset_shadow_depths_wall_01_door_contact.png
+        sourceCandidatePath: UI/review/dark-uiux-pr08-exploration/non-ruins-wall-family-variation-2026-06-03/tileset_shadow_depths_wall_01_door_contact.png
+        subject: derived shadow-depths wall door-contact piece for topology-risk component anchors, preserving basalt threshold material without the full square wall card
+        constraints:
+          - derived from existing shadow-depths wall material
+          - transparent outside door-contact mass
+          - no baked gameplay markers
+          - no readable text
+        materialTags: [phase4, uiux, pr08, shadow-depths, tile_wall, terrain_wall_family, wall_family_variation, wall_piece_door_contact, dark-v1, client-only-prototype]
+        geminiKeyRequired: false

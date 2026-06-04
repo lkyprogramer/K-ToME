@@ -26,6 +26,13 @@ internal enum class RoomCompositorStrategy {
     LEGACY_TILE_DECORATION,
     ART_PLATE_PRESENTATION,
     TOPOLOGY_RISK_HYBRID_PRESENTATION,
+    ;
+
+    val usesRoomArtPlateGroundMaterial: Boolean
+        get() = this != LEGACY_TILE_DECORATION
+
+    val usesRoomArtPlateInteractionGrammar: Boolean
+        get() = this != LEGACY_TILE_DECORATION
 }
 
 internal data class RoomArtPlateModel(
@@ -100,7 +107,8 @@ internal enum class RoomArtPlateTopologyDecision {
 
 internal object RoomArtPlateCatalog {
     private const val FALLBACK_TOPOLOGY_SOURCE_BAND_ALPHA = 0.36f
-    private const val DEDICATED_TOPOLOGY_SOURCE_BAND_ALPHA = 0.42f
+    private const val RUINS_DEDICATED_TOPOLOGY_SOURCE_BAND_ALPHA = 0.50f
+    private const val NON_RUINS_DEDICATED_TOPOLOGY_SOURCE_BAND_ALPHA = 0.62f
 
     fun resolve(
         visualResolver: VisualManifestResolver,
@@ -137,7 +145,7 @@ internal object RoomArtPlateCatalog {
                         if (topologySourceKey == null) {
                             FALLBACK_TOPOLOGY_SOURCE_BAND_ALPHA
                         } else {
-                            DEDICATED_TOPOLOGY_SOURCE_BAND_ALPHA
+                            dedicatedTopologySourceBandAlpha(tilesetKey)
                         },
                     tilesetKey = tilesetKey,
                     family = family,
@@ -146,6 +154,12 @@ internal object RoomArtPlateCatalog {
             topology = topology,
         )
     }
+
+    private fun dedicatedTopologySourceBandAlpha(tilesetKey: String): Float =
+        when (tilesetKey) {
+            DarkUiMapVisualKeys.RUINS_TILESET -> RUINS_DEDICATED_TOPOLOGY_SOURCE_BAND_ALPHA
+            else -> NON_RUINS_DEDICATED_TOPOLOGY_SOURCE_BAND_ALPHA
+        }
 }
 
 internal object RoomArtPlateTopologyContract {
@@ -265,13 +279,49 @@ internal object RoomArtPlateRenderer {
         if (visiblePoints.isEmpty()) {
             return
         }
-        drawTopologyRiskSourceCroppedBands(canvas, frame, artPlate, visiblePoints)
+        drawTopologyRiskBandMantleFields(canvas, frame, artPlate, visiblePoints)
         drawTopologyRiskMaterialRuns(canvas, frame, visiblePoints)
         drawTopologyRiskInteriorSeamDissolveFields(canvas, frame, visiblePoints)
         drawTopologyRiskAmbientDepthFields(canvas, frame, visiblePoints)
+        drawTopologyRiskSourceCroppedBands(canvas, frame, artPlate, visiblePoints)
+        drawTopologyRiskAperturePressure(canvas, frame, visiblePoints)
+        drawTopologyRiskBoundaryWallMassSlabs(canvas, frame, visiblePoints)
+        drawTopologyRiskWallRunVeils(canvas, frame, visiblePoints)
         drawTopologyRiskLocalLightPools(canvas, frame, artPlate.topology, visiblePoints)
         drawTopologyRiskBoundaryMarks(canvas, frame, visiblePoints)
         drawTopologyRiskWallComponents(canvas, frame, artPlate, visiblePoints)
+    }
+
+    private fun drawTopologyRiskBandMantleFields(
+        canvas: TileCanvas,
+        frame: MapRenderFrame,
+        artPlate: RoomArtPlateModel,
+        visiblePoints: Set<Point>,
+    ) {
+        val palette = topologyRiskMantlePalette(artPlate.source.tilesetKey)
+        visiblePoints
+            .toTopologyBands()
+            .filter { band -> band.width >= 3 && band.height >= 2 }
+            .forEach { band ->
+                val startRect = frame.viewport.tileRect(Point(band.startX, band.startY))
+                val cellSize = frame.viewport.cellSize.toFloat()
+                val x = startRect.x.toFloat()
+                val y = startRect.y.toFloat()
+                val width = cellSize * band.width
+                val height = cellSize * band.height
+                canvas.drawRect(
+                    tileBounds(x + 1f, y + 2f, width - 2f, height - 4f),
+                    plateColor(palette.fieldHex, palette.fieldAlpha),
+                )
+                canvas.drawRect(
+                    tileBounds(x + 5f, y + height - 12f, width - 10f, 9f),
+                    plateColor(palette.upperShadowHex, palette.upperShadowAlpha),
+                )
+                canvas.drawRect(
+                    tileBounds(x + 8f, y + 4f, (width - 16f).coerceAtLeast(4f), 7f),
+                    plateColor(palette.lowerLipHex, palette.lowerLipAlpha),
+                )
+            }
     }
 
     private fun drawTopologyRiskSourceCroppedBands(
@@ -299,6 +349,274 @@ internal object RoomArtPlateRenderer {
                     ),
                 )
             }
+    }
+
+    private fun drawTopologyRiskAperturePressure(
+        canvas: TileCanvas,
+        frame: MapRenderFrame,
+        visiblePoints: Set<Point>,
+    ) {
+        visiblePoints
+            .toTopologyBands()
+            .filter { band -> band.width >= 3 && band.height >= 2 }
+            .forEachIndexed { index, band ->
+                val startRect = frame.viewport.tileRect(Point(band.startX, band.startY))
+                val cellSize = frame.viewport.cellSize.toFloat()
+                val x = startRect.x.toFloat()
+                val y = startRect.y.toFloat()
+                val width = cellSize * band.width
+                val height = cellSize * band.height
+                val stagger = if (index % 2 == 0) 0.12f else 0.22f
+                canvas.drawRect(
+                    tileBounds(x + cellSize * 0.30f, y + cellSize * 0.42f, width - cellSize * 0.60f, height - cellSize * 0.84f),
+                    plateColor("566447", 0.046f),
+                )
+                val upperWidth = width * 0.68f
+                val upperX = (x + width * stagger).coerceAtMost(x + width - upperWidth - cellSize * 0.12f)
+                canvas.drawRect(
+                    tileBounds(upperX, y + height - cellSize * 0.58f, upperWidth, cellSize * 0.34f),
+                    plateColor("070A08", 0.162f),
+                )
+                canvas.drawRect(
+                    tileBounds(upperX + upperWidth * 0.16f, y + height - cellSize * 0.25f, upperWidth * 0.52f, 3f),
+                    plateColor("D2AD68", 0.182f),
+                )
+
+                val lowerWidth = width * 0.54f
+                val lowerX = x + width * if (index % 2 == 0) 0.34f else 0.18f
+                canvas.drawRect(
+                    tileBounds(lowerX.coerceAtMost(x + width - lowerWidth), y + cellSize * 0.12f, lowerWidth, cellSize * 0.28f),
+                    plateColor("060806", 0.138f),
+                )
+                canvas.drawRect(
+                    tileBounds(lowerX + lowerWidth * 0.20f, y + cellSize * 0.36f, lowerWidth * 0.44f, 2.5f),
+                    plateColor("A8905E", 0.132f),
+                )
+
+                if (band.height >= 3) {
+                    val sideWidth = cellSize * 0.42f
+                    canvas.drawRect(
+                        tileBounds(x + width - sideWidth - cellSize * 0.10f, y + height * 0.22f, sideWidth, height * 0.52f),
+                        plateColor("070A08", 0.154f),
+                    )
+                    canvas.drawRect(
+                        tileBounds(x + width - sideWidth - cellSize * 0.04f, y + height * 0.34f, 2.5f, height * 0.30f),
+                        plateColor("D2AD68", 0.126f),
+                    )
+                }
+            }
+    }
+
+    private fun drawTopologyRiskBoundaryWallMassSlabs(
+        canvas: TileCanvas,
+        frame: MapRenderFrame,
+        visiblePoints: Set<Point>,
+    ) {
+        visiblePoints
+            .groupBy(Point::y)
+            .forEach { (rowY, rowPoints) ->
+                val rowXs = rowPoints.map(Point::x).toSet()
+                rowXs
+                    .filter { x -> Point(x, rowY + 1) !in visiblePoints }
+                    .sorted()
+                    .toTopologyRuns()
+                    .filter { run -> run.length >= 3 }
+                    .forEach { run -> drawHorizontalTopologyRiskBoundaryWallMassSlab(canvas, frame, rowY, run, north = true) }
+                rowXs
+                    .filter { x -> Point(x, rowY - 1) !in visiblePoints }
+                    .sorted()
+                    .toTopologyRuns()
+                    .filter { run -> run.length >= 3 }
+                    .forEach { run -> drawHorizontalTopologyRiskBoundaryWallMassSlab(canvas, frame, rowY, run, north = false) }
+            }
+
+        visiblePoints
+            .groupBy(Point::x)
+            .forEach { (columnX, columnPoints) ->
+                val columnYs = columnPoints.map(Point::y).toSet()
+                columnYs
+                    .filter { y -> Point(columnX - 1, y) !in visiblePoints }
+                    .sorted()
+                    .toTopologyRuns()
+                    .filter { run -> run.length >= 3 }
+                    .forEach { run -> drawVerticalTopologyRiskBoundaryWallMassSlab(canvas, frame, columnX, run, west = true) }
+                columnYs
+                    .filter { y -> Point(columnX + 1, y) !in visiblePoints }
+                    .sorted()
+                    .toTopologyRuns()
+                    .filter { run -> run.length >= 3 }
+                    .forEach { run -> drawVerticalTopologyRiskBoundaryWallMassSlab(canvas, frame, columnX, run, west = false) }
+            }
+    }
+
+    private fun drawHorizontalTopologyRiskBoundaryWallMassSlab(
+        canvas: TileCanvas,
+        frame: MapRenderFrame,
+        rowY: Int,
+        run: TopologyRun,
+        north: Boolean,
+    ) {
+        val startRect = frame.viewport.tileRect(Point(run.start, rowY))
+        val cellSize = frame.viewport.cellSize.toFloat()
+        val x = startRect.x.toFloat()
+        val y =
+            if (north) {
+                startRect.y + cellSize - 31f
+            } else {
+                startRect.y + 1f
+            }
+        val width = cellSize * run.length
+        canvas.drawRect(
+            tileBounds(x + 4f, y, width - 8f, 29f),
+            plateColor("050604", 0.232f),
+        )
+        canvas.drawRect(
+            tileBounds(x + cellSize * 0.92f, y + if (north) 19f else 7f, width - cellSize * 1.84f, 4f),
+            plateColor("8A7654", 0.092f),
+        )
+        if (run.length >= 5) {
+            val capX = x + cellSize * if (north) 2.20f else 1.35f
+            canvas.drawRect(
+                tileBounds(capX, y + if (north) 6f else 14f, cellSize * 1.70f, 10f),
+                plateColor("171A14", 0.166f),
+            )
+            canvas.drawRect(
+                tileBounds(capX + cellSize * 1.18f, y + if (north) 4f else 12f, 3f, 16f),
+                plateColor("050604", 0.154f),
+            )
+        }
+    }
+
+    private fun drawVerticalTopologyRiskBoundaryWallMassSlab(
+        canvas: TileCanvas,
+        frame: MapRenderFrame,
+        columnX: Int,
+        run: TopologyRun,
+        west: Boolean,
+    ) {
+        val startRect = frame.viewport.tileRect(Point(columnX, run.start))
+        val cellSize = frame.viewport.cellSize.toFloat()
+        val x =
+            if (west) {
+                startRect.x + 1f
+            } else {
+                startRect.x + cellSize - 31f
+            }
+        val y = startRect.y.toFloat()
+        val height = cellSize * run.length
+        canvas.drawRect(
+            tileBounds(x, y + 4f, 29f, height - 8f),
+            plateColor("050604", 0.224f),
+        )
+        canvas.drawRect(
+            tileBounds(if (west) x + 7f else x + 19f, y + cellSize * 0.92f, 4f, height - cellSize * 1.84f),
+            plateColor("8A7654", 0.084f),
+        )
+        if (run.length >= 5) {
+            val capY = y + cellSize * if (west) 2.35f else 1.42f
+            canvas.drawRect(
+                tileBounds(x + if (west) 13f else 6f, capY, 10f, cellSize * 1.56f),
+                plateColor("171A14", 0.154f),
+            )
+            canvas.drawRect(
+                tileBounds(x + if (west) 11f else 4f, capY + cellSize * 1.04f, 16f, 3f),
+                plateColor("050604", 0.148f),
+            )
+        }
+    }
+
+    private fun drawTopologyRiskWallRunVeils(
+        canvas: TileCanvas,
+        frame: MapRenderFrame,
+        visiblePoints: Set<Point>,
+    ) {
+        visiblePoints
+            .groupBy(Point::y)
+            .forEach { (rowY, rowPoints) ->
+                val rowXs = rowPoints.map(Point::x).toSet()
+                rowXs
+                    .filter { x -> Point(x, rowY + 1) !in visiblePoints }
+                    .sorted()
+                    .toTopologyRuns()
+                    .filter { run -> run.length >= 3 }
+                    .forEach { run -> drawHorizontalTopologyRiskWallRunVeil(canvas, frame, rowY, run, north = true) }
+                rowXs
+                    .filter { x -> Point(x, rowY - 1) !in visiblePoints }
+                    .sorted()
+                    .toTopologyRuns()
+                    .filter { run -> run.length >= 3 }
+                    .forEach { run -> drawHorizontalTopologyRiskWallRunVeil(canvas, frame, rowY, run, north = false) }
+            }
+
+        visiblePoints
+            .groupBy(Point::x)
+            .forEach { (columnX, columnPoints) ->
+                val columnYs = columnPoints.map(Point::y).toSet()
+                columnYs
+                    .filter { y -> Point(columnX - 1, y) !in visiblePoints }
+                    .sorted()
+                    .toTopologyRuns()
+                    .filter { run -> run.length >= 3 }
+                    .forEach { run -> drawVerticalTopologyRiskWallRunVeil(canvas, frame, columnX, run, west = true) }
+                columnYs
+                    .filter { y -> Point(columnX + 1, y) !in visiblePoints }
+                    .sorted()
+                    .toTopologyRuns()
+                    .filter { run -> run.length >= 3 }
+                    .forEach { run -> drawVerticalTopologyRiskWallRunVeil(canvas, frame, columnX, run, west = false) }
+            }
+    }
+
+    private fun drawHorizontalTopologyRiskWallRunVeil(
+        canvas: TileCanvas,
+        frame: MapRenderFrame,
+        rowY: Int,
+        run: TopologyRun,
+        north: Boolean,
+    ) {
+        val startRect = frame.viewport.tileRect(Point(run.start, rowY))
+        val cellSize = frame.viewport.cellSize.toFloat()
+        val x = startRect.x.toFloat()
+        val y =
+            if (north) {
+                startRect.y + cellSize - 23f
+            } else {
+                startRect.y + 3f
+            }
+        canvas.drawRect(
+            tileBounds(x + 5f, y, cellSize * run.length - 10f, 21f),
+            plateColor("0B0D0A", 0.148f),
+        )
+        canvas.drawRect(
+            tileBounds(x + 13f, if (north) y + 16f else y + 3f, cellSize * run.length - 26f, 2.5f),
+            plateColor("9A8256", 0.074f),
+        )
+    }
+
+    private fun drawVerticalTopologyRiskWallRunVeil(
+        canvas: TileCanvas,
+        frame: MapRenderFrame,
+        columnX: Int,
+        run: TopologyRun,
+        west: Boolean,
+    ) {
+        val startRect = frame.viewport.tileRect(Point(columnX, run.start))
+        val cellSize = frame.viewport.cellSize.toFloat()
+        val x =
+            if (west) {
+                startRect.x + 3f
+            } else {
+                startRect.x + cellSize - 23f
+            }
+        val y = startRect.y.toFloat()
+        canvas.drawRect(
+            tileBounds(x, y + 5f, 21f, cellSize * run.length - 10f),
+            plateColor("0B0D0A", 0.148f),
+        )
+        canvas.drawRect(
+            tileBounds(if (west) x + 3f else x + 16f, y + 13f, 2.5f, cellSize * run.length - 26f),
+            plateColor("9A8256", 0.070f),
+        )
     }
 
     private fun drawTopologyRiskMaterialRuns(
@@ -523,18 +841,32 @@ internal object RoomArtPlateRenderer {
         visiblePoints: Set<Point>,
     ) {
         visiblePoints.forEach { point ->
-            topologyRiskWallComponentPlacements(point, visiblePoints).forEach { placement ->
-                val asset = artPlate.source.componentAssets.assetFor(placement.role) ?: return@forEach
-                canvas.drawAsset(
-                    asset,
-                    topologyRiskComponentBounds(frame, point),
-                    placement.role.componentAlpha,
-                    flipX = placement.flipX,
-                    flipY = placement.flipY,
-                )
-            }
+            topologyRiskWallComponentPlacements(point, visiblePoints)
+                .filter { placement -> placement.shouldDrawAnchor(point) }
+                .forEach { placement ->
+                    val asset = artPlate.source.componentAssets.assetFor(placement.role) ?: return@forEach
+                    canvas.drawAsset(
+                        asset,
+                        topologyRiskComponentBounds(frame, point),
+                        placement.role.componentAlpha,
+                        flipX = placement.flipX,
+                        flipY = placement.flipY,
+                    )
+                }
         }
     }
+
+    private fun TopologyRiskWallComponentPlacement.shouldDrawAnchor(point: Point): Boolean =
+        when (role) {
+            TerrainWallPieceRole.CORNER,
+            TerrainWallPieceRole.DOOR_CONTACT,
+            -> true
+
+            TerrainWallPieceRole.CROWN,
+            TerrainWallPieceRole.SIDE,
+            TerrainWallPieceRole.BASE,
+            -> (point.x * 31 + point.y * 17).mod(6) == 0
+        }
 
     private fun topologyRiskWallComponentPlacements(
         point: Point,
@@ -658,6 +990,58 @@ internal object RoomArtPlateRenderer {
         val point: Point,
         val runLength: Int,
     )
+
+    private data class TopologyRiskMantlePalette(
+        val fieldHex: String,
+        val fieldAlpha: Float,
+        val upperShadowHex: String,
+        val upperShadowAlpha: Float,
+        val lowerLipHex: String,
+        val lowerLipAlpha: Float,
+    )
+
+    private fun topologyRiskMantlePalette(tilesetKey: String): TopologyRiskMantlePalette =
+        when (tilesetKey) {
+            DarkUiMapVisualKeys.FOREST_EDGE_TILESET ->
+                TopologyRiskMantlePalette(
+                    fieldHex = "111B14",
+                    fieldAlpha = 0.156f,
+                    upperShadowHex = "050604",
+                    upperShadowAlpha = 0.108f,
+                    lowerLipHex = "8E7540",
+                    lowerLipAlpha = 0.046f,
+                )
+
+            DarkUiMapVisualKeys.MINE_TILESET ->
+                TopologyRiskMantlePalette(
+                    fieldHex = "18130E",
+                    fieldAlpha = 0.148f,
+                    upperShadowHex = "050504",
+                    upperShadowAlpha = 0.112f,
+                    lowerLipHex = "A06F3D",
+                    lowerLipAlpha = 0.048f,
+                )
+
+            DarkUiMapVisualKeys.SHADOW_DEPTHS_TILESET ->
+                TopologyRiskMantlePalette(
+                    fieldHex = "0D0F1A",
+                    fieldAlpha = 0.164f,
+                    upperShadowHex = "050508",
+                    upperShadowAlpha = 0.118f,
+                    lowerLipHex = "6D64A6",
+                    lowerLipAlpha = 0.052f,
+                )
+
+            else ->
+                TopologyRiskMantlePalette(
+                    fieldHex = "11130E",
+                    fieldAlpha = 0.150f,
+                    upperShadowHex = "050604",
+                    upperShadowAlpha = 0.110f,
+                    lowerLipHex = "91764A",
+                    lowerLipAlpha = 0.046f,
+                )
+        }
 
     private val TerrainWallPieceRole.componentAlpha: Float
         get() =

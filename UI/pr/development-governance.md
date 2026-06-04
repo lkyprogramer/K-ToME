@@ -14,6 +14,7 @@ dark UI/UX PR 不再依赖人工记忆执行资源 gate、golden 和白盒流程
 2. 资源 PR 先证明 registry / sheet plan / manifest / coverage 可执行，再进入截图和人工验收。
 3. `clientSmoke`、`goldenScreenshot`、resource lint 和 packaged app 白盒不互相替代。
 4. raw sheet、contact sheet、manifest、coverage artifact、manual record 全部使用 repo-relative path。
+5. 长视觉迭代必须具备可执行的收敛语义；`accepted-forward` 只能表示局部证据，不能累计成 closure。
 
 ## 2. Acceptance Matrix
 
@@ -51,9 +52,45 @@ dark UI/UX PR 固定按以下顺序执行：
    - 运行 `:client:clientSmoke` 和 `:client:goldenScreenshot`。
 5. governance gate
    - 结构性 client PR、renderer 重排、public presentation model 或 gate wiring 必须运行 `maintainabilityLint`。
-6. final closure
+6. visual convergence gate
+   - 长视觉迭代、director-grade 目标、resource/art/compositor 多轮调参或 PR-08 类目标循环，必须先通过下面的 Visual Convergence Gate，才能进入 final closure。
+7. final closure
    - 最后运行 `verifyChanged`。
    - PR-07 或 package-facing UI 变更必须保留 packaged app 白盒记录；不能只用 debug client golden 替代。
+
+### 3.1 Visual Convergence Gate
+
+这个 gate 管视觉目标是否继续迭代，而不是替代 resource lint、golden 或 packaged whitebox。
+
+适用范围：
+
+1. 同一 dark UI/UX PR 内连续推进同一 `technique family` 的资源、compositor、presentation、chrome 或 interaction grammar。
+2. 任何使用 `accepted-forward`、`limited-accepted-forward`、`proof-forward` 或等价 provisional verdict 的迭代记录。
+3. 任何以 director-grade、first-read quality、all-map closure、packaged parity 或 aesthetic stop-line 为目标的 PR / goal / review packet。
+
+硬规则：
+
+1. `accepted-forward` 必须记录 active blocker、technique family、主要证据 artifact 和 failure-counter impact：`counts-as-progress`、`counts-as-failure` 或 `freeze-no-more-local-polish`。
+2. 同一 technique family 连续两个 packet 仍让同一 active blocker 低于 rubric 阈值，必须 technique change；禁止继续 alpha、seam、fog、line-weight、single-cell rectangle、draw-order 或 same-key texture 调参。
+3. 同一 active blocker 第三次出现时，必须记录 direction-change / freeze / explicit deferral 决策；后续 packet 不能再把 governance-only 文档更新或同类微调记为 progress。
+4. 如果固定参考图 A/B、packaged crop 或 D8/D9 real-procgen evidence 显示画面 first-read 变差，即使某个代理指标改善，也必须记为 rejected / backed-out / freeze，不得记为 accepted-forward progress。
+5. D8/D9、edge mean、hash、brightness 等代理指标只允许作为回归保护和候选比较辅助；director-grade closure 必须回到固定 crop A/B 或 packaged crop 的二元质量判定。
+6. 方向性止损仍遵守仓库 hard red lines。未触碰 schema/version/public contract/owner boundary 的 UI/UX 方向选择，默认由 agent 按 evidence-owned protocol 记录决策；不得把日常候选选择退回成 routine human wait。
+
+闭集字段：
+
+1. `blocker-id` 必须是稳定 kebab-case，不得用 packet 标题、候选名或临时描述替代。
+2. `technique-family` 只能使用以下闭集：`source-art`、`alpha-tuning`、`compositor-rect`、`wall-family`、`presentation-structure`、`layout-ab`、`interaction-grammar`、`resource-manifest-wiring`、`packaged-parity`、`governance-docs`。新增取值必须同改本文和 `acceptanceContractLint`。
+3. `failure-counter-impact` 只能使用：`counts-as-progress`、`counts-as-failure`、`freeze-no-more-local-polish`、`not-visual-progress`。
+4. 同一 blocker 达到第三次及以上时，`required-action` 只能是 `direction-change`、`freeze`、`explicit-deferral` 或 `ab-decision-required`；不能写成继续观察或常规排期。
+
+执行要求：
+
+1. 对命中本 gate 的 PR，在 PR 文档、goal log、manual record 或 review packet 中记录上述字段；最终 closure 前 reviewer 必须能从 canonical artifact 追到最近一次 failure-counter impact。
+2. PR-08 类长循环必须在 goal log 顶部维护机器可读的当前收敛状态表，至少包含 `blocker-id`、`technique-family`、`occurrence-count`、`failure-counter-impact`、`required-action` 和 `status`。
+3. docs-only packet 若不声明视觉进展，必须明确 `technique-family=governance-docs` 且 `failure-counter-impact=not-visual-progress`，不能清零或降低当前视觉 blocker 的 failure counter。
+4. `acceptanceContractLint` 必须保护本节和 PR-08 当前收敛状态，防止后续 governance 文档退化成只有结构 gate、没有视觉收敛 gate。
+5. 本 gate 只阻止无收益的同类微迭代；它不推翻已经通过 owner/resource/manifest 边界证明的资源路线，也不允许引入第二套视觉 authority 来让报告变绿。
 
 ## 4. Gate Budget
 

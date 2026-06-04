@@ -66,6 +66,8 @@ val verificationOnlyTestTags =
         "verifyHiddenPreflight",
         "verifyContentPackPreflight",
         "scopeCoverageLint",
+        "pr08RealProcgenProbe",
+        "pr08RuntimeTopologyProbe",
     )
 val verifyOwnerTaskPaths =
     listOf(
@@ -966,6 +968,18 @@ tasks.register("goldenScreenshot") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs deterministic screenshot golden coverage."
     dependsOn(":client:goldenScreenshot")
+}
+
+tasks.register("pr08RuntimeTopologyProbe") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs PR-08 runtime topology crop probes outside the full golden suite."
+    dependsOn(":client:pr08RuntimeTopologyProbe")
+}
+
+tasks.register("pr08RealProcgenProbe") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs PR-08 D9 real-procgen ROI evidence probes."
+    dependsOn(":client:pr08RealProcgenProbe")
 }
 
 tasks.register("preReleaseAcceptance") {

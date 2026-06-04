@@ -8375,13 +8375,19 @@ class TileRendererCanvasTest {
         val cells =
             (0 until width).flatMap { x ->
                 (0 until height).map { y ->
-                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    val isVisibleShape = (x to y) in visibleRegion
+                    val isWall = isVisibleShape && (x == 0 || y == 0 || x == width - 1 || y == height - 1)
                     MapCellSnapshot(
                         x = x,
                         y = y,
-                        visibility = if ((x to y) in visibleRegion) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
-                        terrainTypeId = if (isWall) "wall" else "floor",
-                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                        visibility = if (isVisibleShape) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (isVisibleShape) if (isWall) "wall" else "floor" else "void",
+                        terrainVisualKey =
+                            when {
+                                !isVisibleShape -> "tileset.test.ground_01"
+                                isWall -> DarkUiMapVisualKeys.RUINS_WALL
+                                else -> DarkUiMapVisualKeys.RUINS_GROUND
+                            },
                     )
                 }
             }
@@ -8429,11 +8435,20 @@ class TileRendererCanvasTest {
             canvas.assetDraws.none { draw -> draw.isPr08FullRoomPlateStretch(roomArtPlateKey) },
             "PR-08 full-room plate must not stretch as one unsafe bbox over topology-risky L-shaped visible bounds: ${canvas.assetDraws}",
         )
-        val topologySourceBands = canvas.assetDraws.filter { draw -> draw.isPr08TopologyRiskSourceCroppedBand(topologySourceKey) }
+        val topologySourceBands =
+            canvas.assetDraws.filter { draw ->
+                draw.isPr08TopologyRiskSourceCroppedBand(topologySourceKey, expectedAlpha = 0.49f..0.51f)
+            }
+        val topologyBandMantles = canvas.rectDraws.filter { draw -> draw.isPr08TopologyRiskBandMantle() }
         assertEquals(
             2,
             topologySourceBands.size,
             "Topology-risk hybrid should replace bridge fragments with two dedicated-source visible-topology bands: ${canvas.assetDraws}",
+        )
+        assertEquals(
+            2,
+            topologyBandMantles.size,
+            "Topology-risk hybrid should lay broad room-scale mantle fields below the dedicated topology source, one per visible topology band: ${canvas.rectDraws}",
         )
         assertTrue(
             canvas.assetDraws.none { draw ->
@@ -8474,6 +8489,30 @@ class TileRendererCanvasTest {
             "Topology-risk source-cropped bands must not cover the hidden L-shaped notch outside visible topology: ${canvas.assetDraws}",
         )
         assertTrue(
+            topologyBandMantles.any { draw ->
+                draw.contains(
+                    horizontalSourceRepresentative.x + horizontalSourceRepresentative.width * 0.5f,
+                    horizontalSourceRepresentative.y + horizontalSourceRepresentative.height * 0.5f,
+                )
+            },
+            "Topology-risk mantle should tie the horizontal visible band together before tile seams become the first read: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            topologyBandMantles.any { draw ->
+                draw.contains(
+                    verticalSourceRepresentative.x + verticalSourceRepresentative.width * 0.5f,
+                    verticalSourceRepresentative.y + verticalSourceRepresentative.height * 0.5f,
+                )
+            },
+            "Topology-risk mantle should tie the vertical visible band together before tile seams become the first read: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            topologyBandMantles.none { draw ->
+                draw.contains(hiddenNotch.x + hiddenNotch.width * 0.5f, hiddenNotch.y + hiddenNotch.height * 0.5f)
+            },
+            "Topology-risk mantle fields must stay clipped to visible topology bands instead of filling hidden L-shaped notches: ${canvas.rectDraws}",
+        )
+        assertTrue(
             canvas.assetDraws.none { draw ->
                 draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_MATERIAL_BREAKUP
             },
@@ -8498,11 +8537,18 @@ class TileRendererCanvasTest {
             "Topology-risk dedicated source bands should cover a representative visible cell on the vertical arm: ${canvas.assetDraws}",
         )
         assertTrue(
-            canvas.assetDraws.any { draw ->
+            canvas.assetDraws.none { draw ->
                 draw.asset.entry.category == "tile_ground" &&
                     draw.asset.requestedKey == DarkUiMapVisualKeys.RUINS_GROUND
             },
-            "Topology-risk fallback should keep runtime tile material visible instead of leaving the map compositor empty: ${canvas.assetDraws}",
+            "Topology-risk hybrid should let the dedicated topology source own ground material instead of restoring a grid-first tile floor: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.asset.entry.category == "tile_wall" &&
+                    draw.asset.requestedKey == DarkUiMapVisualKeys.RUINS_WALL
+            },
+            "Topology-risk hybrid should keep runtime wall material visible so authored source ownership does not erase tactical boundaries: ${canvas.assetDraws}",
         )
         assertTrue(
             canvas.rectDraws.any { draw -> draw.isPr08TopologyRiskHybridRunField() },
@@ -8616,6 +8662,192 @@ class TileRendererCanvasTest {
             canvas.assetDraws.any { draw -> draw.isPr08TopologyRiskWallComponent("tileset.ruins.wall_01.side") },
             "Topology-risk hybrid should draw side components on outer vertical boundaries: ${canvas.assetDraws}",
         )
+    }
+
+    @Test
+    fun renderCanvasUsesPr08InteractionGrammarOverTopologyRiskHybridRoomArtPlate() {
+        val canvas = RecordingTileCanvas()
+        val width = 8
+        val height = 7
+        val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
+        val topologySourceKey = DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE
+        val rareItem =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                typeId = "WEAPON",
+                iconKey = "item.short_sword.icon",
+                qualityTierId = "RARE",
+            )
+        val visibleRegion =
+            (0 until width).flatMap { x ->
+                (0 until height).mapNotNull { y ->
+                    if (y <= 2 || x <= 2) {
+                        x to y
+                    } else {
+                        null
+                    }
+                }
+            }.toSet()
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if ((x to y) in visibleRegion) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) DarkUiMapVisualKeys.RUINS_WALL else DarkUiMapVisualKeys.RUINS_GROUND,
+                        actorEntityId = if (x == 4 && y == 2) 2 else null,
+                        items = if (x == 5 && y == 2) List(10) { rareItem } else emptyList(),
+                    )
+                }
+            }
+        val overlays =
+            listOf(
+                OverlayRenderSnapshot(
+                    id = "boss:warning",
+                    visualKey = "vfx.boss.warning.sigil_01",
+                    previewTurns = 1,
+                    dangerLevel = 3,
+                    shape = OverlayShapeSnapshot.SINGLE_TILE,
+                    sourceAbilityId = "boss_warning",
+                    cells = listOf(GridPointSnapshot(4, 2)),
+                ),
+                OverlayRenderSnapshot(
+                    id = "ordinary:vfx",
+                    visualKey = "vfx.zone.effect.void_pressure_01",
+                    previewTurns = 1,
+                    dangerLevel = 1,
+                    shape = OverlayShapeSnapshot.SINGLE_TILE,
+                    sourceAbilityId = "zone_pressure",
+                    cells = listOf(GridPointSnapshot(5, 1)),
+                ),
+            )
+        val targetState =
+            CombatDecisionFrameState(
+                phase = CombatDecisionPhase.TARGET,
+                selectedActionId = "talent:1",
+                selectedMethodId = "default",
+                skippedMethod = true,
+            )
+        val overlayState =
+            OverlayState(
+                mode = UiMode.TARGETING,
+                targetingCursor = com.ktome.core.map.Point(6, 2),
+                modalFrames =
+                    listOf(
+                        ModalFrame(
+                            kind = ModalFrameKind.COMBAT_DECISION,
+                            localState =
+                                ModalFrameLocalState(
+                                    targetingCursor = com.ktome.core.map.Point(6, 2),
+                                    combatDecisionState = targetState,
+                                ),
+                        ),
+                    ),
+            )
+        val base =
+            sampleSnapshot(
+                width = width,
+                height = height,
+                cells = cells,
+                playerX = 2,
+                playerY = 2,
+                overlays = overlays,
+                talents =
+                    listOf(
+                        TalentSlotSnapshot(
+                            slot = 1,
+                            talentId = "power_strike",
+                            nameKey = "talent.vanguard.power_strike.name",
+                            iconKey = CombatAffordanceResourceKeys.ACTION_ICON,
+                            level = 1,
+                            maxLevel = 5,
+                            resourceCost = 3,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            range = 5,
+                            minRange = 0,
+                            currentCooldown = 0,
+                            maxCooldown = 3,
+                            requiresTarget = true,
+                        ),
+                    ),
+                targetablePositions =
+                    listOf(
+                        GridPointSnapshot(5, 2),
+                        GridPointSnapshot(6, 2),
+                        GridPointSnapshot(6, 1),
+                    ),
+            ).withRuinsTileset()
+        val snapshot =
+            base.copy(
+                actors =
+                    base.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 4,
+                            y = 2,
+                            visualKey = "actor.arcanist",
+                            nameKey = "profession.arcanist.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.GENERIC,
+                        ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = roomArtPlateKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                            VisualManifestEntry(
+                                key = topologySourceKey,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype", "room_topology_source"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = overlayState,
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val overlayAssets =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.resolvedKey == "vfx.boss.warning.sigil_01" ||
+                    draw.asset.resolvedKey == "vfx.zone.effect.void_pressure_01"
+            }
+
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.isPr08TopologyRiskSourceCroppedBand(topologySourceKey, expectedAlpha = 0.49f..0.51f)
+            },
+        )
+        assertTrue(canvas.assetDraws.none { draw -> draw.isPr08FullRoomPlateStretch(roomArtPlateKey) })
+        assertEquals(2, overlayAssets.size)
+        assertTrue(overlayAssets.all { draw -> draw.alpha < 0.44f }, overlayAssets.toString())
+        assertTrue(canvas.rectDraws.count { draw -> draw.isRestrainedArtPlateSpriteOverlayMark() } >= overlays.size * 4, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadTargetingTileFill() }, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.count { draw -> draw.isRestrainedArtPlateTargetMark() } >= 4, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.count { draw -> draw.isRestrainedArtPlatePlayerIndicatorMark() } >= 4, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.count { draw -> draw.isRestrainedArtPlateCursorMark() } >= 4, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.any { draw -> draw.isRestrainedArtPlateLootRail() }, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadArtPlatePlayerIndicatorFrame() }, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadArtPlateLootBackingCard() }, canvas.rectDraws.toString())
+        assertTrue(canvas.rectDraws.none { draw -> draw.isBroadArtPlateCursorOutline() }, canvas.rectDraws.toString())
     }
 
     @Test
@@ -8800,8 +9032,8 @@ class TileRendererCanvasTest {
     @Test
     fun renderCanvasKeepsPr08IdleGridHintsBelowInteractionWeight() {
         val canvas = RecordingTileCanvas()
-        val width = 10
-        val height = 7
+        val width = 12
+        val height = 8
         val roomArtPlateKey = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE
         val cells =
             (0 until width).flatMap { x ->
@@ -9469,7 +9701,7 @@ class TileRendererCanvasTest {
                             wallKey = DarkUiMapVisualKeys.FOREST_EDGE_WALL,
                             roomArtPlateKey = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE,
                         ),
-                    topologySourceKey = "ui.map_stage.forest_edge.room_topology_source.pr08_demo",
+                    topologySourceKey = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
                     topologySourcePath = "dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png",
                 ),
                 NonRuinsTopologySourceCase(
@@ -9480,7 +9712,7 @@ class TileRendererCanvasTest {
                             wallKey = DarkUiMapVisualKeys.MINE_WALL,
                             roomArtPlateKey = DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE,
                         ),
-                    topologySourceKey = "ui.map_stage.mine.room_topology_source.pr08_demo",
+                    topologySourceKey = DarkUiMapVisualKeys.MINE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
                     topologySourcePath = "dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png",
                 ),
                 NonRuinsTopologySourceCase(
@@ -9491,7 +9723,7 @@ class TileRendererCanvasTest {
                             wallKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_WALL,
                             roomArtPlateKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE,
                         ),
-                    topologySourceKey = "ui.map_stage.shadow_depths.room_topology_source.pr08_demo",
+                    topologySourceKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
                     topologySourcePath = "dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png",
                 ),
             )
@@ -9551,7 +9783,7 @@ class TileRendererCanvasTest {
 
             val topologySourceBands =
                 canvas.assetDraws.filter { draw ->
-                    draw.isPr08TopologyRiskSourceCroppedBand(case.topologySourceKey)
+                    draw.isPr08TopologyRiskSourceCroppedBand(case.topologySourceKey, expectedAlpha = 0.61f..0.63f)
                 }
 
             assertEquals(
@@ -9563,13 +9795,241 @@ class TileRendererCanvasTest {
                 canvas.assetDraws.none { draw ->
                     draw.asset.resolvedKey == family.roomArtPlateKey && draw.sourceRegion != null
                 },
-                "Non-ruins topology-risk rooms must stop sampling the accepted full-room plate once a dedicated topology source exists: $case ${canvas.assetDraws}",
+                "Non-ruins topology-risk rooms must not sample the accepted full-room plate through chopped topology bands once a dedicated topology source exists: $case ${canvas.assetDraws}",
             )
             assertTrue(
                 canvas.assetDraws.none { draw -> draw.asset.resolvedKey == DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE },
                 "Non-ruins topology-risk fallback must not reuse the ruins dedicated topology source: $family ${canvas.assetDraws}",
             )
         }
+    }
+
+    @Test
+    fun renderCanvasFramesNonRuinsTopologyRiskHybridWithBandScaleAperturePressure() {
+        val canvas = RecordingTileCanvas()
+        val width = 8
+        val height = 7
+        val family =
+            RoomArtPlateFamilyVisualKeys(
+                tilesetKey = DarkUiMapVisualKeys.FOREST_EDGE_TILESET,
+                groundKey = DarkUiMapVisualKeys.FOREST_EDGE_GROUND,
+                wallKey = DarkUiMapVisualKeys.FOREST_EDGE_WALL,
+                roomArtPlateKey = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE,
+            )
+        val visibleRegion =
+            (0 until width).flatMap { x ->
+                (0 until height).mapNotNull { y ->
+                    if (y <= 2 || x <= 2) {
+                        x to y
+                    } else {
+                        null
+                    }
+                }
+            }.toSet()
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isWall = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if ((x to y) in visibleRegion) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (isWall) "wall" else "floor",
+                        terrainVisualKey = if (isWall) family.wallKey else family.groundKey,
+                    )
+                }
+            }
+        val base = sampleSnapshot(width = width, height = height, cells = cells, playerX = 2, playerY = 2)
+        val snapshot = base.copy(metadata = base.metadata.copy(tilesetKey = family.tilesetKey))
+
+        val summary =
+            TileRenderer.renderToCanvas(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver =
+                    sampleResolver(
+                        extraEntries =
+                            listOf(
+                                VisualManifestEntry(
+                                    key = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
+                                    category = "ui_frame",
+                                    rawOutputPath = "dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png",
+                                    footprint = "ui",
+                                    tags = listOf("pr08", "room_art_plate", "room_topology_source", "topology_fragment_source"),
+                                ),
+                            ),
+                    ),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+                canvas = canvas,
+                cellWidth = 32f,
+                cellHeight = 32f,
+            )
+
+        val hiddenNotch = summary.viewport.tileRect(Point(3, 3))
+        val hiddenNotchCenterX = hiddenNotch.x + hiddenNotch.width / 2f
+        val hiddenNotchCenterY = hiddenNotch.y + hiddenNotch.height / 2f
+        val aperturePressure = canvas.rectDraws.filter { draw -> draw.isPr08TopologyRiskBandAperturePressure() }
+        val apertureLips = canvas.rectDraws.filter { draw -> draw.isPr08TopologyRiskBandApertureLip() }
+
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.isPr08TopologyRiskSourceCroppedBand(
+                    DarkUiMapVisualKeys.FOREST_EDGE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
+                    expectedAlpha = 0.61f..0.63f,
+                )
+            },
+            "forest-edge topology-risk room should still route through the dedicated topology source before the aperture pressure pass: ${canvas.assetDraws}",
+        )
+        assertTrue(
+            aperturePressure.any { draw -> draw.width > 150f && draw.height in 8f..14f },
+            "topology-risk bands should receive a broad room-scale upper aperture pressure instead of only per-cell edge marks: $aperturePressure",
+        )
+        assertTrue(
+            aperturePressure.any { draw -> draw.width in 11f..15f && draw.height > 55f },
+            "topology-risk bands should receive a vertical pressure pylon so the risky crop reads as framed room material, not isolated strips: $aperturePressure",
+        )
+        assertTrue(
+            apertureLips.any { draw -> draw.width > 70f && draw.height in 2f..4f },
+            "topology-risk aperture pressure should keep a worn-stone lip so the new framing reads as material, not a flat black mask: $apertureLips",
+        )
+        assertTrue(
+            aperturePressure.none { draw -> draw.contains(hiddenNotchCenterX, hiddenNotchCenterY) },
+            "band-scale topology aperture pressure must stay clipped to visible topology and not cover the hidden L-shaped notch: $aperturePressure",
+        )
+    }
+
+    @Test
+    fun renderCanvasSubduesTopologyRiskWallCardsIntoRunLevelVeils() {
+        val canvas = RecordingTileCanvas()
+        val width = 10
+        val height = 7
+        val visibleRegion =
+            (0 until width).flatMap { x ->
+                (0 until height).mapNotNull { y ->
+                    if (y <= 2 || x <= 2) {
+                        x to y
+                    } else {
+                        null
+                    }
+                }
+            }.toSet()
+        val visibleWallCount =
+            visibleRegion.count { (x, y) ->
+                x == 0 || y == 0 || x == width - 1 || y == height - 1
+            }
+        val cells =
+            (0 until width).flatMap { x ->
+                (0 until height).map { y ->
+                    val isVisibleShape = (x to y) in visibleRegion
+                    val isWall = isVisibleShape && (x == 0 || y == 0 || x == width - 1 || y == height - 1)
+                    MapCellSnapshot(
+                        x = x,
+                        y = y,
+                        visibility = if (isVisibleShape) CellVisibilitySnapshot.VISIBLE else CellVisibilitySnapshot.HIDDEN,
+                        terrainTypeId = if (isVisibleShape) if (isWall) "wall" else "floor" else "void",
+                        terrainVisualKey =
+                            when {
+                                !isVisibleShape -> "tileset.test.ground_01"
+                                isWall -> DarkUiMapVisualKeys.RUINS_WALL
+                                else -> DarkUiMapVisualKeys.RUINS_GROUND
+                            },
+                    )
+                }
+            }
+        val base = sampleSnapshot(width = width, height = height, cells = cells, playerX = 2, playerY = 2)
+        val snapshot = base.withRuinsTileset()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver =
+                sampleResolver(
+                    extraEntries =
+                        listOf(
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.RUINS_ROOM_ART_PLATE_PROTOTYPE,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_plate_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype"),
+                            ),
+                            VisualManifestEntry(
+                                key = DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
+                                category = "ui_frame",
+                                rawOutputPath = "dark-v1/ui/ui_map_stage_ruins_room_topology_source_pr08_demo.png",
+                                footprint = "ui",
+                                tags = listOf("pr08", "client-only-prototype", "room_topology_source"),
+                            ),
+                        ),
+                ),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val wallTileCards =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.requestedKey == DarkUiMapVisualKeys.RUINS_WALL &&
+                    draw.asset.entry.category == "tile_wall" &&
+                    draw.width in 33f..36f &&
+                    draw.height in 33f..36f
+            }
+        val componentAnchors =
+            canvas.assetDraws.filter { draw ->
+                draw.asset.resolvedKey.startsWith("${DarkUiMapVisualKeys.RUINS_WALL}.") &&
+                    draw.asset.entry.category == "tile_wall" &&
+                    draw.width in 27f..31f &&
+                    draw.height in 27f..31f &&
+                    draw.alpha in 0.30f..0.50f
+            }
+
+        assertTrue(
+            canvas.assetDraws.any { draw ->
+                draw.isPr08TopologyRiskSourceCroppedBand(
+                    DarkUiMapVisualKeys.RUINS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
+                    expectedAlpha = 0.49f..0.51f,
+                )
+            },
+            "test setup must exercise the topology-risk hybrid path before asserting wall-run veil behavior: ${canvas.assetDraws}",
+        )
+        assertTrue(wallTileCards.isNotEmpty(), "topology-risk hybrid should keep runtime wall tiles as subdued tactical boundary anchors")
+        assertTrue(
+            wallTileCards.none { draw -> draw.alpha >= 0.85f },
+            "topology-risk hybrid should not draw full-strength wall tiles that read as repeated wall cards: $wallTileCards",
+        )
+        assertTrue(
+            wallTileCards.any { draw -> draw.alpha in 0.52f..0.62f },
+            "topology-risk hybrid should keep subdued runtime wall tiles as tactical boundary anchors: $wallTileCards",
+        )
+        assertTrue(
+            wallTileCards.size <= visibleWallCount / 3 + 1,
+            "topology-risk hybrid should reduce repeated per-cell wall cards to sparse tactical anchors; visibleWallCount=$visibleWallCount cards=$wallTileCards",
+        )
+        assertTrue(
+            wallTileCards.none { draw -> draw.alpha in 0.40f..0.50f },
+            "topology-risk hybrid should not repaint every runtime wall card with a second wall-family relief pass: $wallTileCards",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw -> draw.isPr08TopologyRiskBoundaryWallMassSlab() && draw.width >= 180f },
+            "topology-risk hybrid should replace repeated wall cards with a heavier horizontal boundary mass slab: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw -> draw.isPr08TopologyRiskBoundaryWallMassSlab() && draw.height >= 85f },
+            "topology-risk hybrid should replace repeated wall cards with a heavier vertical boundary mass slab: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw -> draw.isPr08TopologyRiskWallRunVeil() && draw.width >= 180f },
+            "topology-risk hybrid should add a run-level horizontal wall veil so long wall runs read as one authored mass: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            canvas.rectDraws.any { draw -> draw.isPr08TopologyRiskWallRunVeil() && draw.height >= 85f },
+            "topology-risk hybrid should add a run-level vertical wall veil so long wall columns read as carved mass: ${canvas.rectDraws}",
+        )
+        assertTrue(
+            componentAnchors.size < visibleWallCount / 2,
+            "topology-risk hybrid should keep wall-family component pieces as sparse anchors instead of drawing one on every visible wall cell: visibleWallCount=$visibleWallCount anchors=$componentAnchors",
+        )
     }
 
     @Test
@@ -9726,7 +10186,7 @@ class TileRendererCanvasTest {
                         y = y,
                         visibility = CellVisibilitySnapshot.VISIBLE,
                         terrainTypeId = "floor",
-                        terrainVisualKey = "tileset.forest_edge.ground_01",
+                        terrainVisualKey = "tileset.test.ground_01",
                     )
                 }
             }
@@ -9736,7 +10196,7 @@ class TileRendererCanvasTest {
         TileRenderer.renderToCanvas(
             localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
             visualResolver = sampleResolver(),
-            snapshot = snapshot.copy(metadata = snapshot.metadata.copy(tilesetKey = "tileset.forest_edge")),
+            snapshot = snapshot,
             overlayState = OverlayState(mode = UiMode.MAP),
             canvas = canvas,
             cellWidth = 32f,
@@ -11860,6 +12320,15 @@ private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskHybridRunField(): Boo
         width >= 80f &&
         height >= 20f
 
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskBandMantle(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.055f..0.075f &&
+        color.g in 0.070f..0.090f &&
+        color.b in 0.050f..0.070f &&
+        color.a in 0.145f..0.170f &&
+        width >= 80f &&
+        height >= 50f
+
 private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskInteriorSeamDissolve(): Boolean =
     afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
         color.r in 0.060f..0.085f &&
@@ -11867,6 +12336,39 @@ private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskInteriorSeamDissolve(
         color.b in 0.055f..0.080f &&
         color.a in 0.095f..0.125f &&
         ((width >= 90f && height in 7f..16f) || (height >= 90f && width in 7f..16f))
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskBandAperturePressure(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.020f..0.035f &&
+        color.g in 0.025f..0.045f &&
+        color.b in 0.020f..0.040f &&
+        color.a in 0.130f..0.185f &&
+        width > 10f &&
+        height > 8f
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskBandApertureLip(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.62f..0.84f &&
+        color.g in 0.48f..0.70f &&
+        color.b in 0.30f..0.48f &&
+        color.a in 0.120f..0.200f &&
+        ((width >= 34f && height in 2f..4f) || (height >= 34f && width in 2f..4f))
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskWallRunVeil(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r in 0.030f..0.055f &&
+        color.g in 0.040f..0.065f &&
+        color.b in 0.030f..0.055f &&
+        color.a in 0.125f..0.175f &&
+        ((width >= 85f && height in 16f..28f) || (height >= 85f && width in 16f..28f))
+
+private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskBoundaryWallMassSlab(): Boolean =
+    afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
+        color.r < 0.030f &&
+        color.g < 0.030f &&
+        color.b < 0.025f &&
+        color.a in 0.200f..0.270f &&
+        ((width >= 95f && height in 24f..34f) || (height >= 80f && width in 24f..34f))
 
 private fun RecordingTileCanvas.RectDraw.isPr08TopologyRiskHybridDarkEdge(): Boolean =
     afterFlush == TileLayerFlushReason.MAP_CELL_MATERIAL &&
@@ -11908,9 +12410,12 @@ private fun RecordingTileCanvas.AssetDraw.isPr08FullRoomPlateStretch(resolvedKey
         width >= 160f &&
         height >= 120f
 
-private fun RecordingTileCanvas.AssetDraw.isPr08TopologyRiskSourceCroppedBand(resolvedKey: String): Boolean =
+private fun RecordingTileCanvas.AssetDraw.isPr08TopologyRiskSourceCroppedBand(
+    resolvedKey: String,
+    expectedAlpha: ClosedFloatingPointRange<Float>,
+): Boolean =
     asset.resolvedKey == resolvedKey &&
-        alpha in 0.41f..0.43f &&
+        alpha in expectedAlpha &&
         sourceRegion != null &&
         width >= 80f &&
         height >= 80f

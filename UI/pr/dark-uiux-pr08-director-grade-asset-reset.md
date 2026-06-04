@@ -21,6 +21,7 @@
 | `UI08-M05` | §6 runtime compositor reset | `client` | focused layer / marker readability tests | `:client:clientSmoke`, `:client:goldenScreenshot` | `dark-uiux-pr08-director-*` golden set | `required` |
 | `UI08-M06` | §7 shell / panel / bottom HUD unity | `client` / `assets` | focused renderer tests, crop review | `:client:goldenScreenshot` | right-panel and bottom-deck crops | `required` |
 | `UI08-M07` | §8 final director close | `client` / `docs` / `tools` | manual side-by-side rubric | packaged app whitebox, `maintainabilityLint`, `verifyChanged` | `UI/manual-records/dark-uiux-director-grade-runtime-parity.md` | `required` |
+| `UI08-M08` | D10 retained UI authority | `client` / `docs` | retained UI adoption matrix and screen adaptation plan | focused Scene2D host / Skin / layout tests when implemented | `UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md` | `required` |
 
 ### Gate Budget
 
@@ -46,6 +47,7 @@ PR-08 触发资源、runtime compositor、golden、packaged app 和 governance �
 | --- | --- |
 | PR plan source | `UI/pr/dark-uiux-asset-first-director-grade-redesign-plan.md` |
 | PR execution contract | `UI/pr/dark-uiux-pr08-director-grade-asset-reset.md` |
+| D10 retained UI authority contract | `UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md` |
 | Gap audit | `UI/review/dark-uiux-director-grade-gap-audit.md` |
 | Evidence and direction brief | `UI/review/dark-uiux-pr08-evidence-and-direction.md` |
 | Target comp record | `UI/manual-records/dark-uiux-director-grade-target-comp.md` |
@@ -166,6 +168,26 @@ PR-08 runtime layer order 固定为：
 decorative darkness 不能隐藏 player、enemy、loot、telegraph 或 selection。
 
 ## 7. Evidence Labels
+
+### 7.1 D10 Retained UI Authority Packet
+
+PR-08 D10 is the retained UI / theme authority sub-package for the same director-grade target. It does not replace this PR-08 root contract; it explains how the UI shell should stop accumulating hand-written `TileCanvas` UI composition.
+
+Authoritative D10 contract:
+
+```text
+UI/pr/dark-uiux-pr08-d10-map-stage-authority-optimization.md
+```
+
+D10 decisions:
+
+1. Adopt libGDX official Scene2D / Stage / Skin / Table as the retained UI path.
+2. Defer KTX to a separate compatibility spike; do not introduce it in the first host / Skin phase.
+3. Use Skin Composer and TexturePacker as authoring tools only.
+4. Do not adopt VisUI or gdx-skins as runtime dependencies for PR-08.
+5. Keep `TileRenderer` as map rendering authority and embed it through `MapStageActor`.
+6. Execute D10 as `D10-P0 ~ D10-P8` phase-gated hard refactor; migrated surfaces must not keep old immediate UI as long-term compatibility routes.
+7. Main menu, shell, talent tree configuration, inventory/detail workbench, shop, combat/frontstage, bottom deck and nav rail require retained UI adaptation plans and evidence labels.
 
 PR-08 必填 golden / manual evidence：
 

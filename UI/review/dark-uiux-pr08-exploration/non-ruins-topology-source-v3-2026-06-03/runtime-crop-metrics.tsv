@@ -1,0 +1,5 @@
+family	variant	path	sha256	meanLuma	p90Luma	p98Luma	edgeMeanLumaDelta
+forest_edge	previous-wall-mass-slab	UI/review/dark-uiux-pr08-exploration/topology-risk-wall-mass-slab-2026-06-03/forest-edge-wall-mass-slab-crop.png	5b8d8a22592fd863618f6c5cabbbd0d4946f6eb391ad6911d714531cef7cca3c	16.482	38.628	64.485	1.339
+forest_edge	topology-source-v3	UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/forest-edge-topology-source-v3-crop.png	f37eedcf05f01a806d8b7a69bf477452ffcd4748430e74be8cf7825494c86bde	16.356	38.555	64.481	1.359
+shadow_depths	previous-wall-mass-slab	UI/review/dark-uiux-pr08-exploration/topology-risk-wall-mass-slab-2026-06-03/shadow-depths-wall-mass-slab-crop.png	9b3e8acd80a3174246812707af0162927c641778137c6d1a8031c70582b7733d	20.223	40.771	73.227	2.034
+shadow_depths	topology-source-v3	UI/review/dark-uiux-pr08-exploration/non-ruins-topology-source-v3-2026-06-03/shadow-depths-topology-source-v3-crop.png	21515d3b17f2a6b1147b9e40420f39d626b0cf02bbe0fbde5f4fe6eea5c138ea	20.149	40.708	73.223	2.034

@@ -25,6 +25,8 @@ import com.ktome.client.input.UiMode
 import com.ktome.client.render.InventoryWorkbenchCellCoordinate
 import com.ktome.client.render.InventoryWorkbenchGrid
 import com.ktome.client.render.InventoryWorkbenchStacks
+import com.ktome.client.render.RoomArtPlateTopologyContract
+import com.ktome.client.render.RoomArtPlateTopologyDecision
 import com.ktome.client.render.TileLayoutMetrics
 import com.ktome.client.render.TileRenderer
 import com.ktome.client.render.layout.GameShellBounds
@@ -135,6 +137,38 @@ class GoldenScreenshotHarnessTest {
         val probe: Pr08GeneralizationProbe,
         val hash: String,
         val topology: Pr08VisibleTopology,
+    )
+
+    private data class Pr08RuntimeTopologyCropProbe(
+        val label: String,
+        val boardLabel: String,
+        val artifactDirName: String,
+        val boardTitle: String,
+        val seed: Long,
+        val zoneId: String,
+        val floor: Int,
+        val professionId: String,
+        val expectedTilesetKey: String,
+        val expectedDecision: RoomArtPlateTopologyDecision,
+        val expectedTopologySourceKey: String,
+        val expectedRoomPlateKey: String,
+        val expectedVisibleCellCount: Int,
+        val expectedFillPermille: Int,
+        val expectedConnectedComponents: Int,
+    )
+
+    private data class Pr08RuntimeTopologyCropEvidence(
+        val probe: Pr08RuntimeTopologyCropProbe,
+        val cropHash: String,
+        val boardHash: String,
+        val topology: Pr08VisibleTopology,
+        val aspectPermille: Int,
+        val connectedComponents: Int,
+        val decision: RoomArtPlateTopologyDecision,
+        val topologySourceKey: String,
+        val topologySourceHash: String,
+        val roomPlateKey: String,
+        val roomPlateHash: String,
     )
 
     private data class Pr08TopologyMaskProbe(
@@ -287,6 +321,42 @@ class GoldenScreenshotHarnessTest {
         )
     private val darkUiuxPr08GeneralizationEvidenceLabels =
         darkUiuxPr08GeneralizationProbes.map { probe -> probe.label }
+    private val darkUiuxPr08ForestEdgeD9RuntimeProbe =
+        Pr08RuntimeTopologyCropProbe(
+            label = "dark-uiux-pr08-forest-edge-d9-risky-runtime-crop",
+            boardLabel = "dark-uiux-pr08-forest-edge-d9-risky-runtime-board",
+            artifactDirName = "dark-uiux-pr08-forest-edge-d9-risky-runtime",
+            boardTitle = "PR08 D9 forest_edge runtime topology-source proof",
+            seed = 2026060908L,
+            zoneId = "greenwood_fringe",
+            floor = 2,
+            professionId = "rogue",
+            expectedTilesetKey = DarkUiMapVisualKeys.FOREST_EDGE_TILESET,
+            expectedDecision = RoomArtPlateTopologyDecision.TOPOLOGY_RISK_LOW_FILL,
+            expectedTopologySourceKey = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
+            expectedRoomPlateKey = DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE,
+            expectedVisibleCellCount = 93,
+            expectedFillPermille = 603,
+            expectedConnectedComponents = 1,
+        )
+    private val darkUiuxPr08ShadowDepthsD9RuntimeProbe =
+        Pr08RuntimeTopologyCropProbe(
+            label = "dark-uiux-pr08-shadow-depths-d9-disconnected-runtime-crop",
+            boardLabel = "dark-uiux-pr08-shadow-depths-d9-disconnected-runtime-board",
+            artifactDirName = "dark-uiux-pr08-shadow-depths-d9-disconnected-runtime",
+            boardTitle = "PR08 D9 shadow_depths disconnected runtime topology-source proof",
+            seed = 2026060920L,
+            zoneId = "underground_river",
+            floor = 2,
+            professionId = "rogue",
+            expectedTilesetKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_TILESET,
+            expectedDecision = RoomArtPlateTopologyDecision.TOPOLOGY_RISK_DISCONNECTED,
+            expectedTopologySourceKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE,
+            expectedRoomPlateKey = DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE,
+            expectedVisibleCellCount = 129,
+            expectedFillPermille = 671,
+            expectedConnectedComponents = 2,
+        )
     private val darkUiuxPr08TopologyMaskEvidenceLabels =
         listOf("dark-uiux-pr08-topology-source-mask-board")
 
@@ -436,7 +506,7 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             mapOf(
                 "dark-uiux-pr01-1-viewport-deadzone-still" to "e7e918eefd1a86a3d910af6f6655dda8c44da945c834580e806ec806e92ab774",
-                "dark-uiux-pr01-1-viewport-deadzone-scroll" to "df7ca6f611649d5835b8285a14c7f73a9bc6d8481b6629e41788c6c717433904",
+                "dark-uiux-pr01-1-viewport-deadzone-scroll" to "57b8ea25aceaf464c563c4da7e3de6d4e57844de504c3e02fda2053e7ea85cbc",
                 "dark-uiux-pr01-1-viewport-edge-clamp-top-left" to "7571f5f4af22f87d4dbdb769ab61266191d7ad4767f724bb42fa77f091ac4781",
                 "dark-uiux-pr01-1-viewport-edge-clamp-bottom-right" to "545301677c1cc3ce14701a59aec8db45c9e76aab227f5bab78bf6cdf0481d270",
                 "dark-uiux-pr01-1-inspect-tooltip-layer" to "14d5d015bd847dd9469da0e9a557549b0b4bab8ddf5f9346d5229e92fed52d34",
@@ -478,14 +548,14 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "ui-demo-new-parity-1672x941" to "e7f65d0f2f205e238909ec1cd9f54387a9eaf365912e1da5710c9df9e72ed936",
-                "ui-demo-new-parity-1280x800" to "eadc93bf5970b986ccef19a5617ce8ecaad997f3ad67d109ff5211c529687d7e",
+                "ui-demo-new-parity-1672x941" to "d6cc18d682a2465f759a3be6b4f25a0c1709a97bfd5eb869e5ca68d57b36f5bc",
+                "ui-demo-new-parity-1280x800" to "e75f51249ebe241d1e97be73a1e647f8c37ef6b35782d1f478651351127c54f2",
                 "ui-demo-new-right-panel-grid" to "201645bf13f9824fd95289063b92ea8adc722f9d0f344aca75902a2e99c26c47",
                 "ui-demo-new-bottom-deck-no-command-hints" to "a416b96d21059212a6a7682f8163f0f065dcac3b545bad28b064814f8120cdfd",
                 "ui-demo-new-inventory-page-1" to "8a8f9a409dce5316abdacef86a4107fdadfd84e75e53d6458fba4bb45fd2fb5d",
                 "ui-demo-new-inventory-page-2" to "9f52610441461f31ea0f2cd1ed4d0dbca9d98b1725f7d448b09dc4dbde51dbb5",
                 "ui-demo-new-nav-rail-crop" to "0b80fba591e20e244dc1b71b6f241729f78d57fa5c89f93150f114536cb5f692",
-                "ui-demo-new-map-stage-crop" to "84d2844867a2c287cb1fa217fbb04fc9acc8b1c5418f475163a754c380302676",
+                "ui-demo-new-map-stage-crop" to "e7f4c65bf89b1d9beda34b1e8a081a9cfd1f833c2e8454a7c5a12751ff314c78",
             ),
             hashes,
         )
@@ -520,8 +590,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "8c0c18648b9c0f9e57410f34f30adefd31ea2172df33b03d59e0fe040af216cb",
-                "7d7abd405e3d72084e95d4f53a2f1d4263f979d16df6a5dce275b865b1d4a245",
+                "5635f5f6d479ea65b79f8af641c30646e24c518419c94632d15e6345c8bf7ab2",
+                "8c6a3bc889d1bf48578a8442d813cc095bd7cbd1477ceaa2c618eec80f0deb49",
             ),
             listOf(english, chinese),
         )
@@ -596,9 +666,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "81afad0f947ecc43d9eadca920f5d9ba5d43d3f580eb3c195d3fa27347001245",
-                "e82bd3d82c11c75a6a47f6de0835a209d90d16795df600069f1cbdd7c9772204",
+                "23741a8004354326c0377afeee9e8e14dd8ebae2a01330daa3af3c0b4eca4144",
                 "d07e2acb4739abd75852cadcf46f707e82051e29386acbe9e398070fa869dd55",
-                "c35feddae590b0e40559dd3453de6d2c5fbdcacc3541408b6d20ac6306ba033f",
+                "48934d4e615b0a30faced2b2279fa75b428b674cf3dab9fa05f3f0783f8476d2",
             ),
             english + chinese,
         )
@@ -608,7 +678,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("ead38be9f88cabf8f18134a0dad418ca423cf13ede51ded4c25f0e751cb17a66", hash)
+        assertEquals("8b107a6fadf0f7ba418eacc654dfcb0820cac62848ec46a9231ea3ce8b589370", hash)
     }
 
     @Test
@@ -618,16 +688,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "c176f8dc30b6aaccf9f86fb88a941e19222ba37c8f5b0dd5b23ec833856b3ae1",
-                "5c2733ab01a494aaad6c89ac7de9535fe14293c5afc4dccee2ddcbbc45da9610",
-                "f8266325f3044f19525c08a5990e9a66163af0fad64faa89429a38bbdbda8ca5",
-                "787a9c05741fc9ae52c3984eeaa3cdf7cc8ea70a2841c0bab88b63f23d1021c0",
-                "0a989e888b79a9f3cdca3dc269beb5024b85217b161511334092b1ab9c7f9c70",
-                "14facaafa0d9ed6ec36c562d72e4d3413a3a22b2a0c408d2e5114af0f05ba24c",
-                "eaa15599490d0745bd8b37741b6b4506d1c3283ad7d1814584c570dfb670797d",
-                "afcd24e7388cfa6ba89b5a99753347740fe60e1a03c01f608f4107b3f5b912fc",
-                "556b8677cd6eca9d6c391d1077760af827dbad5067d3bbbf788f496463b997a2",
-                "62b3631289f56ed533cdea2d4c95d3fafe1c868e2e2b15f66c80b0ea16a29622",
+                "79ed61f00c4df65f042f547a2999fa55c8f44e8572e266eb30165bcf7c7af445",
+                "0fc8701a9fac5b27ce6a4d0f9544bff13c140d230042c7112cc741cea6504b07",
+                "66c082a081146fcf83ecf63310b0ce3c956aa70d942e7be3632ed19dcb7e0496",
+                "494bdc47aff545eb51ab68d03c0a406a6a57feeda274df7657798e456542837d",
+                "b6f84077412d8c3f7f57748c2d9ce2401777843ea6f5830bbf96430da088648d",
+                "a445d7924f2d65ba3cf56d326c37267988b25ac2c8d85f804e000a4f8ff84953",
+                "e797123f1eedc6791652d67ae72982a388a5dcda8ef22957730f23778215a3f2",
+                "ac93b995951c2a639d781499a41cb01f6f1fbe1a46facb6ae160137ff76d8794",
+                "85a3655528b0e6ed995c7678a453fc3aee2f949d696bfd60793989e4e0e26146",
+                "aee411ed7f4b77c3cd2c8300fb610b8faceba1caadb1a6ba238ae7bf66bb6bed",
             ),
             english + chinese,
         )
@@ -749,6 +819,22 @@ class GoldenScreenshotHarnessTest {
     }
 
     @Test
+    @Tag("pr08RuntimeTopologyProbe")
+    fun darkUiuxPr08ForestEdgeD9RiskyRuntimeCropWritesTopologySourceEvidence() {
+        val evidence = captureDarkUiuxPr08RuntimeTopologyCrop(darkUiuxPr08ForestEdgeD9RuntimeProbe)
+
+        assertPr08RuntimeTopologyCropEvidence(evidence)
+    }
+
+    @Test
+    @Tag("pr08RuntimeTopologyProbe")
+    fun darkUiuxPr08ShadowDepthsD9DisconnectedRuntimeCropWritesTopologySourceEvidence() {
+        val evidence = captureDarkUiuxPr08RuntimeTopologyCrop(darkUiuxPr08ShadowDepthsD9RuntimeProbe)
+
+        assertPr08RuntimeTopologyCropEvidence(evidence)
+    }
+
+    @Test
     fun `dark uiux pr08 topology source mask diagnostic writes owner artifacts`() {
         val hashes = captureDarkUiuxPr08TopologySourceMaskDiagnostic()
 
@@ -781,12 +867,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             mapOf(
-                "phase4-uiux-pr05-telegraph-triple-surface" to "f02c27ffcd9259f08b03ac26ad082ce9adf760da79353417d7442ad241bdecb6",
-                "phase4-uiux-pr05-combat-action" to "cec3fd50461f55e1748258ed8b0bc09b2589895e101e89a91e4cf6a9c71d565a",
-                "phase4-uiux-pr05-combat-method" to "bfe2e831f7e98a935f0f90a23d06bda6382ae8f18225a21c966d2d3a5d801e2a",
-                "phase4-uiux-pr05-combat-target" to "e8227182d9f951a919ab1c3c3c186ed91b24fddd5d81c9805364aa3dfcd0ec29",
-                "phase4-uiux-pr05-combat-disabled-resource" to "cec3fd50461f55e1748258ed8b0bc09b2589895e101e89a91e4cf6a9c71d565a",
-                "phase4-uiux-pr05-combat-illegal-target" to "3807fa67a1475652dc2c37178bcd50fe243b696c4f48f232d6dc63a67e958951",
+                "phase4-uiux-pr05-telegraph-triple-surface" to "267afa5fe679b2f238088418d3c9021605f7278c4ee0c242d9de44480a472c9b",
+                "phase4-uiux-pr05-combat-action" to "1bc6edbf1916fdce896835e864ff81d1cfc10aeb635acc50a7bf12e66307fbbe",
+                "phase4-uiux-pr05-combat-method" to "5f4ce19ced94b80f2b35e121a20045a3b20fb721026a4b3c561f2bd22515a8a5",
+                "phase4-uiux-pr05-combat-target" to "be0821c4e36c9d7b90bf306bab5c6f4a209759fc82e0e2c52349148276d4f16a",
+                "phase4-uiux-pr05-combat-disabled-resource" to "1bc6edbf1916fdce896835e864ff81d1cfc10aeb635acc50a7bf12e66307fbbe",
+                "phase4-uiux-pr05-combat-illegal-target" to "16d905185c389f43d5dfdaca2eb96d355f713df078d1391983f6881a9456fb7e",
             ),
             hashes,
         )
@@ -1239,6 +1325,137 @@ class GoldenScreenshotHarnessTest {
                 app.dispose()
         }
     }
+
+    private fun assertPr08RuntimeTopologyCropEvidence(evidence: Pr08RuntimeTopologyCropEvidence) {
+        val probe = evidence.probe
+        assertEquals(probe.expectedTilesetKey, evidence.topology.tilesetKey)
+        assertEquals(probe.expectedDecision, evidence.decision)
+        assertEquals(probe.expectedTopologySourceKey, evidence.topologySourceKey)
+        assertEquals(probe.expectedRoomPlateKey, evidence.roomPlateKey)
+        assertEquals(probe.expectedVisibleCellCount, evidence.topology.visibleMaterialCells)
+        assertEquals(probe.expectedFillPermille, evidence.topology.fillRatioPermille)
+        assertEquals(probe.expectedConnectedComponents, evidence.connectedComponents)
+        assertTrue(evidence.cropHash.matches(Regex("[a-f0-9]{64}")))
+        assertTrue(evidence.boardHash.matches(Regex("[a-f0-9]{64}")))
+        assertTrue(evidence.topologySourceHash.matches(Regex("[a-f0-9]{64}")))
+        assertTrue(evidence.roomPlateHash.matches(Regex("[a-f0-9]{64}")))
+        assertTrue(
+            Files.isRegularFile(darkUiuxPr08RuntimeTopologyCropGoldenDir(probe).resolve("${probe.label}.png")),
+            "PR08 D9 runtime probe must write the actual map-stage crop for ${probe.label}.",
+        )
+        assertTrue(
+            Files.isRegularFile(darkUiuxPr08RuntimeTopologyCropGoldenDir(probe).resolve("${probe.boardLabel}.png")),
+            "PR08 D9 runtime probe must write a director-review evidence board for ${probe.label}.",
+        )
+        assertTrue(
+            Files.isRegularFile(darkUiuxPr08RuntimeTopologyCropGoldenDir(probe).resolve("evidence-index.tsv")),
+            "PR08 D9 runtime probe must write an evidence index for ${probe.label}.",
+        )
+    }
+
+    private fun captureDarkUiuxPr08RuntimeTopologyCrop(
+        probe: Pr08RuntimeTopologyCropProbe,
+    ): Pr08RuntimeTopologyCropEvidence =
+        withSingleShotLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("${probe.label}-save")),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = probe.seed,
+                            zoneId = probe.zoneId,
+                            floor = probe.floor,
+                            maxFloor = maxOf(2, probe.floor),
+                            playerProfessionId = probe.professionId,
+                            zoneRoute = FOUNDATION_ZONE_ROUTE,
+                            routeIndex = FOUNDATION_ZONE_ROUTE.indexOf(probe.zoneId).coerceAtLeast(0),
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.ZH_CN,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for ${probe.label}." }
+                val snapshot = session.renderSnapshot()
+                val family =
+                    requireNotNull(DarkUiMapVisualKeys.roomArtPlateFamilyFor(snapshot.metadata.tilesetKey, snapshot.mapCells)) {
+                        "PR08 D9 runtime probe expected a supported room-art family for ${snapshot.metadata.tilesetKey}."
+                    }
+                val topology =
+                    requireNotNull(RoomArtPlateTopologyContract.evaluate(family, snapshot.mapCells)) {
+                        "PR08 D9 runtime probe expected visible room-art topology."
+                    }
+                val topologySourceKey =
+                    requireNotNull(DarkUiMapVisualKeys.roomTopologySourceKeyFor(family)) {
+                        "PR08 D9 runtime probe expected a dedicated topology source for ${family.tilesetKey}."
+                    }
+                require(family.tilesetKey == probe.expectedTilesetKey) {
+                    "PR08 D9 runtime probe expected ${probe.expectedTilesetKey} but captured ${family.tilesetKey}."
+                }
+                require(topology.decision == probe.expectedDecision) {
+                    "PR08 D9 runtime probe expected ${probe.expectedDecision} but captured ${topology.decision}."
+                }
+                require(topology.metrics.visibleCellCount == probe.expectedVisibleCellCount) {
+                    "PR08 D9 runtime probe expected ${probe.expectedVisibleCellCount} visible cells but captured ${topology.metrics.visibleCellCount}."
+                }
+                require(topology.metrics.fillPermille == probe.expectedFillPermille) {
+                    "PR08 D9 runtime probe expected fillPermille=${probe.expectedFillPermille} but captured ${topology.metrics.fillPermille}."
+                }
+                require(topology.connectedComponents == probe.expectedConnectedComponents) {
+                    "PR08 D9 runtime probe expected ${probe.expectedConnectedComponents} connected components but captured ${topology.connectedComponents}."
+                }
+
+                val layout = currentTileLayout(session)
+                val mapStageCrop = goldenCrop(layout.demoShell.mapStage, layout)
+                overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                val cropHash =
+                    captureGoldenArtifact(
+                        label = probe.label,
+                        evidenceDir = darkUiuxPr08RuntimeTopologyCropGoldenDir(probe),
+                        crop = mapStageCrop,
+                        flipY = true,
+                    ) {
+                        repeat(2) { app.render() }
+                    }
+                val preliminaryEvidence =
+                    Pr08RuntimeTopologyCropEvidence(
+                        probe = probe,
+                        cropHash = cropHash,
+                        boardHash = "",
+                        topology =
+                            Pr08VisibleTopology(
+                                tilesetKey = snapshot.metadata.tilesetKey,
+                                visibleMaterialCells = topology.metrics.visibleCellCount,
+                                boundsWidth = topology.shape.bounds.width,
+                                boundsHeight = topology.shape.bounds.height,
+                                fillRatioPermille = topology.metrics.fillPermille,
+                                playerOffsetX = snapshot.metadata.playerX - topology.shape.bounds.minX,
+                                playerOffsetY = snapshot.metadata.playerY - topology.shape.bounds.minY,
+                            ),
+                        aspectPermille = topology.metrics.aspectPermille,
+                        connectedComponents = topology.connectedComponents,
+                        decision = topology.decision,
+                        topologySourceKey = topologySourceKey,
+                        topologySourceHash = fileHash(darkUiuxPr08RuntimeTopologyImagePath(topologySourceKey)),
+                        roomPlateKey = family.roomArtPlateKey,
+                        roomPlateHash = fileHash(darkUiuxPr08RuntimeTopologyImagePath(family.roomArtPlateKey)),
+                    )
+                val evidence =
+                    preliminaryEvidence.copy(
+                        boardHash = writeDarkUiuxPr08RuntimeTopologyCropBoard(preliminaryEvidence),
+                    )
+                writeDarkUiuxPr08RuntimeTopologyCropEvidenceIndex(evidence)
+                evidence
+            } finally {
+                app.dispose()
+            }
+        }
 
     private fun captureDarkUiuxPr08TopologySourceMaskDiagnostic(): Map<String, String> {
         val evidenceDir = darkUiuxPr08TopologyMaskGoldenDir()
@@ -3059,6 +3276,84 @@ class GoldenScreenshotHarnessTest {
         Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
     }
 
+    private fun writeDarkUiuxPr08RuntimeTopologyCropEvidenceIndex(
+        evidence: Pr08RuntimeTopologyCropEvidence,
+    ) {
+        val evidenceDir = darkUiuxPr08RuntimeTopologyCropGoldenDir(evidence.probe)
+        Files.createDirectories(evidenceDir)
+        val artifactBase = "client/build/reports/golden/${evidence.probe.artifactDirName}"
+        val topologySourceArtifact = darkUiuxPr08RuntimeTopologyImageRelativePath(evidence.topologySourceKey)
+        val roomPlateArtifact = darkUiuxPr08RuntimeTopologyImageRelativePath(evidence.roomPlateKey)
+        val rows =
+            buildString {
+                appendLine(
+                    "label\thash\tartifact\tseed\tzone\tfloor\tprofession\ttileset\ttopologyDecision\t" +
+                        "topologySourceKey\ttopologySourceArtifact\ttopologySourceHash\troomPlateKey\troomPlateArtifact\t" +
+                        "roomPlateHash\tboundsWidth\tboundsHeight\tvisibleCellCount\tfillRatioPermille\taspectPermille\t" +
+                        "connectedComponents\tplayerOffset\ttopologySignature\tcontract",
+                )
+                appendLine(
+                    darkUiuxPr08RuntimeTopologyCropEvidenceIndexRow(
+                        evidence = evidence,
+                        label = evidence.probe.label,
+                        hash = evidence.cropHash,
+                        artifact = "$artifactBase/${evidence.probe.label}.png",
+                        topologySourceArtifact = topologySourceArtifact,
+                        roomPlateArtifact = roomPlateArtifact,
+                        contract = "actual 1280x800 map-stage crop from D9 ${evidence.topology.tilesetKey} runtime seed",
+                    ),
+                )
+                appendLine(
+                    darkUiuxPr08RuntimeTopologyCropEvidenceIndexRow(
+                        evidence = evidence,
+                        label = evidence.probe.boardLabel,
+                        hash = evidence.boardHash,
+                        artifact = "$artifactBase/${evidence.probe.boardLabel}.png",
+                        topologySourceArtifact = topologySourceArtifact,
+                        roomPlateArtifact = roomPlateArtifact,
+                        contract = "director board: full plate, dedicated topology source, actual runtime crop",
+                    ),
+                )
+            }
+        Files.writeString(evidenceDir.resolve("evidence-index.tsv"), rows)
+    }
+
+    private fun darkUiuxPr08RuntimeTopologyCropEvidenceIndexRow(
+        evidence: Pr08RuntimeTopologyCropEvidence,
+        label: String,
+        hash: String,
+        artifact: String,
+        topologySourceArtifact: String,
+        roomPlateArtifact: String,
+        contract: String,
+    ): String =
+        listOf(
+            label,
+            hash,
+            artifact,
+            evidence.probe.seed.toString(),
+            evidence.probe.zoneId,
+            evidence.probe.floor.toString(),
+            evidence.probe.professionId,
+            evidence.topology.tilesetKey,
+            evidence.decision.name,
+            evidence.topologySourceKey,
+            topologySourceArtifact,
+            evidence.topologySourceHash,
+            evidence.roomPlateKey,
+            roomPlateArtifact,
+            evidence.roomPlateHash,
+            evidence.topology.boundsWidth.toString(),
+            evidence.topology.boundsHeight.toString(),
+            evidence.topology.visibleMaterialCells.toString(),
+            evidence.topology.fillRatioPermille.toString(),
+            evidence.aspectPermille.toString(),
+            evidence.connectedComponents.toString(),
+            "${evidence.topology.playerOffsetX}_${evidence.topology.playerOffsetY}",
+            evidence.topology.signature,
+            contract,
+        ).joinToString(separator = "\t")
+
     private fun writeDarkUiuxPr08GeneralizationBoard(evidence: List<Pr08GeneralizationProbeEvidence>) {
         val evidenceDir = darkUiuxPr08GeneralizationGoldenDir()
         Files.createDirectories(evidenceDir)
@@ -3096,6 +3391,125 @@ class GoldenScreenshotHarnessTest {
         } finally {
             graphics.dispose()
         }
+    }
+
+    private fun writeDarkUiuxPr08RuntimeTopologyCropBoard(
+        evidence: Pr08RuntimeTopologyCropEvidence,
+    ): String {
+        val evidenceDir = darkUiuxPr08RuntimeTopologyCropGoldenDir(evidence.probe)
+        Files.createDirectories(evidenceDir)
+        val roomPlate =
+            ImageIO.read(
+                darkUiuxPr08RuntimeTopologyImagePath(evidence.roomPlateKey)
+                    .toFile(),
+            )
+        val topologySource =
+            ImageIO.read(darkUiuxPr08RuntimeTopologyImagePath(evidence.topologySourceKey).toFile())
+        val runtimeCrop = ImageIO.read(evidenceDir.resolve("${evidence.probe.label}.png").toFile())
+        val panelWidth = 430
+        val imageHeight = 320
+        val margin = 28
+        val headerHeight = 78
+        val footerHeight = 58
+        val panels =
+            listOf(
+                Triple(
+                    "full room plate",
+                    evidence.roomPlateKey,
+                    roomPlate,
+                ),
+                Triple(
+                    "dedicated topology source",
+                    evidence.topologySourceKey,
+                    topologySource,
+                ),
+                Triple(
+                    "actual runtime map-stage crop",
+                    "${evidence.probe.zoneId} seed=${evidence.probe.seed}",
+                    runtimeCrop,
+                ),
+            )
+        val board =
+            java.awt.image.BufferedImage(
+                margin + panels.size * panelWidth + (panels.size - 1) * margin + margin,
+                headerHeight + imageHeight + footerHeight + margin,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB,
+            )
+        val graphics = board.createGraphics()
+        try {
+            graphics.setRenderingHint(
+                java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC,
+            )
+            graphics.color = java.awt.Color(3, 8, 9)
+            graphics.fillRect(0, 0, board.width, board.height)
+            graphics.font = java.awt.Font("SansSerif", java.awt.Font.BOLD, 18)
+            graphics.color = java.awt.Color(236, 225, 202)
+            graphics.drawString(evidence.probe.boardTitle, margin, 32)
+            graphics.font = java.awt.Font("SansSerif", java.awt.Font.PLAIN, 13)
+            graphics.color = java.awt.Color(186, 176, 156)
+            graphics.drawString(
+                "decision=${evidence.decision.name}, fill=${evidence.topology.fillRatioPermille}, " +
+                    "visible=${evidence.topology.visibleMaterialCells}, bounds=${evidence.topology.boundsWidth}x" +
+                    "${evidence.topology.boundsHeight}, components=${evidence.connectedComponents}",
+                margin,
+                55,
+            )
+            panels.forEachIndexed { index, panel ->
+                drawPr08RuntimeEvidencePanel(
+                    graphics = graphics,
+                    title = panel.first,
+                    caption = panel.second,
+                    image = panel.third,
+                    x = margin + index * (panelWidth + margin),
+                    y = headerHeight,
+                    width = panelWidth,
+                    imageHeight = imageHeight,
+                )
+            }
+            graphics.font = java.awt.Font("SansSerif", java.awt.Font.PLAIN, 12)
+            graphics.color = java.awt.Color(146, 136, 118)
+            graphics.drawString(
+                "Same contract path: GameApp runtime snapshot -> RoomArtPlateTopologyContract -> map-stage crop.",
+                margin,
+                board.height - 24,
+            )
+        } finally {
+            graphics.dispose()
+        }
+        val boardPath = evidenceDir.resolve("${evidence.probe.boardLabel}.png")
+        ImageIO.write(board, "png", boardPath.toFile())
+        return fileHash(boardPath)
+    }
+
+    private fun drawPr08RuntimeEvidencePanel(
+        graphics: java.awt.Graphics2D,
+        title: String,
+        caption: String,
+        image: java.awt.image.BufferedImage,
+        x: Int,
+        y: Int,
+        width: Int,
+        imageHeight: Int,
+    ) {
+        graphics.color = java.awt.Color(5, 15, 16)
+        graphics.fillRect(x, y, width, imageHeight)
+        graphics.color = java.awt.Color(123, 92, 48)
+        graphics.drawRect(x, y, width - 1, imageHeight - 1)
+        val availableWidth = width - 24
+        val availableHeight = imageHeight - 76
+        val scale = minOf(availableWidth.toDouble() / image.width, availableHeight.toDouble() / image.height)
+        val imageWidth = (image.width * scale).roundToInt().coerceAtLeast(1)
+        val scaledImageHeight = (image.height * scale).roundToInt().coerceAtLeast(1)
+        val imageX = x + (width - imageWidth) / 2
+        val imageY = y + 42 + (availableHeight - scaledImageHeight) / 2
+        graphics.drawImage(image, imageX, imageY, imageWidth, scaledImageHeight, null)
+        graphics.font = java.awt.Font("SansSerif", java.awt.Font.BOLD, 15)
+        graphics.color = java.awt.Color(228, 218, 194)
+        graphics.drawString(title, x + 14, y + 24)
+        graphics.font = java.awt.Font("SansSerif", java.awt.Font.PLAIN, 11)
+        graphics.color = java.awt.Color(162, 152, 133)
+        graphics.drawString(caption, x + 14, y + imageHeight - 18)
     }
 
     private fun writePhase4UiuxPr05EvidenceIndex(hashes: Map<String, String>) {
@@ -3172,8 +3586,31 @@ class GoldenScreenshotHarnessTest {
     private fun darkUiuxPr08GeneralizationGoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr08-generalization")
 
+    private fun darkUiuxPr08RuntimeTopologyCropGoldenDir(probe: Pr08RuntimeTopologyCropProbe): Path =
+        repoRootPath().resolve("client/build/reports/golden/${probe.artifactDirName}")
+
     private fun darkUiuxPr08TopologyMaskGoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/dark-uiux-pr08-topology-source-mask")
+
+    private fun darkUiuxPr08RuntimeTopologyImagePath(assetKey: String): Path =
+        repoRootPath().resolve(darkUiuxPr08RuntimeTopologyImageRelativePath(assetKey))
+
+    private fun darkUiuxPr08RuntimeTopologyImageRelativePath(assetKey: String): String =
+        when (assetKey) {
+            DarkUiMapVisualKeys.FOREST_EDGE_ROOM_ART_PLATE_PROTOTYPE ->
+                "client/src/main/resources/dark-v1/ui/ui_map_stage_forest_edge_room_plate_pr08_demo.png"
+            DarkUiMapVisualKeys.FOREST_EDGE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE ->
+                "client/src/main/resources/dark-v1/ui/ui_map_stage_forest_edge_room_topology_source_pr08_demo.png"
+            DarkUiMapVisualKeys.MINE_ROOM_ART_PLATE_PROTOTYPE ->
+                "client/src/main/resources/dark-v1/ui/ui_map_stage_mine_room_plate_pr08_demo.png"
+            DarkUiMapVisualKeys.MINE_ROOM_TOPOLOGY_SOURCE_PROTOTYPE ->
+                "client/src/main/resources/dark-v1/ui/ui_map_stage_mine_room_topology_source_pr08_demo.png"
+            DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_ART_PLATE_PROTOTYPE ->
+                "client/src/main/resources/dark-v1/ui/ui_map_stage_shadow_depths_room_plate_pr08_demo.png"
+            DarkUiMapVisualKeys.SHADOW_DEPTHS_ROOM_TOPOLOGY_SOURCE_PROTOTYPE ->
+                "client/src/main/resources/dark-v1/ui/ui_map_stage_shadow_depths_room_topology_source_pr08_demo.png"
+            else -> error("Unsupported PR08 runtime topology evidence asset key: $assetKey")
+        }
 
     private fun phase4UiuxPr05GoldenDir(): Path =
         repoRootPath().resolve("client/build/reports/golden/phase4-uiux-pr05")
@@ -3464,6 +3901,79 @@ class GoldenScreenshotHarnessTest {
         return requireNotNull(result) {
             "LWJGL3 golden capture did not produce a result."
         }.getOrThrow()
+    }
+
+    private fun <T> withSingleShotLwjgl3Context(
+        width: Int,
+        height: Int,
+        block: () -> T,
+    ): T {
+        // Dedicated to pr08RuntimeTopologyProbe captures; do not reuse as general golden infrastructure.
+        var result: Result<T>? = null
+        val configuration =
+            Lwjgl3ApplicationConfiguration().apply {
+                setInitialVisible(false)
+                disableAudio(true)
+                setHdpiMode(HdpiMode.Pixels)
+                setWindowedMode(width, height)
+                setWindowPosition(0, 0)
+                setForegroundFPS(60)
+                setIdleFPS(60)
+                setPauseWhenLostFocus(false)
+                setPauseWhenMinimized(false)
+            }
+
+        try {
+            object : Lwjgl3Application(
+                object : ApplicationAdapter() {
+                    override fun create() {
+                        result = runCatching(block)
+                    }
+                },
+                configuration,
+            ) {
+                override fun loop() {
+                    val window = lwjgl3Windows().get(0)
+                    val windowClass = window.javaClass
+                    val makeCurrent = windowClass.getDeclaredMethod("makeCurrent").apply { isAccessible = true }
+                    val update = windowClass.getDeclaredMethod("update").apply { isAccessible = true }
+                    repeat(8) {
+                        makeCurrent.invoke(window)
+                        update.invoke(window)
+                        if (result != null) {
+                            lwjgl3Windows().clear()
+                            return
+                        }
+                    }
+                }
+
+                override fun cleanupWindows() {
+                    // This focused runtime crop is captured before native teardown; macOS hidden-window cleanup can block.
+                }
+
+                override fun cleanup() {
+                    // The focused single-shot worker exits after the capture, so avoid native GLFW terminate hangs.
+                }
+            }
+        } catch (exception: RuntimeException) {
+            if (isUnavailableLwjglBackend(exception)) {
+                throw TestAbortedException(
+                    "Skipping LWJGL3 screenshot golden because the window backend is unavailable in this environment.",
+                    exception,
+                )
+            }
+            throw exception
+        }
+
+        return requireNotNull(result) {
+            "LWJGL3 golden capture did not produce a result."
+        }.getOrThrow()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Lwjgl3Application.lwjgl3Windows(): com.badlogic.gdx.utils.Array<Any> {
+        val windowsField = Lwjgl3Application::class.java.getDeclaredField("windows").apply { isAccessible = true }
+        return windowsField.get(this) as com.badlogic.gdx.utils.Array<Any>
     }
 
     private fun isUnavailableLwjglBackend(exception: Throwable): Boolean {
