@@ -243,7 +243,7 @@ jobs:
           java-version: "21"
 
       - name: Restore bootstrap download cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .bootstrap/download-cache
           key: bootstrap-downloads-${{ runner.os }}-${{ hashFiles('build.gradle.kts', '**/build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties', 'scripts/bootstrap-deps.sh') }}
@@ -251,7 +251,7 @@ jobs:
             bootstrap-downloads-${{ runner.os }}-
 
       - name: Restore bootstrap Gradle user home cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .bootstrap/gradle-user-home
           key: bootstrap-gradle-user-home-${{ runner.os }}-${{ hashFiles('build.gradle.kts', '**/build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties', 'scripts/bootstrap-deps.sh', 'scripts/verify-bootstrap.sh') }}
